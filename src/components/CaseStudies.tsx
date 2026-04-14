@@ -41,20 +41,31 @@ export function CaseStudies({ locale }: { locale: Locale }) {
     onSelect(api);
   }, [api, onSelect]);
 
-  // 计算卡片样式：实现五级阶梯效果
+  // 计算卡片样式：实现更加显著的小-中-大-中-小效果
   const getCardStyle = (index: number) => {
     const total = cases.length;
     let diff = Math.abs(index - current);
-    if (diff > total / 2) diff = total - diff;
+    
+    // 处理循环列表的索引距离
+    if (diff > total / 2) {
+      diff = total - diff;
+    }
 
-    if (diff === 0) return "scale-110 z-30 opacity-100 shadow-[0_30px_60px_rgba(0,0,0,0.4)]"; // 中心大
-    if (diff === 1) return "scale-95 z-20 opacity-60 grayscale-[0.4]"; // 两侧中
-    return "scale-85 z-10 opacity-30 grayscale-[0.8]"; // 边缘小
+    if (diff === 0) {
+      // 中心：大
+      return "scale-110 z-30 opacity-100 shadow-[0_30px_60px_rgba(0,0,0,0.4)] blur-0 grayscale-0";
+    }
+    if (diff === 1) {
+      // 两侧相邻：中
+      return "scale-90 z-20 opacity-60 grayscale-[0.4] blur-[1px]";
+    }
+    // 边缘：小
+    return "scale-75 z-10 opacity-30 grayscale-[0.8] blur-[2px]";
   };
 
   return (
     <section id="cases" className="py-32 bg-background overflow-hidden">
-      <div className="container mx-auto px-6 mb-16">
+      <div className="container mx-auto px-6 mb-16 relative z-10">
         <div className="flex flex-col md:flex-row justify-between items-end gap-8">
           <SectionHeading 
             title={t.title} 
@@ -62,11 +73,12 @@ export function CaseStudies({ locale }: { locale: Locale }) {
             className="mb-0 max-w-xl"
           />
           
-          <div className="flex gap-4">
+          {/* 增加 z-index 确保按钮在轮播图阴影缓冲区上方 */}
+          <div className="flex gap-4 relative z-50">
             <Button 
               variant="outline" 
               size="icon" 
-              className="rounded-full border-primary/20 hover:bg-primary hover:text-white transition-all h-12 w-12"
+              className="rounded-full border-primary/20 bg-white hover:bg-primary hover:text-white transition-all h-12 w-12 shadow-sm"
               onClick={() => api?.scrollPrev()}
             >
               <MoveLeft className="h-5 w-5" />
@@ -74,7 +86,7 @@ export function CaseStudies({ locale }: { locale: Locale }) {
             <Button 
               variant="outline" 
               size="icon" 
-              className="rounded-full border-primary/20 hover:bg-primary hover:text-white transition-all h-12 w-12"
+              className="rounded-full border-primary/20 bg-white hover:bg-primary hover:text-white transition-all h-12 w-12 shadow-sm"
               onClick={() => api?.scrollNext()}
             >
               <MoveRight className="h-5 w-5" />
@@ -92,7 +104,6 @@ export function CaseStudies({ locale }: { locale: Locale }) {
           }}
           className="w-full"
         >
-          {/* 增加 -ml-8 为桌面端预留间距 */}
           <CarouselContent 
             className="-ml-4 md:-ml-8 cursor-grab active:cursor-grabbing" 
             viewportClassName="py-24 -my-24 overflow-visible"
@@ -104,7 +115,6 @@ export function CaseStudies({ locale }: { locale: Locale }) {
               return (
                 <CarouselItem 
                   key={`${item.id}-${index}`} 
-                  // 增加 pl-8 并微调 basis 比例，确保 5 张卡片有呼吸空间
                   className="pl-4 md:pl-8 basis-[75%] sm:basis-[45%] md:basis-[22%]"
                 >
                   <div 
