@@ -18,7 +18,7 @@ export function VideoSection({ locale }: { locale: Locale }) {
       const rect = sectionRef.current.getBoundingClientRect();
       const windowHeight = window.innerHeight;
       
-      // 计算板块在视口中的滚动进度
+      // Calculate scroll progress within the section
       const totalDist = rect.height + windowHeight;
       const currentPos = windowHeight - rect.top;
       
@@ -31,11 +31,21 @@ export function VideoSection({ locale }: { locale: Locale }) {
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
-  // 幕布上升效果逻辑：
-  // 0.05 到 0.35 的滚动范围内完成垂直揭幕
+  // Curtain rising logic:
+  // Reveal from bottom to top using clip-path inset(top right bottom left)
+  // Transition happens between 5% and 35% of the scroll progress
   const revealProgress = Math.min(Math.max((scrollProgress - 0.05) / 0.3, 0), 1);
-  // inset(top right bottom left) -> 100% 表示顶部裁剪 100%（隐藏），0% 表示不裁剪（显示）
   const clipPath = `inset(${100 - revealProgress * 100}% 0 0 0)`;
+
+  // Ensure video plays when it becomes visible
+  useEffect(() => {
+    if (revealProgress > 0 && videoRef.current) {
+      videoRef.current.play().catch(err => {
+        // Autoplay might be blocked until user interaction in some cases
+        console.warn("Video auto-play delayed:", err);
+      });
+    }
+  }, [revealProgress]);
 
   return (
     <section 
@@ -43,7 +53,7 @@ export function VideoSection({ locale }: { locale: Locale }) {
       className="relative h-[300vh] bg-black z-10"
     >
       <div className="sticky top-0 h-screen w-full overflow-hidden bg-black">
-        {/* 视频层：带垂直上升揭幕动效 */}
+        {/* Video Layer: Curtain Rising Effect */}
         <div 
           className="absolute inset-0 transition-all duration-150 ease-out will-change-[clip-path]"
           style={{ 
@@ -51,7 +61,7 @@ export function VideoSection({ locale }: { locale: Locale }) {
             zIndex: 10
           }}
         >
-          {/* 深色遮罩：提升文字可读性 */}
+          {/* Dark Overlay for better text readability */}
           <div className="absolute inset-0 bg-black/40 z-20" />
           
           <video
@@ -62,15 +72,14 @@ export function VideoSection({ locale }: { locale: Locale }) {
             playsInline
             preload="auto"
             className="h-full w-full object-cover"
-            key={locale} // 切换语言时重置视频状态
+            key={locale}
           >
-            {/* 注意：视频必须位于 public/video/ 目录下才能访问 */}
             <source src="/video/alibaba2023_x264.mp4" type="video/mp4" />
             您的浏览器不支持视频播放。
           </video>
         </div>
 
-        {/* 电影感文字图层 */}
+        {/* Cinematic Text Layers */}
         <div className="absolute inset-0 z-30 flex flex-col items-center justify-center text-center px-6 pointer-events-none">
           <div className="max-w-6xl space-y-12">
             <h2 
@@ -93,7 +102,7 @@ export function VideoSection({ locale }: { locale: Locale }) {
           </div>
         </div>
 
-        {/* 滚动指示器 */}
+        {/* Scroll Indicator */}
         <div className={cn(
           "absolute bottom-12 left-1/2 -translate-x-1/2 z-40 transition-all duration-700",
           revealProgress > 0.1 && revealProgress < 0.9 ? "opacity-40" : "opacity-0"
