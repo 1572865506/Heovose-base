@@ -7,6 +7,7 @@ import { Navbar } from '@/components/Navbar';
 import { Hero } from '@/components/Hero';
 import { ProductGallery } from '@/components/ProductGallery';
 import { ProductionProcess } from '@/components/ProductionProcess';
+import { CaseStudies } from '@/components/CaseStudies';
 import { GlobalMap } from '@/components/GlobalMap';
 import { Footer } from '@/components/Footer';
 
@@ -22,6 +23,8 @@ export default function Home() {
       <ProductGallery locale={locale} />
       
       <ProductionProcess locale={locale} />
+      
+      <CaseStudies locale={locale} />
       
       <GlobalMap locale={locale} />
       

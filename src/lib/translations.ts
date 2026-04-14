@@ -1,3 +1,4 @@
+
 export type Locale = 'en' | 'zh';
 
 export const translations = {
@@ -5,6 +6,7 @@ export const translations = {
     nav: {
       products: 'Products',
       process: 'Process',
+      cases: 'Cases',
       global: 'Global',
       contact: 'Contact',
     },
@@ -21,6 +23,33 @@ export const translations = {
       monitor: 'Industrial Monitors',
       kiosk: 'Self-Service KiosKs',
       requestQuote: 'REQUEST QUOTE',
+    },
+    cases: {
+      title: 'Success Stories',
+      subtitle: 'Real-world impact of Heovose hardware solutions.',
+      viewCase: 'VIEW CASE',
+      tags: {
+        retail: 'RETAIL',
+        industry: 'INDUSTRIAL',
+        office: 'CORPORATE',
+        transport: 'TRANSIT'
+      },
+      retail: {
+        title: 'Smart Retail Transformation',
+        desc: 'Deploying custom kiosks for seamless check-out in Singapore.'
+      },
+      industry: {
+        title: 'Industrial Edge Computing',
+        desc: 'High-performance Mini PCs driving automated lines in Germany.'
+      },
+      office: {
+        title: 'Modern Workspace Integration',
+        desc: 'Premium AIO solutions for a leading tech hub in Tokyo.'
+      },
+      transport: {
+        title: 'Public Transit Signage',
+        desc: 'Durable industrial monitors for New York subway networks.'
+      }
     },
     stats: {
       factories: 'Global Factories',
@@ -54,6 +83,7 @@ export const translations = {
     nav: {
       products: '产品系列',
       process: '生产工艺',
+      cases: '经典案例',
       global: '全球布局',
       contact: '联系我们',
     },
@@ -70,6 +100,33 @@ export const translations = {
       monitor: '工业显示器',
       kiosk: '自助终端机',
       requestQuote: '获取报价',
+    },
+    cases: {
+      title: '案例展示',
+      subtitle: 'Heovose 硬件方案在全球的真实应用。',
+      viewCase: '查看案例',
+      tags: {
+        retail: '新零售',
+        industry: '工业控制',
+        office: '企业办公',
+        transport: '轨道交通'
+      },
+      retail: {
+        title: '智慧零售转型',
+        desc: '为新加坡大型商超部署定制化自助结账系统。'
+      },
+      industry: {
+        title: '工业边缘计算',
+        desc: '高性能迷你电脑助力德国自动化工厂生产线。'
+      },
+      office: {
+        title: '现代办公集成',
+        desc: '为东京科技中心提供高端一体机桌面方案。'
+      },
+      transport: {
+        title: '公共交通数字标牌',
+        desc: '高耐用性工业显示器应用于纽约地铁网络。'
+      }
     },
     stats: {
       factories: '全球工厂',
