@@ -2,6 +2,12 @@
 {
   "placeholderImages": [
     {
+      "id": "hero-bg",
+      "description": "Advanced Manufacturing Facility Background",
+      "imageUrl": "https://picsum.photos/seed/heovose-bg/1920/1080",
+      "imageHint": "modern factory"
+    },
+    {
       "id": "hero-aio",
       "description": "Premium All-in-One PC with sleek 3D perspective design",
       "imageUrl": "https://picsum.photos/seed/heovose-hero/1200/800",
