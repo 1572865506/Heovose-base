@@ -9,7 +9,6 @@ export function VideoSection({ locale }: { locale: Locale }) {
   const t = translations[locale].video;
   const sectionRef = useRef<HTMLDivElement>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
-  const [scrollProgress, setScrollProgress] = useState(0);
   const [revealProgress, setRevealProgress] = useState(0);
 
   useEffect(() => {
@@ -19,18 +18,12 @@ export function VideoSection({ locale }: { locale: Locale }) {
       const rect = sectionRef.current.getBoundingClientRect();
       const windowHeight = window.innerHeight;
       
-      // 计算进入视口的进度 (0 当顶部接触底边，1 当顶部接触顶边)
-      const scrolledIntoView = windowHeight - rect.top;
-      const revealDuration = windowHeight; 
+      // 当板块顶部进入视口底部时开始揭幕 (progress 0)
+      // 当板块顶部到达视口顶部时完成揭幕 (progress 1)
+      const distFromBottom = windowHeight - rect.top;
+      const progress = Math.min(Math.max(distFromBottom / windowHeight, 0), 1);
       
-      const currentReveal = Math.min(Math.max(scrolledIntoView / revealDuration, 0), 1);
-      setRevealProgress(currentReveal);
-
-      // 内容进度：在揭幕完成后，随着继续滚动展示文案
-      const textScrolled = scrolledIntoView - windowHeight;
-      const totalTextDist = rect.height - windowHeight;
-      const progress = Math.min(Math.max(textScrolled / totalTextDist, 0), 1);
-      setScrollProgress(progress);
+      setRevealProgress(progress);
     };
 
     window.addEventListener('scroll', handleScroll, { passive: true });
@@ -39,6 +32,7 @@ export function VideoSection({ locale }: { locale: Locale }) {
   }, []);
 
   // 核心动效：使用 clip-path 开启一个“窗口”，显示背后的固定视频
+  // 这种方式让视频看起来始终固定在幕后，只是被上方的板块揭开了
   const clipPath = `inset(${100 - revealProgress * 100}% 0 0 0)`;
 
   useEffect(() => {
@@ -50,15 +44,15 @@ export function VideoSection({ locale }: { locale: Locale }) {
   return (
     <section 
       ref={sectionRef} 
-      className="relative h-[300vh] z-30 pointer-events-none"
+      className="relative h-[250vh] z-30"
     >
-      {/* 揭幕容器：当它进入视口时，它会 sticky 在顶部，但通过 clip-path 产生垂直升起的效果 */}
+      {/* 揭幕容器：sticky 在顶部，但通过进度动态调整可见区域 */}
       <div 
-        className="sticky top-0 h-screen w-full overflow-hidden pointer-events-auto will-change-[clip-path]"
+        className="sticky top-0 h-screen w-full overflow-hidden will-change-[clip-path]"
         style={{ clipPath }}
       >
-        {/* 固定视频层：使用 fixed 确保视频内容在视觉上相对于窗口静止 */}
-        <div className="fixed inset-0 w-full h-full pointer-events-none">
+        {/* 固定视频层：真正的“银幕” */}
+        <div className="absolute inset-0 w-full h-full">
           <video
             ref={videoRef}
             autoPlay
@@ -71,8 +65,18 @@ export function VideoSection({ locale }: { locale: Locale }) {
           >
             <source src="/video/alibaba2023_x264.mp4" type="video/mp4" />
           </video>
-          {/* 深色半透明遮罩，提升文字可读性 */}
-          <div className="absolute inset-0 bg-black/50 z-10" />
+          {/* 渐变遮罩 */}
+          <div className="absolute inset-0 bg-black/40 z-10" />
+        </div>
+
+        {/* 巨幅装饰文字 (类似参考图效果) */}
+        <div className="absolute inset-0 z-20 flex items-center justify-center pointer-events-none overflow-hidden select-none">
+          <span className={cn(
+            "text-[30vw] font-bold text-white/[0.07] tracking-tighter leading-none transition-transform duration-700 ease-out",
+            revealProgress > 0.1 ? "translate-y-0 opacity-100" : "translate-y-20 opacity-0"
+          )}>
+            QUALITY
+          </span>
         </div>
 
         {/* 品牌文案图层 */}
@@ -81,7 +85,7 @@ export function VideoSection({ locale }: { locale: Locale }) {
             <h2 
               className={cn(
                 "text-5xl md:text-8xl lg:text-9xl font-headline font-bold text-white tracking-tighter leading-none transition-all duration-1000",
-                revealProgress >= 1 && scrollProgress > 0.1 ? "opacity-100 translate-y-0" : "opacity-0 translate-y-20"
+                revealProgress >= 0.8 ? "opacity-100 translate-y-0" : "opacity-0 translate-y-20"
               )}
             >
               {t.title}
@@ -90,7 +94,7 @@ export function VideoSection({ locale }: { locale: Locale }) {
             <p 
               className={cn(
                 "text-2xl md:text-4xl text-white/80 font-light max-w-3xl mx-auto transition-all duration-1000 delay-300",
-                revealProgress >= 1 && scrollProgress > 0.4 ? "opacity-100 translate-y-0" : "opacity-0 translate-y-10"
+                revealProgress >= 0.9 ? "opacity-100 translate-y-0" : "opacity-0 translate-y-10"
               )}
             >
               {t.subtitle}
@@ -101,10 +105,10 @@ export function VideoSection({ locale }: { locale: Locale }) {
         {/* 滚动提示 */}
         <div className={cn(
           "absolute bottom-12 left-1/2 -translate-x-1/2 z-40 transition-opacity duration-700",
-          revealProgress > 0.8 && scrollProgress < 0.9 ? "opacity-40" : "opacity-0"
+          revealProgress > 0.5 && revealProgress < 0.95 ? "opacity-40" : "opacity-0"
         )}>
           <div className="flex flex-col items-center gap-4">
-            <span className="text-[10px] text-white uppercase tracking-[0.3em] font-bold">Scroll</span>
+            <span className="text-[10px] text-white uppercase tracking-[0.3em] font-bold">Discover</span>
             <div className="w-[1px] h-16 bg-gradient-to-b from-white to-transparent" />
           </div>
         </div>
