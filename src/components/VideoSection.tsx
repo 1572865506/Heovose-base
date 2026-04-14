@@ -50,7 +50,7 @@ export function VideoSection({ locale }: { locale: Locale }) {
           style={{ clipPath }}
         >
           {/* Overlay for text readability */}
-          <div className="absolute inset-0 bg-black/50 z-10" />
+          <div className="absolute inset-0 bg-black/40 z-10" />
           
           <video
             autoPlay
@@ -59,7 +59,7 @@ export function VideoSection({ locale }: { locale: Locale }) {
             playsInline
             className="h-full w-full object-cover scale-105"
           >
-            <source src="https://assets.mixkit.co/videos/preview/mixkit-electronic-circuit-board-close-up-1574-large.mp4" type="video/mp4" />
+            <source src="/video/alibaba2023_x264.mp4" type="video/mp4" />
           </video>
         </div>
 
