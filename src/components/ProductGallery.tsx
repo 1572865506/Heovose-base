@@ -95,20 +95,21 @@ export function ProductGallery({ locale }: { locale: Locale }) {
           }}
           className="w-full"
         >
-          <CarouselContent className="-ml-4">
+          {/* Added py-12 to allow shadow space and -my-12 to offset section spacing */}
+          <CarouselContent className="-ml-4 py-12 -my-12">
             {products.map((product) => {
               const imgData = PlaceHolderImages.find(img => img.id === product.id);
               return (
                 <CarouselItem key={product.id} className="pl-4 md:basis-1/2 lg:basis-1/3 xl:basis-1/4">
-                  <div className="group flex flex-col bg-white rounded-2xl shadow-sm hover:shadow-xl transition-all duration-500 overflow-hidden border border-border/20 h-full">
-                    {/* Image Container with 11:9 Aspect Ratio */}
-                    <div className="relative aspect-[11/9] w-full overflow-hidden bg-muted/20">
+                  <div className="group flex flex-col bg-white rounded-2xl shadow-sm hover:shadow-2xl transition-all duration-500 overflow-visible border border-border/20 h-full">
+                    {/* Image Container with 11:9 Aspect Ratio - Added rounded-t-2xl and overflow-hidden here */}
+                    <div className="relative aspect-[11/9] w-full overflow-hidden bg-muted/20 rounded-t-2xl">
                       {imgData?.imageUrl && (
                         <Image
                           src={imgData.imageUrl}
                           alt={product.label}
                           fill
-                          className="object-cover group-hover:scale-105 transition-transform duration-700"
+                          className="object-cover group-hover:scale-110 transition-transform duration-700"
                           data-ai-hint={imgData.imageHint}
                         />
                       )}
@@ -126,7 +127,7 @@ export function ProductGallery({ locale }: { locale: Locale }) {
                       </div>
                       
                       <div className="flex items-center justify-between mt-auto">
-                        <button className="flex items-center gap-2 text-sm font-bold text-primary group/btn tracking-wide">
+                        <button className="flex items-center gap-2 text-sm font-extrabold text-primary group/btn tracking-tighter">
                           {t.requestQuote}
                           <ArrowRight className="h-4 w-4 group-hover/btn:translate-x-1 transition-transform" />
                         </button>
