@@ -19,18 +19,19 @@ export function VideoSection({ locale }: { locale: Locale }) {
       const rect = sectionRef.current.getBoundingClientRect();
       const windowHeight = window.innerHeight;
       
-      // 1. 整体滚动进度 (用于控制文案显现)
-      // 当 section 顶部到达视口顶部时开始计算 (0 到 1)
-      const scrolled = -rect.top;
-      const totalDist = rect.height - windowHeight;
+      // 这里的 rect.top 是因为设置了 mt-[-100vh]，所以它会比实际视觉位置更早进入视口
+      // 我们希望在产品板块即将离开时开始升幕
+      // 当 rect.top 从 0 减少到 -windowHeight 的过程，就是视频升起的过程
+      const revealStart = 0;
+      const revealEnd = -windowHeight;
+      const currentReveal = Math.min(Math.max((revealStart - rect.top) / windowHeight, 0), 1);
+      setRevealProgress(currentReveal);
+
+      // 文案进度：在升幕接近完成时开始（0.8 到 1.0 之间）
+      const scrolled = -rect.top - windowHeight;
+      const totalDist = rect.height - windowHeight * 2;
       const progress = Math.min(Math.max(scrolled / totalDist, 0), 1);
       setScrollProgress(progress);
-
-      // 2. 升幕揭开进度 (用于 clip-path)
-      // 核心修复：从板块进入视口底部那一刻就开始计算揭开进度
-      // rect.top 从 windowHeight 减少到 0 的过程，就是视频从底部升起到填满全屏的过程
-      const reveal = Math.min(Math.max((windowHeight - rect.top) / windowHeight, 0), 1);
-      setRevealProgress(reveal);
     };
 
     window.addEventListener('scroll', handleScroll, { passive: true });
@@ -38,27 +39,26 @@ export function VideoSection({ locale }: { locale: Locale }) {
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
-  // 垂直揭开路径：从 100% (底部隐藏) 到 0% (全屏显示)
+  // 垂直揭开路径：从 100% (底部) 到 0% (全屏)
   const clipPath = `inset(${100 - revealProgress * 100}% 0 0 0)`;
 
   useEffect(() => {
     if (videoRef.current) {
-      videoRef.current.play().catch(() => {
-        // 自动播放受阻处理
-      });
+      videoRef.current.play().catch(() => {});
     }
   }, []);
 
   return (
     <section 
       ref={sectionRef} 
-      className="relative h-[250vh] z-20"
+      className="relative h-[300vh] z-30 -mt-[100vh] pointer-events-none"
     >
-      {/* 移除背景色，确保与上方板块无缝衔接 */}
-      <div className="sticky top-0 h-screen w-full overflow-hidden">
-        {/* 揭幕容器：通过 clip-path 实现垂直升幕，不再使用额外背景遮罩 */}
+      {/* 这里的 pointer-events-none 确保不会干扰到上方板块的点击，
+          但在下面容器里我们会恢复它 */}
+      <div className="sticky top-0 h-screen w-full overflow-hidden pointer-events-auto">
+        {/* 揭幕容器 */}
         <div 
-          className="absolute inset-0 transition-all duration-75 ease-linear will-change-[clip-path]"
+          className="absolute inset-0 will-change-[clip-path]"
           style={{ 
             clipPath,
             zIndex: 10
@@ -77,17 +77,16 @@ export function VideoSection({ locale }: { locale: Locale }) {
             <source src="/video/alibaba2023_x264.mp4" type="video/mp4" />
           </video>
           
-          {/* 视频上方的深色滤镜，仅用于增强文字对比度 */}
-          <div className="absolute inset-0 bg-black/40 z-20" />
+          <div className="absolute inset-0 bg-black/50 z-20" />
         </div>
 
-        {/* 品牌文案层：在揭幕基本完成且进入 sticky 滚动阶段后显现 */}
+        {/* 品牌文案层 */}
         <div className="absolute inset-0 z-30 flex flex-col items-center justify-center text-center px-6 pointer-events-none">
           <div className="max-w-6xl space-y-12">
             <h2 
               className={cn(
                 "text-5xl md:text-8xl lg:text-9xl font-headline font-bold text-white tracking-tighter leading-none transition-all duration-1000",
-                scrollProgress > 0.1 && revealProgress >= 0.95 ? "opacity-100 translate-y-0" : "opacity-0 translate-y-20"
+                revealProgress > 0.9 && scrollProgress > 0.1 ? "opacity-100 translate-y-0" : "opacity-0 translate-y-20"
               )}
             >
               {t.title}
@@ -96,7 +95,7 @@ export function VideoSection({ locale }: { locale: Locale }) {
             <p 
               className={cn(
                 "text-2xl md:text-4xl text-white/80 font-light max-w-3xl mx-auto transition-all duration-1000 delay-300",
-                scrollProgress > 0.4 && revealProgress >= 0.95 ? "opacity-100 translate-y-0" : "opacity-0 translate-y-10"
+                revealProgress > 0.9 && scrollProgress > 0.4 ? "opacity-100 translate-y-0" : "opacity-0 translate-y-10"
               )}
             >
               {t.subtitle}
