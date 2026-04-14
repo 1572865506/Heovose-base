@@ -42,6 +42,36 @@
       "description": "Heovose Manufacturing Plant in Indonesia",
       "imageUrl": "https://picsum.photos/seed/factory-id/800/600",
       "imageHint": "automated warehouse"
+    },
+    {
+      "id": "process-qc",
+      "description": "Quality Control and Inspection",
+      "imageUrl": "https://picsum.photos/seed/heovose-qc/1000/1000",
+      "imageHint": "quality control"
+    },
+    {
+      "id": "process-smt",
+      "description": "SMT Production Line",
+      "imageUrl": "https://picsum.photos/seed/heovose-smt/1000/1000",
+      "imageHint": "electronic manufacturing"
+    },
+    {
+      "id": "process-assembly",
+      "description": "Precision Manual Assembly",
+      "imageUrl": "https://picsum.photos/seed/heovose-assembly/1000/1000",
+      "imageHint": "computer assembly"
+    },
+    {
+      "id": "process-testing",
+      "description": "Functional and Stress Testing",
+      "imageUrl": "https://picsum.photos/seed/heovose-test/1000/1000",
+      "imageHint": "testing lab"
+    },
+    {
+      "id": "process-logistics",
+      "description": "Packaging and Global Logistics",
+      "imageUrl": "https://picsum.photos/seed/heovose-ship/1000/1000",
+      "imageHint": "logistics warehouse"
     }
   ]
 }

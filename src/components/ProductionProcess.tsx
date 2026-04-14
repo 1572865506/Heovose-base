@@ -1,56 +1,142 @@
 
 "use client";
 
+import { useState, useEffect, useRef } from 'react';
+import Image from 'next/image';
 import { Locale, translations } from "@/lib/translations";
 import { SectionHeading } from "./SectionHeading";
-import { CheckCircle2 } from "lucide-react";
+import { PlaceHolderImages } from "@/lib/placeholder-images";
+import { cn } from "@/lib/utils";
 
 export function ProductionProcess({ locale }: { locale: Locale }) {
   const t = translations[locale].process;
+  const [activeStep, setActiveStep] = useState(0);
+  const scrollRefs = useRef<(HTMLDivElement | null)[]>([]);
 
   const steps = [
-    { label: t.iqc, tag: '01' },
-    { label: t.smt, tag: '02' },
-    { label: t.assembly, tag: '03' },
-    { label: t.test, tag: '04' },
-    { label: t.aging, tag: '05' },
-    { label: t.ipqc, tag: '06' },
-    { label: t.final, tag: '07' },
-    { label: t.system, tag: '08' },
-    { label: t.oqa, tag: '09' },
-    { label: t.package, tag: '10' },
-    { label: t.ship, tag: '11' },
+    { label: t.iqc, tag: '01', imageId: 'process-qc', desc: locale === 'en' ? 'Rigorous verification of all incoming components to ensure zero-defect start.' : '严格核实所有进库元器件，确保零缺陷启动。' },
+    { label: t.smt, tag: '02', imageId: 'process-smt', desc: locale === 'en' ? 'High-speed automated SMT lines for precise motherboard component placement.' : '高速自动化 SMT 生产线，实现主板元器件的精准贴装。' },
+    { label: t.assembly, tag: '03', imageId: 'process-assembly', desc: locale === 'en' ? 'Expert technicians handling precision mainboard integration and cabling.' : '专业技术人员进行精密主板集成和布线。' },
+    { label: t.test, tag: '04', imageId: 'process-testing', desc: locale === 'en' ? 'Comprehensive functional validation across all hardware interfaces.' : '对所有硬件接口进行全面的功能验证。' },
+    { label: t.aging, tag: '05', imageId: 'process-testing', desc: locale === 'en' ? 'Extended high-temperature stress testing to guarantee long-term stability.' : '延长的高温压力测试，确保长期稳定性。' },
+    { label: t.ipqc, tag: '06', imageId: 'process-qc', desc: locale === 'en' ? 'In-process quality checkpoints at every critical assembly stage.' : '在每个关键组装阶段设置过程品质检查点。' },
+    { label: t.final, tag: '07', imageId: 'process-assembly', desc: locale === 'en' ? 'Final housing closure and aesthetic quality inspection.' : '整机封壳及外观品质检验。' },
+    { label: t.system, tag: '08', imageId: 'process-smt', desc: locale === 'en' ? 'Custom OS deployment and driver configuration for specific client needs.' : '根据客户需求进行定制化 OS 部署和驱动配置。' },
+    { label: t.oqa, tag: '09', imageId: 'process-qc', desc: locale === 'en' ? 'Outgoing Quality Assurance: Final gatekeeper before product release.' : '出货品质保证：产品发布前的最后一道关口。' },
+    { label: t.package, tag: '10', imageId: 'process-logistics', desc: locale === 'en' ? 'Industrial-grade protective packaging designed for global transit.' : '为全球运输设计的工业级防护包装。' },
+    { label: t.ship, tag: '11', imageId: 'process-logistics', desc: locale === 'en' ? 'Coordinated global dispatch to over 50 countries via premium partners.' : '通过优质合作伙伴协调向全球 50 多个国家发货。' },
   ];
 
+  useEffect(() => {
+    const observers: IntersectionObserver[] = [];
+    
+    scrollRefs.current.forEach((ref, index) => {
+      if (ref) {
+        const observer = new IntersectionObserver(
+          ([entry]) => {
+            if (entry.isIntersecting) {
+              setActiveStep(index);
+            }
+          },
+          { 
+            threshold: 0.6,
+            rootMargin: "-20% 0px -20% 0px"
+          }
+        );
+        observer.observe(ref);
+        observers.push(observer);
+      }
+    });
+
+    return () => observers.forEach(o => o.disconnect());
+  }, []);
+
   return (
-    <section id="process" className="py-24 bg-background relative overflow-hidden">
+    <section id="process" className="py-24 bg-white relative">
       <div className="container mx-auto px-6">
-        <SectionHeading title={t.title} subtitle={t.subtitle} centered />
-        
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {steps.map((step, index) => (
-            <div 
-              key={index}
-              className="flex items-center gap-6 p-6 bg-white rounded-2xl border border-border/40 hover:border-accent/30 hover:shadow-xl transition-all duration-300 group animate-fade-in-up"
-              style={{ animationDelay: `${index * 50}ms` }}
-            >
-              <div className="flex-shrink-0 w-12 h-12 flex items-center justify-center rounded-xl bg-muted group-hover:bg-accent group-hover:text-white transition-colors font-headline font-bold text-lg">
-                {step.tag}
-              </div>
-              <div className="flex-grow">
-                <h4 className="font-semibold text-primary group-hover:text-accent transition-colors">
-                  {step.label}
-                </h4>
-              </div>
-              <CheckCircle2 className="h-5 w-5 text-muted-foreground group-hover:text-accent transition-colors" />
+        <SectionHeading title={t.title} subtitle={t.subtitle} />
+
+        <div className="flex flex-col lg:flex-row gap-12 lg:gap-24 relative mt-20">
+          {/* Sticky Image Column */}
+          <div className="lg:w-1/2 lg:block hidden">
+            <div className="sticky top-32 h-[600px] rounded-[3rem] overflow-hidden bg-muted/20 border border-border/40 shadow-xl group">
+              {steps.map((step, index) => {
+                const imgData = PlaceHolderImages.find(img => img.id === step.imageId);
+                return (
+                  <div
+                    key={index}
+                    className={cn(
+                      "absolute inset-0 transition-opacity duration-1000 ease-in-out",
+                      activeStep === index ? "opacity-100 scale-100" : "opacity-0 scale-110 pointer-events-none"
+                    )}
+                  >
+                    {imgData?.imageUrl && (
+                      <Image
+                        src={imgData.imageUrl}
+                        alt={step.label}
+                        fill
+                        className="object-cover"
+                        data-ai-hint={imgData.imageHint}
+                      />
+                    )}
+                    {/* Dark gradient overlay for readability if needed */}
+                    <div className="absolute inset-0 bg-gradient-to-t from-primary/20 to-transparent" />
+                  </div>
+                );
+              })}
             </div>
-          ))}
+          </div>
+
+          {/* Scrolling Text Column */}
+          <div className="lg:w-1/2 space-y-24 py-12">
+            {steps.map((step, index) => (
+              <div
+                key={index}
+                ref={(el) => (scrollRefs.current[index] = el)}
+                className={cn(
+                  "transition-all duration-700 space-y-6",
+                  activeStep === index ? "opacity-100 translate-x-4" : "opacity-30 translate-x-0"
+                )}
+              >
+                <div className="flex items-center gap-6">
+                  <div className={cn(
+                    "w-16 h-16 flex items-center justify-center rounded-2xl font-headline font-bold text-2xl transition-all duration-500",
+                    activeStep === index ? "bg-primary text-white shadow-lg rotate-3" : "bg-muted text-muted-foreground"
+                  )}>
+                    {step.tag}
+                  </div>
+                  <h3 className={cn(
+                    "text-3xl font-headline font-bold transition-colors duration-500",
+                    activeStep === index ? "text-primary" : "text-muted-foreground/60"
+                  )}>
+                    {step.label}
+                  </h3>
+                </div>
+                
+                <p className="text-xl text-muted-foreground leading-relaxed pl-2">
+                  {step.desc}
+                </p>
+
+                {/* Mobile view image placeholder */}
+                <div className="lg:hidden w-full aspect-video rounded-3xl overflow-hidden relative border border-border/40 mt-8">
+                   {PlaceHolderImages.find(img => img.id === step.imageId)?.imageUrl && (
+                      <Image
+                        src={PlaceHolderImages.find(img => img.id === step.imageId)!.imageUrl}
+                        alt={step.label}
+                        fill
+                        className="object-cover"
+                      />
+                   )}
+                </div>
+              </div>
+            ))}
+            <div className="h-[20vh] hidden lg:block" /> {/* Bottom spacer for better scroll trigger */}
+          </div>
         </div>
       </div>
 
-      {/* Parallax elements */}
-      <div className="absolute top-1/2 left-0 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] border border-accent/10 rounded-full -z-10" />
-      <div className="absolute top-1/2 right-0 translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] border border-accent/5 rounded-full -z-10" />
+      {/* Background Decorative Element */}
+      <div className="absolute top-[20%] right-0 w-[500px] h-[500px] bg-accent/5 rounded-full blur-[120px] -z-10 pointer-events-none" />
     </section>
   );
 }
