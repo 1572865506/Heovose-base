@@ -41,31 +41,29 @@ export function CaseStudies({ locale }: { locale: Locale }) {
     onSelect(api);
   }, [api, onSelect]);
 
-  // 计算卡片样式：去除模糊和去色，保持颜色正常显示
   const getCardStyle = (index: number) => {
     const total = cases.length;
     let diff = Math.abs(index - current);
     
-    // 处理循环列表的索引距离
     if (diff > total / 2) {
       diff = total - diff;
     }
 
     if (diff === 0) {
-      // 中心：大
-      return "scale-110 z-30 opacity-100 shadow-[0_30px_60px_rgba(0,0,0,0.4)]";
+      // Center: Large
+      return "scale-105 z-30 opacity-100 shadow-[0_40px_80px_rgba(0,0,0,0.35)]";
     }
     if (diff === 1) {
-      // 两侧相邻：中
-      return "scale-90 z-20 opacity-80";
+      // Adjacent: Medium
+      return "scale-92 z-20 opacity-80";
     }
-    // 边缘：小
-    return "scale-75 z-10 opacity-60";
+    // Outer: Small
+    return "scale-82 z-10 opacity-60";
   };
 
   return (
     <section id="cases" className="py-32 bg-background overflow-hidden">
-      <div className="container mx-auto px-6 mb-16 relative z-10">
+      <div className="container mx-auto px-6 mb-16 relative z-50">
         <div className="flex flex-col md:flex-row justify-between items-end gap-8">
           <SectionHeading 
             title={t.title} 
@@ -73,28 +71,28 @@ export function CaseStudies({ locale }: { locale: Locale }) {
             className="mb-0 max-w-xl"
           />
           
-          <div className="flex gap-4 relative z-50">
+          <div className="flex gap-4">
             <Button 
               variant="outline" 
               size="icon" 
-              className="rounded-full border-primary/20 bg-white hover:bg-primary hover:text-white transition-all h-12 w-12 shadow-sm"
+              className="rounded-full border-primary/20 bg-white hover:bg-primary hover:text-white transition-all h-14 w-14 shadow-lg active:scale-95"
               onClick={() => api?.scrollPrev()}
             >
-              <MoveLeft className="h-5 w-5" />
+              <MoveLeft className="h-6 w-6" />
             </Button>
             <Button 
               variant="outline" 
               size="icon" 
-              className="rounded-full border-primary/20 bg-white hover:bg-primary hover:text-white transition-all h-12 w-12 shadow-sm"
+              className="rounded-full border-primary/20 bg-white hover:bg-primary hover:text-white transition-all h-14 w-14 shadow-lg active:scale-95"
               onClick={() => api?.scrollNext()}
             >
-              <MoveRight className="h-5 w-5" />
+              <MoveRight className="h-6 w-6" />
             </Button>
           </div>
         </div>
       </div>
 
-      <div className="relative w-full px-0">
+      <div className="relative w-full">
         <Carousel
           setApi={setApi}
           opts={{
@@ -104,8 +102,8 @@ export function CaseStudies({ locale }: { locale: Locale }) {
           className="w-full"
         >
           <CarouselContent 
-            className="-ml-4 md:-ml-8 cursor-grab active:cursor-grabbing" 
-            viewportClassName="py-24 -my-24 overflow-visible"
+            className="-ml-2 md:-ml-4 cursor-grab active:cursor-grabbing" 
+            viewportClassName="py-32 -my-32 overflow-visible"
           >
             {cases.map((item, index) => {
               const imgData = PlaceHolderImages.find(img => img.id === item.id);
@@ -114,17 +112,17 @@ export function CaseStudies({ locale }: { locale: Locale }) {
               return (
                 <CarouselItem 
                   key={`${item.id}-${index}`} 
-                  className="pl-4 md:pl-8 basis-[75%] sm:basis-[45%] md:basis-[22%]"
+                  className="pl-2 md:pl-4 basis-[85%] sm:basis-[50%] md:basis-[22%]"
                 >
                   <div 
                     onClick={() => api?.scrollTo(index)}
                     className={cn(
                       "group relative overflow-hidden rounded-2xl bg-white transition-all duration-700 ease-out cursor-pointer",
-                      "hover:-translate-y-4 hover:shadow-[0_20px_50px_rgba(0,91,153,0.3)]",
+                      "hover:-translate-y-4 hover:shadow-[0_30px_60px_rgba(0,91,153,0.2)]",
                       getCardStyle(index)
                     )}
                   >
-                    <div className="relative aspect-[3/4.5] overflow-hidden">
+                    <div className="relative aspect-[9/11] overflow-hidden">
                       {imgData?.imageUrl && (
                         <Image
                           src={imgData.imageUrl}
@@ -154,7 +152,6 @@ export function CaseStudies({ locale }: { locale: Locale }) {
                           {item.desc}
                         </p>
                         
-                        {/* 圆形箭头按钮样式 */}
                         <div className="flex pt-4">
                           <div className="h-12 w-12 rounded-full bg-accent flex items-center justify-center text-accent-foreground group/link hover:bg-white hover:scale-110 transition-all duration-300">
                             <ArrowRight className="h-5 w-5 group-hover/link:translate-x-1 transition-transform" />
@@ -170,7 +167,7 @@ export function CaseStudies({ locale }: { locale: Locale }) {
         </Carousel>
       </div>
 
-      <div className="container mx-auto px-6 mt-20 flex justify-center">
+      <div className="container mx-auto px-6 mt-12 flex justify-center">
         <div className="w-64 bg-muted/30 h-1.5 rounded-full overflow-hidden">
           <div 
             className="bg-primary h-full transition-all duration-700 ease-out"
