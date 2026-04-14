@@ -83,70 +83,72 @@ export function ProductGallery({ locale }: { locale: Locale }) {
   }, []);
 
   return (
-    <section id="products" className="py-24 bg-background overflow-hidden">
+    <section id="products" className="py-24 bg-background">
       <div className="container mx-auto px-6">
         <SectionHeading title={t.title} subtitle={t.subtitle} centered />
         
-        <Carousel
-          setApi={setApi}
-          plugins={[plugin.current]}
-          opts={{
-            align: "start",
-            loop: true,
-          }}
-          className="w-full"
-        >
-          {/* 
-            使用 viewportClassName="py-12 -my-12" 来扩展视口区域。
-            这允许卡片在 hover 时的放大效果和巨大阴影能够在 overflow-hidden 的容器内正常显示。
-          */}
-          <CarouselContent className="-ml-4" viewportClassName="py-12 -my-12">
-            {products.map((product) => {
-              const imgData = PlaceHolderImages.find(img => img.id === product.id);
-              return (
-                <CarouselItem key={product.id} className="pl-4 md:basis-1/2 lg:basis-1/3 xl:basis-1/4">
-                  <div className="group flex flex-col bg-white rounded-2xl shadow-sm hover:shadow-2xl hover:-translate-y-1 transition-all duration-500 overflow-visible border border-border/20 h-full">
-                    {/* Image Container with 11:9 Aspect Ratio */}
-                    <div className="relative aspect-[11/9] w-full overflow-hidden bg-muted/20 rounded-t-2xl">
-                      {imgData?.imageUrl && (
-                        <Image
-                          src={imgData.imageUrl}
-                          alt={product.label}
-                          fill
-                          className="object-cover group-hover:scale-110 transition-transform duration-700"
-                          data-ai-hint={imgData.imageHint}
-                        />
-                      )}
-                    </div>
-                    
-                    {/* Content Container */}
-                    <div className="p-8 flex flex-col flex-grow">
-                      <div className="space-y-4 mb-12 flex-grow">
-                        <h3 className="text-2xl font-headline font-bold text-primary leading-tight">
-                          {product.label}
-                        </h3>
-                        <p className="text-sm text-muted-foreground leading-relaxed">
-                          {product.desc}
-                        </p>
+        <div className="relative">
+          <Carousel
+            setApi={setApi}
+            plugins={[plugin.current]}
+            opts={{
+              align: "start",
+              loop: true,
+            }}
+            className="w-full"
+          >
+            {/* 
+              使用 p-16 -m-16 (4rem) 提供更大的视口缓冲区。
+              这确保了 shadow-2xl 在所有方向（包括左右边缘）都有足够的空间，不会被裁剪。
+            */}
+            <CarouselContent className="-ml-4" viewportClassName="p-16 -m-16">
+              {products.map((product) => {
+                const imgData = PlaceHolderImages.find(img => img.id === product.id);
+                return (
+                  <CarouselItem key={product.id} className="pl-4 md:basis-1/2 lg:basis-1/3 xl:basis-1/4">
+                    <div className="group flex flex-col bg-white rounded-2xl shadow-sm hover:shadow-2xl hover:-translate-y-2 transition-all duration-500 overflow-visible border border-border/20 h-full">
+                      {/* Image Container with 11:9 Aspect Ratio */}
+                      <div className="relative aspect-[11/9] w-full overflow-hidden bg-muted/20 rounded-t-2xl">
+                        {imgData?.imageUrl && (
+                          <Image
+                            src={imgData.imageUrl}
+                            alt={product.label}
+                            fill
+                            className="object-cover group-hover:scale-110 transition-transform duration-700"
+                            data-ai-hint={imgData.imageHint}
+                          />
+                        )}
                       </div>
                       
-                      <div className="flex items-center justify-between mt-auto pt-6 border-t border-border/10">
-                        <button className="flex items-center gap-2 text-sm font-extrabold text-primary group/btn tracking-tighter">
-                          {t.requestQuote}
-                          <ArrowRight className="h-4 w-4 group-hover/btn:translate-x-1 transition-transform" />
-                        </button>
-                        <FileText className="h-5 w-5 text-primary opacity-40" />
+                      {/* Content Container */}
+                      <div className="p-8 flex flex-col flex-grow">
+                        <div className="space-y-4 mb-12 flex-grow">
+                          <h3 className="text-2xl font-headline font-bold text-primary leading-tight">
+                            {product.label}
+                          </h3>
+                          <p className="text-sm text-muted-foreground leading-relaxed">
+                            {product.desc}
+                          </p>
+                        </div>
+                        
+                        <div className="flex items-center justify-between mt-auto pt-6 border-t border-border/10">
+                          <button className="flex items-center gap-2 text-sm font-extrabold text-primary group/btn tracking-tighter uppercase">
+                            {t.requestQuote}
+                            <ArrowRight className="h-4 w-4 group-hover/btn:translate-x-1 transition-transform" />
+                          </button>
+                          <FileText className="h-5 w-5 text-primary opacity-40" />
+                        </div>
                       </div>
                     </div>
-                  </div>
-                </CarouselItem>
-              );
-            })}
-          </CarouselContent>
-        </Carousel>
+                  </CarouselItem>
+                );
+              })}
+            </CarouselContent>
+          </Carousel>
+        </div>
 
         {/* Carousel Controls: Progress and Play/Pause */}
-        <div className="mt-8 flex items-center justify-end gap-6 max-w-sm ml-auto">
+        <div className="mt-16 flex items-center justify-end gap-6 max-w-sm ml-auto">
           {/* Progress Indicator */}
           <div className="flex gap-2 flex-grow h-1.5 items-center">
             {Array.from({ length: count }).map((_, i) => (
