@@ -60,25 +60,19 @@ export function CaseStudies({ locale }: { locale: Locale }) {
     }
   }, []);
 
-  // "Small - Medium - Large - Medium - Small" scaling logic
   const getCardStyle = (index: number) => {
     const total = cases.length;
     let diff = Math.abs(index - current);
-    
-    // Handle loop diff
     if (diff > total / 2) {
       diff = total - diff;
     }
 
     if (diff === 0) {
-      // Center: Large (105%)
       return "scale-105 z-30 opacity-100 shadow-[0_40px_80px_rgba(0,0,0,0.35)]";
     }
     if (diff === 1) {
-      // Adjacent: Medium (92%)
       return "scale-92 z-20 opacity-80 shadow-lg";
     }
-    // Outer: Small (82%)
     return "scale-82 z-10 opacity-60";
   };
 
@@ -113,7 +107,7 @@ export function CaseStudies({ locale }: { locale: Locale }) {
               return (
                 <CarouselItem 
                   key={`${item.id}-${index}`} 
-                  className="pl-4 md:pl-8 basis-[85%] sm:basis-[50%] md:basis-[22%]"
+                  className="pl-4 md:pl-12 basis-[85%] sm:basis-[50%] md:basis-[22%]"
                 >
                   <div 
                     onClick={() => api?.scrollTo(index)}
@@ -172,28 +166,32 @@ export function CaseStudies({ locale }: { locale: Locale }) {
         </Carousel>
       </div>
 
-      {/* Progress & Controls Bar */}
+      {/* Optimized Progress & Controls Bar to match screenshot */}
       <div className="container mx-auto px-6 mt-16">
-        <div className="flex items-center justify-between bg-white/50 backdrop-blur-sm border border-border/40 p-4 rounded-full max-w-2xl mx-auto shadow-sm">
-          <div className="flex-grow px-4 flex gap-2 h-1.5 items-center">
+        <div className="flex items-center justify-between max-w-4xl mx-auto">
+          {/* Indicators on the left */}
+          <div className="flex gap-2.5 h-1.5 items-center">
             {Array.from({ length: count }).map((_, i) => (
               <button
                 key={i}
                 onClick={() => api?.scrollTo(i)}
                 className={cn(
                   "h-full rounded-full transition-all duration-500 cursor-pointer",
-                  i === current ? "bg-primary w-16" : "bg-muted-foreground/20 w-4 hover:bg-muted-foreground/40"
+                  i === current 
+                    ? "bg-primary w-16" 
+                    : "bg-muted-foreground/20 w-4 hover:bg-muted-foreground/40"
                 )}
               />
             ))}
           </div>
 
-          <div className="flex items-center gap-2 border-l border-border/40 pl-4">
+          {/* Controls on the right */}
+          <div className="flex items-center">
             <Button
               variant="ghost"
               size="icon"
               onClick={toggleAutoplay}
-              className="rounded-full hover:bg-primary/10 text-primary h-10 w-10 shrink-0"
+              className="rounded-full hover:bg-primary/5 text-primary h-10 w-10 shrink-0 border border-transparent hover:border-primary/10"
             >
               {isPlaying ? <Pause className="h-5 w-5" /> : <Play className="h-5 w-5" />}
             </Button>
