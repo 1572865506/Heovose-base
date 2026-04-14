@@ -41,7 +41,7 @@ export function CaseStudies({ locale }: { locale: Locale }) {
     onSelect(api);
   }, [api, onSelect]);
 
-  // 计算卡片样式：实现更加显著的小-中-大-中-小效果
+  // 计算卡片样式：去除模糊和去色，保持颜色正常显示
   const getCardStyle = (index: number) => {
     const total = cases.length;
     let diff = Math.abs(index - current);
@@ -53,14 +53,14 @@ export function CaseStudies({ locale }: { locale: Locale }) {
 
     if (diff === 0) {
       // 中心：大
-      return "scale-110 z-30 opacity-100 shadow-[0_30px_60px_rgba(0,0,0,0.4)] blur-0 grayscale-0";
+      return "scale-110 z-30 opacity-100 shadow-[0_30px_60px_rgba(0,0,0,0.4)]";
     }
     if (diff === 1) {
       // 两侧相邻：中
-      return "scale-90 z-20 opacity-60 grayscale-[0.4] blur-[1px]";
+      return "scale-90 z-20 opacity-80";
     }
     // 边缘：小
-    return "scale-75 z-10 opacity-30 grayscale-[0.8] blur-[2px]";
+    return "scale-75 z-10 opacity-60";
   };
 
   return (
@@ -73,7 +73,6 @@ export function CaseStudies({ locale }: { locale: Locale }) {
             className="mb-0 max-w-xl"
           />
           
-          {/* 增加 z-index 确保按钮在轮播图阴影缓冲区上方 */}
           <div className="flex gap-4 relative z-50">
             <Button 
               variant="outline" 
@@ -118,8 +117,9 @@ export function CaseStudies({ locale }: { locale: Locale }) {
                   className="pl-4 md:pl-8 basis-[75%] sm:basis-[45%] md:basis-[22%]"
                 >
                   <div 
+                    onClick={() => api?.scrollTo(index)}
                     className={cn(
-                      "group relative overflow-hidden rounded-xl bg-white transition-all duration-700 ease-out cursor-pointer",
+                      "group relative overflow-hidden rounded-2xl bg-white transition-all duration-700 ease-out cursor-pointer",
                       "hover:-translate-y-4 hover:shadow-[0_20px_50px_rgba(0,91,153,0.3)]",
                       getCardStyle(index)
                     )}
@@ -150,13 +150,16 @@ export function CaseStudies({ locale }: { locale: Locale }) {
                         <h3 className="text-2xl font-headline font-bold text-white leading-tight">
                           {item.title}
                         </h3>
-                        <p className="text-white/70 text-sm line-clamp-3 leading-relaxed">
+                        <p className="text-white/70 text-sm line-clamp-2 leading-relaxed">
                           {item.desc}
                         </p>
-                        <button className="flex items-center gap-2 text-accent text-xs font-bold tracking-tighter group/link mt-4">
-                          {t.viewCase}
-                          <ArrowRight className="h-4 w-4 group-hover/link:translate-x-2 transition-transform" />
-                        </button>
+                        
+                        {/* 圆形箭头按钮样式 */}
+                        <div className="flex pt-4">
+                          <div className="h-12 w-12 rounded-full bg-accent flex items-center justify-center text-accent-foreground group/link hover:bg-white hover:scale-110 transition-all duration-300">
+                            <ArrowRight className="h-5 w-5 group-hover/link:translate-x-1 transition-transform" />
+                          </div>
+                        </div>
                       </div>
                     </div>
                   </div>
