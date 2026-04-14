@@ -1,4 +1,3 @@
-
 export type Locale = 'en' | 'zh';
 
 export const translations = {
@@ -21,7 +20,7 @@ export const translations = {
       minipc: 'Mini PCs',
       monitor: 'Industrial Monitors',
       kiosk: 'Self-Service KiosKs',
-      learnMore: 'Learn More',
+      requestQuote: 'REQUEST QUOTE',
     },
     stats: {
       factories: 'Global Factories',
@@ -70,7 +69,7 @@ export const translations = {
       minipc: '迷你电脑',
       monitor: '工业显示器',
       kiosk: '自助终端机',
-      learnMore: '了解详情',
+      requestQuote: '获取报价',
     },
     stats: {
       factories: '全球工厂',
