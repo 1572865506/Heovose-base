@@ -19,10 +19,9 @@ export function VideoSection({ locale }: { locale: Locale }) {
       const rect = sectionRef.current.getBoundingClientRect();
       const windowHeight = window.innerHeight;
       
-      // Reveal Progress: 从视频板块顶部接触屏幕底边开始计算
-      // 使得视频像是紧贴着上一个板块“升起”
+      // 计算进入视口的进度 (0 当顶部接触底边，1 当顶部接触顶边)
       const scrolledIntoView = windowHeight - rect.top;
-      const revealDuration = windowHeight; // 在一个视口高度内完成揭幕
+      const revealDuration = windowHeight; 
       
       const currentReveal = Math.min(Math.max(scrolledIntoView / revealDuration, 0), 1);
       setRevealProgress(currentReveal);
@@ -39,7 +38,7 @@ export function VideoSection({ locale }: { locale: Locale }) {
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
-  // 垂直揭幕效果：inset 从 100%（底部）缩减到 0%
+  // 核心动效：使用 clip-path 开启一个“窗口”，显示背后的固定视频
   const clipPath = `inset(${100 - revealProgress * 100}% 0 0 0)`;
 
   useEffect(() => {
@@ -51,17 +50,15 @@ export function VideoSection({ locale }: { locale: Locale }) {
   return (
     <section 
       ref={sectionRef} 
-      className="relative h-[300vh] z-30 pointer-events-none bg-transparent"
+      className="relative h-[300vh] z-30 pointer-events-none"
     >
-      <div className="sticky top-0 h-screen w-full overflow-hidden pointer-events-auto bg-transparent">
-        {/* 视频容器：实现固定背景与垂直揭幕 */}
-        <div 
-          className="absolute inset-0 will-change-[clip-path]"
-          style={{ 
-            clipPath,
-            zIndex: 10
-          }}
-        >
+      {/* 揭幕容器：当它进入视口时，它会 sticky 在顶部，但通过 clip-path 产生垂直升起的效果 */}
+      <div 
+        className="sticky top-0 h-screen w-full overflow-hidden pointer-events-auto will-change-[clip-path]"
+        style={{ clipPath }}
+      >
+        {/* 固定视频层：使用 fixed 确保视频内容在视觉上相对于窗口静止 */}
+        <div className="fixed inset-0 w-full h-full pointer-events-none">
           <video
             ref={videoRef}
             autoPlay
@@ -74,11 +71,11 @@ export function VideoSection({ locale }: { locale: Locale }) {
           >
             <source src="/video/alibaba2023_x264.mp4" type="video/mp4" />
           </video>
-          
-          <div className="absolute inset-0 bg-black/50 z-20" />
+          {/* 深色半透明遮罩，提升文字可读性 */}
+          <div className="absolute inset-0 bg-black/50 z-10" />
         </div>
 
-        {/* 文本图层：固定在视口中，按滚动进度分步显示 */}
+        {/* 品牌文案图层 */}
         <div className="absolute inset-0 z-30 flex flex-col items-center justify-center text-center px-6 pointer-events-none">
           <div className="max-w-6xl space-y-12">
             <h2 
