@@ -54,7 +54,7 @@ export function VideoSection({ locale }: { locale: Locale }) {
   return (
     <section 
       ref={sectionRef} 
-      className="relative h-[300vh] z-30 -mt-[100vh] pointer-events-none"
+      className="relative h-[300vh] z-30 pointer-events-none"
     >
       <div className="sticky top-0 h-screen w-full overflow-hidden pointer-events-auto bg-transparent">
         {/* The Reveal Container */}
