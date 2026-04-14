@@ -32,12 +32,6 @@ export default function Home() {
       <GlobalMap locale={locale} />
       
       <Footer locale={locale} />
-
-      {/* Global decorative elements */}
-      <div className="fixed inset-0 pointer-events-none -z-50 opacity-[0.03] select-none overflow-hidden">
-        <span className="absolute top-[20%] left-[5%] text-[20rem] font-bold">INNOVATE</span>
-        <span className="absolute bottom-[10%] right-[5%] text-[20rem] font-bold">QUALITY</span>
-      </div>
     </main>
   );
 }
