@@ -56,10 +56,11 @@ export function ProductionProcess({ locale }: { locale: Locale }) {
       <div className="container mx-auto px-6">
         <SectionHeading title={t.title} subtitle={t.subtitle} />
 
-        <div className="flex flex-col lg:flex-row gap-12 lg:gap-24 relative mt-20 min-h-screen">
-          {/* Sticky Image Column - 延伸至左侧页面边距 */}
-          <div className="lg:w-[45%] lg:block hidden lg:-ml-[calc((100vw-100%)/2+1.5rem)] relative">
-            <div className="sticky top-32 h-[600px] rounded-r-[4rem] overflow-hidden bg-muted/20 border-y border-r border-border/40 shadow-2xl group">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 lg:gap-24 relative mt-20">
+          
+          {/* Sticky Image Column - Now constrained within grid */}
+          <div className="lg:block hidden relative">
+            <div className="sticky top-32 aspect-square rounded-[3rem] overflow-hidden bg-muted/20 border border-border/40 shadow-2xl group">
               {steps.map((step, index) => {
                 const imgData = PlaceHolderImages.find(img => img.id === step.imageId);
                 return (
@@ -87,7 +88,7 @@ export function ProductionProcess({ locale }: { locale: Locale }) {
           </div>
 
           {/* Scrolling Text Column */}
-          <div className="lg:w-1/2 space-y-48 py-12">
+          <div className="space-y-48 py-12">
             {steps.map((step, index) => (
               <div
                 key={index}
@@ -116,7 +117,7 @@ export function ProductionProcess({ locale }: { locale: Locale }) {
                   {step.desc}
                 </p>
 
-                {/* Mobile view image placeholder */}
+                {/* Mobile view image */}
                 <div className="lg:hidden w-full aspect-video rounded-[2rem] overflow-hidden relative border border-border/40 mt-8 shadow-lg">
                    {PlaceHolderImages.find(img => img.id === step.imageId)?.imageUrl && (
                       <Image
@@ -129,13 +130,13 @@ export function ProductionProcess({ locale }: { locale: Locale }) {
                 </div>
               </div>
             ))}
-            {/* 底部占位确保最后一个步骤能被触发并保持在视口中 */}
+            {/* Spacer for last step visibility */}
             <div className="h-[40vh] hidden lg:block" />
           </div>
         </div>
       </div>
 
-      {/* 背景装饰性元素 - 移到溢出裁剪的容器中 */}
+      {/* Decorative element */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none -z-10">
         <div className="absolute top-[20%] right-0 w-[600px] h-[600px] bg-accent/5 rounded-full blur-[150px]" />
       </div>
