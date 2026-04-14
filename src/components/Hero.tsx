@@ -2,10 +2,8 @@
 "use client";
 
 import Image from 'next/image';
-import { Button } from "@/components/ui/button";
 import { Locale, translations } from "@/lib/translations";
-import { ArrowRight, ShoppingBag, Building2, ChevronRight } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { ShoppingBag, Building2, ChevronRight } from "lucide-react";
 
 export function Hero({ locale }: { locale: Locale }) {
   const t = translations[locale].hero;
@@ -23,40 +21,29 @@ export function Hero({ locale }: { locale: Locale }) {
           className="object-cover"
           priority
         />
-        <div className="absolute inset-0 bg-gradient-to-r from-primary/95 via-primary/60 to-transparent z-10" />
-        <div className="absolute inset-0 bg-black/30 z-10" />
+        <div className="absolute inset-0 bg-gradient-to-r from-primary/90 via-primary/40 to-transparent z-10" />
+        <div className="absolute inset-0 bg-black/20 z-10" />
       </div>
 
       <div className="container mx-auto px-6 relative z-20">
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
-          {/* Left Side: Text and Main CTA */}
-          <div className="space-y-10 animate-fade-in-up">
-            <div className="space-y-6">
-              <span className="text-accent font-bold tracking-[0.3em] uppercase text-xs bg-accent/20 px-5 py-2 rounded-full inline-block border border-accent/30 backdrop-blur-md">
-                Heovose Elevate
-              </span>
-              <h1 className="text-6xl md:text-8xl lg:text-[10rem] font-headline font-bold text-white leading-[0.85] tracking-tighter">
-                {t.headline}
-              </h1>
-              <h2 className="text-2xl md:text-3xl text-white/80 font-light max-w-xl leading-relaxed">
-                {t.subheadline}
-              </h2>
-            </div>
-            
-            <div className="flex flex-col sm:flex-row gap-6 pt-6">
-              <Button size="lg" className="h-16 px-12 text-lg font-bold rounded-full bg-accent hover:bg-accent/90 text-accent-foreground shadow-2xl shadow-accent/20 transition-all hover:scale-105">
-                {t.cta} <ArrowRight className="ml-2 h-6 w-6" />
-              </Button>
-              <Button size="lg" variant="outline" className="h-16 px-12 text-lg font-bold rounded-full border-white/30 text-white hover:bg-white/10 backdrop-blur-sm">
-                {locale === 'en' ? 'View Catalog' : '查看目录'}
-              </Button>
-            </div>
+        <div className="max-w-4xl space-y-12 animate-fade-in-up">
+          {/* Headline and Subheadline */}
+          <div className="space-y-6">
+            <span className="text-accent font-bold tracking-[0.3em] uppercase text-xs bg-accent/20 px-5 py-2 rounded-full inline-block border border-accent/30 backdrop-blur-md">
+              Heovose Elevate
+            </span>
+            <h1 className="text-6xl md:text-8xl lg:text-9xl font-headline font-bold text-white leading-[0.85] tracking-tighter">
+              {t.headline}
+            </h1>
+            <h2 className="text-2xl md:text-3xl text-white/80 font-light max-w-xl leading-relaxed">
+              {t.subheadline}
+            </h2>
           </div>
-
-          {/* Right Side: Quick Access Cards */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-1 gap-6 animate-fade-in-up [animation-delay:200ms]">
+          
+          {/* Entry Cards replacing Buttons */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 pt-8 max-w-3xl">
             {/* Wholesale Card */}
-            <div className="group relative glass-morphism p-8 rounded-[2.5rem] border border-white/10 hover:bg-white/20 transition-all duration-500 cursor-pointer overflow-hidden shadow-2xl">
+            <div className="group relative glass-morphism p-8 rounded-[2rem] border border-white/10 hover:bg-white/20 transition-all duration-500 cursor-pointer overflow-hidden shadow-2xl">
               <div className="absolute top-0 right-0 w-32 h-32 bg-accent/10 rounded-full blur-3xl -mr-16 -mt-16 group-hover:bg-accent/20 transition-all" />
               <div className="relative flex items-center justify-between">
                 <div className="space-y-4">
@@ -76,7 +63,7 @@ export function Hero({ locale }: { locale: Locale }) {
             </div>
 
             {/* Project Card */}
-            <div className="group relative glass-morphism p-8 rounded-[2.5rem] border border-white/10 hover:bg-white/20 transition-all duration-500 cursor-pointer overflow-hidden shadow-2xl">
+            <div className="group relative glass-morphism p-8 rounded-[2rem] border border-white/10 hover:bg-white/20 transition-all duration-500 cursor-pointer overflow-hidden shadow-2xl">
               <div className="absolute top-0 right-0 w-32 h-32 bg-primary/10 rounded-full blur-3xl -mr-16 -mt-16 group-hover:bg-primary/20 transition-all" />
               <div className="relative flex items-center justify-between">
                 <div className="space-y-4">
