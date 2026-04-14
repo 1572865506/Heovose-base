@@ -10,8 +10,8 @@ export const translations = {
       contact: 'Contact',
     },
     hero: {
-      headline: 'Elevating Hardware Boundaries Through Innovation',
-      subheadline: 'Advanced Technology Manufacturing',
+      headline: 'All In One Computer',
+      subheadline: 'Professional Manufacturer',
       cta: 'Explore Solutions',
     },
     products: {
@@ -58,8 +58,8 @@ export const translations = {
       contact: '联系我们',
     },
     hero: {
-      headline: '通过创新提升硬件边界',
-      subheadline: '先进技术制造',
+      headline: '一体机电脑',
+      subheadline: '专业制造商',
       cta: '探索方案',
     },
     products: {

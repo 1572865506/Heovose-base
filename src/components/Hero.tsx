@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState, useRef } from 'react';
@@ -41,8 +42,6 @@ export function Hero({ locale }: { locale: Locale }) {
             </h1>
             <h2 className="text-2xl md:text-3xl text-muted-foreground font-light">
               {t.subheadline}
-              {locale === 'en' && <span className="block mt-2 text-xl opacity-60">先进技术制造</span>}
-              {locale === 'zh' && <span className="block mt-2 text-xl opacity-60">Advanced Technology Manufacturing</span>}
             </h2>
           </div>
           
