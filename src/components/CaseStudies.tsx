@@ -43,7 +43,7 @@ export function CaseStudies({ locale }: { locale: Locale }) {
   const onSelect = useCallback((api: CarouselApi) => {
     if (!api) return;
     setCurrent(api.selectedScrollSnap());
-    setProgress(0); // 重置进度
+    setProgress(0);
   }, []);
 
   useEffect(() => {
@@ -53,11 +53,10 @@ export function CaseStudies({ locale }: { locale: Locale }) {
     onSelect(api);
   }, [api, onSelect]);
 
-  // 进度条逻辑
   useEffect(() => {
     if (!isPlaying) return;
     
-    const intervalTime = 50; // 每 50ms 更新一次
+    const intervalTime = 50;
     const step = (intervalTime / AUTOPLAY_DELAY) * 100;
 
     const timer = setInterval(() => {
@@ -83,18 +82,22 @@ export function CaseStudies({ locale }: { locale: Locale }) {
 
   const getCardStyle = (index: number) => {
     const total = cases.length;
+    // 计算环形差异
     let diff = Math.abs(index - current);
     if (diff > total / 2) {
       diff = total - diff;
     }
 
     if (diff === 0) {
-      return "scale-115 z-30 opacity-100 shadow-[0_40px_80px_rgba(0,0,0,0.35)]";
+      // 中间大 (L)
+      return "scale-[1.12] z-30 opacity-100 shadow-[0_40px_80px_rgba(0,0,0,0.3)]";
     }
     if (diff === 1) {
-      return "scale-85 z-20 opacity-90 shadow-lg";
+      // 侧边中 (M)
+      return "scale-[0.88] z-20 opacity-90 shadow-xl";
     }
-    return "scale-65 z-10 opacity-80";
+    // 外侧小 (S)
+    return "scale-[0.7] z-10 opacity-70";
   };
 
   return (
@@ -118,7 +121,7 @@ export function CaseStudies({ locale }: { locale: Locale }) {
           className="w-full"
         >
           <CarouselContent 
-            className="-ml-8 md:-ml-12 cursor-grab active:cursor-grabbing" 
+            className="-ml-4 md:-ml-8 cursor-grab active:cursor-grabbing" 
             viewportClassName="py-40 -my-40 overflow-visible"
           >
             {cases.map((item, index) => {
@@ -128,13 +131,13 @@ export function CaseStudies({ locale }: { locale: Locale }) {
               return (
                 <CarouselItem 
                   key={`${item.id}-${index}`} 
-                  className="pl-12 md:pl-20 basis-[85%] sm:basis-[50%] md:basis-[28%] lg:basis-[22%]"
+                  className="pl-4 md:pl-8 basis-[85%] sm:basis-[45%] md:basis-[22%] lg:basis-[18%]"
                 >
                   <div 
                     onClick={() => api?.scrollTo(index)}
                     className={cn(
-                      "group relative overflow-hidden rounded-2xl bg-white transition-all duration-700 ease-out cursor-pointer",
-                      "hover:-translate-y-4 hover:shadow-[0_30px_60px_rgba(0,91,153,0.2)]",
+                      "group relative overflow-hidden rounded-2xl bg-white transition-all duration-700 ease-in-out cursor-pointer",
+                      "hover:-translate-y-4",
                       getCardStyle(index)
                     )}
                   >
@@ -163,17 +166,17 @@ export function CaseStudies({ locale }: { locale: Locale }) {
                             <span className="inline-block px-3 py-1 bg-accent text-accent-foreground text-[10px] font-bold rounded-sm tracking-widest uppercase">
                               {item.tag}
                             </span>
-                            <h3 className="text-2xl font-headline font-bold text-white leading-tight">
+                            <h3 className="text-xl font-headline font-bold text-white leading-tight">
                               {item.title}
                             </h3>
-                            <p className="text-white/70 text-sm line-clamp-2 leading-relaxed">
+                            <p className="text-white/70 text-xs line-clamp-2 leading-relaxed">
                               {item.desc}
                             </p>
                           </div>
                           
                           <div className="shrink-0 pb-1">
-                            <div className="h-14 w-14 rounded-full bg-accent flex items-center justify-center text-accent-foreground group/link hover:bg-white hover:scale-110 transition-all duration-300 shadow-xl">
-                              <ArrowRight className="h-6 w-6 group-hover/link:translate-x-1 transition-transform" />
+                            <div className="h-12 w-12 rounded-full bg-accent flex items-center justify-center text-accent-foreground group/link hover:bg-white hover:scale-110 transition-all duration-300 shadow-xl">
+                              <ArrowRight className="h-5 w-5 group-hover/link:translate-x-1 transition-transform" />
                             </div>
                           </div>
                         </div>
@@ -189,7 +192,6 @@ export function CaseStudies({ locale }: { locale: Locale }) {
 
       <div className="container mx-auto px-6 mt-16 relative z-[100]">
         <div className="flex items-center justify-end gap-8 max-w-2xl ml-auto">
-          {/* 进度条指示器 */}
           <div className="flex gap-2.5 h-1.5 items-center">
             {Array.from({ length: count }).map((_, i) => (
               <button
@@ -213,7 +215,6 @@ export function CaseStudies({ locale }: { locale: Locale }) {
             ))}
           </div>
 
-          {/* 控制按钮 */}
           <div className="flex items-center">
             <Button
               variant="ghost"
