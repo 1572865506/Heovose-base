@@ -50,6 +50,7 @@ export function CaseStudies({ locale }: { locale: Locale }) {
     if (!api) return;
     setCount(api.scrollSnapList().length);
     api.on("select", () => onSelect(api));
+    api.on("reInit", () => onSelect(api));
     onSelect(api);
   }, [api, onSelect]);
 
@@ -82,22 +83,22 @@ export function CaseStudies({ locale }: { locale: Locale }) {
 
   const getCardStyle = (index: number) => {
     const total = cases.length;
-    // 计算环形差异
+    // 计算环形差异，得出 0 (大), 1 (中), 2+ (小)
     let diff = Math.abs(index - current);
     if (diff > total / 2) {
       diff = total - diff;
     }
 
     if (diff === 0) {
-      // 中间大 (L)
-      return "scale-[1.12] z-30 opacity-100 shadow-[0_40px_80px_rgba(0,0,0,0.3)]";
+      // 中间大 (L) - 1.15x
+      return "scale-[1.15] z-30 opacity-100 shadow-[0_40px_100px_rgba(0,0,0,0.4)]";
     }
     if (diff === 1) {
-      // 侧边中 (M)
-      return "scale-[0.88] z-20 opacity-90 shadow-xl";
+      // 侧边中 (M) - 0.92x
+      return "scale-[0.92] z-20 opacity-85 shadow-2xl translate-y-2";
     }
-    // 外侧小 (S)
-    return "scale-[0.7] z-10 opacity-70";
+    // 外侧小 (S) - 0.8x
+    return "scale-[0.8] z-10 opacity-70 translate-y-4";
   };
 
   return (
@@ -117,12 +118,13 @@ export function CaseStudies({ locale }: { locale: Locale }) {
           opts={{
             align: "center",
             loop: true,
+            skipSnaps: false,
           }}
           className="w-full"
         >
           <CarouselContent 
             className="-ml-4 md:-ml-8 cursor-grab active:cursor-grabbing" 
-            viewportClassName="py-40 -my-40 overflow-visible"
+            viewportClassName="py-48 -my-48 overflow-visible"
           >
             {cases.map((item, index) => {
               const imgData = PlaceHolderImages.find(img => img.id === item.id);
@@ -131,12 +133,12 @@ export function CaseStudies({ locale }: { locale: Locale }) {
               return (
                 <CarouselItem 
                   key={`${item.id}-${index}`} 
-                  className="pl-4 md:pl-8 basis-[85%] sm:basis-[45%] md:basis-[22%] lg:basis-[18%]"
+                  className="pl-4 md:pl-8 basis-[85%] sm:basis-[45%] md:basis-[25%] lg:basis-[20%]"
                 >
                   <div 
                     onClick={() => api?.scrollTo(index)}
                     className={cn(
-                      "group relative overflow-hidden rounded-2xl bg-white transition-all duration-700 ease-in-out cursor-pointer",
+                      "group relative overflow-hidden rounded-2xl bg-white transition-all duration-700 ease-out cursor-pointer",
                       "hover:-translate-y-4",
                       getCardStyle(index)
                     )}
@@ -153,7 +155,7 @@ export function CaseStudies({ locale }: { locale: Locale }) {
                       )}
                       
                       <div className={cn(
-                        "absolute inset-0 bg-gradient-to-t from-black/90 via-black/20 to-transparent transition-opacity duration-500",
+                        "absolute inset-0 bg-gradient-to-t from-black/95 via-black/20 to-transparent transition-opacity duration-500",
                         isActive ? "opacity-100" : "opacity-40"
                       )} />
                       
@@ -191,15 +193,15 @@ export function CaseStudies({ locale }: { locale: Locale }) {
       </div>
 
       <div className="container mx-auto px-6 mt-16 relative z-[100]">
-        <div className="flex items-center justify-end gap-8 max-w-2xl ml-auto">
-          <div className="flex gap-2.5 h-1.5 items-center">
+        <div className="flex items-center justify-end gap-6 max-w-xl ml-auto">
+          <div className="flex gap-2 h-1 items-center">
             {Array.from({ length: count }).map((_, i) => (
               <button
                 key={i}
                 onClick={() => api?.scrollTo(i)}
                 className={cn(
                   "relative h-full rounded-full transition-all duration-500 cursor-pointer border-none p-0 outline-none overflow-hidden bg-muted-foreground/20",
-                  i === current ? "w-16" : "w-4 hover:bg-muted-foreground/40"
+                  i === current ? "w-12" : "w-4 hover:bg-muted-foreground/40"
                 )}
               >
                 {i === current && (
@@ -215,14 +217,14 @@ export function CaseStudies({ locale }: { locale: Locale }) {
             ))}
           </div>
 
-          <div className="flex items-center">
+          <div className="flex items-center ml-2">
             <Button
               variant="ghost"
               size="icon"
               onClick={toggleAutoplay}
-              className="rounded-full hover:bg-primary/5 text-primary h-12 w-12 shrink-0 border border-transparent hover:border-primary/10"
+              className="rounded-full hover:bg-primary/5 text-primary h-10 w-10 shrink-0 border border-transparent"
             >
-              {isPlaying ? <Pause className="h-6 w-6" /> : <Play className="h-6 w-6" />}
+              {isPlaying ? <Pause className="h-5 w-5" /> : <Play className="h-5 w-5" />}
             </Button>
           </div>
         </div>
