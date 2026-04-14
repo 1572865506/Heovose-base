@@ -23,9 +23,12 @@ export function CaseStudies({ locale }: { locale: Locale }) {
   const [current, setCurrent] = useState(0);
   const [count, setCount] = useState(0);
   const [isPlaying, setIsPlaying] = useState(true);
+  const [progress, setProgress] = useState(0);
   
+  const AUTOPLAY_DELAY = 5000;
+
   const plugin = useRef(
-    Autoplay({ delay: 5000, stopOnInteraction: false })
+    Autoplay({ delay: AUTOPLAY_DELAY, stopOnInteraction: false })
   );
 
   const cases = [
@@ -40,6 +43,7 @@ export function CaseStudies({ locale }: { locale: Locale }) {
   const onSelect = useCallback((api: CarouselApi) => {
     if (!api) return;
     setCurrent(api.selectedScrollSnap());
+    setProgress(0); // 重置进度
   }, []);
 
   useEffect(() => {
@@ -48,6 +52,23 @@ export function CaseStudies({ locale }: { locale: Locale }) {
     api.on("select", () => onSelect(api));
     onSelect(api);
   }, [api, onSelect]);
+
+  // 进度条逻辑
+  useEffect(() => {
+    if (!isPlaying) return;
+    
+    const intervalTime = 50; // 每 50ms 更新一次
+    const step = (intervalTime / AUTOPLAY_DELAY) * 100;
+
+    const timer = setInterval(() => {
+      setProgress((prev) => {
+        if (prev >= 100) return 0;
+        return prev + step;
+      });
+    }, intervalTime);
+
+    return () => clearInterval(timer);
+  }, [isPlaying, current]);
 
   const toggleAutoplay = useCallback(() => {
     const autoplay = plugin.current;
@@ -67,7 +88,6 @@ export function CaseStudies({ locale }: { locale: Locale }) {
       diff = total - diff;
     }
 
-    // 增强的“大-中-小”缩放梯度
     if (diff === 0) {
       return "scale-115 z-30 opacity-100 shadow-[0_40px_80px_rgba(0,0,0,0.35)]";
     }
@@ -167,22 +187,29 @@ export function CaseStudies({ locale }: { locale: Locale }) {
         </Carousel>
       </div>
 
-      {/* 调整导航区域，使其紧凑并靠右对齐 */}
       <div className="container mx-auto px-6 mt-16 relative z-[100]">
         <div className="flex items-center justify-end gap-8 max-w-2xl ml-auto">
-          {/* 指示器 */}
+          {/* 进度条指示器 */}
           <div className="flex gap-2.5 h-1.5 items-center">
             {Array.from({ length: count }).map((_, i) => (
               <button
                 key={i}
                 onClick={() => api?.scrollTo(i)}
                 className={cn(
-                  "h-full rounded-full transition-all duration-500 cursor-pointer border-none p-0 outline-none",
-                  i === current 
-                    ? "bg-primary w-12" 
-                    : "bg-muted-foreground/20 w-4 hover:bg-muted-foreground/40"
+                  "relative h-full rounded-full transition-all duration-500 cursor-pointer border-none p-0 outline-none overflow-hidden bg-muted-foreground/20",
+                  i === current ? "w-16" : "w-4 hover:bg-muted-foreground/40"
                 )}
-              />
+              >
+                {i === current && (
+                  <div 
+                    className="absolute inset-0 bg-primary origin-left"
+                    style={{ 
+                      width: `${progress}%`,
+                      transition: progress === 0 ? 'none' : 'width 50ms linear'
+                    }}
+                  />
+                )}
+              </button>
             ))}
           </div>
 
