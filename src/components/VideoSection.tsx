@@ -18,11 +18,12 @@ export function VideoSection({ locale }: { locale: Locale }) {
       const rect = sectionRef.current.getBoundingClientRect();
       const windowHeight = window.innerHeight;
       
-      // Calculate scroll progress within the section
-      const totalDist = rect.height + windowHeight;
-      const currentPos = windowHeight - rect.top;
+      // Calculate scroll progress based on how much of the section has been scrolled through
+      // Total scrollable distance is the section height
+      const totalDist = rect.height;
+      const scrolled = -rect.top;
       
-      const progress = Math.min(Math.max(currentPos / totalDist, 0), 1);
+      const progress = Math.min(Math.max(scrolled / totalDist, 0), 1);
       setScrollProgress(progress);
     };
 
@@ -31,39 +32,34 @@ export function VideoSection({ locale }: { locale: Locale }) {
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
-  // Curtain rising logic:
-  // Reveal from bottom to top using clip-path inset(top right bottom left)
-  // Transition happens between 5% and 35% of the scroll progress
-  const revealProgress = Math.min(Math.max((scrollProgress - 0.05) / 0.3, 0), 1);
+  // Reveal logic: 
+  // Rising from the bottom between 0% and 40% of the section's scroll path
+  const revealProgress = Math.min(Math.max(scrollProgress / 0.4, 0), 1);
   const clipPath = `inset(${100 - revealProgress * 100}% 0 0 0)`;
 
-  // Ensure video plays when it becomes visible
   useEffect(() => {
-    if (revealProgress > 0 && videoRef.current) {
-      videoRef.current.play().catch(err => {
-        // Autoplay might be blocked until user interaction in some cases
-        console.warn("Video auto-play delayed:", err);
+    if (videoRef.current) {
+      videoRef.current.play().catch(() => {
+        // Handle blocked autoplay
       });
     }
-  }, [revealProgress]);
+  }, []);
 
   return (
     <section 
       ref={sectionRef} 
-      className="relative h-[300vh] bg-black z-10"
+      className="relative h-[300vh] z-20"
     >
-      <div className="sticky top-0 h-screen w-full overflow-hidden bg-black">
-        {/* Video Layer: Curtain Rising Effect */}
+      <div className="sticky top-0 h-screen w-full overflow-hidden">
+        {/* The "Curtain" - Video Container that reveals itself upwards */}
         <div 
-          className="absolute inset-0 transition-all duration-150 ease-out will-change-[clip-path]"
+          className="absolute inset-0 bg-black transition-all duration-75 ease-linear will-change-[clip-path]"
           style={{ 
             clipPath,
             zIndex: 10
           }}
         >
-          {/* Dark Overlay for better text readability */}
-          <div className="absolute inset-0 bg-black/40 z-20" />
-          
+          {/* Video with overlay for readability */}
           <video
             ref={videoRef}
             autoPlay
@@ -75,17 +71,18 @@ export function VideoSection({ locale }: { locale: Locale }) {
             key={locale}
           >
             <source src="/video/alibaba2023_x264.mp4" type="video/mp4" />
-            您的浏览器不支持视频播放。
           </video>
+          
+          <div className="absolute inset-0 bg-black/40 z-20" />
         </div>
 
-        {/* Cinematic Text Layers */}
+        {/* Cinematic Text Layers - Anchored to the viewport */}
         <div className="absolute inset-0 z-30 flex flex-col items-center justify-center text-center px-6 pointer-events-none">
           <div className="max-w-6xl space-y-12">
             <h2 
               className={cn(
                 "text-5xl md:text-8xl lg:text-9xl font-headline font-bold text-white tracking-tighter leading-none transition-all duration-1000",
-                revealProgress > 0.4 ? "opacity-100 translate-y-0" : "opacity-0 translate-y-20"
+                scrollProgress > 0.35 ? "opacity-100 translate-y-0" : "opacity-0 translate-y-20"
               )}
             >
               {t.title}
@@ -94,7 +91,7 @@ export function VideoSection({ locale }: { locale: Locale }) {
             <p 
               className={cn(
                 "text-2xl md:text-4xl text-white/80 font-light max-w-3xl mx-auto transition-all duration-1000 delay-300",
-                revealProgress > 0.7 ? "opacity-100 translate-y-0" : "opacity-0 translate-y-10"
+                scrollProgress > 0.65 ? "opacity-100 translate-y-0" : "opacity-0 translate-y-10"
               )}
             >
               {t.subtitle}
@@ -102,10 +99,10 @@ export function VideoSection({ locale }: { locale: Locale }) {
           </div>
         </div>
 
-        {/* Scroll Indicator */}
+        {/* Dynamic Scroll Indicator */}
         <div className={cn(
-          "absolute bottom-12 left-1/2 -translate-x-1/2 z-40 transition-all duration-700",
-          revealProgress > 0.1 && revealProgress < 0.9 ? "opacity-40" : "opacity-0"
+          "absolute bottom-12 left-1/2 -translate-x-1/2 z-40 transition-opacity duration-700",
+          revealProgress > 0.1 && scrollProgress < 0.9 ? "opacity-40" : "opacity-0"
         )}>
           <div className="flex flex-col items-center gap-4">
             <span className="text-[10px] text-white uppercase tracking-[0.3em] font-bold">Scroll</span>
