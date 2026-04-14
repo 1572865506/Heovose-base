@@ -6,6 +6,7 @@ import { Locale } from '@/lib/translations';
 import { Navbar } from '@/components/Navbar';
 import { Hero } from '@/components/Hero';
 import { ProductGallery } from '@/components/ProductGallery';
+import { VideoSection } from '@/components/VideoSection';
 import { ProductionProcess } from '@/components/ProductionProcess';
 import { CaseStudies } from '@/components/CaseStudies';
 import { GlobalMap } from '@/components/GlobalMap';
@@ -21,6 +22,8 @@ export default function Home() {
       <Hero locale={locale} />
       
       <ProductGallery locale={locale} />
+      
+      <VideoSection locale={locale} />
       
       <ProductionProcess locale={locale} />
       

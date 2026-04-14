@@ -15,6 +15,10 @@ export const translations = {
       subheadline: 'Professional Manufacturer',
       cta: 'Explore Solutions',
     },
+    video: {
+      title: 'Global Intelligent Manufacturing',
+      subtitle: 'Redefining Desktop & Display Excellence.',
+    },
     products: {
       title: 'Our Portfolio',
       subtitle: 'Engineered for Performance and Reliability',
@@ -91,6 +95,10 @@ export const translations = {
       headline: '一体机电脑',
       subheadline: '专业制造商',
       cta: '探索方案',
+    },
+    video: {
+      title: '全球智能制造',
+      subtitle: '重塑桌面与显示之美',
     },
     products: {
       title: '产品中心',
