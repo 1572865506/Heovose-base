@@ -52,14 +52,14 @@ export function ProductionProcess({ locale }: { locale: Locale }) {
   }, []);
 
   return (
-    <section id="process" className="py-24 bg-white relative">
+    <section id="process" className="py-32 bg-white relative overflow-hidden">
       <div className="container mx-auto px-6">
         <SectionHeading title={t.title} subtitle={t.subtitle} />
 
         <div className="flex flex-col lg:flex-row gap-12 lg:gap-24 relative mt-20">
-          {/* Sticky Image Column */}
-          <div className="lg:w-1/2 lg:block hidden">
-            <div className="sticky top-32 h-[600px] rounded-[3rem] overflow-hidden bg-muted/20 border border-border/40 shadow-xl group">
+          {/* Sticky Image Column - 延伸至左侧页面边距 */}
+          <div className="lg:w-[45%] lg:block hidden lg:-ml-[calc((100vw-100%)/2+1.5rem)]">
+            <div className="sticky top-32 h-[650px] rounded-r-[4rem] overflow-hidden bg-muted/20 border-y border-r border-border/40 shadow-2xl group">
               {steps.map((step, index) => {
                 const imgData = PlaceHolderImages.find(img => img.id === step.imageId);
                 return (
@@ -67,7 +67,7 @@ export function ProductionProcess({ locale }: { locale: Locale }) {
                     key={index}
                     className={cn(
                       "absolute inset-0 transition-opacity duration-1000 ease-in-out",
-                      activeStep === index ? "opacity-100 scale-100" : "opacity-0 scale-110 pointer-events-none"
+                      activeStep === index ? "opacity-100 scale-100" : "opacity-0 scale-105 pointer-events-none"
                     )}
                   >
                     {imgData?.imageUrl && (
@@ -79,8 +79,8 @@ export function ProductionProcess({ locale }: { locale: Locale }) {
                         data-ai-hint={imgData.imageHint}
                       />
                     )}
-                    {/* Dark gradient overlay for readability if needed */}
-                    <div className="absolute inset-0 bg-gradient-to-t from-primary/20 to-transparent" />
+                    {/* 底部渐变增强文字阅读性 */}
+                    <div className="absolute inset-0 bg-gradient-to-t from-primary/30 to-transparent" />
                   </div>
                 );
               })}
@@ -88,37 +88,37 @@ export function ProductionProcess({ locale }: { locale: Locale }) {
           </div>
 
           {/* Scrolling Text Column */}
-          <div className="lg:w-1/2 space-y-24 py-12">
+          <div className="lg:w-1/2 space-y-32 py-12">
             {steps.map((step, index) => (
               <div
                 key={index}
                 ref={(el) => (scrollRefs.current[index] = el)}
                 className={cn(
-                  "transition-all duration-700 space-y-6",
-                  activeStep === index ? "opacity-100 translate-x-4" : "opacity-30 translate-x-0"
+                  "transition-all duration-700 space-y-8",
+                  activeStep === index ? "opacity-100 translate-x-4" : "opacity-20 translate-x-0"
                 )}
               >
-                <div className="flex items-center gap-6">
+                <div className="flex items-center gap-8">
                   <div className={cn(
-                    "w-16 h-16 flex items-center justify-center rounded-2xl font-headline font-bold text-2xl transition-all duration-500",
-                    activeStep === index ? "bg-primary text-white shadow-lg rotate-3" : "bg-muted text-muted-foreground"
+                    "w-20 h-20 flex items-center justify-center rounded-3xl font-headline font-bold text-3xl transition-all duration-500",
+                    activeStep === index ? "bg-primary text-white shadow-xl rotate-3" : "bg-muted text-muted-foreground"
                   )}>
                     {step.tag}
                   </div>
                   <h3 className={cn(
-                    "text-3xl font-headline font-bold transition-colors duration-500",
+                    "text-4xl font-headline font-bold transition-colors duration-500",
                     activeStep === index ? "text-primary" : "text-muted-foreground/60"
                   )}>
                     {step.label}
                   </h3>
                 </div>
                 
-                <p className="text-xl text-muted-foreground leading-relaxed pl-2">
+                <p className="text-2xl text-muted-foreground leading-relaxed pl-4 border-l-4 border-accent/20">
                   {step.desc}
                 </p>
 
                 {/* Mobile view image placeholder */}
-                <div className="lg:hidden w-full aspect-video rounded-3xl overflow-hidden relative border border-border/40 mt-8">
+                <div className="lg:hidden w-full aspect-video rounded-[2rem] overflow-hidden relative border border-border/40 mt-12 shadow-lg">
                    {PlaceHolderImages.find(img => img.id === step.imageId)?.imageUrl && (
                       <Image
                         src={PlaceHolderImages.find(img => img.id === step.imageId)!.imageUrl}
@@ -130,13 +130,13 @@ export function ProductionProcess({ locale }: { locale: Locale }) {
                 </div>
               </div>
             ))}
-            <div className="h-[20vh] hidden lg:block" /> {/* Bottom spacer for better scroll trigger */}
+            <div className="h-[20vh] hidden lg:block" /> {/* 底部占位确保最后一个步骤能被触发 */}
           </div>
         </div>
       </div>
 
-      {/* Background Decorative Element */}
-      <div className="absolute top-[20%] right-0 w-[500px] h-[500px] bg-accent/5 rounded-full blur-[120px] -z-10 pointer-events-none" />
+      {/* 背景装饰性元素 */}
+      <div className="absolute top-[20%] right-0 w-[600px] h-[600px] bg-accent/5 rounded-full blur-[150px] -z-10 pointer-events-none" />
     </section>
   );
 }
