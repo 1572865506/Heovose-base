@@ -67,13 +67,14 @@ export function CaseStudies({ locale }: { locale: Locale }) {
       diff = total - diff;
     }
 
+    // 增强的大-中-小比例幅度
     if (diff === 0) {
-      return "scale-105 z-30 opacity-100 shadow-[0_40px_80px_rgba(0,0,0,0.35)]";
+      return "scale-110 z-30 opacity-100 shadow-[0_40px_80px_rgba(0,0,0,0.35)]";
     }
     if (diff === 1) {
-      return "scale-92 z-20 opacity-80 shadow-lg";
+      return "scale-90 z-20 opacity-80 shadow-lg";
     }
-    return "scale-82 z-10 opacity-60";
+    return "scale-75 z-10 opacity-60";
   };
 
   return (
@@ -86,7 +87,7 @@ export function CaseStudies({ locale }: { locale: Locale }) {
         />
       </div>
 
-      <div className="relative w-full">
+      <div className="relative w-full z-10">
         <Carousel
           setApi={setApi}
           plugins={[plugin.current]}
@@ -97,8 +98,8 @@ export function CaseStudies({ locale }: { locale: Locale }) {
           className="w-full"
         >
           <CarouselContent 
-            className="-ml-4 md:-ml-8 cursor-grab active:cursor-grabbing" 
-            viewportClassName="py-32 -my-32 overflow-visible"
+            className="-ml-8 md:-ml-12 cursor-grab active:cursor-grabbing" 
+            viewportClassName="py-40 -my-40 overflow-visible"
           >
             {cases.map((item, index) => {
               const imgData = PlaceHolderImages.find(img => img.id === item.id);
@@ -107,7 +108,7 @@ export function CaseStudies({ locale }: { locale: Locale }) {
               return (
                 <CarouselItem 
                   key={`${item.id}-${index}`} 
-                  className="pl-4 md:pl-12 basis-[85%] sm:basis-[50%] md:basis-[22%]"
+                  className="pl-8 md:pl-16 basis-[85%] sm:basis-[50%] md:basis-[28%] lg:basis-[22%]"
                 >
                   <div 
                     onClick={() => api?.scrollTo(index)}
@@ -166,8 +167,8 @@ export function CaseStudies({ locale }: { locale: Locale }) {
         </Carousel>
       </div>
 
-      {/* Optimized Progress & Controls Bar to match screenshot */}
-      <div className="container mx-auto px-6 mt-16">
+      {/* 增强导航区域的 z-index 确保可点击 */}
+      <div className="container mx-auto px-6 mt-16 relative z-[100]">
         <div className="flex items-center justify-between max-w-4xl mx-auto">
           {/* Indicators on the left */}
           <div className="flex gap-2.5 h-1.5 items-center">
@@ -176,7 +177,7 @@ export function CaseStudies({ locale }: { locale: Locale }) {
                 key={i}
                 onClick={() => api?.scrollTo(i)}
                 className={cn(
-                  "h-full rounded-full transition-all duration-500 cursor-pointer",
+                  "h-full rounded-full transition-all duration-500 cursor-pointer border-none p-0 outline-none",
                   i === current 
                     ? "bg-primary w-16" 
                     : "bg-muted-foreground/20 w-4 hover:bg-muted-foreground/40"
