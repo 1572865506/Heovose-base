@@ -1,7 +1,6 @@
-
 "use client";
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useRef } from 'react';
 import Image from 'next/image';
 import { Button } from "@/components/ui/button";
 import { Locale, translations } from "@/lib/translations";
@@ -36,7 +35,7 @@ export function Hero({ locale }: { locale: Locale }) {
       <div className="container mx-auto px-6 grid grid-cols-1 lg:grid-cols-2 gap-12 items-center relative z-10">
         <div className="space-y-8 animate-fade-in-up">
           <div className="space-y-4">
-            <span className="text-accent font-semibold tracking-wider uppercase text-sm">Heovose Elevate</span>
+            <span className="text-accent font-bold tracking-wider uppercase text-sm">Heovose Elevate</span>
             <h1 className="text-5xl md:text-7xl lg:text-8xl font-headline font-bold text-primary leading-tight">
               {t.headline}
             </h1>
@@ -48,7 +47,7 @@ export function Hero({ locale }: { locale: Locale }) {
           </div>
           
           <div className="flex flex-col sm:flex-row gap-4">
-            <Button size="lg" className="h-14 px-8 text-lg font-medium rounded-full bg-primary hover:bg-primary/90">
+            <Button size="lg" className="h-14 px-8 text-lg font-medium rounded-full bg-primary hover:bg-primary/90 text-primary-foreground">
               {t.cta} <ArrowRight className="ml-2 h-5 w-5" />
             </Button>
             <Button size="lg" variant="outline" className="h-14 px-8 text-lg font-medium rounded-full border-primary/20 hover:bg-accent/5">
@@ -60,7 +59,7 @@ export function Hero({ locale }: { locale: Locale }) {
         <div className="relative flex justify-center lg:justify-end">
           <div className="relative w-full max-w-[600px] aspect-square" style={tiltStyle}>
             <div className="absolute inset-0 bg-accent/10 rounded-full blur-3xl -z-10 animate-pulse" />
-            {heroImage?.imageUrl && (
+            {heroImage?.imageUrl ? (
               <Image
                 src={heroImage.imageUrl}
                 alt={heroImage.description || 'Product Image'}
@@ -69,7 +68,7 @@ export function Hero({ locale }: { locale: Locale }) {
                 priority
                 data-ai-hint={heroImage.imageHint}
               />
-            )}
+            ) : null}
           </div>
         </div>
       </div>
