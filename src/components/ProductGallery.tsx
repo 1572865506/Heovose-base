@@ -32,13 +32,15 @@ export function ProductGallery({ locale }: { locale: Locale }) {
                 style={{ animationDelay: `${index * 100}ms` }}
               >
                 <div className="relative aspect-[4/5] overflow-hidden">
-                  <Image
-                    src={imgData?.imageUrl || ''}
-                    alt={product.label}
-                    fill
-                    className="object-cover group-hover:scale-110 transition-transform duration-700"
-                    data-ai-hint={imgData?.imageHint}
-                  />
+                  {imgData?.imageUrl && (
+                    <Image
+                      src={imgData.imageUrl}
+                      alt={product.label}
+                      fill
+                      className="object-cover group-hover:scale-110 transition-transform duration-700"
+                      data-ai-hint={imgData.imageHint}
+                    />
+                  )}
                   <div className="absolute inset-0 bg-gradient-to-t from-primary/80 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 flex flex-col justify-end p-8">
                     <p className="text-white/80 text-sm">{product.desc}</p>
                   </div>

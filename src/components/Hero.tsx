@@ -60,14 +60,16 @@ export function Hero({ locale }: { locale: Locale }) {
         <div className="relative flex justify-center lg:justify-end">
           <div className="relative w-full max-w-[600px] aspect-square" style={tiltStyle}>
             <div className="absolute inset-0 bg-accent/10 rounded-full blur-3xl -z-10 animate-pulse" />
-            <Image
-              src={heroImage?.imageUrl || ''}
-              alt={heroImage?.description || ''}
-              fill
-              className="object-contain drop-shadow-2xl"
-              priority
-              data-ai-hint={heroImage?.imageHint}
-            />
+            {heroImage?.imageUrl && (
+              <Image
+                src={heroImage.imageUrl}
+                alt={heroImage.description || 'Product Image'}
+                fill
+                className="object-contain drop-shadow-2xl"
+                priority
+                data-ai-hint={heroImage.imageHint}
+              />
+            )}
           </div>
         </div>
       </div>
