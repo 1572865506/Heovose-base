@@ -67,14 +67,14 @@ export function CaseStudies({ locale }: { locale: Locale }) {
       diff = total - diff;
     }
 
-    // 增强的大-中-小比例幅度
+    // 增强的“大-中-小”缩放梯度
     if (diff === 0) {
-      return "scale-110 z-30 opacity-100 shadow-[0_40px_80px_rgba(0,0,0,0.35)]";
+      return "scale-115 z-30 opacity-100 shadow-[0_40px_80px_rgba(0,0,0,0.35)]";
     }
     if (diff === 1) {
-      return "scale-90 z-20 opacity-80 shadow-lg";
+      return "scale-85 z-20 opacity-90 shadow-lg";
     }
-    return "scale-75 z-10 opacity-60";
+    return "scale-65 z-10 opacity-80";
   };
 
   return (
@@ -108,7 +108,7 @@ export function CaseStudies({ locale }: { locale: Locale }) {
               return (
                 <CarouselItem 
                   key={`${item.id}-${index}`} 
-                  className="pl-8 md:pl-16 basis-[85%] sm:basis-[50%] md:basis-[28%] lg:basis-[22%]"
+                  className="pl-12 md:pl-20 basis-[85%] sm:basis-[50%] md:basis-[28%] lg:basis-[22%]"
                 >
                   <div 
                     onClick={() => api?.scrollTo(index)}
@@ -167,10 +167,10 @@ export function CaseStudies({ locale }: { locale: Locale }) {
         </Carousel>
       </div>
 
-      {/* 增强导航区域的 z-index 确保可点击 */}
+      {/* 调整导航区域，使其紧凑并靠右对齐 */}
       <div className="container mx-auto px-6 mt-16 relative z-[100]">
-        <div className="flex items-center justify-between max-w-4xl mx-auto">
-          {/* Indicators on the left */}
+        <div className="flex items-center justify-end gap-8 max-w-2xl ml-auto">
+          {/* 指示器 */}
           <div className="flex gap-2.5 h-1.5 items-center">
             {Array.from({ length: count }).map((_, i) => (
               <button
@@ -179,22 +179,22 @@ export function CaseStudies({ locale }: { locale: Locale }) {
                 className={cn(
                   "h-full rounded-full transition-all duration-500 cursor-pointer border-none p-0 outline-none",
                   i === current 
-                    ? "bg-primary w-16" 
+                    ? "bg-primary w-12" 
                     : "bg-muted-foreground/20 w-4 hover:bg-muted-foreground/40"
                 )}
               />
             ))}
           </div>
 
-          {/* Controls on the right */}
+          {/* 控制按钮 */}
           <div className="flex items-center">
             <Button
               variant="ghost"
               size="icon"
               onClick={toggleAutoplay}
-              className="rounded-full hover:bg-primary/5 text-primary h-10 w-10 shrink-0 border border-transparent hover:border-primary/10"
+              className="rounded-full hover:bg-primary/5 text-primary h-12 w-12 shrink-0 border border-transparent hover:border-primary/10"
             >
-              {isPlaying ? <Pause className="h-5 w-5" /> : <Play className="h-5 w-5" />}
+              {isPlaying ? <Pause className="h-6 w-6" /> : <Play className="h-6 w-6" />}
             </Button>
           </div>
         </div>
