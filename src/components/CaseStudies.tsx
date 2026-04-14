@@ -41,10 +41,22 @@ export function CaseStudies({ locale }: { locale: Locale }) {
     onSelect(api);
   }, [api, onSelect]);
 
+  // 计算卡片尺寸和透明度逻辑
+  const getCardStyle = (index: number) => {
+    const total = cases.length;
+    // 计算当前索引与选中索引的循环距离
+    let diff = Math.abs(index - current);
+    if (diff > total / 2) diff = total - diff;
+
+    if (diff === 0) return "scale-110 z-30 opacity-100 shadow-2xl"; // 大 (正中)
+    if (diff === 1) return "scale-100 z-20 opacity-60 grayscale-[0.3]"; // 中 (两侧)
+    return "scale-90 z-10 opacity-30 grayscale-[0.6]"; // 小 (更远端)
+  };
+
   return (
     <section id="cases" className="py-32 bg-background overflow-hidden">
-      <div className="container mx-auto px-6">
-        <div className="flex flex-col md:flex-row justify-between items-end gap-8 mb-16">
+      <div className="container mx-auto px-6 mb-16">
+        <div className="flex flex-col md:flex-row justify-between items-end gap-8">
           <SectionHeading 
             title={t.title} 
             subtitle={t.subtitle} 
@@ -72,8 +84,8 @@ export function CaseStudies({ locale }: { locale: Locale }) {
         </div>
       </div>
 
-      {/* Full width container to let cards bleed to edges */}
-      <div className="relative w-full">
+      {/* 突破容器限制，全屏宽度展示，预留垂直内边距给阴影和悬浮位移 */}
+      <div className="relative w-full px-0">
         <Carousel
           setApi={setApi}
           opts={{
@@ -82,7 +94,11 @@ export function CaseStudies({ locale }: { locale: Locale }) {
           }}
           className="w-full"
         >
-          <CarouselContent className="-ml-4 md:-ml-8 cursor-grab active:cursor-grabbing">
+          {/* viewportClassName 增加大范围内边距以彻底防止阴影和悬停位移被裁剪 */}
+          <CarouselContent 
+            className="-ml-4 md:-ml-0 cursor-grab active:cursor-grabbing" 
+            viewportClassName="py-24 -my-24 overflow-visible"
+          >
             {cases.map((item, index) => {
               const imgData = PlaceHolderImages.find(img => img.id === item.id);
               const isActive = current === index;
@@ -90,15 +106,16 @@ export function CaseStudies({ locale }: { locale: Locale }) {
               return (
                 <CarouselItem 
                   key={`${item.id}-${index}`} 
-                  className="pl-4 md:pl-8 basis-[85%] sm:basis-[45%] md:basis-[30%] lg:basis-[20%]"
+                  className="pl-4 md:pl-0 basis-[70%] sm:basis-[40%] md:basis-[20%]"
                 >
                   <div 
                     className={cn(
-                      "group relative overflow-hidden rounded-2xl bg-white border border-border/20 transition-all duration-700 ease-out",
-                      isActive ? "scale-110 z-10 opacity-100 shadow-2xl" : "scale-90 opacity-40 grayscale-[0.5]"
+                      "group relative overflow-hidden rounded-xl bg-white transition-all duration-700 ease-out cursor-pointer",
+                      "hover:-translate-y-4 hover:shadow-[0_20px_50px_rgba(0,91,153,0.3)]", // 鼠标悬停浮动及品牌色阴影
+                      getCardStyle(index)
                     )}
                   >
-                    <div className="relative aspect-[3/4] overflow-hidden">
+                    <div className="relative aspect-[3/4.5] overflow-hidden">
                       {imgData?.imageUrl && (
                         <Image
                           src={imgData.imageUrl}
@@ -108,24 +125,30 @@ export function CaseStudies({ locale }: { locale: Locale }) {
                           data-ai-hint={imgData.imageHint}
                         />
                       )}
-                      <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/30 to-transparent" />
                       
+                      {/* 渐变遮罩：只有在中心大卡片时更明显 */}
                       <div className={cn(
-                        "absolute bottom-0 left-0 p-6 w-full space-y-3 transition-all duration-500",
-                        isActive ? "translate-y-0 opacity-100" : "translate-y-4 opacity-0"
+                        "absolute inset-0 bg-gradient-to-t from-black/90 via-black/20 to-transparent transition-opacity duration-500",
+                        isActive ? "opacity-100" : "opacity-40"
+                      )} />
+                      
+                      {/* 内容区域 */}
+                      <div className={cn(
+                        "absolute bottom-0 left-0 p-8 w-full space-y-4 transition-all duration-700",
+                        isActive ? "translate-y-0 opacity-100" : "translate-y-10 opacity-0"
                       )}>
-                        <span className="inline-block px-3 py-0.5 bg-accent text-accent-foreground text-[10px] font-bold rounded-full tracking-widest uppercase">
+                        <span className="inline-block px-3 py-1 bg-accent text-accent-foreground text-[10px] font-bold rounded-sm tracking-widest uppercase">
                           {item.tag}
                         </span>
-                        <h3 className="text-xl font-headline font-bold text-white leading-tight">
+                        <h3 className="text-2xl font-headline font-bold text-white leading-tight">
                           {item.title}
                         </h3>
-                        <p className="text-white/60 text-xs line-clamp-2">
+                        <p className="text-white/70 text-sm line-clamp-3 leading-relaxed">
                           {item.desc}
                         </p>
-                        <button className="flex items-center gap-2 text-white text-xs font-bold tracking-tighter hover:text-accent transition-colors group/link mt-2">
+                        <button className="flex items-center gap-2 text-accent text-xs font-bold tracking-tighter group/link mt-4">
                           {t.viewCase}
-                          <ArrowRight className="h-3 w-3 group-hover/link:translate-x-1 transition-transform" />
+                          <ArrowRight className="h-4 w-4 group-hover/link:translate-x-2 transition-transform" />
                         </button>
                       </div>
                     </div>
@@ -137,11 +160,11 @@ export function CaseStudies({ locale }: { locale: Locale }) {
         </Carousel>
       </div>
 
-      {/* Global progress indicator centered */}
-      <div className="container mx-auto px-6 mt-16 flex justify-center">
-        <div className="w-64 bg-muted/30 h-1 rounded-full overflow-hidden">
+      {/* 底部进度指示器 */}
+      <div className="container mx-auto px-6 mt-20 flex justify-center">
+        <div className="w-64 bg-muted/30 h-1.5 rounded-full overflow-hidden">
           <div 
-            className="bg-primary h-full transition-all duration-500 ease-out"
+            className="bg-primary h-full transition-all duration-700 ease-out"
             style={{ width: `${((current + 1) / cases.length) * 100}%` }}
           />
         </div>
