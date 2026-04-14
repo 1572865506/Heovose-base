@@ -1,0 +1,47 @@
+
+{
+  "placeholderImages": [
+    {
+      "id": "hero-aio",
+      "description": "Premium All-in-One PC with sleek 3D perspective design",
+      "imageUrl": "https://picsum.photos/seed/heovose-hero/1200/800",
+      "imageHint": "all-in-one computer premium"
+    },
+    {
+      "id": "product-aio",
+      "description": "Heovose AIO Series Display",
+      "imageUrl": "https://picsum.photos/seed/heovose-aio/600/400",
+      "imageHint": "desktop computer"
+    },
+    {
+      "id": "product-minipc",
+      "description": "Compact High-Performance Mini PC",
+      "imageUrl": "https://picsum.photos/seed/heovose-mini/600/400",
+      "imageHint": "mini pc"
+    },
+    {
+      "id": "product-monitor",
+      "description": "Professional Grade Industrial Monitor",
+      "imageUrl": "https://picsum.photos/seed/heovose-monitor/600/400",
+      "imageHint": "computer monitor"
+    },
+    {
+      "id": "product-kiosk",
+      "description": "Self-service Industrial Kiosk Terminal",
+      "imageUrl": "https://picsum.photos/seed/heovose-kiosk/600/400",
+      "imageHint": "information kiosk"
+    },
+    {
+      "id": "factory-china",
+      "description": "Heovose Advanced Manufacturing Facility in China",
+      "imageUrl": "https://picsum.photos/seed/factory-cn/800/600",
+      "imageHint": "cleanroom factory"
+    },
+    {
+      "id": "factory-indonesia",
+      "description": "Heovose Manufacturing Plant in Indonesia",
+      "imageUrl": "https://picsum.photos/seed/factory-id/800/600",
+      "imageHint": "automated warehouse"
+    }
+  ]
+}
