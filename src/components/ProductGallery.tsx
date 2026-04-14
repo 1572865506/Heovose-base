@@ -5,7 +5,6 @@ import Image from 'next/image';
 import { Locale, translations } from "@/lib/translations";
 import { PlaceHolderImages } from "@/lib/placeholder-images";
 import { SectionHeading } from "./SectionHeading";
-import { Card, CardContent } from "@/components/ui/card";
 
 export function ProductGallery({ locale }: { locale: Locale }) {
   const t = translations[locale].products;
@@ -20,37 +19,37 @@ export function ProductGallery({ locale }: { locale: Locale }) {
   return (
     <section id="products" className="py-24 bg-background">
       <div className="container mx-auto px-6">
-        <SectionHeading title={t.title} subtitle={t.subtitle} />
+        <SectionHeading title={t.title} subtitle={t.subtitle} centered />
         
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
           {products.map((product, index) => {
             const imgData = PlaceHolderImages.find(img => img.id === product.id);
             return (
-              <Card 
+              <div 
                 key={product.id}
-                className="group overflow-hidden border-none bg-white/50 backdrop-blur-sm hover:shadow-2xl transition-all duration-500 rounded-3xl animate-fade-in-up"
+                className="group flex flex-col bg-white rounded-[2.5rem] shadow-sm hover:shadow-xl transition-all duration-500 overflow-hidden animate-fade-in-up border border-border/20"
                 style={{ animationDelay: `${index * 100}ms` }}
               >
-                <div className="relative aspect-[4/5] overflow-hidden">
+                {/* Image Container with 11:9 Aspect Ratio */}
+                <div className="relative aspect-[11/9] w-full overflow-hidden">
                   {imgData?.imageUrl && (
                     <Image
                       src={imgData.imageUrl}
                       alt={product.label}
                       fill
-                      className="object-cover group-hover:scale-110 transition-transform duration-700"
+                      className="object-cover group-hover:scale-105 transition-transform duration-700"
                       data-ai-hint={imgData.imageHint}
                     />
                   )}
-                  <div className="absolute inset-0 bg-gradient-to-t from-primary/80 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 flex flex-col justify-end p-8">
-                    <p className="text-white/80 text-sm">{product.desc}</p>
-                  </div>
                 </div>
-                <CardContent className="p-6 text-center">
-                  <h3 className="text-xl font-headline font-bold text-primary group-hover:text-accent transition-colors">
+                
+                {/* Content Container */}
+                <div className="p-8 flex flex-col items-center justify-center flex-grow">
+                  <h3 className="text-xl md:text-2xl font-headline font-bold text-primary text-center leading-tight">
                     {product.label}
                   </h3>
-                </CardContent>
-              </Card>
+                </div>
+              </div>
             );
           })}
         </div>

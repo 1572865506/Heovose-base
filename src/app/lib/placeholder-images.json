@@ -10,25 +10,25 @@
     {
       "id": "product-aio",
       "description": "Heovose AIO Series Display",
-      "imageUrl": "https://picsum.photos/seed/heovose-aio/600/400",
+      "imageUrl": "https://picsum.photos/seed/heovose-aio/660/540",
       "imageHint": "desktop computer"
     },
     {
       "id": "product-minipc",
       "description": "Compact High-Performance Mini PC",
-      "imageUrl": "https://picsum.photos/seed/heovose-mini/600/400",
+      "imageUrl": "https://picsum.photos/seed/heovose-mini/660/540",
       "imageHint": "mini pc"
     },
     {
       "id": "product-monitor",
       "description": "Professional Grade Industrial Monitor",
-      "imageUrl": "https://picsum.photos/seed/heovose-monitor/600/400",
+      "imageUrl": "https://picsum.photos/seed/heovose-monitor/660/540",
       "imageHint": "computer monitor"
     },
     {
       "id": "product-kiosk",
       "description": "Self-service Industrial Kiosk Terminal",
-      "imageUrl": "https://picsum.photos/seed/heovose-kiosk/600/400",
+      "imageUrl": "https://picsum.photos/seed/heovose-kiosk/660/540",
       "imageHint": "information kiosk"
     },
     {
