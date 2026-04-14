@@ -21,6 +21,7 @@ export const translations = {
       minipc: 'Mini PCs',
       monitor: 'Industrial Monitors',
       kiosk: 'Self-Service KiosKs',
+      learnMore: 'Learn More',
     },
     stats: {
       factories: 'Global Factories',
@@ -69,6 +70,7 @@ export const translations = {
       minipc: '迷你电脑',
       monitor: '工业显示器',
       kiosk: '自助终端机',
+      learnMore: '了解详情',
     },
     stats: {
       factories: '全球工厂',
