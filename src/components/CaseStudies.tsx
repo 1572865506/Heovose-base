@@ -41,16 +41,15 @@ export function CaseStudies({ locale }: { locale: Locale }) {
     onSelect(api);
   }, [api, onSelect]);
 
-  // 计算卡片尺寸和透明度逻辑
+  // 计算卡片样式：实现五级阶梯效果
   const getCardStyle = (index: number) => {
     const total = cases.length;
-    // 计算当前索引与选中索引的循环距离
     let diff = Math.abs(index - current);
     if (diff > total / 2) diff = total - diff;
 
-    if (diff === 0) return "scale-110 z-30 opacity-100 shadow-2xl"; // 大 (正中)
-    if (diff === 1) return "scale-100 z-20 opacity-60 grayscale-[0.3]"; // 中 (两侧)
-    return "scale-90 z-10 opacity-30 grayscale-[0.6]"; // 小 (更远端)
+    if (diff === 0) return "scale-110 z-30 opacity-100 shadow-[0_30px_60px_rgba(0,0,0,0.4)]"; // 中心大
+    if (diff === 1) return "scale-95 z-20 opacity-60 grayscale-[0.4]"; // 两侧中
+    return "scale-85 z-10 opacity-30 grayscale-[0.8]"; // 边缘小
   };
 
   return (
@@ -84,7 +83,6 @@ export function CaseStudies({ locale }: { locale: Locale }) {
         </div>
       </div>
 
-      {/* 突破容器限制，全屏宽度展示，预留垂直内边距给阴影和悬浮位移 */}
       <div className="relative w-full px-0">
         <Carousel
           setApi={setApi}
@@ -94,9 +92,9 @@ export function CaseStudies({ locale }: { locale: Locale }) {
           }}
           className="w-full"
         >
-          {/* viewportClassName 增加大范围内边距以彻底防止阴影和悬停位移被裁剪 */}
+          {/* 增加 -ml-8 为桌面端预留间距 */}
           <CarouselContent 
-            className="-ml-4 md:-ml-0 cursor-grab active:cursor-grabbing" 
+            className="-ml-4 md:-ml-8 cursor-grab active:cursor-grabbing" 
             viewportClassName="py-24 -my-24 overflow-visible"
           >
             {cases.map((item, index) => {
@@ -106,12 +104,13 @@ export function CaseStudies({ locale }: { locale: Locale }) {
               return (
                 <CarouselItem 
                   key={`${item.id}-${index}`} 
-                  className="pl-4 md:pl-0 basis-[70%] sm:basis-[40%] md:basis-[20%]"
+                  // 增加 pl-8 并微调 basis 比例，确保 5 张卡片有呼吸空间
+                  className="pl-4 md:pl-8 basis-[75%] sm:basis-[45%] md:basis-[22%]"
                 >
                   <div 
                     className={cn(
                       "group relative overflow-hidden rounded-xl bg-white transition-all duration-700 ease-out cursor-pointer",
-                      "hover:-translate-y-4 hover:shadow-[0_20px_50px_rgba(0,91,153,0.3)]", // 鼠标悬停浮动及品牌色阴影
+                      "hover:-translate-y-4 hover:shadow-[0_20px_50px_rgba(0,91,153,0.3)]",
                       getCardStyle(index)
                     )}
                   >
@@ -126,13 +125,11 @@ export function CaseStudies({ locale }: { locale: Locale }) {
                         />
                       )}
                       
-                      {/* 渐变遮罩：只有在中心大卡片时更明显 */}
                       <div className={cn(
                         "absolute inset-0 bg-gradient-to-t from-black/90 via-black/20 to-transparent transition-opacity duration-500",
                         isActive ? "opacity-100" : "opacity-40"
                       )} />
                       
-                      {/* 内容区域 */}
                       <div className={cn(
                         "absolute bottom-0 left-0 p-8 w-full space-y-4 transition-all duration-700",
                         isActive ? "translate-y-0 opacity-100" : "translate-y-10 opacity-0"
@@ -160,7 +157,6 @@ export function CaseStudies({ locale }: { locale: Locale }) {
         </Carousel>
       </div>
 
-      {/* 底部进度指示器 */}
       <div className="container mx-auto px-6 mt-20 flex justify-center">
         <div className="w-64 bg-muted/30 h-1.5 rounded-full overflow-hidden">
           <div 
