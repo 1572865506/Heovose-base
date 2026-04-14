@@ -85,8 +85,8 @@ export function Hero({ locale }: { locale: Locale }) {
         </div>
       </div>
 
-      {/* Scroll indicator */}
-      <div className="absolute bottom-12 left-6 z-20 animate-bounce opacity-40">
+      {/* Scroll indicator - Centered horizontally */}
+      <div className="absolute bottom-12 left-1/2 -translate-x-1/2 z-20 animate-bounce opacity-40">
         <div className="w-6 h-10 border-2 border-white/30 rounded-full flex justify-center p-1.5">
           <div className="w-1.5 h-1.5 bg-white rounded-full" />
         </div>
