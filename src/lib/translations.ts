@@ -14,6 +14,9 @@ export const translations = {
       headline: 'All In One Computer',
       subheadline: 'Professional Manufacturer',
       cta: 'Explore Solutions',
+      wholesale: 'Wholesale Products',
+      project: 'Project Solutions',
+      learnMore: 'Learn More',
     },
     video: {
       title: 'Global Intelligent Manufacturing',
@@ -95,6 +98,9 @@ export const translations = {
       headline: '一体机电脑',
       subheadline: '专业制造商',
       cta: '探索方案',
+      wholesale: '批发产品',
+      project: '项目产品',
+      learnMore: '了解更多',
     },
     video: {
       title: '全球智能制造',

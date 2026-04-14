@@ -4,7 +4,8 @@
 import Image from 'next/image';
 import { Button } from "@/components/ui/button";
 import { Locale, translations } from "@/lib/translations";
-import { ArrowRight } from "lucide-react";
+import { ArrowRight, ShoppingBag, Building2, ChevronRight } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 export function Hero({ locale }: { locale: Locale }) {
   const t = translations[locale].hero;
@@ -22,37 +23,83 @@ export function Hero({ locale }: { locale: Locale }) {
           className="object-cover"
           priority
         />
-        <div className="absolute inset-0 bg-gradient-to-b from-primary/80 via-primary/40 to-primary/90 z-10" />
-        <div className="absolute inset-0 bg-black/20 z-10" />
+        <div className="absolute inset-0 bg-gradient-to-r from-primary/95 via-primary/60 to-transparent z-10" />
+        <div className="absolute inset-0 bg-black/30 z-10" />
       </div>
 
       <div className="container mx-auto px-6 relative z-20">
-        <div className="max-w-4xl mx-auto text-center space-y-10 animate-fade-in-up">
-          <div className="space-y-6">
-            <span className="text-accent font-bold tracking-widest uppercase text-sm bg-accent/10 px-4 py-1.5 rounded-full inline-block border border-accent/20 backdrop-blur-sm">
-              Heovose Elevate
-            </span>
-            <h1 className="text-6xl md:text-8xl lg:text-9xl font-headline font-bold text-white leading-none tracking-tighter">
-              {t.headline}
-            </h1>
-            <h2 className="text-2xl md:text-3xl text-white/70 font-light max-w-2xl mx-auto leading-relaxed">
-              {t.subheadline}
-            </h2>
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
+          {/* Left Side: Text and Main CTA */}
+          <div className="space-y-10 animate-fade-in-up">
+            <div className="space-y-6">
+              <span className="text-accent font-bold tracking-[0.3em] uppercase text-xs bg-accent/20 px-5 py-2 rounded-full inline-block border border-accent/30 backdrop-blur-md">
+                Heovose Elevate
+              </span>
+              <h1 className="text-6xl md:text-8xl lg:text-[10rem] font-headline font-bold text-white leading-[0.85] tracking-tighter">
+                {t.headline}
+              </h1>
+              <h2 className="text-2xl md:text-3xl text-white/80 font-light max-w-xl leading-relaxed">
+                {t.subheadline}
+              </h2>
+            </div>
+            
+            <div className="flex flex-col sm:flex-row gap-6 pt-6">
+              <Button size="lg" className="h-16 px-12 text-lg font-bold rounded-full bg-accent hover:bg-accent/90 text-accent-foreground shadow-2xl shadow-accent/20 transition-all hover:scale-105">
+                {t.cta} <ArrowRight className="ml-2 h-6 w-6" />
+              </Button>
+              <Button size="lg" variant="outline" className="h-16 px-12 text-lg font-bold rounded-full border-white/30 text-white hover:bg-white/10 backdrop-blur-sm">
+                {locale === 'en' ? 'View Catalog' : '查看目录'}
+              </Button>
+            </div>
           </div>
-          
-          <div className="flex flex-col sm:flex-row gap-6 justify-center pt-6">
-            <Button size="lg" className="h-16 px-12 text-lg font-bold rounded-full bg-accent hover:bg-accent/90 text-accent-foreground shadow-2xl shadow-accent/20 transition-all hover:scale-105">
-              {t.cta} <ArrowRight className="ml-2 h-6 w-6" />
-            </Button>
-            <Button size="lg" variant="outline" className="h-16 px-12 text-lg font-bold rounded-full border-white/30 text-white hover:bg-white/10 backdrop-blur-sm">
-              {locale === 'en' ? 'View Catalog' : '查看目录'}
-            </Button>
+
+          {/* Right Side: Quick Access Cards */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-1 gap-6 animate-fade-in-up [animation-delay:200ms]">
+            {/* Wholesale Card */}
+            <div className="group relative glass-morphism p-8 rounded-[2.5rem] border border-white/10 hover:bg-white/20 transition-all duration-500 cursor-pointer overflow-hidden shadow-2xl">
+              <div className="absolute top-0 right-0 w-32 h-32 bg-accent/10 rounded-full blur-3xl -mr-16 -mt-16 group-hover:bg-accent/20 transition-all" />
+              <div className="relative flex items-center justify-between">
+                <div className="space-y-4">
+                  <div className="w-14 h-14 bg-accent/20 rounded-2xl flex items-center justify-center text-accent group-hover:scale-110 transition-transform">
+                    <ShoppingBag className="h-7 w-7" />
+                  </div>
+                  <div>
+                    <h3 className="text-2xl font-headline font-bold text-white mb-2">
+                      {t.wholesale}
+                    </h3>
+                    <p className="text-white/50 text-sm font-medium flex items-center gap-2 group/link">
+                      {t.learnMore} <ChevronRight className="h-4 w-4 group-hover/link:translate-x-1 transition-transform" />
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Project Card */}
+            <div className="group relative glass-morphism p-8 rounded-[2.5rem] border border-white/10 hover:bg-white/20 transition-all duration-500 cursor-pointer overflow-hidden shadow-2xl">
+              <div className="absolute top-0 right-0 w-32 h-32 bg-primary/10 rounded-full blur-3xl -mr-16 -mt-16 group-hover:bg-primary/20 transition-all" />
+              <div className="relative flex items-center justify-between">
+                <div className="space-y-4">
+                  <div className="w-14 h-14 bg-primary/20 rounded-2xl flex items-center justify-center text-white group-hover:scale-110 transition-transform border border-white/10">
+                    <Building2 className="h-7 w-7" />
+                  </div>
+                  <div>
+                    <h3 className="text-2xl font-headline font-bold text-white mb-2">
+                      {t.project}
+                    </h3>
+                    <p className="text-white/50 text-sm font-medium flex items-center gap-2 group/link">
+                      {t.learnMore} <ChevronRight className="h-4 w-4 group-hover/link:translate-x-1 transition-transform" />
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </div>
 
-      {/* Scroll indicator for hero */}
-      <div className="absolute bottom-12 left-1/2 -translate-x-1/2 z-20 animate-bounce opacity-40">
+      {/* Scroll indicator */}
+      <div className="absolute bottom-12 left-6 z-20 animate-bounce opacity-40">
         <div className="w-6 h-10 border-2 border-white/30 rounded-full flex justify-center p-1.5">
           <div className="w-1.5 h-1.5 bg-white rounded-full" />
         </div>
