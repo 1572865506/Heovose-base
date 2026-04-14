@@ -11,7 +11,6 @@ import { ArrowRight } from "lucide-react";
 export function Hero({ locale }: { locale: Locale }) {
   const t = translations[locale].hero;
   const heroProductImage = PlaceHolderImages.find(img => img.id === 'hero-aio');
-  const heroBgImage = PlaceHolderImages.find(img => img.id === 'hero-bg');
   const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
   const containerRef = useRef<HTMLDivElement>(null);
 
@@ -36,16 +35,13 @@ export function Hero({ locale }: { locale: Locale }) {
     >
       {/* Background Image with Overlay */}
       <div className="absolute inset-0 z-0">
-        {heroBgImage && (
-          <Image
-            src={heroBgImage.imageUrl}
-            alt="Heovose Factory Background"
-            fill
-            className="object-cover"
-            priority
-            data-ai-hint={heroBgImage.imageHint}
-          />
-        )}
+        <Image
+          src="/video/hero-bg.png"
+          alt="Heovose Factory Background"
+          fill
+          className="object-cover"
+          priority
+        />
         <div className="absolute inset-0 bg-gradient-to-r from-primary/90 via-primary/40 to-transparent z-10" />
         <div className="absolute inset-0 bg-black/20 z-10" />
       </div>
