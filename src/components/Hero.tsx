@@ -10,7 +10,7 @@ export function Hero({ locale }: { locale: Locale }) {
 
   return (
     <section 
-      className="relative min-h-screen flex items-center pt-20 overflow-hidden"
+      className="relative min-h-screen flex items-center pt-20 overflow-hidden bg-primary"
     >
       {/* Background Image with Overlay */}
       <div className="absolute inset-0 z-0">
@@ -18,11 +18,10 @@ export function Hero({ locale }: { locale: Locale }) {
           src="/video/hero-bg.png"
           alt="Heovose Factory Background"
           fill
-          className="object-cover"
+          className="object-cover opacity-60"
           priority
         />
         <div className="absolute inset-0 bg-gradient-to-r from-primary/90 via-primary/40 to-transparent z-10" />
-        <div className="absolute inset-0 bg-black/20 z-10" />
       </div>
 
       <div className="container mx-auto px-6 relative z-20">
@@ -40,8 +39,8 @@ export function Hero({ locale }: { locale: Locale }) {
             </h2>
           </div>
           
-          {/* Entry Cards replacing Buttons */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 pt-8 max-w-3xl">
+          {/* Entry Cards Left Aligned */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 pt-8 max-w-2xl">
             {/* Wholesale Card */}
             <div className="group relative glass-morphism p-8 rounded-[2rem] border border-white/10 hover:bg-white/20 transition-all duration-500 cursor-pointer overflow-hidden shadow-2xl">
               <div className="absolute top-0 right-0 w-32 h-32 bg-accent/10 rounded-full blur-3xl -mr-16 -mt-16 group-hover:bg-accent/20 transition-all" />
