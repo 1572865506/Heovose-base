@@ -5,7 +5,23 @@ import { useState, useEffect } from 'react';
 import Image from 'next/image';
 import { Locale, translations } from "@/lib/translations";
 import { LanguageToggle } from "./LanguageToggle";
-import { Menu, X, ChevronDown, Monitor, Cpu, Tv, Layout, PenTool, Truck, Globe, ShieldCheck, ArrowRight } from "lucide-react";
+import { 
+  Menu, 
+  X, 
+  ChevronDown, 
+  Monitor, 
+  Cpu, 
+  Tv, 
+  Laptop, 
+  Zap, 
+  HardDrive, 
+  Presentation, 
+  MousePointerClick, 
+  Factory, 
+  Lightbulb, 
+  Store,
+  ArrowRight 
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -36,22 +52,23 @@ export function Navbar({ locale, setLocale }: NavbarProps) {
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
-  // Determine if the navbar should show its background/active style
-  // This is true if scrolled OR if any mega menu is open OR if mobile menu is open
   const isNavbarActive = isScrolled || openWholesale || openProjects || mobileMenuOpen;
 
   const wholesaleItems = [
     { label: sub.aio, desc: sub.aio_desc, icon: Monitor, href: '#products' },
+    { label: sub.laptop, desc: sub.laptop_desc, icon: Laptop, href: '#products' },
     { label: sub.minipc, desc: sub.minipc_desc, icon: Cpu, href: '#products' },
+    { label: sub.electromechanical, desc: sub.electromechanical_desc, icon: Zap, href: '#products' },
     { label: sub.monitor, desc: sub.monitor_desc, icon: Tv, href: '#products' },
-    { label: sub.kiosk, desc: sub.kiosk_desc, icon: Layout, href: '#products' },
+    { label: sub.components, desc: sub.components_desc, icon: HardDrive, href: '#products' },
   ];
 
   const projectItems = [
-    { label: sub.design, desc: sub.design_desc, icon: PenTool, href: '#process' },
-    { label: sub.supply, desc: sub.supply_desc, icon: Truck, href: '#process' },
-    { label: sub.logistics, desc: sub.logistics_desc, icon: Globe, href: '#process' },
-    { label: sub.quality, desc: sub.quality_desc, icon: ShieldCheck, href: '#process' },
+    { label: sub.conference, desc: sub.conference_desc, icon: Presentation, href: '#process' },
+    { label: sub.selfservice, desc: sub.selfservice_desc, icon: MousePointerClick, href: '#process' },
+    { label: sub.industrial, desc: sub.industrial_desc, icon: Factory, href: '#process' },
+    { label: sub.led, desc: sub.led_desc, icon: Lightbulb, href: '#process' },
+    { label: sub.showroom, desc: sub.showroom_desc, icon: Store, href: '#process' },
   ];
 
   const MegaMenuContent = ({ items, onMouseEnter, onMouseLeave }: { items: any[], onMouseEnter: () => void, onMouseLeave: () => void }) => (
@@ -60,7 +77,7 @@ export function Navbar({ locale, setLocale }: NavbarProps) {
       onMouseEnter={onMouseEnter}
       onMouseLeave={onMouseLeave}
     >
-      <div className="flex-1 grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-10">
+      <div className="flex-1 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-x-8 gap-y-10">
         <div className="col-span-full border-b border-border pb-4">
           <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">
             {locale === 'en' ? 'Portfolio' : '产品组合'}
@@ -77,7 +94,7 @@ export function Navbar({ locale, setLocale }: NavbarProps) {
               </div>
               <div className="flex-1">
                 <h4 className="text-sm font-bold text-primary mb-1 group-hover:translate-x-1 transition-transform">{item.label}</h4>
-                <p className="text-xs text-muted-foreground leading-relaxed line-clamp-2">{item.desc}</p>
+                <p className="text-[11px] text-muted-foreground leading-snug line-clamp-2">{item.desc}</p>
               </div>
             </a>
           </DropdownMenuItem>
