@@ -25,6 +25,10 @@ export function Navbar({ locale, setLocale }: NavbarProps) {
   const sub = translations[locale].nav_sub;
   const [isScrolled, setIsScrolled] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  
+  // Hover states for Mega Menus
+  const [openWholesale, setOpenWholesale] = useState(false);
+  const [openProjects, setOpenProjects] = useState(false);
 
   useEffect(() => {
     const handleScroll = () => setIsScrolled(window.scrollY > 20);
@@ -46,8 +50,12 @@ export function Navbar({ locale, setLocale }: NavbarProps) {
     { label: sub.quality, desc: sub.quality_desc, icon: ShieldCheck, href: '#process' },
   ];
 
-  const MegaMenuContent = ({ items }: { items: any[] }) => (
-    <div className="container mx-auto px-6 py-12 flex flex-col lg:flex-row gap-12">
+  const MegaMenuContent = ({ items, onMouseEnter, onMouseLeave }: { items: any[], onMouseEnter: () => void, onMouseLeave: () => void }) => (
+    <div 
+      className="container mx-auto px-6 py-12 flex flex-col lg:flex-row gap-12"
+      onMouseEnter={onMouseEnter}
+      onMouseLeave={onMouseLeave}
+    >
       <div className="flex-1 grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-10">
         <div className="col-span-full border-b border-border pb-4">
           <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">
@@ -114,31 +122,54 @@ export function Navbar({ locale, setLocale }: NavbarProps) {
         {/* Desktop Nav */}
         <div className="hidden lg:flex items-center gap-12">
           <div className="flex items-center gap-8">
+            
             {/* Wholesale Mega Menu */}
-            <DropdownMenu modal={false}>
-              <DropdownMenuTrigger className="flex items-center gap-1 text-sm font-semibold text-primary/80 hover:text-accent transition-colors outline-none focus:outline-none focus:ring-0">
-                {t.wholesale} <ChevronDown className="h-3 w-3" />
-              </DropdownMenuTrigger>
-              <DropdownMenuContent 
-                sideOffset={20}
-                className="w-screen max-w-none left-0 right-0 border-none rounded-none shadow-2xl animate-in fade-in slide-in-from-top-2 duration-300 bg-white/95 backdrop-blur-xl"
-              >
-                <MegaMenuContent items={wholesaleItems} />
-              </DropdownMenuContent>
-            </DropdownMenu>
+            <div 
+              onMouseEnter={() => setOpenWholesale(true)} 
+              onMouseLeave={() => setOpenWholesale(false)}
+            >
+              <DropdownMenu open={openWholesale} onOpenChange={setOpenWholesale} modal={false}>
+                <DropdownMenuTrigger className="flex items-center gap-1 text-sm font-semibold text-primary/80 hover:text-accent transition-colors outline-none focus:outline-none focus:ring-0">
+                  {t.wholesale} <ChevronDown className={cn("h-3 w-3 transition-transform duration-300", openWholesale && "rotate-180")} />
+                </DropdownMenuTrigger>
+                <DropdownMenuContent 
+                  sideOffset={isScrolled ? 16 : 32}
+                  className="w-screen max-w-none left-0 right-0 border-none rounded-none shadow-2xl animate-in fade-in slide-in-from-top-2 duration-300 bg-white/95 backdrop-blur-xl"
+                  onMouseEnter={() => setOpenWholesale(true)}
+                  onMouseLeave={() => setOpenWholesale(false)}
+                >
+                  <MegaMenuContent 
+                    items={wholesaleItems} 
+                    onMouseEnter={() => setOpenWholesale(true)}
+                    onMouseLeave={() => setOpenWholesale(false)}
+                  />
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
 
             {/* Projects Mega Menu */}
-            <DropdownMenu modal={false}>
-              <DropdownMenuTrigger className="flex items-center gap-1 text-sm font-semibold text-primary/80 hover:text-accent transition-colors outline-none focus:outline-none focus:ring-0">
-                {t.projects} <ChevronDown className="h-3 w-3" />
-              </DropdownMenuTrigger>
-              <DropdownMenuContent 
-                sideOffset={20}
-                className="w-screen max-w-none left-0 right-0 border-none rounded-none shadow-2xl animate-in fade-in slide-in-from-top-2 duration-300 bg-white/95 backdrop-blur-xl"
-              >
-                <MegaMenuContent items={projectItems} />
-              </DropdownMenuContent>
-            </DropdownMenu>
+            <div 
+              onMouseEnter={() => setOpenProjects(true)} 
+              onMouseLeave={() => setOpenProjects(false)}
+            >
+              <DropdownMenu open={openProjects} onOpenChange={setOpenProjects} modal={false}>
+                <DropdownMenuTrigger className="flex items-center gap-1 text-sm font-semibold text-primary/80 hover:text-accent transition-colors outline-none focus:outline-none focus:ring-0">
+                  {t.projects} <ChevronDown className={cn("h-3 w-3 transition-transform duration-300", openProjects && "rotate-180")} />
+                </DropdownMenuTrigger>
+                <DropdownMenuContent 
+                  sideOffset={isScrolled ? 16 : 32}
+                  className="w-screen max-w-none left-0 right-0 border-none rounded-none shadow-2xl animate-in fade-in slide-in-from-top-2 duration-300 bg-white/95 backdrop-blur-xl"
+                  onMouseEnter={() => setOpenProjects(true)}
+                  onMouseLeave={() => setOpenProjects(false)}
+                >
+                  <MegaMenuContent 
+                    items={projectItems} 
+                    onMouseEnter={() => setOpenProjects(true)}
+                    onMouseLeave={() => setOpenProjects(false)}
+                  />
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
 
             <a href="#cases" className="text-sm font-semibold text-primary/80 hover:text-accent transition-colors">
               {t.cases}
