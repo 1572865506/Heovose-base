@@ -109,8 +109,28 @@ export const translations = {
     map: {
       title: 'Global Footprint',
       subtitle: 'Strategically located to serve world-class brands.',
-      china: 'Shenzhen, China (HQ)',
-      indonesia: 'Batam, Indonesia',
+      locations: {
+        panyu: {
+          title: 'PANYU HUB',
+          address: 'Panyu District, Guangzhou, China',
+          desc: 'Primary Global Marketing Headquarters and Strategic Operations Command'
+        },
+        shunde: {
+          title: 'SHUNDE FACILITY',
+          address: 'Shunde District, Foshan, China',
+          desc: 'Specialized in small-size computer equipment production and R&D'
+        },
+        beijiao: {
+          title: 'BEIJIAO FACILITY',
+          address: 'Beijiao Town, Shunde, China',
+          desc: 'Large-size and commercial display production hub for global markets'
+        },
+        jakarta: {
+          title: 'JAKARTA BASE',
+          address: 'Jakarta, Indonesia',
+          desc: 'Strategic international manufacturing facility serving Southern markets'
+        }
+      }
     }
   },
   zh: {
@@ -220,8 +240,28 @@ export const translations = {
     map: {
       title: '全球布局',
       subtitle: '战略布局，服务全球品牌。',
-      china: '中国 深圳 (总部)',
-      indonesia: '印度尼西亚 巴淡岛',
+      locations: {
+        panyu: {
+          title: 'PANYU HUB (番禺)',
+          address: '中国 广州 番禺区',
+          desc: '全球营销总部与战略运营指挥中心'
+        },
+        shunde: {
+          title: 'SHUNDE FACILITY (顺德)',
+          address: '中国 佛山 顺德区',
+          desc: '专注于小型化计算设备的生产与研发'
+        },
+        beijiao: {
+          title: 'BEIJIAO FACILITY (北滘)',
+          address: '中国 佛山 顺德北滘镇',
+          desc: '服务全球市场的大尺寸及商显生产枢纽'
+        },
+        jakarta: {
+          title: 'JAKARTA BASE (雅加达)',
+          address: '印度尼西亚 雅加达',
+          desc: '服务南方市场的战略性国际制造基地'
+        }
+      }
     }
   }
 };
