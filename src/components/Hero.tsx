@@ -3,7 +3,8 @@
 
 import Image from 'next/image';
 import { Locale, translations } from "@/lib/translations";
-import { ShoppingBag, Building2, ChevronRight } from "lucide-react";
+import { ShoppingBag, Building2 } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 export function Hero({ locale }: { locale: Locale }) {
   const t = translations[locale].hero;
@@ -39,45 +40,38 @@ export function Hero({ locale }: { locale: Locale }) {
             </h2>
           </div>
           
-          {/* Entry Cards - Replaces previous buttons */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 pt-8 max-w-2xl">
+          {/* Entry Cards */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-8 pt-8 max-w-3xl">
             {/* Wholesale Card */}
-            <div className="group relative glass-morphism p-8 rounded-[2rem] border border-white/10 hover:bg-white/20 transition-all duration-500 cursor-pointer overflow-hidden shadow-2xl">
-              <div className="absolute top-0 right-0 w-32 h-32 bg-accent/10 rounded-full blur-3xl -mr-16 -mt-16 group-hover:bg-accent/20 transition-all" />
-              <div className="relative flex items-center justify-between">
-                <div className="space-y-4">
-                  <div className="w-14 h-14 bg-accent/20 rounded-2xl flex items-center justify-center text-accent group-hover:scale-110 transition-transform">
-                    <ShoppingBag className="h-7 w-7" />
-                  </div>
-                  <div>
-                    <h3 className="text-2xl font-headline font-bold text-white mb-2">
-                      {t.wholesale}
-                    </h3>
-                    <p className="text-white/50 text-sm font-medium flex items-center gap-2 group/link">
-                      {t.learnMore} <ChevronRight className="h-4 w-4 group-hover/link:translate-x-1 transition-transform" />
-                    </p>
-                  </div>
+            <div className="group relative bg-white/10 backdrop-blur-2xl p-10 rounded-[3rem] border border-white/20 hover:border-white/40 transition-all duration-700 cursor-pointer overflow-hidden shadow-[0_30px_60px_rgba(0,0,0,0.3)] hover:scale-[1.03] hover:shadow-[0_40px_80px_rgba(0,0,0,0.4)]">
+              {/* Animated Glow on hover */}
+              <div className="absolute inset-0 bg-gradient-to-br from-white/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-700" />
+              
+              <div className="relative space-y-8">
+                {/* Icon Box - Styled as per screenshot */}
+                <div className="w-20 h-20 bg-[#6b7c7c]/40 backdrop-blur-sm rounded-[1.5rem] flex items-center justify-center text-accent shadow-inner group-hover:scale-110 transition-transform duration-500">
+                  <ShoppingBag className="h-10 w-10 stroke-[1.5]" />
                 </div>
+                
+                <h3 className="text-3xl md:text-4xl font-headline font-bold text-white leading-tight tracking-tight">
+                  {t.wholesale}
+                </h3>
               </div>
             </div>
 
             {/* Project Card */}
-            <div className="group relative glass-morphism p-8 rounded-[2rem] border border-white/10 hover:bg-white/20 transition-all duration-500 cursor-pointer overflow-hidden shadow-2xl">
-              <div className="absolute top-0 right-0 w-32 h-32 bg-primary/10 rounded-full blur-3xl -mr-16 -mt-16 group-hover:bg-primary/20 transition-all" />
-              <div className="relative flex items-center justify-between">
-                <div className="space-y-4">
-                  <div className="w-14 h-14 bg-primary/20 rounded-2xl flex items-center justify-center text-white group-hover:scale-110 transition-transform border border-white/10">
-                    <Building2 className="h-7 w-7" />
-                  </div>
-                  <div>
-                    <h3 className="text-2xl font-headline font-bold text-white mb-2">
-                      {t.project}
-                    </h3>
-                    <p className="text-white/50 text-sm font-medium flex items-center gap-2 group/link">
-                      {t.learnMore} <ChevronRight className="h-4 w-4 group-hover/link:translate-x-1 transition-transform" />
-                    </p>
-                  </div>
+            <div className="group relative bg-white/10 backdrop-blur-2xl p-10 rounded-[3rem] border border-white/20 hover:border-white/40 transition-all duration-700 cursor-pointer overflow-hidden shadow-[0_30px_60px_rgba(0,0,0,0.3)] hover:scale-[1.03] hover:shadow-[0_40px_80px_rgba(0,0,0,0.4)]">
+              <div className="absolute inset-0 bg-gradient-to-br from-white/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-700" />
+              
+              <div className="relative space-y-8">
+                {/* Icon Box */}
+                <div className="w-20 h-20 bg-[#6b7c7c]/40 backdrop-blur-sm rounded-[1.5rem] flex items-center justify-center text-white/90 shadow-inner group-hover:scale-110 transition-transform duration-500">
+                  <Building2 className="h-10 w-10 stroke-[1.5]" />
                 </div>
+                
+                <h3 className="text-3xl md:text-4xl font-headline font-bold text-white leading-tight tracking-tight">
+                  {t.project}
+                </h3>
               </div>
             </div>
           </div>
