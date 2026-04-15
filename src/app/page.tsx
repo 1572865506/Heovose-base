@@ -13,8 +13,8 @@ import { GlobalMap } from '@/components/GlobalMap';
 import { Footer } from '@/components/Footer';
 
 export default function Home() {
-  // 预设中文为默认语言
-  const [locale, setLocale] = useState<Locale>('zh');
+  // 默认语言改为英文
+  const [locale, setLocale] = useState<Locale>('en');
 
   return (
     <main className="relative min-h-screen">

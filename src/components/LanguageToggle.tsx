@@ -24,24 +24,26 @@ export function LanguageToggle({ currentLocale, setLocale }: LanguageToggleProps
     { code: 'vi', label: 'Tiếng Việt' },
   ] as const;
 
-  const currentLabel = languages.find(l => l.code === currentLocale)?.label || 'Language';
-
   return (
-    <DropdownMenu>
+    <DropdownMenu modal={false}>
       <DropdownMenuTrigger asChild>
         <Button 
           variant="ghost" 
           size="sm" 
-          className="rounded-full h-9 px-4 flex items-center gap-2 bg-muted/30 hover:bg-muted/50 border border-border/20 transition-all group"
+          className="rounded-full h-9 px-4 flex items-center gap-2 bg-muted/30 hover:bg-muted/50 border border-border/20 transition-all group shrink-0"
         >
           <Languages className="h-4 w-4 text-primary/60 group-hover:text-primary transition-colors" />
-          <span className="text-[11px] font-bold tracking-widest uppercase">
+          <span className="text-[11px] font-bold tracking-widest uppercase min-w-[20px] text-center">
             {currentLocale === 'zh' ? 'ZH' : currentLocale.toUpperCase()}
           </span>
           <ChevronDown className="h-3 w-3 opacity-40 group-hover:opacity-100 transition-opacity" />
         </Button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" className="w-40 p-1 bg-white/95 backdrop-blur-xl border-border/50 shadow-2xl rounded-xl">
+      <DropdownMenuContent 
+        align="end" 
+        sideOffset={8}
+        className="w-40 p-1 bg-white/95 backdrop-blur-xl border-border/50 shadow-2xl rounded-xl z-[200]"
+      >
         {languages.map((lang) => (
           <DropdownMenuItem
             key={lang.code}
