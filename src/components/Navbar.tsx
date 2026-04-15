@@ -37,8 +37,8 @@ export function Navbar({ locale, setLocale }: NavbarProps) {
   }, []);
 
   // Determine if the navbar should show its background/active style
-  // This is true if scrolled OR if any mega menu is currently open
-  const isNavbarActive = isScrolled || openWholesale || openProjects;
+  // This is true if scrolled OR if any mega menu is open OR if mobile menu is open
+  const isNavbarActive = isScrolled || openWholesale || openProjects || mobileMenuOpen;
 
   const wholesaleItems = [
     { label: sub.aio, desc: sub.aio_desc, icon: Monitor, href: '#products' },
@@ -126,7 +126,10 @@ export function Navbar({ locale, setLocale }: NavbarProps) {
       )}>
         <div className="flex items-center gap-2">
           <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center font-bold text-white">H</div>
-          <span className="text-2xl font-headline font-bold tracking-tighter text-primary">HEOVOSE</span>
+          <span className={cn(
+            "text-2xl font-headline font-bold tracking-tighter transition-colors duration-500",
+            isNavbarActive ? "text-primary" : "text-white"
+          )}>HEOVOSE</span>
         </div>
 
         {/* Desktop Nav */}
@@ -224,7 +227,7 @@ export function Navbar({ locale, setLocale }: NavbarProps) {
         {/* Mobile Menu Trigger */}
         <button 
           className={cn(
-            "lg:hidden p-2 transition-colors",
+            "lg:hidden p-2 transition-colors duration-500",
             isNavbarActive ? "text-primary" : "text-white"
           )} 
           onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
