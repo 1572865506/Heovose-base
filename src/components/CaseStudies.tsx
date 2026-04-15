@@ -98,7 +98,35 @@ export function CaseStudies({ locale }: { locale: Locale }) {
   };
 
   return (
-    <section id="cases" className="py-32 bg-background overflow-hidden">
+    <section id="cases" className="relative py-32 bg-background overflow-hidden">
+      {/* Dynamic Background Layer with Gaussian Blur */}
+      <div className="absolute inset-0 z-0">
+        {cases.map((item, index) => {
+          const imgData = PlaceHolderImages.find(img => img.id === item.id);
+          return (
+            <div
+              key={`bg-${item.id}-${index}`}
+              className={cn(
+                "absolute inset-0 transition-opacity duration-1000 ease-in-out",
+                current === index ? "opacity-25" : "opacity-0"
+              )}
+            >
+              {imgData?.imageUrl && (
+                <Image
+                  src={imgData.imageUrl}
+                  alt="Background Dynamic Blur"
+                  fill
+                  className="object-cover blur-[120px] scale-110"
+                  priority={index === current}
+                />
+              )}
+              {/* Subtle dark overlay to ensure text readability */}
+              <div className="absolute inset-0 bg-background/40" />
+            </div>
+          );
+        })}
+      </div>
+
       <div className="container mx-auto px-6 mb-16 relative z-10">
         <SectionHeading 
           title={t.title} 
