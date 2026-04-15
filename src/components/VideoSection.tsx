@@ -21,7 +21,7 @@ export function VideoSection({ locale }: { locale: Locale }) {
       const rect = sectionRef.current.getBoundingClientRect();
       const windowHeight = window.innerHeight;
       
-      // Video section height is 400vh.
+      // Video section height is 500vh.
       // -mt-[100vh] ensures it starts under the previous section.
       const scrolledPastTop = Math.max(-rect.top, 0);
       const contentScrollableHeight = rect.height - windowHeight;
@@ -45,14 +45,16 @@ export function VideoSection({ locale }: { locale: Locale }) {
     setIsPlaying(!isPlaying);
   }, [isPlaying]);
 
-  // Sequential text visibility logic
-  const isFirstTextVisible = textProgress >= 0.15 && textProgress < 0.5;
-  const isSecondTextVisible = textProgress >= 0.6 && textProgress < 0.95;
+  // Sequential text visibility logic per user request:
+  // Segment 1: 50% - 70%
+  // Segment 2: 80% - 95%
+  const isFirstTextVisible = textProgress >= 0.5 && textProgress < 0.75;
+  const isSecondTextVisible = textProgress >= 0.8 && textProgress < 0.98;
 
   return (
     <section 
       ref={sectionRef} 
-      className="relative h-[400vh] -mt-[100vh] z-10 bg-black"
+      className="relative h-[500vh] -mt-[100vh] z-10 bg-black"
     >
       {/* 
         Sticky Container: Stays fixed at the top of the viewport.
@@ -80,7 +82,7 @@ export function VideoSection({ locale }: { locale: Locale }) {
         <div className="absolute inset-0 z-30 flex items-center justify-center text-center px-6 pointer-events-none">
           <div className="relative w-full max-w-7xl flex items-center justify-center">
             
-            {/* First Segment */}
+            {/* First Segment: 50%-70% */}
             <h2 
               className={cn(
                 "absolute text-5xl md:text-8xl lg:text-9xl font-headline font-bold text-white tracking-tighter leading-none transition-all duration-1000 ease-in-out",
@@ -90,7 +92,7 @@ export function VideoSection({ locale }: { locale: Locale }) {
               {t.title}
             </h2>
             
-            {/* Second Segment */}
+            {/* Second Segment: 80%-95% */}
             <h2 
               className={cn(
                 "absolute text-5xl md:text-8xl lg:text-9xl font-headline font-bold text-white tracking-tighter leading-none transition-all duration-1000 ease-in-out",
