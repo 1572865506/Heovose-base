@@ -111,26 +111,29 @@ export function Navbar({ locale, setLocale }: NavbarProps) {
   return (
     <nav className={cn(
       "fixed top-0 left-0 right-0 z-[100] transition-all duration-500",
-      isScrolled ? "py-4 glass-morphism border-b border-white/20" : "py-8 bg-transparent"
+      isScrolled ? "glass-morphism border-b border-white/20" : "bg-transparent"
     )}>
-      <div className="container mx-auto px-6 flex justify-between items-center">
+      <div className={cn(
+        "container mx-auto px-6 flex justify-between items-center transition-all duration-500",
+        isScrolled ? "h-16" : "h-24"
+      )}>
         <div className="flex items-center gap-2">
           <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center font-bold text-white">H</div>
           <span className="text-2xl font-headline font-bold tracking-tighter text-primary">HEOVOSE</span>
         </div>
 
         {/* Desktop Nav */}
-        <div className="hidden lg:flex items-center gap-12">
-          <div className="flex items-center gap-8">
+        <div className="hidden lg:flex h-full items-center gap-12">
+          <div className="flex h-full items-center gap-8">
             
             {/* Wholesale Mega Menu Container */}
             <div 
               onMouseEnter={() => setOpenWholesale(true)} 
               onMouseLeave={() => setOpenWholesale(false)}
-              className="relative flex items-center"
+              className="h-full relative flex items-center"
             >
               <DropdownMenu open={openWholesale} onOpenChange={setOpenWholesale} modal={false}>
-                <DropdownMenuTrigger className="flex items-center gap-1 text-sm font-semibold text-primary/80 hover:text-accent transition-colors outline-none focus:outline-none focus:ring-0 py-2">
+                <DropdownMenuTrigger className="h-full flex items-center gap-1 text-sm font-semibold text-primary/80 hover:text-accent transition-colors outline-none focus:outline-none focus:ring-0 px-2">
                   {t.wholesale} <ChevronDown className={cn("h-3 w-3 transition-transform duration-300", openWholesale && "rotate-180")} />
                 </DropdownMenuTrigger>
                 <DropdownMenuContent 
@@ -142,7 +145,7 @@ export function Navbar({ locale, setLocale }: NavbarProps) {
                 >
                   <div className={cn(
                     "w-full transition-all duration-300",
-                    isScrolled ? "pt-4" : "pt-8"
+                    isScrolled ? "pt-2" : "pt-4"
                   )}>
                     <div className="bg-white/95 backdrop-blur-xl shadow-2xl border-b border-border animate-in fade-in slide-in-from-top-2 duration-300">
                       <MegaMenuContent 
@@ -160,10 +163,10 @@ export function Navbar({ locale, setLocale }: NavbarProps) {
             <div 
               onMouseEnter={() => setOpenProjects(true)} 
               onMouseLeave={() => setOpenProjects(false)}
-              className="relative flex items-center"
+              className="h-full relative flex items-center"
             >
               <DropdownMenu open={openProjects} onOpenChange={setOpenProjects} modal={false}>
-                <DropdownMenuTrigger className="flex items-center gap-1 text-sm font-semibold text-primary/80 hover:text-accent transition-colors outline-none focus:outline-none focus:ring-0 py-2">
+                <DropdownMenuTrigger className="h-full flex items-center gap-1 text-sm font-semibold text-primary/80 hover:text-accent transition-colors outline-none focus:outline-none focus:ring-0 px-2">
                   {t.projects} <ChevronDown className={cn("h-3 w-3 transition-transform duration-300", openProjects && "rotate-180")} />
                 </DropdownMenuTrigger>
                 <DropdownMenuContent 
@@ -175,7 +178,7 @@ export function Navbar({ locale, setLocale }: NavbarProps) {
                 >
                   <div className={cn(
                     "w-full transition-all duration-300",
-                    isScrolled ? "pt-4" : "pt-8"
+                    isScrolled ? "pt-2" : "pt-4"
                   )}>
                     <div className="bg-white/95 backdrop-blur-xl shadow-2xl border-b border-border animate-in fade-in slide-in-from-top-2 duration-300">
                       <MegaMenuContent 
@@ -189,14 +192,14 @@ export function Navbar({ locale, setLocale }: NavbarProps) {
               </DropdownMenu>
             </div>
 
-            <a href="#cases" className="text-sm font-semibold text-primary/80 hover:text-accent transition-colors">
+            <a href="#cases" className="text-sm font-semibold text-primary/80 hover:text-accent transition-colors h-full flex items-center px-2">
               {t.cases}
             </a>
           </div>
 
-          <div className="flex items-center gap-4 border-l border-border/40 pl-8">
+          <div className="flex items-center gap-4 border-l border-border/40 pl-8 h-full">
             <LanguageToggle currentLocale={locale} setLocale={setLocale} />
-            <Button size="sm" className="rounded-full px-6 bg-primary hover:bg-primary/90">
+            <Button size="sm" className="rounded-full px-6 bg-primary hover:bg-primary/90 shadow-lg">
               {t.contact}
             </Button>
           </div>
