@@ -92,6 +92,7 @@ export function Navbar({ locale, setLocale }: NavbarProps) {
               alt="Featured"
               fill
               className="object-cover"
+              data-ai-hint="tech product"
             />
           </div>
           <h4 className="text-sm font-bold text-primary mb-2 leading-tight">
@@ -143,10 +144,7 @@ export function Navbar({ locale, setLocale }: NavbarProps) {
                   onMouseEnter={() => setOpenWholesale(true)}
                   onMouseLeave={() => setOpenWholesale(false)}
                 >
-                  <div className={cn(
-                    "w-full transition-all duration-300",
-                    isScrolled ? "pt-2" : "pt-4"
-                  )}>
+                  <div className="w-full">
                     <div className="bg-white/95 backdrop-blur-xl shadow-2xl border-b border-border animate-in fade-in slide-in-from-top-2 duration-300">
                       <MegaMenuContent 
                         items={wholesaleItems} 
@@ -176,10 +174,7 @@ export function Navbar({ locale, setLocale }: NavbarProps) {
                   onMouseEnter={() => setOpenProjects(true)}
                   onMouseLeave={() => setOpenProjects(false)}
                 >
-                  <div className={cn(
-                    "w-full transition-all duration-300",
-                    isScrolled ? "pt-2" : "pt-4"
-                  )}>
+                  <div className="w-full">
                     <div className="bg-white/95 backdrop-blur-xl shadow-2xl border-b border-border animate-in fade-in slide-in-from-top-2 duration-300">
                       <MegaMenuContent 
                         items={projectItems} 
