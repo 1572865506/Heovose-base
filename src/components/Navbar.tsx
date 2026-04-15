@@ -36,7 +36,7 @@ export function Navbar({ locale, setLocale }: NavbarProps) {
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
-  // Determine if the navbar should show its "active/scrolled" state
+  // Determine if the navbar should show its background/active style
   // This is true if scrolled OR if any mega menu is currently open
   const isNavbarActive = isScrolled || openWholesale || openProjects;
 
@@ -118,9 +118,13 @@ export function Navbar({ locale, setLocale }: NavbarProps) {
       "fixed top-0 left-0 right-0 z-[110] transition-all duration-500",
       isNavbarActive ? "glass-morphism border-b border-white/20" : "bg-transparent"
     )}>
+      {/* 
+        The actual vertical height (h-16 / h-24) is ONLY determined by scroll state.
+        This prevents the height "jump" when hovering items at the top of the page.
+      */}
       <div className={cn(
         "container mx-auto px-6 flex justify-between items-center transition-all duration-500",
-        isNavbarActive ? "h-16" : "h-24"
+        isScrolled ? "h-16" : "h-24"
       )}>
         <div className="flex items-center gap-2">
           <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center font-bold text-white">H</div>
@@ -268,4 +272,3 @@ export function Navbar({ locale, setLocale }: NavbarProps) {
     </nav>
   );
 }
-
