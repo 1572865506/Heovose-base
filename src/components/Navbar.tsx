@@ -115,8 +115,10 @@ export function Navbar({ locale, setLocale }: NavbarProps) {
 
   return (
     <nav className={cn(
-      "fixed top-0 left-0 right-0 z-[110] transition-all duration-500",
-      isNavbarActive ? "glass-morphism border-b border-white/20" : "bg-transparent"
+      "fixed top-0 left-0 right-0 z-[110] transition-all duration-500 border-b",
+      isNavbarActive 
+        ? "bg-white/70 backdrop-blur-xl border-white/20" 
+        : "bg-transparent border-transparent"
     )}>
       {/* 
         The actual vertical height (h-16 / h-24) is ONLY determined by scroll state.
