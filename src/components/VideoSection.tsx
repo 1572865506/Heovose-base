@@ -19,12 +19,12 @@ export function VideoSection({ locale }: { locale: Locale }) {
       const rect = sectionRef.current.getBoundingClientRect();
       const windowHeight = window.innerHeight;
       
-      // Reveal Progress: 视频板块顶端进入屏幕底部时开始（0），到达屏幕顶部时完成（1）
-      // 使用负边距后，我们需要确保计算是连贯的
+      // Reveal Progress: 从板块顶端进入屏幕底部（0）到板块顶端到达屏幕顶部（1）
+      // 这一段距离刚好是 100vh
       const currentReveal = Math.min(Math.max((windowHeight - rect.top) / windowHeight, 0), 1);
       setRevealProgress(currentReveal);
 
-      // Text Progress: 一旦 sticky 容器吸顶（rect.top <= 0）开始计算
+      // Text Progress: 当板块顶端到达或超过屏幕顶部（rect.top <= 0）时开始计算
       const scrolledPastTop = Math.max(-rect.top, 0);
       const contentScrollableHeight = rect.height - windowHeight;
       const currentTProgress = Math.min(Math.max(scrolledPastTop / contentScrollableHeight, 0), 1);
@@ -36,24 +36,24 @@ export function VideoSection({ locale }: { locale: Locale }) {
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
-  // 幕布揭开效果：使用 inset 裁切
-  // 100% 表示从底部完全遮住，0% 表示完全露出来
+  // 揭幕效果：使用 inset 裁切，从 100%（底部隐藏）过渡到 0%（全屏显示）
+  // 这种方式能产生“视频固定在背景，上层内容将其推开”的视觉错觉
   const clipPath = `inset(${Math.max(0, 100 - revealProgress * 100)}% 0 0 0)`;
 
-  // 文字分段逻辑：两段文字在同一位置先后显示
+  // 文字分段显示逻辑
   const isFirstTextVisible = textProgress >= 0.1 && textProgress < 0.45;
   const isSecondTextVisible = textProgress >= 0.55 && textProgress < 0.9;
 
   return (
     <section 
       ref={sectionRef} 
-      className="relative h-[400vh] z-30 -mt-[100vh] pointer-events-none"
+      className="relative h-[400vh] z-30 bg-transparent"
     >
       <div 
-        className="sticky top-0 h-screen w-full overflow-hidden will-change-[clip-path] pointer-events-auto"
+        className="sticky top-0 h-screen w-full overflow-hidden will-change-[clip-path]"
         style={{ clipPath }}
       >
-        {/* 背景视频层 */}
+        {/* 背景视频层：保持完全静止 */}
         <div className="absolute inset-0 w-full h-full bg-black">
           <video
             ref={videoRef}
@@ -69,7 +69,7 @@ export function VideoSection({ locale }: { locale: Locale }) {
           <div className="absolute inset-0 bg-black/40 z-10" />
         </div>
 
-        {/* 品牌文案层 */}
+        {/* 品牌文案层：在视频背景上居中显示 */}
         <div className="absolute inset-0 z-30 flex items-center justify-center text-center px-6 pointer-events-none">
           <div className="relative w-full max-w-7xl flex items-center justify-center">
             
@@ -102,7 +102,7 @@ export function VideoSection({ locale }: { locale: Locale }) {
           revealProgress > 0.8 && textProgress < 0.9 ? "opacity-40" : "opacity-0"
         )}>
           <div className="flex flex-col items-center gap-4">
-            <span className="text-[10px] text-white uppercase tracking-[0.3em] font-bold">Experience</span>
+            <span className="text-[10px] text-white uppercase tracking-[0.3em] font-bold">Explore</span>
             <div className="w-[1px] h-16 bg-gradient-to-b from-white to-transparent" />
           </div>
         </div>
