@@ -134,7 +134,7 @@ export function Navbar({ locale, setLocale }: NavbarProps) {
     <nav className={cn(
       "fixed top-0 left-0 right-0 z-[110] transition-all duration-500 border-b",
       isNavbarActive 
-        ? "bg-white/70 backdrop-blur-xl border-white/20" 
+        ? "bg-white/70 backdrop-blur-xl border-white/20 shadow-sm" 
         : "bg-transparent border-transparent"
     )}>
       <div className={cn(
@@ -162,8 +162,8 @@ export function Navbar({ locale, setLocale }: NavbarProps) {
               <DropdownMenu open={openWholesale} onOpenChange={setOpenWholesale} modal={false}>
                 <DropdownMenuTrigger className={cn(
                   "h-full flex items-center gap-1 text-sm font-semibold transition-colors outline-none focus:outline-none focus:ring-0 px-2",
-                  isNavbarActive ? "text-primary/80" : "text-white/90",
-                  "hover:text-accent"
+                  isNavbarActive ? "text-primary" : "text-black",
+                  "hover:text-primary/70"
                 )}>
                   {t.wholesale} <ChevronDown className={cn("h-3 w-3 transition-transform duration-300", openWholesale && "rotate-180")} />
                 </DropdownMenuTrigger>
@@ -196,8 +196,8 @@ export function Navbar({ locale, setLocale }: NavbarProps) {
               <DropdownMenu open={openProjects} onOpenChange={setOpenProjects} modal={false}>
                 <DropdownMenuTrigger className={cn(
                   "h-full flex items-center gap-1 text-sm font-semibold transition-colors outline-none focus:outline-none focus:ring-0 px-2",
-                  isNavbarActive ? "text-primary/80" : "text-white/90",
-                  "hover:text-accent"
+                  isNavbarActive ? "text-primary" : "text-black",
+                  "hover:text-primary/70"
                 )}>
                   {t.projects} <ChevronDown className={cn("h-3 w-3 transition-transform duration-300", openProjects && "rotate-180")} />
                 </DropdownMenuTrigger>
@@ -225,8 +225,8 @@ export function Navbar({ locale, setLocale }: NavbarProps) {
               href="#cases" 
               className={cn(
                 "text-sm font-semibold transition-colors h-full flex items-center px-2",
-                isNavbarActive ? "text-primary/80" : "text-white/90",
-                "hover:text-accent"
+                isNavbarActive ? "text-primary" : "text-black",
+                "hover:text-primary/70"
               )}
             >
               {t.cases}
@@ -245,7 +245,7 @@ export function Navbar({ locale, setLocale }: NavbarProps) {
         <button 
           className={cn(
             "lg:hidden p-2 transition-colors duration-500",
-            isNavbarActive ? "text-primary" : "text-white"
+            isNavbarActive ? "text-primary" : "text-black"
           )} 
           onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
         >
