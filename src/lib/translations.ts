@@ -4,11 +4,20 @@ export type Locale = 'en' | 'zh';
 export const translations = {
   en: {
     nav: {
-      products: 'Products',
-      process: 'Process',
+      wholesale: 'Wholesale Products',
+      projects: 'Project Solutions',
       cases: 'Cases',
-      global: 'Global',
-      contact: 'Contact',
+      contact: 'Contact Us',
+    },
+    nav_sub: {
+      aio: 'All-in-One PCs',
+      minipc: 'Mini PCs',
+      monitor: 'Industrial Monitors',
+      kiosk: 'Self-Service Kiosks',
+      design: 'Custom Hardware Design',
+      supply: 'Supply Chain Management',
+      logistics: 'Global Logistics',
+      quality: 'Quality Assurance',
     },
     hero: {
       headline: 'All In One Computer',
@@ -28,7 +37,7 @@ export const translations = {
       aio: 'All-in-One PCs',
       minipc: 'Mini PCs',
       monitor: 'Industrial Monitors',
-      kiosk: 'Self-Service KiosKs',
+      kiosk: 'Self-Service Kiosks',
       requestQuote: 'REQUEST QUOTE',
     },
     cases: {
@@ -88,11 +97,20 @@ export const translations = {
   },
   zh: {
     nav: {
-      products: '产品系列',
-      process: '生产工艺',
-      cases: '经典案例',
-      global: '全球布局',
+      wholesale: '批发产品',
+      projects: '项目产品',
+      cases: '案例',
       contact: '联系我们',
+    },
+    nav_sub: {
+      aio: '一体机电脑',
+      minipc: '迷你电脑',
+      monitor: '工业显示器',
+      kiosk: '自助终端机',
+      design: '定制硬件设计',
+      supply: '供应链管理',
+      logistics: '全球物流',
+      quality: '品质保证',
     },
     hero: {
       headline: '一体机电脑',
