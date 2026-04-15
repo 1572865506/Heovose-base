@@ -51,7 +51,7 @@ export const translations = {
       subheadline: 'Professional Manufacturer',
       cta: 'Explore Solutions',
       wholesale: 'Wholesale Products',
-      project: 'Project Solutions',
+      project: 'Project Products',
       learnMore: 'Learn More',
     },
     video: {
@@ -62,7 +62,7 @@ export const translations = {
       title: 'Our Portfolio',
       subtitle: 'Engineered for Performance and Reliability',
       aio: 'All-in-One PCs',
-      minipc: 'Mini PCs',
+      minipc: 'Mini PC',
       monitor: 'Industrial Monitors',
       kiosk: 'Self-Service Kiosks',
       requestQuote: 'REQUEST QUOTE',
@@ -283,7 +283,6 @@ export const translations = {
     }
   },
   id: {
-    // Placeholder Indonesian - Using English for content structure
     nav: {
       wholesale: 'Produk Grosir',
       projects: 'Solusi Proyek',
@@ -332,7 +331,7 @@ export const translations = {
       subheadline: 'Produsen Profesional',
       cta: 'Jelajahi Solusi',
       wholesale: 'Produk Grosir',
-      project: 'Solusi Proyek',
+      project: 'Project Products',
       learnMore: 'Pelajari Lebih Lanjut',
     },
     video: {
@@ -408,23 +407,22 @@ export const translations = {
         shunde: {
           title: 'FASILITAS SHUNDE',
           address: 'Distrik Shunde, Foshan, Provinsi Guangdong, Tiongkok',
-          desc: 'Spesialisasi dalam produksi peralatan komputer ukuran kecil dan R&D'
+          desc: 'Spesialisasi dalam produksi peralatan komputer ukuran kecil và R&D'
         },
         beijiao: {
           title: 'FASILITAS BEIJIAO',
           address: 'Kota Beijiao, Distrik Shunde, Foshan, Provinsi Guangdong, Tiongkok',
-          desc: 'Hub produksi tampilan komersial dan ukuran besar untuk pasar global'
+          desc: 'Hub produksi tampilan komersial và kích thước lớn cho thị trường toàn cầu'
         },
         jakarta: {
           title: 'BASIS JAKARTA',
           address: 'Jakarta, Indonesia',
-          desc: 'Fasilitas manufaktur internasional strategis yang melayani pasar Selatan'
+          desc: 'Fasilitas manufaktur quốc tế chiến lược phục vụ thị trường miền Nam'
         }
       }
     }
   },
   vi: {
-    // Placeholder Vietnamese - Using English for content structure
     nav: {
       wholesale: 'Sản phẩm Bán buôn',
       projects: 'Giải pháp Dự án',
@@ -473,7 +471,7 @@ export const translations = {
       subheadline: 'Nhà sản xuất chuyên nghiệp',
       cta: 'Khám phá giải pháp',
       wholesale: 'Sản phẩm Bán buôn',
-      project: 'Giải pháp Dự án',
+      project: 'Project Products',
       learnMore: 'Tìm hiểu thêm',
     },
     video: {
