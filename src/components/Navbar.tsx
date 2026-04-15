@@ -127,22 +127,30 @@ export function Navbar({ locale, setLocale }: NavbarProps) {
             <div 
               onMouseEnter={() => setOpenWholesale(true)} 
               onMouseLeave={() => setOpenWholesale(false)}
+              className="relative flex items-center h-full"
             >
               <DropdownMenu open={openWholesale} onOpenChange={setOpenWholesale} modal={false}>
-                <DropdownMenuTrigger className="flex items-center gap-1 text-sm font-semibold text-primary/80 hover:text-accent transition-colors outline-none focus:outline-none focus:ring-0">
+                <DropdownMenuTrigger className="flex items-center gap-1 text-sm font-semibold text-primary/80 hover:text-accent transition-colors outline-none focus:outline-none focus:ring-0 py-2">
                   {t.wholesale} <ChevronDown className={cn("h-3 w-3 transition-transform duration-300", openWholesale && "rotate-180")} />
                 </DropdownMenuTrigger>
                 <DropdownMenuContent 
-                  sideOffset={isScrolled ? 16 : 32}
-                  className="w-screen max-w-none left-0 right-0 border-none rounded-none shadow-2xl animate-in fade-in slide-in-from-top-2 duration-300 bg-white/95 backdrop-blur-xl"
+                  sideOffset={0}
+                  className="w-screen max-w-none left-0 right-0 border-none rounded-none shadow-none animate-in fade-in slide-in-from-top-1 duration-300 bg-transparent p-0"
                   onMouseEnter={() => setOpenWholesale(true)}
                   onMouseLeave={() => setOpenWholesale(false)}
                 >
-                  <MegaMenuContent 
-                    items={wholesaleItems} 
-                    onMouseEnter={() => setOpenWholesale(true)}
-                    onMouseLeave={() => setOpenWholesale(false)}
-                  />
+                  <div className={cn(
+                    "w-full transition-all duration-300",
+                    isScrolled ? "pt-4" : "pt-8"
+                  )}>
+                    <div className="bg-white/95 backdrop-blur-xl shadow-2xl border-b border-border">
+                      <MegaMenuContent 
+                        items={wholesaleItems} 
+                        onMouseEnter={() => setOpenWholesale(true)}
+                        onMouseLeave={() => setOpenWholesale(false)}
+                      />
+                    </div>
+                  </div>
                 </DropdownMenuContent>
               </DropdownMenu>
             </div>
@@ -151,22 +159,30 @@ export function Navbar({ locale, setLocale }: NavbarProps) {
             <div 
               onMouseEnter={() => setOpenProjects(true)} 
               onMouseLeave={() => setOpenProjects(false)}
+              className="relative flex items-center h-full"
             >
               <DropdownMenu open={openProjects} onOpenChange={setOpenProjects} modal={false}>
-                <DropdownMenuTrigger className="flex items-center gap-1 text-sm font-semibold text-primary/80 hover:text-accent transition-colors outline-none focus:outline-none focus:ring-0">
+                <DropdownMenuTrigger className="flex items-center gap-1 text-sm font-semibold text-primary/80 hover:text-accent transition-colors outline-none focus:outline-none focus:ring-0 py-2">
                   {t.projects} <ChevronDown className={cn("h-3 w-3 transition-transform duration-300", openProjects && "rotate-180")} />
                 </DropdownMenuTrigger>
                 <DropdownMenuContent 
-                  sideOffset={isScrolled ? 16 : 32}
-                  className="w-screen max-w-none left-0 right-0 border-none rounded-none shadow-2xl animate-in fade-in slide-in-from-top-2 duration-300 bg-white/95 backdrop-blur-xl"
+                  sideOffset={0}
+                  className="w-screen max-w-none left-0 right-0 border-none rounded-none shadow-none animate-in fade-in slide-in-from-top-1 duration-300 bg-transparent p-0"
                   onMouseEnter={() => setOpenProjects(true)}
                   onMouseLeave={() => setOpenProjects(false)}
                 >
-                  <MegaMenuContent 
-                    items={projectItems} 
-                    onMouseEnter={() => setOpenProjects(true)}
-                    onMouseLeave={() => setOpenProjects(false)}
-                  />
+                  <div className={cn(
+                    "w-full transition-all duration-300",
+                    isScrolled ? "pt-4" : "pt-8"
+                  )}>
+                    <div className="bg-white/95 backdrop-blur-xl shadow-2xl border-b border-border">
+                      <MegaMenuContent 
+                        items={projectItems} 
+                        onMouseEnter={() => setOpenProjects(true)}
+                        onMouseLeave={() => setOpenProjects(false)}
+                      />
+                    </div>
+                  </div>
                 </DropdownMenuContent>
               </DropdownMenu>
             </div>
