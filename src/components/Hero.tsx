@@ -16,7 +16,7 @@ export function Hero({ locale }: { locale: Locale }) {
       {/* Background Image with Overlay */}
       <div className="absolute inset-0 z-0">
         <Image
-          src="/video/whiteboard02.png"
+          src="/video/whiteboard01.jpeg"
           alt="Heovose Hero Background"
           fill
           className="object-cover opacity-60"
