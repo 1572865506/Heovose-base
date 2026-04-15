@@ -1,5 +1,5 @@
 
-export type Locale = 'en' | 'zh';
+export type Locale = 'en' | 'zh' | 'id' | 'vi';
 
 export const translations = {
   en: {
@@ -278,6 +278,288 @@ export const translations = {
           title: 'JAKARTA BASE (雅加达)',
           address: '印度尼西亚 雅加达',
           desc: '服务南方市场的战略性国际制造基地'
+        }
+      }
+    }
+  },
+  id: {
+    // Placeholder Indonesian - Using English for content structure
+    nav: {
+      wholesale: 'Produk Grosir',
+      projects: 'Solusi Proyek',
+      cases: 'Kasus',
+      products: 'Produk',
+      company: 'Perusahaan',
+      contact: 'Hubungi Kami',
+      about: 'Tentang Kami',
+      career: 'Karir',
+      projects_nav: 'Produk Proyek'
+    },
+    nav_sub: {
+      aio: 'AIO & Setengah Jadi',
+      aio_desc: 'PC All-in-One dan kit barebones profesional.',
+      laptop: 'Laptop',
+      laptop_desc: 'Solusi komputasi portabel bisnis dan konsumen.',
+      minipc: 'Mini PC',
+      minipc_desc: 'Komputasi performa tinggi dalam faktor bentuk kompak.',
+      electromechanical: 'Elektromekanikal',
+      electromechanical_desc: 'Casing komputer, catu daya, dan sistem pendingin.',
+      monitor: 'Monitor',
+      monitor_desc: 'Solusi tampilan kelas profesional dan industri.',
+      components: 'Komponen PC',
+      components_desc: 'Motherboard, GPU, RAM, Hard Drive, dan CPU.',
+      conference: 'Tablet Konferensi',
+      conference_desc: 'Tampilan cerdas interaktif untuk pertemuan modern.',
+      selfservice: 'KIOSK / Mandiri',
+      selfservice_desc: 'Terminal cerdas untuk otomatisasi ritel dan layanan publik.',
+      industrial: 'PC Industri',
+      industrial_desc: 'AIO industri dan sistem tampilan kontrol sentuh.',
+      led: 'Proyek LED',
+      led_desc: 'Rekayasa dan solusi tampilan LED skala besar.',
+      showroom: 'Proyek Showroom',
+      showroom_desc: 'Showroom tampilan komersial dan rekayasa pameran.',
+      featured: 'Unggulan',
+      catalog_title: 'Katalog Perangkat Keras Industri 2024',
+      catalog_desc: 'Jelajahi katalog terbaru kami yang menampilkan perangkat keras mutakhir.',
+      download: 'UNDUH KATALOG',
+    },
+    footer: {
+      slogan1: 'Dunia berbagi hal-hal baik!',
+      slogan2: 'Biarkan solusi aplikasi yang luar biasa bermanfaat bagi dunia!',
+    },
+    hero: {
+      headline: 'Komputer All In One',
+      subheadline: 'Produsen Profesional',
+      cta: 'Jelajahi Solusi',
+      wholesale: 'Produk Grosir',
+      project: 'Solusi Proyek',
+      learnMore: 'Pelajari Lebih Lanjut',
+    },
+    video: {
+      title: 'Manufaktur Cerdas Global',
+      subtitle: 'Mendefinisikan Ulang Keunggulan Desktop & Tampilan.',
+    },
+    products: {
+      title: 'Portofolio Kami',
+      subtitle: 'Dirancang untuk Performa dan Keandalan',
+      aio: 'PC All-in-One',
+      minipc: 'Mini PC',
+      monitor: 'Monitor Industri',
+      kiosk: 'Kios Layanan Mandiri',
+      requestQuote: 'MINTA PENAWARAN',
+    },
+    cases: {
+      title: 'Kisah Sukses',
+      subtitle: 'Dampak dunia nyata dari solusi perangkat keras Heovose.',
+      viewCase: 'LIHAT KASUS',
+      tags: {
+        retail: 'RITEL',
+        industry: 'INDUSTRI',
+        office: 'KORPORAT',
+        transport: 'TRANSIT'
+      },
+      retail: {
+        title: 'Transformasi Ritel Cerdas',
+        desc: 'Menyebarkan kios khusus untuk checkout lancar di Singapura.'
+      },
+      industry: {
+        title: 'Komputasi Tepi Industri',
+        desc: 'Mini PC performa tinggi menggerakkan lini otomatis di Jerman.'
+      },
+      office: {
+        title: 'Integrasi Ruang Kerja Modern',
+        desc: 'Solusi AIO premium untuk hub teknologi terkemuka di Tokyo.'
+      },
+      transport: {
+        title: 'Papan Nama Transportasi Publik',
+        desc: 'Monitor industri tahan lama untuk jaringan kereta bawah tanah New York.'
+      }
+    },
+    stats: {
+      factories: 'Pabrik Global',
+      series: 'Seri AIO',
+      clients: 'Klien Puas',
+      experience: 'Tahun Keunggulan',
+    },
+    process: {
+      title: 'Manufaktur Presisi',
+      subtitle: 'Alur Kerja Keunggulan 11-Langkah',
+      iqc: 'IQC: Kontrol Kualitas Masuk',
+      smt: 'SMT: Teknologi Permukaan',
+      assembly: 'Perakitan Motherboard',
+      test: 'Pengujian Fungsional',
+      aging: 'Penuaan Suhu Tinggi',
+      ipqc: 'IPQC: Kualitas Dalam Proses',
+      final: 'Perakitan Akhir',
+      system: 'Integrasi Sistem',
+      oqa: 'OQA: Jaminan Kualitas Keluar',
+      package: 'Kemasan Pelindung',
+      ship: 'Pengiriman Global',
+    },
+    map: {
+      title: 'Jejak Global',
+      subtitle: 'Terletak strategis untuk melayani merek kelas dunia.',
+      locations: {
+        panyu: {
+          title: 'PANYU HUB',
+          address: 'Distrik Panyu, Guangzhou, Provinsi Guangdong, Tiongkok',
+          desc: 'Markas Besar Pemasaran Global Utama dan Komando Operasi Strategis'
+        },
+        shunde: {
+          title: 'FASILITAS SHUNDE',
+          address: 'Distrik Shunde, Foshan, Provinsi Guangdong, Tiongkok',
+          desc: 'Spesialisasi dalam produksi peralatan komputer ukuran kecil dan R&D'
+        },
+        beijiao: {
+          title: 'FASILITAS BEIJIAO',
+          address: 'Kota Beijiao, Distrik Shunde, Foshan, Provinsi Guangdong, Tiongkok',
+          desc: 'Hub produksi tampilan komersial dan ukuran besar untuk pasar global'
+        },
+        jakarta: {
+          title: 'BASIS JAKARTA',
+          address: 'Jakarta, Indonesia',
+          desc: 'Fasilitas manufaktur internasional strategis yang melayani pasar Selatan'
+        }
+      }
+    }
+  },
+  vi: {
+    // Placeholder Vietnamese - Using English for content structure
+    nav: {
+      wholesale: 'Sản phẩm Bán buôn',
+      projects: 'Giải pháp Dự án',
+      cases: 'Trường hợp',
+      products: 'Sản phẩm',
+      company: 'Công ty',
+      contact: 'Liên hệ',
+      about: 'Về chúng tôi',
+      career: 'Tuyển dụng',
+      projects_nav: 'Sản phẩm Dự án'
+    },
+    nav_sub: {
+      aio: 'AIO & Bán thành phẩm',
+      aio_desc: 'Máy tính All-in-One và bộ barebones chuyên nghiệp.',
+      laptop: 'Máy tính xách tay',
+      laptop_desc: 'Giải pháp máy tính xách tay doanh nghiệp và người tiêu dùng.',
+      minipc: 'Mini PC',
+      minipc_desc: 'Máy tính hiệu suất cao trong một kích thước nhỏ gọn.',
+      electromechanical: 'Cơ điện',
+      electromechanical_desc: 'Vỏ máy tính, bộ nguồn và hệ thống làm mát.',
+      monitor: 'Màn hình',
+      monitor_desc: 'Giải pháp màn hình lớp chuyên nghiệp và công nghiệp.',
+      components: 'Linh kiện PC',
+      components_desc: 'Bo mạch chủ, GPU, RAM, Ổ cứng và CPU.',
+      conference: 'Máy tính bảng hội nghị',
+      conference_desc: 'Màn hình thông minh tương tác cho các cuộc họp hiện đại.',
+      selfservice: 'KIOSK / Tự phục vụ',
+      selfservice_desc: 'Thiết bị thông minh cho bán lẻ và tự động hóa dịch vụ công.',
+      industrial: 'PC Công nghiệp',
+      industrial_desc: 'AIO công nghiệp và hệ thống màn hình điều khiển cảm ứng.',
+      led: 'Dự án LED',
+      led_desc: 'Giải pháp màn hình LED quy mô lớn.',
+      showroom: 'Dự án Showroom',
+      showroom_desc: 'Showroom màn hình thương mại và triển lãm.',
+      featured: 'Nổi bật',
+      catalog_title: 'Danh mục Phần cứng Công nghiệp 2024',
+      catalog_desc: 'Khám phá danh mục mới nhất của chúng tôi.',
+      download: 'TẢI DANH MỤC',
+    },
+    footer: {
+      slogan1: 'Thế giới chia sẻ những điều tốt đẹp!',
+      slogan2: 'Hãy để các giải pháp ứng dụng xuất sắc mang lại lợi ích cho thế giới!',
+    },
+    hero: {
+      headline: 'Máy tính All In One',
+      subheadline: 'Nhà sản xuất chuyên nghiệp',
+      cta: 'Khám phá giải pháp',
+      wholesale: 'Sản phẩm Bán buôn',
+      project: 'Giải pháp Dự án',
+      learnMore: 'Tìm hiểu thêm',
+    },
+    video: {
+      title: 'Sản xuất thông minh toàn cầu',
+      subtitle: 'Định nghĩa lại sự xuất sắc của máy tính để bàn & màn hình.',
+    },
+    products: {
+      title: 'Danh mục của chúng tôi',
+      subtitle: 'Được thiết kế cho hiệu suất và độ tin cậy',
+      aio: 'Máy tính All-in-One',
+      minipc: 'Mini PC',
+      monitor: 'Màn hình công nghiệp',
+      kiosk: 'Kiosk tự phục vụ',
+      requestQuote: 'YÊU CẦU BÁO GIÁ',
+    },
+    cases: {
+      title: 'Câu chuyện thành công',
+      subtitle: 'Tác động thực tế của giải pháp phần cứng Heovose.',
+      viewCase: 'XEM CHI TIẾT',
+      tags: {
+        retail: 'BÁN LẺ',
+        industry: 'CÔNG NGHIỆP',
+        office: 'DOANH NGHIỆP',
+        transport: 'VẬN TẢI'
+      },
+      retail: {
+        title: 'Chuyển đổi bán lẻ thông minh',
+        desc: 'Triển khai kiosk tùy chỉnh để thanh toán liền mạch tại Singapore.'
+      },
+      industry: {
+        title: 'Máy tính biên công nghiệp',
+        desc: 'Mini PC hiệu suất cao vận hành dây chuyền tự động tại Đức.'
+      },
+      office: {
+        title: 'Tích hợp không gian làm việc hiện đại',
+        desc: 'Giải pháp AIO cao cấp cho trung tâm công nghệ hàng đầu tại Tokyo.'
+      },
+      transport: {
+        title: 'Biển báo giao thông công cộng',
+        desc: 'Màn hình công nghiệp bền bỉ cho hệ thống tàu điện ngầm New York.'
+      }
+    },
+    stats: {
+      factories: 'Nhà máy toàn cầu',
+      series: 'Dòng AIO',
+      clients: 'Khách hàng hài lòng',
+      experience: 'Năm kinh nghiệm',
+    },
+    process: {
+      title: 'Sản xuất chính xác',
+      subtitle: 'Quy trình 11 bước xuất sắc',
+      iqc: 'IQC: Kiểm soát chất lượng đầu vào',
+      smt: 'SMT: Công nghệ gắn bề mặt',
+      assembly: 'Lắp ráp bo mạch chủ',
+      test: 'Kiểm tra chức năng',
+      aging: 'Lão hóa nhiệt độ cao',
+      ipqc: 'IPQC: Chất lượng trong quy trình',
+      final: 'Lắp ráp cuối cùng',
+      system: 'Tích hợp hệ thống',
+      oqa: 'OQA: Đảm bảo chất lượng đầu ra',
+      package: 'Đóng gói bảo vệ',
+      ship: 'Giao hàng toàn cầu',
+    },
+    map: {
+      title: 'Dấu ấn toàn cầu',
+      subtitle: 'Vị trí chiến lược phục vụ các thương hiệu thế giới.',
+      locations: {
+        panyu: {
+          title: 'TRUNG TÂM PHIÊN NGƯ',
+          address: 'Quận Phiên Ngư, Quảng Châu, Quảng Đông, Trung Quốc',
+          desc: 'Trụ sở tiếp thị toàn cầu chính và Trung tâm điều hành chiến lược'
+        },
+        shunde: {
+          title: 'CƠ SỞ THUẬN ĐỨC',
+          address: 'Quận Thuận Đức, Phật Sơn, Quảng Đông, Trung Quốc',
+          desc: 'Chuyên sản xuất thiết bị máy tính cỡ nhỏ và R&D'
+        },
+        beijiao: {
+          title: 'CƠ SỞ BẮC GIẢO',
+          address: 'Thị trấn Bắc Giảo, Thuận Đức, Phật Sơn, Quảng Đông, Trung Quốc',
+          desc: 'Trung tâm sản xuất màn hình thương mại cho thị trường toàn cầu'
+        },
+        jakarta: {
+          title: 'CĂN CỨ JAKARTA',
+          address: 'Jakarta, Indonesia',
+          desc: 'Cơ sở sản xuất quốc tế chiến lược phục vụ thị trường miền Nam'
         }
       }
     }
