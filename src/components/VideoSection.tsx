@@ -9,8 +9,8 @@ export function VideoSection({ locale }: { locale: Locale }) {
   const t = translations[locale].video;
   const sectionRef = useRef<HTMLDivElement>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
-  const [revealProgress, setRevealProgress] = useState(0); // 0 to 1 for the curtain reveal
-  const [textProgress, setTextProgress] = useState(0); // 0 to 1 for the text sequences
+  const [revealProgress, setRevealProgress] = useState(0); 
+  const [textProgress, setTextProgress] = useState(0); 
 
   useEffect(() => {
     const handleScroll = () => {
@@ -18,18 +18,17 @@ export function VideoSection({ locale }: { locale: Locale }) {
       
       const rect = sectionRef.current.getBoundingClientRect();
       const windowHeight = window.innerHeight;
-      const totalHeight = rect.height;
       
-      // 1. Reveal Progress: Starts when the section top enters from screen bottom
-      // Ends when the section top reaches screen top (sticky point)
-      const reveal = Math.min(Math.max((windowHeight - rect.top) / windowHeight, 0), 1);
-      setRevealProgress(reveal);
+      // Reveal Progress: 视频板块顶端进入屏幕底部时开始（0），到达屏幕顶部时完成（1）
+      // 使用负边距后，我们需要确保计算是连贯的
+      const currentReveal = Math.min(Math.max((windowHeight - rect.top) / windowHeight, 0), 1);
+      setRevealProgress(currentReveal);
 
-      // 2. Text Progress: Starts once the section hits the top and becomes sticky
+      // Text Progress: 一旦 sticky 容器吸顶（rect.top <= 0）开始计算
       const scrolledPastTop = Math.max(-rect.top, 0);
-      const contentScrollableHeight = totalHeight - windowHeight;
-      const tProgress = Math.min(Math.max(scrolledPastTop / contentScrollableHeight, 0), 1);
-      setTextProgress(tProgress);
+      const contentScrollableHeight = rect.height - windowHeight;
+      const currentTProgress = Math.min(Math.max(scrolledPastTop / contentScrollableHeight, 0), 1);
+      setTextProgress(currentTProgress);
     };
 
     window.addEventListener('scroll', handleScroll, { passive: true });
@@ -37,30 +36,24 @@ export function VideoSection({ locale }: { locale: Locale }) {
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
-  // Use inset to create the "curtain lifting" effect.
-  // 100% means hidden at bottom, 0% means fully revealed.
+  // 幕布揭开效果：使用 inset 裁切
+  // 100% 表示从底部完全遮住，0% 表示完全露出来
   const clipPath = `inset(${Math.max(0, 100 - revealProgress * 100)}% 0 0 0)`;
 
-  useEffect(() => {
-    if (videoRef.current) {
-      videoRef.current.play().catch(() => {});
-    }
-  }, []);
-
-  // Text timing logic based on textProgress
+  // 文字分段逻辑：两段文字在同一位置先后显示
   const isFirstTextVisible = textProgress >= 0.1 && textProgress < 0.45;
   const isSecondTextVisible = textProgress >= 0.55 && textProgress < 0.9;
 
   return (
     <section 
       ref={sectionRef} 
-      className="relative h-[400vh] z-30 bg-background"
+      className="relative h-[400vh] z-30 -mt-[100vh] pointer-events-none"
     >
       <div 
-        className="sticky top-0 h-screen w-full overflow-hidden will-change-[clip-path]"
+        className="sticky top-0 h-screen w-full overflow-hidden will-change-[clip-path] pointer-events-auto"
         style={{ clipPath }}
       >
-        {/* The video stays fixed at the top while being revealed */}
+        {/* 背景视频层 */}
         <div className="absolute inset-0 w-full h-full bg-black">
           <video
             ref={videoRef}
@@ -73,28 +66,28 @@ export function VideoSection({ locale }: { locale: Locale }) {
           >
             <source src="/video/alibaba2023_x264.mp4" type="video/mp4" />
           </video>
-          <div className="absolute inset-0 bg-black/50 z-10" />
+          <div className="absolute inset-0 bg-black/40 z-10" />
         </div>
 
-        {/* Brand Text Layer */}
-        <div className="absolute inset-0 z-30 flex flex-col items-center justify-center text-center px-6 pointer-events-none">
-          <div className="relative w-full max-w-7xl h-full flex items-center justify-center">
+        {/* 品牌文案层 */}
+        <div className="absolute inset-0 z-30 flex items-center justify-center text-center px-6 pointer-events-none">
+          <div className="relative w-full max-w-7xl flex items-center justify-center">
             
-            {/* Segment 1 */}
+            {/* 第一段文字 */}
             <h2 
               className={cn(
-                "absolute text-5xl md:text-8xl lg:text-9xl font-headline font-bold text-white tracking-tighter leading-none transition-all duration-700 ease-in-out",
-                isFirstTextVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-10"
+                "absolute text-5xl md:text-8xl lg:text-9xl font-headline font-bold text-white tracking-tighter leading-none transition-all duration-1000 ease-in-out",
+                isFirstTextVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-20"
               )}
             >
               {t.title}
             </h2>
             
-            {/* Segment 2 */}
+            {/* 第二段文字 */}
             <h2 
               className={cn(
-                "absolute text-5xl md:text-8xl lg:text-9xl font-headline font-bold text-white tracking-tighter leading-none transition-all duration-700 ease-in-out",
-                isSecondTextVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-10"
+                "absolute text-5xl md:text-8xl lg:text-9xl font-headline font-bold text-white tracking-tighter leading-none transition-all duration-1000 ease-in-out",
+                isSecondTextVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-20"
               )}
             >
               {t.subtitle}
@@ -103,10 +96,10 @@ export function VideoSection({ locale }: { locale: Locale }) {
           </div>
         </div>
 
-        {/* Scroll Indicator */}
+        {/* 滚动体验指示 */}
         <div className={cn(
           "absolute bottom-12 left-1/2 -translate-x-1/2 z-40 transition-opacity duration-700",
-          revealProgress > 0.5 && textProgress < 0.9 ? "opacity-40" : "opacity-0"
+          revealProgress > 0.8 && textProgress < 0.9 ? "opacity-40" : "opacity-0"
         )}>
           <div className="flex flex-col items-center gap-4">
             <span className="text-[10px] text-white uppercase tracking-[0.3em] font-bold">Experience</span>
