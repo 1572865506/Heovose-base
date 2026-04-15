@@ -10,7 +10,7 @@ export function Hero({ locale }: { locale: Locale }) {
 
   return (
     <section 
-      className="relative min-h-screen flex items-center pt-20 overflow-hidden bg-primary"
+      className="relative min-h-screen flex items-center pt-20 overflow-hidden bg-primary z-20"
     >
       {/* Background Image with Overlay */}
       <div className="absolute inset-0 z-0">
@@ -39,7 +39,7 @@ export function Hero({ locale }: { locale: Locale }) {
             </h2>
           </div>
           
-          {/* Entry Cards Left Aligned */}
+          {/* Entry Cards - Replaces previous buttons */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 pt-8 max-w-2xl">
             {/* Wholesale Card */}
             <div className="group relative glass-morphism p-8 rounded-[2rem] border border-white/10 hover:bg-white/20 transition-all duration-500 cursor-pointer overflow-hidden shadow-2xl">
@@ -84,7 +84,7 @@ export function Hero({ locale }: { locale: Locale }) {
         </div>
       </div>
 
-      {/* Scroll indicator - Centered horizontally */}
+      {/* Scroll indicator */}
       <div className="absolute bottom-12 left-1/2 -translate-x-1/2 z-20 animate-bounce opacity-40">
         <div className="w-6 h-10 border-2 border-white/30 rounded-full flex justify-center p-1.5">
           <div className="w-1.5 h-1.5 bg-white rounded-full" />

@@ -83,12 +83,11 @@ export function ProductGallery({ locale }: { locale: Locale }) {
   }, []);
 
   return (
-    <section id="products" className="py-24 bg-background overflow-hidden">
+    <section id="products" className="relative z-20 py-24 bg-background overflow-hidden shadow-[0_50px_100px_rgba(0,0,0,0.1)]">
       <div className="container mx-auto px-6">
         <SectionHeading title={t.title} subtitle={t.subtitle} />
       </div>
       
-      {/* 轮播容器：使用负 margin 使其宽度超过 container，并增加内边距防止阴影截断 */}
       <div className="relative px-4 md:px-12 lg:px-24">
         <Carousel
           setApi={setApi}
@@ -105,7 +104,6 @@ export function ProductGallery({ locale }: { locale: Locale }) {
               return (
                 <CarouselItem key={product.id} className="pl-6 md:basis-1/2 lg:basis-1/3 xl:basis-1/4">
                   <div className="group flex flex-col bg-white rounded-[2rem] shadow-sm hover:shadow-2xl hover:-translate-y-2 transition-all duration-500 border border-border/20 h-full">
-                    {/* 图片区域 11:9 比例 */}
                     <div className="relative aspect-[11/9] w-full overflow-hidden bg-muted/20 rounded-t-[2rem]">
                       {imgData?.imageUrl && (
                         <Image
@@ -118,7 +116,6 @@ export function ProductGallery({ locale }: { locale: Locale }) {
                       )}
                     </div>
                     
-                    {/* 内容区域：按照截图排版 */}
                     <div className="p-8 flex flex-col flex-grow">
                       <div className="space-y-4 mb-8 flex-grow">
                         <h3 className="text-2xl font-headline font-bold text-primary leading-tight">
@@ -129,7 +126,6 @@ export function ProductGallery({ locale }: { locale: Locale }) {
                         </p>
                       </div>
                       
-                      {/* 底部操作栏 */}
                       <div className="flex items-center justify-between mt-auto pt-6">
                         <button className="flex items-center gap-2 text-sm font-bold text-primary group/btn tracking-tighter">
                           {t.requestQuote}
@@ -147,7 +143,6 @@ export function ProductGallery({ locale }: { locale: Locale }) {
           </CarouselContent>
         </Carousel>
 
-        {/* 进度条与控制按钮：限制在 container 宽度内对齐 */}
         <div className="container mx-auto px-6 mt-4">
           <div className="flex items-center justify-end gap-6 max-w-md ml-auto">
             <div className="flex gap-2 flex-grow h-1.5 items-center">
