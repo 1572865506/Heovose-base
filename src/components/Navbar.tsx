@@ -36,6 +36,10 @@ export function Navbar({ locale, setLocale }: NavbarProps) {
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
+  // Determine if the navbar should show its "active/scrolled" state
+  // This is true if scrolled OR if any mega menu is currently open
+  const isNavbarActive = isScrolled || openWholesale || openProjects;
+
   const wholesaleItems = [
     { label: sub.aio, desc: sub.aio_desc, icon: Monitor, href: '#products' },
     { label: sub.minipc, desc: sub.minipc_desc, icon: Cpu, href: '#products' },
@@ -111,12 +115,12 @@ export function Navbar({ locale, setLocale }: NavbarProps) {
 
   return (
     <nav className={cn(
-      "fixed top-0 left-0 right-0 z-[100] transition-all duration-500",
-      isScrolled ? "glass-morphism border-b border-white/20" : "bg-transparent"
+      "fixed top-0 left-0 right-0 z-[110] transition-all duration-500",
+      isNavbarActive ? "glass-morphism border-b border-white/20" : "bg-transparent"
     )}>
       <div className={cn(
         "container mx-auto px-6 flex justify-between items-center transition-all duration-500",
-        isScrolled ? "h-16" : "h-24"
+        isNavbarActive ? "h-16" : "h-24"
       )}>
         <div className="flex items-center gap-2">
           <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center font-bold text-white">H</div>
@@ -134,7 +138,11 @@ export function Navbar({ locale, setLocale }: NavbarProps) {
               className="h-full relative flex items-center"
             >
               <DropdownMenu open={openWholesale} onOpenChange={setOpenWholesale} modal={false}>
-                <DropdownMenuTrigger className="h-full flex items-center gap-1 text-sm font-semibold text-primary/80 hover:text-accent transition-colors outline-none focus:outline-none focus:ring-0 px-2">
+                <DropdownMenuTrigger className={cn(
+                  "h-full flex items-center gap-1 text-sm font-semibold transition-colors outline-none focus:outline-none focus:ring-0 px-2",
+                  isNavbarActive ? "text-primary/80" : "text-white/90",
+                  "hover:text-accent"
+                )}>
                   {t.wholesale} <ChevronDown className={cn("h-3 w-3 transition-transform duration-300", openWholesale && "rotate-180")} />
                 </DropdownMenuTrigger>
                 <DropdownMenuContent 
@@ -164,7 +172,11 @@ export function Navbar({ locale, setLocale }: NavbarProps) {
               className="h-full relative flex items-center"
             >
               <DropdownMenu open={openProjects} onOpenChange={setOpenProjects} modal={false}>
-                <DropdownMenuTrigger className="h-full flex items-center gap-1 text-sm font-semibold text-primary/80 hover:text-accent transition-colors outline-none focus:outline-none focus:ring-0 px-2">
+                <DropdownMenuTrigger className={cn(
+                  "h-full flex items-center gap-1 text-sm font-semibold transition-colors outline-none focus:outline-none focus:ring-0 px-2",
+                  isNavbarActive ? "text-primary/80" : "text-white/90",
+                  "hover:text-accent"
+                )}>
                   {t.projects} <ChevronDown className={cn("h-3 w-3 transition-transform duration-300", openProjects && "rotate-180")} />
                 </DropdownMenuTrigger>
                 <DropdownMenuContent 
@@ -187,7 +199,14 @@ export function Navbar({ locale, setLocale }: NavbarProps) {
               </DropdownMenu>
             </div>
 
-            <a href="#cases" className="text-sm font-semibold text-primary/80 hover:text-accent transition-colors h-full flex items-center px-2">
+            <a 
+              href="#cases" 
+              className={cn(
+                "text-sm font-semibold transition-colors h-full flex items-center px-2",
+                isNavbarActive ? "text-primary/80" : "text-white/90",
+                "hover:text-accent"
+              )}
+            >
               {t.cases}
             </a>
           </div>
@@ -202,7 +221,10 @@ export function Navbar({ locale, setLocale }: NavbarProps) {
 
         {/* Mobile Menu Trigger */}
         <button 
-          className="lg:hidden p-2 text-primary" 
+          className={cn(
+            "lg:hidden p-2 transition-colors",
+            isNavbarActive ? "text-primary" : "text-white"
+          )} 
           onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
         >
           {mobileMenuOpen ? <X /> : <Menu />}
@@ -246,3 +268,4 @@ export function Navbar({ locale, setLocale }: NavbarProps) {
     </nav>
   );
 }
+
