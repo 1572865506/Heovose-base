@@ -16,8 +16,8 @@ export function Hero({ locale }: { locale: Locale }) {
       {/* Background Image with Overlay */}
       <div className="absolute inset-0 z-0">
         <Image
-          src="/video/hero-bg.png"
-          alt="Heovose Factory Background"
+          src="/video/whiteboard01.png"
+          alt="Heovose Hero Background"
           fill
           className="object-cover opacity-60"
           priority
@@ -41,37 +41,37 @@ export function Hero({ locale }: { locale: Locale }) {
           </div>
           
           {/* Entry Cards */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-8 pt-8 max-w-2xl">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 pt-8 max-w-xl">
             {/* Wholesale Card */}
-            <div className="group relative bg-white/10 backdrop-blur-2xl p-8 rounded-[2.5rem] border border-white/20 hover:border-accent/40 transition-all duration-700 cursor-pointer overflow-hidden shadow-[0_30px_60px_rgba(0,0,0,0.3)]">
+            <div className="group relative bg-white/10 backdrop-blur-2xl p-6 rounded-[2rem] border border-white/20 hover:border-accent/40 transition-all duration-700 cursor-pointer overflow-hidden shadow-[0_20px_40px_rgba(0,0,0,0.3)]">
               {/* Gradient Border Glow Overlay */}
-              <div className="absolute inset-0 bg-gradient-to-br from-accent/20 via-transparent to-white/5 opacity-0 group-hover:opacity-100 transition-opacity duration-700 pointer-events-none" />
+              <div className="absolute inset-0 bg-gradient-to-br from-accent/30 via-transparent to-white/10 opacity-0 group-hover:opacity-100 transition-opacity duration-700 pointer-events-none" />
               
               {/* Internal Content */}
-              <div className="relative space-y-6">
+              <div className="relative space-y-4">
                 {/* Icon Box */}
-                <div className="w-16 h-16 bg-[#6b7c7c]/40 backdrop-blur-sm rounded-2xl flex items-center justify-center text-accent shadow-inner group-hover:scale-105 transition-transform duration-500">
-                  <ShoppingBag className="h-8 w-8 stroke-[1.5]" />
+                <div className="w-14 h-14 bg-[#6b7c7c]/40 backdrop-blur-sm rounded-xl flex items-center justify-center text-accent shadow-inner transition-transform duration-500">
+                  <ShoppingBag className="h-7 w-7 stroke-[1.5]" />
                 </div>
                 
-                <h3 className="text-2xl md:text-3xl font-headline font-bold text-white leading-tight tracking-tight">
+                <h3 className="text-xl md:text-2xl font-headline font-bold text-white leading-tight tracking-tight">
                   {t.wholesale}
                 </h3>
               </div>
             </div>
 
             {/* Project Card */}
-            <div className="group relative bg-white/10 backdrop-blur-2xl p-8 rounded-[2.5rem] border border-white/20 hover:border-accent/40 transition-all duration-700 cursor-pointer overflow-hidden shadow-[0_30px_60px_rgba(0,0,0,0.3)]">
+            <div className="group relative bg-white/10 backdrop-blur-2xl p-6 rounded-[2rem] border border-white/20 hover:border-accent/40 transition-all duration-700 cursor-pointer overflow-hidden shadow-[0_20px_40px_rgba(0,0,0,0.3)]">
               {/* Gradient Border Glow Overlay */}
-              <div className="absolute inset-0 bg-gradient-to-br from-accent/20 via-transparent to-white/5 opacity-0 group-hover:opacity-100 transition-opacity duration-700 pointer-events-none" />
+              <div className="absolute inset-0 bg-gradient-to-br from-accent/30 via-transparent to-white/10 opacity-0 group-hover:opacity-100 transition-opacity duration-700 pointer-events-none" />
               
-              <div className="relative space-y-6">
+              <div className="relative space-y-4">
                 {/* Icon Box */}
-                <div className="w-16 h-16 bg-[#6b7c7c]/40 backdrop-blur-sm rounded-2xl flex items-center justify-center text-white/90 shadow-inner group-hover:scale-105 transition-transform duration-500">
-                  <Building2 className="h-8 w-8 stroke-[1.5]" />
+                <div className="w-14 h-14 bg-[#6b7c7c]/40 backdrop-blur-sm rounded-xl flex items-center justify-center text-white/90 shadow-inner transition-transform duration-500">
+                  <Building2 className="h-7 w-7 stroke-[1.5]" />
                 </div>
                 
-                <h3 className="text-2xl md:text-3xl font-headline font-bold text-white leading-tight tracking-tight">
+                <h3 className="text-xl md:text-2xl font-headline font-bold text-white leading-tight tracking-tight">
                   {t.project}
                 </h3>
               </div>
