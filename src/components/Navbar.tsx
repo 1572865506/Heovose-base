@@ -52,6 +52,7 @@ export function Navbar({ locale, setLocale }: NavbarProps) {
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
+  // Use scrolled state for height, but hover/menu state for background
   const isNavbarActive = isScrolled || openWholesale || openProjects || mobileMenuOpen;
 
   const wholesaleItems = [
@@ -145,7 +146,7 @@ export function Navbar({ locale, setLocale }: NavbarProps) {
           <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center font-bold text-white">H</div>
           <span className={cn(
             "text-2xl font-headline font-bold tracking-tighter transition-colors duration-500",
-            isNavbarActive ? "text-primary" : "text-white"
+            isNavbarActive ? "text-primary" : "text-primary"
           )}>HEOVOSE</span>
         </div>
 
@@ -162,7 +163,7 @@ export function Navbar({ locale, setLocale }: NavbarProps) {
               <DropdownMenu open={openWholesale} onOpenChange={setOpenWholesale} modal={false}>
                 <DropdownMenuTrigger className={cn(
                   "h-full flex items-center gap-1 text-sm font-semibold transition-colors outline-none focus:outline-none focus:ring-0 px-2",
-                  isNavbarActive ? "text-primary" : "text-black",
+                  isNavbarActive ? "text-muted-foreground" : "text-black",
                   "hover:text-primary/70"
                 )}>
                   {t.wholesale} <ChevronDown className={cn("h-3 w-3 transition-transform duration-300", openWholesale && "rotate-180")} />
@@ -196,7 +197,7 @@ export function Navbar({ locale, setLocale }: NavbarProps) {
               <DropdownMenu open={openProjects} onOpenChange={setOpenProjects} modal={false}>
                 <DropdownMenuTrigger className={cn(
                   "h-full flex items-center gap-1 text-sm font-semibold transition-colors outline-none focus:outline-none focus:ring-0 px-2",
-                  isNavbarActive ? "text-primary" : "text-black",
+                  isNavbarActive ? "text-muted-foreground" : "text-black",
                   "hover:text-primary/70"
                 )}>
                   {t.projects} <ChevronDown className={cn("h-3 w-3 transition-transform duration-300", openProjects && "rotate-180")} />
@@ -225,7 +226,7 @@ export function Navbar({ locale, setLocale }: NavbarProps) {
               href="#cases" 
               className={cn(
                 "text-sm font-semibold transition-colors h-full flex items-center px-2",
-                isNavbarActive ? "text-primary" : "text-black",
+                isNavbarActive ? "text-muted-foreground" : "text-black",
                 "hover:text-primary/70"
               )}
             >
