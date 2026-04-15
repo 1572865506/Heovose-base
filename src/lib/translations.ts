@@ -12,6 +12,7 @@ export const translations = {
       contact: 'Contact Us',
       about: 'About Us',
       career: 'Career',
+      projects_nav: 'Project Products'
     },
     nav_sub: {
       aio: 'AIO & Semi-finished',
@@ -28,7 +29,7 @@ export const translations = {
       components_desc: 'Motherboards, GPUs, RAM, Hard Drives, and CPUs.',
       conference: 'Conference Tablets',
       conference_desc: 'Interactive intelligent displays for modern meetings.',
-      selfservice: 'Self-service Equipment',
+      selfservice: 'KIOSK / Self-service',
       selfservice_desc: 'Smart terminals for retail and public service automation.',
       industrial: 'Industrial PCs',
       industrial_desc: 'Industrial AIO and touch-controlled display systems.',
@@ -147,6 +148,7 @@ export const translations = {
       contact: '联系我们',
       about: '关于我们',
       career: '加入我们',
+      projects_nav: '项目产品'
     },
     nav_sub: {
       aio: '电脑一体机及半成品',
@@ -163,7 +165,7 @@ export const translations = {
       components_desc: '主板、显卡、内存、硬盘及CPU核心部件。',
       conference: '会议平板',
       conference_desc: '为现代智能办公设计的交互式显示终端。',
-      selfservice: '自助设备',
+      selfservice: '自助终端 / KIOSK',
       selfservice_desc: '适用于零售、金融等场景的智能交互设备。',
       industrial: '工业机',
       industrial_desc: '工业一体机及工业触摸显示器等硬核方案。',
