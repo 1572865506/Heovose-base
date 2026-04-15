@@ -42,6 +42,10 @@ export const translations = {
       catalog_desc: 'Explore our latest catalog featuring cutting-edge hardware.',
       download: 'DOWNLOAD CATALOG',
     },
+    footer: {
+      slogan1: 'The world shares good things!',
+      slogan2: 'Let excellent application solutions benefit the world!',
+    },
     hero: {
       headline: 'All In One Computer',
       subheadline: 'Professional Manufacturer',
@@ -117,17 +121,17 @@ export const translations = {
       locations: {
         panyu: {
           title: 'PANYU HUB',
-          address: 'Panyu District, Guangzhou, China',
+          address: 'Panyu District, Guangzhou, Guangdong Province, China',
           desc: 'Primary Global Marketing Headquarters and Strategic Operations Command'
         },
         shunde: {
           title: 'SHUNDE FACILITY',
-          address: 'Shunde District, Foshan, China',
+          address: 'Shunde District, Foshan, Guangdong Province, China',
           desc: 'Specialized in small-size computer equipment production and R&D'
         },
         beijiao: {
           title: 'BEIJIAO FACILITY',
-          address: 'Beijiao Town, Shunde, China',
+          address: 'Beijiao Town, Shunde District, Foshan, Guangdong Province, China',
           desc: 'Large-size and commercial display production hub for global markets'
         },
         jakarta: {
@@ -177,6 +181,10 @@ export const translations = {
       catalog_title: '工业硬件手册 2024',
       catalog_desc: '探索我们包含前沿硬件技术的最新手册。',
       download: '下载手册',
+    },
+    footer: {
+      slogan1: '世界共享美好！',
+      slogan2: '让优秀的场景应用方案造福世界！',
     },
     hero: {
       headline: '一体机电脑',
@@ -253,17 +261,17 @@ export const translations = {
       locations: {
         panyu: {
           title: 'PANYU HUB (番禺)',
-          address: '中国 广州 番禺区',
+          address: '中国 广东 广州 番禺区',
           desc: '全球营销总部与战略运营指挥中心'
         },
         shunde: {
           title: 'SHUNDE FACILITY (顺德)',
-          address: '中国 佛山 顺德区',
+          address: '中国 广东 佛山 顺德区',
           desc: '专注于小型化计算设备的生产与研发'
         },
         beijiao: {
           title: 'BEIJIAO FACILITY (北滘)',
-          address: '中国 佛山 顺德北滘镇',
+          address: '中国 广东 佛山 顺德 北滘镇',
           desc: '服务全球市场的大尺寸及商显生产枢纽'
         },
         jakarta: {
