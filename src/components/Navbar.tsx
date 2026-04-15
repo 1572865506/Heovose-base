@@ -2,9 +2,10 @@
 "use client";
 
 import { useState, useEffect } from 'react';
+import Image from 'next/image';
 import { Locale, translations } from "@/lib/translations";
 import { LanguageToggle } from "./LanguageToggle";
-import { Menu, X, ChevronDown } from "lucide-react";
+import { Menu, X, ChevronDown, Monitor, Cpu, Tv, Layout, PenTool, Truck, Globe, ShieldCheck, ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -12,6 +13,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { cn } from "@/lib/utils";
 
 interface NavbarProps {
   locale: Locale;
@@ -31,21 +33,78 @@ export function Navbar({ locale, setLocale }: NavbarProps) {
   }, []);
 
   const wholesaleItems = [
-    { label: sub.aio, href: '#products' },
-    { label: sub.minipc, href: '#products' },
-    { label: sub.monitor, href: '#products' },
-    { label: sub.kiosk, href: '#products' },
+    { label: sub.aio, desc: sub.aio_desc, icon: Monitor, href: '#products' },
+    { label: sub.minipc, desc: sub.minipc_desc, icon: Cpu, href: '#products' },
+    { label: sub.monitor, desc: sub.monitor_desc, icon: Tv, href: '#products' },
+    { label: sub.kiosk, desc: sub.kiosk_desc, icon: Layout, href: '#products' },
   ];
 
   const projectItems = [
-    { label: sub.design, href: '#process' },
-    { label: sub.supply, href: '#process' },
-    { label: sub.logistics, href: '#process' },
-    { label: sub.quality, href: '#process' },
+    { label: sub.design, desc: sub.design_desc, icon: PenTool, href: '#process' },
+    { label: sub.supply, desc: sub.supply_desc, icon: Truck, href: '#process' },
+    { label: sub.logistics, desc: sub.logistics_desc, icon: Globe, href: '#process' },
+    { label: sub.quality, desc: sub.quality_desc, icon: ShieldCheck, href: '#process' },
   ];
 
+  const MegaMenuContent = ({ items }: { items: any[] }) => (
+    <div className="container mx-auto px-6 py-12 flex flex-col lg:flex-row gap-12">
+      <div className="flex-1 grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-10">
+        <div className="col-span-full border-b border-border pb-4">
+          <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">
+            {locale === 'en' ? 'Portfolio' : '产品组合'}
+          </span>
+        </div>
+        {items.map((item) => (
+          <DropdownMenuItem key={item.label} asChild className="p-0 bg-transparent hover:bg-transparent">
+            <a 
+              href={item.href} 
+              className="flex gap-4 group cursor-pointer focus:bg-transparent"
+            >
+              <div className="w-12 h-12 rounded-xl bg-primary/5 flex items-center justify-center text-primary group-hover:bg-primary group-hover:text-white transition-all duration-300">
+                <item.icon className="h-6 w-6" />
+              </div>
+              <div className="flex-1">
+                <h4 className="text-sm font-bold text-primary mb-1 group-hover:translate-x-1 transition-transform">{item.label}</h4>
+                <p className="text-xs text-muted-foreground leading-relaxed line-clamp-2">{item.desc}</p>
+              </div>
+            </a>
+          </DropdownMenuItem>
+        ))}
+      </div>
+      
+      {/* Featured Card */}
+      <div className="lg:w-80 shrink-0">
+        <div className="bg-muted/30 rounded-3xl p-6 border border-border/50 h-full flex flex-col">
+          <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest mb-4 block">
+            {sub.featured}
+          </span>
+          <div className="relative aspect-video rounded-2xl overflow-hidden mb-6 shadow-lg">
+            <Image 
+              src="https://picsum.photos/seed/nav-featured/400/225" 
+              alt="Featured"
+              fill
+              className="object-cover"
+            />
+          </div>
+          <h4 className="text-sm font-bold text-primary mb-2 leading-tight">
+            {sub.catalog_title}
+          </h4>
+          <p className="text-xs text-muted-foreground leading-relaxed mb-6">
+            {sub.catalog_desc}
+          </p>
+          <Button variant="ghost" size="sm" className="mt-auto w-fit text-primary font-bold text-[10px] p-0 hover:bg-transparent hover:translate-x-1 transition-all">
+            {sub.download} <ArrowRight className="ml-2 h-3 w-3" />
+          </Button>
+        </div>
+      </div>
+    </div>
+  );
+
   return (
-    <nav className={`fixed top-0 left-0 right-0 z-[100] transition-all duration-500 ${isScrolled ? 'py-4 glass-morphism' : 'py-8 bg-transparent'}`}>
+    <nav className={cn(
+      "fixed top-0 left-0 right-0 z-[100] transition-all duration-500",
+      isScrolled ? "py-4 glass-morphism border-b border-white/20" : "py-8 bg-transparent"
+    )}>
       <div className="container mx-auto px-6 flex justify-between items-center">
         <div className="flex items-center gap-2">
           <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center font-bold text-white">H</div>
@@ -55,43 +114,33 @@ export function Navbar({ locale, setLocale }: NavbarProps) {
         {/* Desktop Nav */}
         <div className="hidden lg:flex items-center gap-12">
           <div className="flex items-center gap-8">
-            {/* Wholesale Dropdown */}
-            <DropdownMenu>
-              <DropdownMenuTrigger className="flex items-center gap-1 text-sm font-semibold text-primary/80 hover:text-accent transition-colors outline-none">
+            {/* Wholesale Mega Menu */}
+            <DropdownMenu modal={false}>
+              <DropdownMenuTrigger className="flex items-center gap-1 text-sm font-semibold text-primary/80 hover:text-accent transition-colors outline-none focus:outline-none focus:ring-0">
                 {t.wholesale} <ChevronDown className="h-3 w-3" />
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="start" className="w-56 glass-morphism border-white/20">
-                {wholesaleItems.map((item) => (
-                  <DropdownMenuItem key={item.label} asChild>
-                    <a href={item.href} className="w-full cursor-pointer text-primary/70 hover:text-primary hover:bg-white/10">
-                      {item.label}
-                    </a>
-                  </DropdownMenuItem>
-                ))}
+              <DropdownMenuContent 
+                sideOffset={20}
+                className="w-screen max-w-none left-0 right-0 border-none rounded-none shadow-2xl animate-in fade-in slide-in-from-top-2 duration-300 bg-white/95 backdrop-blur-xl"
+              >
+                <MegaMenuContent items={wholesaleItems} />
               </DropdownMenuContent>
             </DropdownMenu>
 
-            {/* Projects Dropdown */}
-            <DropdownMenu>
-              <DropdownMenuTrigger className="flex items-center gap-1 text-sm font-semibold text-primary/80 hover:text-accent transition-colors outline-none">
+            {/* Projects Mega Menu */}
+            <DropdownMenu modal={false}>
+              <DropdownMenuTrigger className="flex items-center gap-1 text-sm font-semibold text-primary/80 hover:text-accent transition-colors outline-none focus:outline-none focus:ring-0">
                 {t.projects} <ChevronDown className="h-3 w-3" />
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="start" className="w-56 glass-morphism border-white/20">
-                {projectItems.map((item) => (
-                  <DropdownMenuItem key={item.label} asChild>
-                    <a href={item.href} className="w-full cursor-pointer text-primary/70 hover:text-primary hover:bg-white/10">
-                      {item.label}
-                    </a>
-                  </DropdownMenuItem>
-                ))}
+              <DropdownMenuContent 
+                sideOffset={20}
+                className="w-screen max-w-none left-0 right-0 border-none rounded-none shadow-2xl animate-in fade-in slide-in-from-top-2 duration-300 bg-white/95 backdrop-blur-xl"
+              >
+                <MegaMenuContent items={projectItems} />
               </DropdownMenuContent>
             </DropdownMenu>
 
-            {/* Cases Link */}
-            <a 
-              href="#cases" 
-              className="text-sm font-semibold text-primary/80 hover:text-accent transition-colors"
-            >
+            <a href="#cases" className="text-sm font-semibold text-primary/80 hover:text-accent transition-colors">
               {t.cases}
             </a>
           </div>
@@ -115,19 +164,29 @@ export function Navbar({ locale, setLocale }: NavbarProps) {
 
       {/* Mobile Nav */}
       {mobileMenuOpen && (
-        <div className="lg:hidden absolute top-full left-0 right-0 bg-white border-t border-border p-6 shadow-2xl animate-in slide-in-from-top duration-300">
-          <div className="flex flex-col gap-6">
+        <div className="lg:hidden absolute top-full left-0 right-0 bg-white border-t border-border p-6 shadow-2xl animate-in slide-in-from-top duration-300 h-screen overflow-y-auto">
+          <div className="flex flex-col gap-8 pb-32">
             <div className="space-y-4">
                <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">{t.wholesale}</p>
-               {wholesaleItems.map((item) => (
-                 <a key={item.label} href={item.href} onClick={() => setMobileMenuOpen(false)} className="block text-lg font-bold text-primary pl-4">{item.label}</a>
-               ))}
+               <div className="grid grid-cols-1 gap-4 pl-4">
+                 {wholesaleItems.map((item) => (
+                   <a key={item.label} href={item.href} onClick={() => setMobileMenuOpen(false)} className="flex items-center gap-3">
+                     <item.icon className="h-5 w-5 text-primary" />
+                     <span className="text-lg font-bold text-primary">{item.label}</span>
+                   </a>
+                 ))}
+               </div>
             </div>
             <div className="space-y-4">
                <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">{t.projects}</p>
-               {projectItems.map((item) => (
-                 <a key={item.label} href={item.href} onClick={() => setMobileMenuOpen(false)} className="block text-lg font-bold text-primary pl-4">{item.label}</a>
-               ))}
+               <div className="grid grid-cols-1 gap-4 pl-4">
+                 {projectItems.map((item) => (
+                   <a key={item.label} href={item.href} onClick={() => setMobileMenuOpen(false)} className="flex items-center gap-3">
+                     <item.icon className="h-5 w-5 text-primary" />
+                     <span className="text-lg font-bold text-primary">{item.label}</span>
+                   </a>
+                 ))}
+               </div>
             </div>
             <a href="#cases" onClick={() => setMobileMenuOpen(false)} className="text-lg font-bold text-primary">{t.cases}</a>
             <div className="pt-6 border-t border-border flex flex-col gap-6">
