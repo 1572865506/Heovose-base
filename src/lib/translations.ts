@@ -7,7 +7,11 @@ export const translations = {
       wholesale: 'Wholesale Products',
       projects: 'Project Solutions',
       cases: 'Cases',
+      products: 'Products',
+      company: 'Company',
       contact: 'Contact Us',
+      about: 'About Us',
+      career: 'Career',
     },
     nav_sub: {
       aio: 'AIO & Semi-finished',
@@ -138,7 +142,11 @@ export const translations = {
       wholesale: '批发产品',
       projects: '项目产品',
       cases: '案例',
+      products: '产品中心',
+      company: '公司信息',
       contact: '联系我们',
+      about: '关于我们',
+      career: '加入我们',
     },
     nav_sub: {
       aio: '电脑一体机及半成品',
