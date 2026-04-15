@@ -120,10 +120,6 @@ export function Navbar({ locale, setLocale }: NavbarProps) {
         ? "bg-white/70 backdrop-blur-xl border-white/20" 
         : "bg-transparent border-transparent"
     )}>
-      {/* 
-        The actual vertical height (h-16 / h-24) is ONLY determined by scroll state.
-        This prevents the height "jump" when hovering items at the top of the page.
-      */}
       <div className={cn(
         "container mx-auto px-6 flex justify-between items-center transition-all duration-500",
         isScrolled ? "h-16" : "h-24"
@@ -217,7 +213,7 @@ export function Navbar({ locale, setLocale }: NavbarProps) {
             </a>
           </div>
 
-          <div className="flex items-center gap-4 border-l border-border/40 pl-8 h-full">
+          <div className="flex items-center gap-6 h-full">
             <LanguageToggle currentLocale={locale} setLocale={setLocale} />
             <Button size="sm" className="rounded-full px-6 bg-primary hover:bg-primary/90 shadow-lg">
               {t.contact}
