@@ -83,27 +83,23 @@ export function CaseStudies({ locale }: { locale: Locale }) {
 
   const getCardStyle = (index: number) => {
     const total = cases.length;
-    // 计算环形差异，得出 0 (大), 1 (中), 2+ (小)
     let diff = Math.abs(index - current);
     if (diff > total / 2) {
       diff = total - diff;
     }
 
     if (diff === 0) {
-      // 中间大 (L) - 1.15x
       return "scale-[1.15] z-30 opacity-100 shadow-[0_40px_100px_rgba(0,0,0,0.4)]";
     }
     if (diff === 1) {
-      // 侧边中 (M) - 0.92x
       return "scale-[0.92] z-20 opacity-85 shadow-2xl translate-y-2";
     }
-    // 外侧小 (S) - 0.8x
     return "scale-[0.8] z-10 opacity-70 translate-y-4";
   };
 
   return (
     <section id="cases" className="py-32 bg-background overflow-hidden">
-      <div className="container mx-auto px-6 mb-16 relative z-50">
+      <div className="container mx-auto px-6 mb-16 relative z-10">
         <SectionHeading 
           title={t.title} 
           subtitle={t.subtitle} 
@@ -192,7 +188,7 @@ export function CaseStudies({ locale }: { locale: Locale }) {
         </Carousel>
       </div>
 
-      <div className="container mx-auto px-6 mt-16 relative z-[100]">
+      <div className="container mx-auto px-6 mt-16 relative z-10">
         <div className="flex items-center justify-end gap-6 max-w-xl ml-auto">
           <div className="flex gap-2 h-1 items-center">
             {Array.from({ length: count }).map((_, i) => (
