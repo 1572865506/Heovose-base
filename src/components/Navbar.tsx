@@ -63,10 +63,10 @@ export function Navbar({ locale, setLocale }: NavbarProps) {
           </span>
         </div>
         {items.map((item) => (
-          <DropdownMenuItem key={item.label} asChild className="p-0 bg-transparent hover:bg-transparent">
+          <DropdownMenuItem key={item.label} asChild className="p-0 bg-transparent hover:bg-transparent focus:bg-transparent">
             <a 
               href={item.href} 
-              className="flex gap-4 group cursor-pointer focus:bg-transparent"
+              className="flex gap-4 group cursor-pointer outline-none focus:outline-none"
             >
               <div className="w-12 h-12 rounded-xl bg-primary/5 flex items-center justify-center text-primary group-hover:bg-primary group-hover:text-white transition-all duration-300">
                 <item.icon className="h-6 w-6" />
@@ -123,11 +123,11 @@ export function Navbar({ locale, setLocale }: NavbarProps) {
         <div className="hidden lg:flex items-center gap-12">
           <div className="flex items-center gap-8">
             
-            {/* Wholesale Mega Menu */}
+            {/* Wholesale Mega Menu Container */}
             <div 
               onMouseEnter={() => setOpenWholesale(true)} 
               onMouseLeave={() => setOpenWholesale(false)}
-              className="relative flex items-center h-full"
+              className="relative flex items-center"
             >
               <DropdownMenu open={openWholesale} onOpenChange={setOpenWholesale} modal={false}>
                 <DropdownMenuTrigger className="flex items-center gap-1 text-sm font-semibold text-primary/80 hover:text-accent transition-colors outline-none focus:outline-none focus:ring-0 py-2">
@@ -135,7 +135,8 @@ export function Navbar({ locale, setLocale }: NavbarProps) {
                 </DropdownMenuTrigger>
                 <DropdownMenuContent 
                   sideOffset={0}
-                  className="w-screen max-w-none left-0 right-0 border-none rounded-none shadow-none animate-in fade-in slide-in-from-top-1 duration-300 bg-transparent p-0"
+                  align="start"
+                  className="w-screen max-w-none left-0 right-0 border-none rounded-none shadow-none bg-transparent p-0 overflow-visible"
                   onMouseEnter={() => setOpenWholesale(true)}
                   onMouseLeave={() => setOpenWholesale(false)}
                 >
@@ -143,7 +144,7 @@ export function Navbar({ locale, setLocale }: NavbarProps) {
                     "w-full transition-all duration-300",
                     isScrolled ? "pt-4" : "pt-8"
                   )}>
-                    <div className="bg-white/95 backdrop-blur-xl shadow-2xl border-b border-border">
+                    <div className="bg-white/95 backdrop-blur-xl shadow-2xl border-b border-border animate-in fade-in slide-in-from-top-2 duration-300">
                       <MegaMenuContent 
                         items={wholesaleItems} 
                         onMouseEnter={() => setOpenWholesale(true)}
@@ -155,11 +156,11 @@ export function Navbar({ locale, setLocale }: NavbarProps) {
               </DropdownMenu>
             </div>
 
-            {/* Projects Mega Menu */}
+            {/* Projects Mega Menu Container */}
             <div 
               onMouseEnter={() => setOpenProjects(true)} 
               onMouseLeave={() => setOpenProjects(false)}
-              className="relative flex items-center h-full"
+              className="relative flex items-center"
             >
               <DropdownMenu open={openProjects} onOpenChange={setOpenProjects} modal={false}>
                 <DropdownMenuTrigger className="flex items-center gap-1 text-sm font-semibold text-primary/80 hover:text-accent transition-colors outline-none focus:outline-none focus:ring-0 py-2">
@@ -167,7 +168,8 @@ export function Navbar({ locale, setLocale }: NavbarProps) {
                 </DropdownMenuTrigger>
                 <DropdownMenuContent 
                   sideOffset={0}
-                  className="w-screen max-w-none left-0 right-0 border-none rounded-none shadow-none animate-in fade-in slide-in-from-top-1 duration-300 bg-transparent p-0"
+                  align="start"
+                  className="w-screen max-w-none left-0 right-0 border-none rounded-none shadow-none bg-transparent p-0 overflow-visible"
                   onMouseEnter={() => setOpenProjects(true)}
                   onMouseLeave={() => setOpenProjects(false)}
                 >
@@ -175,7 +177,7 @@ export function Navbar({ locale, setLocale }: NavbarProps) {
                     "w-full transition-all duration-300",
                     isScrolled ? "pt-4" : "pt-8"
                   )}>
-                    <div className="bg-white/95 backdrop-blur-xl shadow-2xl border-b border-border">
+                    <div className="bg-white/95 backdrop-blur-xl shadow-2xl border-b border-border animate-in fade-in slide-in-from-top-2 duration-300">
                       <MegaMenuContent 
                         items={projectItems} 
                         onMouseEnter={() => setOpenProjects(true)}
