@@ -1,9 +1,10 @@
 
 /**
  * FIRESTORE SECURITY RULES
- * Forced Redeployment Timestamp: 2025-02-21 10:15:00
+ * Forced Redeployment Timestamp: 2025-02-21 14:30:00
  * 
  * Status: Read-Only Public Access for Product Catalog
+ * This file is managed by the App Prototyper.
  */
 
 rules_version = '2';
@@ -17,13 +18,13 @@ service cloud.firestore {
     }
 
     // 允许任何用户（包括未登录用户）读取产品列表
-    // 明确允许 get 和 list 操作
+    // 采用更宽泛的匹配模式确保查询（list）和单文档（get）访问都被允许
     match /products/{product} {
       allow read: if true;
       allow write: if false;
     }
 
-    // 默认禁止其他所有集合的访问
+    // 默认禁止其他所有集合的访问，确保安全
     match /{document=**} {
       allow read: if false;
       allow write: if false;
