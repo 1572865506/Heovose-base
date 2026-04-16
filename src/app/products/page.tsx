@@ -3,6 +3,7 @@
 
 import { useState, useMemo, useEffect, Suspense } from 'react';
 import Image from 'next/image';
+import Link from 'next/link';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { Locale, translations } from '@/lib/translations';
 import { Navbar } from '@/components/Navbar';
@@ -362,7 +363,8 @@ function ProductListContent() {
             ) : filteredProducts.length > 0 ? (
               <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-8">
                 {filteredProducts.map((product) => (
-                  <div 
+                  <Link 
+                    href={`/products/${product.id}`}
                     key={product.id}
                     className="group bg-white rounded-3xl border border-border/40 overflow-hidden hover:shadow-2xl transition-all duration-500 flex flex-col"
                   >
@@ -410,7 +412,7 @@ function ProductListContent() {
                         </Button>
                       </div>
                     </div>
-                  </div>
+                  </Link>
                 ))}
               </div>
             ) : (
