@@ -1,21 +1,11 @@
 /**
  * FIRESTORE SECURITY RULES
- *
+ * Updated: 2024-03-20 (Forced re-deployment)
+ * 
  * Core Philosophy:
- * This ruleset implements a Public Catalog model. The primary focus is on ensuring high availability
- * of product information and categories for marketing and e-commerce purposes while strictly
- * protecting data integrity from unauthorized modifications.
- *
- * Data Structure:
- * The data is organized into two primary top-level collections:
- * 1. `/product_categories`: Contains organizational buckets (e.g., AIO, Monitors).
- * 2. `/products`: Contains detailed specifications and assets for individual items.
- *
- * Key Security Decisions:
- * - Public Read Access: Both categories and products are intended for public consumption. To facilitate
- *   global display without authentication, 'read' (get and list) operations are permitted for all users.
- * - Restricted Writes: All write operations (create, update, delete) are explicitly denied from the 
- *   client-side to prevent unauthorized data tampering.
+ * This ruleset implements a Public Catalog model.
+ * - Public Read Access: All users (including anonymous/unauthenticated) can read categories and products.
+ * - Restricted Writes: No client-side writes are permitted.
  */
 
 rules_version = '2';
