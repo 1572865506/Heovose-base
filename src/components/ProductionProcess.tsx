@@ -66,21 +66,25 @@ export function ProductionProcess({ locale }: { locale: Locale }) {
 
   useEffect(() => {
     const activeImages = steps[activeStep]?.images || [];
-    if (activeImages.length <= 1 || !isPlaying) {
+    if (activeImages.length <= 1) {
       setProgress(0);
+      setSubImageIndex(0);
       return;
     }
+
+    if (!isPlaying) return;
 
     const intervalTime = 50;
     const stepValue = (intervalTime / AUTOPLAY_DELAY) * 100;
 
     const timer = setInterval(() => {
       setProgress((prev) => {
-        if (prev >= 100) {
-          setSubImageIndex((idx) => (idx + 1) % activeImages.length);
+        const next = prev + stepValue;
+        if (next >= 100) {
+          setSubImageIndex((curr) => (curr + 1) % activeImages.length);
           return 0;
         }
-        return prev + stepValue;
+        return next;
       });
     }, intervalTime);
 
@@ -120,19 +124,21 @@ export function ProductionProcess({ locale }: { locale: Locale }) {
                         key={`${segIndex}-${iIndex}`}
                         className={cn(
                           "absolute inset-0 transition-opacity duration-1000 ease-in-out",
-                          isSegmentActive && subImageIndex === iIndex ? "opacity-100" : "opacity-0"
+                          (isSegmentActive && (segment.images.length > 1 ? subImageIndex === iIndex : iIndex === 0))
+                            ? "opacity-100" 
+                            : "opacity-0"
                         )}
                       >
                         <Image
                           src={imgUrl}
-                          alt={`Process Segment ${segIndex}`}
+                          alt={`Process Step Image`}
                           fill
                           className="object-cover"
                           priority={segIndex === 0}
                         />
                       </div>
                     ))}
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent" />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/10 to-transparent" />
                   </div>
                 );
               })}
@@ -148,7 +154,7 @@ export function ProductionProcess({ locale }: { locale: Locale }) {
                           setProgress(0);
                         }}
                         className={cn(
-                          "relative h-0.5 rounded-full transition-all duration-500 overflow-hidden bg-white/30",
+                          "relative h-1 rounded-full transition-all duration-500 overflow-hidden bg-white/30",
                           i === subImageIndex ? "w-8" : "w-2 hover:bg-white/50"
                         )}
                       >
