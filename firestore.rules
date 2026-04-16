@@ -1,29 +1,29 @@
+
 /**
  * FIRESTORE SECURITY RULES
- * Forced Redeployment Timestamp: 2024-05-20 17:15:00
+ * Forced Redeployment Timestamp: 2024-05-20 18:30:00
  * 
- * Purpose: Public Product Catalog Access
- * Status: Read-Only for all users (Authenticated and Unauthenticated)
+ * Status: Read-Only Public Access for Product Catalog
  */
 
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // Allow public read access to product categories
+    // 允许任何用户（包括匿名用户）读取产品分类
     match /product_categories/{category} {
       allow read: if true;
       allow write: if false;
     }
 
-    // Allow public read access to products
-    // This allows both 'get' (single doc) and 'list' (collection queries)
+    // 允许任何用户（包括匿名用户）读取产品列表
+    // 支持 get (单个文档) 和 list (查询/过滤)
     match /products/{product} {
       allow read: if true;
       allow write: if false;
     }
 
-    // Default deny for all other collections to maintain security
+    // 默认禁止其他所有集合的访问
     match /{document=**} {
       allow read: if false;
       allow write: if false;
