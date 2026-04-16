@@ -24,8 +24,7 @@ export function ProductionProcess({ locale }: { locale: Locale }) {
     { label: t.manufacturing, tag: '08', imageUrl: '/Pipeline/3-1.jpg', desc: t.manufacturing_desc },
     { label: t.system, tag: '09', imageUrl: '/Pipeline/4-1.jpg', desc: t.system_desc },
     { label: t.fg_warehousing, tag: '10', imageUrl: '/Pipeline/5-1.jpg', desc: t.fg_warehousing_desc },
-    { label: t.package, tag: '11', imageUrl: '/Pipeline/5-2.jpg', desc: t.package_desc },
-    { label: t.ship, tag: '12', imageUrl: '/Pipeline/5-2.jpg', desc: t.ship_desc },
+    { label: t.shipment, tag: '11', imageUrl: '/Pipeline/6-1.JPG', desc: t.shipment_desc },
   ];
 
   useEffect(() => {
@@ -63,7 +62,7 @@ export function ProductionProcess({ locale }: { locale: Locale }) {
           <div className="lg:block hidden relative">
             <div className="sticky top-32 aspect-square rounded-[3rem] overflow-hidden bg-muted/20 border border-border/40 shadow-2xl group">
               {steps.map((step, index) => {
-                const imgUrl = step.imageUrl || PlaceHolderImages.find(img => img.id === step.imageId)?.imageUrl;
+                const imgUrl = step.imageUrl;
                 return (
                   <div
                     key={index}
@@ -119,9 +118,9 @@ export function ProductionProcess({ locale }: { locale: Locale }) {
 
                 {/* Mobile view image */}
                 <div className="lg:hidden w-full aspect-video rounded-[2rem] overflow-hidden relative border border-border/40 mt-8 shadow-lg">
-                   { (step.imageUrl || PlaceHolderImages.find(img => img.id === step.imageId)?.imageUrl) && (
+                   { step.imageUrl && (
                       <Image
-                        src={step.imageUrl || PlaceHolderImages.find(img => img.id === step.imageId)!.imageUrl}
+                        src={step.imageUrl}
                         alt={step.label}
                         fill
                         className="object-cover"

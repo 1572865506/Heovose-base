@@ -102,7 +102,7 @@ export const translations = {
     },
     process: {
       title: 'Precision Manufacturing',
-      subtitle: 'The 12-Step Excellence Workflow',
+      subtitle: 'The 11-Step Excellence Workflow',
       pmc: 'PMC PLANNING',
       pmc_desc: 'Production and material control planning for optimal resource allocation and timeline management.',
       procurement: 'PROCUREMENT',
@@ -123,10 +123,8 @@ export const translations = {
       system_desc: 'Final quality assurance before products leave the facility.',
       fg_warehousing: 'WAREHOUSING',
       fg_warehousing_desc: 'Product storage and inventory management before shipment.',
-      package: 'Protective Packaging',
-      package_desc: 'Industrial-grade protective packaging designed for global transit.',
-      ship: 'Global Dispatch',
-      ship_desc: 'Coordinated global dispatch to over 50 countries via premium partners.',
+      shipment: 'SHIPMENT',
+      shipment_desc: 'Secure packaging and global distribution to customers worldwide.',
     },
     map: {
       title: 'Global Footprint',
@@ -255,7 +253,7 @@ export const translations = {
     },
     process: {
       title: '精密制造',
-      subtitle: '12步卓越生产流程',
+      subtitle: '11步卓越生产流程',
       pmc: 'PMC 计划',
       pmc_desc: '生产与物料控制计划，实现最优资源配置和时间进度管理。',
       procurement: '采购管理',
@@ -276,10 +274,8 @@ export const translations = {
       system_desc: '产品离开工厂前的最后质量保证。',
       fg_warehousing: '成品入库',
       fg_warehousing_desc: '出货前的产品存储与库存管理。',
-      package: '防护包装',
-      package_desc: '为全球运输设计的工业级防护包装。',
-      ship: '全球物流',
-      ship_desc: '通过优质合作伙伴协调向全球 50 多个国家发货。',
+      shipment: '包装发货',
+      shipment_desc: '专业的工业防护包装，安全高效地配送至全球客户。',
     },
     map: {
       title: '全球布局',
@@ -338,11 +334,11 @@ export const translations = {
       selfservice: 'KIOSK / Mandiri',
       selfservice_desc: 'Terminal cerdas untuk otomatisasi ritel dan layanan publik.',
       industrial: 'PC Industri',
-      industrial_desc: 'AIO industri dan sistem tampilan kontrol sentuh.',
+      industrial_desc: 'AIO industri và hệ thống màn hình điều khiển cảm ứng.',
       led: 'Proyek LED',
-      led_desc: 'Rekayasa dan solusi tampilan LED skala besar.',
+      led_desc: 'Rekayasa và giải pháp màn hình LED quy mô lớn.',
       showroom: 'Proyek Showroom',
-      showroom_desc: 'Showroom tampilan komersial dan rekayasa pameran.',
+      showroom_desc: 'Showroom màn hình thương mại và triển lãm.',
       featured: 'Unggulan',
       catalog_title: 'Katalog Perangkat Keras Industri 2024',
       catalog_desc: 'Jelajahi katalog terbaru kami yang menampilkan perangkat keras mutakhir.',
@@ -408,31 +404,29 @@ export const translations = {
     },
     process: {
       title: 'Manufaktur Presisi',
-      subtitle: 'Alur Kerja Keunggulan 12-Langkah',
+      subtitle: 'Alur Kerja Keunggulan 11-Langkah',
       pmc: 'PMC PLANNING',
-      pmc_desc: 'Perencanaan pengendalian produksi dan material untuk alokasi sumber daya dan manajemen jadwal yang optimal.',
+      pmc_desc: 'Perencanaan pengendalian produksi và vật tư để tối ưu hóa nguồn lực.',
       procurement: 'PROCUREMENT',
-      procurement_desc: 'Sourcing strategis dan pembelian bahan baku berkualitas tinggi dari pemasok bersertifikat.',
+      procurement_desc: 'Sourcing chiến lược và mua nguyên liệu chất lượng cao.',
       supplier: 'SUPPLIER',
-      supplier_desc: 'Mengelola hubungan pemasok dan memastikan pengiriman komponen tepat waktu.',
+      supplier_desc: 'Quản lý mối quan hệ nhà cung cấp và đảm bảo giao hàng đúng hạn.',
       receiving: 'RECEIVING',
-      receiving_desc: 'Menerima dan memverifikasi material yang masuk terhadap pesanan pembelian.',
+      receiving_desc: 'Tiếp nhận và xác minh vật liệu so với đơn đặt hàng.',
       inspection: 'INSPEKSI',
       inspection_desc: 'Inspeksi kualitas komprehensif memastikan semua bahan memenuhi spesifikasi.',
       warehousing: 'PERGUDANGAN',
-      warehousing_desc: 'Penyimpanan bahan yang aman di fasilitas yang terkontrol iklimnya.',
+      warehousing_desc: 'Penyimpanan bahan yang aman ở cơ sở kiểm soát khí hậu.',
       issuing: 'PENGELUARAN MATERIAL',
-      issuing_desc: 'Permintaan material yang sistematis dan distribusi ke lini produksi.',
+      issuing_desc: 'Permintaan material yang hệ thống và phân phối đến các dây chuyền sản xuất.',
       manufacturing: 'MANUFACTURING',
-      manufacturing_desc: 'Manufaktur presisi menggunakan peralatan canggih dan protokol kualitas yang ketat.',
+      manufacturing_desc: 'Manufaktur chính xác sử dụng thiết bị tiên tiến và các giao thức chất lượng nghiêm ngặt.',
       system: 'PRE-SHIPMENT INSPECTION',
-      system_desc: 'Jaminan kualitas akhir sebelum produk meninggalkan fasilitas.',
+      system_desc: 'Jaminan chất lượng cuối cùng trước khi sản phẩm rời khỏi nhà máy.',
       fg_warehousing: 'WAREHOUSING',
-      fg_warehousing_desc: 'Penyimpanan produk dan manajemen inventaris sebelum pengiriman.',
-      package: 'Kemasan Pelindung',
-      package_desc: 'Industrial-grade protective packaging designed for global transit.',
-      ship: 'Pengiriman Global',
-      ship_desc: 'Coordinated global dispatch to over 50 countries via premium partners.',
+      fg_warehousing_desc: 'Lưu kho sản phẩm và quản lý hàng tồn kho trước khi xuất xưởng.',
+      shipment: 'PENGIRIMAN',
+      shipment_desc: 'Pengemasan aman và phân phối toàn cầu đến khách hàng trên toàn thế giới.',
     },
     map: {
       title: 'Jejak Global',
@@ -441,22 +435,22 @@ export const translations = {
         panyu: {
           title: 'PANYU HUB',
           address: 'Distrik Panyu, Guangzhou, Provinsi Guangdong, Tiongkok',
-          desc: 'Markas Besar Pemasaran Global Utama dan Komando Operasi Strategis'
+          desc: 'Markas Besar Pemasaran Global Utama và Trung tâm điều hành chiến lược'
         },
         shunde: {
           title: 'FASILITAS SHUNDE',
           address: 'Distrik Shunde, Foshan, Provinsi Guangdong, Tiongkok',
-          desc: 'Spesialisasi dalam produksi peralatan komputer ukuran kecil và R&D'
+          desc: 'Spesialisasi trong sản xuất thiết bị máy tính cỡ nhỏ và R&D'
         },
         beijiao: {
           title: 'FASILITAS BEIJIAO',
           address: 'Kota Beijiao, Distrik Shunde, Foshan, Provinsi Guangdong, Tiongkok',
-          desc: 'Hub produksi tampilan komersial và kích thước lớn cho thị trường toàn cầu'
+          desc: 'Hub sản xuất màn hình thương mại cho thị trường toàn cầu'
         },
         jakarta: {
           title: 'BASIS JAKARTA',
           address: 'Jakarta, Indonesia',
-          desc: 'Fasilitas manufaktur quốc tế chiến lược phục vụ thị trường miền Nam'
+          desc: 'Cơ sở sản xuất quốc tế chiến lược phục vụ thị trường miền Nam'
         }
       }
     }
@@ -561,7 +555,7 @@ export const translations = {
     },
     process: {
       title: 'Sản xuất chính xác',
-      subtitle: 'Quy trình 12 bước xuất sắc',
+      subtitle: 'Quy trình 11 bước xuất sắc',
       pmc: 'PMC PLANNING',
       pmc_desc: 'Lập kế hoạch kiểm soát sản xuất và vật tư để tối ưu hóa nguồn lực.',
       procurement: 'PROCUREMENT',
@@ -582,10 +576,8 @@ export const translations = {
       system_desc: 'Kiểm tra chất lượng cuối cùng trước khi sản phẩm rời khỏi nhà máy.',
       fg_warehousing: 'WAREHOUSING',
       fg_warehousing_desc: 'Lưu kho sản phẩm và quản lý hàng tồn kho trước khi xuất xưởng.',
-      package: 'Đóng gói bảo vệ',
-      package_desc: 'Industrial-grade protective packaging designed for global transit.',
-      ship: 'Giao hàng toàn cầu',
-      ship_desc: 'Coordinated global dispatch to over 50 countries via premium partners.',
+      shipment: 'VẬN CHUYỂN',
+      shipment_desc: 'Đóng gói an toàn và phân phối toàn cầu đến khách hàng trên toàn thế giới.',
     },
     map: {
       title: 'Dấu ấn toàn cầu',
