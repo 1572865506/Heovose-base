@@ -1,6 +1,7 @@
 
 "use client";
 
+import Image from 'next/image';
 import { Locale, translations } from "@/lib/translations";
 import { Linkedin, Twitter, Facebook, Mail, Phone } from "lucide-react";
 
@@ -17,7 +18,13 @@ export function Footer({ locale }: { locale: Locale }) {
           {/* Column 1: Brand & Social */}
           <div className="space-y-8">
             <div className="space-y-4">
-              <h3 className="text-3xl font-headline font-bold tracking-tighter">HEOVOSE</h3>
+              <Image
+                src="/image/Heovose.svg"
+                alt="Heovose Logo White"
+                width={180}
+                height={36}
+                className="h-9 w-auto object-contain"
+              />
               <div className="space-y-1">
                 <p className="text-accent font-bold text-sm tracking-wide">{f.slogan1}</p>
                 <p className="opacity-60 text-xs leading-relaxed max-w-[240px]">{f.slogan2}</p>

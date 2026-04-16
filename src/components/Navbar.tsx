@@ -142,12 +142,15 @@ export function Navbar({ locale, setLocale }: NavbarProps) {
         "container mx-auto px-6 flex justify-between items-center transition-all duration-500",
         isScrolled ? "h-16" : "h-24"
       )}>
-        <div className="flex items-center gap-2">
-          <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center font-bold text-white">H</div>
-          <span className={cn(
-            "text-2xl font-headline font-bold tracking-tighter transition-colors duration-500",
-            isNavbarActive ? "text-primary" : "text-primary"
-          )}>HEOVOSE</span>
+        <div className="flex items-center">
+          <Image
+            src={isNavbarActive ? "/image/Heovose-color.svg" : "/image/Heovose.svg"}
+            alt="Heovose Logo"
+            width={160}
+            height={32}
+            className="h-8 w-auto object-contain transition-all duration-500"
+            priority
+          />
         </div>
 
         {/* Desktop Nav */}
