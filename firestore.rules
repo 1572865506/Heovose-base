@@ -1,28 +1,29 @@
 /**
  * FIRESTORE SECURITY RULES
- * Forced Redeployment Timestamp: 2024-05-20 16:30:00
+ * Forced Redeployment Timestamp: 2024-05-20 17:15:00
  * 
- * Purpose: Public Product Catalog
- * Access: Global Read / No Write
+ * Purpose: Public Product Catalog Access
+ * Status: Read-Only for all users (Authenticated and Unauthenticated)
  */
 
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // Allow anyone to read product categories
+    // Allow public read access to product categories
     match /product_categories/{category} {
       allow read: if true;
       allow write: if false;
     }
 
-    // Allow anyone to read products
+    // Allow public read access to products
+    // This allows both 'get' (single doc) and 'list' (collection queries)
     match /products/{product} {
       allow read: if true;
       allow write: if false;
     }
 
-    // Default deny for all other collections
+    // Default deny for all other collections to maintain security
     match /{document=**} {
       allow read: if false;
       allow write: if false;
