@@ -64,28 +64,27 @@ export function ProductionProcess({ locale }: { locale: Locale }) {
     return () => observers.forEach(o => o.disconnect());
   }, []);
 
-  // Combined Timer for progress and image rotation
+  // Robust timer for progress and image rotation
   useEffect(() => {
+    let timer: NodeJS.Timeout;
     const activeImages = steps[activeStep]?.images || [];
-    if (activeImages.length <= 1 || !isPlaying) {
+
+    if (isPlaying && activeImages.length > 1) {
+      const intervalTime = 50;
+      const increment = (intervalTime / AUTOPLAY_DELAY) * 100;
+
+      timer = setInterval(() => {
+        setProgress((prev) => {
+          if (prev >= 100) {
+            setSubImageIndex((prevIdx) => (prevIdx + 1) % activeImages.length);
+            return 0;
+          }
+          return prev + increment;
+        });
+      }, intervalTime);
+    } else {
       setProgress(0);
-      return;
     }
-
-    const intervalTime = 50;
-    const increment = (intervalTime / AUTOPLAY_DELAY) * 100;
-
-    const timer = setInterval(() => {
-      setProgress((prev) => {
-        const next = prev + increment;
-        if (next >= 100) {
-          // Trigger index change when progress reaches 100
-          setSubImageIndex((prevIdx) => (prevIdx + 1) % activeImages.length);
-          return 0;
-        }
-        return next;
-      });
-    }, intervalTime);
 
     return () => clearInterval(timer);
   }, [activeStep, isPlaying, steps, AUTOPLAY_DELAY]);
@@ -108,7 +107,7 @@ export function ProductionProcess({ locale }: { locale: Locale }) {
             <div className={cn(
               "sticky top-32 h-[70vh] min-h-[500px] max-h-[800px] overflow-hidden bg-muted/20 border-y border-r border-border/40 shadow-2xl transition-all duration-500",
               "rounded-r-[3rem] rounded-l-none",
-              /* Bleed-to-Edge: Pulls the container to the screen edge restricted by 1920px container logic */
+              /* Bleed-to-Edge Logic */
               "lg:-ml-[calc((min(100vw,1920px)-1280px)/2+1.5rem)] lg:w-[calc(100%+((min(100vw,1920px)-1280px)/2+1.5rem))]"
             )}>
               {imageSegments.map((segment, segIndex) => {
@@ -148,7 +147,7 @@ export function ProductionProcess({ locale }: { locale: Locale }) {
                 );
               })}
 
-              {/* Sub-image rotation controls - Refined & Compact */}
+              {/* Compact Sub-image rotation controls */}
               {steps[activeStep]?.images.length > 1 && (
                 <div className="absolute bottom-8 right-8 z-50 flex items-center gap-4 animate-in fade-in slide-in-from-bottom-4 duration-500">
                   <div className="flex gap-1.5 items-center">
@@ -218,7 +217,7 @@ export function ProductionProcess({ locale }: { locale: Locale }) {
                   {step.desc}
                 </p>
 
-                {/* Mobile View: Inline Images */}
+                {/* Mobile View */}
                 <div className="lg:hidden w-full aspect-video rounded-[2rem] overflow-hidden relative border border-border/40 mt-8 shadow-lg">
                    {step.images.map((imgUrl, iIndex) => (
                       <div
@@ -236,22 +235,6 @@ export function ProductionProcess({ locale }: { locale: Locale }) {
                         />
                       </div>
                    ))}
-
-                   {step.images.length > 1 && activeStep === index && (
-                      <div className="absolute bottom-4 right-4 z-10 flex items-center gap-3 bg-black/40 backdrop-blur-md px-3 py-2 rounded-full border border-white/10">
-                        <div className="flex gap-1.5">
-                          {step.images.map((_, i) => (
-                            <div 
-                              key={i} 
-                              className={cn(
-                                "h-1 rounded-full transition-all",
-                                i === subImageIndex ? "bg-accent w-6" : "bg-white/30 w-1.5"
-                              )} 
-                            />
-                          ))}
-                        </div>
-                      </div>
-                   )}
                 </div>
               </div>
             ))}
@@ -259,7 +242,6 @@ export function ProductionProcess({ locale }: { locale: Locale }) {
         </div>
       </div>
 
-      {/* Background Decorative Layer */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none -z-10">
         <div className="absolute top-[20%] right-0 w-[600px] h-[600px] bg-accent/5 rounded-full blur-[150px]" />
       </div>
