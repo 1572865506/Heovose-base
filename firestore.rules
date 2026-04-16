@@ -1,0 +1,80 @@
+/**
+ * FIRESTORE SECURITY RULES
+ *
+ * Core Philosophy:
+ * This ruleset implements a Public Catalog model. The primary focus is on ensuring high availability
+ * of product information and categories for marketing and e-commerce purposes while strictly
+ * protecting data integrity from unauthorized modifications.
+ *
+ * Data Structure:
+ * The data is organized into two primary top-level collections:
+ * 1. `/product_categories`: Contains organizational buckets (e.g., AIO, Monitors).
+ * 2. `/products`: Contains detailed specifications and assets for individual items.
+ *
+ * Key Security Decisions:
+ * - Public Read Access: Both categories and products are intended for public consumption. To facilitate
+ *   global display without authentication, 'get' and 'list' operations are permitted for all users.
+ * - Restricted Writes: Neither 'ProductCategory' nor 'Product' entities contain user-ownership fields
+ *   (like 'authorId' or 'userId'). In this prototyping phase, all write operations (create, update, delete)
+ *   are explicitly denied from the client-side to prevent unauthorized data tampering. Administrative
+ *   write access is deferred for a later stage when an `isAdmin` function will be implemented.
+ * - Query Security: In accordance with strictly enforced query performance principles, list operations
+ *   do not rely on internal document state for authorization.
+ *
+ * Denormalization for Authorization:
+ * - This model utilizes a flat hierarchy to ensure that checking a product's access does not require
+ *   expensive 'get()' calls to its parent category.
+ * - For prototyping, relational integrity is maintained by ensuring critical links (like productCategoryId)
+ *   cannot be modified once a product is established.
+ */
+
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // --- COLLECTION RULES ---
+
+    /**
+     * @description Rules for Product Categories. These are publicly visible to all users.
+     * @path /product_categories/{categoryId}
+     * @allow Public 'get' and 'list' requests.
+     * @deny Any 'create', 'update', or 'delete' request from non-admin clients.
+     * @principle Public catalog access with administrative-only writes.
+     */
+    match /product_categories/{categoryId} {
+      allow get, list: if true;
+
+      // CRITICAL: Cannot implement owner-only writes. The 'ProductCategory' entity is missing an 'ownerId' or 'authorId' field.
+      // In prototyping, all writes are currently denied as per core philosophy.
+      allow create: if false;
+      allow update, delete: if false;
+    }
+
+    /**
+     * @description Rules for individual Products.
+     * @path /products/{productId}
+     * @allow Public 'get' and 'list' requests to facilitate product browsing.
+     * @deny Any 'create', 'update', or 'delete' request.
+     * @principle Protects product data integrity; enforces immutability of relational fields (logic ready for admin implementation).
+     */
+    match /products/{productId} {
+
+      // Get is allowed based on the resource status.
+      // List is allowed globally as per Principle P6 (resource variables not used in list).
+      allow get: if resource.data.status == 'active';
+      allow list: if true;
+
+      // CRITICAL: Cannot implement owner-only writes. The 'Product' entity is missing an 'ownerId' or 'authorId' field.
+      // In prototyping, all writes are currently denied as per core philosophy.
+      allow create: if false;
+
+      /**
+       * Note: Prototyping logic for future updates is provided below, but currently locked.
+       * When enabling updates, ensure 'productCategoryId' is immutable:
+       * allow update: if exists(resource) && (request.resource.data.productCategoryId == resource.data.productCategoryId);
+       */
+      allow update, delete: if false;
+    }
+
+  }
+}
