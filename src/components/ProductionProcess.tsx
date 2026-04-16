@@ -32,7 +32,6 @@ export function ProductionProcess({ locale }: { locale: Locale }) {
     { label: t.shipment, tag: '11', images: ['/Pipeline/6-1.JPG'], desc: t.shipment_desc },
   ], [t]);
 
-  // Visual Segments to prevent flashing when images are the same across adjacent steps
   const imageSegments = useMemo(() => [
     { start: 0, end: 3, images: ['/Pipeline/1-1.png'] },
     { start: 4, end: 5, images: ['/Pipeline/2-1.jpg'] },
@@ -65,33 +64,35 @@ export function ProductionProcess({ locale }: { locale: Locale }) {
     return () => observers.forEach(o => o.disconnect());
   }, []);
 
-  // Handle auto-rotation and progress bar
+  // Timer to handle the progress bar increment
   useEffect(() => {
     const activeImages = steps[activeStep]?.images || [];
-    if (activeImages.length <= 1) {
+    if (activeImages.length <= 1 || !isPlaying) {
       setProgress(0);
-      setSubImageIndex(0);
       return;
     }
 
-    if (!isPlaying) return;
-
     const intervalTime = 50;
-    const stepValue = (intervalTime / AUTOPLAY_DELAY) * 100;
+    const increment = (intervalTime / AUTOPLAY_DELAY) * 100;
 
     const timer = setInterval(() => {
       setProgress((prev) => {
-        const next = prev + stepValue;
-        if (next >= 100) {
-          setSubImageIndex((curr) => (curr + 1) % activeImages.length);
-          return 0;
-        }
+        const next = prev + increment;
         return next;
       });
     }, intervalTime);
 
     return () => clearInterval(timer);
-  }, [activeStep, isPlaying, steps]);
+  }, [activeStep, isPlaying, steps, AUTOPLAY_DELAY]);
+
+  // Decoupled effect to handle rotation when progress hits 100
+  useEffect(() => {
+    const activeImages = steps[activeStep]?.images || [];
+    if (progress >= 100 && activeImages.length > 1) {
+      setSubImageIndex((prev) => (prev + 1) % activeImages.length);
+      setProgress(0);
+    }
+  }, [progress, activeStep, steps]);
 
   // Reset index when step changes
   useEffect(() => {
@@ -124,31 +125,34 @@ export function ProductionProcess({ locale }: { locale: Locale }) {
                       isSegmentActive ? "opacity-100" : "opacity-0 pointer-events-none"
                     )}
                   >
-                    {segment.images.map((imgUrl, iIndex) => (
-                      <div
-                        key={`${segIndex}-${iIndex}`}
-                        className={cn(
-                          "absolute inset-0 transition-opacity duration-1000 ease-in-out",
-                          (isSegmentActive && (segment.images.length > 1 ? subImageIndex === iIndex : iIndex === 0))
-                            ? "opacity-100" 
-                            : "opacity-0"
-                        )}
-                      >
-                        <Image
-                          src={imgUrl}
-                          alt={`Process Step Image`}
-                          fill
-                          className="object-cover"
-                          priority={segIndex === 0}
-                        />
-                      </div>
-                    ))}
+                    {segment.images.map((imgUrl, iIndex) => {
+                      const isCurrentSubImage = segment.images.length > 1 ? subImageIndex === iIndex : iIndex === 0;
+                      return (
+                        <div
+                          key={`${segIndex}-${iIndex}`}
+                          className={cn(
+                            "absolute inset-0 transition-opacity duration-1000 ease-in-out",
+                            (isSegmentActive && isCurrentSubImage)
+                              ? "opacity-100" 
+                              : "opacity-0"
+                          )}
+                        >
+                          <Image
+                            src={imgUrl}
+                            alt={`Process Step Image`}
+                            fill
+                            className="object-cover"
+                            priority={segIndex === 0}
+                          />
+                        </div>
+                      );
+                    })}
                     <div className="absolute inset-0 bg-gradient-to-t from-black/10 to-transparent" />
                   </div>
                 );
               })}
 
-              {/* Sub-image rotation controls (Visible only when multiple images exist for current step) */}
+              {/* Sub-image rotation controls */}
               {steps[activeStep]?.images.length > 1 && (
                 <div className="absolute bottom-8 right-8 z-50 flex items-center gap-4 animate-in fade-in slide-in-from-bottom-4 duration-500">
                   <div className="flex gap-1.5 items-center">
