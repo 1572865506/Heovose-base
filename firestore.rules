@@ -1,21 +1,21 @@
 /**
  * FIRESTORE SECURITY RULES
- * Updated: 2024-03-20 (Forced re-deployment)
+ * Updated: 2024-03-21 14:30:00 (Mandatory Redeployment for Public Catalog)
  * 
  * Core Philosophy:
- * This ruleset implements a Public Catalog model.
- * - Public Read Access: All users (including anonymous/unauthenticated) can read categories and products.
- * - Restricted Writes: No client-side writes are permitted.
+ * This application serves as a public product catalog. 
+ * All visitors (authenticated or not) must have read access to products and categories.
  */
 
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // --- COLLECTION RULES ---
+    // --- PUBLIC ACCESS RULES ---
 
     /**
-     * @description Rules for Product Categories. Publicly readable.
+     * @description Allow public read access to all product categories.
+     * Required for the sidebar and category navigation.
      */
     match /product_categories/{categoryId} {
       allow read: if true;
@@ -23,10 +23,18 @@ service cloud.firestore {
     }
 
     /**
-     * @description Rules for individual Products. Publicly readable.
+     * @description Allow public read access to all products.
+     * This covers both individual 'get' and collection 'list' operations.
      */
     match /products/{productId} {
       allow read: if true;
+      allow write: if false;
+    }
+
+    // --- DEFAULT FALLBACK ---
+    // Explicitly deny any other access to ensure security.
+    match /{document=**} {
+      allow read: if false;
       allow write: if false;
     }
 
