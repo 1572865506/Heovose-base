@@ -5,6 +5,7 @@ import { useState } from 'react';
 import { Locale } from '@/lib/translations';
 import { Navbar } from '@/components/Navbar';
 import { Hero } from '@/components/Hero';
+import { ProductBento } from '@/components/ProductBento';
 import { ProductGallery } from '@/components/ProductGallery';
 import { VideoSection } from '@/components/VideoSection';
 import { ProductionProcess } from '@/components/ProductionProcess';
@@ -21,6 +22,8 @@ export default function Home() {
       <Navbar locale={locale} setLocale={setLocale} />
       
       <Hero locale={locale} />
+      
+      <ProductBento locale={locale} />
       
       <ProductGallery locale={locale} />
       
