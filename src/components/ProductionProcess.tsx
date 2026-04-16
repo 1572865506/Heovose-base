@@ -32,7 +32,6 @@ export function ProductionProcess({ locale }: { locale: Locale }) {
     { label: t.shipment, tag: '11', images: ['/Pipeline/6-1.JPG'], desc: t.shipment_desc },
   ], [t]);
 
-  // Define visual segments to avoid redundant transitions when images are the same
   const imageSegments = useMemo(() => [
     { start: 0, end: 3, images: ['/Pipeline/1-1.jpg'] },
     { start: 4, end: 5, images: ['/Pipeline/2-1.jpg'] },
@@ -65,7 +64,6 @@ export function ProductionProcess({ locale }: { locale: Locale }) {
     return () => observers.forEach(o => o.disconnect());
   }, []);
 
-  // Handle internal slideshow for segments with multiple images
   useEffect(() => {
     const activeImages = steps[activeStep]?.images || [];
     if (activeImages.length <= 1 || !isPlaying) {
@@ -89,7 +87,6 @@ export function ProductionProcess({ locale }: { locale: Locale }) {
     return () => clearInterval(timer);
   }, [activeStep, isPlaying, steps]);
 
-  // Reset progress and sub-index when activeStep changes
   useEffect(() => {
     setSubImageIndex(0);
     setProgress(0);
@@ -102,12 +99,10 @@ export function ProductionProcess({ locale }: { locale: Locale }) {
 
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-16 lg:gap-24 relative mt-20">
           
-          {/* Left Column: Image (Sticky & Bleed-to-edge) */}
           <div className="lg:col-span-7 hidden lg:block relative">
             <div className={cn(
               "sticky top-32 h-[70vh] min-h-[500px] max-h-[800px] overflow-hidden bg-muted/20 border-y border-r border-border/40 shadow-2xl transition-all duration-500",
               "rounded-r-[5rem] rounded-l-none",
-              // Bleed-to-edge logic capped at 1920px width
               "lg:-ml-[calc((min(100vw,1920px)-1280px)/2+1.5rem)] lg:w-[calc(100%+((min(100vw,1920px)-1280px)/2+1.5rem))]"
             )}>
               {imageSegments.map((segment, segIndex) => {
@@ -130,7 +125,7 @@ export function ProductionProcess({ locale }: { locale: Locale }) {
                       >
                         <Image
                           src={imgUrl}
-                          alt={`Process Segment ${segIndex} - Image ${iIndex}`}
+                          alt={`Process Segment ${segIndex}`}
                           fill
                           className="object-cover"
                           priority={segIndex === 0}
@@ -142,10 +137,9 @@ export function ProductionProcess({ locale }: { locale: Locale }) {
                 );
               })}
 
-              {/* Carousel Controls Overlay - Desktop */}
               {steps[activeStep]?.images.length > 1 && (
-                <div className="absolute bottom-10 right-10 z-50 flex items-center gap-6 bg-black/40 backdrop-blur-xl px-6 py-4 rounded-3xl border border-white/10 shadow-2xl animate-in fade-in slide-in-from-bottom-4 duration-500">
-                  <div className="flex gap-2 items-center">
+                <div className="absolute bottom-8 right-8 z-50 flex items-center gap-4 animate-in fade-in slide-in-from-bottom-4 duration-500">
+                  <div className="flex gap-1.5 items-center">
                     {steps[activeStep].images.map((_, i) => (
                       <button
                         key={i}
@@ -154,8 +148,8 @@ export function ProductionProcess({ locale }: { locale: Locale }) {
                           setProgress(0);
                         }}
                         className={cn(
-                          "relative h-1 rounded-full transition-all duration-500 overflow-hidden bg-white/20",
-                          i === subImageIndex ? "w-12" : "w-4 hover:bg-white/40"
+                          "relative h-0.5 rounded-full transition-all duration-500 overflow-hidden bg-white/30",
+                          i === subImageIndex ? "w-8" : "w-2 hover:bg-white/50"
                         )}
                       >
                         {i === subImageIndex && isPlaying && (
@@ -176,16 +170,15 @@ export function ProductionProcess({ locale }: { locale: Locale }) {
                   
                   <button
                     onClick={() => setIsPlaying(!isPlaying)}
-                    className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center text-white hover:bg-accent hover:text-accent-foreground transition-all"
+                    className="w-8 h-8 rounded-full bg-white/10 backdrop-blur-md flex items-center justify-center text-white hover:bg-accent hover:text-accent-foreground transition-all shadow-lg border border-white/10"
                   >
-                    {isPlaying ? <Pause className="h-5 w-5" /> : <Play className="h-5 w-5 ml-0.5" />}
+                    {isPlaying ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4 ml-0.5" />}
                   </button>
                 </div>
               )}
             </div>
           </div>
 
-          {/* Right Column: Text Steps (Scrollable) */}
           <div className="lg:col-span-5 space-y-[60vh] py-12">
             {steps.map((step, index) => (
               <div
@@ -215,7 +208,6 @@ export function ProductionProcess({ locale }: { locale: Locale }) {
                   {step.desc}
                 </p>
 
-                {/* Mobile View: Inline Images */}
                 <div className="lg:hidden w-full aspect-video rounded-[2rem] overflow-hidden relative border border-border/40 mt-8 shadow-lg">
                    {step.images.map((imgUrl, iIndex) => (
                       <div
@@ -234,7 +226,6 @@ export function ProductionProcess({ locale }: { locale: Locale }) {
                       </div>
                    ))}
 
-                   {/* Mobile Controls */}
                    {step.images.length > 1 && activeStep === index && (
                       <div className="absolute bottom-4 right-4 z-10 flex items-center gap-3 bg-black/40 backdrop-blur-md px-3 py-2 rounded-full border border-white/10">
                         <div className="flex gap-1.5">
