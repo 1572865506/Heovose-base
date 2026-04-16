@@ -7,73 +7,133 @@ import { useSearchParams } from 'next/navigation';
 import { Locale, translations } from '@/lib/translations';
 import { Navbar } from '@/components/Navbar';
 import { Footer } from '@/components/Footer';
-import { useCollection, useMemoFirebase, useFirestore } from '@/firebase';
-import { collection, query, where, orderBy } from 'firebase/firestore';
-import { Search, Filter, ArrowRight, FileText, ChevronRight, AlertCircle, RefreshCw } from 'lucide-react';
+import { Search, Filter, ArrowRight, FileText, ChevronRight } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { cn } from '@/lib/utils';
+import { PlaceHolderImages } from '@/lib/placeholder-images';
+
+// 本地模拟数据 - 分类
+const MOCK_CATEGORIES = [
+  { id: 'cat-aio', nameEn: 'All-in-One PC', nameZh: '一体机电脑' },
+  { id: 'cat-minipc', nameEn: 'Mini PC', nameZh: '迷你主机' },
+  { id: 'cat-monitor', nameEn: 'Industrial Monitor', nameZh: '工业显示器' },
+  { id: 'cat-kiosk', nameEn: 'Self-service Kiosk', nameZh: '自助终端' },
+];
+
+// 本地模拟数据 - 产品
+const MOCK_PRODUCTS = [
+  {
+    id: 'p1',
+    productCategoryId: 'cat-aio',
+    nameEn: 'Heovose H24 Pro AIO',
+    nameZh: 'Heovose H24 Pro 一体机',
+    taglineEn: 'Ultimate Integration',
+    descriptionEn: 'High-performance 23.8-inch All-in-One PC with borderless display and powerful processing.',
+    descriptionZh: '高性能 23.8 英寸一体机，采用无边框显示屏和强劲处理器。',
+    primaryImageUrl: 'https://picsum.photos/seed/aio1/600/450',
+    keyFeaturesEn: ['Intel i7', '16GB RAM', '512GB SSD'],
+    keyFeaturesZh: ['英特尔 i7', '16GB 内存', '512GB 硬盘'],
+    status: 'active'
+  },
+  {
+    id: 'p2',
+    productCategoryId: 'cat-minipc',
+    nameEn: 'Ultra-Compact M1 Mini',
+    nameZh: '超紧凑 M1 迷你主机',
+    taglineEn: 'Tiny but Mighty',
+    descriptionEn: 'Space-saving computing solution for office and industrial edge applications.',
+    descriptionZh: '适用于办公和工业边缘应用的节省空间的计算解决方案。',
+    primaryImageUrl: 'https://picsum.photos/seed/mini1/600/450',
+    keyFeaturesEn: ['4K Output', 'Fanless Design', 'Low Power'],
+    keyFeaturesZh: ['4K 输出', '无风扇设计', '低功耗'],
+    status: 'active'
+  },
+  {
+    id: 'p3',
+    productCategoryId: 'cat-monitor',
+    nameEn: 'IP65 Industrial Touch',
+    nameZh: 'IP65 工业级触摸屏',
+    taglineEn: 'Rugged Durability',
+    descriptionEn: 'Fully sealed industrial display designed for harsh manufacturing environments.',
+    descriptionZh: '专为恶劣制造环境设计的全密封工业显示器。',
+    primaryImageUrl: 'https://picsum.photos/seed/mon1/600/450',
+    keyFeaturesEn: ['Waterproof', 'Sunlight Readable', 'Capacitive Touch'],
+    keyFeaturesZh: ['防水', '阳光下可视', '电容触摸'],
+    status: 'active'
+  },
+  {
+    id: 'p4',
+    productCategoryId: 'cat-kiosk',
+    nameEn: 'Smart Retail Terminal',
+    nameZh: '智能零售终端',
+    taglineEn: 'Interactive Experience',
+    descriptionEn: 'Versatile self-service kiosk for check-out, ticketing, and information lookup.',
+    descriptionZh: '多功能自助终端，适用于结账、票务和信息查询。',
+    primaryImageUrl: 'https://picsum.photos/seed/kiosk1/600/450',
+    keyFeaturesEn: ['QR Scanner', 'Thermal Printer', 'Customizable'],
+    keyFeaturesZh: ['扫码器', '热敏打印机', '可定制'],
+    status: 'active'
+  },
+  {
+    id: 'p5',
+    productCategoryId: 'cat-aio',
+    nameEn: 'Business Elite A27',
+    nameZh: '商务精英 A27',
+    taglineEn: 'Professional Workspace',
+    descriptionEn: '27-inch 4K All-in-One PC tailored for creative professionals and high-end offices.',
+    descriptionZh: '专为创意专业人士和高端办公室定制的 27 英寸 4K 一体机。',
+    primaryImageUrl: 'https://picsum.photos/seed/aio2/600/450',
+    keyFeaturesEn: ['4K IPS', 'NVIDIA GPU', 'Ergonomic Stand'],
+    keyFeaturesZh: ['4K IPS', '英伟达显卡', '人体工学支架'],
+    status: 'active'
+  }
+];
 
 function ProductListContent() {
   const [locale, setLocale] = useState<Locale>('en');
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategoryId, setSelectedCategoryId] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
   
   const searchParams = useSearchParams();
   const categoryParam = searchParams.get('category');
-  const firestore = useFirestore();
   const t = translations[locale].products;
 
-  // Fetch Categories
-  const categoriesQuery = useMemoFirebase(() => {
-    if (!firestore) return null;
-    return query(collection(firestore, 'product_categories'), orderBy('nameEn', 'asc'));
-  }, [firestore]);
-  const { data: categories, error: categoriesError } = useCollection(categoriesQuery);
-
-  // Handle URL category parameter
+  // 模拟初始加载效果
   useEffect(() => {
-    if (categoryParam && categories) {
-      const found = categories.find(c => 
+    const timer = setTimeout(() => setIsLoading(false), 800);
+    return () => clearTimeout(timer);
+  }, []);
+
+  // 根据 URL 参数初始化分类过滤
+  useEffect(() => {
+    if (categoryParam) {
+      const found = MOCK_CATEGORIES.find(c => 
         c.id === categoryParam || 
-        c.nameEn.toLowerCase().includes(categoryParam.toLowerCase())
+        c.nameEn.toLowerCase().includes(categoryParam.toLowerCase()) ||
+        c.nameZh.includes(categoryParam)
       );
       if (found) setSelectedCategoryId(found.id);
     }
-  }, [categoryParam, categories]);
+  }, [categoryParam]);
 
-  // Fetch Active Products
-  const productsQuery = useMemoFirebase(() => {
-    if (!firestore) return null;
-    return query(
-      collection(firestore, 'products'),
-      where('status', '==', 'active'),
-      orderBy('createdAt', 'desc')
-    );
-  }, [firestore]);
-  const { data: allProducts, isLoading: productsLoading, error: productsError } = useCollection(productsQuery);
-
-  // Filter products client-side for better UX responsiveness
+  // 客户端过滤逻辑
   const filteredProducts = useMemo(() => {
-    if (!allProducts) return [];
-    return allProducts.filter(product => {
+    return MOCK_PRODUCTS.filter(product => {
       const matchesCategory = !selectedCategoryId || product.productCategoryId === selectedCategoryId;
       const name = locale === 'zh' ? product.nameZh : product.nameEn;
       const matchesSearch = name.toLowerCase().includes(searchQuery.toLowerCase());
       return matchesCategory && matchesSearch;
     });
-  }, [allProducts, selectedCategoryId, searchQuery, locale]);
+  }, [selectedCategoryId, searchQuery, locale]);
 
   const activeCategoryName = useMemo(() => {
     if (!selectedCategoryId) return t.allCategories;
-    const cat = categories?.find(c => c.id === selectedCategoryId);
+    const cat = MOCK_CATEGORIES.find(c => c.id === selectedCategoryId);
     return locale === 'zh' ? cat?.nameZh : cat?.nameEn;
-  }, [selectedCategoryId, categories, locale, t.allCategories]);
-
-  // 错误反馈逻辑
-  const hasError = !!(productsError || categoriesError);
+  }, [selectedCategoryId, locale, t.allCategories]);
 
   return (
     <main className="relative min-h-screen bg-background">
@@ -104,33 +164,6 @@ function ProductListContent() {
 
       {/* Main Content */}
       <section className="py-16 container mx-auto px-6">
-        {hasError && (
-          <Alert variant="destructive" className="mb-12 rounded-2xl border-2 bg-destructive/5 animate-in fade-in slide-in-from-top-4 duration-500">
-            <AlertCircle className="h-5 w-5" />
-            <AlertTitle className="font-bold mb-2">数据同步中或配置检查</AlertTitle>
-            <AlertDescription className="text-sm opacity-90 space-y-3">
-              <p>
-                {locale === 'zh' 
-                  ? "目前无法获取产品数据。这通常有以下几种原因：" 
-                  : "Unable to fetch product data. This typically happens for a few reasons:"}
-              </p>
-              <ul className="list-disc pl-5 space-y-1">
-                <li>{locale === 'zh' ? "数据库中尚未创建 'products' 集合或集合内无有效数据。" : "The 'products' collection is missing or empty in Firestore."}</li>
-                <li>{locale === 'zh' ? "新部署的安全规则正在全球 CDN 生效中（通常需要 1 分钟）。" : "New security rules are propagating (usually takes about 1 minute)."}</li>
-                <li>{locale === 'zh' ? "没有符合 'status == active' 条件的产品。" : "No products match the 'status == active' criteria."}</li>
-              </ul>
-              <Button 
-                variant="outline" 
-                size="sm" 
-                onClick={() => window.location.reload()}
-                className="mt-2 bg-white text-destructive border-destructive hover:bg-destructive hover:text-white transition-all font-bold"
-              >
-                <RefreshCw className="mr-2 h-4 w-4" /> {locale === 'zh' ? "重试连接" : "Retry Connection"}
-              </Button>
-            </AlertDescription>
-          </Alert>
-        )}
-
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-12">
           
           {/* Sidebar Filters */}
@@ -173,7 +206,7 @@ function ProductListContent() {
                   <span>{t.allCategories}</span>
                   {!selectedCategoryId && <ChevronRight className="h-4 w-4" />}
                 </button>
-                {categories?.map((category) => (
+                {MOCK_CATEGORIES.map((category) => (
                   <button
                     key={category.id}
                     onClick={() => setSelectedCategoryId(category.id)}
@@ -203,7 +236,7 @@ function ProductListContent() {
               </div>
             </div>
 
-            {productsLoading ? (
+            {isLoading ? (
               <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-8">
                 {[1, 2, 3, 4, 5, 6].map((i) => (
                   <div key={i} className="h-[400px] rounded-[2rem] bg-muted/20 animate-pulse" />
@@ -219,7 +252,7 @@ function ProductListContent() {
                     {/* Image Area */}
                     <div className="relative aspect-[4/3] bg-muted/20 overflow-hidden">
                       <Image
-                        src={product.primaryImageUrl || 'https://picsum.photos/seed/prod/600/450'}
+                        src={product.primaryImageUrl}
                         alt={locale === 'zh' ? product.nameZh : product.nameEn}
                         fill
                         className="object-cover group-hover:scale-110 transition-transform duration-700"
@@ -244,7 +277,7 @@ function ProductListContent() {
 
                       {/* Key Features */}
                       <div className="flex flex-wrap gap-2 pt-2">
-                        {(locale === 'zh' ? product.keyFeaturesZh : product.keyFeaturesEn)?.slice(0, 3).map((feature: string, idx: number) => (
+                        {(locale === 'zh' ? product.keyFeaturesZh : product.keyFeaturesEn).map((feature, idx) => (
                           <span key={idx} className="text-[9px] font-bold text-muted-foreground uppercase border border-border/60 px-2 py-0.5 rounded-full">
                             {feature}
                           </span>
@@ -270,19 +303,15 @@ function ProductListContent() {
                 </div>
                 <div className="space-y-2">
                   <h4 className="text-xl font-bold text-primary">
-                    {hasError ? (locale === 'zh' ? "正在建立连接..." : "Establishing Connection...") : t.noResults}
+                    {t.noResults}
                   </h4>
                   <p className="text-muted-foreground text-sm max-w-xs mx-auto">
-                    {hasError 
-                      ? (locale === 'zh' ? "规则正在同步。如果此状态持续超过 1 分钟，请检查数据库是否为空。" : "Rules are syncing. If this persists for >1 min, check if the database is empty.") 
-                      : (locale === 'zh' ? "请尝试调整您的搜索或筛选条件。" : "Try adjusting your search or filters.")}
+                    {locale === 'zh' ? "请尝试调整您的搜索或筛选条件。" : "Try adjusting your search or filters."}
                   </p>
                 </div>
-                {!hasError && (
-                  <Button onClick={() => { setSearchQuery(''); setSelectedCategoryId(null); }} variant="link" className="text-primary font-bold">
-                    Clear all filters
-                  </Button>
-                )}
+                <Button onClick={() => { setSearchQuery(''); setSelectedCategoryId(null); }} variant="link" className="text-primary font-bold">
+                  Clear all filters
+                </Button>
               </div>
             )}
           </div>
