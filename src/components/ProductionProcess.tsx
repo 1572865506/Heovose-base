@@ -68,14 +68,12 @@ export function ProductionProcess({ locale }: { locale: Locale }) {
 
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-16 lg:gap-24 relative mt-20">
           
-          {/* Left Column: Image (Sticky & Bleed-to-edge) */}
+          {/* Left Column: Image (Sticky & Bleed-to-edge with Height Constraints) */}
           <div className="lg:col-span-7 hidden lg:block relative">
             <div className={cn(
-              "sticky top-32 aspect-square overflow-hidden bg-muted/20 border-y border-r border-border/40 shadow-2xl transition-all duration-500",
+              "sticky top-32 h-[70vh] min-h-[500px] max-h-[800px] overflow-hidden bg-muted/20 border-y border-r border-border/40 shadow-2xl transition-all duration-500",
               "rounded-r-[5rem] rounded-l-none",
-              // Bleed-to-edge logic:
-              // -ml calculates the distance from container edge to screen edge, limited to 1920px.
-              // w-[calc(100%+...)] compensates for the negative margin to ensure correct width.
+              // Bleed-to-edge logic capped at 1920px width
               "lg:-ml-[calc((min(100vw,1920px)-1280px)/2+1.5rem)] lg:w-[calc(100%+((min(100vw,1920px)-1280px)/2+1.5rem))]"
             )}>
               {steps.map((step, sIndex) => (
