@@ -79,7 +79,6 @@ export function ProductionProcess({ locale }: { locale: Locale }) {
       setProgress((prev) => {
         const next = prev + increment;
         if (next >= 100) {
-          // Progress reached 100, trigger next image
           setSubImageIndex((prevIdx) => (prevIdx + 1) % activeImages.length);
           return 0;
         }
