@@ -53,16 +53,23 @@ const MOCK_CATEGORIES: Category[] = [
   { id: 'cat-led', line: 'project', nameEn: 'LED Screen Project', nameZh: 'LED 工程' },
 ];
 
+// 定义不同类别的特有标签
 const CATEGORY_TAGS: Record<string, { en: string; zh: string }[]> = {
   'cat-aio': [
-    { en: '19 inch', zh: '19 英寸' }, { en: '23.8 inch', zh: '23.8 英寸' }, { en: '27 inch', zh: '27 英寸' }, { en: 'Office', zh: '办公' }
+    { en: '19 inch', zh: '19 英寸' }, { en: '23.8 inch', zh: '23.8 英寸' }, { en: '27 inch', zh: '27 英寸' }, { en: 'Office', zh: '办公' }, { en: 'Touch', zh: '触控' }
   ],
   'cat-minipc': [
-    { en: 'Fanless', zh: '无风扇' }, { en: 'Gaming', zh: '游戏' }, { en: 'Edge Computing', zh: '边缘计算' }
+    { en: 'Fanless', zh: '无风扇' }, { en: 'Gaming', zh: '游戏' }, { en: 'Edge Computing', zh: '边缘计算' }, { en: 'Dual LAN', zh: '双网口' }
   ],
   'cat-gpu': [
     { en: 'NVIDIA', zh: '英伟达' }, { en: 'AMD', zh: '超威' }, { en: 'Gaming', zh: '游戏' }, { en: 'Workstation', zh: '工作站' }
   ],
+  'cat-kiosk': [
+    { en: 'Payment', zh: '支付' }, { en: 'Medical', zh: '医疗' }, { en: 'Retail', zh: '零售' }, { en: 'Outdoor', zh: '户外' }
+  ],
+  'cat-components': [
+    { en: 'Gaming', zh: '电竞' }, { en: 'Pro', zh: '专业' }, { en: 'Budget', zh: '入门' }
+  ]
 };
 
 const MOCK_PRODUCTS = [
@@ -89,7 +96,7 @@ const MOCK_PRODUCTS = [
     descriptionEn: 'Versatile self-service kiosk for check-out and ticketing.',
     descriptionZh: '多功能自助终端，适用于结账和票务。',
     primaryImageUrl: 'https://picsum.photos/seed/kiosk1/600/450',
-    tags: ['Payment'],
+    tags: ['Payment', 'Retail'],
     status: 'active'
   },
   {
@@ -115,7 +122,7 @@ const MOCK_PRODUCTS = [
     descriptionEn: 'Low-latency high-speed memory modules.',
     descriptionZh: '低延迟高速内存模组。',
     primaryImageUrl: 'https://picsum.photos/seed/ram1/600/450',
-    tags: ['DDR5', '32GB'],
+    tags: ['DDR5', '32GB', 'Gaming'],
     status: 'active'
   }
 ];
@@ -165,6 +172,8 @@ function ProductListContent() {
           border: 'border-primary', 
           hover: 'hover:bg-primary/10',
           button: 'bg-primary hover:bg-primary/90',
+          accent: 'bg-accent text-accent-foreground',
+          lightBg: 'bg-primary/5'
         } 
       : { 
           bg: 'bg-[#F97316]', 
@@ -172,6 +181,8 @@ function ProductListContent() {
           border: 'border-[#F97316]', 
           hover: 'hover:bg-[#F97316]/10',
           button: 'bg-[#F97316] hover:bg-[#F97316]/90',
+          accent: 'bg-[#F97316] text-white',
+          lightBg: 'bg-[#F97316]/5'
         };
   };
 
@@ -179,9 +190,7 @@ function ProductListContent() {
 
   const filteredProducts = useMemo(() => {
     return MOCK_PRODUCTS.filter(product => {
-      // 如果选中了父类，显示所有子类的产品
       const category = MOCK_CATEGORIES.find(c => c.id === selectedCategoryId);
-      const isChild = category?.parentId === selectedCategoryId;
       const subCategoryIds = MOCK_CATEGORIES.filter(c => c.parentId === selectedCategoryId).map(c => c.id);
       
       const matchesCategory = !selectedCategoryId || 
@@ -195,13 +204,20 @@ function ProductListContent() {
     });
   }, [selectedCategoryId, selectedTag, searchQuery, locale]);
 
+  const activeCategoryTags = useMemo(() => {
+    if (!selectedCategoryId) return [];
+    // 优先匹配具体类别的标签，如果没有则匹配其父类别的标签
+    const cat = MOCK_CATEGORIES.find(c => c.id === selectedCategoryId);
+    const tags = CATEGORY_TAGS[selectedCategoryId] || (cat?.parentId ? CATEGORY_TAGS[cat.parentId] : []);
+    return tags;
+  }, [selectedCategoryId]);
+
   const activeCategoryName = useMemo(() => {
     if (!selectedCategoryId) return t.allCategories;
     const cat = MOCK_CATEGORIES.find(c => c.id === selectedCategoryId);
     return locale === 'zh' ? cat?.nameZh : cat?.nameEn;
   }, [selectedCategoryId, locale, t.allCategories]);
 
-  // 分类层级渲染逻辑
   const parentCategories = MOCK_CATEGORIES.filter(c => !c.parentId && c.line === activeLine);
   
   return (
@@ -224,7 +240,7 @@ function ProductListContent() {
             </h1>
             <p className="text-xl opacity-80 font-light max-w-xl">
               {activeLine === 'project' 
-                ? (locale === 'zh' ? '针对大型工程、智能会议及工业场景的专业定制化硬件方案。' : 'Professional solutions.')
+                ? (locale === 'zh' ? '针对大型工程、智能会议及工业场景的专业定制化硬件方案。' : 'Professional hardware solutions for large-scale engineering, smart meetings and industrial scenarios.')
                 : t.listSubtitle}
             </p>
           </div>
@@ -233,8 +249,10 @@ function ProductListContent() {
 
       <section className="py-16 container mx-auto px-6">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-12">
+          
+          {/* Sidebar */}
           <aside className="lg:col-span-3 space-y-10">
-            {/* 产品线切换 */}
+            {/* Line Switcher */}
             <div className="p-1 bg-muted rounded-2xl flex gap-1">
                <button 
                 onClick={() => setSelectedCategoryId('cat-aio')}
@@ -249,13 +267,14 @@ function ProductListContent() {
                 onClick={() => setSelectedCategoryId('cat-kiosk')}
                 className={cn(
                   "flex-1 flex items-center justify-center gap-2 py-3 rounded-xl text-xs font-bold transition-all",
-                  activeLine === 'project' ? "bg-white shadow-md text-orange-500" : "text-muted-foreground hover:text-orange-500"
+                  activeLine === 'project' ? "bg-white shadow-md text-[#F97316]" : "text-muted-foreground hover:text-[#F97316]"
                 )}
                >
                  <LayoutGrid className="h-4 w-4" /> {locale === 'zh' ? '项目' : 'Project'}
                </button>
             </div>
 
+            {/* Search */}
             <div className="space-y-4">
               <h3 className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Search</h3>
               <div className="relative">
@@ -269,14 +288,14 @@ function ProductListContent() {
               </div>
             </div>
 
-            {/* 层级分类菜单 */}
+            {/* Categories Accordion */}
             <div className="space-y-4">
               <h3 className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Categories</h3>
               <Accordion type="single" collapsible className="w-full space-y-1">
                 {parentCategories.map((category) => {
                   const subCategories = MOCK_CATEGORIES.filter(c => c.parentId === category.id);
                   const hasSubs = subCategories.length > 0;
-                  const isSelected = selectedCategoryId === category.id;
+                  const isSelected = selectedCategoryId === category.id || subCategories.some(s => s.id === selectedCategoryId);
 
                   if (hasSubs) {
                     return (
@@ -316,11 +335,11 @@ function ProductListContent() {
                       onClick={() => setSelectedCategoryId(category.id)}
                       className={cn(
                         "w-full flex items-center justify-between px-4 py-3 rounded-xl transition-all text-sm font-medium text-left",
-                        isSelected ? `${lineStyles.bg} text-white` : "hover:bg-muted text-muted-foreground"
+                        selectedCategoryId === category.id ? `${lineStyles.bg} text-white` : "hover:bg-muted text-muted-foreground"
                       )}
                     >
                       <span>{locale === 'zh' ? category.nameZh : category.nameEn}</span>
-                      <ChevronRight className={cn("h-4 w-4", isSelected ? "opacity-100" : "opacity-0")} />
+                      <ChevronRight className={cn("h-4 w-4", selectedCategoryId === category.id ? "opacity-100" : "opacity-0")} />
                     </button>
                   );
                 })}
@@ -328,16 +347,61 @@ function ProductListContent() {
             </div>
           </aside>
 
+          {/* Product Grid Area */}
           <div className="lg:col-span-9 space-y-8">
-            <div className="flex items-center justify-between border-b border-border/40 pb-4">
-              <Badge variant="secondary" className="px-3 py-1 rounded-full text-xs font-bold uppercase">
-                {filteredProducts.length} {locale === 'zh' ? '件产品' : 'Items'}
-              </Badge>
-              <span className={cn("text-sm italic font-medium", lineStyles.text)}>
-                {activeCategoryName}
-              </span>
+            
+            {/* Toolbar: Category Info + Tags */}
+            <div className="space-y-6">
+              <div className="flex items-center justify-between border-b border-border/40 pb-4">
+                <div className="flex items-center gap-3">
+                  <Badge variant="secondary" className="px-3 py-1 rounded-full text-xs font-bold uppercase">
+                    {filteredProducts.length} {locale === 'zh' ? '件产品' : 'Items'}
+                  </Badge>
+                  <span className={cn("text-sm italic font-medium", lineStyles.text)}>
+                    {activeCategoryName}
+                  </span>
+                </div>
+              </div>
+
+              {/* Dynamic Tags Filter */}
+              {activeCategoryTags.length > 0 && (
+                <div className="space-y-3">
+                  <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Quick Filters</p>
+                  <ScrollArea className="w-full whitespace-nowrap">
+                    <div className="flex gap-2 pb-4">
+                      <Button
+                        variant={selectedTag === null ? 'default' : 'outline'}
+                        size="sm"
+                        className={cn(
+                          "rounded-full px-4 text-xs font-medium transition-all",
+                          selectedTag === null ? lineStyles.bg : "hover:bg-muted"
+                        )}
+                        onClick={() => setSelectedTag(null)}
+                      >
+                        {locale === 'zh' ? '全部' : 'All'}
+                      </Button>
+                      {activeCategoryTags.map((tag) => (
+                        <Button
+                          key={tag.en}
+                          variant={selectedTag === tag.en ? 'default' : 'outline'}
+                          size="sm"
+                          className={cn(
+                            "rounded-full px-4 text-xs font-medium transition-all",
+                            selectedTag === tag.en ? lineStyles.bg : "hover:bg-muted"
+                          )}
+                          onClick={() => setSelectedTag(tag.en)}
+                        >
+                          {locale === 'zh' ? tag.zh : tag.en}
+                        </Button>
+                      ))}
+                    </div>
+                    <ScrollBar orientation="horizontal" />
+                  </ScrollArea>
+                </div>
+              )}
             </div>
 
+            {/* Grid */}
             {filteredProducts.length > 0 ? (
               <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-8">
                 {filteredProducts.map((product) => (
@@ -353,6 +417,13 @@ function ProductListContent() {
                         fill
                         className="object-cover group-hover:scale-110 transition-transform duration-700"
                       />
+                      <div className="absolute top-4 left-4 flex flex-wrap gap-1">
+                        {product.tags?.slice(0, 2).map(tag => (
+                          <Badge key={tag} className="bg-white/80 backdrop-blur-md text-[10px] text-primary border-none font-bold">
+                            {tag}
+                          </Badge>
+                        ))}
+                      </div>
                     </div>
                     <div className="p-6 space-y-4 flex-grow flex flex-col">
                       <h3 className={cn("text-xl font-headline font-bold", lineStyles.text)}>
@@ -362,7 +433,7 @@ function ProductListContent() {
                         {locale === 'zh' ? product.descriptionZh : product.descriptionEn}
                       </p>
                       <div className="mt-auto pt-6 flex items-center justify-between">
-                        <Button variant="outline" size="sm" className="rounded-xl text-xs font-bold">
+                        <Button variant="outline" size="sm" className={cn("rounded-xl text-xs font-bold group-hover:bg-muted transition-colors")}>
                           {t.viewDetails} <ArrowRight className="ml-2 h-3 w-3" />
                         </Button>
                       </div>
@@ -373,7 +444,7 @@ function ProductListContent() {
             ) : (
               <div className="py-32 text-center text-muted-foreground border-2 border-dashed rounded-[3rem]">
                 <p>{t.noResults}</p>
-                <Button onClick={() => setSelectedCategoryId(null)} variant="link" className={lineStyles.text}>Reset</Button>
+                <Button onClick={() => {setSelectedCategoryId(null); setSelectedTag(null);}} variant="link" className={lineStyles.text}>Reset Filters</Button>
               </div>
             )}
           </div>
