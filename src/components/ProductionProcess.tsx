@@ -23,9 +23,9 @@ export function ProductionProcess({ locale }: { locale: Locale }) {
     { label: t.issuing, tag: '07', imageUrl: '/Pipeline/2-2.png', desc: t.issuing_desc },
     { label: t.manufacturing, tag: '08', imageUrl: '/Pipeline/3-1.jpg', desc: t.manufacturing_desc },
     { label: t.system, tag: '09', imageUrl: '/Pipeline/4-1.jpg', desc: t.system_desc },
-    { label: t.oqa, tag: '10', imageUrl: '/Pipeline/4-2.png', desc: t.oqa_desc },
-    { label: t.package, tag: '11', imageId: 'process-logistics', desc: t.package_desc },
-    { label: t.ship, tag: '12', imageId: 'process-logistics', desc: t.ship_desc },
+    { label: t.fg_warehousing, tag: '10', imageUrl: '/Pipeline/5-1.jpg', desc: t.fg_warehousing_desc },
+    { label: t.package, tag: '11', imageUrl: '/Pipeline/5-2.jpg', desc: t.package_desc },
+    { label: t.ship, tag: '12', imageUrl: '/Pipeline/5-2.jpg', desc: t.ship_desc },
   ];
 
   useEffect(() => {
