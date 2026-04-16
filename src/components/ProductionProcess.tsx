@@ -18,6 +18,7 @@ export function ProductionProcess({ locale }: { locale: Locale }) {
   
   const AUTOPLAY_DELAY = 4000;
 
+  // 1. 定义步骤数据
   const steps = useMemo(() => [
     { label: t.pmc, tag: '01', images: ['/Pipeline/1-1.png'], desc: t.pmc_desc },
     { label: t.procurement, tag: '02', images: ['/Pipeline/1-1.png'], desc: t.procurement_desc },
@@ -32,6 +33,7 @@ export function ProductionProcess({ locale }: { locale: Locale }) {
     { label: t.shipment, tag: '11', images: ['/Pipeline/6-1.JPG'], desc: t.shipment_desc },
   ], [t]);
 
+  // 2. 视觉分段逻辑：防止相邻步骤图片相同时闪烁
   const imageSegments = useMemo(() => [
     { start: 0, end: 3, images: ['/Pipeline/1-1.png'] },
     { start: 4, end: 5, images: ['/Pipeline/2-1.jpg'] },
@@ -42,6 +44,7 @@ export function ProductionProcess({ locale }: { locale: Locale }) {
     { start: 10, end: 10, images: ['/Pipeline/6-1.JPG'] },
   ], []);
 
+  // 3. 滚动交叉观察
   useEffect(() => {
     const observers: IntersectionObserver[] = [];
     scrollRefs.current.forEach((ref, index) => {
@@ -64,32 +67,34 @@ export function ProductionProcess({ locale }: { locale: Locale }) {
     return () => observers.forEach(o => o.disconnect());
   }, []);
 
-  // Robust timer for progress and image rotation
+  // 4. 自动轮播定时器：修复切换失效问题
   useEffect(() => {
-    let timer: NodeJS.Timeout;
+    if (!isPlaying) return;
+    
     const activeImages = steps[activeStep]?.images || [];
-
-    if (isPlaying && activeImages.length > 1) {
-      const intervalTime = 50;
-      const increment = (intervalTime / AUTOPLAY_DELAY) * 100;
-
-      timer = setInterval(() => {
-        setProgress((prev) => {
-          if (prev >= 100) {
-            setSubImageIndex((prevIdx) => (prevIdx + 1) % activeImages.length);
-            return 0;
-          }
-          return prev + increment;
-        });
-      }, intervalTime);
-    } else {
+    if (activeImages.length <= 1) {
       setProgress(0);
+      return;
     }
 
-    return () => clearInterval(timer);
-  }, [activeStep, isPlaying, steps, AUTOPLAY_DELAY]);
+    const intervalTime = 50;
+    const increment = (intervalTime / AUTOPLAY_DELAY) * 100;
 
-  // Reset index when step changes
+    const timer = setInterval(() => {
+      setProgress((prev) => {
+        if (prev >= 100) {
+          // 在进度条跑满时，同步切换图片索引
+          setSubImageIndex((prevIdx) => (prevIdx + 1) % activeImages.length);
+          return 0;
+        }
+        return prev + increment;
+      });
+    }, intervalTime);
+
+    return () => clearInterval(timer);
+  }, [activeStep, isPlaying, steps]);
+
+  // 5. 步骤改变时重置状态
   useEffect(() => {
     setSubImageIndex(0);
     setProgress(0);
@@ -102,12 +107,12 @@ export function ProductionProcess({ locale }: { locale: Locale }) {
 
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-16 lg:gap-24 relative mt-20">
           
-          {/* Left Column: Fixed Image with Bleed-to-Edge Design */}
+          {/* 左侧大图：破位出血 + 吸顶固定 */}
           <div className="lg:col-span-7 hidden lg:block relative">
             <div className={cn(
               "sticky top-32 h-[70vh] min-h-[500px] max-h-[800px] overflow-hidden bg-muted/20 border-y border-r border-border/40 shadow-2xl transition-all duration-500",
               "rounded-r-[3rem] rounded-l-none",
-              /* Bleed-to-Edge Logic */
+              /* 破位出血逻辑：适配 1920px 限制 */
               "lg:-ml-[calc((min(100vw,1920px)-1280px)/2+1.5rem)] lg:w-[calc(100%+((min(100vw,1920px)-1280px)/2+1.5rem))]"
             )}>
               {imageSegments.map((segment, segIndex) => {
@@ -134,7 +139,7 @@ export function ProductionProcess({ locale }: { locale: Locale }) {
                         >
                           <Image
                             src={imgUrl}
-                            alt={`Process Step Image`}
+                            alt={`Process Step Detail`}
                             fill
                             className="object-cover"
                             priority={segIndex === 0}
@@ -147,7 +152,7 @@ export function ProductionProcess({ locale }: { locale: Locale }) {
                 );
               })}
 
-              {/* Compact Sub-image rotation controls */}
+              {/* 轮播交互控制台 */}
               {steps[activeStep]?.images.length > 1 && (
                 <div className="absolute bottom-8 right-8 z-50 flex items-center gap-4 animate-in fade-in slide-in-from-bottom-4 duration-500">
                   <div className="flex gap-1.5 items-center">
@@ -187,7 +192,7 @@ export function ProductionProcess({ locale }: { locale: Locale }) {
             </div>
           </div>
 
-          {/* Right Column: Scrolling Steps */}
+          {/* 右侧步骤文字：超长行程滚动 */}
           <div className="lg:col-span-5 space-y-[60vh] py-12">
             {steps.map((step, index) => (
               <div
@@ -217,8 +222,8 @@ export function ProductionProcess({ locale }: { locale: Locale }) {
                   {step.desc}
                 </p>
 
-                {/* Mobile View */}
-                <div className="lg:hidden w-full aspect-video rounded-[2rem] overflow-hidden relative border border-border/40 mt-8 shadow-lg">
+                {/* 移动端视图 */}
+                <div className="lg:hidden w-full aspect-video rounded-3xl overflow-hidden relative border border-border/40 mt-8 shadow-lg">
                    {step.images.map((imgUrl, iIndex) => (
                       <div
                         key={`mob-${index}-${iIndex}`}
