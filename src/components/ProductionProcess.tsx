@@ -21,10 +21,11 @@ export function ProductionProcess({ locale }: { locale: Locale }) {
     { label: t.inspection, tag: '05', imageUrl: '/Pipeline/2-1.jpg', desc: t.inspection_desc },
     { label: t.warehousing, tag: '06', imageUrl: '/Pipeline/2-1.jpg', desc: t.warehousing_desc },
     { label: t.issuing, tag: '07', imageUrl: '/Pipeline/2-2.png', desc: t.issuing_desc },
-    { label: t.system, tag: '08', imageId: 'process-smt', desc: locale === 'en' ? 'Custom OS deployment and driver configuration for specific client needs.' : '根据客户需求进行定制化 OS 部署和驱动配置。' },
-    { label: t.oqa, tag: '09', imageId: 'process-qc', desc: locale === 'en' ? 'Outgoing Quality Assurance: Final gatekeeper before product release.' : '出货品质保证：产品发布前的最后一道关口。' },
-    { label: t.package, tag: '10', imageId: 'process-logistics', desc: locale === 'en' ? 'Industrial-grade protective packaging designed for global transit.' : '为全球运输设计的工业级防护包装。' },
-    { label: t.ship, tag: '11', imageId: 'process-logistics', desc: locale === 'en' ? 'Coordinated global dispatch to over 50 countries via premium partners.' : '通过优质合作伙伴协调向全球 50 多个国家发货。' },
+    { label: t.manufacturing, tag: '08', imageUrl: '/Pipeline/3-1.jpg', desc: t.manufacturing_desc },
+    { label: t.system, tag: '09', imageId: 'process-smt', desc: locale === 'en' ? 'Custom OS deployment and driver configuration for specific client needs.' : '根据客户需求进行定制化 OS 部署和驱动配置。' },
+    { label: t.oqa, tag: '10', imageId: 'process-qc', desc: locale === 'en' ? 'Outgoing Quality Assurance: Final gatekeeper before product release.' : '出货品质保证：产品发布前的最后一道关口。' },
+    { label: t.package, tag: '11', imageId: 'process-logistics', desc: locale === 'en' ? 'Industrial-grade protective packaging designed for global transit.' : '为全球运输设计的工业级防护包装。' },
+    { label: t.ship, tag: '12', imageId: 'process-logistics', desc: locale === 'en' ? 'Coordinated global dispatch to over 50 countries via premium partners.' : '通过优质合作伙伴协调向全球 50 多个国家发货。' },
   ];
 
   useEffect(() => {
