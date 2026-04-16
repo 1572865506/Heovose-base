@@ -19,17 +19,17 @@ export function Hero({ locale }: { locale: Locale }) {
           src="/video/whiteboard02.png"
           alt="Heovose Hero Background"
           fill
-          className="object-cover"
+          className="object-cover opacity-100"
           priority
         />
         
-        {/* Left-to-Right Glass Blur Gradient */}
+        {/* Left-to-Right Glass Blur Gradient - Optimized for responsive clear view */}
         <div 
-          className="absolute inset-0 z-10 backdrop-blur-3xl [mask-image:linear-gradient(to_right,black_20%,transparent_65%)]" 
+          className="absolute inset-0 z-10 backdrop-blur-3xl [mask-image:linear-gradient(to_right,rgba(0,0,0,1)_0%,rgba(0,0,0,1)_15%,rgba(0,0,0,0)_50%)]" 
         />
         
         {/* Subtle color overlay for text contrast */}
-        <div className="absolute inset-0 bg-gradient-to-r from-primary/30 via-transparent to-transparent z-20" />
+        <div className="absolute inset-0 bg-gradient-to-r from-primary/20 via-transparent to-transparent z-20" />
       </div>
 
       <div className="container mx-auto px-6 relative z-30">
