@@ -3,143 +3,107 @@
 
 import { useState, useMemo, useEffect, Suspense } from 'react';
 import Image from 'next/image';
-import { useSearchParams } from 'next/navigation';
+import { useSearchParams, useRouter } from 'next/navigation';
 import { Locale, translations } from '@/lib/translations';
 import { Navbar } from '@/components/Navbar';
 import { Footer } from '@/components/Footer';
-import { Search, Filter, ArrowRight, FileText, ChevronRight, X } from 'lucide-react';
+import { Search, Filter, ArrowRight, FileText, ChevronRight, X, Package, LayoutGrid } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
 import { cn } from '@/lib/utils';
 
-// 本地模拟数据 - 分类
+type ProductLine = 'wholesale' | 'project';
+
+// 本地模拟数据 - 分类 (新增 line 属性)
 const MOCK_CATEGORIES = [
-  { id: 'cat-aio', nameEn: 'All-in-One PC', nameZh: '一体机电脑' },
-  { id: 'cat-minipc', nameEn: 'Mini PC', nameZh: '迷你主机' },
-  { id: 'cat-monitor', nameEn: 'Industrial Monitor', nameZh: '工业显示器' },
-  { id: 'cat-kiosk', nameEn: 'Self-service Kiosk', nameZh: '自助终端' },
+  // Wholesale Line
+  { id: 'cat-aio', line: 'wholesale', nameEn: 'All-in-One PC', nameZh: '一体机电脑' },
+  { id: 'cat-minipc', line: 'wholesale', nameEn: 'Mini PC', nameZh: '迷你主机' },
+  { id: 'cat-monitor', line: 'wholesale', nameEn: 'Industrial Monitor', nameZh: '工业显示器' },
+  { id: 'cat-laptop', line: 'wholesale', nameEn: 'Laptops', nameZh: '笔记本电脑' },
+  // Project Line
+  { id: 'cat-kiosk', line: 'project', nameEn: 'Self-service Kiosk', nameZh: '自助终端' },
+  { id: 'cat-conference', line: 'project', nameEn: 'Conference Tablet', nameZh: '会议平板' },
+  { id: 'cat-industrial', line: 'project', nameEn: 'Industrial PC', nameZh: '工业控制机' },
+  { id: 'cat-led', line: 'project', nameEn: 'LED Screen Project', nameZh: 'LED 工程' },
 ];
 
-// 类别对应的动态标签定义
 const CATEGORY_TAGS: Record<string, { en: string; zh: string }[]> = {
   'cat-aio': [
-    { en: '19 inch', zh: '19 英寸' },
-    { en: '21.5 inch', zh: '21.5 英寸' },
-    { en: '23.8 inch', zh: '23.8 英寸' },
-    { en: '27 inch', zh: '27 英寸' },
-    { en: 'Office', zh: '办公' },
-    { en: 'Creative', zh: '创意设计' },
-    { en: 'Touch Screen', zh: '触摸屏' },
+    { en: '19 inch', zh: '19 英寸' }, { en: '23.8 inch', zh: '23.8 英寸' }, { en: '27 inch', zh: '27 英寸' }, { en: 'Office', zh: '办公' }
   ],
   'cat-minipc': [
-    { en: 'Fanless', zh: '无风扇' },
-    { en: 'Gaming', zh: '游戏' },
-    { en: 'Office', zh: '办公' },
-    { en: 'Industrial Edge', zh: '工业边缘' },
-    { en: '4K Display', zh: '4K 显示' },
+    { en: 'Fanless', zh: '无风扇' }, { en: 'Gaming', zh: '游戏' }, { en: 'Edge Computing', zh: '边缘计算' }
   ],
   'cat-monitor': [
-    { en: 'Touch', zh: '触摸' },
-    { en: 'IP65 Waterproof', zh: 'IP65 防水' },
-    { en: 'High Brightness', zh: '高亮度' },
-    { en: 'Embedded', zh: '嵌入式' },
-    { en: 'Panel Mount', zh: '面板式' },
+    { en: 'IP65', zh: 'IP65 防水' }, { en: 'High Brightness', zh: '高亮度' }, { en: 'Touch', zh: '触摸' }
   ],
   'cat-kiosk': [
-    { en: 'Payment', zh: '支付' },
-    { en: 'Information', zh: '信息查询' },
-    { en: 'Ticketing', zh: '票务' },
-    { en: 'Outdoor', zh: '户外' },
-    { en: 'Healthcare', zh: '医疗' },
+    { en: 'Payment', zh: '支付' }, { en: 'Medical', zh: '医疗' }, { en: 'Outdoor', zh: '户外' }
   ],
 };
 
-// 本地模拟数据 - 产品 (增加了 tags 属性)
 const MOCK_PRODUCTS = [
   {
     id: 'p1',
     productCategoryId: 'cat-aio',
+    line: 'wholesale',
     nameEn: 'Heovose H24 Pro AIO',
     nameZh: 'Heovose H24 Pro 一体机',
     taglineEn: 'Ultimate Integration',
-    descriptionEn: 'High-performance 23.8-inch All-in-One PC with borderless display and powerful processing.',
-    descriptionZh: '高性能 23.8 英寸一体机，采用无边框显示屏和强劲处理器。',
+    descriptionEn: 'High-performance 23.8-inch All-in-One PC with borderless display.',
+    descriptionZh: '高性能 23.8 英寸一体机，采用无边框显示屏。',
     primaryImageUrl: 'https://picsum.photos/seed/aio1/600/450',
-    keyFeaturesEn: ['Intel i7', '16GB RAM', '512GB SSD'],
-    keyFeaturesZh: ['英特尔 i7', '16GB 内存', '512GB 硬盘'],
+    keyFeaturesEn: ['Intel i7', '16GB RAM'],
+    keyFeaturesZh: ['英特尔 i7', '16GB 内存'],
     tags: ['23.8 inch', 'Office'],
     status: 'active'
   },
   {
     id: 'p2',
-    productCategoryId: 'cat-minipc',
-    nameEn: 'Ultra-Compact M1 Mini',
-    nameZh: '超紧凑 M1 迷你主机',
-    taglineEn: 'Tiny but Mighty',
-    descriptionEn: 'Space-saving computing solution for office and industrial edge applications.',
-    descriptionZh: '适用于办公和工业边缘应用的节省空间的计算解决方案。',
-    primaryImageUrl: 'https://picsum.photos/seed/mini1/600/450',
-    keyFeaturesEn: ['4K Output', 'Fanless Design', 'Low Power'],
-    keyFeaturesZh: ['4K 输出', '无风扇设计', '低功耗'],
-    tags: ['Fanless', 'Industrial Edge'],
+    productCategoryId: 'cat-kiosk',
+    line: 'project',
+    nameEn: 'Smart Retail Kiosk',
+    nameZh: '智能零售终端',
+    taglineEn: 'Future of Retail',
+    descriptionEn: 'Versatile self-service kiosk for check-out and ticketing.',
+    descriptionZh: '多功能自助终端，适用于结账和票务。',
+    primaryImageUrl: 'https://picsum.photos/seed/kiosk1/600/450',
+    keyFeaturesEn: ['QR Scanner', 'Thermal Printer'],
+    keyFeaturesZh: ['扫码器', '热敏打印机'],
+    tags: ['Payment'],
     status: 'active'
   },
   {
     id: 'p3',
     productCategoryId: 'cat-monitor',
-    nameEn: 'IP65 Industrial Touch',
-    nameZh: 'IP65 工业级触摸屏',
-    taglineEn: 'Rugged Durability',
-    descriptionEn: 'Fully sealed industrial display designed for harsh manufacturing environments.',
-    descriptionZh: '专为恶劣制造环境设计的全密封工业显示器。',
+    line: 'wholesale',
+    nameEn: 'Industrial Touch Display',
+    nameZh: '工业级触摸屏',
+    taglineEn: 'Rugged Quality',
+    descriptionEn: 'Fully sealed industrial display for harsh environments.',
+    descriptionZh: '专为恶劣环境设计的全密封工业显示器。',
     primaryImageUrl: 'https://picsum.photos/seed/mon1/600/450',
-    keyFeaturesEn: ['Waterproof', 'Sunlight Readable', 'Capacitive Touch'],
-    keyFeaturesZh: ['防水', '阳光下可视', '电容触摸'],
-    tags: ['Touch', 'IP65 Waterproof', 'High Brightness'],
+    keyFeaturesEn: ['IP65 Waterproof', '1000 nits'],
+    keyFeaturesZh: ['IP65 防水', '1000 尼特'],
+    tags: ['IP65', 'High Brightness'],
     status: 'active'
   },
   {
     id: 'p4',
-    productCategoryId: 'cat-kiosk',
-    nameEn: 'Smart Retail Terminal',
-    nameZh: '智能零售终端',
-    taglineEn: 'Interactive Experience',
-    descriptionEn: 'Versatile self-service kiosk for check-out, ticketing, and information lookup.',
-    descriptionZh: '多功能自助终端，适用于结账、票务和信息查询。',
-    primaryImageUrl: 'https://picsum.photos/seed/kiosk1/600/450',
-    keyFeaturesEn: ['QR Scanner', 'Thermal Printer', 'Customizable'],
-    keyFeaturesZh: ['扫码器', '热敏打印机', '可定制'],
-    tags: ['Payment', 'Information'],
-    status: 'active'
-  },
-  {
-    id: 'p5',
-    productCategoryId: 'cat-aio',
-    nameEn: 'Business Elite A27',
-    nameZh: '商务精英 A27',
-    taglineEn: 'Professional Workspace',
-    descriptionEn: '27-inch 4K All-in-One PC tailored for creative professionals and high-end offices.',
-    descriptionZh: '专为创意专业人士和高端办公室定制的 27 英寸 4K 一体机。',
-    primaryImageUrl: 'https://picsum.photos/seed/aio2/600/450',
-    keyFeaturesEn: ['4K IPS', 'NVIDIA GPU', 'Ergonomic Stand'],
-    keyFeaturesZh: ['4K IPS', '英伟达显卡', '人体工学支架'],
-    tags: ['27 inch', 'Creative'],
-    status: 'active'
-  },
-  {
-    id: 'p6',
-    productCategoryId: 'cat-aio',
-    nameEn: 'Compact H19 Office',
-    nameZh: '紧凑型 H19 办公系列',
-    taglineEn: 'Space Saver',
-    descriptionEn: '19-inch entry-level All-in-One PC for administrative tasks and reception.',
-    descriptionZh: '19 英寸入门级一体机，适用于行政任务和前台接待。',
-    primaryImageUrl: 'https://picsum.photos/seed/aio3/600/450',
-    keyFeaturesEn: ['19 inch Panel', 'Energy Efficient', 'Compact Base'],
-    keyFeaturesZh: ['19 英寸面板', '低功耗设计', '紧凑型底座'],
-    tags: ['19 inch', 'Office'],
+    productCategoryId: 'cat-conference',
+    line: 'project',
+    nameEn: '86" Smart Conference Hub',
+    nameZh: '86寸智能会议平板',
+    taglineEn: 'Collaboration Redefined',
+    descriptionEn: 'Large format interactive display for modern conference rooms.',
+    descriptionZh: '适用于现代会议室的大尺寸交互式显示屏。',
+    primaryImageUrl: 'https://picsum.photos/seed/conf1/600/450',
+    keyFeaturesEn: ['4K UHD', '20-point Touch'],
+    keyFeaturesZh: ['4K 超清', '20点触控'],
+    tags: ['Touch'],
     status: 'active'
   }
 ];
@@ -152,6 +116,7 @@ function ProductListContent() {
   const [isLoading, setIsLoading] = useState(true);
   
   const searchParams = useSearchParams();
+  const router = useRouter();
   const categoryParam = searchParams.get('category');
   const t = translations[locale].products;
 
@@ -178,6 +143,38 @@ function ProductListContent() {
     setSelectedTag(null);
   }, [selectedCategoryId]);
 
+  // 判断当前选中的产品线
+  const activeLine: ProductLine = useMemo(() => {
+    if (!selectedCategoryId) return 'wholesale';
+    const cat = MOCK_CATEGORIES.find(c => c.id === selectedCategoryId);
+    return (cat?.line as ProductLine) || 'wholesale';
+  }, [selectedCategoryId]);
+
+  // 主色调工具函数
+  const getLineStyles = (line: ProductLine) => {
+    return line === 'wholesale' 
+      ? { 
+          bg: 'bg-primary', 
+          text: 'text-primary', 
+          border: 'border-primary', 
+          hover: 'hover:bg-primary/10',
+          shadow: 'shadow-primary/20',
+          button: 'bg-primary hover:bg-primary/90',
+          gradient: 'from-primary/20 via-transparent'
+        } 
+      : { 
+          bg: 'bg-[#F97316]', 
+          text: 'text-[#F97316]', 
+          border: 'border-[#F97316]', 
+          hover: 'hover:bg-[#F97316]/10',
+          shadow: 'shadow-orange-500/20',
+          button: 'bg-[#F97316] hover:bg-[#F97316]/90',
+          gradient: 'from-[#F97316]/20 via-transparent'
+        };
+  };
+
+  const lineStyles = getLineStyles(activeLine);
+
   // 获取当前类别下的可用标签
   const currentCategoryTags = useMemo(() => {
     if (!selectedCategoryId) return [];
@@ -188,7 +185,7 @@ function ProductListContent() {
   const filteredProducts = useMemo(() => {
     return MOCK_PRODUCTS.filter(product => {
       const matchesCategory = !selectedCategoryId || product.productCategoryId === selectedCategoryId;
-      const matchesTag = !selectedTag || product.tags.includes(selectedTag);
+      const matchesTag = !selectedTag || (product.tags || []).includes(selectedTag);
       const name = locale === 'zh' ? product.nameZh : product.nameEn;
       const matchesSearch = name.toLowerCase().includes(searchQuery.toLowerCase());
       return matchesCategory && matchesTag && matchesSearch;
@@ -205,24 +202,31 @@ function ProductListContent() {
     <main className="relative min-h-screen bg-background">
       <Navbar locale={locale} setLocale={setLocale} />
       
-      {/* Header Section */}
-      <section className="pt-32 pb-16 bg-primary text-primary-foreground relative overflow-hidden">
+      {/* Dynamic Header Section */}
+      <section className={cn("pt-32 pb-16 text-white relative transition-colors duration-700", lineStyles.bg)}>
         <div className="absolute inset-0 opacity-10">
           <Image
             src="https://picsum.photos/seed/list-bg/1920/600"
             alt="Product List Background"
             fill
             className="object-cover"
-            data-ai-hint="electronic hardware"
+            data-ai-hint="high tech hardware"
           />
         </div>
         <div className="container mx-auto px-6 relative z-10">
           <div className="max-w-3xl space-y-6">
+            <div className="flex items-center gap-4">
+               <Badge className="bg-white/20 backdrop-blur-md text-white border-white/20 px-4 py-1 text-[10px] font-bold uppercase tracking-widest">
+                  {activeLine === 'wholesale' ? (locale === 'zh' ? '批发产品线' : 'Wholesale Line') : (locale === 'zh' ? '项目产品线' : 'Project Line')}
+               </Badge>
+            </div>
             <h1 className="text-4xl md:text-6xl font-headline font-bold tracking-tight">
-              {t.listTitle}
+              {activeLine === 'project' && locale === 'zh' ? '项目定制化方案' : t.listTitle}
             </h1>
-            <p className="text-xl opacity-80 font-light">
-              {t.listSubtitle}
+            <p className="text-xl opacity-80 font-light max-w-xl">
+              {activeLine === 'project' 
+                ? (locale === 'zh' ? '针对大型工程、智能会议及工业场景的专业定制化硬件方案。' : 'Professional hardware solutions tailored for large projects, smart meetings, and industrial scenes.')
+                : t.listSubtitle}
             </p>
           </div>
         </div>
@@ -234,14 +238,36 @@ function ProductListContent() {
           
           {/* Sidebar Filters */}
           <aside className="lg:col-span-3 space-y-10">
+            {/* Product Line Selector */}
+            <div className="p-1 bg-muted rounded-2xl flex gap-1">
+               <button 
+                onClick={() => setSelectedCategoryId('cat-aio')}
+                className={cn(
+                  "flex-1 flex items-center justify-center gap-2 py-3 rounded-xl text-xs font-bold transition-all",
+                  activeLine === 'wholesale' ? "bg-white shadow-md text-primary" : "text-muted-foreground hover:text-primary"
+                )}
+               >
+                 <Package className="h-4 w-4" /> {locale === 'zh' ? '批发' : 'Wholesale'}
+               </button>
+               <button 
+                onClick={() => setSelectedCategoryId('cat-kiosk')}
+                className={cn(
+                  "flex-1 flex items-center justify-center gap-2 py-3 rounded-xl text-xs font-bold transition-all",
+                  activeLine === 'project' ? "bg-white shadow-md text-orange-500" : "text-muted-foreground hover:text-orange-500"
+                )}
+               >
+                 <LayoutGrid className="h-4 w-4" /> {locale === 'zh' ? '项目' : 'Project'}
+               </button>
+            </div>
+
             {/* Search */}
             <div className="space-y-4">
-              <h3 className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Search</h3>
+              <h3 className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Search</h3>
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <Input
                   placeholder={t.searchPlaceholder}
-                  className="pl-10 rounded-xl border-border/40 focus:ring-primary"
+                  className="pl-10 rounded-xl border-border/40 focus:ring-0"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                 />
@@ -250,39 +276,26 @@ function ProductListContent() {
 
             {/* Categories */}
             <div className="space-y-4">
-              <div className="flex items-center justify-between">
-                <h3 className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Categories</h3>
-                {selectedCategoryId && (
-                  <button 
-                    onClick={() => setSelectedCategoryId(null)}
-                    className="text-[10px] font-bold text-primary hover:underline"
-                  >
-                    Reset
-                  </button>
-                )}
-              </div>
+              <h3 className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
+                {activeLine === 'wholesale' ? (locale === 'zh' ? '分销类别' : 'Wholesale Types') : (locale === 'zh' ? '项目分类' : 'Project Types')}
+              </h3>
               <div className="flex flex-col gap-1">
-                <button
-                  onClick={() => setSelectedCategoryId(null)}
-                  className={cn(
-                    "flex items-center justify-between px-4 py-3 rounded-xl transition-all text-sm font-medium",
-                    !selectedCategoryId ? "bg-primary text-white shadow-lg" : "hover:bg-muted"
-                  )}
-                >
-                  <span>{t.allCategories}</span>
-                  {!selectedCategoryId && <ChevronRight className="h-4 w-4" />}
-                </button>
-                {MOCK_CATEGORIES.map((category) => (
+                {MOCK_CATEGORIES.filter(c => c.line === activeLine).map((category) => (
                   <button
                     key={category.id}
                     onClick={() => setSelectedCategoryId(category.id)}
                     className={cn(
-                      "flex items-center justify-between px-4 py-3 rounded-xl transition-all text-sm font-medium text-left",
-                      selectedCategoryId === category.id ? "bg-primary text-white shadow-lg" : "hover:bg-muted"
+                      "flex items-center justify-between px-4 py-3 rounded-xl transition-all text-sm font-medium text-left group",
+                      selectedCategoryId === category.id 
+                        ? `${lineStyles.bg} text-white shadow-xl` 
+                        : "hover:bg-muted text-muted-foreground"
                     )}
                   >
                     <span>{locale === 'zh' ? category.nameZh : category.nameEn}</span>
-                    {selectedCategoryId === category.id && <ChevronRight className="h-4 w-4" />}
+                    <ChevronRight className={cn(
+                      "h-4 w-4 transition-transform",
+                      selectedCategoryId === category.id ? "translate-x-1" : "opacity-0 group-hover:opacity-40"
+                    )} />
                   </button>
                 ))}
               </div>
@@ -292,34 +305,26 @@ function ProductListContent() {
           {/* Product Grid Area */}
           <div className="lg:col-span-9 space-y-8">
             
-            {/* Upper Selection Area: Dynamic Tags */}
+            {/* Upper Info Area */}
             <div className="space-y-6">
               <div className="flex items-center justify-between border-b border-border/40 pb-4">
                 <div className="flex items-center gap-3">
                   <Badge variant="secondary" className="px-3 py-1 rounded-full text-xs font-bold uppercase tracking-tighter">
-                    {filteredProducts.length} Results
+                    {filteredProducts.length} {locale === 'zh' ? '件产品' : 'Items'}
                   </Badge>
-                  <span className="text-sm text-muted-foreground italic">
-                    in {activeCategoryName}
+                  <span className={cn("text-sm italic font-medium", lineStyles.text)}>
+                    {activeCategoryName}
                   </span>
                 </div>
               </div>
 
-              {/* Dynamic Tag Bar (Only visible when a category is selected) */}
+              {/* Dynamic Tag Bar */}
               {selectedCategoryId && currentCategoryTags.length > 0 && (
                 <div className="space-y-3">
                   <div className="flex items-center justify-between">
                     <h4 className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground flex items-center gap-2">
-                      <Filter className="h-3 w-3" /> Quick Filters
+                      <Filter className="h-3 w-3" /> Specification Filters
                     </h4>
-                    {selectedTag && (
-                      <button 
-                        onClick={() => setSelectedTag(null)}
-                        className="text-[10px] text-primary hover:underline flex items-center gap-1"
-                      >
-                        <X className="h-2 w-2" /> Clear Tag
-                      </button>
-                    )}
                   </div>
                   <ScrollArea className="w-full whitespace-nowrap">
                     <div className="flex gap-2 pb-4">
@@ -332,8 +337,8 @@ function ProductListContent() {
                             className={cn(
                               "px-4 py-2 rounded-full text-xs font-medium border transition-all duration-300",
                               isSelected 
-                                ? "bg-accent text-accent-foreground border-accent shadow-md scale-105" 
-                                : "bg-white border-border/60 text-muted-foreground hover:border-primary hover:text-primary"
+                                ? `${lineStyles.bg} text-white border-transparent shadow-lg scale-105` 
+                                : `bg-white border-border/60 text-muted-foreground ${lineStyles.hover}`
                             )}
                           >
                             {locale === 'zh' ? tag.zh : tag.en}
@@ -350,7 +355,7 @@ function ProductListContent() {
             {/* Grid */}
             {isLoading ? (
               <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-8">
-                {[1, 2, 3, 4, 5, 6].map((i) => (
+                {[1, 2, 3].map((i) => (
                   <div key={i} className="h-[400px] rounded-[2rem] bg-muted/20 animate-pulse" />
                 ))}
               </div>
@@ -361,7 +366,6 @@ function ProductListContent() {
                     key={product.id}
                     className="group bg-white rounded-3xl border border-border/40 overflow-hidden hover:shadow-2xl transition-all duration-500 flex flex-col"
                   >
-                    {/* Image Area */}
                     <div className="relative aspect-[4/3] bg-muted/20 overflow-hidden">
                       <Image
                         src={product.primaryImageUrl}
@@ -370,16 +374,15 @@ function ProductListContent() {
                         className="object-cover group-hover:scale-110 transition-transform duration-700"
                       />
                       <div className="absolute top-4 left-4">
-                        <Badge className="bg-white/90 backdrop-blur-md text-primary border-none shadow-sm text-[10px] font-bold">
+                        <Badge className={cn("bg-white/90 backdrop-blur-md border-none shadow-sm text-[10px] font-bold", lineStyles.text)}>
                           {product.taglineEn}
                         </Badge>
                       </div>
                     </div>
 
-                    {/* Content Area */}
                     <div className="p-6 space-y-4 flex-grow flex flex-col">
                       <div className="space-y-1">
-                        <h3 className="text-xl font-headline font-bold text-primary leading-tight">
+                        <h3 className={cn("text-xl font-headline font-bold leading-tight", lineStyles.text)}>
                           {locale === 'zh' ? product.nameZh : product.nameEn}
                         </h3>
                         <p className="text-xs text-muted-foreground line-clamp-2 leading-relaxed min-h-[2.5rem]">
@@ -387,9 +390,8 @@ function ProductListContent() {
                         </p>
                       </div>
 
-                      {/* Product Tags (Displayed as badges) */}
                       <div className="flex flex-wrap gap-1.5 pt-1">
-                        {product.tags.map((tag, idx) => (
+                        {(product.tags || []).map((tag, idx) => (
                           <span 
                             key={idx} 
                             className="text-[9px] px-2 py-0.5 bg-muted/40 text-muted-foreground rounded-full border border-border/20"
@@ -399,20 +401,11 @@ function ProductListContent() {
                         ))}
                       </div>
 
-                      {/* Key Features */}
-                      <div className="flex flex-wrap gap-2 pt-2 border-t border-border/20">
-                        {(locale === 'zh' ? product.keyFeaturesZh : product.keyFeaturesEn).map((feature, idx) => (
-                          <span key={idx} className="text-[9px] font-bold text-primary/60 uppercase tracking-tighter">
-                            • {feature}
-                          </span>
-                        ))}
-                      </div>
-
                       <div className="pt-6 mt-auto flex items-center justify-between gap-4">
                         <Button variant="outline" size="sm" className="flex-1 rounded-xl text-xs font-bold tracking-tighter group/btn">
-                          {t.viewDetails} <ArrowRight className="ml-2 h-3 w-3 group-hover/btn:translate-x-1 transition-transform" />
+                          {t.viewDetails} <ArrowRight className={cn("ml-2 h-3 w-3 group-hover/btn:translate-x-1 transition-transform", lineStyles.text)} />
                         </Button>
-                        <Button size="icon" variant="ghost" className="rounded-xl h-9 w-9 bg-primary/5 text-primary hover:bg-primary hover:text-white transition-all">
+                        <Button size="icon" className={cn("rounded-xl h-9 w-9 transition-all text-white", lineStyles.bg)}>
                           <FileText className="h-4 w-4" />
                         </Button>
                       </div>
@@ -425,16 +418,9 @@ function ProductListContent() {
                 <div className="h-20 w-20 bg-muted/20 rounded-full flex items-center justify-center mx-auto text-muted-foreground">
                   <Filter className="h-10 w-10 opacity-20" />
                 </div>
-                <div className="space-y-2">
-                  <h4 className="text-xl font-bold text-primary">
-                    {t.noResults}
-                  </h4>
-                  <p className="text-muted-foreground text-sm max-w-xs mx-auto">
-                    {locale === 'zh' ? "请尝试调整您的搜索或筛选条件。" : "Try adjusting your search or filters."}
-                  </p>
-                </div>
-                <Button onClick={() => { setSearchQuery(''); setSelectedCategoryId(null); setSelectedTag(null); }} variant="link" className="text-primary font-bold">
-                  Clear all filters
+                <h4 className="text-xl font-bold text-muted-foreground">{t.noResults}</h4>
+                <Button onClick={() => { setSearchQuery(''); setSelectedCategoryId(null); }} variant="link" className={lineStyles.text}>
+                  Reset filters
                 </Button>
               </div>
             )}
