@@ -64,7 +64,7 @@ export function ProductionProcess({ locale }: { locale: Locale }) {
     return () => observers.forEach(o => o.disconnect());
   }, []);
 
-  // Timer to handle the progress bar increment
+  // Combined Timer for progress and image rotation
   useEffect(() => {
     const activeImages = steps[activeStep]?.images || [];
     if (activeImages.length <= 1 || !isPlaying) {
@@ -78,21 +78,17 @@ export function ProductionProcess({ locale }: { locale: Locale }) {
     const timer = setInterval(() => {
       setProgress((prev) => {
         const next = prev + increment;
+        if (next >= 100) {
+          // Progress reached 100, trigger next image
+          setSubImageIndex((prevIdx) => (prevIdx + 1) % activeImages.length);
+          return 0;
+        }
         return next;
       });
     }, intervalTime);
 
     return () => clearInterval(timer);
   }, [activeStep, isPlaying, steps, AUTOPLAY_DELAY]);
-
-  // Decoupled effect to handle rotation when progress hits 100
-  useEffect(() => {
-    const activeImages = steps[activeStep]?.images || [];
-    if (progress >= 100 && activeImages.length > 1) {
-      setSubImageIndex((prev) => (prev + 1) % activeImages.length);
-      setProgress(0);
-    }
-  }, [progress, activeStep, steps]);
 
   // Reset index when step changes
   useEffect(() => {
@@ -111,7 +107,7 @@ export function ProductionProcess({ locale }: { locale: Locale }) {
           <div className="lg:col-span-7 hidden lg:block relative">
             <div className={cn(
               "sticky top-32 h-[70vh] min-h-[500px] max-h-[800px] overflow-hidden bg-muted/20 border-y border-r border-border/40 shadow-2xl transition-all duration-500",
-              "rounded-r-[5rem] rounded-l-none",
+              "rounded-r-[3rem] rounded-l-none",
               /* Dynamic calculation for Bleed-to-Edge restricted by 1920px container logic */
               "lg:-ml-[calc((min(100vw,1920px)-1280px)/2+1.5rem)] lg:w-[calc(100%+((min(100vw,1920px)-1280px)/2+1.5rem))]"
             )}>
@@ -168,17 +164,14 @@ export function ProductionProcess({ locale }: { locale: Locale }) {
                           i === subImageIndex ? "w-8" : "w-2 hover:bg-white/50"
                         )}
                       >
-                        {i === subImageIndex && isPlaying && (
+                        {i === subImageIndex && (
                           <div 
                             className="absolute inset-0 bg-accent origin-left"
                             style={{ 
-                              width: `${progress}%`,
-                              transition: progress === 0 ? 'none' : 'width 50ms linear'
+                              width: isPlaying ? `${progress}%` : '100%',
+                              transition: (progress === 0 && isPlaying) ? 'none' : 'width 50ms linear'
                             }}
                           />
-                        )}
-                        {i === subImageIndex && !isPlaying && (
-                          <div className="absolute inset-0 bg-accent w-full" />
                         )}
                       </button>
                     ))}
