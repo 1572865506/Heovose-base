@@ -62,14 +62,20 @@ export function ProductionProcess({ locale }: { locale: Locale }) {
   }, [activeStep]);
 
   return (
-    <section id="process" className="py-32 bg-white relative">
+    <section id="process" className="py-32 bg-white relative overflow-hidden">
       <div className="container mx-auto px-6">
         <SectionHeading title={t.title} subtitle={t.subtitle} />
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 lg:gap-24 relative mt-20">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-16 lg:gap-24 relative mt-20">
           
-          <div className="lg:block hidden relative">
-            <div className="sticky top-32 aspect-square rounded-[3rem] overflow-hidden bg-muted/20 border border-border/40 shadow-2xl">
+          {/* Left Column: Image (Sticky & Bleed) */}
+          <div className="lg:col-span-7 hidden lg:block relative">
+            <div className={cn(
+              "sticky top-32 aspect-square overflow-hidden bg-muted/20 border-y border-r border-border/40 shadow-2xl transition-all duration-500",
+              "rounded-r-[5rem] rounded-l-none",
+              // Bleed to edge calculation: pulls to edge but caps at 1920px screen width logic
+              "lg:-ml-[calc((min(100vw,1920px)-1280px)/2+1.5rem)] lg:w-[calc(100%+((min(100vw,1920px)-1280px)/2+1.5rem))]"
+            )}>
               {steps.map((step, sIndex) => (
                 <div
                   key={`step-img-${sIndex}`}
@@ -101,7 +107,8 @@ export function ProductionProcess({ locale }: { locale: Locale }) {
             </div>
           </div>
 
-          <div className="space-y-[40vh] py-12">
+          {/* Right Column: Text Steps (Scrollable) */}
+          <div className="lg:col-span-5 space-y-[60vh] py-12">
             {steps.map((step, index) => (
               <div
                 key={index}
@@ -130,6 +137,7 @@ export function ProductionProcess({ locale }: { locale: Locale }) {
                   {step.desc}
                 </p>
 
+                {/* Mobile View: Inline Images */}
                 <div className="lg:hidden w-full aspect-video rounded-[2rem] overflow-hidden relative border border-border/40 mt-8 shadow-lg">
                    {step.images.map((imgUrl, iIndex) => (
                       <div
