@@ -3,6 +3,7 @@
 
 import { useState, useEffect } from 'react';
 import Image from 'next/image';
+import Link from 'next/link';
 import { Locale, translations } from "@/lib/translations";
 import { LanguageToggle } from "./LanguageToggle";
 import { 
@@ -56,20 +57,20 @@ export function Navbar({ locale, setLocale }: NavbarProps) {
   const isNavbarActive = isScrolled || openWholesale || openProjects || mobileMenuOpen;
 
   const wholesaleItems = [
-    { label: sub.aio, desc: sub.aio_desc, icon: Monitor, href: '#products' },
-    { label: sub.laptop, desc: sub.laptop_desc, icon: Laptop, href: '#products' },
-    { label: sub.minipc, desc: sub.minipc_desc, icon: Cpu, href: '#products' },
-    { label: sub.electromechanical, desc: sub.electromechanical_desc, icon: Zap, href: '#products' },
-    { label: sub.monitor, desc: sub.monitor_desc, icon: Tv, href: '#products' },
-    { label: sub.components, desc: sub.components_desc, icon: HardDrive, href: '#products' },
+    { label: sub.aio, desc: sub.aio_desc, icon: Monitor, href: '/products' },
+    { label: sub.laptop, desc: sub.laptop_desc, icon: Laptop, href: '/products' },
+    { label: sub.minipc, desc: sub.minipc_desc, icon: Cpu, href: '/products' },
+    { label: sub.electromechanical, desc: sub.electromechanical_desc, icon: Zap, href: '/products' },
+    { label: sub.monitor, desc: sub.monitor_desc, icon: Tv, href: '/products' },
+    { label: sub.components, desc: sub.components_desc, icon: HardDrive, href: '/products' },
   ];
 
   const projectItems = [
-    { label: sub.conference, desc: sub.conference_desc, icon: Presentation, href: '#process' },
-    { label: sub.selfservice, desc: sub.selfservice_desc, icon: MousePointerClick, href: '#process' },
-    { label: sub.industrial, desc: sub.industrial_desc, icon: Factory, href: '#process' },
-    { label: sub.led, desc: sub.led_desc, icon: Lightbulb, href: '#process' },
-    { label: sub.showroom, desc: sub.showroom_desc, icon: Store, href: '#process' },
+    { label: sub.conference, desc: sub.conference_desc, icon: Presentation, href: '/products' },
+    { label: sub.selfservice, desc: sub.selfservice_desc, icon: MousePointerClick, href: '/products' },
+    { label: sub.industrial, desc: sub.industrial_desc, icon: Factory, href: '/products' },
+    { label: sub.led, desc: sub.led_desc, icon: Lightbulb, href: '/products' },
+    { label: sub.showroom, desc: sub.showroom_desc, icon: Store, href: '/products' },
   ];
 
   const MegaMenuContent = ({ items, onMouseEnter, onMouseLeave }: { items: any[], onMouseEnter: () => void, onMouseLeave: () => void }) => (
@@ -86,7 +87,7 @@ export function Navbar({ locale, setLocale }: NavbarProps) {
         </div>
         {items.map((item) => (
           <DropdownMenuItem key={item.label} asChild className="p-0 bg-transparent hover:bg-transparent focus:bg-transparent">
-            <a 
+            <Link 
               href={item.href} 
               className="flex gap-4 group cursor-pointer outline-none focus:outline-none"
             >
@@ -97,7 +98,7 @@ export function Navbar({ locale, setLocale }: NavbarProps) {
                 <h4 className="text-sm font-bold text-primary mb-1 group-hover:translate-x-1 transition-transform">{item.label}</h4>
                 <p className="text-[11px] text-muted-foreground leading-snug line-clamp-2">{item.desc}</p>
               </div>
-            </a>
+            </Link>
           </DropdownMenuItem>
         ))}
       </div>
@@ -142,7 +143,7 @@ export function Navbar({ locale, setLocale }: NavbarProps) {
         "container mx-auto px-6 flex justify-between items-center transition-all duration-500",
         isScrolled ? "h-16" : "h-24"
       )}>
-        <div className="flex items-center">
+        <Link href="/" className="flex items-center">
           <Image
             src={isNavbarActive ? "/image/Heovose-color.svg" : "/image/Heovose.svg"}
             alt="Heovose Logo"
@@ -151,7 +152,7 @@ export function Navbar({ locale, setLocale }: NavbarProps) {
             className="h-8 w-auto object-contain transition-all duration-500"
             priority
           />
-        </div>
+        </Link>
 
         {/* Desktop Nav */}
         <div className="hidden lg:flex h-full items-center gap-12">
@@ -225,8 +226,8 @@ export function Navbar({ locale, setLocale }: NavbarProps) {
               </DropdownMenu>
             </div>
 
-            <a 
-              href="#cases" 
+            <Link 
+              href="/#cases" 
               className={cn(
                 "text-sm font-semibold transition-colors h-full flex items-center px-2",
                 isNavbarActive ? "text-muted-foreground" : "text-black",
@@ -234,7 +235,7 @@ export function Navbar({ locale, setLocale }: NavbarProps) {
               )}
             >
               {t.cases}
-            </a>
+            </Link>
           </div>
 
           <div className="flex items-center gap-6 h-full">
@@ -265,10 +266,10 @@ export function Navbar({ locale, setLocale }: NavbarProps) {
                <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">{t.wholesale}</p>
                <div className="grid grid-cols-1 gap-4 pl-4">
                  {wholesaleItems.map((item) => (
-                   <a key={item.label} href={item.href} onClick={() => setMobileMenuOpen(false)} className="flex items-center gap-3">
+                   <Link key={item.label} href={item.href} onClick={() => setMobileMenuOpen(false)} className="flex items-center gap-3">
                      <item.icon className="h-5 w-5 text-primary" />
                      <span className="text-lg font-bold text-primary">{item.label}</span>
-                   </a>
+                   </Link>
                  ))}
                </div>
             </div>
@@ -276,14 +277,14 @@ export function Navbar({ locale, setLocale }: NavbarProps) {
                <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">{t.projects}</p>
                <div className="grid grid-cols-1 gap-4 pl-4">
                  {projectItems.map((item) => (
-                   <a key={item.label} href={item.href} onClick={() => setMobileMenuOpen(false)} className="flex items-center gap-3">
+                   <Link key={item.label} href={item.href} onClick={() => setMobileMenuOpen(false)} className="flex items-center gap-3">
                      <item.icon className="h-5 w-5 text-primary" />
                      <span className="text-lg font-bold text-primary">{item.label}</span>
-                   </a>
+                   </Link>
                  ))}
                </div>
             </div>
-            <a href="#cases" onClick={() => setMobileMenuOpen(false)} className="text-lg font-bold text-primary">{t.cases}</a>
+            <Link href="/#cases" onClick={() => setMobileMenuOpen(false)} className="text-lg font-bold text-primary">{t.cases}</Link>
             <div className="pt-6 border-t border-border flex flex-col gap-6">
               <LanguageToggle currentLocale={locale} setLocale={setLocale} />
               <Button className="w-full rounded-xl bg-primary">{t.contact}</Button>
