@@ -79,6 +79,7 @@ export function ProductionProcess({ locale }: { locale: Locale }) {
       setProgress((prev) => {
         const next = prev + increment;
         if (next >= 100) {
+          // Trigger index change when progress reaches 100
           setSubImageIndex((prevIdx) => (prevIdx + 1) % activeImages.length);
           return 0;
         }
@@ -107,7 +108,7 @@ export function ProductionProcess({ locale }: { locale: Locale }) {
             <div className={cn(
               "sticky top-32 h-[70vh] min-h-[500px] max-h-[800px] overflow-hidden bg-muted/20 border-y border-r border-border/40 shadow-2xl transition-all duration-500",
               "rounded-r-[3rem] rounded-l-none",
-              /* Dynamic calculation for Bleed-to-Edge restricted by 1920px container logic */
+              /* Bleed-to-Edge: Pulls the container to the screen edge restricted by 1920px container logic */
               "lg:-ml-[calc((min(100vw,1920px)-1280px)/2+1.5rem)] lg:w-[calc(100%+((min(100vw,1920px)-1280px)/2+1.5rem))]"
             )}>
               {imageSegments.map((segment, segIndex) => {
@@ -147,7 +148,7 @@ export function ProductionProcess({ locale }: { locale: Locale }) {
                 );
               })}
 
-              {/* Sub-image rotation controls */}
+              {/* Sub-image rotation controls - Refined & Compact */}
               {steps[activeStep]?.images.length > 1 && (
                 <div className="absolute bottom-8 right-8 z-50 flex items-center gap-4 animate-in fade-in slide-in-from-bottom-4 duration-500">
                   <div className="flex gap-1.5 items-center">
