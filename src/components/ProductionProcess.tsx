@@ -19,26 +19,26 @@ export function ProductionProcess({ locale }: { locale: Locale }) {
   const AUTOPLAY_DELAY = 4000;
 
   const steps = useMemo(() => [
-    { label: t.pmc, tag: '01', images: ['/Pipeline/1-1.jpg'], desc: t.pmc_desc },
-    { label: t.procurement, tag: '02', images: ['/Pipeline/1-1.jpg'], desc: t.procurement_desc },
-    { label: t.supplier, tag: '03', images: ['/Pipeline/1-1.jpg'], desc: t.supplier_desc },
-    { label: t.receiving, tag: '04', images: ['/Pipeline/1-1.jpg'], desc: t.receiving_desc },
+    { label: t.pmc, tag: '01', images: ['/Pipeline/1-1.png'], desc: t.pmc_desc },
+    { label: t.procurement, tag: '02', images: ['/Pipeline/1-1.png'], desc: t.procurement_desc },
+    { label: t.supplier, tag: '03', images: ['/Pipeline/1-1.png'], desc: t.supplier_desc },
+    { label: t.receiving, tag: '04', images: ['/Pipeline/1-1.png'], desc: t.receiving_desc },
     { label: t.inspection, tag: '05', images: ['/Pipeline/2-1.jpg'], desc: t.inspection_desc },
     { label: t.warehousing, tag: '06', images: ['/Pipeline/2-1.jpg'], desc: t.warehousing_desc },
     { label: t.issuing, tag: '07', images: ['/Pipeline/2-2.png'], desc: t.issuing_desc },
-    { label: t.manufacturing, tag: '08', images: ['/Pipeline/3-1.jpg'], desc: t.manufacturing_desc },
-    { label: t.system, tag: '09', images: ['/Pipeline/4-1.jpg', '/Pipeline/4-2.png'], desc: t.system_desc },
+    { label: t.manufacturing, tag: '08', images: ['/Pipeline/3-1.png'], desc: t.manufacturing_desc },
+    { label: t.system, tag: '09', images: ['/Pipeline/4-1.png', '/Pipeline/4-2.png'], desc: t.system_desc },
     { label: t.fg_warehousing, tag: '10', images: ['/Pipeline/5-1.jpg', '/Pipeline/5-2.jpg'], desc: t.fg_warehousing_desc },
     { label: t.shipment, tag: '11', images: ['/Pipeline/6-1.JPG'], desc: t.shipment_desc },
   ], [t]);
 
   // Visual Segments to prevent flashing when images are the same across adjacent steps
   const imageSegments = useMemo(() => [
-    { start: 0, end: 3, images: ['/Pipeline/1-1.jpg'] },
+    { start: 0, end: 3, images: ['/Pipeline/1-1.png'] },
     { start: 4, end: 5, images: ['/Pipeline/2-1.jpg'] },
     { start: 6, end: 6, images: ['/Pipeline/2-2.png'] },
-    { start: 7, end: 7, images: ['/Pipeline/3-1.jpg'] },
-    { start: 8, end: 8, images: ['/Pipeline/4-1.jpg', '/Pipeline/4-2.png'] },
+    { start: 7, end: 7, images: ['/Pipeline/3-1.png'] },
+    { start: 8, end: 8, images: ['/Pipeline/4-1.png', '/Pipeline/4-2.png'] },
     { start: 9, end: 9, images: ['/Pipeline/5-1.jpg', '/Pipeline/5-2.jpg'] },
     { start: 10, end: 10, images: ['/Pipeline/6-1.JPG'] },
   ], []);
