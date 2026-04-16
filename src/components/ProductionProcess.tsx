@@ -32,6 +32,7 @@ export function ProductionProcess({ locale }: { locale: Locale }) {
     { label: t.shipment, tag: '11', images: ['/Pipeline/6-1.JPG'], desc: t.shipment_desc },
   ], [t]);
 
+  // Visual Segments to prevent flashing when images are the same across adjacent steps
   const imageSegments = useMemo(() => [
     { start: 0, end: 3, images: ['/Pipeline/1-1.jpg'] },
     { start: 4, end: 5, images: ['/Pipeline/2-1.jpg'] },
@@ -64,6 +65,7 @@ export function ProductionProcess({ locale }: { locale: Locale }) {
     return () => observers.forEach(o => o.disconnect());
   }, []);
 
+  // Handle auto-rotation and progress bar
   useEffect(() => {
     const activeImages = steps[activeStep]?.images || [];
     if (activeImages.length <= 1) {
@@ -91,6 +93,7 @@ export function ProductionProcess({ locale }: { locale: Locale }) {
     return () => clearInterval(timer);
   }, [activeStep, isPlaying, steps]);
 
+  // Reset index when step changes
   useEffect(() => {
     setSubImageIndex(0);
     setProgress(0);
@@ -103,10 +106,12 @@ export function ProductionProcess({ locale }: { locale: Locale }) {
 
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-16 lg:gap-24 relative mt-20">
           
+          {/* Left Column: Fixed Image with Bleed-to-Edge Design */}
           <div className="lg:col-span-7 hidden lg:block relative">
             <div className={cn(
               "sticky top-32 h-[70vh] min-h-[500px] max-h-[800px] overflow-hidden bg-muted/20 border-y border-r border-border/40 shadow-2xl transition-all duration-500",
               "rounded-r-[5rem] rounded-l-none",
+              /* Dynamic calculation for Bleed-to-Edge restricted by 1920px container logic */
               "lg:-ml-[calc((min(100vw,1920px)-1280px)/2+1.5rem)] lg:w-[calc(100%+((min(100vw,1920px)-1280px)/2+1.5rem))]"
             )}>
               {imageSegments.map((segment, segIndex) => {
@@ -143,6 +148,7 @@ export function ProductionProcess({ locale }: { locale: Locale }) {
                 );
               })}
 
+              {/* Sub-image rotation controls (Visible only when multiple images exist for current step) */}
               {steps[activeStep]?.images.length > 1 && (
                 <div className="absolute bottom-8 right-8 z-50 flex items-center gap-4 animate-in fade-in slide-in-from-bottom-4 duration-500">
                   <div className="flex gap-1.5 items-center">
@@ -185,6 +191,7 @@ export function ProductionProcess({ locale }: { locale: Locale }) {
             </div>
           </div>
 
+          {/* Right Column: Scrolling Steps */}
           <div className="lg:col-span-5 space-y-[60vh] py-12">
             {steps.map((step, index) => (
               <div
@@ -214,6 +221,7 @@ export function ProductionProcess({ locale }: { locale: Locale }) {
                   {step.desc}
                 </p>
 
+                {/* Mobile View: Inline Images */}
                 <div className="lg:hidden w-full aspect-video rounded-[2rem] overflow-hidden relative border border-border/40 mt-8 shadow-lg">
                    {step.images.map((imgUrl, iIndex) => (
                       <div
@@ -254,6 +262,7 @@ export function ProductionProcess({ locale }: { locale: Locale }) {
         </div>
       </div>
 
+      {/* Background Decorative Layer */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none -z-10">
         <div className="absolute top-[20%] right-0 w-[600px] h-[600px] bg-accent/5 rounded-full blur-[150px]" />
       </div>
