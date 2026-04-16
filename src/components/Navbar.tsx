@@ -4,6 +4,7 @@
 import { useState, useEffect } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
+import { usePathname } from 'next/navigation';
 import { Locale, translations } from "@/lib/translations";
 import { LanguageToggle } from "./LanguageToggle";
 import { 
@@ -40,6 +41,8 @@ interface NavbarProps {
 export function Navbar({ locale, setLocale }: NavbarProps) {
   const t = translations[locale].nav;
   const sub = translations[locale].nav_sub;
+  const pathname = usePathname();
+  
   const [isScrolled, setIsScrolled] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   
@@ -53,8 +56,15 @@ export function Navbar({ locale, setLocale }: NavbarProps) {
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
-  // Use scrolled state for height, but hover/menu state for background
-  const isNavbarActive = isScrolled || openWholesale || openProjects || mobileMenuOpen;
+  // Determine if the page has a dark/colored header area at the top
+  const isTransparentHeaderPage = pathname === '/' || pathname === '/products';
+  
+  // Navbar is "Active" (White Opaque) if:
+  // 1. Scrolled down
+  // 2. A mega menu is hovered
+  // 3. Mobile menu is open
+  // 4. We are on a page that DOES NOT have a dark header background
+  const isNavbarActive = !isTransparentHeaderPage || isScrolled || openWholesale || openProjects || mobileMenuOpen;
 
   const wholesaleItems = [
     { label: sub.aio, desc: sub.aio_desc, icon: Monitor, href: '/products?category=AIO' },
@@ -136,7 +146,7 @@ export function Navbar({ locale, setLocale }: NavbarProps) {
     <nav className={cn(
       "fixed top-0 left-0 right-0 z-[110] transition-all duration-500 border-b",
       isNavbarActive 
-        ? "bg-white/70 backdrop-blur-xl border-white/20 shadow-sm" 
+        ? "bg-white/90 backdrop-blur-xl border-white/20 shadow-sm" 
         : "bg-transparent border-transparent"
     )}>
       <div className={cn(
@@ -167,7 +177,7 @@ export function Navbar({ locale, setLocale }: NavbarProps) {
               <DropdownMenu open={openWholesale} onOpenChange={setOpenWholesale} modal={false}>
                 <DropdownMenuTrigger className={cn(
                   "h-full flex items-center gap-1 text-sm font-semibold transition-colors outline-none focus:outline-none focus:ring-0 px-2",
-                  isNavbarActive ? "text-muted-foreground" : "text-black",
+                  isNavbarActive ? "text-muted-foreground" : "text-white/90",
                   "hover:text-primary/70"
                 )}>
                   {t.wholesale} <ChevronDown className={cn("h-3 w-3 transition-transform duration-300", openWholesale && "rotate-180")} />
@@ -201,7 +211,7 @@ export function Navbar({ locale, setLocale }: NavbarProps) {
               <DropdownMenu open={openProjects} onOpenChange={setOpenProjects} modal={false}>
                 <DropdownMenuTrigger className={cn(
                   "h-full flex items-center gap-1 text-sm font-semibold transition-colors outline-none focus:outline-none focus:ring-0 px-2",
-                  isNavbarActive ? "text-muted-foreground" : "text-black",
+                  isNavbarActive ? "text-muted-foreground" : "text-white/90",
                   "hover:text-primary/70"
                 )}>
                   {t.projects} <ChevronDown className={cn("h-3 w-3 transition-transform duration-300", openProjects && "rotate-180")} />
@@ -230,7 +240,7 @@ export function Navbar({ locale, setLocale }: NavbarProps) {
               href="/#cases" 
               className={cn(
                 "text-sm font-semibold transition-colors h-full flex items-center px-2",
-                isNavbarActive ? "text-muted-foreground" : "text-black",
+                isNavbarActive ? "text-muted-foreground" : "text-white/90",
                 "hover:text-primary/70"
               )}
             >
@@ -252,7 +262,7 @@ export function Navbar({ locale, setLocale }: NavbarProps) {
         <button 
           className={cn(
             "lg:hidden p-2 transition-colors duration-500",
-            isNavbarActive ? "text-primary" : "text-black"
+            isNavbarActive ? "text-primary" : "text-white"
           )} 
           onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
         >
