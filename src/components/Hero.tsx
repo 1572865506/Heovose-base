@@ -11,21 +11,28 @@ export function Hero({ locale }: { locale: Locale }) {
 
   return (
     <section 
-      className="relative min-h-screen flex items-center pt-20 overflow-hidden bg-primary z-20"
+      className="relative min-h-screen flex items-center pt-20 overflow-hidden z-20"
     >
-      {/* Background Image with Overlay */}
+      {/* Background Image with Dynamic Glass Effect */}
       <div className="absolute inset-0 z-0">
         <Image
-          src="/video/xiaohuangren.jpg"
+          src="/video/whiteboard02.png"
           alt="Heovose Hero Background"
           fill
-          className="object-cover opacity-60"
+          className="object-cover"
           priority
         />
-        <div className="absolute inset-0 bg-gradient-to-r from-primary/90 via-primary/40 to-transparent z-10" />
+        
+        {/* Left-to-Right Glass Blur Gradient */}
+        <div 
+          className="absolute inset-0 z-10 backdrop-blur-3xl [mask-image:linear-gradient(to_right,black_20%,transparent_65%)]" 
+        />
+        
+        {/* Subtle color overlay for text contrast */}
+        <div className="absolute inset-0 bg-gradient-to-r from-primary/30 via-transparent to-transparent z-20" />
       </div>
 
-      <div className="container mx-auto px-6 relative z-20">
+      <div className="container mx-auto px-6 relative z-30">
         <div className="max-w-4xl space-y-12 animate-fade-in-up">
           {/* Headline and Subheadline */}
           <div className="space-y-6">
