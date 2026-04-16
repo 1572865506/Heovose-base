@@ -3,6 +3,7 @@
 
 import { useState, useEffect, useCallback, useRef } from 'react';
 import Image from 'next/image';
+import Link from 'next/link';
 import { Locale, translations } from "@/lib/translations";
 import { PlaceHolderImages } from "@/lib/placeholder-images";
 import { SectionHeading } from "./SectionHeading";
@@ -31,32 +32,38 @@ export function ProductGallery({ locale }: { locale: Locale }) {
     { 
       id: 'product-aio', 
       label: t.aio, 
-      desc: locale === 'en' ? 'Sleek, powerful desktop integration for modern workspaces.' : '专为现代办公空间设计的强劲一体化桌面方案。' 
+      desc: locale === 'en' ? 'Sleek, powerful desktop integration for modern workspaces.' : '专为现代办公空间设计的强劲一体化桌面方案。',
+      slug: 'AIO'
     },
     { 
       id: 'product-minipc', 
       label: t.minipc, 
-      desc: locale === 'en' ? 'Ultra-compact performance for edge computing and business.' : '适用于边缘计算和商业应用的高性能迷你电脑。' 
+      desc: locale === 'en' ? 'Ultra-compact performance for edge computing and business.' : '适用于边缘计算和商业应用的高性能迷你电脑。',
+      slug: 'Mini PC'
     },
     { 
       id: 'product-monitor', 
       label: t.monitor, 
-      desc: locale === 'en' ? 'Rugged industrial displays built for 24/7 durability.' : '专为 24/7 全天候运行设计的耐用工业级显示器。' 
+      desc: locale === 'en' ? 'Rugged industrial displays built for 24/7 durability.' : '专为 24/7 全天候运行设计的耐用工业级显示器。',
+      slug: 'Monitor'
     },
     { 
       id: 'product-kiosk', 
       label: t.kiosk, 
-      desc: locale === 'en' ? 'Smart self-service terminals for retail and hospitality.' : '适用于零售和酒店业的高性能智能自助服务终端。' 
+      desc: locale === 'en' ? 'Smart self-service terminals for retail and hospitality.' : '适用于零售和酒店业的高性能智能自助服务终端。',
+      slug: 'KIOSK'
     },
     { 
       id: 'factory-china', 
       label: locale === 'en' ? 'Custom Hardware Design' : '定制硬件设计', 
-      desc: locale === 'en' ? 'Bespoke hardware manufacturing solutions for global partners.' : '为全球合作伙伴提供的定制硬件制造解决方案。' 
+      desc: locale === 'en' ? 'Bespoke hardware manufacturing solutions for global partners.' : '为全球合作伙伴提供的定制硬件制造解决方案。',
+      slug: 'Components'
     },
     { 
       id: 'factory-indonesia', 
       label: locale === 'en' ? 'Supply Chain Management' : '供应链管理', 
-      desc: locale === 'en' ? 'End-to-end logistics and component sourcing services.' : '端到端的物流和元器件采购服务。' 
+      desc: locale === 'en' ? 'End-to-end logistics and component sourcing services.' : '端到端的物流和元器件采购服务。',
+      slug: 'Components'
     },
   ];
 
@@ -127,10 +134,13 @@ export function ProductGallery({ locale }: { locale: Locale }) {
                       </div>
                       
                       <div className="flex items-center justify-between mt-auto pt-6">
-                        <button className="flex items-center gap-2 text-sm font-bold text-primary group/btn tracking-tighter">
-                          {t.requestQuote}
+                        <Link 
+                          href={`/products?category=${encodeURIComponent(product.slug)}`}
+                          className="flex items-center gap-2 text-sm font-bold text-primary group/btn tracking-tighter"
+                        >
+                          {t.viewDetails}
                           <ArrowRight className="h-4 w-4 group-hover/btn:translate-x-1 transition-transform" />
-                        </button>
+                        </Link>
                         <div className="p-2 bg-muted/30 rounded-lg group-hover:bg-primary/5 transition-colors">
                           <FileText className="h-5 w-5 text-primary/40 group-hover:text-primary transition-colors" />
                         </div>

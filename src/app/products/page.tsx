@@ -1,8 +1,9 @@
 
 "use client";
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect, Suspense } from 'react';
 import Image from 'next/image';
+import { useSearchParams } from 'next/navigation';
 import { Locale, translations } from '@/lib/translations';
 import { Navbar } from '@/components/Navbar';
 import { Footer } from '@/components/Footer';
@@ -14,11 +15,13 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
 
-export default function ProductListPage() {
+function ProductListContent() {
   const [locale, setLocale] = useState<Locale>('en');
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategoryId, setSelectedCategoryId] = useState<string | null>(null);
   
+  const searchParams = useSearchParams();
+  const categoryParam = searchParams.get('category');
   const firestore = useFirestore();
   const t = translations[locale].products;
 
@@ -28,6 +31,17 @@ export default function ProductListPage() {
     return query(collection(firestore, 'product_categories'), orderBy('nameEn', 'asc'));
   }, [firestore]);
   const { data: categories, isLoading: categoriesLoading } = useCollection(categoriesQuery);
+
+  // Handle URL category parameter
+  useEffect(() => {
+    if (categoryParam && categories) {
+      const found = categories.find(c => 
+        c.id === categoryParam || 
+        c.nameEn.toLowerCase().includes(categoryParam.toLowerCase())
+      );
+      if (found) setSelectedCategoryId(found.id);
+    }
+  }, [categoryParam, categories]);
 
   // Fetch Active Products
   const productsQuery = useMemoFirebase(() => {
@@ -232,5 +246,13 @@ export default function ProductListPage() {
 
       <Footer locale={locale} />
     </main>
+  );
+}
+
+export default function ProductListPage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen flex items-center justify-center">Loading...</div>}>
+      <ProductListContent />
+    </Suspense>
   );
 }

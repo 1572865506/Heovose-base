@@ -57,20 +57,20 @@ export function Navbar({ locale, setLocale }: NavbarProps) {
   const isNavbarActive = isScrolled || openWholesale || openProjects || mobileMenuOpen;
 
   const wholesaleItems = [
-    { label: sub.aio, desc: sub.aio_desc, icon: Monitor, href: '/products' },
-    { label: sub.laptop, desc: sub.laptop_desc, icon: Laptop, href: '/products' },
-    { label: sub.minipc, desc: sub.minipc_desc, icon: Cpu, href: '/products' },
-    { label: sub.electromechanical, desc: sub.electromechanical_desc, icon: Zap, href: '/products' },
-    { label: sub.monitor, desc: sub.monitor_desc, icon: Tv, href: '/products' },
-    { label: sub.components, desc: sub.components_desc, icon: HardDrive, href: '/products' },
+    { label: sub.aio, desc: sub.aio_desc, icon: Monitor, href: '/products?category=AIO' },
+    { label: sub.laptop, desc: sub.laptop_desc, icon: Laptop, href: '/products?category=Laptop' },
+    { label: sub.minipc, desc: sub.minipc_desc, icon: Cpu, href: '/products?category=Mini%20PC' },
+    { label: sub.electromechanical, desc: sub.electromechanical_desc, icon: Zap, href: '/products?category=Electromechanical' },
+    { label: sub.monitor, desc: sub.monitor_desc, icon: Tv, href: '/products?category=Monitor' },
+    { label: sub.components, desc: sub.components_desc, icon: HardDrive, href: '/products?category=Components' },
   ];
 
   const projectItems = [
-    { label: sub.conference, desc: sub.conference_desc, icon: Presentation, href: '/products' },
-    { label: sub.selfservice, desc: sub.selfservice_desc, icon: MousePointerClick, href: '/products' },
-    { label: sub.industrial, desc: sub.industrial_desc, icon: Factory, href: '/products' },
-    { label: sub.led, desc: sub.led_desc, icon: Lightbulb, href: '/products' },
-    { label: sub.showroom, desc: sub.showroom_desc, icon: Store, href: '/products' },
+    { label: sub.conference, desc: sub.conference_desc, icon: Presentation, href: '/products?category=Conference' },
+    { label: sub.selfservice, desc: sub.selfservice_desc, icon: MousePointerClick, href: '/products?category=KIOSK' },
+    { label: sub.industrial, desc: sub.industrial_desc, icon: Factory, href: '/products?category=Industrial' },
+    { label: sub.led, desc: sub.led_desc, icon: Lightbulb, href: '/products?category=LED' },
+    { label: sub.showroom, desc: sub.showroom_desc, icon: Store, href: '/products?category=Showroom' },
   ];
 
   const MegaMenuContent = ({ items, onMouseEnter, onMouseLeave }: { items: any[], onMouseEnter: () => void, onMouseLeave: () => void }) => (
@@ -240,9 +240,11 @@ export function Navbar({ locale, setLocale }: NavbarProps) {
 
           <div className="flex items-center gap-6 h-full">
             <LanguageToggle currentLocale={locale} setLocale={setLocale} />
-            <Button size="sm" className="rounded-full px-6 bg-primary hover:bg-primary/90 shadow-lg">
-              {t.contact}
-            </Button>
+            <Link href="/products">
+              <Button size="sm" className="rounded-full px-6 bg-primary hover:bg-primary/90 shadow-lg">
+                {t.contact}
+              </Button>
+            </Link>
           </div>
         </div>
 
@@ -287,7 +289,9 @@ export function Navbar({ locale, setLocale }: NavbarProps) {
             <Link href="/#cases" onClick={() => setMobileMenuOpen(false)} className="text-lg font-bold text-primary">{t.cases}</Link>
             <div className="pt-6 border-t border-border flex flex-col gap-6">
               <LanguageToggle currentLocale={locale} setLocale={setLocale} />
-              <Button className="w-full rounded-xl bg-primary">{t.contact}</Button>
+              <Link href="/products" onClick={() => setMobileMenuOpen(false)}>
+                <Button className="w-full rounded-xl bg-primary">{t.contact}</Button>
+              </Link>
             </div>
           </div>
         </div>

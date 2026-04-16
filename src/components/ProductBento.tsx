@@ -2,6 +2,7 @@
 "use client";
 
 import Image from 'next/image';
+import Link from 'next/link';
 import { Locale, translations } from "@/lib/translations";
 import { PlaceHolderImages } from "@/lib/placeholder-images";
 import { SectionHeading } from "./SectionHeading";
@@ -13,17 +14,17 @@ export function ProductBento({ locale }: { locale: Locale }) {
   const sub = translations[locale].nav_sub;
 
   const items = [
-    { label: sub.aio, id: 'product-aio', grid: 'lg:col-span-2 lg:row-span-2', category: t.wholesale },
-    { label: sub.minipc, id: 'product-minipc', grid: 'lg:col-span-1 lg:row-span-2', category: t.wholesale },
-    { label: sub.monitor, id: 'product-monitor', grid: 'lg:col-span-1 lg:row-span-1', category: t.wholesale },
-    { label: sub.laptop, id: 'product-laptop', grid: 'lg:col-span-1 lg:row-span-1', category: t.wholesale },
-    { label: sub.conference, id: 'case-office', grid: 'lg:col-span-1 lg:row-span-2', category: t.projects },
-    { label: sub.selfservice, id: 'product-kiosk', grid: 'lg:col-span-2 lg:row-span-2', category: t.projects },
-    { label: sub.industrial, id: 'case-factory', grid: 'lg:col-span-1 lg:row-span-1', category: t.projects },
-    { label: sub.led, id: 'case-transport', grid: 'lg:col-span-1 lg:row-span-1', category: t.projects },
-    { label: sub.showroom, id: 'case-retail', grid: 'lg:col-span-1 lg:row-span-2', category: t.projects },
-    { label: sub.electromechanical, id: 'product-minipc', grid: 'lg:col-span-2 lg:row-span-2', category: t.wholesale },
-    { label: sub.components, id: 'factory-china', grid: 'lg:col-span-2 lg:row-span-1', category: t.wholesale },
+    { label: sub.aio, id: 'product-aio', grid: 'lg:col-span-2 lg:row-span-2', category: t.wholesale, slug: 'AIO' },
+    { label: sub.minipc, id: 'product-minipc', grid: 'lg:col-span-1 lg:row-span-2', category: t.wholesale, slug: 'Mini PC' },
+    { label: sub.monitor, id: 'product-monitor', grid: 'lg:col-span-1 lg:row-span-1', category: t.wholesale, slug: 'Monitor' },
+    { label: sub.laptop, id: 'product-laptop', grid: 'lg:col-span-1 lg:row-span-1', category: t.wholesale, slug: 'Laptop' },
+    { label: sub.conference, id: 'case-office', grid: 'lg:col-span-1 lg:row-span-2', category: t.projects, slug: 'Conference' },
+    { label: sub.selfservice, id: 'product-kiosk', grid: 'lg:col-span-2 lg:row-span-2', category: t.projects, slug: 'KIOSK' },
+    { label: sub.industrial, id: 'case-factory', grid: 'lg:col-span-1 lg:row-span-1', category: t.projects, slug: 'Industrial' },
+    { label: sub.led, id: 'case-transport', grid: 'lg:col-span-1 lg:row-span-1', category: t.projects, slug: 'LED' },
+    { label: sub.showroom, id: 'case-retail', grid: 'lg:col-span-1 lg:row-span-2', category: t.projects, slug: 'Showroom' },
+    { label: sub.electromechanical, id: 'product-minipc', grid: 'lg:col-span-2 lg:row-span-2', category: t.wholesale, slug: 'Electromechanical' },
+    { label: sub.components, id: 'factory-china', grid: 'lg:col-span-2 lg:row-span-1', category: t.wholesale, slug: 'Components' },
   ];
 
   return (
@@ -38,8 +39,9 @@ export function ProductBento({ locale }: { locale: Locale }) {
           {items.map((item, index) => {
             const imgData = PlaceHolderImages.find(img => img.id === item.id);
             return (
-              <div
+              <Link
                 key={index}
+                href={`/products?category=${encodeURIComponent(item.slug)}`}
                 className={cn(
                   "group relative rounded-[2rem] overflow-hidden border border-border/40 bg-muted/20 transition-all duration-700 hover:shadow-2xl hover:border-primary/20",
                   item.grid
@@ -77,7 +79,7 @@ export function ProductBento({ locale }: { locale: Locale }) {
                 
                 {/* Hover Glow Effect */}
                 <div className="absolute inset-0 bg-gradient-to-br from-white/10 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none" />
-              </div>
+              </Link>
             );
           })}
         </div>

@@ -2,6 +2,7 @@
 "use client";
 
 import Image from 'next/image';
+import Link from 'next/link';
 import { Locale, translations } from "@/lib/translations";
 import { ShoppingBag, Building2 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -50,7 +51,10 @@ export function Hero({ locale }: { locale: Locale }) {
           {/* Entry Cards */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 pt-8 max-w-xl">
             {/* Wholesale Card */}
-            <div className="group relative bg-white/10 backdrop-blur-2xl p-6 rounded-[2rem] border border-white/20 hover:border-accent/40 transition-all duration-700 cursor-pointer overflow-hidden shadow-[0_20px_40px_rgba(0,0,0,0.3)]">
+            <Link 
+              href="/products"
+              className="group relative bg-white/10 backdrop-blur-2xl p-6 rounded-[2rem] border border-white/20 hover:border-accent/40 transition-all duration-700 cursor-pointer overflow-hidden shadow-[0_20px_40px_rgba(0,0,0,0.3)]"
+            >
               {/* Gradient Border Glow Overlay */}
               <div className="absolute inset-0 bg-gradient-to-br from-accent/30 via-transparent to-white/10 opacity-0 group-hover:opacity-100 transition-opacity duration-700 pointer-events-none" />
               
@@ -65,10 +69,13 @@ export function Hero({ locale }: { locale: Locale }) {
                   {t.wholesale}
                 </h3>
               </div>
-            </div>
+            </Link>
 
             {/* Project Card */}
-            <div className="group relative bg-white/10 backdrop-blur-2xl p-6 rounded-[2rem] border border-white/20 hover:border-accent/40 transition-all duration-700 cursor-pointer overflow-hidden shadow-[0_20px_40px_rgba(0,0,0,0.3)]">
+            <Link 
+              href="/products?category=Industrial"
+              className="group relative bg-white/10 backdrop-blur-2xl p-6 rounded-[2rem] border border-white/20 hover:border-accent/40 transition-all duration-700 cursor-pointer overflow-hidden shadow-[0_20px_40px_rgba(0,0,0,0.3)]"
+            >
               {/* Gradient Border Glow Overlay */}
               <div className="absolute inset-0 bg-gradient-to-br from-accent/30 via-transparent to-white/10 opacity-0 group-hover:opacity-100 transition-opacity duration-700 pointer-events-none" />
               
@@ -82,7 +89,7 @@ export function Hero({ locale }: { locale: Locale }) {
                   {t.project}
                 </h3>
               </div>
-            </div>
+            </Link>
           </div>
         </div>
       </div>
