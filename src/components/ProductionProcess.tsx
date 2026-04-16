@@ -14,10 +14,10 @@ export function ProductionProcess({ locale }: { locale: Locale }) {
   const scrollRefs = useRef<(HTMLDivElement | null)[]>([]);
 
   const steps = [
-    { label: t.iqc, tag: '01', imageId: 'process-qc', desc: locale === 'en' ? 'Rigorous verification of all incoming components to ensure zero-defect start.' : '严格核实所有进库元器件，确保零缺陷启动。' },
-    { label: t.smt, tag: '02', imageId: 'process-smt', desc: locale === 'en' ? 'High-speed automated SMT lines for precise motherboard component placement.' : '高速自动化 SMT 生产线，实现主板元器件的精准贴装。' },
-    { label: t.assembly, tag: '03', imageId: 'process-assembly', desc: locale === 'en' ? 'Expert technicians handling precision mainboard integration and cabling.' : '专业技术人员进行精密主板集成和布线。' },
-    { label: t.test, tag: '04', imageId: 'process-testing', desc: locale === 'en' ? 'Comprehensive functional validation across all hardware interfaces.' : '对所有硬件接口进行全面的功能验证。' },
+    { label: t.pmc, tag: '01', imageUrl: '/Pipeline/1-1.jpg', desc: t.pmc_desc },
+    { label: t.procurement, tag: '02', imageUrl: '/Pipeline/1-1.jpg', desc: t.procurement_desc },
+    { label: t.supplier, tag: '03', imageUrl: '/Pipeline/1-1.jpg', desc: t.supplier_desc },
+    { label: t.receiving, tag: '04', imageUrl: '/Pipeline/1-1.jpg', desc: t.receiving_desc },
     { label: t.aging, tag: '05', imageId: 'process-testing', desc: locale === 'en' ? 'Extended high-temperature stress testing to guarantee long-term stability.' : '延长的高温压力测试，确保长期稳定性。' },
     { label: t.ipqc, tag: '06', imageId: 'process-qc', desc: locale === 'en' ? 'In-process quality checkpoints at every critical assembly stage.' : '在每个关键组装阶段设置过程品质检查点。' },
     { label: t.final, tag: '07', imageId: 'process-assembly', desc: locale === 'en' ? 'Final housing closure and aesthetic quality inspection.' : '整机封壳及外观品质检验。' },
@@ -62,7 +62,7 @@ export function ProductionProcess({ locale }: { locale: Locale }) {
           <div className="lg:block hidden relative">
             <div className="sticky top-32 aspect-square rounded-[3rem] overflow-hidden bg-muted/20 border border-border/40 shadow-2xl group">
               {steps.map((step, index) => {
-                const imgData = PlaceHolderImages.find(img => img.id === step.imageId);
+                const imgUrl = step.imageUrl || PlaceHolderImages.find(img => img.id === step.imageId)?.imageUrl;
                 return (
                   <div
                     key={index}
@@ -71,13 +71,12 @@ export function ProductionProcess({ locale }: { locale: Locale }) {
                       activeStep === index ? "opacity-100" : "opacity-0 pointer-events-none"
                     )}
                   >
-                    {imgData?.imageUrl && (
+                    {imgUrl && (
                       <Image
-                        src={imgData.imageUrl}
+                        src={imgUrl}
                         alt={step.label}
                         fill
                         className="object-cover"
-                        data-ai-hint={imgData.imageHint}
                       />
                     )}
                     <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent" />
@@ -119,9 +118,9 @@ export function ProductionProcess({ locale }: { locale: Locale }) {
 
                 {/* Mobile view image */}
                 <div className="lg:hidden w-full aspect-video rounded-[2rem] overflow-hidden relative border border-border/40 mt-8 shadow-lg">
-                   {PlaceHolderImages.find(img => img.id === step.imageId)?.imageUrl && (
+                   { (step.imageUrl || PlaceHolderImages.find(img => img.id === step.imageId)?.imageUrl) && (
                       <Image
-                        src={PlaceHolderImages.find(img => img.id === step.imageId)!.imageUrl}
+                        src={step.imageUrl || PlaceHolderImages.find(img => img.id === step.imageId)!.imageUrl}
                         alt={step.label}
                         fill
                         className="object-cover"
