@@ -9,7 +9,7 @@ import { Navbar } from '@/components/Navbar';
 import { Footer } from '@/components/Footer';
 import { useCollection, useMemoFirebase, useFirestore } from '@/firebase';
 import { collection, query, where, orderBy } from 'firebase/firestore';
-import { Search, Filter, ArrowRight, FileText, ChevronRight, AlertCircle } from 'lucide-react';
+import { Search, Filter, ArrowRight, FileText, ChevronRight, AlertCircle, RefreshCw } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -72,7 +72,7 @@ function ProductListContent() {
     return locale === 'zh' ? cat?.nameZh : cat?.nameEn;
   }, [selectedCategoryId, categories, locale, t.allCategories]);
 
-  // UI 错误反馈：如果发生权限错误或查询错误
+  // 错误反馈逻辑
   const hasError = !!(productsError || categoriesError);
 
   return (
@@ -105,13 +105,28 @@ function ProductListContent() {
       {/* Main Content */}
       <section className="py-16 container mx-auto px-6">
         {hasError && (
-          <Alert variant="destructive" className="mb-8 rounded-2xl border-2">
+          <Alert variant="destructive" className="mb-12 rounded-2xl border-2 bg-destructive/5 animate-in fade-in slide-in-from-top-4 duration-500">
             <AlertCircle className="h-5 w-5" />
-            <AlertTitle className="font-bold">Database Connection Note</AlertTitle>
-            <AlertDescription className="text-sm opacity-90">
-              {locale === 'zh' 
-                ? "无法连接到产品数据库。这通常是因为数据库中尚未添加任何产品数据，或者安全规则正在同步中。请确保在 Firebase 控制台中已创建 'products' 集合。" 
-                : "Unable to connect to the product database. This usually means no product data has been added yet, or security rules are still syncing. Please ensure the 'products' collection is created in your Firebase console."}
+            <AlertTitle className="font-bold mb-2">数据同步中或配置检查</AlertTitle>
+            <AlertDescription className="text-sm opacity-90 space-y-3">
+              <p>
+                {locale === 'zh' 
+                  ? "目前无法获取产品数据。这通常有以下几种原因：" 
+                  : "Unable to fetch product data. This typically happens for a few reasons:"}
+              </p>
+              <ul className="list-disc pl-5 space-y-1">
+                <li>{locale === 'zh' ? "数据库中尚未创建 'products' 集合或集合内无有效数据。" : "The 'products' collection is missing or empty in Firestore."}</li>
+                <li>{locale === 'zh' ? "新部署的安全规则正在全球 CDN 生效中（通常需要 1 分钟）。" : "New security rules are propagating (usually takes about 1 minute)."}</li>
+                <li>{locale === 'zh' ? "没有符合 'status == active' 条件的产品。" : "No products match the 'status == active' criteria."}</li>
+              </ul>
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={() => window.location.reload()}
+                className="mt-2 bg-white text-destructive border-destructive hover:bg-destructive hover:text-white transition-all font-bold"
+              >
+                <RefreshCw className="mr-2 h-4 w-4" /> {locale === 'zh' ? "重试连接" : "Retry Connection"}
+              </Button>
             </AlertDescription>
           </Alert>
         )}
@@ -254,11 +269,13 @@ function ProductListContent() {
                   <Filter className="h-10 w-10 opacity-20" />
                 </div>
                 <div className="space-y-2">
-                  <h4 className="text-xl font-bold text-primary">{hasError ? "Database Syncing" : t.noResults}</h4>
+                  <h4 className="text-xl font-bold text-primary">
+                    {hasError ? (locale === 'zh' ? "正在建立连接..." : "Establishing Connection...") : t.noResults}
+                  </h4>
                   <p className="text-muted-foreground text-sm max-w-xs mx-auto">
                     {hasError 
-                      ? "The database is ready but seems empty. Please add some products in the Firebase console." 
-                      : "Try adjusting your search or filters."}
+                      ? (locale === 'zh' ? "规则正在同步。如果此状态持续超过 1 分钟，请检查数据库是否为空。" : "Rules are syncing. If this persists for >1 min, check if the database is empty.") 
+                      : (locale === 'zh' ? "请尝试调整您的搜索或筛选条件。" : "Try adjusting your search or filters.")}
                   </p>
                 </div>
                 {!hasError && (

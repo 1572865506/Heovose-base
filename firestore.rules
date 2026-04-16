@@ -1,18 +1,31 @@
 
 /**
  * FIRESTORE SECURITY RULES
- * Forced Redeployment Timestamp: 2025-02-21 16:20:00
+ * Forced Redeployment Timestamp: 2025-02-21 17:30:00
  * 
  * Status: Read-Only Public Access for Product Catalog
  * This file is managed by the App Prototyper.
+ * 
+ * Note: Changing this comment triggers a re-deployment to the Firebase console.
  */
 
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // 允许任何用户（包括未登录用户）读取所有集合
-    // 这是一个极简的只读规则，用于确保原型开发阶段的数据顺畅访问
+    // 允许公开读取产品分类
+    match /product_categories/{category} {
+      allow read: if true;
+      allow write: if false;
+    }
+
+    // 允许公开读取产品详情
+    match /products/{product} {
+      allow read: if true;
+      allow write: if false;
+    }
+
+    // 默认禁止其他所有写入
     match /{document=**} {
       allow read: if true;
       allow write: if false;
