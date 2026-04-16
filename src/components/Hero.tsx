@@ -16,7 +16,7 @@ export function Hero({ locale }: { locale: Locale }) {
       {/* Background Image with Dynamic Glass Effect */}
       <div className="absolute inset-0 z-0">
         <Image
-          src="/video/whiteboard02.png"
+          src="/image/whiteboard02.png"
           alt="Heovose Hero Background"
           fill
           className="object-cover opacity-100"
