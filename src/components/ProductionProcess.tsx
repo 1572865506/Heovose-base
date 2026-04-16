@@ -5,31 +5,31 @@ import { useState, useEffect, useRef } from 'react';
 import Image from 'next/image';
 import { Locale, translations } from "@/lib/translations";
 import { SectionHeading } from "./SectionHeading";
-import { PlaceHolderImages } from "@/lib/placeholder-images";
 import { cn } from "@/lib/utils";
 
 export function ProductionProcess({ locale }: { locale: Locale }) {
   const t = translations[locale].process;
   const [activeStep, setActiveStep] = useState(0);
+  const [subImageIndex, setSubImageIndex] = useState(0);
   const scrollRefs = useRef<(HTMLDivElement | null)[]>([]);
 
   const steps = [
-    { label: t.pmc, tag: '01', imageUrl: '/Pipeline/1-1.jpg', desc: t.pmc_desc },
-    { label: t.procurement, tag: '02', imageUrl: '/Pipeline/1-1.jpg', desc: t.procurement_desc },
-    { label: t.supplier, tag: '03', imageUrl: '/Pipeline/1-1.jpg', desc: t.supplier_desc },
-    { label: t.receiving, tag: '04', imageUrl: '/Pipeline/1-1.jpg', desc: t.receiving_desc },
-    { label: t.inspection, tag: '05', imageUrl: '/Pipeline/2-1.jpg', desc: t.inspection_desc },
-    { label: t.warehousing, tag: '06', imageUrl: '/Pipeline/2-1.jpg', desc: t.warehousing_desc },
-    { label: t.issuing, tag: '07', imageUrl: '/Pipeline/2-2.png', desc: t.issuing_desc },
-    { label: t.manufacturing, tag: '08', imageUrl: '/Pipeline/3-1.jpg', desc: t.manufacturing_desc },
-    { label: t.system, tag: '09', imageUrl: '/Pipeline/4-1.jpg', desc: t.system_desc },
-    { label: t.fg_warehousing, tag: '10', imageUrl: '/Pipeline/5-1.jpg', desc: t.fg_warehousing_desc },
-    { label: t.shipment, tag: '11', imageUrl: '/Pipeline/6-1.JPG', desc: t.shipment_desc },
+    { label: t.pmc, tag: '01', images: ['/Pipeline/1-1.jpg'], desc: t.pmc_desc },
+    { label: t.procurement, tag: '02', images: ['/Pipeline/1-1.jpg'], desc: t.procurement_desc },
+    { label: t.supplier, tag: '03', images: ['/Pipeline/1-1.jpg'], desc: t.supplier_desc },
+    { label: t.receiving, tag: '04', images: ['/Pipeline/1-1.jpg'], desc: t.receiving_desc },
+    { label: t.inspection, tag: '05', images: ['/Pipeline/2-1.jpg'], desc: t.inspection_desc },
+    { label: t.warehousing, tag: '06', images: ['/Pipeline/2-1.jpg'], desc: t.warehousing_desc },
+    { label: t.issuing, tag: '07', images: ['/Pipeline/2-2.png'], desc: t.issuing_desc },
+    { label: t.manufacturing, tag: '08', images: ['/Pipeline/3-1.jpg'], desc: t.manufacturing_desc },
+    { label: t.system, tag: '09', images: ['/Pipeline/4-1.jpg', '/Pipeline/4-2.png'], desc: t.system_desc },
+    { label: t.fg_warehousing, tag: '10', images: ['/Pipeline/5-1.jpg', '/Pipeline/5-2.jpg'], desc: t.fg_warehousing_desc },
+    { label: t.shipment, tag: '11', images: ['/Pipeline/6-1.JPG'], desc: t.shipment_desc },
   ];
 
+  // Intersection Observer for steps
   useEffect(() => {
     const observers: IntersectionObserver[] = [];
-    
     scrollRefs.current.forEach((ref, index) => {
       if (ref) {
         const observer = new IntersectionObserver(
@@ -40,16 +40,28 @@ export function ProductionProcess({ locale }: { locale: Locale }) {
           },
           { 
             threshold: 0.5,
-            rootMargin: "-25% 0px -25% 0px"
+            rootMargin: "-20% 0px -20% 0px"
           }
         );
         observer.observe(ref);
         observers.push(observer);
       }
     });
-
     return () => observers.forEach(o => o.disconnect());
   }, []);
+
+  // Sub-image cycling for steps with multiple images
+  useEffect(() => {
+    setSubImageIndex(0);
+    const currentStepImages = steps[activeStep]?.images || [];
+    if (currentStepImages.length <= 1) return;
+
+    const interval = setInterval(() => {
+      setSubImageIndex((prev) => (prev + 1) % currentStepImages.length);
+    }, 3000); // Cycle every 3 seconds
+
+    return () => clearInterval(interval);
+  }, [activeStep]);
 
   return (
     <section id="process" className="py-32 bg-white relative">
@@ -58,36 +70,42 @@ export function ProductionProcess({ locale }: { locale: Locale }) {
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 lg:gap-24 relative mt-20">
           
-          {/* Sticky Image Column - Now constrained within grid */}
+          {/* Sticky Image Column */}
           <div className="lg:block hidden relative">
-            <div className="sticky top-32 aspect-square rounded-[3rem] overflow-hidden bg-muted/20 border border-border/40 shadow-2xl group">
-              {steps.map((step, index) => {
-                const imgUrl = step.imageUrl;
-                return (
-                  <div
-                    key={index}
-                    className={cn(
-                      "absolute inset-0 transition-opacity duration-700 ease-in-out",
-                      activeStep === index ? "opacity-100" : "opacity-0 pointer-events-none"
-                    )}
-                  >
-                    {imgUrl && (
+            <div className="sticky top-32 aspect-square rounded-[3rem] overflow-hidden bg-muted/20 border border-border/40 shadow-2xl">
+              {steps.map((step, sIndex) => (
+                <div
+                  key={`step-img-${sIndex}`}
+                  className={cn(
+                    "absolute inset-0 transition-opacity duration-1000 ease-in-out",
+                    activeStep === sIndex ? "opacity-100" : "opacity-0 pointer-events-none"
+                  )}
+                >
+                  {step.images.map((imgUrl, iIndex) => (
+                    <div
+                      key={`${sIndex}-${iIndex}`}
+                      className={cn(
+                        "absolute inset-0 transition-opacity duration-1000 ease-in-out",
+                        activeStep === sIndex && subImageIndex === iIndex ? "opacity-100" : "opacity-0"
+                      )}
+                    >
                       <Image
                         src={imgUrl}
-                        alt={step.label}
+                        alt={`${step.label} - ${iIndex}`}
                         fill
                         className="object-cover"
+                        priority={sIndex === 0}
                       />
-                    )}
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent" />
-                  </div>
-                );
-              })}
+                    </div>
+                  ))}
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent" />
+                </div>
+              ))}
             </div>
           </div>
 
-          {/* Scrolling Text Column */}
-          <div className="space-y-48 py-12">
+          {/* Scrolling Text Column - Increased vertical space to lengthen scroll time */}
+          <div className="space-y-[40vh] py-12">
             {steps.map((step, index) => (
               <div
                 key={index}
@@ -118,14 +136,22 @@ export function ProductionProcess({ locale }: { locale: Locale }) {
 
                 {/* Mobile view image */}
                 <div className="lg:hidden w-full aspect-video rounded-[2rem] overflow-hidden relative border border-border/40 mt-8 shadow-lg">
-                   { step.imageUrl && (
-                      <Image
-                        src={step.imageUrl}
-                        alt={step.label}
-                        fill
-                        className="object-cover"
-                      />
-                   )}
+                   {step.images.map((imgUrl, iIndex) => (
+                      <div
+                        key={`mob-${index}-${iIndex}`}
+                        className={cn(
+                          "absolute inset-0 transition-opacity duration-1000",
+                          activeStep === index && subImageIndex === iIndex ? "opacity-100" : "opacity-0"
+                        )}
+                      >
+                        <Image
+                          src={imgUrl}
+                          alt={step.label}
+                          fill
+                          className="object-cover"
+                        />
+                      </div>
+                   ))}
                 </div>
               </div>
             ))}
