@@ -62,7 +62,7 @@ export function ProductionProcess({ locale }: { locale: Locale }) {
   }, [activeStep]);
 
   return (
-    <section id="process" className="py-32 bg-white relative overflow-hidden">
+    <section id="process" className="py-32 bg-white relative overflow-x-clip">
       <div className="container mx-auto px-6">
         <SectionHeading title={t.title} subtitle={t.subtitle} />
 
