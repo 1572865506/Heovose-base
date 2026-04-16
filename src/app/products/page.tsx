@@ -9,10 +9,11 @@ import { Navbar } from '@/components/Navbar';
 import { Footer } from '@/components/Footer';
 import { useCollection, useMemoFirebase, useFirestore } from '@/firebase';
 import { collection, query, where, orderBy } from 'firebase/firestore';
-import { Search, Filter, ArrowRight, FileText, ChevronRight } from 'lucide-react';
+import { Search, Filter, ArrowRight, FileText, ChevronRight, AlertCircle } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { cn } from '@/lib/utils';
 
 function ProductListContent() {
@@ -30,7 +31,7 @@ function ProductListContent() {
     if (!firestore) return null;
     return query(collection(firestore, 'product_categories'), orderBy('nameEn', 'asc'));
   }, [firestore]);
-  const { data: categories, isLoading: categoriesLoading } = useCollection(categoriesQuery);
+  const { data: categories, error: categoriesError } = useCollection(categoriesQuery);
 
   // Handle URL category parameter
   useEffect(() => {
@@ -52,7 +53,7 @@ function ProductListContent() {
       orderBy('createdAt', 'desc')
     );
   }, [firestore]);
-  const { data: allProducts, isLoading: productsLoading } = useCollection(productsQuery);
+  const { data: allProducts, isLoading: productsLoading, error: productsError } = useCollection(productsQuery);
 
   // Filter products client-side for better UX responsiveness
   const filteredProducts = useMemo(() => {
@@ -70,6 +71,9 @@ function ProductListContent() {
     const cat = categories?.find(c => c.id === selectedCategoryId);
     return locale === 'zh' ? cat?.nameZh : cat?.nameEn;
   }, [selectedCategoryId, categories, locale, t.allCategories]);
+
+  // UI 错误反馈：如果发生权限错误或查询错误
+  const hasError = !!(productsError || categoriesError);
 
   return (
     <main className="relative min-h-screen bg-background">
@@ -100,6 +104,18 @@ function ProductListContent() {
 
       {/* Main Content */}
       <section className="py-16 container mx-auto px-6">
+        {hasError && (
+          <Alert variant="destructive" className="mb-8 rounded-2xl border-2">
+            <AlertCircle className="h-5 w-5" />
+            <AlertTitle className="font-bold">Database Connection Note</AlertTitle>
+            <AlertDescription className="text-sm opacity-90">
+              {locale === 'zh' 
+                ? "无法连接到产品数据库。这通常是因为数据库中尚未添加任何产品数据，或者安全规则正在同步中。请确保在 Firebase 控制台中已创建 'products' 集合。" 
+                : "Unable to connect to the product database. This usually means no product data has been added yet, or security rules are still syncing. Please ensure the 'products' collection is created in your Firebase console."}
+            </AlertDescription>
+          </Alert>
+        )}
+
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-12">
           
           {/* Sidebar Filters */}
@@ -172,7 +188,13 @@ function ProductListContent() {
               </div>
             </div>
 
-            {filteredProducts.length > 0 ? (
+            {productsLoading ? (
+              <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-8">
+                {[1, 2, 3, 4, 5, 6].map((i) => (
+                  <div key={i} className="h-[400px] rounded-[2rem] bg-muted/20 animate-pulse" />
+                ))}
+              </div>
+            ) : filteredProducts.length > 0 ? (
               <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-8">
                 {filteredProducts.map((product) => (
                   <div 
@@ -232,12 +254,18 @@ function ProductListContent() {
                   <Filter className="h-10 w-10 opacity-20" />
                 </div>
                 <div className="space-y-2">
-                  <h4 className="text-xl font-bold text-primary">{t.noResults}</h4>
-                  <p className="text-muted-foreground text-sm">Try adjusting your search or filters.</p>
+                  <h4 className="text-xl font-bold text-primary">{hasError ? "Database Syncing" : t.noResults}</h4>
+                  <p className="text-muted-foreground text-sm max-w-xs mx-auto">
+                    {hasError 
+                      ? "The database is ready but seems empty. Please add some products in the Firebase console." 
+                      : "Try adjusting your search or filters."}
+                  </p>
                 </div>
-                <Button onClick={() => { setSearchQuery(''); setSelectedCategoryId(null); }} variant="link" className="text-primary font-bold">
-                  Clear all filters
-                </Button>
+                {!hasError && (
+                  <Button onClick={() => { setSearchQuery(''); setSelectedCategoryId(null); }} variant="link" className="text-primary font-bold">
+                    Clear all filters
+                  </Button>
+                )}
               </div>
             )}
           </div>
