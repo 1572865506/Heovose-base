@@ -6,12 +6,17 @@ import Image from 'next/image';
 import { Locale, translations } from "@/lib/translations";
 import { SectionHeading } from "./SectionHeading";
 import { cn } from "@/lib/utils";
+import { Play, Pause } from "lucide-react";
 
 export function ProductionProcess({ locale }: { locale: Locale }) {
   const t = translations[locale].process;
   const [activeStep, setActiveStep] = useState(0);
   const [subImageIndex, setSubImageIndex] = useState(0);
+  const [isPlaying, setIsPlaying] = useState(true);
+  const [progress, setProgress] = useState(0);
   const scrollRefs = useRef<(HTMLDivElement | null)[]>([]);
+  
+  const AUTOPLAY_DELAY = 4000;
 
   const steps = useMemo(() => [
     { label: t.pmc, tag: '01', images: ['/Pipeline/1-1.jpg'], desc: t.pmc_desc },
@@ -25,7 +30,7 @@ export function ProductionProcess({ locale }: { locale: Locale }) {
     { label: t.system, tag: '09', images: ['/Pipeline/4-1.jpg', '/Pipeline/4-2.png'], desc: t.system_desc },
     { label: t.fg_warehousing, tag: '10', images: ['/Pipeline/5-1.jpg', '/Pipeline/5-2.jpg'], desc: t.fg_warehousing_desc },
     { label: t.shipment, tag: '11', images: ['/Pipeline/6-1.JPG'], desc: t.shipment_desc },
-  ], [t, locale]);
+  ], [t]);
 
   // Define visual segments to avoid redundant transitions when images are the same
   const imageSegments = useMemo(() => [
@@ -62,16 +67,33 @@ export function ProductionProcess({ locale }: { locale: Locale }) {
 
   // Handle internal slideshow for segments with multiple images
   useEffect(() => {
-    setSubImageIndex(0);
     const activeImages = steps[activeStep]?.images || [];
-    if (activeImages.length <= 1) return;
+    if (activeImages.length <= 1 || !isPlaying) {
+      setProgress(0);
+      return;
+    }
 
-    const interval = setInterval(() => {
-      setSubImageIndex((prev) => (prev + 1) % activeImages.length);
-    }, 3000);
+    const intervalTime = 50;
+    const stepValue = (intervalTime / AUTOPLAY_DELAY) * 100;
 
-    return () => clearInterval(interval);
-  }, [activeStep, steps]);
+    const timer = setInterval(() => {
+      setProgress((prev) => {
+        if (prev >= 100) {
+          setSubImageIndex((idx) => (idx + 1) % activeImages.length);
+          return 0;
+        }
+        return prev + stepValue;
+      });
+    }, intervalTime);
+
+    return () => clearInterval(timer);
+  }, [activeStep, isPlaying, steps]);
+
+  // Reset progress and sub-index when activeStep changes
+  useEffect(() => {
+    setSubImageIndex(0);
+    setProgress(0);
+  }, [activeStep]);
 
   return (
     <section id="process" className="py-32 bg-white relative overflow-x-clip">
@@ -119,6 +141,47 @@ export function ProductionProcess({ locale }: { locale: Locale }) {
                   </div>
                 );
               })}
+
+              {/* Carousel Controls Overlay - Desktop */}
+              {steps[activeStep]?.images.length > 1 && (
+                <div className="absolute bottom-10 right-10 z-50 flex items-center gap-6 bg-black/40 backdrop-blur-xl px-6 py-4 rounded-3xl border border-white/10 shadow-2xl animate-in fade-in slide-in-from-bottom-4 duration-500">
+                  <div className="flex gap-2 items-center">
+                    {steps[activeStep].images.map((_, i) => (
+                      <button
+                        key={i}
+                        onClick={() => {
+                          setSubImageIndex(i);
+                          setProgress(0);
+                        }}
+                        className={cn(
+                          "relative h-1 rounded-full transition-all duration-500 overflow-hidden bg-white/20",
+                          i === subImageIndex ? "w-12" : "w-4 hover:bg-white/40"
+                        )}
+                      >
+                        {i === subImageIndex && isPlaying && (
+                          <div 
+                            className="absolute inset-0 bg-accent origin-left"
+                            style={{ 
+                              width: `${progress}%`,
+                              transition: progress === 0 ? 'none' : 'width 50ms linear'
+                            }}
+                          />
+                        )}
+                        {i === subImageIndex && !isPlaying && (
+                          <div className="absolute inset-0 bg-accent w-full" />
+                        )}
+                      </button>
+                    ))}
+                  </div>
+                  
+                  <button
+                    onClick={() => setIsPlaying(!isPlaying)}
+                    className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center text-white hover:bg-accent hover:text-accent-foreground transition-all"
+                  >
+                    {isPlaying ? <Pause className="h-5 w-5" /> : <Play className="h-5 w-5 ml-0.5" />}
+                  </button>
+                </div>
+              )}
             </div>
           </div>
 
@@ -170,6 +233,23 @@ export function ProductionProcess({ locale }: { locale: Locale }) {
                         />
                       </div>
                    ))}
+
+                   {/* Mobile Controls */}
+                   {step.images.length > 1 && activeStep === index && (
+                      <div className="absolute bottom-4 right-4 z-10 flex items-center gap-3 bg-black/40 backdrop-blur-md px-3 py-2 rounded-full border border-white/10">
+                        <div className="flex gap-1.5">
+                          {step.images.map((_, i) => (
+                            <div 
+                              key={i} 
+                              className={cn(
+                                "h-1 rounded-full transition-all",
+                                i === subImageIndex ? "bg-accent w-6" : "bg-white/30 w-1.5"
+                              )} 
+                            />
+                          ))}
+                        </div>
+                      </div>
+                   )}
                 </div>
               </div>
             ))}
