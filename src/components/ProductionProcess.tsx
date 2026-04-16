@@ -27,7 +27,6 @@ export function ProductionProcess({ locale }: { locale: Locale }) {
     { label: t.shipment, tag: '11', images: ['/Pipeline/6-1.JPG'], desc: t.shipment_desc },
   ];
 
-  // Intersection Observer for steps
   useEffect(() => {
     const observers: IntersectionObserver[] = [];
     scrollRefs.current.forEach((ref, index) => {
@@ -50,7 +49,6 @@ export function ProductionProcess({ locale }: { locale: Locale }) {
     return () => observers.forEach(o => o.disconnect());
   }, []);
 
-  // Sub-image cycling for steps with multiple images
   useEffect(() => {
     setSubImageIndex(0);
     const currentStepImages = steps[activeStep]?.images || [];
@@ -58,7 +56,7 @@ export function ProductionProcess({ locale }: { locale: Locale }) {
 
     const interval = setInterval(() => {
       setSubImageIndex((prev) => (prev + 1) % currentStepImages.length);
-    }, 3000); // Cycle every 3 seconds
+    }, 3000);
 
     return () => clearInterval(interval);
   }, [activeStep]);
@@ -70,7 +68,6 @@ export function ProductionProcess({ locale }: { locale: Locale }) {
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 lg:gap-24 relative mt-20">
           
-          {/* Sticky Image Column */}
           <div className="lg:block hidden relative">
             <div className="sticky top-32 aspect-square rounded-[3rem] overflow-hidden bg-muted/20 border border-border/40 shadow-2xl">
               {steps.map((step, sIndex) => (
@@ -104,7 +101,6 @@ export function ProductionProcess({ locale }: { locale: Locale }) {
             </div>
           </div>
 
-          {/* Scrolling Text Column - Increased vertical space to lengthen scroll time */}
           <div className="space-y-[40vh] py-12">
             {steps.map((step, index) => (
               <div
@@ -134,7 +130,6 @@ export function ProductionProcess({ locale }: { locale: Locale }) {
                   {step.desc}
                 </p>
 
-                {/* Mobile view image */}
                 <div className="lg:hidden w-full aspect-video rounded-[2rem] overflow-hidden relative border border-border/40 mt-8 shadow-lg">
                    {step.images.map((imgUrl, iIndex) => (
                       <div
@@ -155,13 +150,10 @@ export function ProductionProcess({ locale }: { locale: Locale }) {
                 </div>
               </div>
             ))}
-            {/* Spacer for last step visibility */}
-            <div className="h-[40vh] hidden lg:block" />
           </div>
         </div>
       </div>
 
-      {/* Decorative element */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none -z-10">
         <div className="absolute top-[20%] right-0 w-[600px] h-[600px] bg-accent/5 rounded-full blur-[150px]" />
       </div>
