@@ -1,14 +1,10 @@
 /**
  * Heovose Elevate: Firestore Security Rules
- * Updated: 2024-05-24 10:00:00 (Forced Redeploy)
+ * Updated: 2024-05-24 11:30:00 (Enhanced Admin Write Permissions)
  *
  * Core Philosophy:
- * This ruleset implements a "Public Read, Administrative Write" model. 
- *
- * Key Security Decisions:
- * 1. Admin Verification: Users can 'get' their own document in /admins/{uid} to verify privileges.
- * 2. Public Read Access: All content collections allow 'get' and 'list' operations for all users.
- * 3. Locked Writes: Administrative writes are restricted at the rules level for now.
+ * 1. Public Read: All content collections allow 'get' and 'list' for everyone.
+ * 2. Admin Write: Only authenticated users with a document in /admins/{uid} can write.
  */
 
 rules_version = '2';
@@ -16,72 +12,77 @@ service cloud.firestore {
   match /databases/{database}/documents {
 
     /**
+     * @description Helper function to verify if the requesting user is a registered administrator.
+     */
+    function isAdmin() {
+      return request.auth != null && exists(/databases/$(database)/documents/admins/$(request.auth.uid));
+    }
+
+    /**
      * @description Stores authenticated administrators.
      * @path /admins/{uid}
-     * @allow get: if request.auth != null && request.auth.uid == uid;
      */
     match /admins/{uid} {
-      // 允许用户读取自己的管理员状态进行身份验证
+      // Allow users to read their own admin status for verification
       allow get: if request.auth != null && request.auth.uid == uid;
-      // 禁止列表或写入，管理员名单管理通常在控制台进行
+      // Writes are usually managed via Firebase Console for maximum security
       allow list, write: if false;
     }
 
     /**
-     * @description Localized text strings for English and Chinese translations.
-     * @path /localizedStrings/{localizedStringId}
+     * @description Localized text strings.
      */
     match /localizedStrings/{localizedStringId} {
       allow get, list: if true;
-      allow create, update, delete: if false; 
+      allow write: if isAdmin();
     }
 
     /**
-     * @description Configuration and content for dynamic homepage sections.
+     * @description Configuration for dynamic homepage sections.
      */
     match /homepageSectionContent/{sectionId} {
       allow get, list: if true;
-      allow create, update, delete: if false;
+      allow write: if isAdmin();
     }
 
     /**
-     * @description Categories for products (e.g., AIO, Mini PC).
+     * @description Product categories.
      */
     match /productCategories/{categoryId} {
       allow get, list: if true;
-      allow create, update, delete: if false;
+      allow write: if isAdmin();
     }
 
     /**
-     * @description Individual product details.
+     * @description Product details.
      */
     match /products/{productId} {
       allow get, list: if true;
-      allow create, update, delete: if false;
+      allow write: if isAdmin();
     }
 
     /**
-     * @description Company performance and scale statistics.
+     * @description Company statistics.
      */
     match /statistics/{statisticId} {
       allow get, list: if true;
-      allow create, update, delete: if false;
+      allow write: if isAdmin();
     }
 
     /**
-     * @description Steps detailing the manufacturing process.
+     * @description Manufacturing process steps.
      */
     match /productionSteps/{stepId} {
       allow get, list: if true;
-      allow create, update, delete: if false;
+      allow write: if isAdmin();
     }
 
     /**
-     * @description Geographical locations for global factories.
+     * @description Factory locations.
      */
     match /factoryLocations/{locationId} {
       allow get, list: if true;
-      allow create, update, delete: if false;
+      allow write: if isAdmin();
     }
   }
 }
