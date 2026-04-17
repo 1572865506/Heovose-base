@@ -959,7 +959,7 @@ export default function GalleryPage() {
         <div 
           ref={gridContainerRef}
           onMouseDown={handleMouseDown}
-          className="relative grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-6 min-h-[400px]"
+          className="relative grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-6 min-h-[400px] items-start"
         >
           {/* 框选矩形视图 */}
           {selectionRect.active && (
@@ -1016,13 +1016,13 @@ export default function GalleryPage() {
                   <Maximize className="text-white h-6 w-6" />
                 </div>
               </div>
-              <div className="p-3 space-y-2">
-                <p className="text-[11px] font-bold truncate text-primary">{asset.title}</p>
-                <div className="flex items-center justify-between border-t pt-2">
-                  <Button size="icon" variant="ghost" className="h-7 w-7 hover:text-primary" onClick={(e) => { e.stopPropagation(); navigator.clipboard.writeText(asset.url); toast({ title: "素材链接已复制" }); }}><Copy className="h-3 w-3" /></Button>
+              <div className="p-3 pb-2.5 space-y-1.5">
+                <p className="text-[11px] font-bold truncate text-primary leading-tight">{asset.title}</p>
+                <div className="flex items-center justify-between border-t pt-2 mt-1">
+                  <Button size="icon" variant="ghost" className="h-7 w-7 hover:text-primary" onClick={(e) => { e.stopPropagation(); navigator.clipboard.writeText(asset.url); toast({ title: "素材链接已复制" }); }}><Copy className="h-3.5 w-3.5" /></Button>
                   <div className="flex gap-1">
-                    <Button size="icon" variant="ghost" className="h-7 w-7" onClick={(e) => { e.stopPropagation(); setEditingAsset(asset); }}><Edit3 className="h-3 w-3" /></Button>
-                    <Button size="icon" variant="ghost" className="h-7 w-7 text-destructive hover:bg-destructive/10" onClick={(e) => { e.stopPropagation(); handleDeleteAsset(asset.id); }}><Trash2 className="h-3 w-3" /></Button>
+                    <Button size="icon" variant="ghost" className="h-7 w-7" onClick={(e) => { e.stopPropagation(); setEditingAsset(asset); }}><Edit3 className="h-3.5 w-3.5" /></Button>
+                    <Button size="icon" variant="ghost" className="h-7 w-7 text-destructive hover:bg-destructive/5" onClick={(e) => { e.stopPropagation(); handleDeleteAsset(asset.id); }}><Trash2 className="h-3.5 w-3.5" /></Button>
                   </div>
                 </div>
               </div>
