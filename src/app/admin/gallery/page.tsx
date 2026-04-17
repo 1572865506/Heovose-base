@@ -26,7 +26,9 @@ import {
   PanelTop,
   Minimize2,
   Maximize2,
-  Maximize
+  Maximize,
+  CopyCheck,
+  FileWarning
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -87,6 +89,8 @@ interface UploadTask {
   error?: string;
 }
 
+type DuplicateStrategy = 'rename' | 'overwrite';
+
 export default function GalleryPage() {
   const firestore = useFirestore();
   const { toast } = useToast();
@@ -99,6 +103,10 @@ export default function GalleryPage() {
   
   const [editingCatId, setEditingCatId] = useState<string | null>(null);
   const [catForm, setCatForm] = useState({ name: '', parentId: 'none' });
+
+  // 上传配置
+  const [targetUploadCategoryId, setTargetUploadCategoryId] = useState<string>('');
+  const [duplicateStrategy, setDuplicateStrategy] = useState<DuplicateStrategy>('rename');
 
   // 预览状态
   const [previewImage, setPreviewImage] = useState<GalleryAsset | null>(null);
@@ -156,6 +164,13 @@ export default function GalleryPage() {
     return tree;
   }, [categories]);
 
+  // 设置默认上传分类
+  useEffect(() => {
+    if (categoryTree.length > 0 && !targetUploadCategoryId) {
+      setTargetUploadCategoryId(categoryTree[0].id);
+    }
+  }, [categoryTree, targetUploadCategoryId]);
+
   const visibleCategories = useMemo(() => {
     return categoryTree.filter(cat => {
       let currentParentId = cat.parentId;
@@ -187,6 +202,16 @@ export default function GalleryPage() {
     });
   }, [assets, searchQuery, filterCategory]);
 
+  const generateUniqueTitle = (baseTitle: string, existingAssets: GalleryAsset[]): string => {
+    let title = baseTitle;
+    let counter = 1;
+    while (existingAssets.some(a => a.title === title)) {
+      title = `${baseTitle} (${counter})`;
+      counter++;
+    }
+    return title;
+  };
+
   const handleFileUpload = async (files: FileList | null) => {
     if (!files || !firestore) return;
     if (!categories || categories.length === 0) {
@@ -194,7 +219,7 @@ export default function GalleryPage() {
       return;
     }
 
-    const defaultCategoryId = categoryTree[0]?.id;
+    const categoryId = targetUploadCategoryId || categoryTree[0]?.id;
     setIsTasksPanelOpen(true);
     setIsTasksPanelMinimized(false);
 
@@ -232,16 +257,30 @@ export default function GalleryPage() {
       reader.onload = (e) => {
         updateTask(taskId, { status: 'uploading', progress: 60 });
         const base64 = e.target?.result as string;
-        const assetId = `asset_${Date.now()}_${index}`;
+        
+        const originalTitle = file.name.split('.')[0];
+        let finalTitle = originalTitle;
+        let assetId = `asset_${Date.now()}_${index}`;
+
+        // 冲突处理逻辑
+        const existingAsset = assets?.find(a => a.title === originalTitle && a.fileName === file.name);
+        
+        if (existingAsset && duplicateStrategy === 'overwrite') {
+          assetId = existingAsset.id;
+          finalTitle = existingAsset.title;
+        } else if (duplicateStrategy === 'rename') {
+          finalTitle = generateUniqueTitle(originalTitle, assets || []);
+        }
+
         const assetRef = doc(firestore, 'galleryAssets', assetId);
 
         setDocumentNonBlocking(assetRef, {
           id: assetId,
           url: base64,
-          title: file.name.split('.')[0],
+          title: finalTitle,
           fileName: file.name,
           fileSize: file.size,
-          categoryId: defaultCategoryId,
+          categoryId: categoryId,
           createdAt: serverTimestamp()
         }, { merge: true });
 
@@ -540,19 +579,74 @@ export default function GalleryPage() {
         </div>
       </div>
 
-      <div 
-        onDragOver={(e) => { e.preventDefault(); e.stopPropagation(); }}
-        onDrop={(e) => { e.preventDefault(); e.stopPropagation(); handleFileUpload(e.dataTransfer.files); }}
-        className="group relative h-32 border-2 border-dashed border-primary/20 rounded-[2rem] flex flex-col items-center justify-center bg-white hover:border-primary/50 hover:bg-primary/5 transition-all cursor-pointer"
-        onClick={() => fileInputRef.current?.click()}
-      >
-        <div className="flex items-center gap-4">
-          <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center text-primary group-hover:scale-110 transition-transform">
-            <Upload className="h-6 w-6" />
+      <div className="bg-white p-6 rounded-[2rem] border border-border/40 shadow-sm space-y-6">
+        <div className="flex flex-col lg:flex-row gap-8">
+          <div 
+            onDragOver={(e) => { e.preventDefault(); e.stopPropagation(); }}
+            onDrop={(e) => { e.preventDefault(); e.stopPropagation(); handleFileUpload(e.dataTransfer.files); }}
+            className="group relative flex-1 h-40 border-2 border-dashed border-primary/20 rounded-[2rem] flex flex-col items-center justify-center hover:border-primary/50 hover:bg-primary/5 transition-all cursor-pointer"
+            onClick={() => fileInputRef.current?.click()}
+          >
+            <div className="flex items-center gap-4">
+              <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center text-primary group-hover:scale-110 transition-transform">
+                <Upload className="h-6 w-6" />
+              </div>
+              <div>
+                <p className="text-base font-bold text-primary">点击或拖拽上传本地图片</p>
+                <p className="text-xs text-muted-foreground">支持多文件批量上传，自动应用下方配置</p>
+              </div>
+            </div>
           </div>
-          <div>
-            <p className="text-base font-bold text-primary">点击或拖拽上传本地图片</p>
-            <p className="text-xs text-muted-foreground">支持多文件批量上传，自动提取文件名为标题</p>
+
+          <div className="w-full lg:w-96 space-y-4 bg-muted/20 p-6 rounded-[2rem] border border-border/20">
+            <h3 className="text-[10px] font-bold uppercase tracking-widest text-primary flex items-center gap-2">
+              <Settings2 className="h-3 w-3" /> 上传配置预览
+            </h3>
+            
+            <div className="space-y-3">
+              <div className="space-y-1.5">
+                <Label className="text-[9px] uppercase font-bold opacity-60">目标上传分类</Label>
+                <Select value={targetUploadCategoryId} onValueChange={setTargetUploadCategoryId}>
+                  <SelectTrigger className="h-10 rounded-xl bg-white">
+                    <SelectValue placeholder="选择目标分类" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {categoryTree.map(cat => (
+                      <SelectItem key={cat.id} value={cat.id}>
+                        <span 
+                          style={{ paddingLeft: `${cat.depth * 0.8}rem` }} 
+                          className={cn("flex items-center text-xs", cat.depth > 0 && "text-muted-foreground")}
+                        >
+                          {cat.depth > 0 && <span className="mr-1.5 opacity-30">·</span>}
+                          {cat.name}
+                        </span>
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-1.5">
+                <Label className="text-[9px] uppercase font-bold opacity-60">同名文件处理</Label>
+                <Select value={duplicateStrategy} onValueChange={(v: DuplicateStrategy) => setDuplicateStrategy(v)}>
+                  <SelectTrigger className="h-10 rounded-xl bg-white">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="rename" className="text-xs">
+                      <div className="flex items-center gap-2">
+                        <CopyCheck className="h-3 w-3" /> 自动重命名 (保留副本)
+                      </div>
+                    </SelectItem>
+                    <SelectItem value="overwrite" className="text-xs">
+                      <div className="flex items-center gap-2">
+                        <FileWarning className="h-3 w-3" /> 覆盖现有文件
+                      </div>
+                    </SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
           </div>
         </div>
       </div>
