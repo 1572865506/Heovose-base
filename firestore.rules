@@ -1,10 +1,7 @@
+
 /**
  * Heovose Elevate: Firestore Security Rules
- * Updated: 2024-05-24 11:30:00 (Enhanced Admin Write Permissions)
- *
- * Core Philosophy:
- * 1. Public Read: All content collections allow 'get' and 'list' for everyone.
- * 2. Admin Write: Only authenticated users with a document in /admins/{uid} can write.
+ * Updated: 2024-05-24 15:30:00 (Added Gallery Permissions)
  */
 
 rules_version = '2';
@@ -25,8 +22,15 @@ service cloud.firestore {
     match /admins/{uid} {
       // Allow users to read their own admin status for verification
       allow get: if request.auth != null && request.auth.uid == uid;
-      // Writes are usually managed via Firebase Console for maximum security
       allow list, write: if false;
+    }
+
+    /**
+     * @description Central media gallery assets.
+     */
+    match /galleryAssets/{assetId} {
+      allow get, list: if true;
+      allow write: if isAdmin();
     }
 
     /**

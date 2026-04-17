@@ -26,6 +26,32 @@
         "email"
       ]
     },
+    "GalleryAsset": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "GalleryAsset",
+      "type": "object",
+      "description": "Represents a media asset in the global gallery, such as product photos or technical diagrams.",
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "url": {
+          "type": "string",
+          "format": "uri"
+        },
+        "title": {
+          "type": "string"
+        },
+        "category": {
+          "type": "string",
+          "enum": ["Product", "Diagram", "Banner", "Other"]
+        },
+        "createdAt": {
+          "type": "object"
+        }
+      },
+      "required": ["id", "url", "category", "title"]
+    },
     "LocalizedString": {
       "$schema": "http://json-schema.org/draft-07/schema#",
       "title": "LocalizedString",
@@ -291,6 +317,16 @@
             "$ref": "#/backend/entities/AdminUser"
           },
           "description": "Stores a list of authenticated administrators. Only UIDs present here can access the /admin console."
+        }
+      },
+      {
+        "path": "/galleryAssets/{assetId}",
+        "definition": {
+          "entityName": "GalleryAsset",
+          "schema": {
+            "$ref": "#/backend/entities/GalleryAsset"
+          },
+          "description": "Central media gallery for all site assets."
         }
       },
       {

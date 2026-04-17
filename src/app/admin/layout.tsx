@@ -30,7 +30,8 @@ import {
   LogOut, 
   MapPin,
   ClipboardList,
-  AlertCircle
+  AlertCircle,
+  Image as ImageIcon
 } from 'lucide-react';
 import Link from 'next/link';
 import Image from 'next/image';
@@ -117,6 +118,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       items: [
         { title: "产品列表", icon: Package, href: "/admin/products" },
         { title: "分类管理", icon: Layers, href: "/admin/categories" },
+        { title: "图库资产", icon: ImageIcon, href: "/admin/gallery" },
       ]
     },
     {
