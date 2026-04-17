@@ -11,7 +11,12 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Loader2, Lock } from 'lucide-react';
+import { Loader2, Lock, HelpCircle } from 'lucide-react';
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 
 export default function AdminLoginPage() {
   const [email, setEmail] = useState('');
@@ -32,7 +37,7 @@ export default function AdminLoginPage() {
       router.push('/admin');
     } catch (err: any) {
       console.error(err);
-      setError('Invalid email or password. Please check your credentials.');
+      setError('Invalid email or password. Please ensure you have created an account in the Firebase Console.');
     } finally {
       setIsLoading(false);
     }
@@ -40,8 +45,9 @@ export default function AdminLoginPage() {
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-muted/30 p-6">
-      <Card className="w-full max-w-md shadow-2xl border-border/40">
-        <CardHeader className="space-y-4 text-center">
+      <Card className="w-full max-w-md shadow-2xl border-border/40 overflow-hidden rounded-[2rem]">
+        <div className="h-2 bg-primary" />
+        <CardHeader className="space-y-4 text-center pb-8">
           <div className="flex justify-center mb-2">
             <Image
               src="/image/Heovose-color.svg"
@@ -55,14 +61,14 @@ export default function AdminLoginPage() {
           <CardDescription>Enter your credentials to access the management dashboard.</CardDescription>
         </CardHeader>
         <form onSubmit={handleLogin}>
-          <CardContent className="space-y-4">
+          <CardContent className="space-y-6">
             {error && (
-              <Alert variant="destructive" className="bg-destructive/10 text-destructive border-destructive/20">
-                <AlertDescription>{error}</AlertDescription>
+              <Alert variant="destructive" className="bg-destructive/10 text-destructive border-destructive/20 rounded-xl">
+                <AlertDescription className="text-xs font-bold">{error}</AlertDescription>
               </Alert>
             )}
             <div className="space-y-2">
-              <Label htmlFor="email">Email Address</Label>
+              <Label htmlFor="email" className="text-[10px] font-bold uppercase tracking-widest ml-1">Email Address</Label>
               <Input
                 id="email"
                 type="email"
@@ -70,29 +76,49 @@ export default function AdminLoginPage() {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
-                className="rounded-xl"
+                className="rounded-xl h-12 border-muted"
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="password">Password</Label>
+              <div className="flex items-center justify-between">
+                <Label htmlFor="password" className="text-[10px] font-bold uppercase tracking-widest ml-1">Password</Label>
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <button type="button" className="text-[10px] text-primary hover:underline flex items-center gap-1 font-bold">
+                      <HelpCircle className="h-3 w-3" /> Need help?
+                    </button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-80 p-4 rounded-xl shadow-2xl border-border/40">
+                    <div className="space-y-2 text-xs">
+                      <p className="font-bold text-primary uppercase tracking-tight">How to Login:</p>
+                      <ol className="list-decimal list-inside space-y-1 opacity-70">
+                        <li>Go to <strong>Firebase Console</strong>.</li>
+                        <li>In <strong>Authentication</strong>, add a new user.</li>
+                        <li>In <strong>Firestore</strong>, create a collection <code>admins</code>.</li>
+                        <li>Add a document with the user's <strong>UID</strong>.</li>
+                      </ol>
+                    </div>
+                  </PopoverContent>
+                </Popover>
+              </div>
               <Input
                 id="password"
                 type="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required
-                className="rounded-xl"
+                className="rounded-xl h-12 border-muted"
               />
             </div>
           </CardContent>
-          <CardFooter>
+          <CardFooter className="pt-4 pb-8">
             <Button 
               type="submit" 
-              className="w-full h-12 rounded-xl bg-primary hover:bg-primary/90 font-bold"
+              className="w-full h-14 rounded-xl bg-primary hover:bg-primary/90 font-bold uppercase tracking-[0.2em] shadow-lg shadow-primary/20"
               disabled={isLoading}
             >
-              {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Lock className="mr-2 h-4 w-4" />}
-              Sign In to Management
+              {isLoading ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : <Lock className="mr-2 h-5 w-5" />}
+              Sign In
             </Button>
           </CardFooter>
         </form>

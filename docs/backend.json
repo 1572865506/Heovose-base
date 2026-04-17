@@ -1,5 +1,31 @@
+
 {
   "entities": {
+    "AdminUser": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "AdminUser",
+      "type": "object",
+      "description": "Represents a user with administrative privileges. The existence of a document in the /admins/{uid} collection grants access to the management console.",
+      "properties": {
+        "uid": {
+          "type": "string",
+          "description": "The unique Firebase Authentication UID of the administrator."
+        },
+        "email": {
+          "type": "string",
+          "description": "The email address associated with the admin account."
+        },
+        "role": {
+          "type": "string",
+          "description": "The administrative role (e.g., 'superadmin', 'editor').",
+          "enum": ["superadmin", "editor"]
+        }
+      },
+      "required": [
+        "uid",
+        "email"
+      ]
+    },
     "LocalizedString": {
       "$schema": "http://json-schema.org/draft-07/schema#",
       "title": "LocalizedString",
@@ -258,6 +284,16 @@
   "firestore": {
     "structure": [
       {
+        "path": "/admins/{uid}",
+        "definition": {
+          "entityName": "AdminUser",
+          "schema": {
+            "$ref": "#/backend/entities/AdminUser"
+          },
+          "description": "Stores a list of authenticated administrators. Only UIDs present here can access the /admin console."
+        }
+      },
+      {
         "path": "/localizedStrings/{localizedStringId}",
         "definition": {
           "entityName": "LocalizedString",
@@ -328,6 +364,6 @@
         }
       }
     ],
-    "reasoning": "The Firestore structure is designed to host static, public-facing content for the Heovose Elevate application, focusing on clarity, scalability, and simple security rules. Each distinct content type (e.g., homepage sections, product categories, products, statistics, production steps, factory locations, and localized strings) is stored in its own top-level collection. This design adheres strictly to the core principles:\n\n1.  **Authorization Independence (CRITICAL):** Since all defined entities represent public-facing content, read access is granted to all users for all documents. This inherently achieves authorization independence for read operations as there are no hierarchical dependencies or granular access controls required for viewing the data. Every document can be read atomically without needing to `get()` a parent document to determine permissions. If administrative write access were to be implemented, it would rely on a top-level role check (e.g., `/adminRoles/{uid}`), rather than denormalizing authorization context within content documents, further ensuring independence.\n\n2.  **Clarity of Intent (Debuggability):** Each collection is named explicitly based on the entity it contains (e.g., `homepageSectionContent`, `productCategories`). This makes the purpose of each document and collection immediately clear. The uniform public read access policy simplifies debugging, as any read access issue would point to a misconfigured global read rule rather than complex nested logic.\n\n3.  **DBAC (No Custom Claims):** As the primary use case is public read, no user-specific roles are required for content consumption. If administrative functionality for content management were introduced, roles would be managed via database entry existence (e.g., a `/adminUsers/{uid}` collection) rather than custom claims, allowing rules to directly check `request.auth.uid` against these database entries for write permissions.\n\n4.  **QAPs (Rules are not Filters):** All collections maintain a homogeneous security posture (publicly readable). This means that `list` operations (queries) against any collection will return all documents relevant to the query without needing client-side filtering or complex server-side rule filtering. The structural segregation ensures that public and potentially private data (if it existed) are never mixed, allowing efficient and secure queries directly from the client.\n\n5.  **Invariants:** The structure supports data integrity by explicitly referencing `LocalizedString` entities via `id` fields (e.g., `headlineTextId`, `nameTextId`). While not enforcing referential integrity at the database level, this is a standard pattern for linking content. Timestamps (not explicitly in schema but common) or ownership (not relevant for public content) would be directly stored on documents if needed.\n\n**Denormalization Strategy:** For this specific application, where all content is public read-only, denormalization for authorization independence within the content documents themselves is not necessary for read operations. The 'public read' access model is the ultimate form of authorization independence for consumption. Any references to `LocalizedString` entities are handled by fetching the `LocalizedString` document directly, as it too is public. This avoids `get()` calls in rules because the read rule is simply `allow read: if true;` for content. For admin write operations, independence would be achieved by checking a separate, top-level admin role collection.\n\n**Structural Segregation:** Each entity type is placed in its own top-level collection (e.g., `/products`, `/productCategories`). This ensures that all documents within a given collection share the same security posture (publicly readable) and schema, greatly simplifying security rules and making the database structure intuitive. There is no mixing of public posts with private drafts, or general users with administrators, in the same collection. This directly supports QAPs by making rules simple and preventing the need for complex filters to enforce permissions during `list` operations."
+    "reasoning": "The structure includes a critical /admins/{uid} collection to handle authorization for the management console, separating authenticated users from authorized managers."
   }
 }

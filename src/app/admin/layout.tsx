@@ -1,9 +1,10 @@
 
 "use client";
 
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
-import { useUser, useAuth } from '@/firebase';
+import { useUser, useAuth, useFirestore, useMemoFirebase, useDoc } from '@/firebase';
+import { doc } from 'firebase/firestore';
 import { 
   SidebarProvider, 
   Sidebar, 
@@ -27,40 +28,87 @@ import {
   Settings, 
   Globe, 
   LogOut, 
-  ChevronRight,
   MapPin,
-  ClipboardList
+  ClipboardList,
+  AlertCircle
 } from 'lucide-react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   const { user, isUserLoading } = useUser();
+  const firestore = useFirestore();
   const auth = useAuth();
   const router = useRouter();
   const pathname = usePathname();
 
+  // 1. Create a memoized reference to the admin document in Firestore
+  const adminDocRef = useMemoFirebase(() => {
+    if (!firestore || !user?.uid) return null;
+    return doc(firestore, 'admins', user.uid);
+  }, [firestore, user?.uid]);
+
+  // 2. Listen to the admin document
+  const { data: adminData, isLoading: isAdminDataLoading } = useDoc(adminDocRef);
+
   useEffect(() => {
+    // Redirect if not logged in
     if (!isUserLoading && !user && pathname !== '/admin/login') {
       router.push('/admin/login');
     }
   }, [user, isUserLoading, pathname, router]);
 
-  if (pathname === '/admin/login') {
-    return <>{children}</>;
-  }
-
-  if (isUserLoading) {
+  // Handle Loading States
+  if (isUserLoading || (user && isAdminDataLoading)) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+      <div className="min-h-screen flex items-center justify-center bg-muted/10">
+        <div className="flex flex-col items-center gap-4">
+          <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-primary"></div>
+          <p className="text-xs font-bold text-primary uppercase tracking-widest animate-pulse">Checking Credentials...</p>
+        </div>
       </div>
     );
   }
 
-  if (!user) return null;
+  // Handle Non-Admin Users (Logged in but not in /admins/{uid})
+  if (user && !adminData && !isAdminDataLoading && pathname !== '/admin/login') {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-muted/20 p-6">
+        <Alert variant="destructive" className="max-w-md bg-white border-destructive shadow-2xl rounded-2xl p-8">
+          <AlertCircle className="h-8 w-8 mb-4" />
+          <AlertTitle className="text-xl font-headline font-bold mb-4">Unauthorized Access</AlertTitle>
+          <AlertDescription className="space-y-4">
+            <p className="text-muted-foreground">
+              Your account <strong>{user.email}</strong> is authenticated but does not have administrative privileges.
+            </p>
+            <div className="p-4 bg-muted/50 rounded-xl text-xs space-y-2">
+              <p className="font-bold uppercase tracking-tight">How to fix this:</p>
+              <ol className="list-decimal list-inside space-y-1 opacity-70">
+                <li>Go to Firebase Console</li>
+                <li>In Firestore, create a collection named <code>admins</code></li>
+                <li>Create a document with ID: <code>{user.uid}</code></li>
+              </ol>
+            </div>
+            <Button 
+              className="w-full h-12 rounded-xl font-bold uppercase tracking-widest"
+              onClick={() => auth.signOut()}
+            >
+              Back to Login
+            </Button>
+          </AlertDescription>
+        </Alert>
+      </div>
+    );
+  }
+
+  if (pathname === '/admin/login') {
+    return <>{children}</>;
+  }
+
+  if (!user || !adminData) return null;
 
   const menuGroups = [
     {
@@ -156,10 +204,12 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             <div className="flex items-center gap-6">
               <div className="flex flex-col items-end">
                 <span className="text-xs font-bold text-primary">{user.email}</span>
-                <span className="text-[10px] text-muted-foreground uppercase tracking-widest font-medium">Administrator</span>
+                <span className="text-[10px] text-muted-foreground uppercase tracking-widest font-medium">
+                  {adminData?.role || 'Administrator'}
+                </span>
               </div>
-              <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold shadow-inner">
-                {user.email?.[0].toUpperCase()}
+              <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold shadow-inner uppercase">
+                {user.email?.[0]}
               </div>
             </div>
           </header>
