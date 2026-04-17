@@ -31,7 +31,8 @@ import {
   Link2,
   Search,
   CheckCircle2,
-  Filter
+  Filter,
+  Check
 } from 'lucide-react';
 import { 
   Dialog, 
@@ -120,6 +121,7 @@ function ProductEditorContent() {
   const [pickerTarget, setPickerTarget] = useState<'main' | 'gallery'>('main');
   const [pickerSearch, setPickerSearch] = useState('');
   const [pickerCat, setPickerCat] = useState('all');
+  const [selectedPickerUrls, setSelectedPickerUrls] = useState<Set<string>>(new Set());
 
   const prodRef = useMemoFirebase(() => productId ? doc(firestore, 'products', productId) : null, [firestore, productId]);
   const catsQuery = useMemoFirebase(() => collection(firestore, 'productCategories'), [firestore]);
@@ -234,14 +236,38 @@ function ProductEditorContent() {
     });
   }, [galleryAssets, pickerSearch, pickerCat]);
 
-  const selectAsset = (url: string) => {
+  const togglePickerSelection = (url: string) => {
+    const newSelected = new Set(selectedPickerUrls);
     if (pickerTarget === 'main') {
-      setFormData({ ...formData, mainImageUrl: url });
+      newSelected.clear();
+      newSelected.add(url);
     } else {
-      setFormData({ ...formData, galleryUrls: [...formData.galleryUrls, url] });
+      if (newSelected.has(url)) {
+        newSelected.delete(url);
+      } else {
+        newSelected.add(url);
+      }
+    }
+    setSelectedPickerUrls(newSelected);
+  };
+
+  const handleConfirmPicker = () => {
+    const urls = Array.from(selectedPickerUrls);
+    if (urls.length === 0) {
+      setIsPickerOpen(false);
+      return;
+    }
+
+    if (pickerTarget === 'main') {
+      setFormData({ ...formData, mainImageUrl: urls[0] });
+    } else {
+      setFormData({ 
+        ...formData, 
+        galleryUrls: [...formData.galleryUrls, ...urls] 
+      });
     }
     setIsPickerOpen(false);
-    toast({ title: "已从图库选取素材" });
+    toast({ title: `已成功添加 ${urls.length} 项素材` });
   };
 
   const handleSave = () => {
@@ -282,10 +308,12 @@ function ProductEditorContent() {
     router.push('/admin/products');
   };
 
-  const addGalleryItem = () => {
-    setPickerTarget('gallery');
+  const openPicker = (target: 'main' | 'gallery') => {
+    setPickerTarget(target);
+    setSelectedPickerUrls(new Set());
     setIsPickerOpen(true);
   };
+
   const updateGalleryItem = (idx: number, val: string) => {
     const newUrls = [...formData.galleryUrls];
     newUrls[idx] = val;
@@ -378,7 +406,7 @@ function ProductEditorContent() {
                 <Label className="text-[10px] font-bold uppercase tracking-widest text-primary">产品主图 (Main Image)</Label>
                 <div className="flex gap-2">
                    <button 
-                    onClick={() => { setPickerTarget('main'); setIsPickerOpen(true); }}
+                    onClick={() => openPicker('main')}
                     className="text-[9px] flex items-center gap-1 font-bold text-primary hover:underline transition-colors uppercase"
                   >
                     <LayoutGrid className="h-2 w-2" /> 从图库选择
@@ -520,8 +548,8 @@ function ProductEditorContent() {
                     <ImageIcon className="h-5 w-5" />
                     <h3 className="font-bold">副图库管理</h3>
                   </div>
-                  <Button variant="outline" size="sm" onClick={addGalleryItem} className="rounded-full gap-2">
-                    <Plus className="h-4 w-4" /> 从图库挑选
+                  <Button variant="outline" size="sm" onClick={() => openPicker('gallery')} className="rounded-full gap-2">
+                    <Plus className="h-4 w-4" /> 批量从图库挑选
                   </Button>
                 </div>
 
@@ -538,9 +566,12 @@ function ProductEditorContent() {
                           onChange={e => updateGalleryItem(idx, e.target.value)}
                           className="h-8 text-[10px] rounded-lg border-transparent bg-white/50"
                         />
-                        <Button variant="ghost" size="sm" onClick={() => removeGalleryItem(idx)} className="h-6 text-[10px] text-destructive opacity-0 group-hover:opacity-100 transition-opacity">
-                          移除此图
-                        </Button>
+                        <div className="flex items-center justify-between">
+                          <span className="text-[9px] text-muted-foreground uppercase font-mono">IMG #{idx + 1}</span>
+                          <Button variant="ghost" size="sm" onClick={() => removeGalleryItem(idx)} className="h-6 text-[10px] text-destructive hover:bg-destructive/10">
+                            移除此图
+                          </Button>
+                        </div>
                       </div>
                     </div>
                   ))}
@@ -565,7 +596,10 @@ function ProductEditorContent() {
               挑选图库素材
             </DialogTitle>
             <DialogDescription>
-              选择已有的图库素材作为产品的{pickerTarget === 'main' ? '主图' : '副图'}。
+              {pickerTarget === 'main' 
+                ? '请选择一张图库素材作为产品主图。' 
+                : '支持批量选择，选中的素材将按顺序添加到产品副图库中。'
+              }
             </DialogDescription>
           </DialogHeader>
 
@@ -601,16 +635,27 @@ function ProductEditorContent() {
                 {filteredAssets.map((asset) => (
                   <div 
                     key={asset.id}
-                    className="group relative aspect-square rounded-2xl border border-border/40 overflow-hidden cursor-pointer hover:shadow-xl hover:border-primary transition-all bg-white"
-                    onClick={() => selectAsset(asset.url)}
+                    className={cn(
+                      "group relative aspect-square rounded-2xl border transition-all bg-white cursor-pointer overflow-hidden",
+                      selectedPickerUrls.has(asset.url) 
+                        ? "border-primary ring-2 ring-primary/20 shadow-lg" 
+                        : "border-border/40 hover:shadow-xl hover:border-primary"
+                    )}
+                    onClick={() => togglePickerSelection(asset.url)}
                   >
                     <Image src={asset.url} alt={asset.title} fill className="object-cover group-hover:scale-110 transition-transform duration-500" />
-                    <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                      <div className="bg-white text-primary rounded-full p-2 scale-75 group-hover:scale-100 transition-transform">
-                        <CheckCircle2 className="h-6 w-6" />
+                    
+                    {/* 选中状态指示器 */}
+                    {selectedPickerUrls.has(asset.url) && (
+                      <div className="absolute inset-0 bg-primary/20 flex items-center justify-center">
+                        <div className="bg-primary text-white rounded-full p-1.5 shadow-xl scale-110 animate-in zoom-in duration-200">
+                          <Check className="h-5 w-5 stroke-[3]" />
+                        </div>
                       </div>
-                    </div>
-                    <div className="absolute bottom-0 left-0 right-0 p-2 bg-gradient-to-t from-black/80 to-transparent">
+                    )}
+                    
+                    {/* 悬浮标题 */}
+                    <div className="absolute bottom-0 left-0 right-0 p-2 bg-gradient-to-t from-black/80 to-transparent translate-y-full group-hover:translate-y-0 transition-transform">
                       <p className="text-[9px] text-white font-bold truncate">{asset.title}</p>
                     </div>
                   </div>
@@ -624,8 +669,20 @@ function ProductEditorContent() {
             )}
           </div>
 
-          <DialogFooter className="p-6 bg-muted/30">
-            <Button variant="outline" onClick={() => setIsPickerOpen(false)} className="rounded-xl h-10 px-8">取消</Button>
+          <DialogFooter className="p-6 bg-muted/30 flex items-center justify-between gap-4">
+            <div className="text-xs font-bold text-primary uppercase tracking-widest">
+              {selectedPickerUrls.size > 0 ? `已选中 ${selectedPickerUrls.size} 项` : '未选中任何素材'}
+            </div>
+            <div className="flex gap-2">
+              <Button variant="outline" onClick={() => setIsPickerOpen(false)} className="rounded-xl h-10 px-6">取消</Button>
+              <Button 
+                onClick={handleConfirmPicker} 
+                disabled={selectedPickerUrls.size === 0}
+                className="rounded-xl h-10 px-8 font-bold uppercase tracking-widest gap-2"
+              >
+                <CheckCircle2 className="h-4 w-4" /> 确认选择
+              </Button>
+            </div>
           </DialogFooter>
         </DialogContent>
       </Dialog>
