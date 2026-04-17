@@ -2,7 +2,7 @@
 "use client";
 
 import { useFirestore, useCollection, useMemoFirebase } from '@/firebase';
-import { collection, doc } from 'firebase/firestore';
+import { collection, doc, serverTimestamp } from 'firebase/firestore';
 import { 
   Table, 
   TableBody, 
@@ -17,11 +17,17 @@ import {
   Edit2, 
   Trash2, 
   Loader2, 
-  Package
+  Package,
+  Eye,
+  EyeOff,
+  RefreshCw
 } from 'lucide-react';
-import { deleteDocumentNonBlocking } from '@/firebase/non-blocking-updates';
+import { deleteDocumentNonBlocking, updateDocumentNonBlocking } from '@/firebase/non-blocking-updates';
 import Link from 'next/link';
 import Image from 'next/image';
+import { Badge } from '@/components/ui/badge';
+import { useToast } from '@/hooks/use-toast';
+import { cn } from '@/lib/utils';
 
 interface Product {
   id: string;
@@ -30,6 +36,7 @@ interface Product {
   mainImageUrl: string;
   productCategoryId: string;
   galleryImageUrls: string[];
+  status?: 'published' | 'draft';
 }
 
 interface LocalizedString {
@@ -45,6 +52,7 @@ interface ProductCategory {
 
 export default function AdminProductsPage() {
   const firestore = useFirestore();
+  const { toast } = useToast();
 
   const productsQuery = useMemoFirebase(() => {
     if (!firestore) return null;
@@ -80,6 +88,19 @@ export default function AdminProductsPage() {
     deleteDocumentNonBlocking(doc(firestore, 'products', p.id));
   };
 
+  const toggleStatus = (p: Product) => {
+    if (!firestore) return;
+    const newStatus = p.status === 'published' ? 'draft' : 'published';
+    updateDocumentNonBlocking(doc(firestore, 'products', p.id), {
+      status: newStatus,
+      updatedAt: serverTimestamp()
+    });
+    toast({
+      title: newStatus === 'published' ? "产品已发布" : "产品已转为草稿",
+      description: `${getTranslation(p.nameTextId, 'zh')} 的可见性已更新。`
+    });
+  };
+
   return (
     <div className="space-y-8 animate-in fade-in duration-500">
       <div className="flex items-center justify-between">
@@ -105,18 +126,19 @@ export default function AdminProductsPage() {
               <TableHead className="w-16 pl-6">外观</TableHead>
               <TableHead className="font-bold uppercase text-[10px] tracking-widest">产品名称</TableHead>
               <TableHead className="font-bold uppercase text-[10px] tracking-widest">所属分类</TableHead>
+              <TableHead className="font-bold uppercase text-[10px] tracking-widest">状态</TableHead>
               <TableHead className="font-bold uppercase text-[10px] tracking-widest">ID</TableHead>
-              <TableHead className="w-[120px] text-right pr-6 font-bold uppercase text-[10px] tracking-widest">操作</TableHead>
+              <TableHead className="w-[150px] text-right pr-6 font-bold uppercase text-[10px] tracking-widest">操作</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {isLoading ? (
               <TableRow>
-                <TableCell colSpan={5} className="h-40 text-center"><Loader2 className="h-6 w-6 animate-spin mx-auto opacity-20" /></TableCell>
+                <TableCell colSpan={6} className="h-40 text-center"><Loader2 className="h-6 w-6 animate-spin mx-auto opacity-20" /></TableCell>
               </TableRow>
             ) : products?.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={5} className="h-40 text-center text-muted-foreground italic">暂无产品数据</TableCell>
+                <TableCell colSpan={6} className="h-40 text-center text-muted-foreground italic">暂无产品数据</TableCell>
               </TableRow>
             ) : products?.map((p) => (
               <TableRow key={p.id} className="group hover:bg-muted/5 transition-colors">
@@ -133,6 +155,28 @@ export default function AdminProductsPage() {
                 </TableCell>
                 <TableCell>
                   <span className="text-xs bg-muted px-2 py-1 rounded-full font-medium">{getCategoryName(p.productCategoryId)}</span>
+                </TableCell>
+                <TableCell>
+                  <div className="flex items-center gap-2">
+                    <Badge 
+                      variant={p.status === 'published' ? 'default' : 'secondary'}
+                      className={cn(
+                        "text-[9px] uppercase font-bold px-2 py-0.5 rounded-sm",
+                        p.status === 'published' ? "bg-green-600 hover:bg-green-600" : "bg-muted-foreground/20 text-muted-foreground"
+                      )}
+                    >
+                      {p.status === 'published' ? '已发布' : '草稿'}
+                    </Badge>
+                    <Button 
+                      size="icon" 
+                      variant="ghost" 
+                      className="h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity" 
+                      onClick={() => toggleStatus(p)}
+                      title={p.status === 'published' ? '下架产品' : '发布产品'}
+                    >
+                      {p.status === 'published' ? <EyeOff className="h-3 w-3" /> : <Eye className="h-3 w-3 text-green-600" />}
+                    </Button>
+                  </div>
                 </TableCell>
                 <TableCell className="text-[10px] font-mono opacity-50">{p.id}</TableCell>
                 <TableCell className="pr-6 text-right space-x-1">
@@ -153,3 +197,4 @@ export default function AdminProductsPage() {
     </div>
   );
 }
+

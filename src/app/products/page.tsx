@@ -30,6 +30,7 @@ interface Product {
   mainImageUrl: string;
   productCategoryId: string;
   tags?: string[];
+  status?: 'published' | 'draft';
 }
 
 interface Category {
@@ -79,10 +80,14 @@ function ProductListContent() {
     }
   }, [categoryParam, categories]);
 
-  // 4. 过滤逻辑
+  // 4. 过滤逻辑：只显示 published 状态的产品
   const filteredProducts = useMemo(() => {
     if (!products) return [];
     return products.filter(p => {
+      // 核心过滤：状态必须为已发布
+      const isPublished = p.status === 'published';
+      if (!isPublished) return false;
+
       const matchesCategory = !selectedCategoryId || p.productCategoryId === selectedCategoryId;
       const name = getT(p.nameTextId).toLowerCase();
       const matchesSearch = name.includes(searchQuery.toLowerCase());
@@ -229,3 +234,4 @@ export default function ProductListPage() {
     </Suspense>
   );
 }
+

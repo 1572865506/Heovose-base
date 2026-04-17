@@ -33,7 +33,9 @@ import {
   CheckCircle2,
   Filter,
   Check,
-  Trash2
+  Trash2,
+  Eye,
+  EyeOff
 } from 'lucide-react';
 import { 
   Dialog, 
@@ -61,6 +63,7 @@ interface Product {
   mainImageUrl: string;
   productCategoryId: string;
   galleryImageUrls: string[];
+  status?: 'published' | 'draft';
 }
 
 interface LocalizedString {
@@ -110,7 +113,8 @@ function ProductEditorContent() {
     specsEn: '',
     specsZh: '',
     detailsEn: '',
-    detailsZh: ''
+    detailsZh: '',
+    status: 'draft' as 'published' | 'draft'
   });
 
   const [activeTab, setActiveTab] = useState('basic');
@@ -181,7 +185,8 @@ function ProductEditorContent() {
         specsEn: specsT.en || '',
         specsZh: specsT.zh || '',
         detailsEn: detailsT.en || '',
-        detailsZh: detailsT.zh || ''
+        detailsZh: detailsT.zh || '',
+        status: product.status || 'draft'
       });
     }
   }, [isEditing, product, translations]);
@@ -325,6 +330,7 @@ function ProductEditorContent() {
       mainImageUrl: formData.mainImageUrl,
       productCategoryId: formData.categoryId,
       galleryImageUrls: formData.galleryUrls.filter(Boolean),
+      status: formData.status,
       updatedAt: serverTimestamp()
     }, { merge: true });
 
@@ -374,9 +380,17 @@ function ProductEditorContent() {
             <h2 className="text-2xl font-headline font-bold text-primary flex items-center gap-2">
               {isEditing ? '编辑产品详情' : '发布全新产品'}
             </h2>
-            <p className="text-xs text-muted-foreground uppercase tracking-widest font-medium">
-              ID: {formData.id || 'NEW'} | 分类: {getCatName(formData.categoryId) || '未设定'}
-            </p>
+            <div className="flex items-center gap-3">
+               <p className="text-[10px] text-muted-foreground uppercase tracking-widest font-bold">
+                ID: {formData.id || 'NEW'} | 分类: {getCatName(formData.categoryId) || '未设定'}
+              </p>
+              <Badge variant={formData.status === 'published' ? 'default' : 'secondary'} className={cn(
+                "text-[8px] uppercase px-2 py-0 h-4",
+                formData.status === 'published' ? "bg-green-600" : ""
+              )}>
+                {formData.status === 'published' ? '已发布' : '草稿'}
+              </Badge>
+            </div>
           </div>
         </div>
         <div className="flex gap-3">
@@ -390,7 +404,35 @@ function ProductEditorContent() {
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-10">
         <div className="lg:col-span-4 space-y-6">
           <div className="bg-white p-6 rounded-[2.5rem] border border-border/40 shadow-sm space-y-6">
-            <div className="space-y-2">
+            
+            <div className="space-y-4">
+              <Label className="text-[10px] font-bold uppercase tracking-widest text-primary flex items-center gap-2">
+                {formData.status === 'published' ? <Eye className="h-3 w-3" /> : <EyeOff className="h-3 w-3" />}
+                产品发布状态
+              </Label>
+              <Select value={formData.status} onValueChange={(v: 'published'|'draft') => setFormData({...formData, status: v})}>
+                <SelectTrigger className={cn(
+                  "h-12 rounded-xl border-transparent transition-colors",
+                  formData.status === 'published' ? "bg-green-50 text-green-700" : "bg-muted/30"
+                )}>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="published">
+                    <div className="flex items-center gap-2">
+                      <Eye className="h-3 w-3" /> 立即发布 (公开可见)
+                    </div>
+                  </SelectItem>
+                  <SelectItem value="draft">
+                    <div className="flex items-center gap-2">
+                      <EyeOff className="h-3 w-3" /> 保存为草稿 (下架)
+                    </div>
+                  </SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-2 border-t pt-6">
               <div className="flex items-center justify-between">
                 <Label className="text-[10px] font-bold uppercase tracking-widest text-primary">产品唯一 ID</Label>
                 {!isEditing && formData.categoryId && (
@@ -765,3 +807,4 @@ export default function ProductEditorPage() {
     </Suspense>
   );
 }
+

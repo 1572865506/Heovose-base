@@ -33,6 +33,7 @@ interface Product {
   mainImageUrl: string;
   productCategoryId: string;
   galleryImageUrls: string[];
+  status?: 'published' | 'draft';
 }
 
 interface LocalizedString {
@@ -74,7 +75,8 @@ export default function ProductDetailPage() {
     );
   }
 
-  if (!product) {
+  // 核心逻辑：如果产品未发布，则视为不存在（对非管理员隐藏）
+  if (!product || product.status !== 'published') {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
         <div className="text-center space-y-4">
@@ -211,3 +213,4 @@ export default function ProductDetailPage() {
     </main>
   );
 }
+
