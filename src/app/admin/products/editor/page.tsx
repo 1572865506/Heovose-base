@@ -28,11 +28,24 @@ import {
   Info,
   RefreshCw,
   Upload,
-  Link2
+  Link2,
+  Search,
+  CheckCircle2,
+  Filter
 } from 'lucide-react';
+import { 
+  Dialog, 
+  DialogContent, 
+  DialogFooter, 
+  DialogHeader, 
+  DialogTitle, 
+  DialogTrigger,
+  DialogDescription
+} from '@/components/ui/dialog';
 import { setDocumentNonBlocking } from '@/firebase/non-blocking-updates';
 import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Badge } from '@/components/ui/badge';
 import Image from 'next/image';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
@@ -66,6 +79,13 @@ interface GalleryCategory {
   order: number;
 }
 
+interface GalleryAsset {
+  id: string;
+  url: string;
+  title: string;
+  categoryId: string;
+}
+
 function ProductEditorContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -95,15 +115,23 @@ function ProductEditorContent() {
   const [isUploading, setIsUploading] = useState(false);
   const [showUrlInput, setShowUrlInput] = useState(false);
 
+  // 素材选择器状态
+  const [isPickerOpen, setIsPickerOpen] = useState(false);
+  const [pickerTarget, setPickerTarget] = useState<'main' | 'gallery'>('main');
+  const [pickerSearch, setPickerSearch] = useState('');
+  const [pickerCat, setPickerCat] = useState('all');
+
   const prodRef = useMemoFirebase(() => productId ? doc(firestore, 'products', productId) : null, [firestore, productId]);
   const catsQuery = useMemoFirebase(() => collection(firestore, 'productCategories'), [firestore]);
   const transQuery = useMemoFirebase(() => collection(firestore, 'localizedStrings'), [firestore]);
   const galleryCatsQuery = useMemoFirebase(() => query(collection(firestore, 'galleryCategories'), orderBy('order', 'asc')), [firestore]);
+  const assetsQuery = useMemoFirebase(() => query(collection(firestore, 'galleryAssets'), orderBy('createdAt', 'desc')), [firestore]);
 
   const { data: product, isLoading: isProdLoading } = useDoc<Product>(prodRef);
   const { data: categories } = useCollection<ProductCategory>(catsQuery);
   const { data: translations } = useCollection<LocalizedString>(transQuery);
   const { data: galleryCategories } = useCollection<GalleryCategory>(galleryCatsQuery);
+  const { data: galleryAssets } = useCollection<GalleryAsset>(assetsQuery);
 
   useEffect(() => {
     if (isEditing && product && translations) {
@@ -170,12 +198,10 @@ function ProductEditorContent() {
       const assetId = `asset_prod_${Date.now()}`;
       const assetTitle = `Product Image: ${formData.id || 'Untitled'}`;
       
-      // 寻找或创建一个默认的图库分类
       let targetGalleryCatId = galleryCategories?.[0]?.id || 'uncategorized';
       const prodCat = galleryCategories?.find(c => c.name.includes('产品') || c.name.includes('Product'));
       if (prodCat) targetGalleryCatId = prodCat.id;
 
-      // 1. 同时存入全局图库
       setDocumentNonBlocking(doc(firestore, 'galleryAssets', assetId), {
         id: assetId,
         url: base64,
@@ -186,7 +212,6 @@ function ProductEditorContent() {
         createdAt: serverTimestamp()
       }, { merge: true });
 
-      // 2. 更新当前编辑器状态
       setFormData(prev => ({ ...prev, mainImageUrl: base64 }));
       setIsUploading(false);
       toast({ title: "图片已上传并同步至图库" });
@@ -198,6 +223,25 @@ function ProductEditorContent() {
     };
 
     reader.readAsDataURL(file);
+  };
+
+  const filteredAssets = useMemo(() => {
+    if (!galleryAssets) return [];
+    return galleryAssets.filter(a => {
+      const matchesSearch = a.title.toLowerCase().includes(pickerSearch.toLowerCase());
+      const matchesCat = pickerCat === 'all' || a.categoryId === pickerCat;
+      return matchesSearch && matchesCat;
+    });
+  }, [galleryAssets, pickerSearch, pickerCat]);
+
+  const selectAsset = (url: string) => {
+    if (pickerTarget === 'main') {
+      setFormData({ ...formData, mainImageUrl: url });
+    } else {
+      setFormData({ ...formData, galleryUrls: [...formData.galleryUrls, url] });
+    }
+    setIsPickerOpen(false);
+    toast({ title: "已从图库选取素材" });
   };
 
   const handleSave = () => {
@@ -238,7 +282,10 @@ function ProductEditorContent() {
     router.push('/admin/products');
   };
 
-  const addGalleryItem = () => setFormData({ ...formData, galleryUrls: [...formData.galleryUrls, ''] });
+  const addGalleryItem = () => {
+    setPickerTarget('gallery');
+    setIsPickerOpen(true);
+  };
   const updateGalleryItem = (idx: number, val: string) => {
     const newUrls = [...formData.galleryUrls];
     newUrls[idx] = val;
@@ -265,7 +312,7 @@ function ProductEditorContent() {
   };
 
   return (
-    <div className="max-w-6xl mx-auto space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
+    <div className="max-w-6xl mx-auto space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700 pb-20">
       <div className="flex items-center justify-between sticky top-20 z-40 bg-background/80 backdrop-blur-md py-4 border-b border-border/40">
         <div className="flex items-center gap-4">
           <Button variant="ghost" size="icon" onClick={() => router.back()} className="rounded-full">
@@ -310,7 +357,6 @@ function ProductEditorContent() {
                 onChange={e => setFormData({...formData, id: e.target.value})}
                 className="h-12 rounded-xl bg-muted/20 border-transparent focus-visible:ring-primary"
               />
-              <p className="text-[9px] text-muted-foreground italic px-2">发布后 ID 将锁定不可修改。</p>
             </div>
 
             <div className="space-y-2">
@@ -330,12 +376,20 @@ function ProductEditorContent() {
             <div className="space-y-4 pt-4 border-t border-border/40">
               <div className="flex items-center justify-between">
                 <Label className="text-[10px] font-bold uppercase tracking-widest text-primary">产品主图 (Main Image)</Label>
-                <button 
-                  onClick={() => setShowUrlInput(!showUrlInput)}
-                  className="text-[9px] flex items-center gap-1 font-bold text-muted-foreground hover:text-primary transition-colors uppercase"
-                >
-                  <Link2 className="h-2 w-2" /> {showUrlInput ? '切换到上传' : '使用外部 URL'}
-                </button>
+                <div className="flex gap-2">
+                   <button 
+                    onClick={() => { setPickerTarget('main'); setIsPickerOpen(true); }}
+                    className="text-[9px] flex items-center gap-1 font-bold text-primary hover:underline transition-colors uppercase"
+                  >
+                    <LayoutGrid className="h-2 w-2" /> 从图库选择
+                  </button>
+                  <button 
+                    onClick={() => setShowUrlInput(!showUrlInput)}
+                    className="text-[9px] flex items-center gap-1 font-bold text-muted-foreground hover:text-primary transition-colors uppercase"
+                  >
+                    <Link2 className="h-2 w-2" /> {showUrlInput ? '切换到上传' : '手动输入 URL'}
+                  </button>
+                </div>
               </div>
 
               <div 
@@ -350,7 +404,7 @@ function ProductEditorContent() {
                     <Image src={formData.mainImageUrl} alt="Main" fill className="object-contain p-4" />
                     <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center gap-2">
                       <Upload className="h-6 w-6 text-white" />
-                      <p className="text-white text-[10px] font-bold uppercase">更换图片</p>
+                      <p className="text-white text-[10px] font-bold uppercase">更换图片 (上传)</p>
                     </div>
                   </>
                 ) : isUploading ? (
@@ -365,7 +419,7 @@ function ProductEditorContent() {
                     </div>
                     <div>
                       <p className="text-xs font-bold text-primary">点击上传主图</p>
-                      <p className="text-[10px] text-muted-foreground mt-1">支持 JPG, PNG, WEBP (最大 800KB)</p>
+                      <p className="text-[10px] text-muted-foreground mt-1">或通过右上方按钮从图库选取</p>
                     </div>
                   </div>
                 )}
@@ -387,7 +441,6 @@ function ProductEditorContent() {
                     onChange={e => setFormData({...formData, mainImageUrl: e.target.value})}
                     className="h-10 text-xs rounded-xl bg-muted/20 border-transparent"
                   />
-                  <p className="text-[9px] text-muted-foreground px-2 italic">提示：直接在上方框内点击可快速上传本地文件。</p>
                 </div>
               )}
             </div>
@@ -468,7 +521,7 @@ function ProductEditorContent() {
                     <h3 className="font-bold">副图库管理</h3>
                   </div>
                   <Button variant="outline" size="sm" onClick={addGalleryItem} className="rounded-full gap-2">
-                    <Plus className="h-4 w-4" /> 添加图片
+                    <Plus className="h-4 w-4" /> 从图库挑选
                   </Button>
                 </div>
 
@@ -493,7 +546,7 @@ function ProductEditorContent() {
                   ))}
                   {formData.galleryUrls.length === 0 && (
                     <div className="col-span-full py-12 text-center text-muted-foreground italic border-2 border-dashed rounded-[2rem]">
-                      暂无副图，点击右上方按钮添加。
+                      暂无副图，点击右上方按钮从图库中挑选素材。
                     </div>
                   )}
                 </div>
@@ -502,6 +555,80 @@ function ProductEditorContent() {
           </Tabs>
         </div>
       </div>
+
+      {/* 素材选择器弹窗 */}
+      <Dialog open={isPickerOpen} onOpenChange={setIsPickerOpen}>
+        <DialogContent className="max-w-4xl max-h-[85vh] overflow-hidden flex flex-col p-0 rounded-[2.5rem]">
+          <DialogHeader className="p-8 pb-4">
+            <DialogTitle className="text-xl font-bold flex items-center gap-2">
+              <LayoutGrid className="h-5 w-5 text-primary" />
+              挑选图库素材
+            </DialogTitle>
+            <DialogDescription>
+              选择已有的图库素材作为产品的{pickerTarget === 'main' ? '主图' : '副图'}。
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="px-8 pb-4 flex flex-col md:flex-row gap-4">
+            <div className="relative flex-1">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input 
+                placeholder="搜索素材标题..." 
+                className="pl-10 rounded-xl h-10 bg-muted/40 border-none"
+                value={pickerSearch}
+                onChange={e => setPickerSearch(e.target.value)}
+              />
+            </div>
+            <div className="flex items-center gap-2">
+              <Filter className="h-4 w-4 text-muted-foreground" />
+              <Select value={pickerCat} onValueChange={setPickerCat}>
+                <SelectTrigger className="w-48 rounded-xl h-10">
+                  <SelectValue placeholder="全部分类" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">全部分类</SelectItem>
+                  {galleryCategories?.map(c => (
+                    <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+
+          <div className="flex-1 overflow-y-auto p-8 pt-0 min-h-[300px]">
+            {filteredAssets.length > 0 ? (
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
+                {filteredAssets.map((asset) => (
+                  <div 
+                    key={asset.id}
+                    className="group relative aspect-square rounded-2xl border border-border/40 overflow-hidden cursor-pointer hover:shadow-xl hover:border-primary transition-all bg-white"
+                    onClick={() => selectAsset(asset.url)}
+                  >
+                    <Image src={asset.url} alt={asset.title} fill className="object-cover group-hover:scale-110 transition-transform duration-500" />
+                    <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                      <div className="bg-white text-primary rounded-full p-2 scale-75 group-hover:scale-100 transition-transform">
+                        <CheckCircle2 className="h-6 w-6" />
+                      </div>
+                    </div>
+                    <div className="absolute bottom-0 left-0 right-0 p-2 bg-gradient-to-t from-black/80 to-transparent">
+                      <p className="text-[9px] text-white font-bold truncate">{asset.title}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="h-full flex flex-col items-center justify-center text-muted-foreground py-20 border-2 border-dashed rounded-3xl">
+                <ImageIcon className="h-10 w-10 opacity-20 mb-4" />
+                <p className="text-sm font-bold">未找到匹配素材</p>
+              </div>
+            )}
+          </div>
+
+          <DialogFooter className="p-6 bg-muted/30">
+            <Button variant="outline" onClick={() => setIsPickerOpen(false)} className="rounded-xl h-10 px-8">取消</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
