@@ -25,7 +25,8 @@ import {
   Languages,
   LayoutGrid,
   ClipboardList,
-  Info
+  Info,
+  RefreshCw
 } from 'lucide-react';
 import { setDocumentNonBlocking } from '@/firebase/non-blocking-updates';
 import { Label } from '@/components/ui/label';
@@ -115,6 +116,24 @@ function ProductEditorContent() {
       });
     }
   }, [isEditing, product, translations]);
+
+  // 自动生成 ID 的逻辑
+  useEffect(() => {
+    if (!isEditing && formData.categoryId && !formData.id) {
+      generateAutoId(formData.categoryId);
+    }
+  }, [formData.categoryId, isEditing]);
+
+  const generateAutoId = (catId: string) => {
+    const prefix = catId.replace('cat-', '').toUpperCase();
+    const date = new Date();
+    const dateStr = date.getFullYear().toString().slice(-2) + 
+                    (date.getMonth() + 1).toString().padStart(2, '0') + 
+                    date.getDate().toString().padStart(2, '0');
+    const randomSuffix = Math.random().toString(36).substring(2, 6).toUpperCase();
+    const newId = `${prefix}-${dateStr}-${randomSuffix}`;
+    setFormData(prev => ({ ...prev, id: newId }));
+  };
 
   const handleSave = () => {
     if (!firestore || !formData.id || !formData.categoryId) {
@@ -208,10 +227,20 @@ function ProductEditorContent() {
         <div className="lg:col-span-4 space-y-6">
           <div className="bg-white p-6 rounded-[2.5rem] border border-border/40 shadow-sm space-y-6">
             <div className="space-y-2">
-              <Label className="text-[10px] font-bold uppercase tracking-widest text-primary">产品唯一 ID</Label>
+              <div className="flex items-center justify-between">
+                <Label className="text-[10px] font-bold uppercase tracking-widest text-primary">产品唯一 ID</Label>
+                {!isEditing && formData.categoryId && (
+                  <button 
+                    onClick={() => generateAutoId(formData.categoryId)}
+                    className="text-[9px] flex items-center gap-1 font-bold text-muted-foreground hover:text-primary transition-colors uppercase"
+                  >
+                    <RefreshCw className="h-2 w-2" /> 重新生成
+                  </button>
+                )}
+              </div>
               <Input 
                 disabled={isEditing} 
-                placeholder="例如: H-101" 
+                placeholder="选择分类后将自动填充" 
                 value={formData.id} 
                 onChange={e => setFormData({...formData, id: e.target.value})}
                 className="h-12 rounded-xl bg-muted/20 border-transparent focus-visible:ring-primary"
