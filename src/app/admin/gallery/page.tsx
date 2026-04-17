@@ -263,8 +263,8 @@ export default function GalleryPage() {
       active: true
     });
 
-    // 如果没按 Shift 键，清空之前的选择
-    if (!e.shiftKey) {
+    // 如果没按 Shift 键且当前没在批量模式下，清空之前的选择
+    if (!e.shiftKey && selectedIds.size === 0) {
       setSelectedIds(new Set());
     }
   };
@@ -549,9 +549,9 @@ export default function GalleryPage() {
 
   return (
     <div className="space-y-8 animate-in fade-in duration-500 relative min-h-[80vh] select-none">
-      {/* 批量操作悬浮条 */}
-      {selectedIds.size > 0 && (
-        <div className="fixed top-24 left-1/2 -translate-x-1/2 z-[100] bg-white border border-primary/20 shadow-2xl rounded-full px-6 py-3 flex items-center gap-6 animate-in slide-in-from-top-4 duration-300">
+      {/* 批量操作悬浮条 - z-index 设为 30 以便在大图预览下层 */}
+      {selectedIds.size > 0 && !previewImage && (
+        <div className="fixed top-24 left-1/2 -translate-x-1/2 z-[30] bg-white border border-primary/20 shadow-2xl rounded-full px-6 py-3 flex items-center gap-6 animate-in slide-in-from-top-4 duration-300">
           <div className="flex items-center gap-2">
             <Checkbox 
               checked={selectedIds.size === filteredAssets.length}
@@ -998,7 +998,8 @@ export default function GalleryPage() {
               <div 
                 className="relative aspect-square bg-muted/10 cursor-zoom-in overflow-hidden"
                 onClick={(e) => { 
-                  if (e.shiftKey) {
+                  // 如果按下 Shift 键或当前已经处于批量选择模式，点击图片变为“选择”操作，防止误触预览
+                  if (e.shiftKey || selectedIds.size > 0) {
                     toggleSelectAsset(asset.id);
                   } else {
                     setPreviewScaleMode('fit'); 
@@ -1031,10 +1032,10 @@ export default function GalleryPage() {
         </div>
       )}
 
-      {/* 上传任务管理面板 */}
-      {isTasksPanelOpen && (
+      {/* 上传任务管理面板 - z-index 设为 30 */}
+      {isTasksPanelOpen && !previewImage && (
         <div className={cn(
-          "fixed bottom-6 right-6 z-[200] w-80 bg-white border border-border/40 shadow-2xl rounded-3xl overflow-hidden transition-all duration-500 transform",
+          "fixed bottom-6 right-6 z-[30] w-80 bg-white border border-border/40 shadow-2xl rounded-3xl overflow-hidden transition-all duration-500 transform",
           isTasksPanelMinimized ? "h-14" : "h-96"
         )}>
           <div className="bg-primary p-4 flex items-center justify-between text-white">
@@ -1144,7 +1145,7 @@ export default function GalleryPage() {
         </DialogContent>
       </Dialog>
 
-      {/* 大图预览弹窗 */}
+      {/* 大图预览弹窗 - 具有系统级 z-index，将覆盖所有浮动控件 */}
       <Dialog open={!!previewImage} onOpenChange={(o) => !o && setPreviewImage(null)}>
         <DialogContent className="max-w-[95vw] h-[95vh] p-0 overflow-hidden border-none bg-black/95 shadow-none flex flex-col">
           <DialogHeader className="sr-only">
