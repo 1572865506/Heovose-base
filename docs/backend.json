@@ -5,307 +5,57 @@
       "$schema": "http://json-schema.org/draft-07/schema#",
       "title": "AdminUser",
       "type": "object",
-      "description": "Represents a user with administrative privileges. The existence of a document in the /admins/{uid} collection grants access to the management console.",
+      "description": "Represents a user with administrative privileges.",
       "properties": {
-        "uid": {
-          "type": "string",
-          "description": "The unique Firebase Authentication UID of the administrator."
-        },
-        "email": {
-          "type": "string",
-          "description": "The email address associated with the admin account."
-        },
-        "role": {
-          "type": "string",
-          "description": "The administrative role (e.g., 'superadmin', 'editor').",
-          "enum": ["superadmin", "editor"]
-        }
+        "uid": { "type": "string" },
+        "email": { "type": "string" },
+        "role": { "type": "string", "enum": ["superadmin", "editor"] }
       },
-      "required": [
-        "uid",
-        "email"
-      ]
+      "required": ["uid", "email"]
+    },
+    "GalleryCategory": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "GalleryCategory",
+      "type": "object",
+      "description": "Custom categories for organizing gallery assets.",
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "order": { "type": "number" }
+      },
+      "required": ["id", "name"]
     },
     "GalleryAsset": {
       "$schema": "http://json-schema.org/draft-07/schema#",
       "title": "GalleryAsset",
       "type": "object",
-      "description": "Represents a media asset in the global gallery, such as product photos or technical diagrams.",
+      "description": "Represents a media asset in the global gallery.",
       "properties": {
-        "id": {
-          "type": "string"
-        },
-        "url": {
-          "type": "string",
-          "format": "uri"
-        },
-        "title": {
-          "type": "string"
-        },
-        "category": {
-          "type": "string",
-          "enum": ["Product", "Diagram", "Banner", "Other"]
-        },
-        "createdAt": {
-          "type": "object"
-        }
+        "id": { "type": "string" },
+        "url": { "type": "string" },
+        "title": { "type": "string" },
+        "categoryId": { "type": "string" },
+        "fileName": { "type": "string" },
+        "fileSize": { "type": "number" },
+        "createdAt": { "type": "object" }
       },
-      "required": ["id", "url", "category", "title"]
+      "required": ["id", "url", "title", "categoryId"]
     },
     "LocalizedString": {
       "$schema": "http://json-schema.org/draft-07/schema#",
       "title": "LocalizedString",
       "type": "object",
-      "description": "Represents a piece of text content available in multiple languages, primarily English and Chinese, to support the app's multilingual features.",
+      "description": "Multilingual text content.",
       "properties": {
-        "id": {
-          "type": "string",
-          "description": "Unique identifier for the LocalizedString entity."
-        },
-        "en": {
-          "type": "string",
-          "description": "The English translation of the text."
-        },
-        "zh": {
-          "type": "string",
-          "description": "The Chinese (Simplified) translation of the text."
-        }
+        "id": { "type": "string" },
+        "en": { "type": "string" },
+        "zh": { "type": "string" }
       },
-      "required": [
-        "id",
-        "en",
-        "zh"
-      ]
-    },
-    "HomepageSectionContent": {
-      "$schema": "http://json-schema.org/draft-07/schema#",
-      "title": "HomepageSectionContent",
-      "type": "object",
-      "description": "Defines the content and configuration for dynamic sections on the homepage, such as the Hero section.",
-      "properties": {
-        "id": {
-          "type": "string",
-          "description": "Unique identifier for the homepage section content (e.g., 'hero', 'about-us')."
-        },
-        "sectionType": {
-          "type": "string",
-          "description": "Identifies the type or purpose of the homepage section (e.g., 'hero', 'call-to-action')."
-        },
-        "headlineTextId": {
-          "type": "string",
-          "description": "Reference to LocalizedString for the main headline of the section. (Relationship: LocalizedString 1:N HomepageSectionContent)"
-        },
-        "subtitleTextId": {
-          "type": "string",
-          "description": "Reference to LocalizedString for the subtitle or secondary text of the section. (Relationship: LocalizedString 1:N HomepageSectionContent)"
-        },
-        "imageUrl": {
-          "type": "string",
-          "description": "URL to a primary image associated with the section (e.g., the 45-degree perspective 3D product image for the hero section).",
-          "format": "uri"
-        }
-      },
-      "required": [
-        "id",
-        "sectionType",
-        "headlineTextId",
-        "subtitleTextId",
-        "imageUrl"
-      ]
-    },
-    "ProductCategory": {
-      "$schema": "http://json-schema.org/draft-07/schema#",
-      "title": "ProductCategory",
-      "type": "object",
-      "description": "Categorizes different product types offered by Heovose, such as AIO, Mini PC, Monitors, and KIOSK.",
-      "properties": {
-        "id": {
-          "type": "string",
-          "description": "Unique identifier for the ProductCategory entity."
-        },
-        "nameTextId": {
-          "type": "string",
-          "description": "Reference to LocalizedString for the name of the product category (e.g., 'All-in-One PCs'). (Relationship: LocalizedString 1:N ProductCategory)"
-        },
-        "slug": {
-          "type": "string",
-          "description": "A URL-friendly identifier for the product category, used for routing or display."
-        },
-        "thumbnailImageUrl": {
-          "type": "string",
-          "description": "URL to a thumbnail image representing the product category.",
-          "format": "uri"
-        }
-      },
-      "required": [
-        "id",
-        "nameTextId",
-        "slug",
-        "thumbnailImageUrl"
-      ]
-    },
-    "Product": {
-      "$schema": "http://json-schema.org/draft-07/schema#",
-      "title": "Product",
-      "type": "object",
-      "description": "Represents an individual product within Heovose's offerings, belonging to a specific product category.",
-      "properties": {
-        "id": {
-          "type": "string",
-          "description": "Unique identifier for the Product entity."
-        },
-        "nameTextId": {
-          "type": "string",
-          "description": "Reference to LocalizedString for the product's name. (Relationship: LocalizedString 1:N Product)"
-        },
-        "descriptionTextId": {
-          "type": "string",
-          "description": "Reference to LocalizedString for a brief description of the product. (Relationship: LocalizedString 1:N Product)"
-        },
-        "mainImageUrl": {
-          "type": "string",
-          "description": "URL to the product's primary marketing image.",
-          "format": "uri"
-        },
-        "productCategoryId": {
-          "type": "string",
-          "description": "Reference to ProductCategory to which this product belongs. (Relationship: ProductCategory 1:N Product)"
-        },
-        "galleryImageUrls": {
-          "type": "array",
-          "description": "An array of URLs to additional images for the product gallery.",
-          "items": {
-            "type": "string"
-          }
-        }
-      },
-      "required": [
-        "id",
-        "nameTextId",
-        "descriptionTextId",
-        "mainImageUrl",
-        "productCategoryId",
-        "galleryImageUrls"
-      ]
-    },
-    "Statistic": {
-      "$schema": "http://json-schema.org/draft-07/schema#",
-      "title": "Statistic",
-      "type": "object",
-      "description": "Holds key company statistics, such as factory counts or product series numbers, for engaging visualization.",
-      "properties": {
-        "id": {
-          "type": "string",
-          "description": "Unique identifier for the Statistic entity."
-        },
-        "value": {
-          "type": "string",
-          "description": "The numerical or text value of the statistic (e.g., '3', '30+')."
-        },
-        "unitTextId": {
-          "type": "string",
-          "description": "Reference to LocalizedString for the unit or label of the statistic (e.g., 'Global Factories', 'AIO Series'). (Relationship: LocalizedString 1:N Statistic)"
-        },
-        "descriptionTextId": {
-          "type": "string",
-          "description": "Reference to LocalizedString for a more detailed descriptive text of the statistic. (Relationship: LocalizedString 1:N Statistic)"
-        },
-        "order": {
-          "type": "number",
-          "description": "The intended display order of the statistic on the page."
-        }
-      },
-      "required": [
-        "id",
-        "value",
-        "unitTextId",
-        "descriptionTextId",
-        "order"
-      ]
-    },
-    "ProductionStep": {
-      "$schema": "http://json-schema.org/draft-07/schema#",
-      "title": "ProductionStep",
-      "type": "object",
-      "description": "Details each step of Heovose's 11-step production process, from IQC to OQA.",
-      "properties": {
-        "id": {
-          "type": "string",
-          "description": "Unique identifier for the ProductionStep entity."
-        },
-        "stepNumber": {
-          "type": "number",
-          "description": "The sequential number of the production step (e.g., 1, 2, ..., 11)."
-        },
-        "titleTextId": {
-          "type": "string",
-          "description": "Reference to LocalizedString for the title or abbreviation of the production step (e.g., 'IQC'). (Relationship: LocalizedString 1:N ProductionStep)"
-        },
-        "descriptionTextId": {
-          "type": "string",
-          "description": "Reference to LocalizedString for a detailed explanation of the production step. (Relationship: LocalizedString 1:N ProductionStep)"
-        },
-        "iconUrl": {
-          "type": "string",
-          "description": "URL to an icon or graphic representing the production step.",
-          "format": "uri"
-        }
-      },
-      "required": [
-        "id",
-        "stepNumber",
-        "titleTextId",
-        "descriptionTextId",
-        "iconUrl"
-      ]
-    },
-    "FactoryLocation": {
-      "$schema": "http://json-schema.org/draft-07/schema#",
-      "title": "FactoryLocation",
-      "type": "object",
-      "description": "Specifies the geographical details of Heovose's global factory locations for display on an interactive map.",
-      "properties": {
-        "id": {
-          "type": "string",
-          "description": "Unique identifier for the FactoryLocation entity."
-        },
-        "nameTextId": {
-          "type": "string",
-          "description": "Reference to LocalizedString for the name of the factory location (e.g., 'China Factory'). (Relationship: LocalizedString 1:N FactoryLocation)"
-        },
-        "countryTextId": {
-          "type": "string",
-          "description": "Reference to LocalizedString for the country where the factory is located (e.g., 'China'). (Relationship: LocalizedString 1:N FactoryLocation)"
-        },
-        "latitude": {
-          "type": "number",
-          "description": "The geographical latitude coordinate of the factory location."
-        },
-        "longitude": {
-          "type": "number",
-          "description": "The geographical longitude coordinate of the factory location."
-        },
-        "mapMarkerImageUrl": {
-          "type": "string",
-          "description": "URL to an image or icon to use as a marker on the map for this location.",
-          "format": "uri"
-        }
-      },
-      "required": [
-        "id",
-        "nameTextId",
-        "countryTextId",
-        "latitude",
-        "longitude",
-        "mapMarkerImageUrl"
-      ]
+      "required": ["id", "en", "zh"]
     }
   },
   "auth": {
-    "providers": [
-      "password",
-      "anonymous"
-    ]
+    "providers": ["password", "anonymous"]
   },
   "firestore": {
     "structure": [
@@ -313,93 +63,34 @@
         "path": "/admins/{uid}",
         "definition": {
           "entityName": "AdminUser",
-          "schema": {
-            "$ref": "#/backend/entities/AdminUser"
-          },
-          "description": "Stores a list of authenticated administrators. Only UIDs present here can access the /admin console."
+          "schema": { "$ref": "#/backend/entities/AdminUser" },
+          "description": "Authorized administrators."
+        }
+      },
+      {
+        "path": "/galleryCategories/{categoryId}",
+        "definition": {
+          "entityName": "GalleryCategory",
+          "schema": { "$ref": "#/backend/entities/GalleryCategory" },
+          "description": "Flexible categories for gallery."
         }
       },
       {
         "path": "/galleryAssets/{assetId}",
         "definition": {
           "entityName": "GalleryAsset",
-          "schema": {
-            "$ref": "#/backend/entities/GalleryAsset"
-          },
-          "description": "Central media gallery for all site assets."
+          "schema": { "$ref": "#/backend/entities/GalleryAsset" },
+          "description": "Central media gallery assets."
         }
       },
       {
         "path": "/localizedStrings/{localizedStringId}",
         "definition": {
           "entityName": "LocalizedString",
-          "schema": {
-            "$ref": "#/backend/entities/LocalizedString"
-          },
-          "description": "Stores localized text content for English and Chinese, referenced by other entities for multilingual support. Publicly readable."
-        }
-      },
-      {
-        "path": "/homepageSectionContent/{sectionId}",
-        "definition": {
-          "entityName": "HomepageSectionContent",
-          "schema": {
-            "$ref": "#/backend/entities/HomepageSectionContent"
-          },
-          "description": "Defines dynamic sections for the homepage, such as the Hero section. Includes references to localized strings for text content. Publicly readable."
-        }
-      },
-      {
-        "path": "/productCategories/{categoryId}",
-        "definition": {
-          "entityName": "ProductCategory",
-          "schema": {
-            "$ref": "#/backend/entities/ProductCategory"
-          },
-          "description": "Categorizes different product types offered by Heovose. Includes reference to localized string for category names. Publicly readable."
-        }
-      },
-      {
-        "path": "/products/{productId}",
-        "definition": {
-          "entityName": "Product",
-          "schema": {
-            "$ref": "#/backend/entities/Product"
-          },
-          "description": "Represents an individual product, referencing localized strings for name and description, and a product category. Publicly readable."
-        }
-      },
-      {
-        "path": "/statistics/{statisticId}",
-        "definition": {
-          "entityName": "Statistic",
-          "schema": {
-            "$ref": "#/backend/entities/Statistic"
-          },
-          "description": "Holds key company statistics for engaging visualization. Includes references to localized strings for units and descriptions. Publicly readable."
-        }
-      },
-      {
-        "path": "/productionSteps/{stepId}",
-        "definition": {
-          "entityName": "ProductionStep",
-          "schema": {
-            "$ref": "#/backend/entities/ProductionStep"
-          },
-          "description": "Details each step of Heovose's production process. Includes references to localized strings for titles and descriptions. Publicly readable."
-        }
-      },
-      {
-        "path": "/factoryLocations/{locationId}",
-        "definition": {
-          "entityName": "FactoryLocation",
-          "schema": {
-            "$ref": "#/backend/entities/FactoryLocation"
-          },
-          "description": "Specifies the geographical details of Heovose's global factory locations for display on an interactive map. Includes references to localized strings. Publicly readable."
+          "schema": { "$ref": "#/backend/entities/LocalizedString" },
+          "description": "Multilingual text content."
         }
       }
-    ],
-    "reasoning": "The structure includes a critical /admins/{uid} collection to handle authorization for the management console, separating authenticated users from authorized managers."
+    ]
   }
 }

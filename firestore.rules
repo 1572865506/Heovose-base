@@ -1,91 +1,28 @@
 
-/**
- * Heovose Elevate: Firestore Security Rules
- * Updated: 2024-05-24 15:30:00 (Added Gallery Permissions)
- */
-
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-
-    /**
-     * @description Helper function to verify if the requesting user is a registered administrator.
-     */
     function isAdmin() {
       return request.auth != null && exists(/databases/$(database)/documents/admins/$(request.auth.uid));
     }
 
-    /**
-     * @description Stores authenticated administrators.
-     * @path /admins/{uid}
-     */
     match /admins/{uid} {
-      // Allow users to read their own admin status for verification
       allow get: if request.auth != null && request.auth.uid == uid;
       allow list, write: if false;
     }
 
-    /**
-     * @description Central media gallery assets.
-     */
+    match /galleryCategories/{categoryId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
     match /galleryAssets/{assetId} {
-      allow get, list: if true;
+      allow read: if true;
       allow write: if isAdmin();
     }
 
-    /**
-     * @description Localized text strings.
-     */
     match /localizedStrings/{localizedStringId} {
-      allow get, list: if true;
-      allow write: if isAdmin();
-    }
-
-    /**
-     * @description Configuration for dynamic homepage sections.
-     */
-    match /homepageSectionContent/{sectionId} {
-      allow get, list: if true;
-      allow write: if isAdmin();
-    }
-
-    /**
-     * @description Product categories.
-     */
-    match /productCategories/{categoryId} {
-      allow get, list: if true;
-      allow write: if isAdmin();
-    }
-
-    /**
-     * @description Product details.
-     */
-    match /products/{productId} {
-      allow get, list: if true;
-      allow write: if isAdmin();
-    }
-
-    /**
-     * @description Company statistics.
-     */
-    match /statistics/{statisticId} {
-      allow get, list: if true;
-      allow write: if isAdmin();
-    }
-
-    /**
-     * @description Manufacturing process steps.
-     */
-    match /productionSteps/{stepId} {
-      allow get, list: if true;
-      allow write: if isAdmin();
-    }
-
-    /**
-     * @description Factory locations.
-     */
-    match /factoryLocations/{locationId} {
-      allow get, list: if true;
+      allow read: if true;
       allow write: if isAdmin();
     }
   }
