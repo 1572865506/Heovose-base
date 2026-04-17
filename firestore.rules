@@ -1,134 +1,87 @@
 /**
  * Heovose Elevate: Firestore Security Rules
+ * Updated: 2024-05-24 10:00:00 (Forced Redeploy)
  *
  * Core Philosophy:
- * This ruleset implements a "Public Read, Administrative Write" model. The application serves
- * as a global product showcase and corporate portfolio. As such, all content is intended 
- * to be publicly accessible to both authenticated and anonymous users to support the 
- * multilingual marketing site.
- *
- * Data Structure:
- * The data is organized into flat, top-level collections representing specific content 
- * types (Products, Categories, Statistics, etc.). Multilingual support is achieved via 
- * a centralized `localizedStrings` collection referenced by other entities.
+ * This ruleset implements a "Public Read, Administrative Write" model. 
  *
  * Key Security Decisions:
- * 1. Public Read Access: All content collections allow 'get' and 'list' operations for 
- *    all users. This ensures the marketing site functions correctly without complex 
- *    authorization checks for viewers.
- * 2. Locked Writes: Currently, write operations (create, update, delete) are disabled 
- *    at the rules level. The provided schema does not include ownership fields (e.g., 
- *    `authorId`) or an administrative role mapping. To prevent unauthorized modification 
- *    of public content, writes are restricted until an admin authorization model is defined.
- * 3. Relational Integrity: In preparation for administrative features, rules include 
- *    logic to ensure that a document's internal 'id' field matches its Firestore document ID.
- *
- * Denormalization for Authorization:
- * Since the current model is entirely public-read, denormalization for authorization is 
- * not required for data consumption. Future administrative roles should be denormalized 
- * into a specific `/admins/{uid}` collection or handled via roles on documents.
+ * 1. Admin Verification: Users can 'get' their own document in /admins/{uid} to verify privileges.
+ * 2. Public Read Access: All content collections allow 'get' and 'list' operations for all users.
+ * 3. Locked Writes: Administrative writes are restricted at the rules level for now.
  */
 
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // The 'isSignedIn' and 'isValidId' functions were removed because they were unused
-    // and incorrectly attempted to access the global 'request' object directly within their scope.
-    // If administrative write functionality is implemented in the future,
-    // authentication and ID validation logic will need to be correctly
-    // integrated, potentially by passing `request` or `resource` as arguments
-    // to helper functions, or by inlining the logic.
+    /**
+     * @description Stores authenticated administrators.
+     * @path /admins/{uid}
+     * @allow get: if request.auth != null && request.auth.uid == uid;
+     */
+    match /admins/{uid} {
+      // 允许用户读取自己的管理员状态进行身份验证
+      allow get: if request.auth != null && request.auth.uid == uid;
+      // 禁止列表或写入，管理员名单管理通常在控制台进行
+      allow list, write: if false;
+    }
 
     /**
      * @description Localized text strings for English and Chinese translations.
      * @path /localizedStrings/{localizedStringId}
-     * @allow get, list: if true; (Public consumption)
-     * @deny create, update, delete: (Requires admin role not yet defined)
-     * @principle Public read-only access for shared content.
      */
     match /localizedStrings/{localizedStringId} {
       allow get, list: if true;
-      // CRITICAL: Cannot implement owner-only writes. The 'LocalizedString' entity is missing an 'ownerId' or 'authorId' field.
-      allow create, update, delete: if false; // TODO: Add administrative or owner validation once the schema is updated.
+      allow create, update, delete: if false; 
     }
 
     /**
-     * @description Configuration and content for dynamic homepage sections (e.g., Hero).
-     * @path /homepageSectionContent/{sectionId}
-     * @allow get, list: if true; (Public consumption)
-     * @deny create, update, delete: (Requires admin role not yet defined)
-     * @principle Public read-only access for marketing content.
+     * @description Configuration and content for dynamic homepage sections.
      */
     match /homepageSectionContent/{sectionId} {
       allow get, list: if true;
-      // CRITICAL: Cannot implement owner-only writes. The 'HomepageSectionContent' entity is missing an 'ownerId' or 'authorId' field.
-      allow create, update, delete: if false; // TODO: Add administrative or owner validation once the schema is updated.
+      allow create, update, delete: if false;
     }
 
     /**
      * @description Categories for products (e.g., AIO, Mini PC).
-     * @path /productCategories/{categoryId}
-     * @allow get, list: if true; (Public consumption)
-     * @deny create, update, delete: (Requires admin role not yet defined)
-     * @principle Public read-only access for product taxonomy.
      */
     match /productCategories/{categoryId} {
       allow get, list: if true;
-      // CRITICAL: Cannot implement owner-only writes. The 'ProductCategory' entity is missing an 'ownerId' or 'authorId' field.
-      allow create, update, delete: if false; // TODO: Add administrative or owner validation once the schema is updated.
+      allow create, update, delete: if false;
     }
 
     /**
-     * @description Individual product details and marketing materials.
-     * @path /products/{productId}
-     * @allow get, list: if true; (Public consumption)
-     * @deny create, update, delete: (Requires admin role not yet defined)
-     * @principle Public read-only access for product catalog.
+     * @description Individual product details.
      */
     match /products/{productId} {
       allow get, list: if true;
-      // CRITICAL: Cannot implement owner-only writes. The 'Product' entity is missing an 'ownerId' or 'authorId' field.
-      allow create, update, delete: if false; // TODO: Add administrative or owner validation once the schema is updated.
+      allow create, update, delete: if false;
     }
 
     /**
      * @description Company performance and scale statistics.
-     * @path /statistics/{statisticId}
-     * @allow get, list: if true; (Public consumption)
-     * @deny create, update, delete: (Requires admin role not yet defined)
-     * @principle Public read-only access for company metrics.
      */
     match /statistics/{statisticId} {
       allow get, list: if true;
-      // CRITICAL: Cannot implement owner-only writes. The 'Statistic' entity is missing an 'ownerId' or 'authorId' field.
-      allow create, update, delete: if false; // TODO: Add administrative or owner validation once the schema is updated.
+      allow create, update, delete: if false;
     }
 
     /**
-     * @description Steps detailing the manufacturing and quality assurance process.
-     * @path /productionSteps/{stepId}
-     * @allow get, list: if true; (Public consumption)
-     * @deny create, update, delete: (Requires admin role not yet defined)
-     * @principle Public read-only access for transparency content.
+     * @description Steps detailing the manufacturing process.
      */
     match /productionSteps/{stepId} {
       allow get, list: if true;
-      // CRITICAL: Cannot implement owner-only writes. The 'ProductionStep' entity is missing an 'ownerId' or 'authorId' field.
-      allow create, update, delete: if false; // TODO: Add administrative or owner validation once the schema is updated.
+      allow create, update, delete: if false;
     }
 
     /**
      * @description Geographical locations for global factories.
-     * @path /factoryLocations/{locationId}
-     * @allow get, list: if true; (Public consumption)
-     * @deny create, update, delete: (Requires admin role not yet defined)
-     * @principle Public read-only access for global presence data.
      */
     match /factoryLocations/{locationId} {
       allow get, list: if true;
-      // CRITICAL: Cannot implement owner-only writes. The 'FactoryLocation' entity is missing an 'ownerId' or 'authorId' field.
-      allow create, update, delete: if false; // TODO: Add administrative or owner validation once the schema is updated.
+      allow create, update, delete: if false;
     }
   }
 }
