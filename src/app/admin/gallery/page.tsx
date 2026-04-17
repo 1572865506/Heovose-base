@@ -365,7 +365,11 @@ export default function GalleryPage() {
                         <SelectContent>
                           <SelectItem value="none">无 (设为一级分类)</SelectItem>
                           {categoryTree.filter(c => c.id !== editingCatId).map(cat => (
-                            <SelectItem key={cat.id} value={cat.id}>{cat.fullPath}</SelectItem>
+                            <SelectItem key={cat.id} value={cat.id}>
+                              <span style={{ paddingLeft: `${cat.depth * 0.75}rem` }} className={cn(cat.depth > 0 && "text-muted-foreground")}>
+                                {cat.depth > 0 ? '— ' : ''}{cat.name}
+                              </span>
+                            </SelectItem>
                           ))}
                         </SelectContent>
                       </Select>
@@ -533,7 +537,11 @@ export default function GalleryPage() {
             <SelectContent>
               <SelectItem value="all">全部分类</SelectItem>
               {categoryTree.map(cat => (
-                <SelectItem key={cat.id} value={cat.id}>{cat.fullPath}</SelectItem>
+                <SelectItem key={cat.id} value={cat.id}>
+                  <span style={{ paddingLeft: `${cat.depth * 0.75}rem` }} className={cn(cat.depth > 0 && "text-muted-foreground")}>
+                    {cat.depth > 0 ? '— ' : ''}{cat.name}
+                  </span>
+                </SelectItem>
               ))}
             </SelectContent>
           </Select>
@@ -590,7 +598,11 @@ export default function GalleryPage() {
                   </SelectTrigger>
                   <SelectContent>
                     {categoryTree.map(cat => (
-                      <SelectItem key={cat.id} value={cat.id}>{cat.fullPath}</SelectItem>
+                      <SelectItem key={cat.id} value={cat.id}>
+                        <span style={{ paddingLeft: `${cat.depth * 0.75}rem` }} className={cn(cat.depth > 0 && "text-muted-foreground")}>
+                          {cat.depth > 0 ? '— ' : ''}{cat.name}
+                        </span>
+                      </SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
