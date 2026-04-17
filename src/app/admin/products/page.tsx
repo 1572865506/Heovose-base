@@ -24,7 +24,8 @@ import {
   EyeOff,
   Search,
   Filter,
-  X
+  X,
+  ExternalLink
 } from 'lucide-react';
 import { 
   Select,
@@ -210,15 +211,22 @@ export default function AdminProductsPage() {
             ) : filteredProducts.map((p) => (
               <TableRow key={p.id} className="group hover:bg-muted/5 transition-colors">
                 <TableCell className="pl-6">
-                  <div className="relative h-12 w-12 rounded-lg border bg-muted/10 overflow-hidden">
-                    {p.mainImageUrl && <Image src={p.mainImageUrl} alt={p.id} fill className="object-contain" />}
-                  </div>
+                  <Link href={`/products/${p.id}`} target="_blank" rel="noopener noreferrer">
+                    <div className="relative h-12 w-12 rounded-lg border bg-muted/10 overflow-hidden hover:opacity-80 transition-opacity">
+                      {p.mainImageUrl && <Image src={p.mainImageUrl} alt={p.id} fill className="object-contain" />}
+                    </div>
+                  </Link>
                 </TableCell>
                 <TableCell>
-                  <div className="flex flex-col">
-                    <span className="font-bold text-sm text-primary">{getTranslation(p.nameTextId, 'zh')}</span>
-                    <span className="text-[10px] text-muted-foreground">{getTranslation(p.nameTextId, 'en')}</span>
-                  </div>
+                  <Link href={`/products/${p.id}`} target="_blank" rel="noopener noreferrer" className="group/name block hover:translate-x-1 transition-transform">
+                    <div className="flex flex-col">
+                      <div className="flex items-center gap-1.5">
+                        <span className="font-bold text-sm text-primary group-hover/name:underline decoration-primary/30 underline-offset-4">{getTranslation(p.nameTextId, 'zh')}</span>
+                        <ExternalLink className="h-2.5 w-2.5 text-primary/20 group-hover/name:text-primary transition-colors" />
+                      </div>
+                      <span className="text-[10px] text-muted-foreground">{getTranslation(p.nameTextId, 'en')}</span>
+                    </div>
+                  </Link>
                 </TableCell>
                 <TableCell>
                   <span className="text-xs bg-muted px-2 py-1 rounded-full font-medium">{getCategoryName(p.productCategoryId)}</span>
