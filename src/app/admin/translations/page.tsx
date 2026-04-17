@@ -38,13 +38,21 @@ import {
   Globe,
   Info,
   ShieldCheck,
-  Copy
+  Copy,
+  ExternalLink,
+  ChevronRight
 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { setDocumentNonBlocking, deleteDocumentNonBlocking } from '@/firebase/non-blocking-updates';
 import { Label } from '@/components/ui/label';
 import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 
 interface LocalizedString {
   id: string;
@@ -81,7 +89,7 @@ export default function TranslationsPage() {
   const translationsQuery = useMemoFirebase(() => firestore ? collection(firestore, 'localizedStrings') : null, [firestore]);
   const { data: translations, isLoading } = useCollection<LocalizedString>(translationsQuery);
 
-  // 3. 获取所有业务实体（用于计算引用依赖）
+  // 3. 获取所有业务实体
   const productsQuery = useMemoFirebase(() => firestore ? collection(firestore, 'products') : null, [firestore]);
   const catsQuery = useMemoFirebase(() => firestore ? collection(firestore, 'productCategories') : null, [firestore]);
   const galCatsQuery = useMemoFirebase(() => firestore ? collection(firestore, 'galleryCategories') : null, [firestore]);
@@ -95,51 +103,54 @@ export default function TranslationsPage() {
     { code: 'en', label: 'English' }
   ], [langSettings]);
 
-  // 4. 建立引用索引：查出哪些 ID 正在被系统使用（核心理据）
-  const usedIds = useMemo(() => {
-    const ids = new Set<string>();
+  // 4. 建立详细的引用映射表：不仅查是否使用，还查被谁使用
+  const referenceMap = useMemo(() => {
+    const map = new Map<string, { type: string, name: string, id: string }[]>();
     
-    // 检查产品数据中的引用
+    const addRef = (textId: string, type: string, name: string, id: string) => {
+      if (!textId) return;
+      if (!map.has(textId)) map.set(textId, []);
+      map.get(textId)!.push({ type, name, id });
+    };
+
     products?.forEach(p => {
-      if (p.nameTextId) ids.add(p.nameTextId);
-      if (p.descriptionTextId) ids.add(p.descriptionTextId);
-      if (p.detailsTextId) ids.add(p.detailsTextId);
-      p.advantageTextIds?.forEach((id: string) => ids.add(id));
+      const pName = p.id; //  fallback name
+      addRef(p.nameTextId, '产品名称', pName, p.id);
+      addRef(p.descriptionTextId, '产品描述', pName, p.id);
+      addRef(p.detailsTextId, '详细内容', pName, p.id);
+      p.advantageTextIds?.forEach((id: string) => addRef(id, '核心优势', pName, p.id));
       p.specGroups?.forEach((g: any) => {
-        if (g.titleId) ids.add(g.titleId);
+        addRef(g.titleId, '规格分组', pName, p.id);
         g.items?.forEach((i: any) => {
-          if (i.labelId) ids.add(i.labelId);
-          if (i.valueId) ids.add(i.valueId);
+          addRef(i.labelId, '规格项名', pName, p.id);
+          addRef(i.valueId, '规格内容', pName, p.id);
         });
       });
     });
 
-    // 检查分类数据中的引用
-    categories?.forEach(c => c.nameTextId && ids.add(c.nameTextId));
-    galleryCategories?.forEach(gc => gc.nameTextId && ids.add(gc.nameTextId));
+    categories?.forEach(c => addRef(c.nameTextId, '产品分类', c.id, c.id));
+    galleryCategories?.forEach(gc => addRef(gc.nameTextId, '图库分类', gc.id, gc.id));
     
-    return ids;
+    return map;
   }, [products, categories, galleryCategories]);
 
-  // 5. 重复项深度扫描：支持全语种穿透比对
+  const usedIds = useMemo(() => new Set(referenceMap.keys()), [referenceMap]);
+
+  // 5. 重复项深度扫描
   const duplicateGroups = useMemo(() => {
     if (!translations) return new Map<string, string[]>();
     const groups = new Map<string, string[]>();
 
     translations.forEach(t => {
-      // 生成跨语种内容指纹
       const fingerprint = activeLanguages
         .map(lang => (t[lang.code] || '').trim().toLowerCase())
         .join('::');
-      
-      // 忽略全空项
       if (fingerprint.replace(/::/g, '').length === 0) return;
 
       if (!groups.has(fingerprint)) groups.set(fingerprint, []);
       groups.get(fingerprint)!.push(t.id);
     });
 
-    // 仅保留存在重复（超过1个 ID）的组
     const redundants = new Map<string, string[]>();
     groups.forEach((ids, key) => {
       if (ids.length > 1) redundants.set(key, ids);
@@ -147,7 +158,7 @@ export default function TranslationsPage() {
     return redundants;
   }, [translations, activeLanguages]);
 
-  // 6. 列表过滤逻辑
+  // 6. 列表过滤
   const filteredTranslations = useMemo(() => {
     if (!translations) return [];
     return translations.filter(t => {
@@ -163,64 +174,42 @@ export default function TranslationsPage() {
     });
   }, [translations, searchQuery, showOnlyDuplicates, duplicateGroups, activeLanguages]);
 
-  // 7. 智能清理函数（理据充分，引用安全）
   const handleAutoCleanup = () => {
     if (!firestore || duplicateGroups.size === 0) return;
-
-    if (!confirm(`系统检测到 ${duplicateGroups.size} 组内容重复的词条。确定要启动安全清理吗？\n\n注意：正在被产品使用的词条将被自动保护。`)) return;
+    if (!confirm(`系统检测到 ${duplicateGroups.size} 组内容重复的词条。确定要启动安全清理吗？\n\n注意：正在被引用的词条将被自动跳过，以免导致前端内容丢失。`)) return;
     
     setIsCleaning(true);
     let deleteCount = 0;
     let protectCount = 0;
 
     duplicateGroups.forEach((ids) => {
-      // 优先级策略：
-      // 1. 保留其中一个被系统引用的 ID（Master ID）
-      // 2. 如果都没有被引用，则保留第一个 ID
       const referencedOnes = ids.filter(id => usedIds.has(id));
       const masterId = referencedOnes.length > 0 ? referencedOnes[0] : ids[0];
-      
-      // 筛选出：内容重复、且没有被任何地方引用的“僵尸词条”
       const removableIds = ids.filter(id => id !== masterId && !usedIds.has(id));
       
       removableIds.forEach(id => {
         deleteDocumentNonBlocking(doc(firestore, 'localizedStrings', id));
         deleteCount++;
       });
-
-      // 统计那些虽然内容重复但因“正在使用”而不得不保留的条目
       const conflicts = ids.filter(id => id !== masterId && usedIds.has(id));
       protectCount += conflicts.length;
     });
 
     setIsCleaning(false);
-
     if (deleteCount > 0) {
-      toast({ 
-        title: "清理作业已启动", 
-        description: `已成功提交 ${deleteCount} 个冗余项的删除请求。另有 ${protectCount} 个重复项由于正在被使用而受到保护。` 
-      });
+      toast({ title: "清理请求已发出", description: `已申请删除 ${deleteCount} 个空闲冗余项。` });
     } else if (protectCount > 0) {
-      toast({
-        variant: "destructive",
-        title: "无法自动清理",
-        description: `检测到 ${protectCount} 个重复项，但它们目前全部处于“使用中”状态。为了防止前端内容丢失，系统已跳过处理。请手动在产品端统一引用 ID。`
-      });
-    } else {
-      toast({ title: "未发现可清理的闲置冗余项" });
+      toast({ variant: "destructive", title: "无法自动清理", description: `检测到 ${protectCount} 个重复项由于正在使用中而被系统保护。请手动在业务端统一 ID。` });
     }
   };
 
   const handleSave = () => {
     if (!firestore || !formData.id) return;
-    setDocumentNonBlocking(doc(firestore, 'localizedStrings', formData.id), { 
-      ...formData, 
-      updatedAt: serverTimestamp() 
-    }, { merge: true });
+    setDocumentNonBlocking(doc(firestore, 'localizedStrings', formData.id), { ...formData, updatedAt: serverTimestamp() }, { merge: true });
     setIsAdding(false);
     setEditingId(null);
     setFormData({ id: '' });
-    toast({ title: "翻译已保存" });
+    toast({ title: "保存成功" });
   };
 
   const handleAddLanguage = () => {
@@ -229,22 +218,16 @@ export default function TranslationsPage() {
     const updated = [...activeLanguages, newLang];
     setDoc(doc(firestore, 'settings', 'languages'), { supportedLanguages: updated });
     setNewLang({ code: '', label: '' });
-    toast({ title: `语种 ${newLang.label} 已开启` });
-  };
-
-  const startEdit = (t: LocalizedString) => {
-    setFormData(t);
-    setEditingId(t.id);
   };
 
   return (
-    <div className="space-y-8 animate-in fade-in duration-500">
+    <div className="space-y-8 animate-in fade-in duration-500 pb-20">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <h2 className="text-2xl font-headline font-bold text-primary flex items-center gap-2">
             <Languages className="h-6 w-6" /> 全球语言资产管理
           </h2>
-          <p className="text-sm text-muted-foreground">集中管理全站翻译锚点。系统已启用<b>引用感知 (Reference-Aware)</b> 保护机制。</p>
+          <p className="text-sm text-muted-foreground">管理全站翻译锚点。系统已启用<b>引用感知 (Reference-Aware)</b> 保护机制。</p>
         </div>
         
         <div className="flex gap-2">
@@ -253,7 +236,7 @@ export default function TranslationsPage() {
               variant="outline" 
               onClick={handleAutoCleanup} 
               disabled={isCleaning}
-              className="rounded-xl h-12 border-orange-200 bg-orange-50 text-orange-700 hover:bg-orange-100 gap-2 shadow-sm animate-pulse"
+              className="rounded-xl h-12 border-orange-200 bg-orange-50 text-orange-700 hover:bg-orange-100 gap-2 shadow-sm"
             >
               {isCleaning ? <Loader2 className="h-4 w-4 animate-spin" /> : <Zap className="h-4 w-4 fill-current" />}
               安全清理冗余 ({duplicateGroups.size} 组)
@@ -261,31 +244,18 @@ export default function TranslationsPage() {
           )}
 
           <Dialog open={isSettingsOpen} onOpenChange={setIsSettingsOpen}>
-            <DialogTrigger asChild>
-              <Button variant="outline" className="rounded-xl h-12 gap-2">
-                <Settings2 className="h-4 w-4" /> 语种设置
-              </Button>
-            </DialogTrigger>
+            <DialogTrigger asChild><Button variant="outline" className="rounded-xl h-12 gap-2"><Settings2 className="h-4 w-4" /> 语种设置</Button></DialogTrigger>
             <DialogContent className="rounded-[2rem] max-w-md p-8">
-               <DialogHeader>
-                 <DialogTitle>多语种扩展配置</DialogTitle>
-                 <DialogDescription>添加新语种后，翻译列表将自动增加对应的录入列。</DialogDescription>
-               </DialogHeader>
+               <DialogHeader><DialogTitle>多语种扩展配置</DialogTitle><DialogDescription>添加新语种后，列表将自动生成对应的列。</DialogDescription></DialogHeader>
                <div className="space-y-4 py-4">
-                 <div className="grid grid-cols-2 gap-3 mb-2">
-                   <Label className="text-[10px] font-bold uppercase opacity-40">已启用语种</Label>
-                 </div>
                  {activeLanguages.map(l => (
-                   <div key={l.code} className="flex items-center justify-between p-4 bg-muted/30 rounded-2xl border border-border/10">
-                     <div className="flex flex-col">
-                        <span className="text-sm font-bold">{l.label}</span>
-                        <span className="text-[10px] font-mono opacity-50 uppercase">{l.code}</span>
-                     </div>
-                     {['zh', 'en'].includes(l.code) && <Badge variant="secondary" className="text-[8px]">系统基准</Badge>}
+                   <div key={l.code} className="flex items-center justify-between p-4 bg-muted/30 rounded-2xl border">
+                     <div className="flex flex-col"><span className="text-sm font-bold">{l.label}</span><span className="text-[10px] font-mono opacity-50 uppercase">{l.code}</span></div>
+                     {['zh', 'en'].includes(l.code) && <Badge variant="secondary" className="text-[8px]">基准</Badge>}
                    </div>
                  ))}
                  <div className="pt-6 border-t space-y-4">
-                   <Label className="text-[10px] font-bold uppercase text-primary">新增业务语种</Label>
+                   <Label className="text-[10px] font-bold uppercase text-primary">新增语种</Label>
                    <div className="grid grid-cols-2 gap-2">
                      <Input placeholder="代码 (如: vi)" value={newLang.code} onChange={e => setNewLang({...newLang, code: e.target.value.toLowerCase()})} className="rounded-xl h-12" />
                      <Input placeholder="名称 (如: 越南语)" value={newLang.label} onChange={e => setNewLang({...newLang, label: e.target.value})} className="rounded-xl h-12" />
@@ -297,41 +267,16 @@ export default function TranslationsPage() {
           </Dialog>
 
           <Dialog open={isAdding} onOpenChange={setIsAdding}>
-            <DialogTrigger asChild>
-              <Button className="rounded-xl h-12 px-6 font-bold uppercase tracking-widest gap-2 shadow-lg">
-                <Plus className="h-4 w-4" /> 新增词条
-              </Button>
-            </DialogTrigger>
+            <DialogTrigger asChild><Button className="rounded-xl h-12 px-6 font-bold uppercase tracking-widest gap-2 shadow-lg"><Plus className="h-4 w-4" /> 新增词条</Button></DialogTrigger>
             <DialogContent className="rounded-[2.5rem] max-w-lg p-0 overflow-hidden shadow-2xl border-none">
-              <div className="bg-primary p-8 text-white">
-                <DialogHeader>
-                  <DialogTitle className="text-2xl font-bold flex items-center gap-3">
-                    <Globe className="h-6 w-6" /> 创建全球语言锚点
-                  </DialogTitle>
-                  <DialogDescription className="text-white/60">此 ID 将被产品详情或分类引用，支持全动态扩展。</DialogDescription>
-                </DialogHeader>
-              </div>
+              <div className="bg-primary p-8 text-white"><DialogHeader><DialogTitle className="text-2xl font-bold flex items-center gap-3"><Globe className="h-6 w-6" /> 创建语言锚点</DialogTitle></DialogHeader></div>
               <div className="p-8 space-y-6 bg-white max-h-[60vh] overflow-y-auto">
-                <div className="space-y-2">
-                  <Label className="text-[10px] font-bold uppercase text-primary tracking-widest">唯一标识符 (Translation ID)</Label>
-                  <Input placeholder="例如: spec_vga_output" value={formData.id} onChange={e => setFormData({...formData, id: e.target.value})} className="h-12 rounded-xl bg-muted/10 border-none font-mono" />
-                </div>
-                <div className="h-px bg-border/40 my-4" />
+                <div className="space-y-2"><Label className="text-[10px] font-bold uppercase text-primary">唯一 ID (Translation ID)</Label><Input placeholder="例如: spec_vga_output" value={formData.id} onChange={e => setFormData({...formData, id: e.target.value})} className="h-12 rounded-xl bg-muted/10 border-none" /></div>
                 {activeLanguages.map(lang => (
-                  <div key={lang.code} className="space-y-2">
-                    <Label className="text-[10px] font-bold uppercase text-muted-foreground">{lang.label} ({lang.code.toUpperCase()})</Label>
-                    <Input 
-                      value={formData[lang.code] || ''} 
-                      onChange={e => setFormData({...formData, [lang.code]: e.target.value})} 
-                      className="rounded-xl h-12 bg-muted/5 border-border/40 focus:bg-white transition-all" 
-                    />
-                  </div>
+                  <div key={lang.code} className="space-y-2"><Label className="text-[10px] font-bold uppercase text-muted-foreground">{lang.label} ({lang.code.toUpperCase()})</Label><Input value={formData[lang.code] || ''} onChange={e => setFormData({...formData, [lang.code]: e.target.value})} className="rounded-xl h-12 bg-muted/5" /></div>
                 ))}
               </div>
-              <DialogFooter className="bg-muted/30 p-6 flex gap-2">
-                <Button variant="outline" onClick={() => { setIsAdding(false); setFormData({id:''}); }} className="rounded-xl h-12 flex-1">取消</Button>
-                <Button onClick={handleSave} className="rounded-xl h-12 flex-1 shadow-lg">保存翻译</Button>
-              </DialogFooter>
+              <DialogFooter className="bg-muted/30 p-6 flex gap-2"><Button variant="outline" onClick={() => setIsAdding(false)} className="rounded-xl h-12 flex-1">取消</Button><Button onClick={handleSave} className="rounded-xl h-12 flex-1 shadow-lg">保存翻译</Button></DialogFooter>
             </DialogContent>
           </Dialog>
         </div>
@@ -340,35 +285,19 @@ export default function TranslationsPage() {
       <div className="flex flex-col md:flex-row items-center gap-4 bg-white p-4 rounded-2xl border border-border/40 shadow-sm">
         <div className="relative flex-1 w-full">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-          <Input 
-            placeholder="搜索 ID、翻译内容或已用锚点..." 
-            className="pl-10 border-none bg-muted/40 rounded-xl h-11 focus-visible:ring-0" 
-            value={searchQuery} 
-            onChange={e => setSearchQuery(e.target.value)} 
-          />
+          <Input placeholder="搜索 ID 或翻译内容..." className="pl-10 border-none bg-muted/40 rounded-xl h-11 focus-visible:ring-0" value={searchQuery} onChange={e => setSearchQuery(e.target.value)} />
         </div>
-        <Button 
-          variant={showOnlyDuplicates ? "default" : "ghost"} 
-          size="sm" 
-          onClick={() => setShowOnlyDuplicates(!showOnlyDuplicates)} 
-          className={cn(
-            "rounded-xl h-11 gap-2 transition-all", 
-            showOnlyDuplicates && "bg-orange-600 hover:bg-orange-700 text-white"
-          )}
-        >
-          <AlertTriangle className={cn("h-3.5 w-3.5", showOnlyDuplicates ? "animate-bounce" : "")} /> 
-          {showOnlyDuplicates ? "正在查看冗余项" : "仅看重复内容"}
+        <Button variant={showOnlyDuplicates ? "default" : "ghost"} size="sm" onClick={() => setShowOnlyDuplicates(!showOnlyDuplicates)} className={cn("rounded-xl h-11 gap-2", showOnlyDuplicates && "bg-orange-600 text-white")}>
+          <AlertTriangle className="h-3.5 w-3.5" /> {showOnlyDuplicates ? "查看冗余项" : "仅看重复内容"}
         </Button>
       </div>
 
-      <div className="bg-white rounded-[2rem] border border-border/40 shadow-xl overflow-x-auto">
+      <div className="bg-white rounded-[2rem] border shadow-xl overflow-x-auto">
         <Table>
           <TableHeader className="bg-muted/30">
             <TableRow>
-              <TableHead className="pl-8 py-6 font-bold uppercase text-[10px] tracking-widest">锚点 ID / 引用状态</TableHead>
-              {activeLanguages.map(lang => (
-                <TableHead key={lang.code} className="font-bold uppercase text-[10px] tracking-widest">{lang.label}</TableHead>
-              ))}
+              <TableHead className="pl-8 py-6 font-bold uppercase text-[10px] tracking-widest">锚点 ID / 引用详情</TableHead>
+              {activeLanguages.map(lang => (<TableHead key={lang.code} className="font-bold uppercase text-[10px] tracking-widest">{lang.label}</TableHead>))}
               <TableHead className="text-right pr-8 font-bold uppercase text-[10px] tracking-widest">管理操作</TableHead>
             </TableRow>
           </TableHeader>
@@ -376,34 +305,58 @@ export default function TranslationsPage() {
             {isLoading ? (
               <TableRow><TableCell colSpan={10} className="h-60 text-center"><Loader2 className="h-8 w-8 animate-spin mx-auto opacity-20" /></TableCell></TableRow>
             ) : filteredTranslations.map((t) => {
+              const refs = referenceMap.get(t.id) || [];
               const fingerprint = activeLanguages.map(l => (t[l.code] || '').trim().toLowerCase()).join('::');
               const isDuplicate = duplicateGroups.has(fingerprint);
               
               return (
-                <TableRow key={t.id} className={cn(
-                  "group transition-colors",
-                  isDuplicate ? "bg-orange-50/50 hover:bg-orange-50" : "hover:bg-muted/5",
-                  usedIds.has(t.id) ? "border-l-4 border-l-primary/30" : "border-l-4 border-l-transparent"
-                )}>
+                <TableRow key={t.id} className={cn("group transition-colors", isDuplicate ? "bg-orange-50/50" : "hover:bg-muted/5", refs.length > 0 ? "border-l-4 border-l-primary/30" : "border-l-4 border-l-transparent")}>
                   <TableCell className="pl-8">
                     <div className="flex flex-col gap-1.5">
                       <div className="flex items-center gap-2">
                         <code className="text-[11px] font-bold text-primary bg-primary/5 px-2 py-0.5 rounded-sm">{t.id}</code>
-                        {isDuplicate && (
-                          <Badge variant="outline" className="text-[8px] bg-orange-100 text-orange-700 border-orange-200">内容冗余</Badge>
-                        )}
+                        {isDuplicate && <Badge variant="outline" className="text-[8px] bg-orange-100 text-orange-700 border-orange-200">内容冗余</Badge>}
                       </div>
-                      <div className="flex items-center gap-3">
-                        {usedIds.has(t.id) ? (
-                          <div className="flex items-center gap-1 text-green-600">
-                            <ShieldCheck className="h-3 w-3" />
-                            <span className="text-[9px] font-bold uppercase tracking-tighter">生产环境引用中</span>
-                          </div>
+                      
+                      <div className="flex flex-wrap gap-1 items-center">
+                        {refs.length > 0 ? (
+                          <TooltipProvider>
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <div className="flex items-center gap-1 text-green-600 cursor-help">
+                                  <ShieldCheck className="h-3 w-3" />
+                                  <span className="text-[9px] font-bold uppercase tracking-tighter">正在使用 ({refs.length})</span>
+                                </div>
+                              </TooltipTrigger>
+                              <TooltipContent className="p-4 rounded-xl max-w-xs bg-white border-primary/20 shadow-2xl">
+                                <div className="space-y-2">
+                                  <p className="text-[10px] font-bold uppercase text-primary border-b pb-1 mb-2">引用位置列表</p>
+                                  {refs.map((ref, idx) => (
+                                    <div key={idx} className="flex items-center justify-between gap-4 group/ref">
+                                      <div className="flex flex-col">
+                                        <span className="text-[9px] opacity-40 uppercase font-bold">{ref.type}</span>
+                                        <span className="text-[11px] font-bold truncate max-w-[120px]">{ref.name}</span>
+                                      </div>
+                                      <Button variant="ghost" size="icon" className="h-6 w-6 opacity-40 group-hover/ref:opacity-100" onClick={() => window.open(ref.type.includes('图库') ? '/admin/gallery' : `/admin/products/editor?id=${ref.id}`, '_blank')}>
+                                        <ExternalLink className="h-3 w-3" />
+                                      </Button>
+                                    </div>
+                                  ))}
+                                </div>
+                              </TooltipContent>
+                            </Tooltip>
+                          </TooltipProvider>
                         ) : (
                           <div className="flex items-center gap-1 text-muted-foreground opacity-30">
                             <X className="h-3 w-3" />
-                            <span className="text-[9px] font-bold uppercase tracking-tighter">闲置 ID</span>
+                            <span className="text-[9px] font-bold uppercase tracking-tighter">闲置词条</span>
                           </div>
+                        )}
+                        
+                        {isDuplicate && refs.length > 0 && (
+                          <Button variant="ghost" size="sm" className="h-5 px-1 text-[8px] text-orange-600 bg-orange-100 hover:bg-orange-200 rounded-sm ml-2" onClick={() => { navigator.clipboard.writeText(t.id); toast({ title: "已复制 ID", description: "您可以将此 ID 粘贴到其他产品中进行合并。" }); }}>
+                            <Copy className="h-2.5 w-2.5 mr-1" /> 复制 ID
+                          </Button>
                         )}
                       </div>
                     </div>
@@ -411,15 +364,9 @@ export default function TranslationsPage() {
                   {activeLanguages.map(lang => (
                     <TableCell key={lang.code}>
                       {editingId === t.id ? (
-                        <Input 
-                          value={formData[lang.code] || ''} 
-                          onChange={e => setFormData({...formData, [lang.code]: e.target.value})} 
-                          className="h-9 text-xs rounded-lg" 
-                        />
+                        <Input value={formData[lang.code] || ''} onChange={e => setFormData({...formData, [lang.code]: e.target.value})} className="h-9 text-xs rounded-lg" />
                       ) : (
-                        <div className="max-w-[200px] overflow-hidden">
-                          <span className="text-xs text-muted-foreground line-clamp-2 leading-relaxed">{t[lang.code] || '-'}</span>
-                        </div>
+                        <span className="text-xs text-muted-foreground line-clamp-2">{t[lang.code] || '-'}</span>
                       )}
                     </TableCell>
                   ))}
@@ -431,14 +378,9 @@ export default function TranslationsPage() {
                        </div>
                      ) : (
                        <div className="flex justify-end gap-1">
-                         <Button size="icon" variant="ghost" onClick={() => startEdit(t)} className="h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity"><Edit2 className="h-3.5 w-3.5" /></Button>
-                         {!usedIds.has(t.id) && (
-                           <Button 
-                             size="icon" 
-                             variant="ghost" 
-                             className="h-8 w-8 text-destructive opacity-0 group-hover:opacity-100 transition-opacity" 
-                             onClick={() => { if(confirm('删除闲置词条？')) deleteDocumentNonBlocking(doc(firestore, 'localizedStrings', t.id)); }}
-                           >
+                         <Button size="icon" variant="ghost" onClick={() => { setFormData(t); setEditingId(t.id); }} className="h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity"><Edit2 className="h-3.5 w-3.5" /></Button>
+                         {refs.length === 0 && (
+                           <Button size="icon" variant="ghost" className="h-8 w-8 text-destructive opacity-0 group-hover:opacity-100 transition-opacity" onClick={() => { if(confirm('删除闲置词条？')) deleteDocumentNonBlocking(doc(firestore, 'localizedStrings', t.id)); }}>
                              <Trash2 className="h-3.5 w-3.5" />
                            </Button>
                          )}
@@ -448,16 +390,10 @@ export default function TranslationsPage() {
                 </TableRow>
               );
             })}
-            {filteredTranslations.length === 0 && (
-              <TableRow>
-                <TableCell colSpan={10} className="h-40 text-center text-muted-foreground italic">
-                  未找到任何匹配的翻译词条
-                </TableCell>
-              </TableRow>
-            )}
           </TableBody>
         </Table>
       </div>
     </div>
   );
 }
+
