@@ -366,8 +366,12 @@ export default function GalleryPage() {
                           <SelectItem value="none">无 (设为一级分类)</SelectItem>
                           {categoryTree.filter(c => c.id !== editingCatId).map(cat => (
                             <SelectItem key={cat.id} value={cat.id}>
-                              <span style={{ paddingLeft: `${cat.depth * 0.75}rem` }} className={cn(cat.depth > 0 && "text-muted-foreground")}>
-                                {cat.depth > 0 ? '— ' : ''}{cat.name}
+                              <span 
+                                style={{ paddingLeft: `${cat.depth * 1}rem` }} 
+                                className={cn("flex items-center", cat.depth > 0 && "text-muted-foreground")}
+                              >
+                                {cat.depth > 0 && <span className="mr-2 opacity-30">·</span>}
+                                {cat.name}
                               </span>
                             </SelectItem>
                           ))}
@@ -503,7 +507,7 @@ export default function GalleryPage() {
 
       <div 
         onDragOver={(e) => { e.preventDefault(); e.stopPropagation(); }}
-        onDrop={(e) => { e.preventDefault(); e.stopPropagation(); handleFileUpload(e.dataTransfer.files); }}
+        onDrop={(e) => { e.preventDefault(); e.stopPropagation(); handleFileUpload(e.target.files); }}
         className="group relative h-32 border-2 border-dashed border-primary/20 rounded-[2rem] flex flex-col items-center justify-center bg-white hover:border-primary/50 hover:bg-primary/5 transition-all cursor-pointer"
         onClick={() => fileInputRef.current?.click()}
       >
@@ -538,8 +542,12 @@ export default function GalleryPage() {
               <SelectItem value="all">全部分类</SelectItem>
               {categoryTree.map(cat => (
                 <SelectItem key={cat.id} value={cat.id}>
-                  <span style={{ paddingLeft: `${cat.depth * 0.75}rem` }} className={cn(cat.depth > 0 && "text-muted-foreground")}>
-                    {cat.depth > 0 ? '— ' : ''}{cat.name}
+                  <span 
+                    style={{ paddingLeft: `${cat.depth * 1}rem` }} 
+                    className={cn("flex items-center", cat.depth > 0 && "text-muted-foreground")}
+                  >
+                    {cat.depth > 0 && <span className="mr-2 opacity-30">·</span>}
+                    {cat.name}
                   </span>
                 </SelectItem>
               ))}
@@ -599,8 +607,12 @@ export default function GalleryPage() {
                   <SelectContent>
                     {categoryTree.map(cat => (
                       <SelectItem key={cat.id} value={cat.id}>
-                        <span style={{ paddingLeft: `${cat.depth * 0.75}rem` }} className={cn(cat.depth > 0 && "text-muted-foreground")}>
-                          {cat.depth > 0 ? '— ' : ''}{cat.name}
+                        <span 
+                          style={{ paddingLeft: `${cat.depth * 1}rem` }} 
+                          className={cn("flex items-center", cat.depth > 0 && "text-muted-foreground")}
+                        >
+                          {cat.depth > 0 && <span className="mr-2 opacity-30">·</span>}
+                          {cat.name}
                         </span>
                       </SelectItem>
                     ))}
