@@ -1,10 +1,10 @@
 
 "use client";
 
-import { useState, useEffect, useMemo, Suspense } from 'react';
+import { useState, useEffect, useMemo, Suspense, useRef } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useFirestore, useDoc, useCollection, useMemoFirebase } from '@/firebase';
-import { doc, collection, serverTimestamp } from 'firebase/firestore';
+import { doc, collection, serverTimestamp, query, orderBy } from 'firebase/firestore';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -26,7 +26,9 @@ import {
   LayoutGrid,
   ClipboardList,
   Info,
-  RefreshCw
+  RefreshCw,
+  Upload,
+  Link2
 } from 'lucide-react';
 import { setDocumentNonBlocking } from '@/firebase/non-blocking-updates';
 import { Label } from '@/components/ui/label';
@@ -57,11 +59,19 @@ interface ProductCategory {
   nameTextId: string;
 }
 
+interface GalleryCategory {
+  id: string;
+  name: string;
+  parentId?: string | null;
+  order: number;
+}
+
 function ProductEditorContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const firestore = useFirestore();
   const { toast } = useToast();
+  const fileInputRef = useRef<HTMLInputElement>(null);
   
   const productId = searchParams.get('id');
   const isEditing = !!productId;
@@ -82,14 +92,18 @@ function ProductEditorContent() {
   });
 
   const [activeTab, setActiveTab] = useState('basic');
+  const [isUploading, setIsUploading] = useState(false);
+  const [showUrlInput, setShowUrlInput] = useState(false);
 
   const prodRef = useMemoFirebase(() => productId ? doc(firestore, 'products', productId) : null, [firestore, productId]);
   const catsQuery = useMemoFirebase(() => collection(firestore, 'productCategories'), [firestore]);
   const transQuery = useMemoFirebase(() => collection(firestore, 'localizedStrings'), [firestore]);
+  const galleryCatsQuery = useMemoFirebase(() => query(collection(firestore, 'galleryCategories'), orderBy('order', 'asc')), [firestore]);
 
   const { data: product, isLoading: isProdLoading } = useDoc<Product>(prodRef);
   const { data: categories } = useCollection<ProductCategory>(catsQuery);
   const { data: translations } = useCollection<LocalizedString>(transQuery);
+  const { data: galleryCategories } = useCollection<GalleryCategory>(galleryCatsQuery);
 
   useEffect(() => {
     if (isEditing && product && translations) {
@@ -117,7 +131,6 @@ function ProductEditorContent() {
     }
   }, [isEditing, product, translations]);
 
-  // 自动生成 ID 的逻辑
   useEffect(() => {
     if (!isEditing && formData.categoryId && !formData.id) {
       generateAutoId(formData.categoryId);
@@ -133,6 +146,58 @@ function ProductEditorContent() {
     const randomSuffix = Math.random().toString(36).substring(2, 6).toUpperCase();
     const newId = `${prefix}-${dateStr}-${randomSuffix}`;
     setFormData(prev => ({ ...prev, id: newId }));
+  };
+
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !firestore) return;
+
+    if (!file.type.startsWith('image/')) {
+      toast({ variant: "destructive", title: "文件类型错误", description: "请选择有效的图片文件。" });
+      return;
+    }
+
+    if (file.size > 800000) {
+      toast({ variant: "destructive", title: "文件过大", description: "图片大小不能超过 800KB。" });
+      return;
+    }
+
+    setIsUploading(true);
+    const reader = new FileReader();
+
+    reader.onload = async (event) => {
+      const base64 = event.target?.result as string;
+      const assetId = `asset_prod_${Date.now()}`;
+      const assetTitle = `Product Image: ${formData.id || 'Untitled'}`;
+      
+      // 寻找或创建一个默认的图库分类
+      let targetGalleryCatId = galleryCategories?.[0]?.id || 'uncategorized';
+      const prodCat = galleryCategories?.find(c => c.name.includes('产品') || c.name.includes('Product'));
+      if (prodCat) targetGalleryCatId = prodCat.id;
+
+      // 1. 同时存入全局图库
+      setDocumentNonBlocking(doc(firestore, 'galleryAssets', assetId), {
+        id: assetId,
+        url: base64,
+        title: assetTitle,
+        fileName: file.name,
+        fileSize: file.size,
+        categoryId: targetGalleryCatId,
+        createdAt: serverTimestamp()
+      }, { merge: true });
+
+      // 2. 更新当前编辑器状态
+      setFormData(prev => ({ ...prev, mainImageUrl: base64 }));
+      setIsUploading(false);
+      toast({ title: "图片已上传并同步至图库" });
+    };
+
+    reader.onerror = () => {
+      setIsUploading(false);
+      toast({ variant: "destructive", title: "上传失败", description: "读取图片文件时发生错误。" });
+    };
+
+    reader.readAsDataURL(file);
   };
 
   const handleSave = () => {
@@ -262,23 +327,69 @@ function ProductEditorContent() {
               </Select>
             </div>
 
-            <div className="space-y-2 pt-4 border-t border-border/40">
-              <Label className="text-[10px] font-bold uppercase tracking-widest text-primary">产品主图 (Main Image)</Label>
-              <div className="relative aspect-square rounded-2xl bg-muted/30 border border-dashed border-border overflow-hidden flex items-center justify-center group">
-                {formData.mainImageUrl ? (
-                  <Image src={formData.mainImageUrl} alt="Main" fill className="object-contain p-4" />
-                ) : (
-                  <ImageIcon className="h-12 w-12 text-muted-foreground opacity-20" />
+            <div className="space-y-4 pt-4 border-t border-border/40">
+              <div className="flex items-center justify-between">
+                <Label className="text-[10px] font-bold uppercase tracking-widest text-primary">产品主图 (Main Image)</Label>
+                <button 
+                  onClick={() => setShowUrlInput(!showUrlInput)}
+                  className="text-[9px] flex items-center gap-1 font-bold text-muted-foreground hover:text-primary transition-colors uppercase"
+                >
+                  <Link2 className="h-2 w-2" /> {showUrlInput ? '切换到上传' : '使用外部 URL'}
+                </button>
+              </div>
+
+              <div 
+                className={cn(
+                  "relative aspect-square rounded-2xl bg-muted/30 border border-dashed border-border overflow-hidden flex flex-col items-center justify-center group transition-all",
+                  !showUrlInput && "cursor-pointer hover:bg-muted/50 hover:border-primary/50"
                 )}
-                <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center p-4">
+                onClick={() => !showUrlInput && fileInputRef.current?.click()}
+              >
+                {formData.mainImageUrl ? (
+                  <>
+                    <Image src={formData.mainImageUrl} alt="Main" fill className="object-contain p-4" />
+                    <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center gap-2">
+                      <Upload className="h-6 w-6 text-white" />
+                      <p className="text-white text-[10px] font-bold uppercase">更换图片</p>
+                    </div>
+                  </>
+                ) : isUploading ? (
+                  <div className="flex flex-col items-center gap-2">
+                    <Loader2 className="h-8 w-8 animate-spin text-primary opacity-40" />
+                    <p className="text-[10px] font-bold text-primary/40 uppercase">同步中...</p>
+                  </div>
+                ) : (
+                  <div className="flex flex-col items-center gap-3 p-8 text-center">
+                    <div className="h-12 w-12 rounded-full bg-primary/5 flex items-center justify-center text-primary/40">
+                      <ImageIcon className="h-6 w-6" />
+                    </div>
+                    <div>
+                      <p className="text-xs font-bold text-primary">点击上传主图</p>
+                      <p className="text-[10px] text-muted-foreground mt-1">支持 JPG, PNG, WEBP (最大 800KB)</p>
+                    </div>
+                  </div>
+                )}
+                
+                <input 
+                  type="file" 
+                  ref={fileInputRef} 
+                  className="hidden" 
+                  accept="image/*"
+                  onChange={handleImageUpload}
+                />
+              </div>
+
+              {showUrlInput && (
+                <div className="space-y-2 animate-in slide-in-from-top-2 duration-300">
                   <Input 
-                    placeholder="输入主图 URL..." 
+                    placeholder="输入外部图片 URL..." 
                     value={formData.mainImageUrl} 
                     onChange={e => setFormData({...formData, mainImageUrl: e.target.value})}
-                    className="bg-white text-xs h-9"
+                    className="h-10 text-xs rounded-xl bg-muted/20 border-transparent"
                   />
+                  <p className="text-[9px] text-muted-foreground px-2 italic">提示：直接在上方框内点击可快速上传本地文件。</p>
                 </div>
-              </div>
+              )}
             </div>
           </div>
         </div>
