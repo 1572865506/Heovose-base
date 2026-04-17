@@ -17,10 +17,11 @@
       "$schema": "http://json-schema.org/draft-07/schema#",
       "title": "GalleryCategory",
       "type": "object",
-      "description": "Custom categories for organizing gallery assets.",
+      "description": "Custom categories for organizing gallery assets with hierarchy support.",
       "properties": {
         "id": { "type": "string" },
         "name": { "type": "string" },
+        "parentId": { "type": "string", "description": "ID of the parent category for nested structure." },
         "order": { "type": "number" }
       },
       "required": ["id", "name"]
@@ -72,7 +73,7 @@
         "definition": {
           "entityName": "GalleryCategory",
           "schema": { "$ref": "#/backend/entities/GalleryCategory" },
-          "description": "Flexible categories for gallery."
+          "description": "Flexible hierarchical categories for gallery."
         }
       },
       {

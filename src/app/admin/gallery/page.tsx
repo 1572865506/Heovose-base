@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState, useMemo, useRef } from 'react';
@@ -16,7 +17,8 @@ import {
   Edit3,
   Layers,
   MoveUp,
-  MoveDown
+  MoveDown,
+  ChevronRight
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -48,10 +50,12 @@ import { setDocumentNonBlocking, deleteDocumentNonBlocking } from '@/firebase/no
 import { Label } from '@/components/ui/label';
 import Image from 'next/image';
 import { useToast } from '@/hooks/use-toast';
+import { cn } from '@/lib/utils';
 
 interface GalleryCategory {
   id: string;
   name: string;
+  parentId?: string;
   order: number;
 }
 
@@ -76,6 +80,7 @@ export default function GalleryPage() {
   const [editingAsset, setEditingAsset] = useState<GalleryAsset | null>(null);
   const [isCategoryDialogOpen, setIsCategoryDialogOpen] = useState(false);
   const [newCatName, setNewCatName] = useState('');
+  const [newCatParentId, setNewCatParentId] = useState<string>('none');
 
   // Firestore Data
   const categoriesQuery = useMemoFirebase(() => {
@@ -90,6 +95,22 @@ export default function GalleryPage() {
 
   const { data: categories } = useCollection<GalleryCategory>(categoriesQuery);
   const { data: assets, isLoading } = useCollection<GalleryAsset>(assetsQuery);
+
+  // 层级处理逻辑
+  const categoryTree = useMemo(() => {
+    if (!categories) return [];
+    
+    const getFullPath = (cat: GalleryCategory): string => {
+      if (!cat.parentId || cat.parentId === 'none') return cat.name;
+      const parent = categories.find(c => c.id === cat.parentId);
+      return parent ? `${getFullPath(parent)} > ${cat.name}` : cat.name;
+    };
+
+    return categories.map(cat => ({
+      ...cat,
+      fullPath: getFullPath(cat)
+    })).sort((a, b) => a.fullPath.localeCompare(b.fullPath));
+  }, [categories]);
 
   const filteredAssets = useMemo(() => {
     if (!assets) return [];
@@ -108,7 +129,7 @@ export default function GalleryPage() {
     }
 
     setIsUploading(true);
-    const defaultCategoryId = categories[0].id;
+    const defaultCategoryId = categoryTree[0]?.id;
 
     for (let i = 0; i < files.length; i++) {
       const file = files[i];
@@ -158,28 +179,23 @@ export default function GalleryPage() {
     deleteDocumentNonBlocking(doc(firestore, 'galleryAssets', id));
   };
 
-  // Category Management Logic
   const handleAddCategory = () => {
     if (!firestore || !newCatName.trim()) return;
     const id = `cat_${Date.now()}`;
     const order = (categories?.length || 0) + 1;
-    setDocumentNonBlocking(doc(firestore, 'galleryCategories', id), { id, name: newCatName, order }, { merge: true });
+    setDocumentNonBlocking(doc(firestore, 'galleryCategories', id), { 
+      id, 
+      name: newCatName, 
+      parentId: newCatParentId === 'none' ? null : newCatParentId,
+      order 
+    }, { merge: true });
     setNewCatName('');
+    setNewCatParentId('none');
   };
 
   const handleDeleteCategory = (id: string) => {
     if (!firestore || !confirm('删除分类将使相关图片变为“未分类”。确定吗？')) return;
     deleteDocumentNonBlocking(doc(firestore, 'galleryCategories', id));
-  };
-
-  const updateCategoryOrder = (cat: GalleryCategory, direction: 'up' | 'down') => {
-    if (!firestore || !categories) return;
-    const idx = categories.indexOf(cat);
-    const targetIdx = direction === 'up' ? idx - 1 : idx + 1;
-    if (targetIdx < 0 || targetIdx >= categories.length) return;
-    const targetCat = categories[targetIdx];
-    setDocumentNonBlocking(doc(firestore, 'galleryCategories', cat.id), { ...cat, order: targetCat.order }, { merge: true });
-    setDocumentNonBlocking(doc(firestore, 'galleryCategories', targetCat.id), { ...targetCat, order: cat.order }, { merge: true });
   };
 
   return (
@@ -190,11 +206,10 @@ export default function GalleryPage() {
             <ImageIcon className="h-6 w-6" />
             全球图库中心
           </h2>
-          <p className="text-sm text-muted-foreground">批量管理图片资产，支持拖拽上传与分类管理。</p>
+          <p className="text-sm text-muted-foreground">批量管理图片资产，支持多级分类与拖拽上传。</p>
         </div>
         
         <div className="flex gap-2">
-          {/* Category Settings Dialog */}
           <Dialog open={isCategoryDialogOpen} onOpenChange={setIsCategoryDialogOpen}>
             <DialogTrigger asChild>
               <Button variant="outline" className="rounded-xl h-12 gap-2">
@@ -205,43 +220,65 @@ export default function GalleryPage() {
               <div className="p-8 space-y-6">
                 <DialogHeader>
                   <DialogTitle className="text-xl font-bold flex items-center gap-2">
-                    <Layers className="h-5 w-5" /> 图库分类设置
+                    <Layers className="h-5 w-5" /> 多级分类设置
                   </DialogTitle>
                 </DialogHeader>
                 
-                <div className="flex gap-3">
-                  <Input 
-                    placeholder="新增分类名称 (如: 展会实拍)" 
-                    value={newCatName}
-                    onChange={e => setNewCatName(e.target.value)}
-                    className="rounded-xl h-12"
-                  />
-                  <Button onClick={handleAddCategory} className="rounded-xl h-12 px-6">
-                    <Plus className="h-4 w-4" /> 添加
+                <div className="space-y-4 bg-muted/20 p-6 rounded-2xl border border-border/40">
+                  <p className="text-[10px] font-bold uppercase tracking-widest text-primary">新增分类</p>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label className="text-[10px] font-bold">分类名称</Label>
+                      <Input 
+                        placeholder="如: 展会实拍" 
+                        value={newCatName}
+                        onChange={e => setNewCatName(e.target.value)}
+                        className="rounded-xl h-12"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label className="text-[10px] font-bold">所属上级</Label>
+                      <Select value={newCatParentId} onValueChange={setNewCatParentId}>
+                        <SelectTrigger className="h-12 rounded-xl">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="none">无 (作为一级分类)</SelectItem>
+                          {categoryTree.map(cat => (
+                            <SelectItem key={cat.id} value={cat.id}>{cat.fullPath}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+                  <Button onClick={handleAddCategory} className="w-full rounded-xl h-12">
+                    <Plus className="h-4 w-4 mr-2" /> 添加分类
                   </Button>
                 </div>
 
-                <div className="max-h-[50vh] overflow-y-auto rounded-2xl border">
+                <div className="max-h-[40vh] overflow-y-auto rounded-2xl border">
                   <Table>
                     <TableHeader className="bg-muted/50">
                       <TableRow>
-                        <TableHead className="w-20 pl-4">排序</TableHead>
-                        <TableHead>名称</TableHead>
+                        <TableHead className="pl-4">层级路径</TableHead>
                         <TableHead className="w-24 text-right pr-4">操作</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {categories?.map((cat, idx) => (
+                      {categoryTree.map((cat) => (
                         <TableRow key={cat.id}>
                           <TableCell className="pl-4">
-                            <div className="flex gap-1">
-                              <Button size="icon" variant="ghost" className="h-6 w-6" disabled={idx === 0} onClick={() => updateCategoryOrder(cat, 'up')}><MoveUp className="h-3 w-3" /></Button>
-                              <Button size="icon" variant="ghost" className="h-6 w-6" disabled={idx === categories.length - 1} onClick={() => updateCategoryOrder(cat, 'down')}><MoveDown className="h-3 w-3" /></Button>
+                            <div className="flex items-center gap-2">
+                              {cat.parentId && <ChevronRight className="h-3 w-3 text-muted-foreground" />}
+                              <span className={cn(cat.parentId ? "text-sm" : "font-bold text-primary")}>
+                                {cat.fullPath}
+                              </span>
                             </div>
                           </TableCell>
-                          <TableCell className="font-bold text-primary">{cat.name}</TableCell>
                           <TableCell className="pr-4 text-right">
-                            <Button size="icon" variant="ghost" className="h-7 w-7 text-destructive" onClick={() => handleDeleteCategory(cat.id)}><Trash2 className="h-4 w-4" /></Button>
+                            <Button size="icon" variant="ghost" className="h-7 w-7 text-destructive" onClick={() => handleDeleteCategory(cat.id)}>
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
                           </TableCell>
                         </TableRow>
                       ))}
@@ -297,13 +334,13 @@ export default function GalleryPage() {
         <div className="flex items-center gap-2 w-full md:w-auto">
           <Filter className="h-4 w-4 text-muted-foreground" />
           <Select value={filterCategory} onValueChange={setFilterCategory}>
-            <SelectTrigger className="w-full md:w-48 rounded-xl">
+            <SelectTrigger className="w-full md:w-64 rounded-xl">
               <SelectValue placeholder="全部分类" />
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">全部分类</SelectItem>
-              {categories?.map(cat => (
-                <SelectItem key={cat.id} value={cat.id}>{cat.name}</SelectItem>
+              {categoryTree.map(cat => (
+                <SelectItem key={cat.id} value={cat.id}>{cat.fullPath}</SelectItem>
               ))}
             </SelectContent>
           </Select>
@@ -322,8 +359,8 @@ export default function GalleryPage() {
               <div className="relative aspect-square bg-muted/10">
                 <Image src={asset.url} alt={asset.title} fill className="object-cover" />
                 <div className="absolute top-2 left-2">
-                  <Badge className="text-[8px] bg-black/60 border-none uppercase">
-                    {categories?.find(c => c.id === asset.categoryId)?.name || '未分类'}
+                  <Badge className="text-[7px] bg-black/70 border-none uppercase max-w-[100px] truncate">
+                    {categoryTree.find(c => c.id === asset.categoryId)?.fullPath || '未分类'}
                   </Badge>
                 </div>
               </div>
@@ -358,19 +395,25 @@ export default function GalleryPage() {
               <div className="space-y-2">
                 <Label className="text-[10px] font-bold uppercase">调整分类</Label>
                 <Select value={editingAsset.categoryId} onValueChange={v => setEditingAsset({...editingAsset, categoryId: v})}>
-                  <SelectTrigger><SelectValue /></SelectTrigger>
-                  <SelectContent>{categories?.map(cat => (<SelectItem key={cat.id} value={cat.id}>{cat.name}</SelectItem>))}</SelectContent>
+                  <SelectTrigger className="rounded-xl h-12">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {categoryTree.map(cat => (
+                      <SelectItem key={cat.id} value={cat.id}>{cat.fullPath}</SelectItem>
+                    ))}
+                  </SelectContent>
                 </Select>
               </div>
               <div className="p-4 bg-muted/20 rounded-xl space-y-1">
                 <p className="text-[10px] text-muted-foreground">文件名: {editingAsset.fileName}</p>
-                <p className="text-[10px] text-muted-foreground">大小: {(editingAsset.fileSize || 0 / 1024).toFixed(1)} KB</p>
+                <p className="text-[10px] text-muted-foreground">大小: {(editingAsset.fileSize ? editingAsset.fileSize / 1024 : 0).toFixed(1)} KB</p>
               </div>
             </div>
           )}
           <DialogFooter>
-            <Button variant="outline" onClick={() => setEditingAsset(null)}>取消</Button>
-            <Button onClick={handleUpdateAsset}>确认修改</Button>
+            <Button variant="outline" onClick={() => setEditingAsset(null)} className="rounded-xl h-12">取消</Button>
+            <Button onClick={handleUpdateAsset} className="rounded-xl h-12">确认修改</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
