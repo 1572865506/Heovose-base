@@ -106,13 +106,11 @@ export default function GalleryPage() {
       return parent ? `${getFullPath(parent)} > ${cat.name}` : cat.name;
     };
 
+    // 保持原始的 order 排序，这是手动排序生效的关键
     return categories.map(cat => ({
       ...cat,
       fullPath: getFullPath(cat)
-    })).sort((a, b) => {
-      // 优先按照路径排序，这样子分类会紧跟父分类
-      return a.fullPath.localeCompare(b.fullPath);
-    });
+    }));
   }, [categories]);
 
   const filteredAssets = useMemo(() => {
@@ -173,7 +171,7 @@ export default function GalleryPage() {
   const handleUpdateAsset = () => {
     if (!firestore || !editingAsset) return;
     const assetRef = doc(firestore, 'galleryAssets', editingAsset.id);
-    setDocumentNonBlocking(assetRef, editingAsset, { merge: true });
+    updateDocumentNonBlocking(assetRef, editingAsset);
     setEditingAsset(null);
     toast({ title: "修改已保存" });
   };
@@ -206,17 +204,17 @@ export default function GalleryPage() {
   };
 
   const handleMoveCategory = (id: string, direction: 'up' | 'down') => {
-    if (!firestore || !categories) return;
-    const index = categories.findIndex(c => c.id === id);
+    if (!firestore || !categoryTree) return;
+    const index = categoryTree.findIndex(c => c.id === id);
     if (index === -1) return;
     
     const targetIndex = direction === 'up' ? index - 1 : index + 1;
-    if (targetIndex < 0 || targetIndex >= categories.length) return;
+    if (targetIndex < 0 || targetIndex >= categoryTree.length) return;
 
-    const current = categories[index];
-    const target = categories[targetIndex];
+    const current = categoryTree[index];
+    const target = categoryTree[targetIndex];
 
-    // 交换 order
+    // 交换数据库中的 order 权重
     updateDocumentNonBlocking(doc(firestore, 'galleryCategories', current.id), { order: target.order });
     updateDocumentNonBlocking(doc(firestore, 'galleryCategories', target.id), { order: current.order });
   };
