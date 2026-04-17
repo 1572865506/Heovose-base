@@ -18,7 +18,8 @@ import {
   Layers,
   ChevronRight,
   ArrowUp,
-  ArrowDown
+  ArrowDown,
+  X
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -79,8 +80,10 @@ export default function GalleryPage() {
   const [filterCategory, setFilterCategory] = useState<string>('all');
   const [editingAsset, setEditingAsset] = useState<GalleryAsset | null>(null);
   const [isCategoryDialogOpen, setIsCategoryDialogOpen] = useState(false);
-  const [newCatName, setNewCatName] = useState('');
-  const [newCatParentId, setNewCatParentId] = useState<string>('none');
+  
+  // 分类管理状态
+  const [editingCatId, setEditingCatId] = useState<string | null>(null);
+  const [catForm, setCatForm] = useState({ name: '', parentId: 'none' });
 
   // Firestore Data
   const categoriesQuery = useMemoFirebase(() => {
@@ -106,7 +109,6 @@ export default function GalleryPage() {
       return parent ? `${getFullPath(parent)} > ${cat.name}` : cat.name;
     };
 
-    // 保持原始的 order 排序，这是手动排序生效的关键
     return categories.map(cat => ({
       ...cat,
       fullPath: getFullPath(cat)
@@ -137,11 +139,7 @@ export default function GalleryPage() {
       if (!file.type.startsWith('image/')) continue;
 
       if (file.size > 800000) {
-        toast({ 
-          variant: "destructive", 
-          title: "文件过大", 
-          description: `${file.name} 超过 800KB 限制。` 
-        });
+        toast({ variant: "destructive", title: "文件过大", description: `${file.name} 超过 800KB 限制。` });
         continue;
       }
 
@@ -165,7 +163,7 @@ export default function GalleryPage() {
     }
     
     setIsUploading(false);
-    toast({ title: "上传已开始", description: "图片正在后台处理并同步。" });
+    toast({ title: "上传已开始" });
   };
 
   const handleUpdateAsset = () => {
@@ -179,28 +177,57 @@ export default function GalleryPage() {
   const handleDeleteAsset = (id: string) => {
     if (!firestore || !confirm('确定要永久移除此图片吗？')) return;
     deleteDocumentNonBlocking(doc(firestore, 'galleryAssets', id));
-    toast({ title: "图片已移除" });
   };
 
-  const handleAddCategory = () => {
-    if (!firestore || !newCatName.trim()) return;
-    const id = `cat_${Date.now()}`;
-    const order = (categories?.length || 0) + 1;
-    setDocumentNonBlocking(doc(firestore, 'galleryCategories', id), { 
-      id, 
-      name: newCatName, 
-      parentId: newCatParentId === 'none' ? null : newCatParentId,
-      order 
-    }, { merge: true });
-    setNewCatName('');
-    setNewCatParentId('none');
-    toast({ title: "分类已添加" });
+  // 分类管理逻辑
+  const handleSaveCategory = () => {
+    if (!firestore || !catForm.name.trim()) return;
+    
+    if (editingCatId) {
+      // 防止循环引用：不能将父级设为自己
+      if (catForm.parentId === editingCatId) {
+        toast({ variant: "destructive", title: "无效操作", description: "不能将分类的上级设为自己。" });
+        return;
+      }
+      
+      const catRef = doc(firestore, 'galleryCategories', editingCatId);
+      updateDocumentNonBlocking(catRef, {
+        name: catForm.name,
+        parentId: catForm.parentId === 'none' ? null : catForm.parentId
+      });
+      toast({ title: "分类已更新" });
+    } else {
+      const id = `cat_${Date.now()}`;
+      const order = (categories?.length || 0) + 1;
+      setDocumentNonBlocking(doc(firestore, 'galleryCategories', id), { 
+        id, 
+        name: catForm.name, 
+        parentId: catForm.parentId === 'none' ? null : catForm.parentId,
+        order 
+      }, { merge: true });
+      toast({ title: "分类已添加" });
+    }
+    
+    resetCatForm();
+  };
+
+  const resetCatForm = () => {
+    setEditingCatId(null);
+    setCatForm({ name: '', parentId: 'none' });
+  };
+
+  const startEditCategory = (cat: GalleryCategory) => {
+    setEditingCatId(cat.id);
+    setCatForm({ 
+      name: cat.name, 
+      parentId: cat.parentId || 'none' 
+    });
   };
 
   const handleDeleteCategory = (id: string) => {
     if (!firestore || !confirm('警告：删除分类将使关联图片变为“未分类”。确定继续吗？')) return;
     deleteDocumentNonBlocking(doc(firestore, 'galleryCategories', id));
-    toast({ title: "分类已成功删除" });
+    if (editingCatId === id) resetCatForm();
   };
 
   const handleMoveCategory = (id: string, direction: 'up' | 'down') => {
@@ -214,7 +241,6 @@ export default function GalleryPage() {
     const current = categoryTree[index];
     const target = categoryTree[targetIndex];
 
-    // 交换数据库中的 order 权重
     updateDocumentNonBlocking(doc(firestore, 'galleryCategories', current.id), { order: target.order });
     updateDocumentNonBlocking(doc(firestore, 'galleryCategories', target.id), { order: current.order });
   };
@@ -227,7 +253,7 @@ export default function GalleryPage() {
             <ImageIcon className="h-6 w-6" />
             全球图库中心
           </h2>
-          <p className="text-sm text-muted-foreground">支持拖拽批量上传及多级分类管理。</p>
+          <p className="text-sm text-muted-foreground">支持批量上传及自定义多级分类。</p>
         </div>
         
         <div className="flex gap-2">
@@ -245,35 +271,47 @@ export default function GalleryPage() {
                   </DialogTitle>
                 </DialogHeader>
                 
-                <div className="space-y-4 bg-muted/30 p-6 rounded-2xl border border-border/40">
-                  <p className="text-[10px] font-bold uppercase tracking-widest text-primary">创建新层级</p>
+                <div className={cn(
+                  "space-y-4 p-6 rounded-2xl border transition-colors",
+                  editingCatId ? "bg-accent/5 border-accent/40" : "bg-muted/30 border-border/40"
+                )}>
+                  <div className="flex items-center justify-between">
+                    <p className="text-[10px] font-bold uppercase tracking-widest text-primary">
+                      {editingCatId ? '正在编辑分类层级' : '创建新层级分类'}
+                    </p>
+                    {editingCatId && (
+                      <Button variant="ghost" size="sm" onClick={resetCatForm} className="h-6 text-[10px] uppercase font-bold text-muted-foreground">
+                        <X className="h-3 w-3 mr-1" /> 取消编辑
+                      </Button>
+                    )}
+                  </div>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div className="space-y-2">
                       <Label className="text-[10px] font-bold">分类名称</Label>
                       <Input 
                         placeholder="如: 展会实拍" 
-                        value={newCatName}
-                        onChange={e => setNewCatName(e.target.value)}
+                        value={catForm.name}
+                        onChange={e => setCatForm({...catForm, name: e.target.value})}
                         className="rounded-xl h-12"
                       />
                     </div>
                     <div className="space-y-2">
-                      <Label className="text-[10px] font-bold">所属父级</Label>
-                      <Select value={newCatParentId} onValueChange={setNewCatParentId}>
+                      <Label className="text-[10px] font-bold">所属父级 (在此调整层级)</Label>
+                      <Select value={catForm.parentId} onValueChange={v => setCatForm({...catForm, parentId: v})}>
                         <SelectTrigger className="h-12 rounded-xl">
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="none">无 (顶层分类)</SelectItem>
-                          {categoryTree.map(cat => (
+                          <SelectItem value="none">无 (设为顶层)</SelectItem>
+                          {categoryTree.filter(c => c.id !== editingCatId).map(cat => (
                             <SelectItem key={cat.id} value={cat.id}>{cat.fullPath}</SelectItem>
                           ))}
                         </SelectContent>
                       </Select>
                     </div>
                   </div>
-                  <Button onClick={handleAddCategory} className="w-full rounded-xl h-12 font-bold">
-                    <Plus className="h-4 w-4 mr-2" /> 确认添加
+                  <Button onClick={handleSaveCategory} className="w-full rounded-xl h-12 font-bold uppercase tracking-widest">
+                    {editingCatId ? '保存层级更改' : '确认添加分类'}
                   </Button>
                 </div>
 
@@ -281,13 +319,16 @@ export default function GalleryPage() {
                   <Table>
                     <TableHeader className="bg-muted/50">
                       <TableRow>
-                        <TableHead className="pl-4">分类层级路径</TableHead>
-                        <TableHead className="w-40 text-right pr-4">操作</TableHead>
+                        <TableHead className="pl-4">分类层级全路径</TableHead>
+                        <TableHead className="w-48 text-right pr-4">管理操作</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
                       {categoryTree.map((cat, index) => (
-                        <TableRow key={cat.id} className="hover:bg-muted/10 transition-colors">
+                        <TableRow key={cat.id} className={cn(
+                          "hover:bg-muted/10 transition-colors group",
+                          editingCatId === cat.id ? "bg-accent/10" : ""
+                        )}>
                           <TableCell className="pl-4">
                             <div className={cn(
                               "flex items-center gap-2",
@@ -310,6 +351,7 @@ export default function GalleryPage() {
                                 className="h-7 w-7" 
                                 disabled={index === 0}
                                 onClick={() => handleMoveCategory(cat.id, 'up')}
+                                title="上移排序"
                               >
                                 <ArrowUp className="h-3 w-3" />
                               </Button>
@@ -319,6 +361,7 @@ export default function GalleryPage() {
                                 className="h-7 w-7" 
                                 disabled={index === categoryTree.length - 1}
                                 onClick={() => handleMoveCategory(cat.id, 'down')}
+                                title="下移排序"
                               >
                                 <ArrowDown className="h-3 w-3" />
                               </Button>
@@ -326,22 +369,25 @@ export default function GalleryPage() {
                               <Button 
                                 size="icon" 
                                 variant="ghost" 
+                                className={cn("h-7 w-7", editingCatId === cat.id ? "text-accent" : "")}
+                                onClick={() => startEditCategory(cat)}
+                                title="修改名称或上级"
+                              >
+                                <Edit3 className="h-3 w-3" />
+                              </Button>
+                              <Button 
+                                size="icon" 
+                                variant="ghost" 
                                 className="h-7 w-7 text-destructive hover:bg-destructive/10" 
                                 onClick={() => handleDeleteCategory(cat.id)}
+                                title="删除分类"
                               >
-                                <Trash2 className="h-4 w-4" />
+                                <Trash2 className="h-3 w-3" />
                               </Button>
                             </div>
                           </TableCell>
                         </TableRow>
                       ))}
-                      {categoryTree.length === 0 && (
-                        <TableRow>
-                          <TableCell colSpan={2} className="h-20 text-center text-muted-foreground italic">
-                            暂无分类，请在上方添加。
-                          </TableCell>
-                        </TableRow>
-                      )}
                     </TableBody>
                   </Table>
                 </div>
@@ -375,8 +421,8 @@ export default function GalleryPage() {
         <div className="flex items-center gap-4">
           <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center text-primary group-hover:scale-110 transition-transform"><Upload className="h-6 w-6" /></div>
           <div>
-            <p className="text-base font-bold text-primary">点击或拖拽多张图片到此处</p>
-            <p className="text-xs text-muted-foreground">系统将自动提取文件名并分配默认分类</p>
+            <p className="text-base font-bold text-primary">点击或拖拽上传图片</p>
+            <p className="text-xs text-muted-foreground">支持多文件上传，自动识别文件名</p>
           </div>
         </div>
       </div>
@@ -385,7 +431,7 @@ export default function GalleryPage() {
         <div className="relative flex-1 w-full">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input 
-            placeholder="在图库中搜索..." 
+            placeholder="搜索素材标题..." 
             className="pl-10 border-none bg-muted/40 focus-visible:ring-0 rounded-xl"
             value={searchQuery}
             onChange={e => setSearchQuery(e.target.value)}
@@ -408,9 +454,9 @@ export default function GalleryPage() {
       </div>
 
       {isLoading ? (
-        <div className="py-24 text-center flex flex-col items-center gap-3">
-          <Loader2 className="h-10 w-10 animate-spin text-primary opacity-30" />
-          <span className="text-xs uppercase tracking-[0.2em] font-bold text-primary/50">正在同步全球资产...</span>
+        <div className="py-24 text-center">
+          <Loader2 className="h-10 w-10 animate-spin text-primary opacity-20 mx-auto mb-4" />
+          <p className="text-xs font-bold uppercase tracking-widest text-primary/50">同步素材库中...</p>
         </div>
       ) : (
         <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-6">
@@ -436,27 +482,21 @@ export default function GalleryPage() {
               </div>
             </div>
           ))}
-          {filteredAssets.length === 0 && (
-            <div className="col-span-full py-32 text-center text-muted-foreground border-2 border-dashed rounded-[3rem] bg-muted/5">
-              <p className="italic opacity-50">未找到相关素材</p>
-              <Button variant="link" onClick={() => { setSearchQuery(''); setFilterCategory('all'); }} className="text-primary text-xs">重置所有筛选</Button>
-            </div>
-          )}
         </div>
       )}
 
-      {/* Asset Edit Dialog */}
+      {/* 资产编辑弹窗 */}
       <Dialog open={!!editingAsset} onOpenChange={(o) => !o && setEditingAsset(null)}>
         <DialogContent className="rounded-3xl max-w-sm p-8">
           <DialogHeader><DialogTitle className="text-lg font-bold">编辑素材信息</DialogTitle></DialogHeader>
           {editingAsset && (
             <div className="space-y-4 py-4">
               <div className="space-y-2">
-                <Label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">素材标题 (显示名称)</Label>
+                <Label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">素材标题</Label>
                 <Input value={editingAsset.title} onChange={e => setEditingAsset({...editingAsset, title: e.target.value})} className="rounded-xl h-12" />
               </div>
               <div className="space-y-2">
-                <Label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">调整层级分类</Label>
+                <Label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">调整分类</Label>
                 <Select value={editingAsset.categoryId} onValueChange={v => setEditingAsset({...editingAsset, categoryId: v})}>
                   <SelectTrigger className="rounded-xl h-12">
                     <SelectValue />
@@ -468,15 +508,11 @@ export default function GalleryPage() {
                   </SelectContent>
                 </Select>
               </div>
-              <div className="p-4 bg-muted/40 rounded-xl space-y-1 text-[10px] text-muted-foreground font-medium">
-                <p>原始文件名: {editingAsset.fileName}</p>
-                <p>资源大小: {(editingAsset.fileSize ? editingAsset.fileSize / 1024 : 0).toFixed(1)} KB</p>
-              </div>
             </div>
           )}
           <DialogFooter className="flex gap-2">
             <Button variant="outline" onClick={() => setEditingAsset(null)} className="rounded-xl h-12 flex-1">取消</Button>
-            <Button onClick={handleUpdateAsset} className="rounded-xl h-12 flex-1">确认修改</Button>
+            <Button onClick={handleUpdateAsset} className="rounded-xl h-12 flex-1">保存修改</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
