@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useState, useMemo, useRef, useEffect } from 'react';
+import { useState, useMemo, useRef, useEffect, useCallback } from 'react';
 import { useFirestore, useCollection, useMemoFirebase } from '@/firebase';
 import { collection, doc, serverTimestamp, query, orderBy } from 'firebase/firestore';
 import { 
@@ -100,6 +100,7 @@ export default function GalleryPage() {
   const firestore = useFirestore();
   const { toast } = useToast();
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const gridContainerRef = useRef<HTMLDivElement>(null);
   
   const [searchQuery, setSearchQuery] = useState('');
   const [filterCategory, setFilterCategory] = useState<string>('all');
@@ -114,6 +115,15 @@ export default function GalleryPage() {
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [isBatchCategoryDialogOpen, setIsBatchCategoryDialogOpen] = useState(false);
   const [batchTargetCategoryId, setBatchTargetCategoryId] = useState<string>('');
+
+  // 框选状态
+  const [selectionRect, setSelectionRect] = useState<{
+    startX: number;
+    startY: number;
+    currentX: number;
+    currentY: number;
+    active: boolean;
+  }>({ startX: 0, startY: 0, currentX: 0, currentY: 0, active: false });
 
   // 上传配置
   const [targetUploadCategoryId, setTargetUploadCategoryId] = useState<string>('');
@@ -230,6 +240,101 @@ export default function GalleryPage() {
       setSelectedIds(new Set(filteredAssets.map(a => a.id)));
     }
   };
+
+  // 框选逻辑实现
+  const handleMouseDown = (e: React.MouseEvent) => {
+    // 如果点击的是按钮、复选框或输入框，不启动框选
+    const target = e.target as HTMLElement;
+    if (target.closest('button') || target.closest('input') || target.closest('label') || target.closest('[role="checkbox"]')) {
+      return;
+    }
+
+    if (!gridContainerRef.current) return;
+
+    const rect = gridContainerRef.current.getBoundingClientRect();
+    const startX = e.clientX - rect.left + gridContainerRef.current.scrollLeft;
+    const startY = e.clientY - rect.top + gridContainerRef.current.scrollTop;
+
+    setSelectionRect({
+      startX,
+      startY,
+      currentX: startX,
+      currentY: startY,
+      active: true
+    });
+
+    // 如果没按 Shift 键，清空之前的选择
+    if (!e.shiftKey) {
+      setSelectedIds(new Set());
+    }
+  };
+
+  const handleMouseMove = useCallback((e: MouseEvent) => {
+    if (!selectionRect.active || !gridContainerRef.current) return;
+
+    const rect = gridContainerRef.current.getBoundingClientRect();
+    const currentX = e.clientX - rect.left + gridContainerRef.current.scrollLeft;
+    const currentY = e.clientY - rect.top + gridContainerRef.current.scrollTop;
+
+    setSelectionRect(prev => ({ ...prev, currentX, currentY }));
+
+    // 计算框选区域
+    const left = Math.min(selectionRect.startX, currentX);
+    const top = Math.min(selectionRect.startY, currentY);
+    const right = Math.max(selectionRect.startX, currentX);
+    const bottom = Math.max(selectionRect.startY, currentY);
+
+    // 检测网格项碰撞
+    const items = gridContainerRef.current.querySelectorAll('.gallery-item');
+    const newSelected = new Set(e.shiftKey ? selectedIds : []);
+
+    items.forEach((item) => {
+      const itemEl = item as HTMLElement;
+      const itemId = itemEl.dataset.id;
+      if (!itemId) return;
+
+      const itemRect = {
+        left: itemEl.offsetLeft,
+        top: itemEl.offsetTop,
+        right: itemEl.offsetLeft + itemEl.offsetWidth,
+        bottom: itemEl.offsetTop + itemEl.offsetHeight
+      };
+
+      // 矩形碰撞检测
+      const isOverlapping = !(
+        itemRect.left > right ||
+        itemRect.right < left ||
+        itemRect.top > bottom ||
+        itemRect.bottom < top
+      );
+
+      if (isOverlapping) {
+        newSelected.add(itemId);
+      }
+    });
+
+    setSelectedIds(newSelected);
+  }, [selectionRect, selectedIds]);
+
+  const handleMouseUp = useCallback(() => {
+    if (selectionRect.active) {
+      setSelectionRect(prev => ({ ...prev, active: false }));
+    }
+  }, [selectionRect.active]);
+
+  useEffect(() => {
+    if (selectionRect.active) {
+      window.addEventListener('mousemove', handleMouseMove);
+      window.addEventListener('mouseup', handleMouseUp);
+    } else {
+      window.removeEventListener('mousemove', handleMouseMove);
+      window.removeEventListener('mouseup', handleMouseUp);
+    }
+    return () => {
+      window.removeEventListener('mousemove', handleMouseMove);
+      window.removeEventListener('mouseup', handleMouseUp);
+    };
+  }, [selectionRect.active, handleMouseMove, handleMouseUp]);
 
   const handleBatchDelete = () => {
     if (!firestore || selectedIds.size === 0) return;
@@ -443,7 +548,7 @@ export default function GalleryPage() {
   };
 
   return (
-    <div className="space-y-8 animate-in fade-in duration-500 relative min-h-[80vh]">
+    <div className="space-y-8 animate-in fade-in duration-500 relative min-h-[80vh] select-none">
       {/* 批量操作悬浮条 */}
       {selectedIds.size > 0 && (
         <div className="fixed top-24 left-1/2 -translate-x-1/2 z-[100] bg-white border border-primary/20 shadow-2xl rounded-full px-6 py-3 flex items-center gap-6 animate-in slide-in-from-top-4 duration-300">
@@ -527,7 +632,7 @@ export default function GalleryPage() {
             <ImageIcon className="h-6 w-6" />
             全球图库中心
           </h2>
-          <p className="text-sm text-muted-foreground">支持多级分类管理、素材批量上传及批量编辑。</p>
+          <p className="text-sm text-muted-foreground">支持多级分类管理、素材批量上传及框选批量编辑。</p>
         </div>
         
         <div className="flex gap-2">
@@ -851,12 +956,33 @@ export default function GalleryPage() {
           <p className="text-xs font-bold uppercase tracking-widest text-primary/50">同步素材库中...</p>
         </div>
       ) : (
-        <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-6">
+        <div 
+          ref={gridContainerRef}
+          onMouseDown={handleMouseDown}
+          className="relative grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-6 min-h-[400px]"
+        >
+          {/* 框选矩形视图 */}
+          {selectionRect.active && (
+            <div 
+              className="absolute z-[50] border border-primary bg-primary/10 pointer-events-none transition-none"
+              style={{
+                left: Math.min(selectionRect.startX, selectionRect.currentX),
+                top: Math.min(selectionRect.startY, selectionRect.currentY),
+                width: Math.abs(selectionRect.currentX - selectionRect.startX),
+                height: Math.abs(selectionRect.currentY - selectionRect.startY),
+              }}
+            />
+          )}
+
           {filteredAssets.map((asset) => (
-            <div key={asset.id} className={cn(
-              "group relative bg-white rounded-2xl border transition-all duration-300 overflow-hidden",
-              selectedIds.has(asset.id) ? "border-primary ring-2 ring-primary/20 shadow-xl" : "border-border/40 hover:shadow-2xl"
-            )}>
+            <div 
+              key={asset.id} 
+              data-id={asset.id}
+              className={cn(
+                "gallery-item group relative bg-white rounded-2xl border transition-all duration-300 overflow-hidden",
+                selectedIds.has(asset.id) ? "border-primary ring-2 ring-primary/20 shadow-xl" : "border-border/40 hover:shadow-2xl"
+              )}
+            >
               {/* 多选框 */}
               <div className="absolute top-2 left-2 z-20">
                 <Checkbox 
@@ -871,7 +997,14 @@ export default function GalleryPage() {
 
               <div 
                 className="relative aspect-square bg-muted/10 cursor-zoom-in overflow-hidden"
-                onClick={() => { setPreviewScaleMode('fit'); setPreviewImage(asset); }}
+                onClick={(e) => { 
+                  if (e.shiftKey) {
+                    toggleSelectAsset(asset.id);
+                  } else {
+                    setPreviewScaleMode('fit'); 
+                    setPreviewImage(asset); 
+                  }
+                }}
               >
                 <Image src={asset.url} alt={asset.title} fill className="object-cover group-hover:scale-105 transition-transform duration-500" />
                 <div className="absolute bottom-2 left-2">
