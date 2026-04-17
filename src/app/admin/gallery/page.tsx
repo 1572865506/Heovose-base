@@ -28,7 +28,8 @@ import {
   Maximize2,
   Maximize,
   CopyCheck,
-  FileWarning
+  FileWarning,
+  CloudUpload
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -100,6 +101,7 @@ export default function GalleryPage() {
   const [filterCategory, setFilterCategory] = useState<string>('all');
   const [editingAsset, setEditingAsset] = useState<GalleryAsset | null>(null);
   const [isCategoryDialogOpen, setIsCategoryDialogOpen] = useState(false);
+  const [isUploadDialogOpen, setIsUploadDialogOpen] = useState(false);
   
   const [editingCatId, setEditingCatId] = useState<string | null>(null);
   const [catForm, setCatForm] = useState({ name: '', parentId: 'none' });
@@ -399,6 +401,7 @@ export default function GalleryPage() {
         </div>
         
         <div className="flex gap-2">
+          {/* 分类设置弹窗 */}
           <Dialog open={isCategoryDialogOpen} onOpenChange={setIsCategoryDialogOpen}>
             <DialogTrigger asChild>
               <Button variant="outline" className="rounded-xl h-12 gap-2">
@@ -562,92 +565,119 @@ export default function GalleryPage() {
             </DialogContent>
           </Dialog>
 
-          <Button 
-            className="rounded-xl h-12 px-6 font-bold uppercase tracking-widest gap-2"
-            onClick={() => fileInputRef.current?.click()}
-          >
-            <Plus className="h-4 w-4" /> 批量上传
-          </Button>
-          <input 
-            type="file" 
-            ref={fileInputRef} 
-            multiple 
-            accept="image/*" 
-            className="hidden" 
-            onChange={(e) => handleFileUpload(e.target.files)}
-          />
-        </div>
-      </div>
-
-      <div className="bg-white p-6 rounded-[2rem] border border-border/40 shadow-sm space-y-6">
-        <div className="flex flex-col lg:flex-row gap-8">
-          <div 
-            onDragOver={(e) => { e.preventDefault(); e.stopPropagation(); }}
-            onDrop={(e) => { e.preventDefault(); e.stopPropagation(); handleFileUpload(e.dataTransfer.files); }}
-            className="group relative flex-1 h-40 border-2 border-dashed border-primary/20 rounded-[2rem] flex flex-col items-center justify-center hover:border-primary/50 hover:bg-primary/5 transition-all cursor-pointer"
-            onClick={() => fileInputRef.current?.click()}
-          >
-            <div className="flex items-center gap-4">
-              <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center text-primary group-hover:scale-110 transition-transform">
-                <Upload className="h-6 w-6" />
+          {/* 统一的上传弹窗 */}
+          <Dialog open={isUploadDialogOpen} onOpenChange={setIsUploadDialogOpen}>
+            <DialogTrigger asChild>
+              <Button className="rounded-xl h-12 px-6 font-bold uppercase tracking-widest gap-2">
+                <CloudUpload className="h-4 w-4" /> 上传素材
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="rounded-[2.5rem] max-w-3xl p-0 overflow-hidden border-none shadow-2xl">
+              <div className="bg-primary p-8 text-white">
+                <DialogHeader>
+                  <DialogTitle className="text-2xl font-bold flex items-center gap-3">
+                    <CloudUpload className="h-8 w-8" /> 批量上传素材
+                  </DialogTitle>
+                  <DialogDescription className="text-white/60 text-sm">
+                    支持多文件批量上传，请预先配置好分类与冲突策略。
+                  </DialogDescription>
+                </DialogHeader>
               </div>
-              <div>
-                <p className="text-base font-bold text-primary">点击或拖拽上传本地图片</p>
-                <p className="text-xs text-muted-foreground">支持多文件批量上传，自动应用下方配置</p>
-              </div>
-            </div>
-          </div>
-
-          <div className="w-full lg:w-96 space-y-4 bg-muted/20 p-6 rounded-[2rem] border border-border/20">
-            <h3 className="text-[10px] font-bold uppercase tracking-widest text-primary flex items-center gap-2">
-              <Settings2 className="h-3 w-3" /> 上传配置预览
-            </h3>
-            
-            <div className="space-y-3">
-              <div className="space-y-1.5">
-                <Label className="text-[9px] uppercase font-bold opacity-60">目标上传分类</Label>
-                <Select value={targetUploadCategoryId} onValueChange={setTargetUploadCategoryId}>
-                  <SelectTrigger className="h-10 rounded-xl bg-white">
-                    <SelectValue placeholder="选择目标分类" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {categoryTree.map(cat => (
-                      <SelectItem key={cat.id} value={cat.id}>
-                        <span 
-                          style={{ paddingLeft: `${cat.depth * 0.8}rem` }} 
-                          className={cn("flex items-center text-xs", cat.depth > 0 && "text-muted-foreground")}
-                        >
-                          {cat.depth > 0 && <span className="mr-1.5 opacity-30">·</span>}
-                          {cat.name}
-                        </span>
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div className="space-y-1.5">
-                <Label className="text-[9px] uppercase font-bold opacity-60">同名文件处理</Label>
-                <Select value={duplicateStrategy} onValueChange={(v: DuplicateStrategy) => setDuplicateStrategy(v)}>
-                  <SelectTrigger className="h-10 rounded-xl bg-white">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="rename" className="text-xs">
-                      <div className="flex items-center gap-2">
-                        <CopyCheck className="h-3 w-3" /> 自动重命名 (保留副本)
+              
+              <div className="p-8 grid grid-cols-1 md:grid-cols-12 gap-8 bg-white">
+                <div className="md:col-span-7 space-y-4">
+                  <div 
+                    onDragOver={(e) => { e.preventDefault(); e.stopPropagation(); }}
+                    onDrop={(e) => { 
+                      e.preventDefault(); 
+                      e.stopPropagation(); 
+                      handleFileUpload(e.dataTransfer.files);
+                    }}
+                    className="group relative h-64 border-2 border-dashed border-primary/20 rounded-[2rem] flex flex-col items-center justify-center hover:border-primary/50 hover:bg-primary/5 transition-all cursor-pointer bg-muted/10"
+                    onClick={() => fileInputRef.current?.click()}
+                  >
+                    <div className="flex flex-col items-center gap-4">
+                      <div className="h-16 w-16 rounded-full bg-primary/10 flex items-center justify-center text-primary group-hover:scale-110 transition-transform">
+                        <Upload className="h-8 w-8" />
                       </div>
-                    </SelectItem>
-                    <SelectItem value="overwrite" className="text-xs">
-                      <div className="flex items-center gap-2">
-                        <FileWarning className="h-3 w-3" /> 覆盖现有文件
+                      <div className="text-center">
+                        <p className="text-lg font-bold text-primary">点击或拖拽上传图片</p>
+                        <p className="text-xs text-muted-foreground mt-1">支持 JPG, PNG, WEBP (建议不超过 800KB)</p>
                       </div>
-                    </SelectItem>
-                  </SelectContent>
-                </Select>
+                    </div>
+                    <input 
+                      type="file" 
+                      ref={fileInputRef} 
+                      multiple 
+                      accept="image/*" 
+                      className="hidden" 
+                      onChange={(e) => handleFileUpload(e.target.files)}
+                    />
+                  </div>
+                </div>
+
+                <div className="md:col-span-5 space-y-6">
+                  <div className="space-y-4">
+                    <div className="space-y-2">
+                      <Label className="text-[10px] font-bold uppercase tracking-widest text-primary flex items-center gap-2">
+                        <Layers className="h-3 w-3" /> 目标上传分类
+                      </Label>
+                      <Select value={targetUploadCategoryId} onValueChange={setTargetUploadCategoryId}>
+                        <SelectTrigger className="h-12 rounded-xl bg-muted/20 border-transparent hover:bg-muted/30 transition-colors">
+                          <SelectValue placeholder="选择目标分类" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {categoryTree.map(cat => (
+                            <SelectItem key={cat.id} value={cat.id}>
+                              <span 
+                                style={{ paddingLeft: `${cat.depth * 0.8}rem` }} 
+                                className={cn("flex items-center text-xs", cat.depth > 0 && "text-muted-foreground")}
+                              >
+                                {cat.depth > 0 && <span className="mr-1.5 opacity-30">·</span>}
+                                {cat.name}
+                              </span>
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label className="text-[10px] font-bold uppercase tracking-widest text-primary flex items-center gap-2">
+                        <CopyCheck className="h-3 w-3" /> 同名文件处理
+                      </Label>
+                      <Select value={duplicateStrategy} onValueChange={(v: DuplicateStrategy) => setDuplicateStrategy(v)}>
+                        <SelectTrigger className="h-12 rounded-xl bg-muted/20 border-transparent hover:bg-muted/30 transition-colors">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="rename" className="text-xs">
+                            <div className="flex items-center gap-2">
+                              <CopyCheck className="h-3 w-3" /> 自动重命名 (保留副本)
+                            </div>
+                          </SelectItem>
+                          <SelectItem value="overwrite" className="text-xs">
+                            <div className="flex items-center gap-2">
+                              <FileWarning className="h-3 w-3" /> 覆盖现有文件
+                            </div>
+                          </SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+
+                  <div className="p-4 rounded-2xl bg-primary/5 border border-primary/10">
+                    <p className="text-[10px] leading-relaxed text-primary/70 italic">
+                      提示：您可以直接在此时拖入文件。上传开始后，右下角的任务管理器将同步展示进度。
+                    </p>
+                  </div>
+                </div>
               </div>
-            </div>
-          </div>
+              <DialogFooter className="bg-muted/30 p-4">
+                <Button variant="outline" onClick={() => setIsUploadDialogOpen(false)} className="rounded-xl h-10 px-8">关闭</Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
         </div>
       </div>
 
@@ -932,3 +962,4 @@ export default function GalleryPage() {
     </div>
   );
 }
+
