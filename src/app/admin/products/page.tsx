@@ -1,6 +1,7 @@
 
 "use client";
 
+import { useState, useMemo } from 'react';
 import { useFirestore, useCollection, useMemoFirebase } from '@/firebase';
 import { collection, doc, serverTimestamp } from 'firebase/firestore';
 import { 
@@ -12,6 +13,7 @@ import {
   TableRow 
 } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import { 
   Plus, 
   Edit2, 
@@ -20,8 +22,17 @@ import {
   Package,
   Eye,
   EyeOff,
-  RefreshCw
+  Search,
+  Filter,
+  X
 } from 'lucide-react';
+import { 
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { deleteDocumentNonBlocking, updateDocumentNonBlocking } from '@/firebase/non-blocking-updates';
 import Link from 'next/link';
 import Image from 'next/image';
@@ -53,6 +64,9 @@ interface ProductCategory {
 export default function AdminProductsPage() {
   const firestore = useFirestore();
   const { toast } = useToast();
+  
+  const [searchQuery, setSearchQuery] = useState('');
+  const [filterCategory, setFilterCategory] = useState('all');
 
   const productsQuery = useMemoFirebase(() => {
     if (!firestore) return null;
@@ -69,7 +83,7 @@ export default function AdminProductsPage() {
     return collection(firestore, 'localizedStrings');
   }, [firestore]);
 
-  const { data: products, isLoading } = useCollection<Product>(productsQuery);
+  const { data: products, isLoading: isProdsLoading } = useCollection<Product>(productsQuery);
   const { data: categories } = useCollection<ProductCategory>(catsQuery);
   const { data: translations } = useCollection<LocalizedString>(transQuery);
 
@@ -82,6 +96,20 @@ export default function AdminProductsPage() {
     const cat = categories?.find(c => c.id === id);
     return cat ? getTranslation(cat.nameTextId) : id;
   };
+
+  const filteredProducts = useMemo(() => {
+    if (!products) return [];
+    return products.filter(p => {
+      const nameZh = getTranslation(p.nameTextId, 'zh').toLowerCase();
+      const nameEn = getTranslation(p.nameTextId, 'en').toLowerCase();
+      const search = searchQuery.toLowerCase();
+      
+      const matchesSearch = nameZh.includes(search) || nameEn.includes(search) || p.id.toLowerCase().includes(search);
+      const matchesCategory = filterCategory === 'all' || p.productCategoryId === filterCategory;
+      
+      return matchesSearch && matchesCategory;
+    });
+  }, [products, searchQuery, filterCategory, translations]);
 
   const handleDelete = (p: Product) => {
     if (!firestore || !confirm('确定要删除此产品吗？相关翻译项不会被自动删除以防引用冲突。')) return;
@@ -119,6 +147,43 @@ export default function AdminProductsPage() {
         </Link>
       </div>
 
+      <div className="flex flex-col md:flex-row items-center gap-4 bg-white p-4 rounded-2xl border border-border/40 shadow-sm">
+        <div className="relative flex-1 w-full">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Input 
+            placeholder="按产品名称或 ID 搜索..." 
+            className="pl-10 border-none bg-muted/40 focus-visible:ring-0 rounded-xl h-11"
+            value={searchQuery}
+            onChange={e => setSearchQuery(e.target.value)}
+          />
+          {searchQuery && (
+            <button 
+              onClick={() => setSearchQuery('')}
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-primary transition-colors"
+            >
+              <X className="h-3 w-3" />
+            </button>
+          )}
+        </div>
+        <div className="flex items-center gap-2 w-full md:w-auto">
+          <Filter className="h-4 w-4 text-muted-foreground" />
+          <Select value={filterCategory} onValueChange={setFilterCategory}>
+            <SelectTrigger className="w-full md:w-64 rounded-xl h-11 border-none bg-muted/40 focus:ring-0">
+              <SelectValue placeholder="全部分类" />
+            </SelectTrigger>
+            <SelectContent className="rounded-xl">
+              <SelectItem value="all">全部分类</SelectItem>
+              {categories?.map(cat => (
+                <SelectItem key={cat.id} value={cat.id}>{getCategoryName(cat.id)}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+        <div className="shrink-0 px-2 text-[10px] font-bold uppercase tracking-widest text-primary/40">
+          共 {filteredProducts.length} 项
+        </div>
+      </div>
+
       <div className="bg-white rounded-3xl border border-border/40 shadow-xl overflow-hidden">
         <Table>
           <TableHeader className="bg-muted/30">
@@ -132,15 +197,17 @@ export default function AdminProductsPage() {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {isLoading ? (
+            {isProdsLoading ? (
               <TableRow>
                 <TableCell colSpan={6} className="h-40 text-center"><Loader2 className="h-6 w-6 animate-spin mx-auto opacity-20" /></TableCell>
               </TableRow>
-            ) : products?.length === 0 ? (
+            ) : filteredProducts.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={6} className="h-40 text-center text-muted-foreground italic">暂无产品数据</TableCell>
+                <TableCell colSpan={6} className="h-40 text-center text-muted-foreground italic">
+                  {searchQuery || filterCategory !== 'all' ? '未找到匹配的产品' : '暂无产品数据'}
+                </TableCell>
               </TableRow>
-            ) : products?.map((p) => (
+            ) : filteredProducts.map((p) => (
               <TableRow key={p.id} className="group hover:bg-muted/5 transition-colors">
                 <TableCell className="pl-6">
                   <div className="relative h-12 w-12 rounded-lg border bg-muted/10 overflow-hidden">
@@ -167,15 +234,13 @@ export default function AdminProductsPage() {
                     >
                       {p.status === 'published' ? '已发布' : '草稿'}
                     </Badge>
-                    <Button 
-                      size="icon" 
-                      variant="ghost" 
-                      className="h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity" 
+                    <button 
+                      className="p-1.5 rounded-full hover:bg-muted transition-colors opacity-0 group-hover:opacity-100" 
                       onClick={() => toggleStatus(p)}
                       title={p.status === 'published' ? '下架产品' : '发布产品'}
                     >
-                      {p.status === 'published' ? <EyeOff className="h-3 w-3" /> : <Eye className="h-3 w-3 text-green-600" />}
-                    </Button>
+                      {p.status === 'published' ? <EyeOff className="h-3 w-3 text-muted-foreground" /> : <Eye className="h-3 w-3 text-green-600" />}
+                    </button>
                   </div>
                 </TableCell>
                 <TableCell className="text-[10px] font-mono opacity-50">{p.id}</TableCell>
@@ -197,4 +262,3 @@ export default function AdminProductsPage() {
     </div>
   );
 }
-
