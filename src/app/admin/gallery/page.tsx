@@ -25,7 +25,8 @@ import {
   AlertCircle,
   PanelTop,
   Minimize2,
-  Maximize2
+  Maximize2,
+  Maximize
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -97,6 +98,9 @@ export default function GalleryPage() {
   
   const [editingCatId, setEditingCatId] = useState<string | null>(null);
   const [catForm, setCatForm] = useState({ name: '', parentId: 'none' });
+
+  // 预览状态
+  const [previewImage, setPreviewImage] = useState<GalleryAsset | null>(null);
 
   // 上传任务管理
   const [uploadTasks, setUploadTasks] = useState<UploadTask[]>([]);
@@ -594,12 +598,18 @@ export default function GalleryPage() {
         <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-6">
           {filteredAssets.map((asset) => (
             <div key={asset.id} className="group relative bg-white rounded-2xl border border-border/40 overflow-hidden hover:shadow-2xl transition-all">
-              <div className="relative aspect-square bg-muted/10">
-                <Image src={asset.url} alt={asset.title} fill className="object-cover" />
+              <div 
+                className="relative aspect-square bg-muted/10 cursor-zoom-in overflow-hidden"
+                onClick={() => setPreviewImage(asset)}
+              >
+                <Image src={asset.url} alt={asset.title} fill className="object-cover group-hover:scale-105 transition-transform duration-500" />
                 <div className="absolute top-2 left-2">
                   <Badge className="text-[7px] bg-black/70 border-none uppercase px-2 py-0.5 rounded-sm max-w-[120px] truncate">
                     {categoryTree.find(c => c.id === asset.categoryId)?.fullPath || '未分类'}
                   </Badge>
+                </div>
+                <div className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                  <Maximize className="text-white h-6 w-6" />
                 </div>
               </div>
               <div className="p-3 space-y-2">
@@ -725,6 +735,50 @@ export default function GalleryPage() {
             <Button variant="outline" onClick={() => setEditingAsset(null)} className="rounded-xl h-12 flex-1">取消</Button>
             <Button onClick={handleUpdateAsset} className="rounded-xl h-12 flex-1">保存</Button>
           </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* 大图预览弹窗 */}
+      <Dialog open={!!previewImage} onOpenChange={(o) => !o && setPreviewImage(null)}>
+        <DialogContent className="max-w-[95vw] max-h-[95vh] p-0 overflow-hidden border-none bg-black/90 shadow-none flex flex-col items-center justify-center">
+          <div className="relative w-full h-full flex items-center justify-center p-4">
+            {previewImage && (
+              <div className="relative w-full h-full flex flex-col items-center gap-4">
+                <div className="relative w-full flex-1 min-h-0">
+                  <Image 
+                    src={previewImage.url} 
+                    alt={previewImage.title} 
+                    fill 
+                    className="object-contain" 
+                    priority
+                  />
+                </div>
+                <div className="bg-white/10 backdrop-blur-md px-6 py-3 rounded-full border border-white/20 flex items-center gap-6">
+                  <div className="flex flex-col">
+                    <span className="text-white font-bold text-sm">{previewImage.title}</span>
+                    <span className="text-white/60 text-[10px] uppercase tracking-widest">
+                      {categoryTree.find(c => c.id === previewImage.categoryId)?.fullPath || '未分类'}
+                    </span>
+                  </div>
+                  <div className="h-8 w-px bg-white/20" />
+                  <Button 
+                    variant="ghost" 
+                    size="sm" 
+                    className="text-white hover:bg-white/20 rounded-xl"
+                    onClick={() => { navigator.clipboard.writeText(previewImage.url); toast({ title: "链接已复制" }); }}
+                  >
+                    <Copy className="h-4 w-4 mr-2" /> 复制链接
+                  </Button>
+                </div>
+              </div>
+            )}
+            <button 
+              onClick={() => setPreviewImage(null)}
+              className="absolute top-4 right-4 z-[210] p-2 bg-black/50 hover:bg-black/70 text-white rounded-full transition-colors"
+            >
+              <X className="h-6 w-6" />
+            </button>
+          </div>
         </DialogContent>
       </Dialog>
     </div>
