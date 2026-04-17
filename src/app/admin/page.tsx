@@ -8,10 +8,10 @@ import Link from 'next/link';
 
 export default function AdminDashboard() {
   const quickStats = [
-    { label: "Active Products", value: "24", icon: Package, color: "text-blue-600", bg: "bg-blue-50" },
-    { label: "Product Categories", value: "8", icon: Layers, color: "text-orange-600", bg: "bg-orange-50" },
-    { label: "Localization Strings", value: "156", icon: Globe, color: "text-green-600", bg: "bg-green-50" },
-    { label: "Factory Locations", value: "4", icon: Factory, color: "text-purple-600", bg: "bg-purple-50" },
+    { label: "活跃产品", value: "24", icon: Package, color: "text-blue-600", bg: "bg-blue-50" },
+    { label: "产品分类", value: "8", icon: Layers, color: "text-orange-600", bg: "bg-orange-50" },
+    { label: "多语言翻译项", value: "156", icon: Globe, color: "text-green-600", bg: "bg-green-50" },
+    { label: "全球工厂分布", value: "4", icon: Factory, color: "text-purple-600", bg: "bg-purple-50" },
   ];
 
   return (
@@ -35,8 +35,8 @@ export default function AdminDashboard() {
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
         <Card className="lg:col-span-8 border-border/40 shadow-sm rounded-2xl">
           <CardHeader>
-            <CardTitle className="text-xl font-headline font-bold text-primary">Recent Operations</CardTitle>
-            <CardDescription>System logs and recent content updates.</CardDescription>
+            <CardTitle className="text-xl font-headline font-bold text-primary">最近操作日志</CardTitle>
+            <CardDescription>系统实时日志及内容更新记录。</CardDescription>
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
@@ -47,12 +47,12 @@ export default function AdminDashboard() {
                       <TrendingUp className="h-5 w-5" />
                     </div>
                     <div>
-                      <p className="text-sm font-bold">Product Updated: Heovose H24 Pro</p>
-                      <p className="text-[10px] text-muted-foreground uppercase tracking-widest">2 hours ago by admin@heovose.com</p>
+                      <p className="text-sm font-bold">产品更新: Heovose H24 Pro</p>
+                      <p className="text-[10px] text-muted-foreground uppercase tracking-widest">2小时前 由 admin@heovose.com 修改</p>
                     </div>
                   </div>
                   <Button variant="ghost" size="sm" className="rounded-lg text-xs font-bold text-primary">
-                    View
+                    查看详情
                   </Button>
                 </div>
               ))}
@@ -62,28 +62,28 @@ export default function AdminDashboard() {
 
         <Card className="lg:col-span-4 border-border/40 shadow-sm rounded-2xl bg-primary text-primary-foreground">
           <CardHeader>
-            <CardTitle className="text-xl font-headline font-bold text-white">Quick Actions</CardTitle>
-            <CardDescription className="text-white/60">Frequently used management tools.</CardDescription>
+            <CardTitle className="text-xl font-headline font-bold text-white">快捷操作</CardTitle>
+            <CardDescription className="text-white/60">常用的管理工具入口。</CardDescription>
           </CardHeader>
           <CardContent className="space-y-3">
             <Link href="/admin/products" className="flex items-center justify-between p-4 bg-white/10 hover:bg-white/20 transition-colors rounded-xl group">
               <div className="flex items-center gap-3">
                 <Package className="h-5 w-5" />
-                <span className="text-sm font-bold">Add New Product</span>
+                <span className="text-sm font-bold">添加新产品</span>
               </div>
               <ArrowUpRight className="h-4 w-4 opacity-40 group-hover:opacity-100 transition-all" />
             </Link>
             <Link href="/admin/translations" className="flex items-center justify-between p-4 bg-white/10 hover:bg-white/20 transition-colors rounded-xl group">
               <div className="flex items-center gap-3">
                 <Globe className="h-5 w-5" />
-                <span className="text-sm font-bold">Manage Translations</span>
+                <span className="text-sm font-bold">管理翻译项</span>
               </div>
               <ArrowUpRight className="h-4 w-4 opacity-40 group-hover:opacity-100 transition-all" />
             </Link>
             <Link href="/admin/home" className="flex items-center justify-between p-4 bg-white/10 hover:bg-white/20 transition-colors rounded-xl group">
               <div className="flex items-center gap-3">
                 <Home className="h-5 w-5" />
-                <span className="text-sm font-bold">Edit Homepage</span>
+                <span className="text-sm font-bold">编辑首页内容</span>
               </div>
               <ArrowUpRight className="h-4 w-4 opacity-40 group-hover:opacity-100 transition-all" />
             </Link>

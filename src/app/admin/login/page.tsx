@@ -8,7 +8,7 @@ import { useAuth } from '@/firebase';
 import { signInWithEmailAndPassword } from 'firebase/auth';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
+import { Label } from '@/label';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Loader2, Lock, HelpCircle } from 'lucide-react';
@@ -37,7 +37,7 @@ export default function AdminLoginPage() {
       router.push('/admin');
     } catch (err: any) {
       console.error(err);
-      setError('Invalid email or password. Please ensure you have created an account in the Firebase Console.');
+      setError('登录失败。请检查邮箱和密码是否正确，并确保在 Firebase Console 中已创建该账号。');
     } finally {
       setIsLoading(false);
     }
@@ -57,8 +57,8 @@ export default function AdminLoginPage() {
               className="h-10 w-auto"
             />
           </div>
-          <CardTitle className="text-2xl font-headline font-bold text-primary">Admin Control Center</CardTitle>
-          <CardDescription>Enter your credentials to access the management dashboard.</CardDescription>
+          <CardTitle className="text-2xl font-headline font-bold text-primary">后台管理中心</CardTitle>
+          <CardDescription>请输入您的凭据以访问管理仪表盘。</CardDescription>
         </CardHeader>
         <form onSubmit={handleLogin}>
           <CardContent className="space-y-6">
@@ -68,7 +68,7 @@ export default function AdminLoginPage() {
               </Alert>
             )}
             <div className="space-y-2">
-              <Label htmlFor="email" className="text-[10px] font-bold uppercase tracking-widest ml-1">Email Address</Label>
+              <Label htmlFor="email" className="text-[10px] font-bold uppercase tracking-widest ml-1">电子邮箱</Label>
               <Input
                 id="email"
                 type="email"
@@ -81,21 +81,21 @@ export default function AdminLoginPage() {
             </div>
             <div className="space-y-2">
               <div className="flex items-center justify-between">
-                <Label htmlFor="password" className="text-[10px] font-bold uppercase tracking-widest ml-1">Password</Label>
+                <Label htmlFor="password" className="text-[10px] font-bold uppercase tracking-widest ml-1">密码</Label>
                 <Popover>
                   <PopoverTrigger asChild>
                     <button type="button" className="text-[10px] text-primary hover:underline flex items-center gap-1 font-bold">
-                      <HelpCircle className="h-3 w-3" /> Need help?
+                      <HelpCircle className="h-3 w-3" /> 需要帮助？
                     </button>
                   </PopoverTrigger>
                   <PopoverContent className="w-80 p-4 rounded-xl shadow-2xl border-border/40">
                     <div className="space-y-2 text-xs">
-                      <p className="font-bold text-primary uppercase tracking-tight">How to Login:</p>
+                      <p className="font-bold text-primary uppercase tracking-tight">如何登录：</p>
                       <ol className="list-decimal list-inside space-y-1 opacity-70">
-                        <li>Go to <strong>Firebase Console</strong>.</li>
-                        <li>In <strong>Authentication</strong>, add a new user.</li>
-                        <li>In <strong>Firestore</strong>, create a collection <code>admins</code>.</li>
-                        <li>Add a document with the user's <strong>UID</strong>.</li>
+                        <li>访问 <strong>Firebase Console</strong>。</li>
+                        <li>在 <strong>Authentication</strong> 中添加新用户。</li>
+                        <li>在 <strong>Firestore</strong> 中创建 <code>admins</code> 集合。</li>
+                        <li>添加一个文档，ID 设置为该用户的 <strong>UID</strong>。</li>
                       </ol>
                     </div>
                   </PopoverContent>
@@ -118,7 +118,7 @@ export default function AdminLoginPage() {
               disabled={isLoading}
             >
               {isLoading ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : <Lock className="mr-2 h-5 w-5" />}
-              Sign In
+              立即登录
             </Button>
           </CardFooter>
         </form>

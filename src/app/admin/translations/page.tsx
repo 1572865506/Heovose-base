@@ -3,7 +3,7 @@
 
 import { useState, useMemo } from 'react';
 import { useFirestore, useCollection, useMemoFirebase } from '@/firebase';
-import { collection, doc, deleteDoc, serverTimestamp, setDoc } from 'firebase/firestore';
+import { collection, doc, serverTimestamp } from 'firebase/firestore';
 import { 
   Table, 
   TableBody, 
@@ -28,7 +28,6 @@ import {
   Plus, 
   Edit2, 
   Trash2, 
-  Globe, 
   Loader2, 
   Check, 
   X,
@@ -50,10 +49,8 @@ export default function TranslationsPage() {
   const [isAdding, setIsAdding] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   
-  // Form State
   const [formData, setFormData] = useState({ id: '', en: '', zh: '' });
 
-  // 1. Fetch Translations
   const translationsQuery = useMemoFirebase(() => {
     if (!firestore) return null;
     return collection(firestore, 'localizedStrings');
@@ -61,7 +58,6 @@ export default function TranslationsPage() {
 
   const { data: translations, isLoading } = useCollection<LocalizedString>(translationsQuery);
 
-  // 2. Filter Logic
   const filteredTranslations = useMemo(() => {
     if (!translations) return [];
     return translations.filter(t => 
@@ -71,7 +67,6 @@ export default function TranslationsPage() {
     );
   }, [translations, searchQuery]);
 
-  // 3. Actions
   const handleSave = () => {
     if (!firestore || !formData.id) return;
     
@@ -89,7 +84,7 @@ export default function TranslationsPage() {
   };
 
   const handleDelete = (id: string) => {
-    if (!firestore || !confirm('Are you sure you want to delete this translation? This may break referenced content.')) return;
+    if (!firestore || !confirm('确定要删除此翻译项吗？这可能会导致引用的内容显示不正常。')) return;
     const docRef = doc(firestore, 'localizedStrings', id);
     deleteDocumentNonBlocking(docRef);
   };
@@ -105,37 +100,37 @@ export default function TranslationsPage() {
         <div>
           <h2 className="text-2xl font-headline font-bold text-primary flex items-center gap-2">
             <Languages className="h-6 w-6" />
-            Translation Management
+            多语言翻译管理
           </h2>
-          <p className="text-sm text-muted-foreground">Manage multi-language strings used across the website.</p>
+          <p className="text-sm text-muted-foreground">管理全站使用的翻译文本键值对。</p>
         </div>
         
         <Dialog open={isAdding} onOpenChange={setIsAdding}>
           <DialogTrigger asChild>
             <Button className="rounded-xl h-12 px-6 font-bold uppercase tracking-widest gap-2">
-              <Plus className="h-4 w-4" /> Add String
+              <Plus className="h-4 w-4" /> 新增翻译
             </Button>
           </DialogTrigger>
           <DialogContent className="rounded-2xl max-w-md">
             <DialogHeader>
-              <DialogTitle>Add New Localized String</DialogTitle>
+              <DialogTitle>添加新翻译项</DialogTitle>
               <DialogDescription>
-                Create a unique ID to reference this text in other entities.
+                创建一个唯一的 ID，用于在其他内容中引用此文本。
               </DialogDescription>
             </DialogHeader>
             <div className="grid gap-4 py-4">
               <div className="grid gap-2">
-                <Label htmlFor="id" className="text-[10px] font-bold uppercase">String ID (Unique Key)</Label>
+                <Label htmlFor="id" className="text-[10px] font-bold uppercase">翻译键 ID (唯一标识)</Label>
                 <Input 
                   id="id" 
-                  placeholder="e.g., hero_headline" 
+                  placeholder="例如: hero_headline" 
                   value={formData.id} 
                   onChange={e => setFormData({...formData, id: e.target.value})}
                   className="rounded-xl"
                 />
               </div>
               <div className="grid gap-2">
-                <Label htmlFor="en" className="text-[10px] font-bold uppercase">English Content</Label>
+                <Label htmlFor="en" className="text-[10px] font-bold uppercase">英文内容 (EN)</Label>
                 <Input 
                   id="en" 
                   value={formData.en} 
@@ -144,7 +139,7 @@ export default function TranslationsPage() {
                 />
               </div>
               <div className="grid gap-2">
-                <Label htmlFor="zh" className="text-[10px] font-bold uppercase">Chinese Content</Label>
+                <Label htmlFor="zh" className="text-[10px] font-bold uppercase">中文内容 (ZH)</Label>
                 <Input 
                   id="zh" 
                   value={formData.zh} 
@@ -154,8 +149,8 @@ export default function TranslationsPage() {
               </div>
             </div>
             <DialogFooter>
-              <Button variant="outline" onClick={() => setIsAdding(false)} className="rounded-xl">Cancel</Button>
-              <Button onClick={handleSave} className="rounded-xl">Save Translation</Button>
+              <Button variant="outline" onClick={() => setIsAdding(false)} className="rounded-xl">取消</Button>
+              <Button onClick={handleSave} className="rounded-xl">保存翻译</Button>
             </DialogFooter>
           </DialogContent>
         </Dialog>
@@ -165,14 +160,14 @@ export default function TranslationsPage() {
         <div className="relative flex-1">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input 
-            placeholder="Search by ID or content..." 
+            placeholder="按 ID 或内容搜索..." 
             className="pl-10 border-none bg-transparent focus-visible:ring-0 text-sm"
             value={searchQuery}
             onChange={e => setSearchQuery(e.target.value)}
           />
         </div>
         <Badge variant="secondary" className="rounded-lg px-3 py-1 font-bold">
-          {filteredTranslations.length} Keys
+          {filteredTranslations.length} 个条目
         </Badge>
       </div>
 
@@ -180,10 +175,10 @@ export default function TranslationsPage() {
         <Table>
           <TableHeader className="bg-muted/30">
             <TableRow>
-              <TableHead className="w-[30%] font-bold uppercase text-[10px] tracking-widest pl-6">String ID</TableHead>
-              <TableHead className="font-bold uppercase text-[10px] tracking-widest">English (EN)</TableHead>
-              <TableHead className="font-bold uppercase text-[10px] tracking-widest">Chinese (ZH)</TableHead>
-              <TableHead className="w-[100px] text-right pr-6 font-bold uppercase text-[10px] tracking-widest">Actions</TableHead>
+              <TableHead className="w-[30%] font-bold uppercase text-[10px] tracking-widest pl-6">翻译键 ID</TableHead>
+              <TableHead className="font-bold uppercase text-[10px] tracking-widest">英文 (EN)</TableHead>
+              <TableHead className="font-bold uppercase text-[10px] tracking-widest">中文 (ZH)</TableHead>
+              <TableHead className="w-[100px] text-right pr-6 font-bold uppercase text-[10px] tracking-widest">操作</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -192,14 +187,14 @@ export default function TranslationsPage() {
                 <TableCell colSpan={4} className="h-40 text-center">
                   <div className="flex flex-col items-center gap-2 opacity-50">
                     <Loader2 className="h-6 w-6 animate-spin" />
-                    <span className="text-xs font-bold uppercase tracking-tighter">Syncing Cloud Data...</span>
+                    <span className="text-xs font-bold uppercase tracking-tighter">同步云端数据中...</span>
                   </div>
                 </TableCell>
               </TableRow>
             ) : filteredTranslations.length === 0 ? (
               <TableRow>
                 <TableCell colSpan={4} className="h-40 text-center text-muted-foreground italic">
-                  No translations found. Add your first string to get started.
+                  未找到任何翻译。
                 </TableCell>
               </TableRow>
             ) : (

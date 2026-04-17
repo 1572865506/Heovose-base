@@ -45,58 +45,53 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   const router = useRouter();
   const pathname = usePathname();
 
-  // 1. Create a memoized reference to the admin document in Firestore
   const adminDocRef = useMemoFirebase(() => {
     if (!firestore || !user?.uid) return null;
     return doc(firestore, 'admins', user.uid);
   }, [firestore, user?.uid]);
 
-  // 2. Listen to the admin document
   const { data: adminData, isLoading: isAdminDataLoading } = useDoc(adminDocRef);
 
   useEffect(() => {
-    // Redirect if not logged in
     if (!isUserLoading && !user && pathname !== '/admin/login') {
       router.push('/admin/login');
     }
   }, [user, isUserLoading, pathname, router]);
 
-  // Handle Loading States
   if (isUserLoading || (user && isAdminDataLoading)) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-muted/10">
         <div className="flex flex-col items-center gap-4">
           <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-primary"></div>
-          <p className="text-xs font-bold text-primary uppercase tracking-widest animate-pulse">Checking Credentials...</p>
+          <p className="text-[10px] font-bold text-primary uppercase tracking-widest animate-pulse">正在验证权限...</p>
         </div>
       </div>
     );
   }
 
-  // Handle Non-Admin Users (Logged in but not in /admins/{uid})
   if (user && !adminData && !isAdminDataLoading && pathname !== '/admin/login') {
     return (
       <div className="min-h-screen flex items-center justify-center bg-muted/20 p-6">
         <Alert variant="destructive" className="max-w-md bg-white border-destructive shadow-2xl rounded-2xl p-8">
           <AlertCircle className="h-8 w-8 mb-4" />
-          <AlertTitle className="text-xl font-headline font-bold mb-4">Unauthorized Access</AlertTitle>
+          <AlertTitle className="text-xl font-headline font-bold mb-4">未授权访问</AlertTitle>
           <AlertDescription className="space-y-4">
             <p className="text-muted-foreground">
-              Your account <strong>{user.email}</strong> is authenticated but does not have administrative privileges.
+              您的账号 <strong>{user.email}</strong> 已通过身份验证，但尚未获得管理权限。
             </p>
             <div className="p-4 bg-muted/50 rounded-xl text-xs space-y-2">
-              <p className="font-bold uppercase tracking-tight">How to fix this:</p>
+              <p className="font-bold uppercase tracking-tight">如何修复：</p>
               <ol className="list-decimal list-inside space-y-1 opacity-70">
-                <li>Go to Firebase Console</li>
-                <li>In Firestore, create a collection named <code>admins</code></li>
-                <li>Create a document with ID: <code>{user.uid}</code></li>
+                <li>进入 Firebase 控制台</li>
+                <li>在 Firestore 中创建名为 <code>admins</code> 的集合</li>
+                <li>创建一个文档，文档 ID 为： <code>{user.uid}</code></li>
               </ol>
             </div>
             <Button 
               className="w-full h-12 rounded-xl font-bold uppercase tracking-widest"
               onClick={() => auth.signOut()}
             >
-              Back to Login
+              返回登录
             </Button>
           </AlertDescription>
         </Alert>
@@ -112,32 +107,32 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
   const menuGroups = [
     {
-      label: "Overview",
+      label: "核心概览",
       items: [
-        { title: "Dashboard", icon: LayoutDashboard, href: "/admin" },
+        { title: "控制面板", icon: LayoutDashboard, href: "/admin" },
       ]
     },
     {
-      label: "Product Management",
+      label: "产品管理",
       items: [
-        { title: "Products", icon: Package, href: "/admin/products" },
-        { title: "Categories", icon: Layers, href: "/admin/categories" },
+        { title: "产品列表", icon: Package, href: "/admin/products" },
+        { title: "分类管理", icon: Layers, href: "/admin/categories" },
       ]
     },
     {
-      label: "Content Management",
+      label: "内容管理",
       items: [
-        { title: "Home Sections", icon: Home, href: "/admin/home" },
-        { title: "Corporate Info", icon: BarChart3, href: "/admin/corporate" },
-        { title: "Production Steps", icon: ClipboardList, href: "/admin/steps" },
-        { title: "Factory Map", icon: MapPin, href: "/admin/map" },
+        { title: "首页配置", icon: Home, href: "/admin/home" },
+        { title: "统计数据", icon: BarChart3, href: "/admin/corporate" },
+        { title: "生产流程", icon: ClipboardList, href: "/admin/steps" },
+        { title: "全球地图", icon: MapPin, href: "/admin/map" },
       ]
     },
     {
-      label: "System",
+      label: "系统设置",
       items: [
-        { title: "Translations", icon: Globe, href: "/admin/translations" },
-        { title: "Settings", icon: Settings, href: "/admin/settings" },
+        { title: "多语言翻译", icon: Globe, href: "/admin/translations" },
+        { title: "通用设置", icon: Settings, href: "/admin/settings" },
       ]
     }
   ];
@@ -149,7 +144,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           <SidebarHeader className="h-20 flex items-center px-6 border-b border-border/40">
             <Link href="/admin" className="flex items-center gap-2">
               <Image src="/image/Heovose-color.svg" alt="Heovose Admin" width={140} height={30} className="h-7 w-auto" />
-              <span className="text-[10px] font-bold bg-primary/10 text-primary px-2 py-0.5 rounded-full uppercase tracking-tighter">Admin</span>
+              <span className="text-[10px] font-bold bg-primary/10 text-primary px-2 py-0.5 rounded-full uppercase tracking-tighter">管理后台</span>
             </Link>
           </SidebarHeader>
           <SidebarContent className="py-6">
@@ -187,7 +182,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
               onClick={() => auth.signOut()}
             >
               <LogOut className="h-4 w-4" />
-              <span className="text-sm font-bold uppercase tracking-widest">Sign Out</span>
+              <span className="text-sm font-bold uppercase tracking-widest">退出登录</span>
             </Button>
           </SidebarFooter>
         </Sidebar>
@@ -198,14 +193,14 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
               <SidebarTrigger />
               <div className="h-6 w-px bg-border/60 mx-2" />
               <h1 className="font-headline font-bold text-lg text-primary uppercase tracking-widest">
-                {menuGroups.flatMap(g => g.items).find(i => i.href === pathname)?.title || 'Admin Center'}
+                {menuGroups.flatMap(g => g.items).find(i => i.href === pathname)?.title || '管理中心'}
               </h1>
             </div>
             <div className="flex items-center gap-6">
               <div className="flex flex-col items-end">
                 <span className="text-xs font-bold text-primary">{user.email}</span>
                 <span className="text-[10px] text-muted-foreground uppercase tracking-widest font-medium">
-                  {adminData?.role || 'Administrator'}
+                  {adminData?.role === 'superadmin' ? '超级管理员' : '编辑员'}
                 </span>
               </div>
               <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold shadow-inner uppercase">
