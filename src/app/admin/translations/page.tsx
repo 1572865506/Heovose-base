@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useState, useMemo } from 'react';
@@ -40,7 +39,8 @@ import {
   ShieldCheck,
   Copy,
   ExternalLink,
-  ChevronRight
+  ChevronRight,
+  Sparkles
 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { setDocumentNonBlocking, deleteDocumentNonBlocking } from '@/firebase/non-blocking-updates';
@@ -103,7 +103,7 @@ export default function TranslationsPage() {
     { code: 'en', label: 'English' }
   ], [langSettings]);
 
-  // 4. 建立详细的引用映射表：不仅查是否使用，还查被谁使用
+  // 4. 建立详细的引用映射表
   const referenceMap = useMemo(() => {
     const map = new Map<string, { type: string, name: string, id: string }[]>();
     
@@ -114,7 +114,7 @@ export default function TranslationsPage() {
     };
 
     products?.forEach(p => {
-      const pName = p.id; //  fallback name
+      const pName = p.id;
       addRef(p.nameTextId, '产品名称', pName, p.id);
       addRef(p.descriptionTextId, '产品描述', pName, p.id);
       addRef(p.detailsTextId, '详细内容', pName, p.id);
@@ -136,27 +136,49 @@ export default function TranslationsPage() {
 
   const usedIds = useMemo(() => new Set(referenceMap.keys()), [referenceMap]);
 
-  // 5. 重复项深度扫描
-  const duplicateGroups = useMemo(() => {
+  /**
+   * 5. 跨语言语义重复扫描
+   * 现在的逻辑：如果两个条目的中文 *或* 英文完全一致，则视为“潜在语义冲突”。
+   */
+  const semanticDuplicates = useMemo(() => {
     if (!translations) return new Map<string, string[]>();
     const groups = new Map<string, string[]>();
 
     translations.forEach(t => {
-      const fingerprint = activeLanguages
-        .map(lang => (t[lang.code] || '').trim().toLowerCase())
-        .join('::');
-      if (fingerprint.replace(/::/g, '').length === 0) return;
-
-      if (!groups.has(fingerprint)) groups.set(fingerprint, []);
-      groups.get(fingerprint)!.push(t.id);
+      const zh = (t.zh || '').trim().toLowerCase();
+      const en = (t.en || '').trim().toLowerCase();
+      
+      // 只要中文或英文有一个非空且重复，就归为一组
+      const fingerprint = `sem::${zh}||${en}`;
+      
+      // 实际查重逻辑更复杂：建立多对多映射
+      translations.forEach(other => {
+        if (t.id === other.id) return;
+        const oZh = (other.zh || '').trim().toLowerCase();
+        const oEn = (other.en || '').trim().toLowerCase();
+        
+        // 发现中文同义词（英文相同）或 英文同义词（中文相同）
+        if ((en !== '' && en === oEn) || (zh !== '' && zh === oZh)) {
+          const groupKey = en !== '' && en === oEn ? `en:${en}` : `zh:${zh}`;
+          if (!groups.has(groupKey)) groups.set(groupKey, [t.id]);
+          if (!groups.get(groupKey)!.includes(other.id)) groups.get(groupKey)!.push(other.id);
+        }
+      });
     });
 
-    const redundants = new Map<string, string[]>();
-    groups.forEach((ids, key) => {
-      if (ids.length > 1) redundants.set(key, ids);
+    return groups;
+  }, [translations]);
+
+  // 计算可安全清理的组
+  const duplicatableCount = useMemo(() => {
+    let count = 0;
+    semanticDuplicates.forEach(ids => {
+      const referencedCount = ids.filter(id => usedIds.has(id)).length;
+      const canCleanup = ids.length > referencedCount && ids.length > 1;
+      if (canCleanup) count++;
     });
-    return redundants;
-  }, [translations, activeLanguages]);
+    return count;
+  }, [semanticDuplicates, usedIds]);
 
   // 6. 列表过滤
   const filteredTranslations = useMemo(() => {
@@ -167,22 +189,24 @@ export default function TranslationsPage() {
         Object.values(t).some(v => typeof v === 'string' && v.toLowerCase().includes(search));
       
       if (showOnlyDuplicates) {
-        const fingerprint = activeLanguages.map(l => (t[l.code] || '').trim().toLowerCase()).join('::');
-        return matchesSearch && duplicateGroups.has(fingerprint);
+        let hasSemanticMatch = false;
+        semanticDuplicates.forEach(ids => {
+          if (ids.includes(t.id)) hasSemanticMatch = true;
+        });
+        return matchesSearch && hasSemanticMatch;
       }
       return matchesSearch;
     });
-  }, [translations, searchQuery, showOnlyDuplicates, duplicateGroups, activeLanguages]);
+  }, [translations, searchQuery, showOnlyDuplicates, semanticDuplicates]);
 
   const handleAutoCleanup = () => {
-    if (!firestore || duplicateGroups.size === 0) return;
-    if (!confirm(`系统检测到 ${duplicateGroups.size} 组内容重复的词条。确定要启动安全清理吗？\n\n注意：正在被引用的词条将被自动跳过，以免导致前端内容丢失。`)) return;
+    if (!firestore || semanticDuplicates.size === 0) return;
+    if (!confirm(`系统检测到 ${duplicatableCount} 组内容重叠的词条。确定要启动安全清理吗？\n\n逻辑：如果多个 ID 内容相同，系统将保留正在被引用的 ID，并删除闲置的重复 ID。`)) return;
     
     setIsCleaning(true);
     let deleteCount = 0;
-    let protectCount = 0;
 
-    duplicateGroups.forEach((ids) => {
+    semanticDuplicates.forEach((ids) => {
       const referencedOnes = ids.filter(id => usedIds.has(id));
       const masterId = referencedOnes.length > 0 ? referencedOnes[0] : ids[0];
       const removableIds = ids.filter(id => id !== masterId && !usedIds.has(id));
@@ -191,16 +215,10 @@ export default function TranslationsPage() {
         deleteDocumentNonBlocking(doc(firestore, 'localizedStrings', id));
         deleteCount++;
       });
-      const conflicts = ids.filter(id => id !== masterId && usedIds.has(id));
-      protectCount += conflicts.length;
     });
 
     setIsCleaning(false);
-    if (deleteCount > 0) {
-      toast({ title: "清理请求已发出", description: `已申请删除 ${deleteCount} 个空闲冗余项。` });
-    } else if (protectCount > 0) {
-      toast({ variant: "destructive", title: "无法自动清理", description: `检测到 ${protectCount} 个重复项由于正在使用中而被系统保护。请手动在业务端统一 ID。` });
-    }
+    toast({ title: "清理完成", description: `已安全移除 ${deleteCount} 个闲置冗余项。正在被引用的项已受保护。` });
   };
 
   const handleSave = () => {
@@ -227,11 +245,11 @@ export default function TranslationsPage() {
           <h2 className="text-2xl font-headline font-bold text-primary flex items-center gap-2">
             <Languages className="h-6 w-6" /> 全球语言资产管理
           </h2>
-          <p className="text-sm text-muted-foreground">管理全站翻译锚点。系统已启用<b>引用感知 (Reference-Aware)</b> 保护机制。</p>
+          <p className="text-sm text-muted-foreground">管理全站翻译锚点。系统已启用<b>概念去重 (Concept-Aware)</b> 与同义词识别逻辑。</p>
         </div>
         
         <div className="flex gap-2">
-          {duplicateGroups.size > 0 && (
+          {duplicatableCount > 0 && (
             <Button 
               variant="outline" 
               onClick={handleAutoCleanup} 
@@ -239,7 +257,7 @@ export default function TranslationsPage() {
               className="rounded-xl h-12 border-orange-200 bg-orange-50 text-orange-700 hover:bg-orange-100 gap-2 shadow-sm"
             >
               {isCleaning ? <Loader2 className="h-4 w-4 animate-spin" /> : <Zap className="h-4 w-4 fill-current" />}
-              安全清理冗余 ({duplicateGroups.size} 组)
+              安全清理冗余 ({duplicatableCount} 组)
             </Button>
           )}
 
@@ -288,7 +306,7 @@ export default function TranslationsPage() {
           <Input placeholder="搜索 ID 或翻译内容..." className="pl-10 border-none bg-muted/40 rounded-xl h-11 focus-visible:ring-0" value={searchQuery} onChange={e => setSearchQuery(e.target.value)} />
         </div>
         <Button variant={showOnlyDuplicates ? "default" : "ghost"} size="sm" onClick={() => setShowOnlyDuplicates(!showOnlyDuplicates)} className={cn("rounded-xl h-11 gap-2", showOnlyDuplicates && "bg-orange-600 text-white")}>
-          <AlertTriangle className="h-3.5 w-3.5" /> {showOnlyDuplicates ? "查看冗余项" : "仅看重复内容"}
+          <AlertTriangle className="h-3.5 w-3.5" /> {showOnlyDuplicates ? "查看重叠语义" : "仅看重叠项"}
         </Button>
       </div>
 
@@ -306,16 +324,50 @@ export default function TranslationsPage() {
               <TableRow><TableCell colSpan={10} className="h-60 text-center"><Loader2 className="h-8 w-8 animate-spin mx-auto opacity-20" /></TableCell></TableRow>
             ) : filteredTranslations.map((t) => {
               const refs = referenceMap.get(t.id) || [];
-              const fingerprint = activeLanguages.map(l => (t[l.code] || '').trim().toLowerCase()).join('::');
-              const isDuplicate = duplicateGroups.has(fingerprint);
               
+              // 检查语义重叠
+              let semanticType = '';
+              let semanticIds: string[] = [];
+              semanticDuplicates.forEach((ids, key) => {
+                if (ids.includes(t.id)) {
+                  semanticType = key.startsWith('en:') ? '英文一致(同义词)' : '中文一致(多译一)';
+                  semanticIds = ids;
+                }
+              });
+              const isDuplicate = semanticIds.length > 1;
+              const canBeCleaned = isDuplicate && refs.length === 0;
+
               return (
                 <TableRow key={t.id} className={cn("group transition-colors", isDuplicate ? "bg-orange-50/50" : "hover:bg-muted/5", refs.length > 0 ? "border-l-4 border-l-primary/30" : "border-l-4 border-l-transparent")}>
                   <TableCell className="pl-8">
                     <div className="flex flex-col gap-1.5">
                       <div className="flex items-center gap-2">
                         <code className="text-[11px] font-bold text-primary bg-primary/5 px-2 py-0.5 rounded-sm">{t.id}</code>
-                        {isDuplicate && <Badge variant="outline" className="text-[8px] bg-orange-100 text-orange-700 border-orange-200">内容冗余</Badge>}
+                        {isDuplicate && (
+                          <TooltipProvider>
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <Badge variant="outline" className="text-[8px] bg-orange-100 text-orange-700 border-orange-200 cursor-help">
+                                  {semanticType}
+                                </Badge>
+                              </TooltipTrigger>
+                              <TooltipContent className="p-4 rounded-xl max-w-xs bg-white border-orange-200 shadow-2xl">
+                                <div className="space-y-2">
+                                  <p className="text-[10px] font-bold uppercase text-orange-700 border-b border-orange-100 pb-1">检测到以下关联词条</p>
+                                  {semanticIds.map(sid => (
+                                    <div key={sid} className="flex flex-col gap-0.5">
+                                      <span className={cn("text-[10px] font-mono", sid === t.id ? "font-bold text-primary" : "opacity-40")}>{sid}</span>
+                                      <span className="text-[9px] italic opacity-60">
+                                        {translations?.find(tr => tr.id === sid)?.zh} / {translations?.find(tr => tr.id === sid)?.en}
+                                      </span>
+                                    </div>
+                                  ))}
+                                  {refs.length > 0 && <p className="text-[9px] text-green-700 font-bold pt-2 flex items-center gap-1"><ShieldCheck className="h-3 w-3" /> 当前词条正在被引用，受安全保护</p>}
+                                </div>
+                              </TooltipContent>
+                            </Tooltip>
+                          </TooltipProvider>
+                        )}
                       </div>
                       
                       <div className="flex flex-wrap gap-1 items-center">
@@ -353,9 +405,9 @@ export default function TranslationsPage() {
                           </div>
                         )}
                         
-                        {isDuplicate && refs.length > 0 && (
-                          <Button variant="ghost" size="sm" className="h-5 px-1 text-[8px] text-orange-600 bg-orange-100 hover:bg-orange-200 rounded-sm ml-2" onClick={() => { navigator.clipboard.writeText(t.id); toast({ title: "已复制 ID", description: "您可以将此 ID 粘贴到其他产品中进行合并。" }); }}>
-                            <Copy className="h-2.5 w-2.5 mr-1" /> 复制 ID
+                        {isDuplicate && (
+                          <Button variant="ghost" size="sm" className="h-5 px-1 text-[8px] text-orange-600 bg-orange-100 hover:bg-orange-200 rounded-sm ml-2" onClick={() => { navigator.clipboard.writeText(t.id); toast({ title: "已复制锚点 ID", description: "您可以将此 ID 粘贴到其他产品规格中实现统一引用。" }); }}>
+                            <Copy className="h-2.5 w-2.5 mr-1" /> 复制 ID 用于合并
                           </Button>
                         )}
                       </div>
@@ -396,4 +448,3 @@ export default function TranslationsPage() {
     </div>
   );
 }
-

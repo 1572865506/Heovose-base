@@ -215,15 +215,32 @@ function ProductEditorContent() {
   }, [isEditing, product, translations]);
 
   /**
-   * 智能 ID 分配：执行不区分大小写的匹配，防止冗余
+   * 概念级智能 ID 分配：执行交叉语言匹配。
+   * 只要填写的中文或英文其中之一在现有库中已存在，即视为同一“概念”，复用 ID。
    */
   const getSmartId = (en: string, zh: string, preferredId: string) => {
     if (!translations) return preferredId;
-    const existing = translations.find(t => 
-      t.en.trim().toLowerCase() === en.trim().toLowerCase() && 
-      t.zh.trim().toLowerCase() === zh.trim().toLowerCase()
-    );
-    return existing ? existing.id : preferredId;
+    
+    const inputEn = en.trim().toLowerCase();
+    const inputZh = zh.trim().toLowerCase();
+
+    // 交叉匹配：检查现有词条的 zh 或 en 是否与当前输入的 zh 或 en 匹配
+    const existing = translations.find(t => {
+      const tEn = (t.en || '').trim().toLowerCase();
+      const tZh = (t.zh || '').trim().toLowerCase();
+      
+      // 核心匹配逻辑：
+      // 1. 英文完全匹配（由于英文术语更具唯一性，这是最稳健的桥梁）
+      // 2. 中文完全匹配
+      return (inputEn !== '' && inputEn === tEn) || (inputZh !== '' && inputZh === tZh);
+    });
+
+    if (existing) {
+      console.log(`Smart ID Match found: Using existing ID [${existing.id}] for input [${zh} / ${en}]`);
+      return existing.id;
+    }
+    
+    return preferredId;
   };
 
   const handleSave = () => {
@@ -231,7 +248,7 @@ function ProductEditorContent() {
     
     const saveLang = (en: string, zh: string, defaultId: string) => {
       const targetId = getSmartId(en, zh, defaultId);
-      // 保存时更新内容，但 ID 保持唯一
+      // 保存时以当前输入内容更新该 ID 对应的文本，实现“全站语义同步”
       setDocumentNonBlocking(doc(firestore, 'localizedStrings', targetId), { 
         id: targetId, 
         en: en.trim(), 
@@ -272,7 +289,7 @@ function ProductEditorContent() {
       updatedAt: serverTimestamp()
     }, { merge: true });
 
-    toast({ title: "产品已保存", description: "系统已智能处理多语言冗余项并更新发布状态。" });
+    toast({ title: "产品已保存", description: "系统已智能合并多语言冗余项并同步全站翻译。" });
     router.push('/admin/products');
   };
 
