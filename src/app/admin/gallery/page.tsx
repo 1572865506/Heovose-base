@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useState, useMemo, useRef } from 'react';
@@ -15,7 +14,7 @@ import {
   Upload,
   Settings2,
   Edit3,
-  FileText,
+  Layers,
   MoveUp,
   MoveDown
 } from 'lucide-react';
@@ -334,7 +333,7 @@ export default function GalleryPage() {
                   <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => { navigator.clipboard.writeText(asset.url); toast({ title: "链接已复制" }); }}><Copy className="h-3 w-3" /></Button>
                   <div className="flex gap-1">
                     <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => setEditingAsset(asset)}><Edit3 className="h-3 w-3" /></Button>
-                    <Button size="icon" variant="ghost" className="h-7 w-7 text-destructive" onClick={() => handleDeleteAsset(asset.id)}><Trash2 className="h-3 w-3" /></Button>
+                    <Button size="icon" variant="ghost" className="h-7 w-7 text-destructive" onClick={() => handleDeleteAsset(asset.id)}><Trash2 className="h-4 w-4" /></Button>
                   </div>
                 </div>
               </div>
