@@ -37,7 +37,8 @@ import {
   Eye,
   EyeOff,
   PlusCircle,
-  TableProperties
+  TableProperties,
+  FolderPlus
 } from 'lucide-react';
 import { 
   Dialog, 
@@ -63,13 +64,22 @@ interface ProductSpecEntry {
   valueZh: string;
 }
 
+interface ProductSpecGroup {
+  titleEn: string;
+  titleZh: string;
+  items: ProductSpecEntry[];
+}
+
 interface Product {
   id: string;
   nameTextId: string;
   descriptionTextId: string;
   detailsTextId?: string;
   advantageTextIds?: string[];
-  specs?: { labelId: string, valueId: string }[];
+  specGroups?: { 
+    titleId: string, 
+    items: { labelId: string, valueId: string }[] 
+  }[];
   mainImageUrl: string;
   productCategoryId: string;
   galleryImageUrls: string[];
@@ -123,7 +133,7 @@ function ProductEditorContent() {
     detailsEn: '',
     detailsZh: '',
     advantages: [] as { zh: string, en: string }[],
-    specs: [] as ProductSpecEntry[],
+    specGroups: [] as ProductSpecGroup[],
     status: 'draft' as 'published' | 'draft'
   });
 
@@ -187,14 +197,22 @@ function ProductEditorContent() {
         return { zh: t.zh || '', en: t.en || '' };
       });
 
-      const specs = (product.specs || []).map(s => {
-        const labelT = getT(s.labelId);
-        const valueT = getT(s.valueId);
+      const specGroups = (product.specGroups || []).map(g => {
+        const titleT = getT(g.titleId);
+        const items = g.items.map(item => {
+          const lblT = getT(item.labelId);
+          const valT = getT(item.valueId);
+          return {
+            labelEn: lblT.en || '',
+            labelZh: lblT.zh || '',
+            valueEn: valT.en || '',
+            valueZh: valT.zh || ''
+          };
+        });
         return {
-          labelEn: labelT.en || '',
-          labelZh: labelT.zh || '',
-          valueEn: valueT.en || '',
-          valueZh: valueT.zh || ''
+          titleEn: titleT.en || '',
+          titleZh: titleT.zh || '',
+          items: items
         };
       });
 
@@ -210,14 +228,14 @@ function ProductEditorContent() {
         detailsEn: detailsT.en || '',
         detailsZh: detailsT.zh || '',
         advantages: advantages.length > 0 ? advantages : [{ zh: '', en: '' }],
-        specs: specs.length > 0 ? specs : [{ labelEn: '', labelZh: '', valueEn: '', valueZh: '' }],
+        specGroups: specGroups.length > 0 ? specGroups : [],
         status: product.status || 'draft'
       });
     } else if (!isEditing) {
       setFormData(prev => ({
         ...prev,
         advantages: [{ zh: '', en: '' }],
-        specs: [{ labelEn: '', labelZh: '', valueEn: '', valueZh: '' }]
+        specGroups: []
       }));
     }
   }, [isEditing, product, translations]);
@@ -359,16 +377,20 @@ function ProductEditorContent() {
       }
     });
 
-    // 处理技术规格 (Structured)
-    const specRefs: { labelId: string, valueId: string }[] = [];
-    formData.specs.forEach((spec, index) => {
-      if (spec.labelZh || spec.labelEn) {
-        const lblId = `prod_spec_lbl_${formData.id}_${index}`;
-        const valId = `prod_spec_val_${formData.id}_${index}`;
-        saveLang(lblId, spec.labelEn, spec.labelZh);
-        saveLang(valId, spec.valueEn, spec.valueZh);
-        specRefs.push({ labelId: lblId, valueId: valId });
-      }
+    // 处理分组技术规格
+    const savedSpecGroups = formData.specGroups.map((group, gIdx) => {
+      const titleId = `prod_spec_group_${formData.id}_${gIdx}`;
+      saveLang(titleId, group.titleEn, group.titleZh);
+
+      const items = group.items.map((item, iIdx) => {
+        const lblId = `prod_spec_lbl_${formData.id}_${gIdx}_${iIdx}`;
+        const valId = `prod_spec_val_${formData.id}_${gIdx}_${iIdx}`;
+        saveLang(lblId, item.labelEn, item.labelZh);
+        saveLang(valId, item.valueEn, item.valueZh);
+        return { labelId: lblId, valueId: valId };
+      });
+
+      return { titleId, items };
     });
 
     setDocumentNonBlocking(doc(firestore, 'products', formData.id), {
@@ -377,7 +399,7 @@ function ProductEditorContent() {
       descriptionTextId: descId,
       detailsTextId: detailsId,
       advantageTextIds: advantageIds,
-      specs: specRefs,
+      specGroups: savedSpecGroups,
       mainImageUrl: formData.mainImageUrl,
       productCategoryId: formData.categoryId,
       galleryImageUrls: formData.galleryUrls.filter(Boolean),
@@ -416,16 +438,35 @@ function ProductEditorContent() {
     setFormData({ ...formData, advantages: formData.advantages.filter((_, i) => i !== idx) });
   };
 
-  const updateSpec = (idx: number, field: keyof ProductSpecEntry, val: string) => {
-    const newSpecs = [...formData.specs];
-    newSpecs[idx][field] = val;
-    setFormData({ ...formData, specs: newSpecs });
+  // 规格分组管理函数
+  const addSpecGroup = () => {
+    setFormData({
+      ...formData,
+      specGroups: [...formData.specGroups, { titleEn: '', titleZh: '', items: [{ labelEn: '', labelZh: '', valueEn: '', valueZh: '' }] }]
+    });
   };
-  const addSpec = () => {
-    setFormData({ ...formData, specs: [...formData.specs, { labelEn: '', labelZh: '', valueEn: '', valueZh: '' }] });
+  const removeSpecGroup = (gIdx: number) => {
+    setFormData({ ...formData, specGroups: formData.specGroups.filter((_, i) => i !== gIdx) });
   };
-  const removeSpec = (idx: number) => {
-    setFormData({ ...formData, specs: formData.specs.filter((_, i) => i !== idx) });
+  const updateGroupTitle = (gIdx: number, field: 'titleEn' | 'titleZh', val: string) => {
+    const newGroups = [...formData.specGroups];
+    newGroups[gIdx][field] = val;
+    setFormData({ ...formData, specGroups: newGroups });
+  };
+  const addSpecToGroup = (gIdx: number) => {
+    const newGroups = [...formData.specGroups];
+    newGroups[gIdx].items.push({ labelEn: '', labelZh: '', valueEn: '', valueZh: '' });
+    setFormData({ ...formData, specGroups: newGroups });
+  };
+  const removeSpecFromGroup = (gIdx: number, iIdx: number) => {
+    const newGroups = [...formData.specGroups];
+    newGroups[gIdx].items = newGroups[gIdx].items.filter((_, i) => i !== iIdx);
+    setFormData({ ...formData, specGroups: newGroups });
+  };
+  const updateSpecItem = (gIdx: number, iIdx: number, field: keyof ProductSpecEntry, val: string) => {
+    const newGroups = [...formData.specGroups];
+    newGroups[gIdx].items[iIdx][field] = val;
+    setFormData({ ...formData, specGroups: newGroups });
   };
 
   if (isEditing && isProdLoading) {
@@ -750,59 +791,83 @@ function ProductEditorContent() {
                 <div className="flex items-center justify-between border-b border-border/20 pb-4">
                   <div className="flex items-center gap-3 text-primary">
                     <TableProperties className="h-5 w-5" />
-                    <h3 className="font-bold">结构化技术规格</h3>
+                    <h3 className="font-bold">分层技术参数管理</h3>
                   </div>
-                  <Button variant="ghost" size="sm" onClick={addSpec} className="text-primary font-bold text-[10px] uppercase gap-1">
-                    <PlusCircle className="h-3 w-3" /> 添加规格项
+                  <Button variant="ghost" size="sm" onClick={addSpecGroup} className="text-primary font-bold text-[10px] uppercase gap-1">
+                    <FolderPlus className="h-3 w-3" /> 添加参数分类
                   </Button>
                 </div>
 
-                <div className="space-y-6">
-                  {formData.specs.map((spec, idx) => (
-                    <div key={idx} className="p-6 bg-muted/20 rounded-[2rem] border border-border/10 relative group">
+                <div className="space-y-12">
+                  {formData.specGroups.map((group, gIdx) => (
+                    <div key={gIdx} className="p-8 bg-muted/10 rounded-[3rem] border border-border/10 relative group/group">
                       <Button 
                         variant="ghost" 
                         size="icon" 
-                        onClick={() => removeSpec(idx)}
-                        className="absolute -top-2 -right-2 h-8 w-8 bg-white border shadow-sm text-destructive rounded-full opacity-0 group-hover:opacity-100 transition-opacity z-10"
+                        onClick={() => removeSpecGroup(gIdx)}
+                        className="absolute top-4 right-4 h-8 w-8 text-destructive opacity-0 group-hover/group:opacity-100 transition-opacity"
                       >
-                        <Trash2 className="h-3.5 w-3.5" />
+                        <Trash2 className="h-4 w-4" />
                       </Button>
 
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                        <div className="space-y-4">
-                          <Badge variant="outline" className="text-[8px] uppercase tracking-widest font-bold px-2 py-0.5 border-primary/20 text-primary/60">条目 #{idx + 1} 标题</Badge>
-                          <div className="grid grid-cols-2 gap-4">
-                            <div className="space-y-1">
-                              <Label className="text-[9px] font-bold uppercase text-muted-foreground ml-1">中文 (ZH)</Label>
-                              <Input placeholder="例如: 尺寸" value={spec.labelZh} onChange={e => updateSpec(idx, 'labelZh', e.target.value)} className="h-10 text-xs rounded-xl" />
-                            </div>
-                            <div className="space-y-1">
-                              <Label className="text-[9px] font-bold uppercase text-muted-foreground ml-1">英文 (EN)</Label>
-                              <Input placeholder="e.g. SIZE" value={spec.labelEn} onChange={e => updateSpec(idx, 'labelEn', e.target.value)} className="h-10 text-xs rounded-xl" />
-                            </div>
-                          </div>
+                      <div className="space-y-8">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                           <div className="space-y-2">
+                              <Label className="text-[10px] font-bold uppercase text-primary">分类标题 (ZH)</Label>
+                              <Input 
+                                placeholder="例如: PC (X86) 参数" 
+                                value={group.titleZh} 
+                                onChange={e => updateGroupTitle(gIdx, 'titleZh', e.target.value)}
+                                className="h-11 rounded-xl bg-white"
+                              />
+                           </div>
+                           <div className="space-y-2">
+                              <Label className="text-[10px] font-bold uppercase text-primary">分类标题 (EN)</Label>
+                              <Input 
+                                placeholder="e.g. PC (X86) Parameters" 
+                                value={group.titleEn} 
+                                onChange={e => updateGroupTitle(gIdx, 'titleEn', e.target.value)}
+                                className="h-11 rounded-xl bg-white"
+                              />
+                           </div>
                         </div>
 
                         <div className="space-y-4">
-                          <Badge variant="outline" className="text-[8px] uppercase tracking-widest font-bold px-2 py-0.5 border-primary/20 text-primary/60">条目 #{idx + 1} 内容</Badge>
-                          <div className="grid grid-cols-2 gap-4">
-                            <div className="space-y-1">
-                              <Label className="text-[9px] font-bold uppercase text-muted-foreground ml-1">中文 (ZH)</Label>
-                              <Input placeholder="例如: 24 英寸" value={spec.valueZh} onChange={e => updateSpec(idx, 'valueZh', e.target.value)} className="h-10 text-xs rounded-xl" />
-                            </div>
-                            <div className="space-y-1">
-                              <Label className="text-[9px] font-bold uppercase text-muted-foreground ml-1">英文 (EN)</Label>
-                              <Input placeholder="e.g. 24 inch" value={spec.valueEn} onChange={e => updateSpec(idx, 'valueEn', e.target.value)} className="h-10 text-xs rounded-xl" />
-                            </div>
-                          </div>
+                           <div className="flex items-center justify-between px-2">
+                              <span className="text-[9px] font-bold uppercase tracking-widest text-muted-foreground">分类下属规格项</span>
+                              <Button variant="ghost" size="sm" onClick={() => addSpecToGroup(gIdx)} className="h-7 text-primary text-[9px] font-bold uppercase gap-1">
+                                <PlusCircle className="h-3 w-3" /> 添加规格项
+                              </Button>
+                           </div>
+
+                           <div className="grid grid-cols-1 gap-4">
+                              {group.items.map((item, iIdx) => (
+                                <div key={iIdx} className="grid grid-cols-1 md:grid-cols-12 gap-4 items-center p-4 bg-white rounded-2xl relative group/item">
+                                   <div className="md:col-span-5 grid grid-cols-2 gap-2">
+                                      <Input placeholder="项名 (ZH)" value={item.labelZh} onChange={e => updateSpecItem(gIdx, iIdx, 'labelZh', e.target.value)} className="h-9 text-xs rounded-lg bg-muted/20 border-none" />
+                                      <Input placeholder="项名 (EN)" value={item.labelEn} onChange={e => updateSpecItem(gIdx, iIdx, 'labelEn', e.target.value)} className="h-9 text-xs rounded-lg bg-muted/20 border-none" />
+                                   </div>
+                                   <div className="md:col-span-6 grid grid-cols-2 gap-2">
+                                      <Input placeholder="项值 (ZH)" value={item.valueZh} onChange={e => updateSpecItem(gIdx, iIdx, 'valueZh', e.target.value)} className="h-9 text-xs rounded-lg bg-muted/20 border-none" />
+                                      <Input placeholder="项值 (EN)" value={item.valueEn} onChange={e => updateSpecItem(gIdx, iIdx, 'valueEn', e.target.value)} className="h-9 text-xs rounded-lg bg-muted/20 border-none" />
+                                   </div>
+                                   <div className="md:col-span-1 flex justify-end">
+                                      <Button variant="ghost" size="icon" onClick={() => removeSpecFromGroup(gIdx, iIdx)} className="h-8 w-8 text-destructive opacity-0 group-hover/item:opacity-100">
+                                        <X className="h-3.5 w-3.5" />
+                                      </Button>
+                                   </div>
+                                </div>
+                              ))}
+                           </div>
                         </div>
                       </div>
                     </div>
                   ))}
-                  {formData.specs.length === 0 && (
-                    <div className="py-20 text-center border-2 border-dashed rounded-[3rem] text-muted-foreground italic">
-                      点击右上角按钮开始录入技术规格条目。
+
+                  {formData.specGroups.length === 0 && (
+                    <div className="py-24 text-center border-2 border-dashed rounded-[3rem] text-muted-foreground flex flex-col items-center gap-4">
+                      <FolderPlus className="h-10 w-10 opacity-20" />
+                      <p className="italic">点击右上角“添加参数分类”开始录入硬件数据。</p>
                     </div>
                   )}
                 </div>

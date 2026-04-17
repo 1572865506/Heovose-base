@@ -5,7 +5,7 @@ import { useState, useMemo, useEffect } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
-import { useFirestore, useDoc, useCollection, useMemoFirebase } from '@/firebase';
+import { useUser, useFirestore, useDoc, useCollection, useMemoFirebase } from '@/firebase';
 import { doc, collection } from 'firebase/firestore';
 import { Locale, translations } from '@/lib/translations';
 import { Navbar } from '@/components/Navbar';
@@ -32,7 +32,10 @@ interface Product {
   descriptionTextId: string;
   detailsTextId?: string;
   advantageTextIds?: string[];
-  specs?: { labelId: string, valueId: string }[];
+  specGroups?: { 
+    titleId: string, 
+    items: { labelId: string, valueId: string }[] 
+  }[];
   mainImageUrl: string;
   productCategoryId: string;
   galleryImageUrls: string[];
@@ -47,6 +50,7 @@ interface LocalizedString {
 
 export default function ProductDetailPage() {
   const { id } = useParams();
+  const { user } = useUser();
   const [locale, setLocale] = useState<Locale>('en');
   const [activeImage, setActiveImage] = useState<string | null>(null);
 
@@ -75,12 +79,15 @@ export default function ProductDetailPage() {
     return product.advantageTextIds.map(id => getT(id)).filter(Boolean);
   }, [product, translationsData, locale]);
 
-  const formattedSpecs = useMemo(() => {
-    if (!product?.specs) return [];
-    return product.specs.map(s => ({
-      label: getT(s.labelId),
-      value: getT(s.valueId)
-    })).filter(s => s.label);
+  const groupedSpecs = useMemo(() => {
+    if (!product?.specGroups) return [];
+    return product.specGroups.map(group => ({
+      title: getT(group.titleId),
+      items: group.items.map(item => ({
+        label: getT(item.labelId),
+        value: getT(item.valueId)
+      })).filter(i => i.label)
+    })).filter(g => g.title);
   }, [product, translationsData, locale]);
 
   if (isProdLoading) {
@@ -91,8 +98,8 @@ export default function ProductDetailPage() {
     );
   }
 
-  // 核心逻辑：如果产品未发布，则视为不存在（对非管理员隐藏）
-  if (!product || product.status !== 'published') {
+  // 如果产品未发布且当前不是管理员，则视为不存在
+  if (!product || (product.status !== 'published' && !user)) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
         <div className="text-center space-y-4">
@@ -232,22 +239,30 @@ export default function ProductDetailPage() {
               </TabsContent>
 
               <TabsContent value="specs" className="animate-in fade-in slide-in-from-bottom-4 duration-700">
-                 <div className="bg-muted/10 rounded-[3rem] border border-border/40 overflow-hidden">
-                    {formattedSpecs.length > 0 ? (
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-px bg-border/40">
-                        {formattedSpecs.map((spec, i) => (
-                          <div key={i} className="flex bg-white group hover:bg-muted/5 transition-colors">
-                            <div className="w-1/3 p-6 bg-muted/20 border-r border-border/10">
-                              <span className="text-xs font-bold text-primary uppercase tracking-wider">{spec.label}</span>
-                            </div>
-                            <div className="flex-1 p-6">
-                              <span className="text-sm text-muted-foreground font-medium">{spec.value}</span>
-                            </div>
+                 <div className="space-y-16">
+                    {groupedSpecs.length > 0 ? groupedSpecs.map((group, gIdx) => (
+                      <div key={gIdx} className="space-y-8">
+                        <div className="flex items-center gap-4">
+                           <h3 className="text-2xl font-headline font-bold text-primary shrink-0 uppercase tracking-wide">{group.title}</h3>
+                           <div className="h-px bg-border flex-1" />
+                        </div>
+                        <div className="bg-muted/10 rounded-[3rem] border border-border/40 overflow-hidden">
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-px bg-border/40">
+                            {group.items.map((item, iIdx) => (
+                              <div key={iIdx} className="flex bg-white group hover:bg-muted/5 transition-colors">
+                                <div className="w-1/3 p-6 bg-muted/20 border-r border-border/10">
+                                  <span className="text-xs font-bold text-primary uppercase tracking-wider">{item.label}</span>
+                                </div>
+                                <div className="flex-1 p-6">
+                                  <span className="text-sm text-muted-foreground font-medium">{item.value}</span>
+                                </div>
+                              </div>
+                            ))}
                           </div>
-                        ))}
+                        </div>
                       </div>
-                    ) : (
-                      <div className="p-12 text-center italic text-muted-foreground">
+                    )) : (
+                      <div className="p-12 text-center italic text-muted-foreground border-2 border-dashed rounded-[3rem]">
                         技术规格正在同步中，请联系销售获取最新 PDF 规格书。
                       </div>
                     )}
