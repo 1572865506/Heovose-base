@@ -32,7 +32,8 @@ import {
   Search,
   CheckCircle2,
   Filter,
-  Check
+  Check,
+  Trash2
 } from 'lucide-react';
 import { 
   Dialog, 
@@ -115,6 +116,7 @@ function ProductEditorContent() {
   const [activeTab, setActiveTab] = useState('basic');
   const [isUploading, setIsUploading] = useState(false);
   const [showUrlInput, setShowUrlInput] = useState(false);
+  const [uploadGalleryCatId, setUploadGalleryCatId] = useState<string>('');
 
   // 素材选择器状态
   const [isPickerOpen, setIsPickerOpen] = useState(false);
@@ -134,6 +136,29 @@ function ProductEditorContent() {
   const { data: translations } = useCollection<LocalizedString>(transQuery);
   const { data: galleryCategories } = useCollection<GalleryCategory>(galleryCatsQuery);
   const { data: galleryAssets } = useCollection<GalleryAsset>(assetsQuery);
+
+  const galleryCategoryTree = useMemo(() => {
+    if (!galleryCategories) return [];
+    const tree: (GalleryCategory & { depth: number })[] = [];
+    const build = (parentId: string | null = null, depth = 0) => {
+      galleryCategories
+        .filter(c => (c.parentId || null) === parentId)
+        .sort((a, b) => a.order - b.order)
+        .forEach(item => {
+          tree.push({ ...item, depth });
+          build(item.id, depth + 1);
+        });
+    };
+    build(null);
+    return tree;
+  }, [galleryCategories]);
+
+  useEffect(() => {
+    if (galleryCategories?.length && !uploadGalleryCatId) {
+      const defaultCat = galleryCategories.find(c => c.name.includes('产品') || c.name.includes('Product')) || galleryCategories[0];
+      setUploadGalleryCatId(defaultCat.id);
+    }
+  }, [galleryCategories, uploadGalleryCatId]);
 
   useEffect(() => {
     if (isEditing && product && translations) {
@@ -200,9 +225,7 @@ function ProductEditorContent() {
       const assetId = `asset_prod_${Date.now()}`;
       const assetTitle = `Product Image: ${formData.id || 'Untitled'}`;
       
-      let targetGalleryCatId = galleryCategories?.[0]?.id || 'uncategorized';
-      const prodCat = galleryCategories?.find(c => c.name.includes('产品') || c.name.includes('Product'));
-      if (prodCat) targetGalleryCatId = prodCat.id;
+      const targetGalleryCatId = uploadGalleryCatId || galleryCategories?.[0]?.id || 'uncategorized';
 
       setDocumentNonBlocking(doc(firestore, 'galleryAssets', assetId), {
         id: assetId,
@@ -217,6 +240,7 @@ function ProductEditorContent() {
       setFormData(prev => ({ ...prev, mainImageUrl: base64 }));
       setIsUploading(false);
       toast({ title: "图片已上传并同步至图库" });
+      if (fileInputRef.current) fileInputRef.current.value = '';
     };
 
     reader.onerror = () => {
@@ -420,19 +444,58 @@ function ProductEditorContent() {
                 </div>
               </div>
 
+              {!showUrlInput && (
+                <div className="space-y-2">
+                  <Label className="text-[9px] font-bold uppercase text-muted-foreground">图库上传目标分类</Label>
+                  <Select value={uploadGalleryCatId} onValueChange={setUploadGalleryCatId}>
+                    <SelectTrigger className="h-8 text-[10px] rounded-lg bg-muted/20 border-transparent">
+                      <SelectValue placeholder="选择图库分类" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {galleryCategoryTree.map(cat => (
+                        <SelectItem key={cat.id} value={cat.id} className="text-xs">
+                          <span style={{ paddingLeft: `${cat.depth * 0.5}rem` }} className="flex items-center">
+                            {cat.depth > 0 && <span className="mr-1.5 opacity-30">·</span>}
+                            {cat.name}
+                          </span>
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
+
               <div 
                 className={cn(
                   "relative aspect-square rounded-2xl bg-muted/30 border border-dashed border-border overflow-hidden flex flex-col items-center justify-center group transition-all",
-                  !showUrlInput && "cursor-pointer hover:bg-muted/50 hover:border-primary/50"
+                  (!showUrlInput && !formData.mainImageUrl) && "cursor-pointer hover:bg-muted/50 hover:border-primary/50"
                 )}
-                onClick={() => !showUrlInput && fileInputRef.current?.click()}
+                onClick={() => (!showUrlInput && !formData.mainImageUrl) && fileInputRef.current?.click()}
               >
                 {formData.mainImageUrl ? (
                   <>
                     <Image src={formData.mainImageUrl} alt="Main" fill className="object-contain p-4" />
                     <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center gap-2">
-                      <Upload className="h-6 w-6 text-white" />
-                      <p className="text-white text-[10px] font-bold uppercase">更换图片 (上传)</p>
+                      <div className="flex gap-2">
+                        {!showUrlInput && (
+                          <Button 
+                            variant="secondary" 
+                            size="sm" 
+                            className="rounded-xl h-10 px-4 font-bold uppercase text-[10px]"
+                            onClick={(e) => { e.stopPropagation(); fileInputRef.current?.click(); }}
+                          >
+                            <Upload className="h-3 w-3 mr-2" /> 更换
+                          </Button>
+                        )}
+                        <Button 
+                          variant="destructive" 
+                          size="sm" 
+                          className="rounded-xl h-10 px-4 font-bold uppercase text-[10px]"
+                          onClick={(e) => { e.stopPropagation(); setFormData({...formData, mainImageUrl: ''}); }}
+                        >
+                          <X className="h-3 w-3 mr-2" /> 移除
+                        </Button>
+                      </div>
                     </div>
                   </>
                 ) : isUploading ? (
@@ -548,7 +611,7 @@ function ProductEditorContent() {
                     <ImageIcon className="h-5 w-5" />
                     <h3 className="font-bold">副图库管理</h3>
                   </div>
-                  <Button variant="outline" size="sm" onClick={() => openPicker('gallery')} className="rounded-full gap-2">
+                  <Button variant="outline" size="sm" onClick={() => openPicker('gallery')} className="rounded-full gap-2 text-xs font-bold uppercase">
                     <Plus className="h-4 w-4" /> 批量从图库挑选
                   </Button>
                 </div>
@@ -621,8 +684,13 @@ function ProductEditorContent() {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">全部分类</SelectItem>
-                  {galleryCategories?.map(c => (
-                    <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
+                  {galleryCategoryTree.map(cat => (
+                    <SelectItem key={cat.id} value={cat.id}>
+                      <span style={{ paddingLeft: `${cat.depth * 0.5}rem` }} className="flex items-center">
+                        {cat.depth > 0 && <span className="mr-1.5 opacity-30">·</span>}
+                        {cat.name}
+                      </span>
+                    </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
