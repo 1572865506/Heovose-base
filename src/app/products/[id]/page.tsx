@@ -30,9 +30,9 @@ interface Product {
   id: string;
   nameTextId: string;
   descriptionTextId: string;
-  specsTextId?: string;
   detailsTextId?: string;
   advantageTextIds?: string[];
+  specs?: { labelId: string, valueId: string }[];
   mainImageUrl: string;
   productCategoryId: string;
   galleryImageUrls: string[];
@@ -73,6 +73,14 @@ export default function ProductDetailPage() {
   const advantages = useMemo(() => {
     if (!product?.advantageTextIds) return [];
     return product.advantageTextIds.map(id => getT(id)).filter(Boolean);
+  }, [product, translationsData, locale]);
+
+  const formattedSpecs = useMemo(() => {
+    if (!product?.specs) return [];
+    return product.specs.map(s => ({
+      label: getT(s.labelId),
+      value: getT(s.valueId)
+    })).filter(s => s.label);
   }, [product, translationsData, locale]);
 
   if (isProdLoading) {
@@ -224,13 +232,22 @@ export default function ProductDetailPage() {
               </TabsContent>
 
               <TabsContent value="specs" className="animate-in fade-in slide-in-from-bottom-4 duration-700">
-                 <div className="p-12 bg-muted/20 rounded-[3rem] border border-border/40">
-                    {product.specsTextId && getT(product.specsTextId) ? (
-                      <div className="text-left whitespace-pre-wrap font-mono text-sm text-primary/80">
-                        {getT(product.specsTextId)}
+                 <div className="bg-muted/10 rounded-[3rem] border border-border/40 overflow-hidden">
+                    {formattedSpecs.length > 0 ? (
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-px bg-border/40">
+                        {formattedSpecs.map((spec, i) => (
+                          <div key={i} className="flex bg-white group hover:bg-muted/5 transition-colors">
+                            <div className="w-1/3 p-6 bg-muted/20 border-r border-border/10">
+                              <span className="text-xs font-bold text-primary uppercase tracking-wider">{spec.label}</span>
+                            </div>
+                            <div className="flex-1 p-6">
+                              <span className="text-sm text-muted-foreground font-medium">{spec.value}</span>
+                            </div>
+                          </div>
+                        ))}
                       </div>
                     ) : (
-                      <div className="text-center italic text-muted-foreground">
+                      <div className="p-12 text-center italic text-muted-foreground">
                         技术规格正在同步中，请联系销售获取最新 PDF 规格书。
                       </div>
                     )}

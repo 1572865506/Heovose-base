@@ -4,7 +4,7 @@
 import { useState, useEffect, useMemo, Suspense, useRef } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useFirestore, useDoc, useCollection, useMemoFirebase } from '@/firebase';
-import { doc, collection, serverTimestamp, query, orderBy, deleteDoc } from 'firebase/firestore';
+import { doc, collection, serverTimestamp, query, orderBy } from 'firebase/firestore';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -36,7 +36,8 @@ import {
   Trash2,
   Eye,
   EyeOff,
-  PlusCircle
+  PlusCircle,
+  TableProperties
 } from 'lucide-react';
 import { 
   Dialog, 
@@ -55,13 +56,20 @@ import Image from 'next/image';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 
+interface ProductSpecEntry {
+  labelEn: string;
+  labelZh: string;
+  valueEn: string;
+  valueZh: string;
+}
+
 interface Product {
   id: string;
   nameTextId: string;
   descriptionTextId: string;
-  specsTextId?: string;
   detailsTextId?: string;
   advantageTextIds?: string[];
+  specs?: { labelId: string, valueId: string }[];
   mainImageUrl: string;
   productCategoryId: string;
   galleryImageUrls: string[];
@@ -112,11 +120,10 @@ function ProductEditorContent() {
     nameZh: '',
     descEn: '',
     descZh: '',
-    specsEn: '',
-    specsZh: '',
     detailsEn: '',
     detailsZh: '',
     advantages: [] as { zh: string, en: string }[],
+    specs: [] as ProductSpecEntry[],
     status: 'draft' as 'published' | 'draft'
   });
 
@@ -173,12 +180,22 @@ function ProductEditorContent() {
       
       const nameT = getT(product.nameTextId);
       const descT = getT(product.descriptionTextId);
-      const specsT = getT(product.specsTextId);
       const detailsT = getT(product.detailsTextId);
       
       const advantages = (product.advantageTextIds || []).map(id => {
         const t = getT(id);
         return { zh: t.zh || '', en: t.en || '' };
+      });
+
+      const specs = (product.specs || []).map(s => {
+        const labelT = getT(s.labelId);
+        const valueT = getT(s.valueId);
+        return {
+          labelEn: labelT.en || '',
+          labelZh: labelT.zh || '',
+          valueEn: valueT.en || '',
+          valueZh: valueT.zh || ''
+        };
       });
 
       setFormData({
@@ -190,18 +207,17 @@ function ProductEditorContent() {
         nameZh: nameT.zh || '',
         descEn: descT.en || '',
         descZh: descT.zh || '',
-        specsEn: specsT.en || '',
-        specsZh: specsT.zh || '',
         detailsEn: detailsT.en || '',
         detailsZh: detailsT.zh || '',
-        advantages: advantages.length > 0 ? advantages : [{ zh: '', en: '' }, { zh: '', en: '' }],
+        advantages: advantages.length > 0 ? advantages : [{ zh: '', en: '' }],
+        specs: specs.length > 0 ? specs : [{ labelEn: '', labelZh: '', valueEn: '', valueZh: '' }],
         status: product.status || 'draft'
       });
     } else if (!isEditing) {
-      // 默认提供两个空白优势输入框
       setFormData(prev => ({
         ...prev,
-        advantages: [{ zh: '', en: '' }, { zh: '', en: '' }]
+        advantages: [{ zh: '', en: '' }],
+        specs: [{ labelEn: '', labelZh: '', valueEn: '', valueZh: '' }]
       }));
     }
   }, [isEditing, product, translations]);
@@ -244,7 +260,6 @@ function ProductEditorContent() {
       const base64 = event.target?.result as string;
       const assetId = `asset_prod_${Date.now()}`;
       const assetTitle = `Product Image: ${formData.id || 'Untitled'}`;
-      
       const targetGalleryCatId = uploadGalleryCatId || galleryCategories?.[0]?.id || 'uncategorized';
 
       setDocumentNonBlocking(doc(firestore, 'galleryAssets', assetId), {
@@ -322,7 +337,6 @@ function ProductEditorContent() {
     
     const nameId = isEditing ? product?.nameTextId : `prod_name_${formData.id}`;
     const descId = isEditing ? product?.descriptionTextId : `prod_desc_${formData.id}`;
-    const specsId = isEditing && product?.specsTextId ? product.specsTextId : `prod_specs_${formData.id}`;
     const detailsId = isEditing && product?.detailsTextId ? product.detailsTextId : `prod_details_${formData.id}`;
 
     const saveLang = (id: string, en: string, zh: string) => {
@@ -333,7 +347,6 @@ function ProductEditorContent() {
 
     saveLang(nameId!, formData.nameEn, formData.nameZh);
     saveLang(descId!, formData.descEn, formData.descZh);
-    saveLang(specsId, formData.specsEn, formData.specsZh);
     saveLang(detailsId, formData.detailsEn, formData.detailsZh);
 
     // 处理核心优势
@@ -346,13 +359,25 @@ function ProductEditorContent() {
       }
     });
 
+    // 处理技术规格 (Structured)
+    const specRefs: { labelId: string, valueId: string }[] = [];
+    formData.specs.forEach((spec, index) => {
+      if (spec.labelZh || spec.labelEn) {
+        const lblId = `prod_spec_lbl_${formData.id}_${index}`;
+        const valId = `prod_spec_val_${formData.id}_${index}`;
+        saveLang(lblId, spec.labelEn, spec.labelZh);
+        saveLang(valId, spec.valueEn, spec.valueZh);
+        specRefs.push({ labelId: lblId, valueId: valId });
+      }
+    });
+
     setDocumentNonBlocking(doc(firestore, 'products', formData.id), {
       id: formData.id,
       nameTextId: nameId,
       descriptionTextId: descId,
-      specsTextId: specsId,
       detailsTextId: detailsId,
       advantageTextIds: advantageIds,
+      specs: specRefs,
       mainImageUrl: formData.mainImageUrl,
       productCategoryId: formData.categoryId,
       galleryImageUrls: formData.galleryUrls.filter(Boolean),
@@ -389,6 +414,18 @@ function ProductEditorContent() {
   };
   const removeAdv = (idx: number) => {
     setFormData({ ...formData, advantages: formData.advantages.filter((_, i) => i !== idx) });
+  };
+
+  const updateSpec = (idx: number, field: keyof ProductSpecEntry, val: string) => {
+    const newSpecs = [...formData.specs];
+    newSpecs[idx][field] = val;
+    setFormData({ ...formData, specs: newSpecs });
+  };
+  const addSpec = () => {
+    setFormData({ ...formData, specs: [...formData.specs, { labelEn: '', labelZh: '', valueEn: '', valueZh: '' }] });
+  };
+  const removeSpec = (idx: number) => {
+    setFormData({ ...formData, specs: formData.specs.filter((_, i) => i !== idx) });
   };
 
   if (isEditing && isProdLoading) {
@@ -624,8 +661,11 @@ function ProductEditorContent() {
               <TabsTrigger value="basic" className="rounded-none px-0 pb-4 text-xs font-bold uppercase tracking-widest data-[state=active]:border-b-2 data-[state=active]:border-primary transition-all">
                 <LayoutGrid className="h-3 w-3 mr-2" /> 基础信息
               </TabsTrigger>
-              <TabsTrigger value="content" className="rounded-none px-0 pb-4 text-xs font-bold uppercase tracking-widest data-[state=active]:border-b-2 data-[state=active]:border-primary transition-all">
-                <ClipboardList className="h-3 w-3 mr-2" /> 规格与详情
+              <TabsTrigger value="specs" className="rounded-none px-0 pb-4 text-xs font-bold uppercase tracking-widest data-[state=active]:border-b-2 data-[state=active]:border-primary transition-all">
+                <TableProperties className="h-3 w-3 mr-2" /> 技术规格
+              </TabsTrigger>
+              <TabsTrigger value="details" className="rounded-none px-0 pb-4 text-xs font-bold uppercase tracking-widest data-[state=active]:border-b-2 data-[state=active]:border-primary transition-all">
+                <Info className="h-3 w-3 mr-2" /> 详细介绍
               </TabsTrigger>
               <TabsTrigger value="gallery" className="rounded-none px-0 pb-4 text-xs font-bold uppercase tracking-widest data-[state=active]:border-b-2 data-[state=active]:border-primary transition-all">
                 <ImageIcon className="h-3 w-3 mr-2" /> 更多图库
@@ -705,29 +745,87 @@ function ProductEditorContent() {
               </div>
             </TabsContent>
 
-            <TabsContent value="content" className="space-y-8 animate-in fade-in slide-in-from-right-2">
-              <div className="bg-white p-8 rounded-[2.5rem] border border-border/40 shadow-sm space-y-10">
-                <section className="space-y-6">
-                  <div className="flex items-center gap-3 text-primary border-b border-border/20 pb-4">
-                    <ClipboardList className="h-5 w-5" />
-                    <h3 className="font-bold">技术规格 (Specifications)</h3>
+            <TabsContent value="specs" className="space-y-8 animate-in fade-in slide-in-from-right-2">
+              <div className="bg-white p-8 rounded-[2.5rem] border border-border/40 shadow-sm space-y-8">
+                <div className="flex items-center justify-between border-b border-border/20 pb-4">
+                  <div className="flex items-center gap-3 text-primary">
+                    <TableProperties className="h-5 w-5" />
+                    <h3 className="font-bold">结构化技术规格</h3>
                   </div>
-                  <div className="grid grid-cols-2 gap-8">
-                    <Textarea placeholder="技术参数详情 (中文)..." value={formData.specsZh} onChange={e => setFormData({...formData, specsZh: e.target.value})} className="rounded-xl min-h-[200px]" />
-                    <Textarea placeholder="Technical Specs Details (English)..." value={formData.specsEn} onChange={e => setFormData({...formData, specsEn: e.target.value})} className="rounded-xl min-h-[200px]" />
-                  </div>
-                </section>
+                  <Button variant="ghost" size="sm" onClick={addSpec} className="text-primary font-bold text-[10px] uppercase gap-1">
+                    <PlusCircle className="h-3 w-3" /> 添加规格项
+                  </Button>
+                </div>
 
-                <section className="space-y-6">
-                  <div className="flex items-center gap-3 text-primary border-b border-border/20 pb-4">
-                    <Info className="h-5 w-5" />
-                    <h3 className="font-bold">详细介绍 (Details)</h3>
+                <div className="space-y-6">
+                  {formData.specs.map((spec, idx) => (
+                    <div key={idx} className="p-6 bg-muted/20 rounded-[2rem] border border-border/10 relative group">
+                      <Button 
+                        variant="ghost" 
+                        size="icon" 
+                        onClick={() => removeSpec(idx)}
+                        className="absolute -top-2 -right-2 h-8 w-8 bg-white border shadow-sm text-destructive rounded-full opacity-0 group-hover:opacity-100 transition-opacity z-10"
+                      >
+                        <Trash2 className="h-3.5 w-3.5" />
+                      </Button>
+
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                        <div className="space-y-4">
+                          <Badge variant="outline" className="text-[8px] uppercase tracking-widest font-bold px-2 py-0.5 border-primary/20 text-primary/60">条目 #{idx + 1} 标题</Badge>
+                          <div className="grid grid-cols-2 gap-4">
+                            <div className="space-y-1">
+                              <Label className="text-[9px] font-bold uppercase text-muted-foreground ml-1">中文 (ZH)</Label>
+                              <Input placeholder="例如: 尺寸" value={spec.labelZh} onChange={e => updateSpec(idx, 'labelZh', e.target.value)} className="h-10 text-xs rounded-xl" />
+                            </div>
+                            <div className="space-y-1">
+                              <Label className="text-[9px] font-bold uppercase text-muted-foreground ml-1">英文 (EN)</Label>
+                              <Input placeholder="e.g. SIZE" value={spec.labelEn} onChange={e => updateSpec(idx, 'labelEn', e.target.value)} className="h-10 text-xs rounded-xl" />
+                            </div>
+                          </div>
+                        </div>
+
+                        <div className="space-y-4">
+                          <Badge variant="outline" className="text-[8px] uppercase tracking-widest font-bold px-2 py-0.5 border-primary/20 text-primary/60">条目 #{idx + 1} 内容</Badge>
+                          <div className="grid grid-cols-2 gap-4">
+                            <div className="space-y-1">
+                              <Label className="text-[9px] font-bold uppercase text-muted-foreground ml-1">中文 (ZH)</Label>
+                              <Input placeholder="例如: 24 英寸" value={spec.valueZh} onChange={e => updateSpec(idx, 'valueZh', e.target.value)} className="h-10 text-xs rounded-xl" />
+                            </div>
+                            <div className="space-y-1">
+                              <Label className="text-[9px] font-bold uppercase text-muted-foreground ml-1">英文 (EN)</Label>
+                              <Input placeholder="e.g. 24 inch" value={spec.valueEn} onChange={e => updateSpec(idx, 'valueEn', e.target.value)} className="h-10 text-xs rounded-xl" />
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                  {formData.specs.length === 0 && (
+                    <div className="py-20 text-center border-2 border-dashed rounded-[3rem] text-muted-foreground italic">
+                      点击右上角按钮开始录入技术规格条目。
+                    </div>
+                  )}
+                </div>
+              </div>
+            </TabsContent>
+
+            <TabsContent value="details" className="space-y-8 animate-in fade-in slide-in-from-right-2">
+              <div className="bg-white p-8 rounded-[2.5rem] border border-border/40 shadow-sm space-y-6">
+                <div className="flex items-center gap-3 text-primary border-b border-border/20 pb-4">
+                  <Info className="h-5 w-5" />
+                  <h3 className="font-bold">产品详细介绍 (Rich Content)</h3>
+                </div>
+                
+                <div className="grid grid-cols-2 gap-8">
+                  <div className="space-y-4">
+                    <Label className="text-[10px] font-bold uppercase text-muted-foreground">中文详细内容 (ZH)</Label>
+                    <Textarea placeholder="产品详细描述 (中文)..." value={formData.detailsZh} onChange={e => setFormData({...formData, detailsZh: e.target.value})} className="rounded-2xl min-h-[400px] bg-muted/10 border-transparent focus:bg-white transition-colors" />
                   </div>
-                  <div className="grid grid-cols-2 gap-8">
-                    <Textarea placeholder="产品详细描述 (中文)..." value={formData.detailsZh} onChange={e => setFormData({...formData, detailsZh: e.target.value})} className="rounded-xl min-h-[250px]" />
-                    <Textarea placeholder="Long Product Details (English)..." value={formData.detailsEn} onChange={e => setFormData({...formData, detailsEn: e.target.value})} className="rounded-xl min-h-[250px]" />
+                  <div className="space-y-4">
+                    <Label className="text-[10px] font-bold uppercase text-muted-foreground">英文详细内容 (EN)</Label>
+                    <Textarea placeholder="Long Product Details (English)..." value={formData.detailsEn} onChange={e => setFormData({...formData, detailsEn: e.target.value})} className="rounded-2xl min-h-[400px] bg-muted/10 border-transparent focus:bg-white transition-colors" />
                   </div>
-                </section>
+                </div>
               </div>
             </TabsContent>
 
