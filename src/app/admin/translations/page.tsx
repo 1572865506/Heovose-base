@@ -35,7 +35,7 @@ import {
   Zap,
   AlertTriangle,
   Settings2,
-  Globe2,
+  Globe,
   Info,
   ShieldCheck,
   Copy
@@ -68,6 +68,7 @@ export default function TranslationsPage() {
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [showOnlyDuplicates, setShowOnlyDuplicates] = useState(false);
+  const [isCleaning, setIsCleaning] = useState(false);
   
   const [formData, setFormData] = useState<Record<string, string>>({ id: '' });
   const [newLang, setNewLang] = useState({ code: '', label: '' });
@@ -165,9 +166,12 @@ export default function TranslationsPage() {
   // 7. 智能清理函数（理据充分，引用安全）
   const handleAutoCleanup = () => {
     if (!firestore || duplicateGroups.size === 0) return;
+
+    if (!confirm(`系统检测到 ${duplicateGroups.size} 组内容重复的词条。确定要启动安全清理吗？\n\n注意：正在被产品使用的词条将被自动保护。`)) return;
     
+    setIsCleaning(true);
     let deleteCount = 0;
-    let keepCount = 0;
+    let protectCount = 0;
 
     duplicateGroups.forEach((ids) => {
       // 优先级策略：
@@ -184,15 +188,27 @@ export default function TranslationsPage() {
         deleteCount++;
       });
 
-      // 统计那些虽然内容重复但因“正在使用”而不得不保留的条目（建议管理员手动合并产品端引用）
+      // 统计那些虽然内容重复但因“正在使用”而不得不保留的条目
       const conflicts = ids.filter(id => id !== masterId && usedIds.has(id));
-      keepCount += conflicts.length;
+      protectCount += conflicts.length;
     });
 
-    toast({ 
-      title: "清理作业完成", 
-      description: `已安全移除 ${deleteCount} 个未使用的冗余项。检测到 ${keepCount} 个重复项仍被产品引用，已自动跳过以保护前端显示。` 
-    });
+    setIsCleaning(false);
+
+    if (deleteCount > 0) {
+      toast({ 
+        title: "清理作业已启动", 
+        description: `已成功提交 ${deleteCount} 个冗余项的删除请求。另有 ${protectCount} 个重复项由于正在被使用而受到保护。` 
+      });
+    } else if (protectCount > 0) {
+      toast({
+        variant: "destructive",
+        title: "无法自动清理",
+        description: `检测到 ${protectCount} 个重复项，但它们目前全部处于“使用中”状态。为了防止前端内容丢失，系统已跳过处理。请手动在产品端统一引用 ID。`
+      });
+    } else {
+      toast({ title: "未发现可清理的闲置冗余项" });
+    }
   };
 
   const handleSave = () => {
@@ -236,9 +252,11 @@ export default function TranslationsPage() {
             <Button 
               variant="outline" 
               onClick={handleAutoCleanup} 
+              disabled={isCleaning}
               className="rounded-xl h-12 border-orange-200 bg-orange-50 text-orange-700 hover:bg-orange-100 gap-2 shadow-sm animate-pulse"
             >
-              <Zap className="h-4 w-4 fill-current" /> 安全清理冗余 ({duplicateGroups.size} 组)
+              {isCleaning ? <Loader2 className="h-4 w-4 animate-spin" /> : <Zap className="h-4 w-4 fill-current" />}
+              安全清理冗余 ({duplicateGroups.size} 组)
             </Button>
           )}
 
@@ -288,7 +306,7 @@ export default function TranslationsPage() {
               <div className="bg-primary p-8 text-white">
                 <DialogHeader>
                   <DialogTitle className="text-2xl font-bold flex items-center gap-3">
-                    <Globe2 className="h-6 w-6" /> 创建全球语言锚点
+                    <Globe className="h-6 w-6" /> 创建全球语言锚点
                   </DialogTitle>
                   <DialogDescription className="text-white/60">此 ID 将被产品详情或分类引用，支持全动态扩展。</DialogDescription>
                 </DialogHeader>
