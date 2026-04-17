@@ -98,13 +98,31 @@
       "$schema": "http://json-schema.org/draft-07/schema#",
       "title": "LocalizedString",
       "type": "object",
-      "description": "Multilingual text content.",
+      "description": "Multilingual text content with dynamic keys.",
       "properties": {
         "id": { "type": "string" },
         "en": { "type": "string" },
         "zh": { "type": "string" }
       },
       "required": ["id", "en", "zh"]
+    },
+    "AppConfig": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "AppConfig",
+      "type": "object",
+      "description": "Global application settings.",
+      "properties": {
+        "supportedLanguages": { 
+          "type": "array", 
+          "items": { 
+            "type": "object",
+            "properties": {
+              "code": { "type": "string" },
+              "label": { "type": "string" }
+            }
+          } 
+        }
+      }
     }
   },
   "auth": {
@@ -158,6 +176,14 @@
           "entityName": "LocalizedString",
           "schema": { "$ref": "#/backend/entities/LocalizedString" },
           "description": "Multilingual text content."
+        }
+      },
+      {
+        "path": "/settings/languages",
+        "definition": {
+          "entityName": "AppConfig",
+          "schema": { "$ref": "#/backend/entities/AppConfig" },
+          "description": "Multilingual support configuration."
         }
       }
     ]
