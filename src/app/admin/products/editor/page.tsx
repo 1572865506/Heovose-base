@@ -316,7 +316,7 @@ function ProductEditorContent() {
                     <Textarea placeholder="产品详细描述 (中文)..." value={formData.detailsZh} onChange={e => setFormData({...formData, detailsZh: e.target.value})} className="rounded-xl min-h-[250px]" />
                     <Textarea placeholder="Long Product Details (English)..." value={formData.detailsEn} onChange={e => setFormData({...formData, detailsEn: e.target.value})} className="rounded-xl min-h-[250px]" />
                   </div>
-                </div>
+                </section>
               </div>
             </TabsContent>
 
