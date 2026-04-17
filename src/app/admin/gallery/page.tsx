@@ -29,7 +29,10 @@ import {
   Maximize,
   CopyCheck,
   FileWarning,
-  CloudUpload
+  CloudUpload,
+  CheckSquare,
+  Square,
+  MoreHorizontal
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -59,6 +62,7 @@ import {
 } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
+import { Checkbox } from '@/components/ui/checkbox';
 import { setDocumentNonBlocking, deleteDocumentNonBlocking, updateDocumentNonBlocking } from '@/firebase/non-blocking-updates';
 import { Label } from '@/components/ui/label';
 import Image from 'next/image';
@@ -105,6 +109,11 @@ export default function GalleryPage() {
   
   const [editingCatId, setEditingCatId] = useState<string | null>(null);
   const [catForm, setCatForm] = useState({ name: '', parentId: 'none' });
+
+  // 批量操作状态
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [isBatchCategoryDialogOpen, setIsBatchCategoryDialogOpen] = useState(false);
+  const [batchTargetCategoryId, setBatchTargetCategoryId] = useState<string>('');
 
   // 上传配置
   const [targetUploadCategoryId, setTargetUploadCategoryId] = useState<string>('');
@@ -203,6 +212,50 @@ export default function GalleryPage() {
       return matchesSearch && matchesCategory;
     });
   }, [assets, searchQuery, filterCategory]);
+
+  const toggleSelectAsset = (id: string) => {
+    const newSelected = new Set(selectedIds);
+    if (newSelected.has(id)) {
+      newSelected.delete(id);
+    } else {
+      newSelected.add(id);
+    }
+    setSelectedIds(newSelected);
+  };
+
+  const toggleSelectAll = () => {
+    if (selectedIds.size === filteredAssets.length) {
+      setSelectedIds(new Set());
+    } else {
+      setSelectedIds(new Set(filteredAssets.map(a => a.id)));
+    }
+  };
+
+  const handleBatchDelete = () => {
+    if (!firestore || selectedIds.size === 0) return;
+    if (!confirm(`确定要永久移除选中的 ${selectedIds.size} 项素材吗？`)) return;
+    
+    selectedIds.forEach(id => {
+      deleteDocumentNonBlocking(doc(firestore, 'galleryAssets', id));
+    });
+    
+    setSelectedIds(new Set());
+    toast({ title: "批量删除已启动" });
+  };
+
+  const handleBatchUpdateCategory = () => {
+    if (!firestore || selectedIds.size === 0 || !batchTargetCategoryId) return;
+    
+    selectedIds.forEach(id => {
+      updateDocumentNonBlocking(doc(firestore, 'galleryAssets', id), {
+        categoryId: batchTargetCategoryId
+      });
+    });
+    
+    setSelectedIds(new Set());
+    setIsBatchCategoryDialogOpen(false);
+    toast({ title: `已将 ${selectedIds.size} 项素材移动到新分类` });
+  };
 
   const generateUniqueTitle = (baseTitle: string, existingAssets: GalleryAsset[]): string => {
     let title = baseTitle;
@@ -391,13 +444,90 @@ export default function GalleryPage() {
 
   return (
     <div className="space-y-8 animate-in fade-in duration-500 relative min-h-[80vh]">
+      {/* 批量操作悬浮条 */}
+      {selectedIds.size > 0 && (
+        <div className="fixed top-24 left-1/2 -translate-x-1/2 z-[100] bg-white border border-primary/20 shadow-2xl rounded-full px-6 py-3 flex items-center gap-6 animate-in slide-in-from-top-4 duration-300">
+          <div className="flex items-center gap-2">
+            <Checkbox 
+              checked={selectedIds.size === filteredAssets.length}
+              onCheckedChange={toggleSelectAll}
+              className="rounded-md"
+            />
+            <span className="text-sm font-bold text-primary whitespace-nowrap">
+              已选中 {selectedIds.size} 项
+            </span>
+          </div>
+          
+          <div className="h-6 w-px bg-border" />
+          
+          <div className="flex items-center gap-2">
+            <Dialog open={isBatchCategoryDialogOpen} onOpenChange={setIsBatchCategoryDialogOpen}>
+              <DialogTrigger asChild>
+                <Button variant="outline" size="sm" className="rounded-full h-10 px-6 gap-2 border-primary/20 hover:bg-primary/5 text-primary">
+                  <Layers className="h-4 w-4" /> 修改分类
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="rounded-3xl max-w-sm">
+                <DialogHeader>
+                  <DialogTitle>批量移动分类</DialogTitle>
+                  <DialogDescription>将选中的 {selectedIds.size} 项素材移动到指定层级。</DialogDescription>
+                </DialogHeader>
+                <div className="py-6 space-y-4">
+                  <Label className="text-[10px] font-bold uppercase">目标分类</Label>
+                  <Select value={batchTargetCategoryId} onValueChange={setBatchTargetCategoryId}>
+                    <SelectTrigger className="rounded-xl h-12">
+                      <SelectValue placeholder="选择新分类" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {categoryTree.map(cat => (
+                        <SelectItem key={cat.id} value={cat.id}>
+                          <span 
+                            style={{ paddingLeft: `${cat.depth * 1}rem` }} 
+                            className={cn("flex items-center", cat.depth > 0 && "text-muted-foreground")}
+                          >
+                            {cat.depth > 0 && <span className="mr-2 opacity-30">·</span>}
+                            {cat.name}
+                          </span>
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <DialogFooter className="flex gap-2">
+                  <Button variant="outline" onClick={() => setIsBatchCategoryDialogOpen(false)} className="rounded-xl h-12 flex-1">取消</Button>
+                  <Button onClick={handleBatchUpdateCategory} disabled={!batchTargetCategoryId} className="rounded-xl h-12 flex-1">确认移动</Button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
+
+            <Button 
+              variant="destructive" 
+              size="sm" 
+              className="rounded-full h-10 px-6 gap-2 shadow-lg shadow-destructive/10"
+              onClick={handleBatchDelete}
+            >
+              <Trash2 className="h-4 w-4" /> 批量删除
+            </Button>
+            
+            <Button 
+              variant="ghost" 
+              size="icon" 
+              className="rounded-full h-10 w-10 hover:bg-muted"
+              onClick={() => setSelectedIds(new Set())}
+            >
+              <X className="h-4 w-4" />
+            </Button>
+          </div>
+        </div>
+      )}
+
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <h2 className="text-2xl font-headline font-bold text-primary flex items-center gap-2">
             <ImageIcon className="h-6 w-6" />
             全球图库中心
           </h2>
-          <p className="text-sm text-muted-foreground">支持多级分类管理与本地素材批量上传。</p>
+          <p className="text-sm text-muted-foreground">支持多级分类管理、素材批量上传及批量编辑。</p>
         </div>
         
         <div className="flex gap-2">
@@ -723,13 +853,28 @@ export default function GalleryPage() {
       ) : (
         <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-6">
           {filteredAssets.map((asset) => (
-            <div key={asset.id} className="group relative bg-white rounded-2xl border border-border/40 overflow-hidden hover:shadow-2xl transition-all">
+            <div key={asset.id} className={cn(
+              "group relative bg-white rounded-2xl border transition-all duration-300 overflow-hidden",
+              selectedIds.has(asset.id) ? "border-primary ring-2 ring-primary/20 shadow-xl" : "border-border/40 hover:shadow-2xl"
+            )}>
+              {/* 多选框 */}
+              <div className="absolute top-2 left-2 z-20">
+                <Checkbox 
+                  checked={selectedIds.has(asset.id)}
+                  onCheckedChange={() => toggleSelectAsset(asset.id)}
+                  className={cn(
+                    "rounded-md border-white/50 bg-black/20 backdrop-blur-sm",
+                    selectedIds.has(asset.id) && "bg-primary border-primary"
+                  )}
+                />
+              </div>
+
               <div 
                 className="relative aspect-square bg-muted/10 cursor-zoom-in overflow-hidden"
                 onClick={() => { setPreviewScaleMode('fit'); setPreviewImage(asset); }}
               >
                 <Image src={asset.url} alt={asset.title} fill className="object-cover group-hover:scale-105 transition-transform duration-500" />
-                <div className="absolute top-2 left-2">
+                <div className="absolute bottom-2 left-2">
                   <Badge className="text-[7px] bg-black/70 border-none uppercase px-2 py-0.5 rounded-sm max-w-[120px] truncate">
                     {categoryTree.find(c => c.id === asset.categoryId)?.fullPath || '未分类'}
                   </Badge>
@@ -741,10 +886,10 @@ export default function GalleryPage() {
               <div className="p-3 space-y-2">
                 <p className="text-[11px] font-bold truncate text-primary">{asset.title}</p>
                 <div className="flex items-center justify-between border-t pt-2">
-                  <Button size="icon" variant="ghost" className="h-7 w-7 hover:text-primary" onClick={() => { navigator.clipboard.writeText(asset.url); toast({ title: "素材链接已复制" }); }}><Copy className="h-3 w-3" /></Button>
+                  <Button size="icon" variant="ghost" className="h-7 w-7 hover:text-primary" onClick={(e) => { e.stopPropagation(); navigator.clipboard.writeText(asset.url); toast({ title: "素材链接已复制" }); }}><Copy className="h-3 w-3" /></Button>
                   <div className="flex gap-1">
-                    <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => setEditingAsset(asset)}><Edit3 className="h-3 w-3" /></Button>
-                    <Button size="icon" variant="ghost" className="h-7 w-7 text-destructive hover:bg-destructive/10" onClick={() => handleDeleteAsset(asset.id)}><Trash2 className="h-3 w-3" /></Button>
+                    <Button size="icon" variant="ghost" className="h-7 w-7" onClick={(e) => { e.stopPropagation(); setEditingAsset(asset); }}><Edit3 className="h-3 w-3" /></Button>
+                    <Button size="icon" variant="ghost" className="h-7 w-7 text-destructive hover:bg-destructive/10" onClick={(e) => { e.stopPropagation(); handleDeleteAsset(asset.id); }}><Trash2 className="h-3 w-3" /></Button>
                   </div>
                 </div>
               </div>
@@ -962,4 +1107,3 @@ export default function GalleryPage() {
     </div>
   );
 }
-
