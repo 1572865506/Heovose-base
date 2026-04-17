@@ -214,8 +214,15 @@ function ProductEditorContent() {
     }
   }, [isEditing, product, translations]);
 
+  /**
+   * 智能 ID 分配：执行不区分大小写的匹配，防止冗余
+   */
   const getSmartId = (en: string, zh: string, preferredId: string) => {
-    const existing = translations?.find(t => t.en.trim() === en.trim() && t.zh.trim() === zh.trim());
+    if (!translations) return preferredId;
+    const existing = translations.find(t => 
+      t.en.trim().toLowerCase() === en.trim().toLowerCase() && 
+      t.zh.trim().toLowerCase() === zh.trim().toLowerCase()
+    );
     return existing ? existing.id : preferredId;
   };
 
@@ -224,7 +231,13 @@ function ProductEditorContent() {
     
     const saveLang = (en: string, zh: string, defaultId: string) => {
       const targetId = getSmartId(en, zh, defaultId);
-      setDocumentNonBlocking(doc(firestore, 'localizedStrings', targetId), { id: targetId, en, zh, updatedAt: serverTimestamp() }, { merge: true });
+      // 保存时更新内容，但 ID 保持唯一
+      setDocumentNonBlocking(doc(firestore, 'localizedStrings', targetId), { 
+        id: targetId, 
+        en: en.trim(), 
+        zh: zh.trim(), 
+        updatedAt: serverTimestamp() 
+      }, { merge: true });
       return targetId;
     };
 
@@ -337,7 +350,6 @@ function ProductEditorContent() {
 
   return (
     <div className="max-w-6xl mx-auto space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700 pb-20">
-      {/* 增强型吸顶页头 */}
       <div className="flex items-center justify-between sticky top-20 z-40 bg-background/90 backdrop-blur-xl py-6 border-b border-border/40 shadow-sm px-2">
         <div className="flex items-center gap-4">
           <Button variant="ghost" size="icon" onClick={() => router.back()} className="rounded-full hover:bg-muted"><ArrowLeft className="h-5 w-5" /></Button>
@@ -356,7 +368,6 @@ function ProductEditorContent() {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-10">
-        {/* 左侧配置栏 */}
         <div className="lg:col-span-4 space-y-6">
           <div className="bg-white p-8 rounded-[2.5rem] border border-border/40 shadow-sm space-y-8">
             <div className="space-y-4">
@@ -433,7 +444,6 @@ function ProductEditorContent() {
           </div>
         </div>
 
-        {/* 右侧主编辑器 */}
         <div className="lg:col-span-8">
           <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
             <TabsList className="bg-transparent border-b border-border/40 w-full justify-start gap-10 rounded-none mb-10 h-auto p-0">
@@ -601,7 +611,6 @@ function ProductEditorContent() {
         </div>
       </div>
 
-      {/* 全局素材选择器弹窗 */}
       <Dialog open={isPickerOpen} onOpenChange={setIsPickerOpen}>
         <DialogContent className="max-w-5xl p-0 rounded-[3rem] overflow-hidden flex flex-col h-[85vh] border-none shadow-2xl">
           <div className="bg-primary p-8 text-white">
@@ -654,7 +663,6 @@ function ProductEditorContent() {
                 >
                   <Image src={a.url} alt={a.title} fill className="object-cover" />
                   
-                  {/* 选中状态遮罩 */}
                   {selectedPickerUrls.has(a.url) && (
                     <div className="absolute inset-0 bg-primary/20 backdrop-blur-[2px] flex items-center justify-center animate-in fade-in duration-300">
                       <div className="bg-white rounded-full p-2 shadow-2xl">
@@ -663,7 +671,6 @@ function ProductEditorContent() {
                     </div>
                   )}
 
-                  {/* 悬停信息 */}
                   <div className="absolute inset-x-0 bottom-0 p-3 bg-gradient-to-t from-black/80 to-transparent opacity-0 group-hover:opacity-100 transition-opacity">
                     <p className="text-[10px] text-white font-bold truncate">{a.title}</p>
                   </div>

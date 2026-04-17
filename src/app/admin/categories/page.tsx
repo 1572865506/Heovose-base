@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useState } from 'react';
@@ -68,28 +67,35 @@ export default function CategoriesPage() {
   const { data: categories, isLoading: isCatsLoading } = useCollection<ProductCategory>(categoriesQuery);
   const { data: translations } = useCollection<LocalizedString>(translationsQuery);
 
+  /**
+   * 智能 ID 分配：执行不区分大小写的匹配，防止冗余
+   */
   const getSmartId = (en: string, zh: string, preferredId: string) => {
-    const existing = translations?.find(t => t.en.trim() === en.trim() && t.zh.trim() === zh.trim());
+    if (!translations) return preferredId;
+    const existing = translations.find(t => 
+      t.en.trim().toLowerCase() === en.trim().toLowerCase() && 
+      t.zh.trim().toLowerCase() === zh.trim().toLowerCase()
+    );
     return existing ? existing.id : preferredId;
   };
 
   const handleSave = () => {
     if (!firestore || !formData.id || !formData.slug) return;
     
-    // 智能 ID 分配：如果已有相同名称的翻译，则复用它，减少冗余
+    // 1. 获取 ID（不区分大小写匹配已有项）
     const defaultId = editingCategory?.nameTextId || `cat_name_${formData.id}`;
     const nameTextId = getSmartId(formData.nameEn, formData.nameZh, defaultId);
     
-    // 1. 保存翻译项
+    // 2. 保存翻译项（更新内容但复用 ID）
     const langRef = doc(firestore, 'localizedStrings', nameTextId);
     setDocumentNonBlocking(langRef, {
       id: nameTextId,
-      en: formData.nameEn,
-      zh: formData.nameZh,
+      en: formData.nameEn.trim(),
+      zh: formData.nameZh.trim(),
       updatedAt: serverTimestamp()
     }, { merge: true });
 
-    // 2. 保存分类项
+    // 3. 保存分类项
     const catRef = doc(firestore, 'productCategories', formData.id);
     setDocumentNonBlocking(catRef, {
       id: formData.id,
@@ -124,7 +130,6 @@ export default function CategoriesPage() {
   const handleDelete = (id: string, nameTextId: string) => {
     if (!firestore || !confirm('确定要删除此分类吗？')) return;
     deleteDocumentNonBlocking(doc(firestore, 'productCategories', id));
-    // 注意：不自动删除 nameTextId，因为可能有其他地方复用了它
   };
 
   return (
@@ -132,7 +137,7 @@ export default function CategoriesPage() {
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-2xl font-headline font-bold text-primary flex items-center gap-2"><Layers className="h-6 w-6" /> 产品分类管理</h2>
-          <p className="text-sm text-muted-foreground">定义产品的所属大类。系统已启用智能翻译复用机制。</p>
+          <p className="text-sm text-muted-foreground">定义产品的所属大类。系统已启用智能翻译复用机制（不区分大小写）。</p>
         </div>
         
         <Dialog open={isAdding} onOpenChange={setIsAdding}>
