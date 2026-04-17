@@ -1,9 +1,8 @@
-
 "use client";
 
 import { useState, useEffect, useMemo, Suspense, useRef } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { useFirestore, useDoc, useCollection, useMemoFirebase } from '@/firebase';
+import { useUser, useFirestore, useDoc, useCollection, useMemoFirebase } from '@/firebase';
 import { doc, collection, serverTimestamp, query, orderBy } from 'firebase/firestore';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -37,7 +36,8 @@ import {
   EyeOff,
   PlusCircle,
   TableProperties,
-  FolderPlus
+  FolderPlus,
+  Globe
 } from 'lucide-react';
 import { 
   Dialog, 
@@ -452,7 +452,7 @@ function ProductEditorContent() {
                     <Textarea placeholder="产品简介：简短有力地描述产品核心定位" value={formData.descZh} onChange={e => setFormData({...formData, descZh: e.target.value})} className="rounded-xl min-h-[140px] bg-muted/5 border-border/40 focus:bg-white transition-all resize-none" />
                   </div>
                   <div className="space-y-5">
-                    <Label className="text-[10px] font-bold uppercase text-muted-foreground tracking-widest flex items-center gap-2"><Globe2 className="h-3 w-3" /> 英文内容 (EN)</Label>
+                    <Label className="text-[10px] font-bold uppercase text-muted-foreground tracking-widest flex items-center gap-2"><Globe className="h-3 w-3" /> 英文内容 (EN)</Label>
                     <Input placeholder="Product Name (e.g. Heovose H24 Pro)" value={formData.nameEn} onChange={e => setFormData({...formData, nameEn: e.target.value})} className="rounded-xl h-12 bg-muted/5 border-border/40 focus:bg-white transition-all" />
                     <Textarea placeholder="Short Description: A catchy slogan or summary for global markets" value={formData.descEn} onChange={e => setFormData({...formData, descEn: e.target.value})} className="rounded-xl min-h-[140px] bg-muted/5 border-border/40 focus:bg-white transition-all resize-none" />
                   </div>
