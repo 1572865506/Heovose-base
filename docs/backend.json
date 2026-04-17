@@ -13,6 +13,58 @@
       },
       "required": ["uid", "email"]
     },
+    "ProductCategory": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "ProductCategory",
+      "type": "object",
+      "description": "Hardware product categories with multi-language support.",
+      "properties": {
+        "id": { "type": "string" },
+        "nameTextId": { "type": "string", "description": "Reference to LocalizedString" },
+        "slug": { "type": "string" },
+        "thumbnailImageUrl": { "type": "string" },
+        "updatedAt": { "type": "object" }
+      },
+      "required": ["id", "nameTextId", "slug"]
+    },
+    "Product": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Product",
+      "type": "object",
+      "description": "Hardware product details including complex technical specs and multi-language content.",
+      "properties": {
+        "id": { "type": "string" },
+        "nameTextId": { "type": "string" },
+        "descriptionTextId": { "type": "string" },
+        "detailsTextId": { "type": "string" },
+        "advantageTextIds": { "type": "array", "items": { "type": "string" } },
+        "specGroups": { 
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "titleId": { "type": "string" },
+              "items": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "labelId": { "type": "string" },
+                    "valueId": { "type": "string" }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "mainImageUrl": { "type": "string" },
+        "productCategoryId": { "type": "string" },
+        "galleryImageUrls": { "type": "array", "items": { "type": "string" } },
+        "status": { "type": "string", "enum": ["published", "draft"] },
+        "updatedAt": { "type": "object" }
+      },
+      "required": ["id", "nameTextId", "productCategoryId", "mainImageUrl"]
+    },
     "GalleryCategory": {
       "$schema": "http://json-schema.org/draft-07/schema#",
       "title": "GalleryCategory",
@@ -20,11 +72,11 @@
       "description": "Custom categories for organizing gallery assets with hierarchy support.",
       "properties": {
         "id": { "type": "string" },
-        "name": { "type": "string" },
+        "nameTextId": { "type": "string", "description": "Reference to LocalizedString for multi-language names." },
         "parentId": { "type": "string", "description": "ID of the parent category for nested structure." },
         "order": { "type": "number" }
       },
-      "required": ["id", "name"]
+      "required": ["id", "nameTextId"]
     },
     "GalleryAsset": {
       "$schema": "http://json-schema.org/draft-07/schema#",
@@ -66,6 +118,22 @@
           "entityName": "AdminUser",
           "schema": { "$ref": "#/backend/entities/AdminUser" },
           "description": "Authorized administrators."
+        }
+      },
+      {
+        "path": "/productCategories/{categoryId}",
+        "definition": {
+          "entityName": "ProductCategory",
+          "schema": { "$ref": "#/backend/entities/ProductCategory" },
+          "description": "Product classification."
+        }
+      },
+      {
+        "path": "/products/{productId}",
+        "definition": {
+          "entityName": "Product",
+          "schema": { "$ref": "#/backend/entities/Product" },
+          "description": "Hardware product records."
         }
       },
       {
