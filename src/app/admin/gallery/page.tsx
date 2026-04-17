@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useState, useMemo, useRef } from 'react';
+import { useState, useMemo, useRef, useEffect } from 'react';
 import { useFirestore, useCollection, useMemoFirebase } from '@/firebase';
 import { collection, doc, serverTimestamp, query, orderBy } from 'firebase/firestore';
 import { 
@@ -20,7 +20,12 @@ import {
   ChevronDown,
   ArrowUp,
   ArrowDown,
-  X
+  X,
+  CheckCircle2,
+  AlertCircle,
+  PanelTop,
+  Minimize2,
+  Maximize2
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -48,6 +53,7 @@ import {
   TableRow 
 } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
+import { Progress } from '@/components/ui/progress';
 import { setDocumentNonBlocking, deleteDocumentNonBlocking, updateDocumentNonBlocking } from '@/firebase/non-blocking-updates';
 import { Label } from '@/components/ui/label';
 import Image from 'next/image';
@@ -71,12 +77,19 @@ interface GalleryAsset {
   createdAt?: any;
 }
 
+interface UploadTask {
+  id: string;
+  fileName: string;
+  progress: number;
+  status: 'reading' | 'uploading' | 'completed' | 'error';
+  error?: string;
+}
+
 export default function GalleryPage() {
   const firestore = useFirestore();
   const { toast } = useToast();
   const fileInputRef = useRef<HTMLInputElement>(null);
   
-  const [isUploading, setIsUploading] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [filterCategory, setFilterCategory] = useState<string>('all');
   const [editingAsset, setEditingAsset] = useState<GalleryAsset | null>(null);
@@ -85,7 +98,11 @@ export default function GalleryPage() {
   const [editingCatId, setEditingCatId] = useState<string | null>(null);
   const [catForm, setCatForm] = useState({ name: '', parentId: 'none' });
 
-  // 用于追踪折叠状态的 ID 集合
+  // 上传任务管理
+  const [uploadTasks, setUploadTasks] = useState<UploadTask[]>([]);
+  const [isTasksPanelOpen, setIsTasksPanelOpen] = useState(false);
+  const [isTasksPanelMinimized, setIsTasksPanelMinimized] = useState(false);
+
   const [collapsedIds, setCollapsedIds] = useState<Set<string>>(new Set());
 
   const categoriesQuery = useMemoFirebase(() => {
@@ -103,28 +120,22 @@ export default function GalleryPage() {
 
   const categoryTree = useMemo(() => {
     if (!categories) return [];
-    
     const getFullPath = (cat: GalleryCategory): string => {
       const parent = categories.find(c => c.id === cat.parentId);
       return parent ? `${getFullPath(parent)} > ${cat.name}` : cat.name;
     };
-
     const getDepth = (cat: GalleryCategory): number => {
       const parent = categories.find(c => c.id === cat.parentId);
       return parent ? getDepth(parent) + 1 : 0;
     };
-
     const hasChildren = (id: string): boolean => {
       return categories.some(c => c.parentId === id);
     };
-
     const tree: (GalleryCategory & { fullPath: string, depth: number, hasChildren: boolean })[] = [];
-    
     const build = (parentId: string | null = null) => {
       const levelItems = categories
         .filter(c => (c.parentId || null) === parentId)
         .sort((a, b) => a.order - b.order);
-        
       levelItems.forEach(item => {
         tree.push({
           ...item,
@@ -135,15 +146,12 @@ export default function GalleryPage() {
         build(item.id);
       });
     };
-
     build(null);
     return tree;
   }, [categories]);
 
-  // 计算哪些行应该被渲染（基于折叠状态）
   const visibleCategories = useMemo(() => {
     return categoryTree.filter(cat => {
-      // 检查其任何祖先是否被折叠
       let currentParentId = cat.parentId;
       while (currentParentId) {
         if (collapsedIds.has(currentParentId)) return false;
@@ -180,25 +188,49 @@ export default function GalleryPage() {
       return;
     }
 
-    setIsUploading(true);
     const defaultCategoryId = categoryTree[0]?.id;
+    setIsTasksPanelOpen(true);
+    setIsTasksPanelMinimized(false);
 
-    for (let i = 0; i < files.length; i++) {
-      const file = files[i];
-      if (!file.type.startsWith('image/')) continue;
+    const newTasks: UploadTask[] = Array.from(files).map((file, i) => ({
+      id: `task_${Date.now()}_${i}`,
+      fileName: file.name,
+      progress: 0,
+      status: 'reading'
+    }));
+
+    setUploadTasks(prev => [...prev, ...newTasks]);
+
+    Array.from(files).forEach((file, index) => {
+      const taskId = newTasks[index].id;
+      
+      if (!file.type.startsWith('image/')) {
+        updateTask(taskId, { status: 'error', error: '文件类型不符', progress: 0 });
+        return;
+      }
+      
       if (file.size > 800000) {
-        toast({ variant: "destructive", title: "文件过大", description: `${file.name} 超过 800KB 限制。` });
-        continue;
+        updateTask(taskId, { status: 'error', error: '超过 800KB', progress: 0 });
+        return;
       }
 
       const reader = new FileReader();
-      reader.onload = async (e) => {
+      
+      reader.onprogress = (e) => {
+        if (e.lengthComputable) {
+          const p = Math.round((e.loaded / e.total) * 50);
+          updateTask(taskId, { progress: p });
+        }
+      };
+
+      reader.onload = (e) => {
+        updateTask(taskId, { status: 'uploading', progress: 60 });
         const base64 = e.target?.result as string;
-        const id = `asset_${Date.now()}_${i}`;
-        const assetRef = doc(firestore, 'galleryAssets', id);
+        const assetId = `asset_${Date.now()}_${index}`;
+        const assetRef = doc(firestore, 'galleryAssets', assetId);
 
         setDocumentNonBlocking(assetRef, {
-          id,
+          id: assetId,
           url: base64,
           title: file.name.split('.')[0],
           fileName: file.name,
@@ -206,11 +238,29 @@ export default function GalleryPage() {
           categoryId: defaultCategoryId,
           createdAt: serverTimestamp()
         }, { merge: true });
+
+        // 模拟同步进度
+        setTimeout(() => updateTask(taskId, { progress: 85 }), 300);
+        setTimeout(() => updateTask(taskId, { status: 'completed', progress: 100 }), 800);
       };
+
+      reader.onerror = () => {
+        updateTask(taskId, { status: 'error', error: '读取失败', progress: 0 });
+      };
+
       reader.readAsDataURL(file);
+    });
+  };
+
+  const updateTask = (id: string, updates: Partial<UploadTask>) => {
+    setUploadTasks(prev => prev.map(t => t.id === id ? { ...t, ...updates } : t));
+  };
+
+  const clearCompletedTasks = () => {
+    setUploadTasks(prev => prev.filter(t => t.status !== 'completed' && t.status !== 'error'));
+    if (uploadTasks.filter(t => t.status !== 'completed' && t.status !== 'error').length === 0) {
+      setIsTasksPanelOpen(false);
     }
-    setIsUploading(false);
-    toast({ title: "上传已开始" });
   };
 
   const handleUpdateAsset = () => {
@@ -227,30 +277,21 @@ export default function GalleryPage() {
 
   const handleSaveCategory = () => {
     if (!firestore || !catForm.name.trim()) return;
-    
     const parentId = catForm.parentId === 'none' ? null : catForm.parentId;
-
     if (editingCatId) {
       if (catForm.parentId === editingCatId) {
         toast({ variant: "destructive", title: "无效操作", description: "不能将分类的上级设为自己。" });
         return;
       }
       const catRef = doc(firestore, 'galleryCategories', editingCatId);
-      updateDocumentNonBlocking(catRef, {
-        name: catForm.name,
-        parentId: parentId
-      });
+      updateDocumentNonBlocking(catRef, { name: catForm.name, parentId: parentId });
       toast({ title: "分类已更新" });
     } else {
       const id = `cat_${Date.now()}`;
       const siblings = categories?.filter(c => (c.parentId || null) === parentId) || [];
       const order = siblings.length + 1;
-
       setDocumentNonBlocking(doc(firestore, 'galleryCategories', id), { 
-        id, 
-        name: catForm.name, 
-        parentId: parentId,
-        order 
+        id, name: catForm.name, parentId: parentId, order 
       }, { merge: true });
       toast({ title: "分类已添加" });
     }
@@ -277,18 +318,13 @@ export default function GalleryPage() {
     if (!firestore || !categories) return;
     const cat = categories.find(c => c.id === id);
     if (!cat) return;
-
     const siblings = categories
       .filter(c => (c.parentId || null) === (cat.parentId || null))
       .sort((a, b) => a.order - b.order);
-
     const index = siblings.findIndex(s => s.id === id);
     const targetIndex = direction === 'up' ? index - 1 : index + 1;
-
     if (targetIndex < 0 || targetIndex >= siblings.length) return;
-
     const target = siblings[targetIndex];
-    
     updateDocumentNonBlocking(doc(firestore, 'galleryCategories', cat.id), { order: target.order });
     updateDocumentNonBlocking(doc(firestore, 'galleryCategories', target.id), { order: cat.order });
   };
@@ -307,7 +343,7 @@ export default function GalleryPage() {
   };
 
   return (
-    <div className="space-y-8 animate-in fade-in duration-500">
+    <div className="space-y-8 animate-in fade-in duration-500 relative min-h-[80vh]">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <h2 className="text-2xl font-headline font-bold text-primary flex items-center gap-2">
@@ -474,13 +510,6 @@ export default function GalleryPage() {
                           </TableCell>
                         </TableRow>
                       ))}
-                      {visibleCategories.length === 0 && categories?.length !== 0 && (
-                        <TableRow>
-                          <TableCell colSpan={2} className="h-20 text-center text-xs text-muted-foreground">
-                            所有分类均被折叠
-                          </TableCell>
-                        </TableRow>
-                      )}
                     </TableBody>
                   </Table>
                 </div>
@@ -507,7 +536,7 @@ export default function GalleryPage() {
 
       <div 
         onDragOver={(e) => { e.preventDefault(); e.stopPropagation(); }}
-        onDrop={(e) => { e.preventDefault(); e.stopPropagation(); handleFileUpload(e.target.files); }}
+        onDrop={(e) => { e.preventDefault(); e.stopPropagation(); handleFileUpload(e.dataTransfer.files); }}
         className="group relative h-32 border-2 border-dashed border-primary/20 rounded-[2rem] flex flex-col items-center justify-center bg-white hover:border-primary/50 hover:bg-primary/5 transition-all cursor-pointer"
         onClick={() => fileInputRef.current?.click()}
       >
@@ -517,7 +546,7 @@ export default function GalleryPage() {
           </div>
           <div>
             <p className="text-base font-bold text-primary">点击或拖拽上传本地图片</p>
-            <p className="text-xs text-muted-foreground">支持批量处理，文件名将自动设为标题</p>
+            <p className="text-xs text-muted-foreground">支持多文件批量上传，自动提取文件名为标题</p>
           </div>
         </div>
       </div>
@@ -585,6 +614,77 @@ export default function GalleryPage() {
               </div>
             </div>
           ))}
+        </div>
+      )}
+
+      {/* 上传任务管理面板 */}
+      {isTasksPanelOpen && (
+        <div className={cn(
+          "fixed bottom-6 right-6 z-[200] w-80 bg-white border border-border/40 shadow-2xl rounded-3xl overflow-hidden transition-all duration-500 transform",
+          isTasksPanelMinimized ? "h-14" : "h-96"
+        )}>
+          <div className="bg-primary p-4 flex items-center justify-between text-white">
+            <div className="flex items-center gap-2">
+              <PanelTop className="h-4 w-4" />
+              <span className="text-xs font-bold uppercase tracking-widest">上传任务管理器</span>
+              <Badge variant="outline" className="text-[10px] bg-white/10 border-white/20 text-white ml-2">
+                {uploadTasks.filter(t => t.status === 'completed').length} / {uploadTasks.length}
+              </Badge>
+            </div>
+            <div className="flex items-center gap-1">
+              <Button 
+                variant="ghost" 
+                size="icon" 
+                className="h-6 w-6 hover:bg-white/10"
+                onClick={() => setIsTasksPanelMinimized(!isTasksPanelMinimized)}
+              >
+                {isTasksPanelMinimized ? <Maximize2 className="h-3 w-3" /> : <Minimize2 className="h-3 w-3" />}
+              </Button>
+              <Button 
+                variant="ghost" 
+                size="icon" 
+                className="h-6 w-6 hover:bg-white/10"
+                onClick={() => { setIsTasksPanelOpen(false); setUploadTasks([]); }}
+              >
+                <X className="h-3 w-3" />
+              </Button>
+            </div>
+          </div>
+
+          {!isTasksPanelMinimized && (
+            <div className="flex flex-col h-[calc(100%-56px)]">
+              <div className="flex-1 overflow-y-auto p-4 space-y-4">
+                {uploadTasks.map(task => (
+                  <div key={task.id} className="space-y-2">
+                    <div className="flex items-center justify-between text-[10px] font-medium">
+                      <span className="truncate max-w-[180px] text-primary font-bold">{task.fileName}</span>
+                      {task.status === 'completed' ? (
+                        <CheckCircle2 className="h-3 w-3 text-green-500" />
+                      ) : task.status === 'error' ? (
+                        <span className="text-destructive flex items-center gap-1"><AlertCircle className="h-3 w-3" /> {task.error}</span>
+                      ) : (
+                        <span className="text-muted-foreground animate-pulse">
+                          {task.status === 'reading' ? '读取中...' : '同步中...'}
+                        </span>
+                      )}
+                    </div>
+                    <Progress value={task.progress} className="h-1" />
+                  </div>
+                ))}
+              </div>
+              <div className="p-4 border-t bg-muted/20 flex gap-2">
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  className="w-full text-[10px] font-bold h-8 rounded-xl"
+                  onClick={clearCompletedTasks}
+                  disabled={uploadTasks.every(t => t.status !== 'completed' && t.status !== 'error')}
+                >
+                  清理已完成
+                </Button>
+              </div>
+            </div>
+          )}
         </div>
       )}
 
