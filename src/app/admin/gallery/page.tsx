@@ -36,6 +36,7 @@ import {
   DialogFooter, 
   DialogHeader, 
   DialogTitle, 
+  DialogDescription,
   DialogTrigger 
 } from '@/components/ui/dialog';
 import { 
@@ -701,7 +702,9 @@ export default function GalleryPage() {
       {/* 资产编辑弹窗 */}
       <Dialog open={!!editingAsset} onOpenChange={(o) => !o && setEditingAsset(null)}>
         <DialogContent className="rounded-3xl max-w-sm p-8">
-          <DialogHeader><DialogTitle className="text-lg font-bold">编辑素材信息</DialogTitle></DialogHeader>
+          <DialogHeader>
+            <DialogTitle className="text-lg font-bold">编辑素材信息</DialogTitle>
+          </DialogHeader>
           {editingAsset && (
             <div className="space-y-4 py-4">
               <div className="space-y-2">
@@ -741,6 +744,10 @@ export default function GalleryPage() {
       {/* 大图预览弹窗 */}
       <Dialog open={!!previewImage} onOpenChange={(o) => !o && setPreviewImage(null)}>
         <DialogContent className="max-w-[95vw] max-h-[95vh] p-0 overflow-hidden border-none bg-black/90 shadow-none flex flex-col items-center justify-center">
+          <DialogHeader className="sr-only">
+            <DialogTitle>{previewImage?.title || '图片预览'}</DialogTitle>
+            <DialogDescription>查看素材的高清预览图</DialogDescription>
+          </DialogHeader>
           <div className="relative w-full h-full flex items-center justify-center p-4">
             {previewImage && (
               <div className="relative w-full h-full flex flex-col items-center gap-4">
