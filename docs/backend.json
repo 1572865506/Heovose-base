@@ -1,103 +1,123 @@
 {
   "entities": {
+    "LocalizedString": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "LocalizedString",
+      "type": "object",
+      "description": "Represents a piece of text content available in multiple languages, primarily English and Chinese, to support the app's multilingual features.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the LocalizedString entity."
+        },
+        "en": {
+          "type": "string",
+          "description": "The English translation of the text."
+        },
+        "zh": {
+          "type": "string",
+          "description": "The Chinese (Simplified) translation of the text."
+        }
+      },
+      "required": [
+        "id",
+        "en",
+        "zh"
+      ]
+    },
+    "HomepageSectionContent": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "HomepageSectionContent",
+      "type": "object",
+      "description": "Defines the content and configuration for dynamic sections on the homepage, such as the Hero section.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the homepage section content (e.g., 'hero', 'about-us')."
+        },
+        "sectionType": {
+          "type": "string",
+          "description": "Identifies the type or purpose of the homepage section (e.g., 'hero', 'call-to-action')."
+        },
+        "headlineTextId": {
+          "type": "string",
+          "description": "Reference to LocalizedString for the main headline of the section. (Relationship: LocalizedString 1:N HomepageSectionContent)"
+        },
+        "subtitleTextId": {
+          "type": "string",
+          "description": "Reference to LocalizedString for the subtitle or secondary text of the section. (Relationship: LocalizedString 1:N HomepageSectionContent)"
+        },
+        "imageUrl": {
+          "type": "string",
+          "description": "URL to a primary image associated with the section (e.g., the 45-degree perspective 3D product image for the hero section).",
+          "format": "uri"
+        }
+      },
+      "required": [
+        "id",
+        "sectionType",
+        "headlineTextId",
+        "subtitleTextId",
+        "imageUrl"
+      ]
+    },
     "ProductCategory": {
       "$schema": "http://json-schema.org/draft-07/schema#",
       "title": "ProductCategory",
       "type": "object",
-      "description": "Represents a category under which products are grouped, such as AIO, Mini PC, Monitors, or KIOSK.",
+      "description": "Categorizes different product types offered by Heovose, such as AIO, Mini PC, Monitors, and KIOSK.",
       "properties": {
         "id": {
           "type": "string",
           "description": "Unique identifier for the ProductCategory entity."
         },
-        "nameEn": {
+        "nameTextId": {
           "type": "string",
-          "description": "The name of the product category in English."
+          "description": "Reference to LocalizedString for the name of the product category (e.g., 'All-in-One PCs'). (Relationship: LocalizedString 1:N ProductCategory)"
         },
-        "nameZh": {
+        "slug": {
           "type": "string",
-          "description": "The name of the product category in Chinese."
+          "description": "A URL-friendly identifier for the product category, used for routing or display."
         },
-        "descriptionEn": {
-          "type": "string",
-          "description": "A detailed description of the product category in English."
-        },
-        "descriptionZh": {
-          "type": "string",
-          "description": "A detailed description of the product category in Chinese."
-        },
-        "thumbnailUrl": {
+        "thumbnailImageUrl": {
           "type": "string",
           "description": "URL to a thumbnail image representing the product category.",
           "format": "uri"
-        },
-        "createdAt": {
-          "type": "string",
-          "description": "Timestamp when the product category was created.",
-          "format": "date-time"
-        },
-        "updatedAt": {
-          "type": "string",
-          "description": "Timestamp when the product category was last updated.",
-          "format": "date-time"
         }
       },
       "required": [
         "id",
-        "nameEn",
-        "nameZh",
-        "thumbnailUrl",
-        "createdAt",
-        "updatedAt"
+        "nameTextId",
+        "slug",
+        "thumbnailImageUrl"
       ]
     },
     "Product": {
       "$schema": "http://json-schema.org/draft-07/schema#",
       "title": "Product",
       "type": "object",
-      "description": "Represents an individual product manufactured by Heovose, including its details, features, and visual assets.",
+      "description": "Represents an individual product within Heovose's offerings, belonging to a specific product category.",
       "properties": {
         "id": {
           "type": "string",
           "description": "Unique identifier for the Product entity."
         },
+        "nameTextId": {
+          "type": "string",
+          "description": "Reference to LocalizedString for the product's name. (Relationship: LocalizedString 1:N Product)"
+        },
+        "descriptionTextId": {
+          "type": "string",
+          "description": "Reference to LocalizedString for a brief description of the product. (Relationship: LocalizedString 1:N Product)"
+        },
+        "mainImageUrl": {
+          "type": "string",
+          "description": "URL to the product's primary marketing image.",
+          "format": "uri"
+        },
         "productCategoryId": {
           "type": "string",
-          "description": "Reference to ProductCategory. (Relationship: ProductCategory 1:N Product)"
-        },
-        "nameEn": {
-          "type": "string",
-          "description": "The official name of the product in English."
-        },
-        "nameZh": {
-          "type": "string",
-          "description": "The official name of the product in Chinese."
-        },
-        "taglineEn": {
-          "type": "string",
-          "description": "A short, catchy slogan or subtitle for the product in English."
-        },
-        "taglineZh": {
-          "type": "string",
-          "description": "A short, catchy slogan or subtitle for the product in Chinese."
-        },
-        "descriptionEn": {
-          "type": "string",
-          "description": "A comprehensive description of the product in English."
-        },
-        "descriptionZh": {
-          "type": "string",
-          "description": "A comprehensive description of the product in Chinese."
-        },
-        "model3dUrl": {
-          "type": "string",
-          "description": "URL to the 3D model asset of the product, used for interactive visualizations.",
-          "format": "uri"
-        },
-        "primaryImageUrl": {
-          "type": "string",
-          "description": "URL to the main promotional image of the product.",
-          "format": "uri"
+          "description": "Reference to ProductCategory to which this product belongs. (Relationship: ProductCategory 1:N Product)"
         },
         "galleryImageUrls": {
           "type": "array",
@@ -105,55 +125,127 @@
           "items": {
             "type": "string"
           }
-        },
-        "keyFeaturesEn": {
-          "type": "array",
-          "description": "An array of key features or selling points of the product in English.",
-          "items": {
-            "type": "string"
-          }
-        },
-        "keyFeaturesZh": {
-          "type": "array",
-          "description": "An array of key features or selling points of the product in Chinese.",
-          "items": {
-            "type": "string"
-          }
-        },
-        "specificationsUrl": {
-          "type": "string",
-          "description": "Optional URL to a detailed technical specification sheet (e.g., PDF) for the product.",
-          "format": "uri"
-        },
-        "status": {
-          "type": "string",
-          "description": "The current status of the product (e.g., 'active', 'discontinued', 'upcoming')."
-        },
-        "createdAt": {
-          "type": "string",
-          "description": "Timestamp when the product record was created.",
-          "format": "date-time"
-        },
-        "updatedAt": {
-          "type": "string",
-          "description": "Timestamp when the product record was last updated.",
-          "format": "date-time"
         }
       },
       "required": [
         "id",
+        "nameTextId",
+        "descriptionTextId",
+        "mainImageUrl",
         "productCategoryId",
-        "nameEn",
-        "nameZh",
-        "descriptionEn",
-        "descriptionZh",
-        "model3dUrl",
-        "primaryImageUrl",
-        "keyFeaturesEn",
-        "keyFeaturesZh",
-        "status",
-        "createdAt",
-        "updatedAt"
+        "galleryImageUrls"
+      ]
+    },
+    "Statistic": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Statistic",
+      "type": "object",
+      "description": "Holds key company statistics, such as factory counts or product series numbers, for engaging visualization.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the Statistic entity."
+        },
+        "value": {
+          "type": "string",
+          "description": "The numerical or text value of the statistic (e.g., '3', '30+')."
+        },
+        "unitTextId": {
+          "type": "string",
+          "description": "Reference to LocalizedString for the unit or label of the statistic (e.g., 'Global Factories', 'AIO Series'). (Relationship: LocalizedString 1:N Statistic)"
+        },
+        "descriptionTextId": {
+          "type": "string",
+          "description": "Reference to LocalizedString for a more detailed descriptive text of the statistic. (Relationship: LocalizedString 1:N Statistic)"
+        },
+        "order": {
+          "type": "number",
+          "description": "The intended display order of the statistic on the page."
+        }
+      },
+      "required": [
+        "id",
+        "value",
+        "unitTextId",
+        "descriptionTextId",
+        "order"
+      ]
+    },
+    "ProductionStep": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "ProductionStep",
+      "type": "object",
+      "description": "Details each step of Heovose's 11-step production process, from IQC to OQA.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the ProductionStep entity."
+        },
+        "stepNumber": {
+          "type": "number",
+          "description": "The sequential number of the production step (e.g., 1, 2, ..., 11)."
+        },
+        "titleTextId": {
+          "type": "string",
+          "description": "Reference to LocalizedString for the title or abbreviation of the production step (e.g., 'IQC'). (Relationship: LocalizedString 1:N ProductionStep)"
+        },
+        "descriptionTextId": {
+          "type": "string",
+          "description": "Reference to LocalizedString for a detailed explanation of the production step. (Relationship: LocalizedString 1:N ProductionStep)"
+        },
+        "iconUrl": {
+          "type": "string",
+          "description": "URL to an icon or graphic representing the production step.",
+          "format": "uri"
+        }
+      },
+      "required": [
+        "id",
+        "stepNumber",
+        "titleTextId",
+        "descriptionTextId",
+        "iconUrl"
+      ]
+    },
+    "FactoryLocation": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "FactoryLocation",
+      "type": "object",
+      "description": "Specifies the geographical details of Heovose's global factory locations for display on an interactive map.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the FactoryLocation entity."
+        },
+        "nameTextId": {
+          "type": "string",
+          "description": "Reference to LocalizedString for the name of the factory location (e.g., 'China Factory'). (Relationship: LocalizedString 1:N FactoryLocation)"
+        },
+        "countryTextId": {
+          "type": "string",
+          "description": "Reference to LocalizedString for the country where the factory is located (e.g., 'China'). (Relationship: LocalizedString 1:N FactoryLocation)"
+        },
+        "latitude": {
+          "type": "number",
+          "description": "The geographical latitude coordinate of the factory location."
+        },
+        "longitude": {
+          "type": "number",
+          "description": "The geographical longitude coordinate of the factory location."
+        },
+        "mapMarkerImageUrl": {
+          "type": "string",
+          "description": "URL to an image or icon to use as a marker on the map for this location.",
+          "format": "uri"
+        }
+      },
+      "required": [
+        "id",
+        "nameTextId",
+        "countryTextId",
+        "latitude",
+        "longitude",
+        "mapMarkerImageUrl"
       ]
     }
   },
@@ -166,26 +258,76 @@
   "firestore": {
     "structure": [
       {
-        "path": "/product_categories",
+        "path": "/localizedStrings/{localizedStringId}",
+        "definition": {
+          "entityName": "LocalizedString",
+          "schema": {
+            "$ref": "#/backend/entities/LocalizedString"
+          },
+          "description": "Stores localized text content for English and Chinese, referenced by other entities for multilingual support. Publicly readable."
+        }
+      },
+      {
+        "path": "/homepageSectionContent/{sectionId}",
+        "definition": {
+          "entityName": "HomepageSectionContent",
+          "schema": {
+            "$ref": "#/backend/entities/HomepageSectionContent"
+          },
+          "description": "Defines dynamic sections for the homepage, such as the Hero section. Includes references to localized strings for text content. Publicly readable."
+        }
+      },
+      {
+        "path": "/productCategories/{categoryId}",
         "definition": {
           "entityName": "ProductCategory",
           "schema": {
             "$ref": "#/backend/entities/ProductCategory"
           },
-          "description": "Stores all product categories, such as AIO, Mini PC, Monitors, and KIOSK. These are public, global, and intended for display on the product list page and homepage product gallery. All documents in this collection share the same security posture (publicly readable)."
+          "description": "Categorizes different product types offered by Heovose. Includes reference to localized string for category names. Publicly readable."
         }
       },
       {
-        "path": "/products",
+        "path": "/products/{productId}",
         "definition": {
           "entityName": "Product",
           "schema": {
             "$ref": "#/backend/entities/Product"
           },
-          "description": "Stores individual product details. Each product includes a `productCategoryId` to link it to its respective category. Products with a `status` of 'active' are publicly readable, enabling display on the product list page. This collection includes a denormalized `productCategoryId` for efficient querying and maintains authorization independence as products are public and not authorization-dependent on their categories."
+          "description": "Represents an individual product, referencing localized strings for name and description, and a product category. Publicly readable."
+        }
+      },
+      {
+        "path": "/statistics/{statisticId}",
+        "definition": {
+          "entityName": "Statistic",
+          "schema": {
+            "$ref": "#/backend/entities/Statistic"
+          },
+          "description": "Holds key company statistics for engaging visualization. Includes references to localized strings for units and descriptions. Publicly readable."
+        }
+      },
+      {
+        "path": "/productionSteps/{stepId}",
+        "definition": {
+          "entityName": "ProductionStep",
+          "schema": {
+            "$ref": "#/backend/entities/ProductionStep"
+          },
+          "description": "Details each step of Heovose's production process. Includes references to localized strings for titles and descriptions. Publicly readable."
+        }
+      },
+      {
+        "path": "/factoryLocations/{locationId}",
+        "definition": {
+          "entityName": "FactoryLocation",
+          "schema": {
+            "$ref": "#/backend/entities/FactoryLocation"
+          },
+          "description": "Specifies the geographical details of Heovose's global factory locations for display on an interactive map. Includes references to localized strings. Publicly readable."
         }
       }
     ],
-    "reasoning": "The Firestore structure is designed for optimal performance, debuggability, and security by adhering strictly to the core design principles. Both `ProductCategory` and `Product` entities are stored in top-level collections: `/product_categories` and `/products` respectively. This flat structure, coupled with the homogeneous security posture of public readability, eliminates complex authorization dependencies.\n\n**Authorization Independence:** The design achieves authorization independence by treating `ProductCategory` and `Product` as independent public data entities. Access to a `Product` document does not require reading its associated `ProductCategory` document for authorization decisions. The `productCategoryId` field within a `Product` document serves purely as a data relationship (a foreign key) for categorization, not as a security credential or a dependency for access rules. All documents within `/product_categories` and `/products` (when `status` is 'active') are intended to be publicly readable. This negates the need for `get()` calls in security rules, as there are no hierarchical authorization links to traverse. This independence simplifies rule writing and improves the atomicity of operations.\n\n**QAPs (Rules are not Filters):** This structure supports Query-as-Permission (QAPs) by ensuring that all documents within a given collection share the same security requirements. For `/product_categories`, all documents are publicly readable. For `/products`, only documents with `status: 'active'` will be readable. This segregation means that security rules can be straightforward: `allow read: if true;` for categories and `allow read: if resource.data.status == 'active';` for products. Client-side queries can then filter by `productCategoryId` or other fields (e.g., specific product types for the gallery) without security rules needing to perform filtering logic. Any `list` operation on these collections will inherently only return data that is authorized according to these simple, explicit rules, thereby fulfilling the QAPs mandate."
+    "reasoning": "The Firestore structure is designed to host static, public-facing content for the Heovose Elevate application, focusing on clarity, scalability, and simple security rules. Each distinct content type (e.g., homepage sections, product categories, products, statistics, production steps, factory locations, and localized strings) is stored in its own top-level collection. This design adheres strictly to the core principles:\n\n1.  **Authorization Independence (CRITICAL):** Since all defined entities represent public-facing content, read access is granted to all users for all documents. This inherently achieves authorization independence for read operations as there are no hierarchical dependencies or granular access controls required for viewing the data. Every document can be read atomically without needing to `get()` a parent document to determine permissions. If administrative write access were to be implemented, it would rely on a top-level role check (e.g., `/adminRoles/{uid}`), rather than denormalizing authorization context within content documents, further ensuring independence.\n\n2.  **Clarity of Intent (Debuggability):** Each collection is named explicitly based on the entity it contains (e.g., `homepageSectionContent`, `productCategories`). This makes the purpose of each document and collection immediately clear. The uniform public read access policy simplifies debugging, as any read access issue would point to a misconfigured global read rule rather than complex nested logic.\n\n3.  **DBAC (No Custom Claims):** As the primary use case is public read, no user-specific roles are required for content consumption. If administrative functionality for content management were introduced, roles would be managed via database entry existence (e.g., a `/adminUsers/{uid}` collection) rather than custom claims, allowing rules to directly check `request.auth.uid` against these database entries for write permissions.\n\n4.  **QAPs (Rules are not Filters):** All collections maintain a homogeneous security posture (publicly readable). This means that `list` operations (queries) against any collection will return all documents relevant to the query without needing client-side filtering or complex server-side rule filtering. The structural segregation ensures that public and potentially private data (if it existed) are never mixed, allowing efficient and secure queries directly from the client.\n\n5.  **Invariants:** The structure supports data integrity by explicitly referencing `LocalizedString` entities via `id` fields (e.g., `headlineTextId`, `nameTextId`). While not enforcing referential integrity at the database level, this is a standard pattern for linking content. Timestamps (not explicitly in schema but common) or ownership (not relevant for public content) would be directly stored on documents if needed.\n\n**Denormalization Strategy:** For this specific application, where all content is public read-only, denormalization for authorization independence within the content documents themselves is not necessary for read operations. The 'public read' access model is the ultimate form of authorization independence for consumption. Any references to `LocalizedString` entities are handled by fetching the `LocalizedString` document directly, as it too is public. This avoids `get()` calls in rules because the read rule is simply `allow read: if true;` for content. For admin write operations, independence would be achieved by checking a separate, top-level admin role collection.\n\n**Structural Segregation:** Each entity type is placed in its own top-level collection (e.g., `/products`, `/productCategories`). This ensures that all documents within a given collection share the same security posture (publicly readable) and schema, greatly simplifying security rules and making the database structure intuitive. There is no mixing of public posts with private drafts, or general users with administrators, in the same collection. This directly supports QAPs by making rules simple and preventing the need for complex filters to enforce permissions during `list` operations."
   }
 }
