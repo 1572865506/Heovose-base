@@ -102,6 +102,7 @@ export default function GalleryPage() {
 
   // 预览状态
   const [previewImage, setPreviewImage] = useState<GalleryAsset | null>(null);
+  const [previewScaleMode, setPreviewScaleMode] = useState<'fit' | 'original'>('fit');
 
   // 上传任务管理
   const [uploadTasks, setUploadTasks] = useState<UploadTask[]>([]);
@@ -601,7 +602,7 @@ export default function GalleryPage() {
             <div key={asset.id} className="group relative bg-white rounded-2xl border border-border/40 overflow-hidden hover:shadow-2xl transition-all">
               <div 
                 className="relative aspect-square bg-muted/10 cursor-zoom-in overflow-hidden"
-                onClick={() => setPreviewImage(asset)}
+                onClick={() => { setPreviewScaleMode('fit'); setPreviewImage(asset); }}
               >
                 <Image src={asset.url} alt={asset.title} fill className="object-cover group-hover:scale-105 transition-transform duration-500" />
                 <div className="absolute top-2 left-2">
@@ -743,27 +744,41 @@ export default function GalleryPage() {
 
       {/* 大图预览弹窗 */}
       <Dialog open={!!previewImage} onOpenChange={(o) => !o && setPreviewImage(null)}>
-        <DialogContent className="max-w-[95vw] h-[95vh] p-0 overflow-hidden border-none bg-black/90 shadow-none flex flex-col">
+        <DialogContent className="max-w-[95vw] h-[95vh] p-0 overflow-hidden border-none bg-black/95 shadow-none flex flex-col">
           <DialogHeader className="sr-only">
             <DialogTitle>{previewImage?.title || '图片预览'}</DialogTitle>
             <DialogDescription>查看素材的高清预览图</DialogDescription>
           </DialogHeader>
           
-          <div className="relative flex-1 w-full flex flex-col items-center justify-center p-4">
+          <div className={cn(
+            "relative flex-1 w-full flex flex-col items-center p-4 transition-all duration-300",
+            previewScaleMode === 'fit' ? "justify-center" : "overflow-auto justify-start"
+          )}>
             {previewImage && (
               <>
-                <div className="relative w-full h-full">
-                  <Image 
-                    src={previewImage.url} 
-                    alt={previewImage.title} 
-                    fill 
-                    className="object-contain" 
-                    priority
-                  />
+                <div className={cn(
+                  "relative transition-all duration-300",
+                  previewScaleMode === 'fit' ? "w-full h-full" : "min-w-max min-h-max"
+                )}>
+                  {previewScaleMode === 'fit' ? (
+                    <Image 
+                      src={previewImage.url} 
+                      alt={previewImage.title} 
+                      fill 
+                      className="object-contain" 
+                      priority
+                    />
+                  ) : (
+                    <img 
+                      src={previewImage.url} 
+                      alt={previewImage.title} 
+                      className="max-w-none shadow-2xl"
+                    />
+                  )}
                 </div>
                 
                 {/* 底部信息条 */}
-                <div className="absolute bottom-10 left-1/2 -translate-x-1/2 z-[210] bg-white/10 backdrop-blur-md px-6 py-3 rounded-full border border-white/20 flex items-center gap-6">
+                <div className="fixed bottom-10 left-1/2 -translate-x-1/2 z-[210] bg-white/10 backdrop-blur-md px-6 py-3 rounded-full border border-white/20 flex items-center gap-6">
                   <div className="flex flex-col">
                     <span className="text-white font-bold text-sm">{previewImage.title}</span>
                     <span className="text-white/60 text-[10px] uppercase tracking-widest">
@@ -771,6 +786,34 @@ export default function GalleryPage() {
                     </span>
                   </div>
                   <div className="h-8 w-px bg-white/20" />
+                  
+                  <div className="flex items-center gap-2">
+                    <Button 
+                      variant="ghost" 
+                      size="sm" 
+                      className={cn(
+                        "text-white hover:bg-white/20 rounded-xl transition-all",
+                        previewScaleMode === 'fit' ? "bg-white/20" : ""
+                      )}
+                      onClick={() => setPreviewScaleMode('fit')}
+                    >
+                      <Minimize2 className="h-4 w-4 mr-2" /> 适合屏幕
+                    </Button>
+                    <Button 
+                      variant="ghost" 
+                      size="sm" 
+                      className={cn(
+                        "text-white hover:bg-white/20 rounded-xl transition-all",
+                        previewScaleMode === 'original' ? "bg-white/20" : ""
+                      )}
+                      onClick={() => setPreviewScaleMode('original')}
+                    >
+                      <Maximize2 className="h-4 w-4 mr-2" /> 原始大小
+                    </Button>
+                  </div>
+
+                  <div className="h-8 w-px bg-white/20" />
+                  
                   <Button 
                     variant="ghost" 
                     size="sm" 
@@ -785,7 +828,7 @@ export default function GalleryPage() {
             
             <button 
               onClick={() => setPreviewImage(null)}
-              className="absolute top-4 right-4 z-[210] p-2 bg-black/50 hover:bg-black/70 text-white rounded-full transition-colors"
+              className="fixed top-4 right-4 z-[210] p-2 bg-black/50 hover:bg-black/70 text-white rounded-full transition-colors"
             >
               <X className="h-6 w-6" />
             </button>
