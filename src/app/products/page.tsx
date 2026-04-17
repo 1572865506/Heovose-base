@@ -4,11 +4,13 @@
 import { useState, useMemo, useEffect, Suspense } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
-import { useSearchParams, useRouter } from 'next/navigation';
+import { useSearchParams } from 'next/navigation';
+import { useFirestore, useCollection, useMemoFirebase } from '@/firebase';
+import { collection } from 'firebase/firestore';
 import { Locale, translations } from '@/lib/translations';
 import { Navbar } from '@/components/Navbar';
 import { Footer } from '@/components/Footer';
-import { Search, Filter, ArrowRight, FileText, ChevronRight, X, Package, LayoutGrid, ChevronDown } from 'lucide-react';
+import { Search, ArrowRight, ChevronRight, Package, LayoutGrid, Loader2 } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -21,227 +23,93 @@ import {
 } from "@/components/ui/accordion";
 import { cn } from '@/lib/utils';
 
-type ProductLine = 'wholesale' | 'project';
+interface Product {
+  id: string;
+  nameTextId: string;
+  descriptionTextId: string;
+  mainImageUrl: string;
+  productCategoryId: string;
+  tags?: string[];
+}
 
 interface Category {
   id: string;
-  line: ProductLine;
-  nameEn: string;
-  nameZh: string;
-  parentId?: string;
+  nameTextId: string;
+  slug: string;
+  thumbnailImageUrl?: string;
+  parentId?: string; // 支持层级，虽然目前 backend.json 较简单
 }
 
-// 模拟数据 - 分类 (支持层级)
-const MOCK_CATEGORIES: Category[] = [
-  // Wholesale Line
-  { id: 'cat-aio', line: 'wholesale', nameEn: 'All-in-One PC', nameZh: '一体机电脑' },
-  { id: 'cat-minipc', line: 'wholesale', nameEn: 'Mini PC', nameZh: '迷你主机' },
-  { id: 'cat-monitor', line: 'wholesale', nameEn: 'Industrial Monitor', nameZh: '工业显示器' },
-  { id: 'cat-laptop', line: 'wholesale', nameEn: 'Laptops', nameZh: '笔记本电脑' },
-  // PC Components & Sub-categories
-  { id: 'cat-components', line: 'wholesale', nameEn: 'PC Components', nameZh: '电脑配件' },
-  { id: 'cat-mb', line: 'wholesale', nameEn: 'Motherboards', nameZh: '主板', parentId: 'cat-components' },
-  { id: 'cat-gpu', line: 'wholesale', nameEn: 'GPUs', nameZh: '显卡', parentId: 'cat-components' },
-  { id: 'cat-ram', line: 'wholesale', nameEn: 'RAM', nameZh: '内存', parentId: 'cat-components' },
-  { id: 'cat-hdd', line: 'wholesale', nameEn: 'Storage (SSD/HDD)', nameZh: '硬盘/存储', parentId: 'cat-components' },
-  { id: 'cat-cpu', line: 'wholesale', nameEn: 'CPUs', nameZh: '中央处理器', parentId: 'cat-components' },
-  
-  // Project Line
-  { id: 'cat-kiosk', line: 'project', nameEn: 'Self-service Kiosk', nameZh: '自助终端' },
-  { id: 'cat-conference', line: 'project', nameEn: 'Conference Tablet', nameZh: '会议平板' },
-  { id: 'cat-industrial', line: 'project', nameEn: 'Industrial PC', nameZh: '工业控制机' },
-  { id: 'cat-led', line: 'project', nameEn: 'LED Screen Project', nameZh: 'LED 工程' },
-];
-
-// 定义不同类别的特有标签
-const CATEGORY_TAGS: Record<string, { en: string; zh: string }[]> = {
-  'cat-aio': [
-    { en: '19 inch', zh: '19 英寸' }, { en: '23.8 inch', zh: '23.8 英寸' }, { en: '27 inch', zh: '27 英寸' }, { en: 'Office', zh: '办公' }, { en: 'Touch', zh: '触控' }
-  ],
-  'cat-minipc': [
-    { en: 'Fanless', zh: '无风扇' }, { en: 'Gaming', zh: '游戏' }, { en: 'Edge Computing', zh: '边缘计算' }, { en: 'Dual LAN', zh: '双网口' }
-  ],
-  'cat-gpu': [
-    { en: 'NVIDIA', zh: '英伟达' }, { en: 'AMD', zh: '超威' }, { en: 'Gaming', zh: '游戏' }, { en: 'Workstation', zh: '工作站' }
-  ],
-  'cat-kiosk': [
-    { en: 'Payment', zh: '支付' }, { en: 'Medical', zh: '医疗' }, { en: 'Retail', zh: '零售' }, { en: 'Outdoor', zh: '户外' }
-  ],
-  'cat-components': [
-    { en: 'Gaming', zh: '电竞' }, { en: 'Pro', zh: '专业' }, { en: 'Budget', zh: '入门' }
-  ]
-};
-
-const MOCK_PRODUCTS = [
-  {
-    id: 'p1',
-    productCategoryId: 'cat-aio',
-    line: 'wholesale',
-    nameEn: 'Heovose H24 Pro AIO',
-    nameZh: 'Heovose H24 Pro 一体机',
-    taglineEn: 'Ultimate Integration',
-    descriptionEn: 'High-performance 23.8-inch All-in-One PC with borderless display.',
-    descriptionZh: '高性能 23.8 英寸一体机，采用无边框显示屏。',
-    primaryImageUrl: 'https://picsum.photos/seed/aio1/600/450',
-    tags: ['23.8 inch', 'Office'],
-    status: 'active'
-  },
-  {
-    id: 'p2',
-    productCategoryId: 'cat-kiosk',
-    line: 'project',
-    nameEn: 'Smart Retail Kiosk',
-    nameZh: '智能零售终端',
-    taglineEn: 'Future of Retail',
-    descriptionEn: 'Versatile self-service kiosk for check-out and ticketing.',
-    descriptionZh: '多功能自助终端，适用于结账和票务。',
-    primaryImageUrl: 'https://picsum.photos/seed/kiosk1/600/450',
-    tags: ['Payment', 'Retail'],
-    status: 'active'
-  },
-  {
-    id: 'p5',
-    productCategoryId: 'cat-gpu',
-    line: 'wholesale',
-    nameEn: 'GeForce RTX 4070 Ti',
-    nameZh: 'GeForce RTX 4070 Ti 显卡',
-    taglineEn: 'Power for Professionals',
-    descriptionEn: 'High-end graphics card for gaming and industrial rendering.',
-    descriptionZh: '适用于游戏和工业渲染的高端显卡。',
-    primaryImageUrl: 'https://picsum.photos/seed/gpu1/600/450',
-    tags: ['NVIDIA', 'Gaming'],
-    status: 'active'
-  },
-  {
-    id: 'p6',
-    productCategoryId: 'cat-ram',
-    line: 'wholesale',
-    nameEn: 'Heovose DDR5 32GB RAM',
-    nameZh: 'Heovose DDR5 32GB 内存条',
-    taglineEn: 'Extreme Speed',
-    descriptionEn: 'Low-latency high-speed memory modules.',
-    descriptionZh: '低延迟高速内存模组。',
-    primaryImageUrl: 'https://picsum.photos/seed/ram1/600/450',
-    tags: ['DDR5', '32GB', 'Gaming'],
-    status: 'active'
-  }
-];
+interface LocalizedString {
+  id: string;
+  en: string;
+  zh: string;
+}
 
 function ProductListContent() {
   const [locale, setLocale] = useState<Locale>('en');
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategoryId, setSelectedCategoryId] = useState<string | null>(null);
-  const [selectedTag, setSelectedTag] = useState<string | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
   
+  const firestore = useFirestore();
   const searchParams = useSearchParams();
   const categoryParam = searchParams.get('category');
   const t = translations[locale].products;
 
-  useEffect(() => {
-    const timer = setTimeout(() => setIsLoading(false), 800);
-    return () => clearTimeout(timer);
-  }, []);
+  // 1. 获取 Firestore 数据
+  const prodsRef = useMemoFirebase(() => collection(firestore, 'products'), [firestore]);
+  const catsRef = useMemoFirebase(() => collection(firestore, 'productCategories'), [firestore]);
+  const transRef = useMemoFirebase(() => collection(firestore, 'localizedStrings'), [firestore]);
 
-  useEffect(() => {
-    if (categoryParam) {
-      const found = MOCK_CATEGORIES.find(c => 
-        c.id === categoryParam || 
-        c.nameEn.toLowerCase().includes(categoryParam.toLowerCase()) ||
-        c.nameZh.includes(categoryParam)
-      );
-      if (found) setSelectedCategoryId(found.id);
-    }
-  }, [categoryParam]);
+  const { data: products, isLoading: isProdsLoading } = useCollection<Product>(prodsRef);
+  const { data: categories, isLoading: isCatsLoading } = useCollection<Category>(catsRef);
+  const { data: allTranslations } = useCollection<LocalizedString>(transRef);
 
-  useEffect(() => {
-    setSelectedTag(null);
-  }, [selectedCategoryId]);
-
-  const activeLine: ProductLine = useMemo(() => {
-    if (!selectedCategoryId) return 'wholesale';
-    const cat = MOCK_CATEGORIES.find(c => c.id === selectedCategoryId);
-    return (cat?.line as ProductLine) || 'wholesale';
-  }, [selectedCategoryId]);
-
-  const getLineStyles = (line: ProductLine) => {
-    return line === 'wholesale' 
-      ? { 
-          bg: 'bg-primary', 
-          text: 'text-primary', 
-          border: 'border-primary', 
-          hover: 'hover:bg-primary/10',
-          button: 'bg-primary hover:bg-primary/90',
-          accent: 'bg-accent text-accent-foreground',
-          lightBg: 'bg-primary/5'
-        } 
-      : { 
-          bg: 'bg-[#F97316]', 
-          text: 'text-[#F97316]', 
-          border: 'border-[#F97316]', 
-          hover: 'hover:bg-[#F97316]/10',
-          button: 'bg-[#F97316] hover:bg-[#F97316]/90',
-          accent: 'bg-[#F97316] text-white',
-          lightBg: 'bg-[#F97316]/5'
-        };
+  // 2. 翻译查找工具
+  const getT = (id: string) => {
+    const entry = allTranslations?.find(item => item.id === id);
+    return entry ? (locale === 'zh' ? entry.zh : entry.en) : id;
   };
 
-  const lineStyles = getLineStyles(activeLine);
+  // 3. 处理 URL 参数
+  useEffect(() => {
+    if (categoryParam && categories) {
+      const found = categories.find(c => c.slug === categoryParam || c.id === categoryParam);
+      if (found) setSelectedCategoryId(found.id);
+    }
+  }, [categoryParam, categories]);
 
+  // 4. 过滤逻辑
   const filteredProducts = useMemo(() => {
-    return MOCK_PRODUCTS.filter(product => {
-      const category = MOCK_CATEGORIES.find(c => c.id === selectedCategoryId);
-      const subCategoryIds = MOCK_CATEGORIES.filter(c => c.parentId === selectedCategoryId).map(c => c.id);
-      
-      const matchesCategory = !selectedCategoryId || 
-                             product.productCategoryId === selectedCategoryId || 
-                             subCategoryIds.includes(product.productCategoryId);
-                             
-      const matchesTag = !selectedTag || (product.tags || []).includes(selectedTag);
-      const name = locale === 'zh' ? product.nameZh : product.nameEn;
-      const matchesSearch = name.toLowerCase().includes(searchQuery.toLowerCase());
-      return matchesCategory && matchesTag && matchesSearch;
+    if (!products) return [];
+    return products.filter(p => {
+      const matchesCategory = !selectedCategoryId || p.productCategoryId === selectedCategoryId;
+      const name = getT(p.nameTextId).toLowerCase();
+      const matchesSearch = name.includes(searchQuery.toLowerCase());
+      return matchesCategory && matchesSearch;
     });
-  }, [selectedCategoryId, selectedTag, searchQuery, locale]);
-
-  const activeCategoryTags = useMemo(() => {
-    if (!selectedCategoryId) return [];
-    // 优先匹配具体类别的标签，如果没有则匹配其父类别的标签
-    const cat = MOCK_CATEGORIES.find(c => c.id === selectedCategoryId);
-    const tags = CATEGORY_TAGS[selectedCategoryId] || (cat?.parentId ? CATEGORY_TAGS[cat.parentId] : []);
-    return tags;
-  }, [selectedCategoryId]);
+  }, [products, selectedCategoryId, searchQuery, allTranslations, locale]);
 
   const activeCategoryName = useMemo(() => {
     if (!selectedCategoryId) return t.allCategories;
-    const cat = MOCK_CATEGORIES.find(c => c.id === selectedCategoryId);
-    return locale === 'zh' ? cat?.nameZh : cat?.nameEn;
-  }, [selectedCategoryId, locale, t.allCategories]);
+    const cat = categories?.find(c => c.id === selectedCategoryId);
+    return cat ? getT(cat.nameTextId) : t.allCategories;
+  }, [selectedCategoryId, categories, allTranslations, locale, t.allCategories]);
 
-  const parentCategories = MOCK_CATEGORIES.filter(c => !c.parentId && c.line === activeLine);
-  
+  const isLoading = isProdsLoading || isCatsLoading;
+
   return (
     <main className="relative min-h-screen bg-background">
       <Navbar locale={locale} setLocale={setLocale} />
       
-      <section className={cn("pt-32 pb-16 text-white relative transition-colors duration-700", lineStyles.bg)}>
-        <div className="absolute inset-0 opacity-10">
-          <Image
-            src="https://picsum.photos/seed/list-bg/1920/600"
-            alt="Background"
-            fill
-            className="object-cover"
-          />
-        </div>
+      <section className="pt-32 pb-16 bg-primary text-white relative">
         <div className="container mx-auto px-6 relative z-10">
           <div className="max-w-3xl space-y-6">
             <h1 className="text-4xl md:text-6xl font-headline font-bold tracking-tight">
-              {activeLine === 'project' && locale === 'zh' ? '项目定制化方案' : t.listTitle}
+              {t.listTitle}
             </h1>
             <p className="text-xl opacity-80 font-light max-w-xl">
-              {activeLine === 'project' 
-                ? (locale === 'zh' ? '针对大型工程、智能会议及工业场景的专业定制化硬件方案。' : 'Professional hardware solutions for large-scale engineering, smart meetings and industrial scenarios.')
-                : t.listSubtitle}
+              {t.listSubtitle}
             </p>
           </div>
         </div>
@@ -250,159 +118,64 @@ function ProductListContent() {
       <section className="py-16 container mx-auto px-6">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-12">
           
-          {/* Sidebar */}
           <aside className="lg:col-span-3 space-y-10">
-            {/* Line Switcher */}
-            <div className="p-1 bg-muted rounded-2xl flex gap-1">
-               <button 
-                onClick={() => setSelectedCategoryId('cat-aio')}
-                className={cn(
-                  "flex-1 flex items-center justify-center gap-2 py-3 rounded-xl text-xs font-bold transition-all",
-                  activeLine === 'wholesale' ? "bg-white shadow-md text-primary" : "text-muted-foreground hover:text-primary"
-                )}
-               >
-                 <Package className="h-4 w-4" /> {locale === 'zh' ? '批发' : 'Wholesale'}
-               </button>
-               <button 
-                onClick={() => setSelectedCategoryId('cat-kiosk')}
-                className={cn(
-                  "flex-1 flex items-center justify-center gap-2 py-3 rounded-xl text-xs font-bold transition-all",
-                  activeLine === 'project' ? "bg-white shadow-md text-[#F97316]" : "text-muted-foreground hover:text-[#F97316]"
-                )}
-               >
-                 <LayoutGrid className="h-4 w-4" /> {locale === 'zh' ? '项目' : 'Project'}
-               </button>
+            <div className="space-y-4">
+              <h3 className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">搜索</h3>
+              <Input
+                placeholder={t.searchPlaceholder}
+                className="rounded-xl"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+              />
             </div>
 
-            {/* Search */}
             <div className="space-y-4">
-              <h3 className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Search</h3>
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                <Input
-                  placeholder={t.searchPlaceholder}
-                  className="pl-10 rounded-xl"
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                />
+              <h3 className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">产品分类</h3>
+              <div className="space-y-1">
+                <button
+                  onClick={() => setSelectedCategoryId(null)}
+                  className={cn(
+                    "w-full text-left px-4 py-3 rounded-xl transition-all text-sm font-medium",
+                    selectedCategoryId === null ? "bg-primary text-white" : "hover:bg-muted text-muted-foreground"
+                  )}
+                >
+                  {t.allCategories}
+                </button>
+                {categories?.map((cat) => (
+                  <button
+                    key={cat.id}
+                    onClick={() => setSelectedCategoryId(cat.id)}
+                    className={cn(
+                      "w-full flex items-center justify-between px-4 py-3 rounded-xl transition-all text-sm font-medium text-left",
+                      selectedCategoryId === cat.id ? "bg-primary text-white" : "hover:bg-muted text-muted-foreground"
+                    )}
+                  >
+                    <span>{getT(cat.nameTextId)}</span>
+                    <ChevronRight className={cn("h-4 w-4", selectedCategoryId === cat.id ? "opacity-100" : "opacity-0")} />
+                  </button>
+                ))}
               </div>
-            </div>
-
-            {/* Categories Accordion */}
-            <div className="space-y-4">
-              <h3 className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Categories</h3>
-              <Accordion type="single" collapsible className="w-full space-y-1">
-                {parentCategories.map((category) => {
-                  const subCategories = MOCK_CATEGORIES.filter(c => c.parentId === category.id);
-                  const hasSubs = subCategories.length > 0;
-                  const isSelected = selectedCategoryId === category.id || subCategories.some(s => s.id === selectedCategoryId);
-
-                  if (hasSubs) {
-                    return (
-                      <AccordionItem key={category.id} value={category.id} className="border-none">
-                        <AccordionTrigger 
-                          className={cn(
-                            "flex items-center justify-between px-4 py-3 rounded-xl text-sm font-medium transition-all hover:no-underline",
-                            isSelected ? `${lineStyles.bg} text-white` : "hover:bg-muted text-muted-foreground"
-                          )}
-                          onClick={() => setSelectedCategoryId(category.id)}
-                        >
-                          <span>{locale === 'zh' ? category.nameZh : category.nameEn}</span>
-                        </AccordionTrigger>
-                        <AccordionContent className="pt-1 pb-2 pl-4 space-y-1">
-                          {subCategories.map((sub) => (
-                            <button
-                              key={sub.id}
-                              onClick={() => setSelectedCategoryId(sub.id)}
-                              className={cn(
-                                "w-full text-left px-4 py-2 rounded-lg text-xs font-medium transition-all",
-                                selectedCategoryId === sub.id 
-                                  ? `${lineStyles.text} font-bold bg-muted` 
-                                  : "text-muted-foreground hover:bg-muted"
-                              )}
-                            >
-                              {locale === 'zh' ? sub.nameZh : sub.nameEn}
-                            </button>
-                          ))}
-                        </AccordionContent>
-                      </AccordionItem>
-                    );
-                  }
-
-                  return (
-                    <button
-                      key={category.id}
-                      onClick={() => setSelectedCategoryId(category.id)}
-                      className={cn(
-                        "w-full flex items-center justify-between px-4 py-3 rounded-xl transition-all text-sm font-medium text-left",
-                        selectedCategoryId === category.id ? `${lineStyles.bg} text-white` : "hover:bg-muted text-muted-foreground"
-                      )}
-                    >
-                      <span>{locale === 'zh' ? category.nameZh : category.nameEn}</span>
-                      <ChevronRight className={cn("h-4 w-4", selectedCategoryId === category.id ? "opacity-100" : "opacity-0")} />
-                    </button>
-                  );
-                })}
-              </Accordion>
             </div>
           </aside>
 
-          {/* Product Grid Area */}
           <div className="lg:col-span-9 space-y-8">
-            
-            {/* Toolbar: Category Info + Tags */}
-            <div className="space-y-6">
-              <div className="flex items-center justify-between border-b border-border/40 pb-4">
-                <div className="flex items-center gap-3">
-                  <Badge variant="secondary" className="px-3 py-1 rounded-full text-xs font-bold uppercase">
-                    {filteredProducts.length} {locale === 'zh' ? '件产品' : 'Items'}
-                  </Badge>
-                  <span className={cn("text-sm italic font-medium", lineStyles.text)}>
-                    {activeCategoryName}
-                  </span>
-                </div>
+            <div className="flex items-center justify-between border-b border-border/40 pb-4">
+              <div className="flex items-center gap-3">
+                <Badge variant="secondary" className="px-3 py-1 rounded-full text-xs font-bold uppercase">
+                  {filteredProducts.length} 条目
+                </Badge>
+                <span className="text-sm italic font-medium text-primary">
+                  {activeCategoryName}
+                </span>
               </div>
-
-              {/* Dynamic Tags Filter */}
-              {activeCategoryTags.length > 0 && (
-                <div className="space-y-3">
-                  <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Quick Filters</p>
-                  <ScrollArea className="w-full whitespace-nowrap">
-                    <div className="flex gap-2 pb-4">
-                      <Button
-                        variant={selectedTag === null ? 'default' : 'outline'}
-                        size="sm"
-                        className={cn(
-                          "rounded-full px-4 text-xs font-medium transition-all",
-                          selectedTag === null ? lineStyles.bg : "hover:bg-muted"
-                        )}
-                        onClick={() => setSelectedTag(null)}
-                      >
-                        {locale === 'zh' ? '全部' : 'All'}
-                      </Button>
-                      {activeCategoryTags.map((tag) => (
-                        <Button
-                          key={tag.en}
-                          variant={selectedTag === tag.en ? 'default' : 'outline'}
-                          size="sm"
-                          className={cn(
-                            "rounded-full px-4 text-xs font-medium transition-all",
-                            selectedTag === tag.en ? lineStyles.bg : "hover:bg-muted"
-                          )}
-                          onClick={() => setSelectedTag(tag.en)}
-                        >
-                          {locale === 'zh' ? tag.zh : tag.en}
-                        </Button>
-                      ))}
-                    </div>
-                    <ScrollBar orientation="horizontal" />
-                  </ScrollArea>
-                </div>
-              )}
             </div>
 
-            {/* Grid */}
-            {filteredProducts.length > 0 ? (
+            {isLoading ? (
+              <div className="py-32 flex flex-col items-center justify-center gap-4 text-muted-foreground">
+                <Loader2 className="h-10 w-10 animate-spin opacity-20" />
+                <p className="text-xs font-bold uppercase tracking-widest">正在同步云端数据...</p>
+              </div>
+            ) : filteredProducts.length > 0 ? (
               <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-8">
                 {filteredProducts.map((product) => (
                   <Link 
@@ -412,28 +185,21 @@ function ProductListContent() {
                   >
                     <div className="relative aspect-[4/3] bg-muted/20">
                       <Image
-                        src={product.primaryImageUrl}
-                        alt={product.nameEn}
+                        src={product.mainImageUrl || 'https://picsum.photos/seed/placeholder/600/450'}
+                        alt={product.id}
                         fill
-                        className="object-cover group-hover:scale-110 transition-transform duration-700"
+                        className="object-contain p-4 group-hover:scale-110 transition-transform duration-700"
                       />
-                      <div className="absolute top-4 left-4 flex flex-wrap gap-1">
-                        {product.tags?.slice(0, 2).map(tag => (
-                          <Badge key={tag} className="bg-white/80 backdrop-blur-md text-[10px] text-primary border-none font-bold">
-                            {tag}
-                          </Badge>
-                        ))}
-                      </div>
                     </div>
                     <div className="p-6 space-y-4 flex-grow flex flex-col">
-                      <h3 className={cn("text-xl font-headline font-bold", lineStyles.text)}>
-                        {locale === 'zh' ? product.nameZh : product.nameEn}
+                      <h3 className="text-xl font-headline font-bold text-primary">
+                        {getT(product.nameTextId)}
                       </h3>
                       <p className="text-xs text-muted-foreground line-clamp-2">
-                        {locale === 'zh' ? product.descriptionZh : product.descriptionEn}
+                        {getT(product.descriptionTextId)}
                       </p>
                       <div className="mt-auto pt-6 flex items-center justify-between">
-                        <Button variant="outline" size="sm" className={cn("rounded-xl text-xs font-bold group-hover:bg-muted transition-colors")}>
+                        <Button variant="outline" size="sm" className="rounded-xl text-xs font-bold group-hover:bg-primary group-hover:text-white transition-colors">
                           {t.viewDetails} <ArrowRight className="ml-2 h-3 w-3" />
                         </Button>
                       </div>
@@ -444,7 +210,7 @@ function ProductListContent() {
             ) : (
               <div className="py-32 text-center text-muted-foreground border-2 border-dashed rounded-[3rem]">
                 <p>{t.noResults}</p>
-                <Button onClick={() => {setSelectedCategoryId(null); setSelectedTag(null);}} variant="link" className={lineStyles.text}>Reset Filters</Button>
+                <Button onClick={() => setSelectedCategoryId(null)} variant="link" className="text-primary">重置筛选</Button>
               </div>
             )}
           </div>
