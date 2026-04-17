@@ -97,6 +97,7 @@ export default function GalleryPage() {
   const { data: categories } = useCollection<GalleryCategory>(categoriesQuery);
   const { data: assets, isLoading } = useCollection<GalleryAsset>(assetsQuery);
 
+  // 递归计算分类全路径及深度，并构建树状排序列表
   const categoryTree = useMemo(() => {
     if (!categories) return [];
     
@@ -105,10 +106,31 @@ export default function GalleryPage() {
       return parent ? `${getFullPath(parent)} > ${cat.name}` : cat.name;
     };
 
-    return categories.map(cat => ({
-      ...cat,
-      fullPath: getFullPath(cat)
-    }));
+    const getDepth = (cat: GalleryCategory): number => {
+      const parent = categories.find(c => c.id === cat.parentId);
+      return parent ? getDepth(parent) + 1 : 0;
+    };
+
+    const tree: (GalleryCategory & { fullPath: string, depth: number })[] = [];
+    
+    // 递归构建树，确保子分类紧随父分类，且同级按 order 排序
+    const build = (parentId: string | null = null) => {
+      const levelItems = categories
+        .filter(c => (c.parentId || null) === parentId)
+        .sort((a, b) => a.order - b.order);
+        
+      levelItems.forEach(item => {
+        tree.push({
+          ...item,
+          fullPath: getFullPath(item),
+          depth: getDepth(item)
+        });
+        build(item.id);
+      });
+    };
+
+    build(null);
+    return tree;
   }, [categories]);
 
   const filteredAssets = useMemo(() => {
@@ -175,6 +197,8 @@ export default function GalleryPage() {
   const handleSaveCategory = () => {
     if (!firestore || !catForm.name.trim()) return;
     
+    const parentId = catForm.parentId === 'none' ? null : catForm.parentId;
+
     if (editingCatId) {
       if (catForm.parentId === editingCatId) {
         toast({ variant: "destructive", title: "无效操作", description: "不能将分类的上级设为自己。" });
@@ -183,16 +207,19 @@ export default function GalleryPage() {
       const catRef = doc(firestore, 'galleryCategories', editingCatId);
       updateDocumentNonBlocking(catRef, {
         name: catForm.name,
-        parentId: catForm.parentId === 'none' ? null : catForm.parentId
+        parentId: parentId
       });
       toast({ title: "分类已更新" });
     } else {
       const id = `cat_${Date.now()}`;
-      const order = (categories?.length || 0) + 1;
+      // 计算同级中的 order
+      const siblings = categories?.filter(c => (c.parentId || null) === parentId) || [];
+      const order = siblings.length + 1;
+
       setDocumentNonBlocking(doc(firestore, 'galleryCategories', id), { 
         id, 
         name: catForm.name, 
-        parentId: catForm.parentId === 'none' ? null : catForm.parentId,
+        parentId: parentId,
         order 
       }, { merge: true });
       toast({ title: "分类已添加" });
@@ -221,9 +248,8 @@ export default function GalleryPage() {
     const cat = categories.find(c => c.id === id);
     if (!cat) return;
 
-    // 获取同层级的兄弟分类
     const siblings = categories
-      .filter(c => c.parentId === cat.parentId)
+      .filter(c => (c.parentId || null) === (cat.parentId || null))
       .sort((a, b) => a.order - b.order);
 
     const index = siblings.findIndex(s => s.id === id);
@@ -233,21 +259,21 @@ export default function GalleryPage() {
 
     const target = siblings[targetIndex];
     
-    // 交换 order
     updateDocumentNonBlocking(doc(firestore, 'galleryCategories', cat.id), { order: target.order });
     updateDocumentNonBlocking(doc(firestore, 'galleryCategories', target.id), { order: cat.order });
   };
 
   const isFirstInLevel = (id: string, parentId?: string | null) => {
     if (!categories) return true;
-    const siblings = categories.filter(c => c.parentId === parentId);
-    return siblings[0]?.id === id;
+    const siblings = categories.filter(c => (c.parentId || null) === (parentId || null));
+    return siblings.sort((a, b) => a.order - b.order)[0]?.id === id;
   };
 
   const isLastInLevel = (id: string, parentId?: string | null) => {
     if (!categories) return true;
-    const siblings = categories.filter(c => c.parentId === parentId);
-    return siblings[siblings.length - 1]?.id === id;
+    const siblings = categories.filter(c => (c.parentId || null) === (parentId || null));
+    const sorted = siblings.sort((a, b) => a.order - b.order);
+    return sorted[sorted.length - 1]?.id === id;
   };
 
   return (
@@ -324,7 +350,7 @@ export default function GalleryPage() {
                   <Table>
                     <TableHeader className="bg-muted/50">
                       <TableRow>
-                        <TableHead className="pl-4">分类层级全路径</TableHead>
+                        <TableHead className="pl-4">分类层级展示 (树状结构)</TableHead>
                         <TableHead className="w-48 text-right pr-4">管理操作</TableHead>
                       </TableRow>
                     </TableHeader>
@@ -335,10 +361,20 @@ export default function GalleryPage() {
                           editingCatId === cat.id ? "bg-primary/5" : ""
                         )}>
                           <TableCell className="pl-4">
-                            <div className={cn("flex items-center gap-2", cat.parentId ? "pl-4" : "")}>
-                              {cat.parentId ? <ChevronRight className="h-3 w-3 text-muted-foreground opacity-50" /> : <Layers className="h-3 w-3 text-primary/50" />}
-                              <span className={cn("text-sm", !cat.parentId ? "font-bold text-primary" : "text-muted-foreground")}>
-                                {cat.fullPath}
+                            <div 
+                              className="flex items-center gap-2"
+                              style={{ paddingLeft: `${cat.depth * 1.5}rem` }}
+                            >
+                              {cat.parentId ? (
+                                <ChevronRight className="h-3 w-3 text-muted-foreground opacity-50" />
+                              ) : (
+                                <Layers className="h-3 w-3 text-primary/50" />
+                              )}
+                              <span className={cn(
+                                "text-sm", 
+                                !cat.parentId ? "font-bold text-primary" : "text-muted-foreground"
+                              )}>
+                                {cat.parentId ? cat.name : cat.name}
                               </span>
                             </div>
                           </TableCell>
@@ -520,4 +556,3 @@ export default function GalleryPage() {
     </div>
   );
 }
-
