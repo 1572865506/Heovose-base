@@ -2,7 +2,8 @@
 "use client";
 
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { Package, Layers, Globe, MousePointer2, ArrowUpRight, TrendingUp, Users, Factory } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Package, Layers, Globe, ArrowUpRight, TrendingUp, Factory, Home } from 'lucide-react';
 import Link from 'next/link';
 
 export default function AdminDashboard() {
