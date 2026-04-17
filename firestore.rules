@@ -2,6 +2,8 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
+    // 部署时间戳: 2024-05-24 10:45:00
+    
     function isAdmin() {
       return request.auth != null && exists(/databases/$(database)/documents/admins/$(request.auth.uid));
     }
@@ -11,17 +13,27 @@ service cloud.firestore {
       allow list, write: if false;
     }
 
+    match /productCategories/{categoryId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    match /products/{productId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    match /localizedStrings/{localizedStringId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
     match /galleryCategories/{categoryId} {
       allow read: if true;
       allow write: if isAdmin();
     }
 
     match /galleryAssets/{assetId} {
-      allow read: if true;
-      allow write: if isAdmin();
-    }
-
-    match /localizedStrings/{localizedStringId} {
       allow read: if true;
       allow write: if isAdmin();
     }
