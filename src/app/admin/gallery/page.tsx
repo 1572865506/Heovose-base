@@ -17,6 +17,7 @@ import {
   Edit3,
   Layers,
   ChevronRight,
+  ChevronDown,
   ArrowUp,
   ArrowDown,
   X
@@ -84,6 +85,9 @@ export default function GalleryPage() {
   const [editingCatId, setEditingCatId] = useState<string | null>(null);
   const [catForm, setCatForm] = useState({ name: '', parentId: 'none' });
 
+  // 用于追踪折叠状态的 ID 集合
+  const [collapsedIds, setCollapsedIds] = useState<Set<string>>(new Set());
+
   const categoriesQuery = useMemoFirebase(() => {
     if (!firestore) return null;
     return query(collection(firestore, 'galleryCategories'), orderBy('order', 'asc'));
@@ -97,7 +101,6 @@ export default function GalleryPage() {
   const { data: categories } = useCollection<GalleryCategory>(categoriesQuery);
   const { data: assets, isLoading } = useCollection<GalleryAsset>(assetsQuery);
 
-  // 递归计算分类全路径及深度，并构建树状排序列表
   const categoryTree = useMemo(() => {
     if (!categories) return [];
     
@@ -111,9 +114,12 @@ export default function GalleryPage() {
       return parent ? getDepth(parent) + 1 : 0;
     };
 
-    const tree: (GalleryCategory & { fullPath: string, depth: number })[] = [];
+    const hasChildren = (id: string): boolean => {
+      return categories.some(c => c.parentId === id);
+    };
+
+    const tree: (GalleryCategory & { fullPath: string, depth: number, hasChildren: boolean })[] = [];
     
-    // 递归构建树，确保子分类紧随父分类，且同级按 order 排序
     const build = (parentId: string | null = null) => {
       const levelItems = categories
         .filter(c => (c.parentId || null) === parentId)
@@ -123,7 +129,8 @@ export default function GalleryPage() {
         tree.push({
           ...item,
           fullPath: getFullPath(item),
-          depth: getDepth(item)
+          depth: getDepth(item),
+          hasChildren: hasChildren(item.id)
         });
         build(item.id);
       });
@@ -132,6 +139,30 @@ export default function GalleryPage() {
     build(null);
     return tree;
   }, [categories]);
+
+  // 计算哪些行应该被渲染（基于折叠状态）
+  const visibleCategories = useMemo(() => {
+    return categoryTree.filter(cat => {
+      // 检查其任何祖先是否被折叠
+      let currentParentId = cat.parentId;
+      while (currentParentId) {
+        if (collapsedIds.has(currentParentId)) return false;
+        const parent = categories?.find(c => c.id === currentParentId);
+        currentParentId = parent?.parentId || null;
+      }
+      return true;
+    });
+  }, [categoryTree, collapsedIds, categories]);
+
+  const toggleCollapse = (id: string) => {
+    const newCollapsed = new Set(collapsedIds);
+    if (newCollapsed.has(id)) {
+      newCollapsed.delete(id);
+    } else {
+      newCollapsed.add(id);
+    }
+    setCollapsedIds(newCollapsed);
+  };
 
   const filteredAssets = useMemo(() => {
     if (!assets) return [];
@@ -212,7 +243,6 @@ export default function GalleryPage() {
       toast({ title: "分类已更新" });
     } else {
       const id = `cat_${Date.now()}`;
-      // 计算同级中的 order
       const siblings = categories?.filter(c => (c.parentId || null) === parentId) || [];
       const order = siblings.length + 1;
 
@@ -327,7 +357,7 @@ export default function GalleryPage() {
                       />
                     </div>
                     <div className="space-y-2">
-                      <Label className="text-[10px] font-bold">所属父级 (跨层级移动)</Label>
+                      <Label className="text-[10px] font-bold">所属父级</Label>
                       <Select value={catForm.parentId} onValueChange={v => setCatForm({...catForm, parentId: v})}>
                         <SelectTrigger className="h-12 rounded-xl">
                           <SelectValue />
@@ -348,14 +378,14 @@ export default function GalleryPage() {
 
                 <div className="max-h-[40vh] overflow-y-auto rounded-2xl border bg-white">
                   <Table>
-                    <TableHeader className="bg-muted/50">
+                    <TableHeader className="bg-muted/50 sticky top-0 z-10">
                       <TableRow>
-                        <TableHead className="pl-4">分类层级展示 (树状结构)</TableHead>
+                        <TableHead className="pl-4">分类层级结构</TableHead>
                         <TableHead className="w-48 text-right pr-4">管理操作</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {categoryTree.map((cat) => (
+                      {visibleCategories.map((cat) => (
                         <TableRow key={cat.id} className={cn(
                           "hover:bg-muted/10 transition-colors group",
                           editingCatId === cat.id ? "bg-primary/5" : ""
@@ -365,17 +395,30 @@ export default function GalleryPage() {
                               className="flex items-center gap-2"
                               style={{ paddingLeft: `${cat.depth * 1.5}rem` }}
                             >
-                              {cat.parentId ? (
-                                <ChevronRight className="h-3 w-3 text-muted-foreground opacity-50" />
-                              ) : (
-                                <Layers className="h-3 w-3 text-primary/50" />
-                              )}
-                              <span className={cn(
-                                "text-sm", 
-                                !cat.parentId ? "font-bold text-primary" : "text-muted-foreground"
-                              )}>
-                                {cat.parentId ? cat.name : cat.name}
-                              </span>
+                              <div className="flex items-center gap-1">
+                                {cat.hasChildren ? (
+                                  <Button 
+                                    variant="ghost" 
+                                    size="icon" 
+                                    className="h-5 w-5 p-0 hover:bg-transparent"
+                                    onClick={() => toggleCollapse(cat.id)}
+                                  >
+                                    {collapsedIds.has(cat.id) ? (
+                                      <ChevronRight className="h-3 w-3 text-primary" />
+                                    ) : (
+                                      <ChevronDown className="h-3 w-3 text-primary" />
+                                    )}
+                                  </Button>
+                                ) : (
+                                  <div className="w-5 h-5" />
+                                )}
+                                <span className={cn(
+                                  "text-sm", 
+                                  !cat.parentId ? "font-bold text-primary" : "text-muted-foreground"
+                                )}>
+                                  {cat.name}
+                                </span>
+                              </div>
                             </div>
                           </TableCell>
                           <TableCell className="pr-4 text-right">
@@ -423,6 +466,13 @@ export default function GalleryPage() {
                           </TableCell>
                         </TableRow>
                       ))}
+                      {visibleCategories.length === 0 && categories?.length !== 0 && (
+                        <TableRow>
+                          <TableCell colSpan={2} className="h-20 text-center text-xs text-muted-foreground">
+                            所有分类均被折叠
+                          </TableCell>
+                        </TableRow>
+                      )}
                     </TableBody>
                   </Table>
                 </div>
