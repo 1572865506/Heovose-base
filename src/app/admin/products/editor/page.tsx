@@ -840,20 +840,30 @@ function ProductEditorContent() {
                               </Button>
                            </div>
 
-                           <div className="grid grid-cols-1 gap-4">
+                           <div className="grid grid-cols-1 gap-6">
                               {group.items.map((item, iIdx) => (
-                                <div key={iIdx} className="grid grid-cols-1 md:grid-cols-12 gap-4 items-center p-4 bg-white rounded-2xl relative group/item">
-                                   <div className="md:col-span-5 grid grid-cols-2 gap-2">
-                                      <Input placeholder="项名 (ZH)" value={item.labelZh} onChange={e => updateSpecItem(gIdx, iIdx, 'labelZh', e.target.value)} className="h-9 text-xs rounded-lg bg-muted/20 border-none" />
-                                      <Input placeholder="项名 (EN)" value={item.labelEn} onChange={e => updateSpecItem(gIdx, iIdx, 'labelEn', e.target.value)} className="h-9 text-xs rounded-lg bg-muted/20 border-none" />
+                                <div key={iIdx} className="grid grid-cols-1 md:grid-cols-12 gap-6 items-start p-6 bg-white rounded-[2rem] relative group/item border border-border/10 shadow-sm">
+                                   <div className="md:col-span-5 space-y-3">
+                                      <div className="space-y-2">
+                                        <Label className="text-[9px] font-bold uppercase text-primary/40 ml-1">规格参数名称</Label>
+                                        <div className="space-y-2">
+                                          <Input placeholder="中文名称 (如: 处理器)" value={item.labelZh} onChange={e => updateSpecItem(gIdx, iIdx, 'labelZh', e.target.value)} className="h-10 text-xs rounded-xl bg-muted/20 border-none" />
+                                          <Input placeholder="English Name (e.g. CPU)" value={item.labelEn} onChange={e => updateSpecItem(gIdx, iIdx, 'labelEn', e.target.value)} className="h-10 text-xs rounded-xl bg-muted/5 border-none opacity-70" />
+                                        </div>
+                                      </div>
                                    </div>
-                                   <div className="md:col-span-6 grid grid-cols-2 gap-2">
-                                      <Input placeholder="项值 (ZH)" value={item.valueZh} onChange={e => updateSpecItem(gIdx, iIdx, 'valueZh', e.target.value)} className="h-9 text-xs rounded-lg bg-muted/20 border-none" />
-                                      <Input placeholder="项值 (EN)" value={item.valueEn} onChange={e => updateSpecItem(gIdx, iIdx, 'valueEn', e.target.value)} className="h-9 text-xs rounded-lg bg-muted/20 border-none" />
+                                   <div className="md:col-span-6 space-y-3">
+                                      <div className="space-y-2">
+                                        <Label className="text-[9px] font-bold uppercase text-primary/40 ml-1">具体规格数值</Label>
+                                        <div className="space-y-2">
+                                          <Input placeholder="中文数值 (如: 英特尔 i7)" value={item.valueZh} onChange={e => updateSpecItem(gIdx, iIdx, 'valueZh', e.target.value)} className="h-10 text-xs rounded-xl bg-muted/20 border-none" />
+                                          <Input placeholder="English Value (e.g. Intel i7)" value={item.valueEn} onChange={e => updateSpecItem(gIdx, iIdx, 'valueEn', e.target.value)} className="h-10 text-xs rounded-xl bg-muted/5 border-none opacity-70" />
+                                        </div>
+                                      </div>
                                    </div>
-                                   <div className="md:col-span-1 flex justify-end">
-                                      <Button variant="ghost" size="icon" onClick={() => removeSpecFromGroup(gIdx, iIdx)} className="h-8 w-8 text-destructive opacity-0 group-hover/item:opacity-100">
-                                        <X className="h-3.5 w-3.5" />
+                                   <div className="md:col-span-1 flex justify-end pt-8">
+                                      <Button variant="ghost" size="icon" onClick={() => removeSpecFromGroup(gIdx, iIdx)} className="h-10 w-10 text-destructive opacity-0 group-hover/item:opacity-100 transition-opacity">
+                                        <Trash2 className="h-4 w-4" />
                                       </Button>
                                    </div>
                                 </div>
