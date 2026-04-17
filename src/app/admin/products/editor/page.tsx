@@ -4,7 +4,7 @@
 import { useState, useEffect, useMemo, Suspense, useRef } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useFirestore, useDoc, useCollection, useMemoFirebase } from '@/firebase';
-import { doc, collection, serverTimestamp, query, orderBy } from 'firebase/firestore';
+import { doc, collection, serverTimestamp, query, orderBy, deleteDoc } from 'firebase/firestore';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -35,7 +35,8 @@ import {
   Check,
   Trash2,
   Eye,
-  EyeOff
+  EyeOff,
+  PlusCircle
 } from 'lucide-react';
 import { 
   Dialog, 
@@ -46,7 +47,7 @@ import {
   DialogTrigger,
   DialogDescription
 } from '@/components/ui/dialog';
-import { setDocumentNonBlocking } from '@/firebase/non-blocking-updates';
+import { setDocumentNonBlocking, deleteDocumentNonBlocking } from '@/firebase/non-blocking-updates';
 import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from '@/components/ui/badge';
@@ -60,6 +61,7 @@ interface Product {
   descriptionTextId: string;
   specsTextId?: string;
   detailsTextId?: string;
+  advantageTextIds?: string[];
   mainImageUrl: string;
   productCategoryId: string;
   galleryImageUrls: string[];
@@ -114,6 +116,7 @@ function ProductEditorContent() {
     specsZh: '',
     detailsEn: '',
     detailsZh: '',
+    advantages: [] as { zh: string, en: string }[],
     status: 'draft' as 'published' | 'draft'
   });
 
@@ -172,6 +175,11 @@ function ProductEditorContent() {
       const descT = getT(product.descriptionTextId);
       const specsT = getT(product.specsTextId);
       const detailsT = getT(product.detailsTextId);
+      
+      const advantages = (product.advantageTextIds || []).map(id => {
+        const t = getT(id);
+        return { zh: t.zh || '', en: t.en || '' };
+      });
 
       setFormData({
         id: product.id,
@@ -186,8 +194,15 @@ function ProductEditorContent() {
         specsZh: specsT.zh || '',
         detailsEn: detailsT.en || '',
         detailsZh: detailsT.zh || '',
+        advantages: advantages.length > 0 ? advantages : [{ zh: '', en: '' }, { zh: '', en: '' }],
         status: product.status || 'draft'
       });
+    } else if (!isEditing) {
+      // 默认提供两个空白优势输入框
+      setFormData(prev => ({
+        ...prev,
+        advantages: [{ zh: '', en: '' }, { zh: '', en: '' }]
+      }));
     }
   }, [isEditing, product, translations]);
 
@@ -321,12 +336,23 @@ function ProductEditorContent() {
     saveLang(specsId, formData.specsEn, formData.specsZh);
     saveLang(detailsId, formData.detailsEn, formData.detailsZh);
 
+    // 处理核心优势
+    const advantageIds: string[] = [];
+    formData.advantages.forEach((adv, index) => {
+      if (adv.zh || adv.en) {
+        const advId = `prod_adv_${formData.id}_${index}`;
+        saveLang(advId, adv.en, adv.zh);
+        advantageIds.push(advId);
+      }
+    });
+
     setDocumentNonBlocking(doc(firestore, 'products', formData.id), {
       id: formData.id,
       nameTextId: nameId,
       descriptionTextId: descId,
       specsTextId: specsId,
       detailsTextId: detailsId,
+      advantageTextIds: advantageIds,
       mainImageUrl: formData.mainImageUrl,
       productCategoryId: formData.categoryId,
       galleryImageUrls: formData.galleryUrls.filter(Boolean),
@@ -351,6 +377,18 @@ function ProductEditorContent() {
   };
   const removeGalleryItem = (idx: number) => {
     setFormData({ ...formData, galleryUrls: formData.galleryUrls.filter((_, i) => i !== idx) });
+  };
+
+  const updateAdv = (idx: number, field: 'zh' | 'en', val: string) => {
+    const newAdvs = [...formData.advantages];
+    newAdvs[idx][field] = val;
+    setFormData({ ...formData, advantages: newAdvs });
+  };
+  const addAdv = () => {
+    setFormData({ ...formData, advantages: [...formData.advantages, { zh: '', en: '' }] });
+  };
+  const removeAdv = (idx: number) => {
+    setFormData({ ...formData, advantages: formData.advantages.filter((_, i) => i !== idx) });
   };
 
   if (isEditing && isProdLoading) {
@@ -617,6 +655,53 @@ function ProductEditorContent() {
                     <Textarea placeholder="Short Description (English)" value={formData.descEn} onChange={e => setFormData({...formData, descEn: e.target.value})} className="rounded-xl min-h-[120px]" />
                   </div>
                 </div>
+
+                <div className="space-y-6 pt-8 border-t border-border/20">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3 text-primary">
+                      <CheckCircle2 className="h-5 w-5" />
+                      <h3 className="font-bold">核心优势 (Core Advantages)</h3>
+                    </div>
+                    <Button variant="ghost" size="sm" onClick={addAdv} className="text-primary font-bold text-[10px] uppercase gap-1">
+                      <PlusCircle className="h-3 w-3" /> 添加条目
+                    </Button>
+                  </div>
+                  
+                  <div className="space-y-4">
+                    {formData.advantages.map((adv, idx) => (
+                      <div key={idx} className="grid grid-cols-1 md:grid-cols-12 gap-4 items-start p-4 bg-muted/20 rounded-2xl relative group">
+                        <div className="md:col-span-5 space-y-2">
+                          <Label className="text-[9px] font-bold uppercase text-muted-foreground">优势 #{idx + 1} (ZH)</Label>
+                          <Input 
+                            placeholder="例如：工业级稳定性..." 
+                            value={adv.zh} 
+                            onChange={e => updateAdv(idx, 'zh', e.target.value)}
+                            className="h-10 text-sm rounded-xl"
+                          />
+                        </div>
+                        <div className="md:col-span-6 space-y-2">
+                          <Label className="text-[9px] font-bold uppercase text-muted-foreground">优势 #{idx + 1} (EN)</Label>
+                          <Input 
+                            placeholder="e.g. Industrial-grade stability..." 
+                            value={adv.en} 
+                            onChange={e => updateAdv(idx, 'en', e.target.value)}
+                            className="h-10 text-sm rounded-xl"
+                          />
+                        </div>
+                        <div className="md:col-span-1 pt-6 flex justify-end">
+                          <Button 
+                            variant="ghost" 
+                            size="icon" 
+                            onClick={() => removeAdv(idx)}
+                            className="h-10 w-10 text-destructive opacity-0 group-hover:opacity-100 transition-opacity"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
               </div>
             </TabsContent>
 
@@ -807,4 +892,3 @@ export default function ProductEditorPage() {
     </Suspense>
   );
 }
-

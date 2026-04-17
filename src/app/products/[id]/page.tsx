@@ -30,6 +30,9 @@ interface Product {
   id: string;
   nameTextId: string;
   descriptionTextId: string;
+  specsTextId?: string;
+  detailsTextId?: string;
+  advantageTextIds?: string[];
   mainImageUrl: string;
   productCategoryId: string;
   galleryImageUrls: string[];
@@ -66,6 +69,11 @@ export default function ProductDetailPage() {
   useEffect(() => {
     if (product?.mainImageUrl) setActiveImage(product.mainImageUrl);
   }, [product]);
+
+  const advantages = useMemo(() => {
+    if (!product?.advantageTextIds) return [];
+    return product.advantageTextIds.map(id => getT(id)).filter(Boolean);
+  }, [product, translationsData, locale]);
 
   if (isProdLoading) {
     return (
@@ -146,14 +154,23 @@ export default function ProductDetailPage() {
                    <span className="text-xs font-bold uppercase tracking-[0.2em]">核心优势</span>
                 </div>
                 <div className="grid grid-cols-1 gap-4">
-                   <div className="flex items-start gap-4 p-5 bg-muted/20 rounded-2xl border border-border/20">
-                     <CheckCircle2 className="h-5 w-5 mt-0.5 shrink-0 text-primary" />
-                     <span className="text-sm text-muted-foreground font-medium">工业级稳定性设计，支持 24/7 全天候运行</span>
-                   </div>
-                   <div className="flex items-start gap-4 p-5 bg-muted/20 rounded-2xl border border-border/20">
-                     <CheckCircle2 className="h-5 w-5 mt-0.5 shrink-0 text-primary" />
-                     <span className="text-sm text-muted-foreground font-medium">高性能计算核心，满足复杂业务需求</span>
-                   </div>
+                   {advantages.length > 0 ? advantages.map((adv, i) => (
+                     <div key={i} className="flex items-start gap-4 p-5 bg-muted/20 rounded-2xl border border-border/20">
+                        <CheckCircle2 className="h-5 w-5 mt-0.5 shrink-0 text-primary" />
+                        <span className="text-sm text-muted-foreground font-medium">{adv}</span>
+                     </div>
+                   )) : (
+                     <>
+                        <div className="flex items-start gap-4 p-5 bg-muted/20 rounded-2xl border border-border/20">
+                          <CheckCircle2 className="h-5 w-5 mt-0.5 shrink-0 text-primary" />
+                          <span className="text-sm text-muted-foreground font-medium">工业级稳定性设计，支持 24/7 全天候运行</span>
+                        </div>
+                        <div className="flex items-start gap-4 p-5 bg-muted/20 rounded-2xl border border-border/20">
+                          <CheckCircle2 className="h-5 w-5 mt-0.5 shrink-0 text-primary" />
+                          <span className="text-sm text-muted-foreground font-medium">高性能计算核心，满足复杂业务需求</span>
+                        </div>
+                     </>
+                   )}
                 </div>
               </div>
 
@@ -194,14 +211,29 @@ export default function ProductDetailPage() {
               </TabsList>
               
               <TabsContent value="desc" className="max-w-4xl animate-in fade-in slide-in-from-bottom-4 duration-700">
-                <p className="text-xl text-muted-foreground leading-relaxed font-light italic border-l-4 border-accent pl-8">
-                  {getT(product.descriptionTextId)}
-                </p>
+                <div className="prose prose-lg dark:prose-invert">
+                  <p className="text-xl text-muted-foreground leading-relaxed font-light italic border-l-4 border-accent pl-8 whitespace-pre-wrap">
+                    {getT(product.descriptionTextId)}
+                  </p>
+                  {product.detailsTextId && (
+                    <div className="mt-8 text-base text-muted-foreground/80 leading-relaxed whitespace-pre-wrap">
+                      {getT(product.detailsTextId)}
+                    </div>
+                  )}
+                </div>
               </TabsContent>
 
               <TabsContent value="specs" className="animate-in fade-in slide-in-from-bottom-4 duration-700">
-                 <div className="p-12 bg-muted/20 rounded-[3rem] border border-border/40 text-center">
-                    <p className="text-muted-foreground italic">技术规格正在同步中，请联系销售获取最新 PDF 规格书。</p>
+                 <div className="p-12 bg-muted/20 rounded-[3rem] border border-border/40">
+                    {product.specsTextId && getT(product.specsTextId) ? (
+                      <div className="text-left whitespace-pre-wrap font-mono text-sm text-primary/80">
+                        {getT(product.specsTextId)}
+                      </div>
+                    ) : (
+                      <div className="text-center italic text-muted-foreground">
+                        技术规格正在同步中，请联系销售获取最新 PDF 规格书。
+                      </div>
+                    )}
                  </div>
               </TabsContent>
             </Tabs>
@@ -213,4 +245,3 @@ export default function ProductDetailPage() {
     </main>
   );
 }
-
