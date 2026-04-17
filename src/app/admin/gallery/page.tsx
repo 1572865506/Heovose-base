@@ -743,15 +743,16 @@ export default function GalleryPage() {
 
       {/* 大图预览弹窗 */}
       <Dialog open={!!previewImage} onOpenChange={(o) => !o && setPreviewImage(null)}>
-        <DialogContent className="max-w-[95vw] max-h-[95vh] p-0 overflow-hidden border-none bg-black/90 shadow-none flex flex-col items-center justify-center">
+        <DialogContent className="max-w-[95vw] h-[95vh] p-0 overflow-hidden border-none bg-black/90 shadow-none flex flex-col">
           <DialogHeader className="sr-only">
             <DialogTitle>{previewImage?.title || '图片预览'}</DialogTitle>
             <DialogDescription>查看素材的高清预览图</DialogDescription>
           </DialogHeader>
-          <div className="relative w-full h-full flex items-center justify-center p-4">
+          
+          <div className="relative flex-1 w-full flex flex-col items-center justify-center p-4">
             {previewImage && (
-              <div className="relative w-full h-full flex flex-col items-center gap-4">
-                <div className="relative w-full flex-1 min-h-0">
+              <>
+                <div className="relative w-full h-full">
                   <Image 
                     src={previewImage.url} 
                     alt={previewImage.title} 
@@ -760,7 +761,9 @@ export default function GalleryPage() {
                     priority
                   />
                 </div>
-                <div className="bg-white/10 backdrop-blur-md px-6 py-3 rounded-full border border-white/20 flex items-center gap-6">
+                
+                {/* 底部信息条 */}
+                <div className="absolute bottom-10 left-1/2 -translate-x-1/2 z-[210] bg-white/10 backdrop-blur-md px-6 py-3 rounded-full border border-white/20 flex items-center gap-6">
                   <div className="flex flex-col">
                     <span className="text-white font-bold text-sm">{previewImage.title}</span>
                     <span className="text-white/60 text-[10px] uppercase tracking-widest">
@@ -777,8 +780,9 @@ export default function GalleryPage() {
                     <Copy className="h-4 w-4 mr-2" /> 复制链接
                   </Button>
                 </div>
-              </div>
+              </>
             )}
+            
             <button 
               onClick={() => setPreviewImage(null)}
               className="absolute top-4 right-4 z-[210] p-2 bg-black/50 hover:bg-black/70 text-white rounded-full transition-colors"
