@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useEffect, useState } from 'react';
@@ -31,7 +30,8 @@ import {
   MapPin,
   ClipboardList,
   AlertCircle,
-  Image as ImageIcon
+  Image as ImageIcon,
+  Bot
 } from 'lucide-react';
 import Link from 'next/link';
 import Image from 'next/image';
@@ -134,6 +134,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       label: "系统设置",
       items: [
         { title: "多语言翻译", icon: Globe, href: "/admin/translations" },
+        { title: "AI 智译中枢", icon: Bot, href: "/admin/settings/ai" },
         { title: "通用设置", icon: Settings, href: "/admin/settings" },
       ]
     }
