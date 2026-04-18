@@ -12,6 +12,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { Settings2, Save, Globe, ShieldCheck } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
+import { cn } from '@/lib/utils';
 
 export default function AdminSettingsPage() {
   const [isSaving, setIsSaving] = useState(false);
