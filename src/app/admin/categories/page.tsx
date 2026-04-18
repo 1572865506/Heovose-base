@@ -21,7 +21,6 @@ import {
   DialogFooter, 
   DialogHeader, 
   DialogTitle, 
-  DialogTrigger 
 } from '@/components/ui/dialog';
 import { 
   Plus, 
@@ -29,7 +28,6 @@ import {
   Trash2, 
   Loader2, 
   Layers,
-  Image as ImageIcon,
   Languages
 } from 'lucide-react';
 import { setDocumentNonBlocking, deleteDocumentNonBlocking } from '@/firebase/non-blocking-updates';
@@ -51,7 +49,7 @@ interface LocalizedString {
 
 export default function CategoriesPage() {
   const firestore = useFirestore();
-  const [isAdding, setIsAdding] = useState(false);
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingCategory, setEditingCategory] = useState<ProductCategory | null>(null);
   
   const [formData, setFormData] = useState({
@@ -68,11 +66,34 @@ export default function CategoriesPage() {
   const { data: categories, isLoading: isCatsLoading } = useCollection<ProductCategory>(categoriesQuery);
   const { data: translations } = useCollection<LocalizedString>(translationsQuery);
 
+  const resetForm = () => {
+    setFormData({ id: '', slug: '', thumbnailImageUrl: '', nameEn: '', nameZh: '' });
+    setEditingCategory(null);
+  };
+
+  const handleOpenDialog = () => {
+    resetForm();
+    setIsDialogOpen(true);
+  };
+
+  const handleStartEdit = (cat: ProductCategory) => {
+    const t = translations?.find(t => t.id === cat.nameTextId);
+    setFormData({
+      id: cat.id,
+      slug: cat.slug,
+      thumbnailImageUrl: cat.thumbnailImageUrl || '',
+      nameEn: t?.en || '',
+      nameZh: t?.zh || ''
+    });
+    setEditingCategory(cat);
+    setIsDialogOpen(true);
+  };
+
   const getSmartId = (en: string, zh: string, preferredId: string) => {
     if (!translations) return preferredId;
     const existing = translations.find(t => 
-      t.en.trim().toLowerCase() === en.trim().toLowerCase() || 
-      t.zh.trim().toLowerCase() === zh.trim().toLowerCase()
+      (en && t.en.trim().toLowerCase() === en.trim().toLowerCase()) || 
+      (zh && t.zh.trim().toLowerCase() === zh.trim().toLowerCase())
     );
     return existing ? existing.id : preferredId;
   };
@@ -83,16 +104,16 @@ export default function CategoriesPage() {
     const defaultId = editingCategory?.nameTextId || `cat_name_${formData.id}`;
     const nameTextId = getSmartId(formData.nameEn, formData.nameZh, defaultId);
     
-    const langRef = doc(firestore, 'localizedStrings', nameTextId);
-    setDocumentNonBlocking(langRef, {
+    // 保存翻译
+    setDocumentNonBlocking(doc(firestore, 'localizedStrings', nameTextId), {
       id: nameTextId,
       en: formData.nameEn.trim(),
       zh: formData.nameZh.trim(),
       updatedAt: serverTimestamp()
     }, { merge: true });
 
-    const catRef = doc(firestore, 'productCategories', formData.id);
-    setDocumentNonBlocking(catRef, {
+    // 保存分类
+    setDocumentNonBlocking(doc(firestore, 'productCategories', formData.id), {
       id: formData.id,
       slug: formData.slug,
       nameTextId: nameTextId,
@@ -100,26 +121,8 @@ export default function CategoriesPage() {
       updatedAt: serverTimestamp()
     }, { merge: true });
 
+    setIsDialogOpen(false);
     resetForm();
-  };
-
-  const resetForm = () => {
-    setIsAdding(false);
-    setEditingCategory(null);
-    setFormData({ id: '', slug: '', thumbnailImageUrl: '', nameEn: '', nameZh: '' });
-  };
-
-  const startEdit = (cat: ProductCategory) => {
-    const t = translations?.find(t => t.id === cat.nameTextId);
-    setFormData({
-      id: cat.id,
-      slug: cat.slug,
-      thumbnailImageUrl: cat.thumbnailImageUrl,
-      nameEn: t?.en || '',
-      nameZh: t?.zh || ''
-    });
-    setEditingCategory(cat);
-    setIsAdding(true);
   };
 
   const handleDelete = (id: string) => {
@@ -135,54 +138,48 @@ export default function CategoriesPage() {
           <p className="text-xs text-muted-foreground">定义产品层级。系统会自动识别多语言语义冲突并建议复用。</p>
         </div>
         
-        <Dialog 
-          open={isAdding} 
-          onOpenChange={(open) => {
-            if (!open) resetForm();
-            else setIsAdding(true);
-          }}
-        >
-          <DialogTrigger asChild>
-            <Button onClick={resetForm} className="rounded-lg h-10 px-5 font-bold uppercase text-xs gap-1.5 shadow-sm">
-              <Plus className="h-4 w-4" /> 新增分类
-            </Button>
-          </DialogTrigger>
-          <DialogContent className="rounded-2xl max-w-md p-0 overflow-hidden shadow-2xl border-none">
-            <div className="bg-primary p-6 text-white">
-              <DialogHeader>
-                <DialogTitle className="text-lg font-bold flex items-center gap-2">
-                  <Layers className="h-5 w-5" /> {editingCategory ? '编辑分类' : '添加分类'}
-                </DialogTitle>
-              </DialogHeader>
-            </div>
-            <div className="p-6 space-y-5 bg-white">
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-1.5">
-                  <Label className="text-[10px] font-bold uppercase text-primary tracking-wider">唯一 ID</Label>
-                  <Input disabled={!!editingCategory} value={formData.id} onChange={e => setFormData({...formData, id: e.target.value})} className="h-10 rounded-lg bg-muted/5 font-mono text-xs" />
-                </div>
-                <div className="space-y-1.5">
-                  <Label className="text-[10px] font-bold uppercase text-primary tracking-wider">SLUG</Label>
-                  <Input value={formData.slug} onChange={e => setFormData({...formData, slug: e.target.value})} className="h-10 rounded-lg bg-muted/5 text-xs" />
-                </div>
-              </div>
-              <div className="space-y-3 pt-4 border-t border-border/40">
-                <Label className="text-[10px] font-bold uppercase text-primary flex items-center gap-2"><Languages className="h-3 w-3" /> 双语名称</Label>
-                <Input placeholder="中文名称" value={formData.nameZh} onChange={e => setFormData({...formData, nameZh: e.target.value})} className="rounded-lg h-10 text-xs" />
-                <Input placeholder="English Name" value={formData.nameEn} onChange={e => setFormData({...formData, nameEn: e.target.value})} className="rounded-lg h-10 text-xs" />
-              </div>
-              <div className="space-y-1.5 pt-4 border-t border-border/40">
-                <Label className="text-[10px] font-bold uppercase text-primary">缩略图 URL</Label>
-                <Input value={formData.thumbnailImageUrl} onChange={e => setFormData({...formData, thumbnailImageUrl: e.target.value})} className="h-10 rounded-lg text-xs" />
-              </div>
-            </div>
-            <DialogFooter className="bg-muted/20 p-4 border-t gap-2">
-              <Button variant="outline" size="sm" onClick={resetForm} className="h-9 rounded-lg flex-1">取消</Button>
-              <Button size="sm" onClick={handleSave} className="h-9 rounded-lg flex-1">确认保存</Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
+        <Button onClick={handleOpenDialog} className="rounded-lg h-10 px-5 font-bold uppercase text-xs gap-1.5 shadow-sm">
+          <Plus className="h-4 w-4" /> 新增分类
+        </Button>
       </div>
+
+      <Dialog open={isDialogOpen} onOpenChange={(open) => { setIsDialogOpen(open); if (!open) resetForm(); }}>
+        <DialogContent className="rounded-2xl max-w-md p-0 overflow-hidden shadow-2xl border-none">
+          <div className="bg-primary p-6 text-white">
+            <DialogHeader>
+              <DialogTitle className="text-lg font-bold flex items-center gap-2">
+                <Layers className="h-5 w-5" /> {editingCategory ? '编辑分类' : '添加分类'}
+              </DialogTitle>
+              <DialogDescription className="text-white/60 text-xs">填写分类核心标识及双语名称。</DialogDescription>
+            </DialogHeader>
+          </div>
+          <div className="p-6 space-y-5 bg-white">
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-1.5">
+                <Label className="text-[10px] font-bold uppercase text-primary tracking-wider">唯一 ID</Label>
+                <Input disabled={!!editingCategory} value={formData.id} onChange={e => setFormData({...formData, id: e.target.value})} className="h-10 rounded-lg bg-muted/5 font-mono text-xs" />
+              </div>
+              <div className="space-y-1.5">
+                <Label className="text-[10px] font-bold uppercase text-primary tracking-wider">SLUG</Label>
+                <Input value={formData.slug} onChange={e => setFormData({...formData, slug: e.target.value})} className="h-10 rounded-lg bg-muted/5 text-xs" />
+              </div>
+            </div>
+            <div className="space-y-3 pt-4 border-t border-border/40">
+              <Label className="text-[10px] font-bold uppercase text-primary flex items-center gap-2"><Languages className="h-3 w-3" /> 双语名称</Label>
+              <Input placeholder="中文名称" value={formData.nameZh} onChange={e => setFormData({...formData, nameZh: e.target.value})} className="rounded-lg h-10 text-xs" />
+              <Input placeholder="English Name" value={formData.nameEn} onChange={e => setFormData({...formData, nameEn: e.target.value})} className="rounded-lg h-10 text-xs" />
+            </div>
+            <div className="space-y-1.5 pt-4 border-t border-border/40">
+              <Label className="text-[10px] font-bold uppercase text-primary">缩略图 URL</Label>
+              <Input value={formData.thumbnailImageUrl} onChange={e => setFormData({...formData, thumbnailImageUrl: e.target.value})} className="h-10 rounded-lg text-xs" />
+            </div>
+          </div>
+          <DialogFooter className="bg-muted/20 p-4 border-t gap-2">
+            <Button variant="outline" size="sm" onClick={() => setIsDialogOpen(false)} className="h-9 rounded-lg flex-1">取消</Button>
+            <Button size="sm" onClick={handleSave} className="h-9 rounded-lg flex-1">确认保存</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       <div className="bg-white rounded-xl border border-border/40 shadow-sm overflow-hidden">
         <Table>
@@ -215,7 +212,7 @@ export default function CategoriesPage() {
                 <TableCell className="text-[10px] font-mono opacity-50">{cat.slug}</TableCell>
                 <TableCell className="pr-5 text-right">
                   <div className="flex items-center justify-end gap-0.5">
-                    <Button size="icon" variant="ghost" className="h-8 w-8" onClick={() => startEdit(cat)}><Edit2 className="h-3.5 w-3.5" /></Button>
+                    <Button size="icon" variant="ghost" className="h-8 w-8" onClick={() => handleStartEdit(cat)}><Edit2 className="h-3.5 w-3.5" /></Button>
                     <Button size="icon" variant="ghost" className="h-8 w-8 text-destructive hover:bg-destructive/5" onClick={() => handleDelete(cat.id)}><Trash2 className="h-3.5 w-3.5" /></Button>
                   </div>
                 </TableCell>

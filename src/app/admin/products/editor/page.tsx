@@ -3,7 +3,7 @@
 
 import { useState, useEffect, useMemo, Suspense, useRef } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { useUser, useFirestore, useDoc, useCollection, useMemoFirebase } from '@/firebase';
+import { useFirestore, useDoc, useCollection, useMemoFirebase } from '@/firebase';
 import { doc, collection, serverTimestamp, query, orderBy } from 'firebase/firestore';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -23,18 +23,11 @@ import {
   Plus, 
   X,
   Languages,
-  LayoutGrid,
   Info,
-  RefreshCw,
   Upload,
-  Link2,
   Search,
-  CheckCircle2,
-  Filter,
   Check,
   Trash2,
-  Eye,
-  EyeOff,
   PlusCircle,
   TableProperties,
   FolderPlus,
@@ -47,10 +40,9 @@ import {
   DialogFooter, 
   DialogHeader, 
   DialogTitle, 
-  DialogTrigger,
   DialogDescription
 } from '@/components/ui/dialog';
-import { setDocumentNonBlocking, deleteDocumentNonBlocking } from '@/firebase/non-blocking-updates';
+import { setDocumentNonBlocking } from '@/firebase/non-blocking-updates';
 import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from '@/components/ui/badge';
@@ -169,26 +161,6 @@ function ProductEditorContent() {
   const { data: galleryAssets } = useCollection<GalleryAsset>(assetsQuery);
   const { data: aiConfig } = useDoc<AiConfig>(aiRef);
 
-  const galleryCategoryTree = useMemo(() => {
-    if (!galleryCategories) return [];
-    const tree: (GalleryCategory & { depth: number })[] = [];
-    const build = (parentId: string | null = null, depth = 0) => {
-      galleryCategories.filter(c => (c.parentId || null) === parentId).sort((a, b) => a.order - b.order).forEach(item => {
-        tree.push({ ...item, depth });
-        build(item.id, depth + 1);
-      });
-    };
-    build(null);
-    return tree;
-  }, [galleryCategories]);
-
-  useEffect(() => {
-    if (galleryCategories?.length && !uploadGalleryCatId) {
-      const defaultCat = galleryCategories.find(c => c.name.includes('产品') || c.name.includes('Product')) || galleryCategories[0];
-      setUploadGalleryCatId(defaultCat.id);
-    }
-  }, [galleryCategories, uploadGalleryCatId]);
-
   useEffect(() => {
     if (isEditing && product && translations) {
       const getT = (id?: string) => translations.find(t => t.id === id) || { en: '', zh: '' };
@@ -225,22 +197,13 @@ function ProductEditorContent() {
     }
   }, [isEditing, product, translations]);
 
-  const getSmartId = (en: string, zh: string, preferredId: string) => {
-    if (!translations) return preferredId;
-    const inputEn = en.trim().toLowerCase();
-    const inputZh = zh.trim().toLowerCase();
-    const existing = translations.find(t => {
-      const tEn = (t.en || '').trim().toLowerCase();
-      const tZh = (t.zh || '').trim().toLowerCase();
-      return (inputEn !== '' && (inputEn === tEn || inputZh === tZh)) || (inputZh !== '' && (inputZh === tZh || inputEn === tEn));
-    });
-    return existing ? existing.id : preferredId;
-  };
-
   const handleSave = () => {
-    if (!firestore || !formData.id || !formData.categoryId) return;
+    if (!firestore || !formData.id || !formData.categoryId) {
+      toast({ variant: "destructive", title: "请填写完整产品 ID 和分类" });
+      return;
+    }
     const saveLang = (en: string, zh: string, defaultId: string) => {
-      const targetId = getSmartId(en, zh, defaultId);
+      const targetId = defaultId;
       setDocumentNonBlocking(doc(firestore, 'localizedStrings', targetId), { 
         id: targetId, en: en.trim(), zh: zh.trim(), updatedAt: serverTimestamp() 
       }, { merge: true });
@@ -265,22 +228,11 @@ function ProductEditorContent() {
     router.push('/admin/products');
   };
 
-  const handleAiTranslateField = async (text: string, fieldType: 'name' | 'desc' | 'details' | 'spec') => {
-    if (!aiConfig?.isEnabled) {
-      toast({ variant: "destructive", title: "AI 未启用" });
-      return;
-    }
-    if (!text.trim()) return;
-
+  const handleAiTranslateField = async (text: string, fieldType: 'name' | 'desc' | 'details') => {
+    if (!aiConfig?.isEnabled || !text.trim()) return;
     setIsAiProcessing(true);
     try {
-      const result = await translateContent({
-        text,
-        sourceLang: 'zh',
-        targetLangs: ['en'],
-        model: aiConfig.model
-      });
-
+      const result = await translateContent({ text, sourceLang: 'zh', targetLangs: ['en'], model: aiConfig.model });
       if (result.en) {
         if (fieldType === 'name') setFormData(prev => ({...prev, nameEn: result.en}));
         if (fieldType === 'desc') setFormData(prev => ({...prev, descEn: result.en}));
@@ -312,13 +264,6 @@ function ProductEditorContent() {
     }
   };
 
-  const generateAutoId = (catId: string) => {
-    const prefix = catId.replace('cat-', '').toUpperCase();
-    const dateStr = new Date().toISOString().split('T')[0].replace(/-/g, '').slice(2);
-    const randomSuffix = Math.random().toString(36).substring(2, 6).toUpperCase();
-    setFormData(prev => ({ ...prev, id: `${prefix}-${dateStr}-${randomSuffix}` }));
-  };
-
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file || !firestore) return;
@@ -326,10 +271,6 @@ function ProductEditorContent() {
     const reader = new FileReader();
     reader.onload = async (event) => {
       const base64 = event.target?.result as string;
-      const assetId = `asset_prod_${Date.now()}`;
-      setDocumentNonBlocking(doc(firestore, 'galleryAssets', assetId), {
-        id: assetId, url: base64, title: `Product: ${formData.id}`, fileName: file.name, fileSize: file.size, categoryId: uploadGalleryCatId || 'uncategorized', createdAt: serverTimestamp()
-      }, { merge: true });
       setFormData(prev => ({ ...prev, mainImageUrl: base64 }));
       setIsUploading(false);
     };
@@ -341,11 +282,6 @@ function ProductEditorContent() {
     setSelectedPickerUrls(new Set());
     setIsPickerOpen(true);
   };
-
-  const filteredAssets = useMemo(() => {
-    if (!galleryAssets) return [];
-    return galleryAssets.filter(a => a.title.toLowerCase().includes(pickerSearch.toLowerCase()) && (pickerCat === 'all' || a.categoryId === pickerCat));
-  }, [galleryAssets, pickerSearch, pickerCat]);
 
   const togglePickerSelection = (url: string) => {
     const newSelected = new Set(selectedPickerUrls);
@@ -362,20 +298,7 @@ function ProductEditorContent() {
     setIsPickerOpen(false);
   };
 
-  const updateSpecItem = (gIdx: number, iIdx: number, field: keyof ProductSpecEntry, val: string) => {
-    const newGroups = [...formData.specGroups];
-    newGroups[gIdx].items[iIdx][field] = val;
-    setFormData({ ...formData, specGroups: newGroups });
-  };
-
   if (isEditing && isProdLoading) return <div className="h-[60vh] flex flex-col items-center justify-center gap-4"><Loader2 className="h-8 w-8 animate-spin text-primary opacity-20" /></div>;
-
-  const getCatName = (id: string) => {
-    const cat = categories?.find(c => c.id === id);
-    if (!cat) return id;
-    const t = translations?.find(tr => tr.id === cat.nameTextId);
-    return t ? `${t.zh} (${t.en})` : id;
-  };
 
   return (
     <div className="max-w-6xl mx-auto space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-500 pb-20">
@@ -416,23 +339,20 @@ function ProductEditorContent() {
               </div>
               <div className="space-y-1.5">
                 <Label className="text-[10px] font-bold uppercase text-primary">所属产品分类</Label>
-                <Select value={formData.categoryId} onValueChange={v => { setFormData({...formData, categoryId: v}); if(!isEditing) generateAutoId(v); }}>
+                <Select value={formData.categoryId} onValueChange={v => setFormData({...formData, categoryId: v})}>
                   <SelectTrigger className="h-10 rounded-lg bg-muted/20 border-transparent"><SelectValue placeholder="选择分类..." /></SelectTrigger>
                   <SelectContent className="rounded-xl">
-                    {categories?.map(c => <SelectItem key={c.id} value={c.id} className="text-xs">{getCatName(c.id)}</SelectItem>)}
+                    {categories?.map(c => <SelectItem key={c.id} value={c.id} className="text-xs">{c.id}</SelectItem>)}
                   </SelectContent>
                 </Select>
               </div>
             </div>
             <div className="space-y-4 pt-6 border-t">
               <div className="flex items-center justify-between"><Label className="text-[10px] font-bold uppercase text-primary">产品主图</Label><button onClick={() => openPicker('main')} className="text-[9px] font-bold text-primary uppercase hover:underline">库中挑选</button></div>
-              <div 
-                className="relative aspect-square rounded-xl bg-muted/20 border border-dashed border-border/60 overflow-hidden flex items-center justify-center group cursor-pointer" 
-                onClick={() => !formData.mainImageUrl && fileInputRef.current?.click()}
-              >
+              <div className="relative aspect-square rounded-xl bg-muted/20 border border-dashed border-border/60 overflow-hidden flex items-center justify-center group cursor-pointer" onClick={() => !formData.mainImageUrl && fileInputRef.current?.click()}>
                 {formData.mainImageUrl ? (
                   <>
-                    <Image src={formData.mainImageUrl} alt="Main" fill className="object-contain p-4 transition-transform group-hover:scale-105" />
+                    <Image src={formData.mainImageUrl} alt="Main" fill className="object-contain p-4" />
                     <div className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
                       <Button variant="destructive" size="sm" className="rounded-full h-8 w-8 p-0" onClick={(e) => { e.stopPropagation(); setFormData({...formData, mainImageUrl: ''}); }}><X className="h-4 w-4" /></Button>
                     </div>
@@ -451,7 +371,7 @@ function ProductEditorContent() {
 
         <div className="lg:col-span-8">
           <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-            <TabsList className="bg-muted/30 border-b-0 w-full justify-start gap-1 rounded-xl p-1 mb-4 h-11">
+            <TabsList className="bg-muted/30 w-full justify-start gap-1 rounded-xl p-1 mb-4 h-11">
               <TabsTrigger value="basic" className="rounded-lg px-4 text-[11px] font-bold uppercase tracking-wider data-[state=active]:bg-white data-[state=active]:shadow-sm">基础信息</TabsTrigger>
               <TabsTrigger value="specs" className="rounded-lg px-4 text-[11px] font-bold uppercase tracking-wider data-[state=active]:bg-white data-[state=active]:shadow-sm">技术规格</TabsTrigger>
               <TabsTrigger value="details" className="rounded-lg px-4 text-[11px] font-bold uppercase tracking-wider data-[state=active]:bg-white data-[state=active]:shadow-sm">详细介绍</TabsTrigger>
@@ -509,43 +429,29 @@ function ProductEditorContent() {
                         </div>
                         <Button variant="ghost" size="icon" onClick={() => setFormData({...formData, specGroups: formData.specGroups.filter((_,i)=>i!==gIdx)})} className="h-7 w-7 text-destructive hover:bg-destructive/10"><Trash2 className="h-3.5 w-3.5" /></Button>
                       </div>
-                      
                       <div className="p-0">
                         {group.items.map((item, iIdx) => (
-                          <div key={iIdx} className={cn(
-                            "grid grid-cols-1 md:grid-cols-12 gap-3 px-4 py-3 transition-colors group/item relative",
-                            iIdx % 2 === 1 ? "bg-white/40" : "bg-transparent",
-                            "border-b last:border-b-0 border-border/20"
-                          )}>
+                          <div key={iIdx} className="grid grid-cols-1 md:grid-cols-12 gap-3 px-4 py-3 transition-colors border-b last:border-b-0 border-border/20">
                             <div className="md:col-span-5 grid grid-cols-1 gap-1.5">
                               <div className="relative">
-                                <Input placeholder="参数名 (ZH)" value={item.labelZh} onChange={e => updateSpecItem(gIdx, iIdx, 'labelZh', e.target.value)} className="h-8 text-[11px] rounded-md bg-white pr-7" />
-                                {aiConfig?.isEnabled && (
-                                  <button onClick={() => handleAiTranslateSpec(gIdx, iIdx, item.labelZh, 'label')} className="absolute right-2 top-1.5 text-accent hover:scale-110 transition-transform"><Sparkles className="h-2.5 w-2.5" /></button>
-                                )}
+                                <Input placeholder="参数名 (ZH)" value={item.labelZh} onChange={e => { const g = [...formData.specGroups]; g[gIdx].items[iIdx].labelZh = e.target.value; setFormData({...formData, specGroups: g}); }} className="h-8 text-[11px] rounded-md bg-white pr-7" />
+                                {aiConfig?.isEnabled && <button onClick={() => handleAiTranslateSpec(gIdx, iIdx, item.labelZh, 'label')} className="absolute right-2 top-1.5 text-accent"><Sparkles className="h-2.5 w-2.5" /></button>}
                               </div>
-                              <Input placeholder="Label (EN)" value={item.labelEn} onChange={e => updateSpecItem(gIdx, iIdx, 'labelEn', e.target.value)} className="h-8 text-[11px] rounded-md bg-white/60 opacity-60" />
+                              <Input placeholder="Label (EN)" value={item.labelEn} onChange={e => { const g = [...formData.specGroups]; g[gIdx].items[iIdx].labelEn = e.target.value; setFormData({...formData, specGroups: g}); }} className="h-8 text-[11px] rounded-md bg-white/60 opacity-60" />
                             </div>
                             <div className="md:col-span-6 grid grid-cols-1 gap-1.5">
                               <div className="relative">
-                                <Input placeholder="数值 (ZH)" value={item.valueZh} onChange={e => updateSpecItem(gIdx, iIdx, 'valueZh', e.target.value)} className="h-8 text-[11px] rounded-md bg-white pr-7" />
-                                {aiConfig?.isEnabled && (
-                                  <button onClick={() => handleAiTranslateSpec(gIdx, iIdx, item.valueZh, 'value')} className="absolute right-2 top-1.5 text-accent hover:scale-110 transition-transform"><Sparkles className="h-2.5 w-2.5" /></button>
-                                )}
+                                <Input placeholder="数值 (ZH)" value={item.valueZh} onChange={e => { const g = [...formData.specGroups]; g[gIdx].items[iIdx].valueZh = e.target.value; setFormData({...formData, specGroups: g}); }} className="h-8 text-[11px] rounded-md bg-white pr-7" />
+                                {aiConfig?.isEnabled && <button onClick={() => handleAiTranslateSpec(gIdx, iIdx, item.valueZh, 'value')} className="absolute right-2 top-1.5 text-accent"><Sparkles className="h-2.5 w-2.5" /></button>}
                               </div>
-                              <Input placeholder="Value (EN)" value={item.valueEn} onChange={e => updateSpecItem(gIdx, iIdx, 'valueEn', e.target.value)} className="h-8 text-[11px] rounded-md bg-white/60 opacity-60" />
+                              <Input placeholder="Value (EN)" value={item.valueEn} onChange={e => { const g = [...formData.specGroups]; g[gIdx].items[iIdx].valueEn = e.target.value; setFormData({...formData, specGroups: g}); }} className="h-8 text-[11px] rounded-md bg-white/60 opacity-60" />
                             </div>
-                            <div className="md:col-span-1 flex items-center justify-center pt-2 md:pt-0">
-                              <Button variant="ghost" size="icon" onClick={() => { const g = [...formData.specGroups]; g[gIdx].items = g[gIdx].items.filter((_,i)=>i!==iIdx); setFormData({...formData, specGroups: g}); }} className="h-7 w-7 text-destructive opacity-0 group-hover/item:opacity-100 transition-opacity"><X className="h-3.5 w-3.5" /></Button>
+                            <div className="md:col-span-1 flex items-center justify-center">
+                              <Button variant="ghost" size="icon" onClick={() => { const g = [...formData.specGroups]; g[gIdx].items = g[gIdx].items.filter((_,i)=>i!==iIdx); setFormData({...formData, specGroups: g}); }} className="h-7 w-7 text-destructive"><X className="h-3.5 w-3.5" /></Button>
                             </div>
                           </div>
                         ))}
-                        <button 
-                          onClick={() => { const g = [...formData.specGroups]; g[gIdx].items.push({labelEn:'', labelZh:'', valueEn:'', valueZh:''}); setFormData({...formData, specGroups: g}); }} 
-                          className="w-full h-9 text-[10px] uppercase font-bold tracking-widest text-primary/40 hover:text-primary hover:bg-primary/5 transition-colors border-t border-border/20"
-                        >
-                          + 添加一行
-                        </button>
+                        <button onClick={() => { const g = [...formData.specGroups]; g[gIdx].items.push({labelEn:'', labelZh:'', valueEn:'', valueZh:''}); setFormData({...formData, specGroups: g}); }} className="w-full h-9 text-[10px] uppercase font-bold tracking-widest text-primary/40 hover:text-primary hover:bg-primary/5 transition-colors border-t border-border/20">+ 添加一行</button>
                       </div>
                     </div>
                   ))}
@@ -557,21 +463,11 @@ function ProductEditorContent() {
               <div className="bg-white p-6 rounded-2xl border border-border/40 shadow-sm space-y-4">
                 <div className="flex items-center justify-between border-b pb-3 mb-2">
                   <div className="flex items-center gap-2"><Info className="h-4 w-4 text-primary" /><h3 className="font-bold text-sm">详细图文说明</h3></div>
-                  {aiConfig?.isEnabled && (
-                    <Button variant="outline" size="sm" onClick={() => handleAiTranslateField(formData.detailsZh, 'details')} disabled={isAiProcessing || !formData.detailsZh} className="h-7 rounded-lg text-[9px] font-bold text-accent border-accent/20">
-                      AI 润色翻译
-                    </Button>
-                  )}
+                  {aiConfig?.isEnabled && <Button variant="outline" size="sm" onClick={() => handleAiTranslateField(formData.detailsZh, 'details')} disabled={isAiProcessing || !formData.detailsZh} className="h-7 rounded-lg text-[9px] font-bold text-accent">AI 润色翻译</Button>}
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div className="space-y-2">
-                    <Label className="text-[10px] font-bold uppercase text-primary tracking-widest">中文介绍</Label>
-                    <Textarea placeholder="长篇图文介绍..." value={formData.detailsZh} onChange={e => setFormData({...formData, detailsZh: e.target.value})} className="min-h-[400px] rounded-xl p-4 bg-muted/5 border-border/40 resize-none text-xs leading-relaxed" />
-                  </div>
-                  <div className="space-y-2">
-                    <Label className="text-[10px] font-bold uppercase text-muted-foreground tracking-widest">英文介绍</Label>
-                    <Textarea placeholder="Detailed information in English..." value={formData.detailsEn} onChange={e => setFormData({...formData, detailsEn: e.target.value})} className="min-h-[400px] rounded-xl p-4 bg-muted/5 border-border/40 resize-none text-xs leading-relaxed opacity-80" />
-                  </div>
+                  <Textarea placeholder="中文介绍..." value={formData.detailsZh} onChange={e => setFormData({...formData, detailsZh: e.target.value})} className="min-h-[400px] rounded-xl p-4 bg-muted/5 text-xs" />
+                  <Textarea placeholder="Detailed information in English..." value={formData.detailsEn} onChange={e => setFormData({...formData, detailsEn: e.target.value})} className="min-h-[400px] rounded-xl p-4 bg-muted/5 text-xs opacity-80" />
                 </div>
               </div>
             </TabsContent>
@@ -584,20 +480,14 @@ function ProductEditorContent() {
                  </div>
                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                    {formData.galleryUrls.map((url, idx) => (
-                     <div key={idx} className="flex gap-3 p-3 bg-muted/10 rounded-xl border border-border/20 group relative">
+                     <div key={idx} className="flex gap-3 p-3 bg-muted/10 rounded-xl border border-border/20">
                        <div className="relative h-16 w-16 border rounded-lg bg-white overflow-hidden shadow-sm shrink-0"><Image src={url} alt="Gallery" fill className="object-contain p-1" /></div>
                        <div className="flex-1 flex flex-col justify-between">
-                         <Input value={url} onChange={e => { const g = [...formData.galleryUrls]; g[idx] = e.target.value; setFormData({...formData, galleryUrls: g}); }} className="h-7 text-[9px] bg-white rounded-md border-none shadow-inner" />
-                         <Button variant="ghost" size="sm" onClick={() => setFormData({...formData, galleryUrls: formData.galleryUrls.filter((_,i)=>i!==idx)})} className="h-6 text-destructive text-[9px] font-bold uppercase tracking-widest hover:bg-destructive/5 rounded-md w-fit ml-auto">移除</Button>
+                         <Input value={url} onChange={e => { const g = [...formData.galleryUrls]; g[idx] = e.target.value; setFormData({...formData, galleryUrls: g}); }} className="h-7 text-[9px] bg-white" />
+                         <Button variant="ghost" size="sm" onClick={() => setFormData({...formData, galleryUrls: formData.galleryUrls.filter((_,i)=>i!==idx)})} className="h-6 text-destructive text-[9px] font-bold uppercase hover:bg-destructive/5 ml-auto">移除</Button>
                        </div>
                      </div>
                    ))}
-                   {formData.galleryUrls.length === 0 && (
-                     <div className="col-span-full py-12 text-center border-2 border-dashed rounded-2xl opacity-20">
-                       <ImageIcon className="h-8 w-8 mx-auto mb-2" />
-                       <p className="text-[10px] font-bold uppercase">暂无副图</p>
-                     </div>
-                   )}
                  </div>
                </div>
             </TabsContent>
@@ -607,27 +497,25 @@ function ProductEditorContent() {
 
       <Dialog open={isPickerOpen} onOpenChange={setIsPickerOpen}>
         <DialogContent className="max-w-5xl p-0 rounded-2xl overflow-hidden flex flex-col h-[85vh] border-none shadow-2xl">
-          <div className="bg-primary p-6 text-white"><DialogHeader><DialogTitle className="text-xl font-bold flex items-center gap-2"><ImageIcon className="h-6 w-6" /> 素材中心</DialogTitle><DialogDescription className="text-white/60 text-xs">选择已有素材，避免重复上传产生的冗余负载。</DialogDescription></DialogHeader></div>
-          <div className="px-6 py-4 flex flex-col md:flex-row gap-3 bg-muted/20 border-b border-border/40">
-            <div className="relative flex-1"><Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" /><Input placeholder="搜索素材标题..." value={pickerSearch} onChange={e => setPickerSearch(e.target.value)} className="pl-9 h-10 bg-white rounded-lg border-none shadow-sm" /></div>
-            <Select value={pickerCat} onValueChange={setPickerCat}><SelectTrigger className="w-full md:w-48 h-10 rounded-lg bg-white border-none shadow-sm"><SelectValue placeholder="分类" /></SelectTrigger><SelectContent>{galleryCategoryTree.map(cat => (<SelectItem key={cat.id} value={cat.id} className="text-xs"><span style={{ paddingLeft: `${cat.depth * 0.5}rem` }}>{cat.name}</span></SelectItem>))}</SelectContent></Select>
+          <div className="bg-primary p-6 text-white"><DialogHeader><DialogTitle className="text-xl font-bold flex items-center gap-2"><ImageIcon className="h-6 w-6" /> 素材中心</DialogTitle><DialogDescription className="text-white/60 text-xs">从已有素材库中选择。</DialogDescription></DialogHeader></div>
+          <div className="px-6 py-4 flex flex-col md:flex-row gap-3 bg-muted/20 border-b">
+            <div className="relative flex-1"><Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" /><Input placeholder="搜索素材标题..." value={pickerSearch} onChange={e => setPickerSearch(e.target.value)} className="pl-9 h-10 bg-white" /></div>
           </div>
           <div className="flex-1 overflow-y-auto p-6 bg-muted/5">
             <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
-              {filteredAssets.map(a => (
-                <div key={a.id} className={cn("group relative aspect-square bg-white rounded-lg cursor-pointer overflow-hidden border-2 transition-all", selectedPickerUrls.has(a.url) ? "border-primary ring-2 ring-primary/20" : "border-transparent hover:border-primary/40")} onClick={() => togglePickerSelection(a.url)}>
+              {galleryAssets?.filter(a => a.title.toLowerCase().includes(pickerSearch.toLowerCase())).map(a => (
+                <div key={a.id} className={cn("group relative aspect-square bg-white rounded-lg cursor-pointer overflow-hidden border-2 transition-all", selectedPickerUrls.has(a.url) ? "border-primary ring-2 ring-primary/20" : "border-transparent")} onClick={() => togglePickerSelection(a.url)}>
                   <Image src={a.url} alt={a.title} fill className="object-cover" />
-                  {selectedPickerUrls.has(a.url) && (<div className="absolute inset-0 bg-primary/20 backdrop-blur-[1px] flex items-center justify-center animate-in fade-in"><div className="bg-white rounded-full p-1.5 shadow-lg"><Check className="text-primary h-5 w-5 stroke-[3]" /></div></div>)}
-                  <div className="absolute inset-x-0 bottom-0 p-2 bg-gradient-to-t from-black/80 to-transparent opacity-0 group-hover:opacity-100 transition-opacity"><p className="text-[9px] text-white font-bold truncate">{a.title}</p></div>
+                  {selectedPickerUrls.has(a.url) && <div className="absolute inset-0 bg-primary/20 flex items-center justify-center"><Check className="text-primary h-6 w-6 bg-white rounded-full p-1 shadow-lg" /></div>}
                 </div>
               ))}
             </div>
           </div>
-          <DialogFooter className="p-6 bg-white border-t border-border/40 flex items-center justify-between">
+          <DialogFooter className="p-6 bg-white border-t flex items-center justify-between">
             <div className="text-xs font-bold text-primary">已选中 {selectedPickerUrls.size} 项</div>
             <div className="flex gap-2">
-              <Button variant="outline" size="sm" onClick={() => setIsPickerOpen(false)} className="rounded-lg h-9 px-5">取消</Button>
-              <Button size="sm" onClick={handleConfirmPicker} disabled={selectedPickerUrls.size === 0} className="rounded-lg h-9 px-6 shadow-sm">确认添加</Button>
+              <Button variant="outline" onClick={() => setIsPickerOpen(false)} className="rounded-lg h-9 px-5">取消</Button>
+              <Button onClick={handleConfirmPicker} disabled={selectedPickerUrls.size === 0} className="rounded-lg h-9 px-6">确认添加</Button>
             </div>
           </DialogFooter>
         </DialogContent>
