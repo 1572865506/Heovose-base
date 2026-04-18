@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState, useMemo } from 'react';
@@ -40,10 +41,11 @@ import {
   Copy,
   ExternalLink,
   ChevronRight,
-  Sparkles
+  Sparkles,
+  GitMerge
 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
-import { setDocumentNonBlocking, deleteDocumentNonBlocking } from '@/firebase/non-blocking-updates';
+import { setDocumentNonBlocking, deleteDocumentNonBlocking, updateDocumentNonBlocking } from '@/firebase/non-blocking-updates';
 import { Label } from '@/components/ui/label';
 import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
@@ -77,13 +79,14 @@ export default function TranslationsPage() {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [showOnlyDuplicates, setShowOnlyDuplicates] = useState(false);
   const [isCleaning, setIsCleaning] = useState(false);
+  const [isMerging, setIsMerging] = useState(false);
   
   const [formData, setFormData] = useState<Record<string, string>>({ id: '' });
   const [newLang, setNewLang] = useState({ code: '', label: '' });
 
   // 1. 获取基础语种配置
   const langConfigRef = useMemoFirebase(() => firestore ? doc(firestore, 'settings', 'languages') : null, [firestore]);
-  const { data: langSettings, isLoading: isLangLoading } = useDoc<LanguageSettings>(langConfigRef);
+  const { data: langSettings } = useDoc<LanguageSettings>(langConfigRef);
   
   // 2. 获取所有翻译项
   const translationsQuery = useMemoFirebase(() => firestore ? collection(firestore, 'localizedStrings') : null, [firestore]);
@@ -117,7 +120,7 @@ export default function TranslationsPage() {
       const pName = p.id;
       addRef(p.nameTextId, '产品名称', pName, p.id);
       addRef(p.descriptionTextId, '产品描述', pName, p.id);
-      addRef(p.detailsTextId, '详细内容', pName, p.id);
+      if (p.detailsTextId) addRef(p.detailsTextId, '详细内容', pName, p.id);
       p.advantageTextIds?.forEach((id: string) => addRef(id, '核心优势', pName, p.id));
       p.specGroups?.forEach((g: any) => {
         addRef(g.titleId, '规格分组', pName, p.id);
@@ -136,10 +139,7 @@ export default function TranslationsPage() {
 
   const usedIds = useMemo(() => new Set(referenceMap.keys()), [referenceMap]);
 
-  /**
-   * 5. 跨语言语义重复扫描
-   * 现在的逻辑：如果两个条目的中文 *或* 英文完全一致，则视为“潜在语义冲突”。
-   */
+  // 5. 跨语言语义重复扫描
   const semanticDuplicates = useMemo(() => {
     if (!translations) return new Map<string, string[]>();
     const groups = new Map<string, string[]>();
@@ -148,10 +148,6 @@ export default function TranslationsPage() {
       const zh = (t.zh || '').trim().toLowerCase();
       const en = (t.en || '').trim().toLowerCase();
       
-      // 只要中文或英文有一个非空且重复，就归为一组
-      const fingerprint = `sem::${zh}||${en}`;
-      
-      // 实际查重逻辑更复杂：建立多对多映射
       translations.forEach(other => {
         if (t.id === other.id) return;
         const oZh = (other.zh || '').trim().toLowerCase();
@@ -180,7 +176,117 @@ export default function TranslationsPage() {
     return count;
   }, [semanticDuplicates, usedIds]);
 
-  // 6. 列表过滤
+  // 6. 核心业务：一键合并并迁移引用
+  const handleMergeReferences = async (masterId: string, redundantIds: string[]) => {
+    if (!firestore || !products || !categories || !galleryCategories) return;
+    
+    const count = redundantIds.reduce((acc, rid) => acc + (referenceMap.get(rid)?.length || 0), 0);
+    if (count === 0) {
+      toast({ title: "无需迁移", description: "这些冗余项目前没有被任何产品引用。" });
+      return;
+    }
+
+    if (!confirm(`确定要将选中的 ${redundantIds.length} 个词条的引用全部迁移到 ID: ${masterId} 吗？\n\n这将影响 ${count} 处引用位置。操作完成后，冗余项将变为闲置状态，可被安全清理。`)) return;
+
+    setIsMerging(true);
+    let updatedCount = 0;
+
+    const redundantSet = new Set(redundantIds);
+    const migrate = (id: string) => redundantSet.has(id) ? masterId : id;
+
+    // 1. 迁移产品引用
+    products.forEach(p => {
+      let changed = false;
+      const newName = migrate(p.nameTextId);
+      if (newName !== p.nameTextId) changed = true;
+
+      const newDesc = migrate(p.descriptionTextId);
+      if (newDesc !== p.descriptionTextId) changed = true;
+
+      const newDetails = p.detailsTextId ? migrate(p.detailsTextId) : undefined;
+      if (newDetails !== p.detailsTextId) changed = true;
+
+      const newAdvs = p.advantageTextIds?.map((id: string) => {
+        const mid = migrate(id);
+        if (mid !== id) changed = true;
+        return mid;
+      });
+
+      const newSpecs = p.specGroups?.map((g: any) => {
+        let gChanged = false;
+        const newTitle = migrate(g.titleId);
+        if (newTitle !== g.titleId) gChanged = true;
+
+        const newItems = g.items?.map((item: any) => {
+          const newLabel = migrate(item.labelId);
+          const newValue = migrate(item.valueId);
+          if (newLabel !== item.labelId || newValue !== item.valueId) gChanged = true;
+          return { labelId: newLabel, valueId: newValue };
+        });
+
+        if (gChanged) changed = true;
+        return { titleId: newTitle, items: newItems };
+      });
+
+      if (changed) {
+        updateDocumentNonBlocking(doc(firestore, 'products', p.id), {
+          nameTextId: newName,
+          descriptionTextId: newDesc,
+          detailsTextId: newDetails,
+          advantageTextIds: newAdvs,
+          specGroups: newSpecs,
+          updatedAt: serverTimestamp()
+        });
+        updatedCount++;
+      }
+    });
+
+    // 2. 迁移分类引用
+    categories.forEach(c => {
+      const newName = migrate(c.nameTextId);
+      if (newName !== c.nameTextId) {
+        updateDocumentNonBlocking(doc(firestore, 'productCategories', c.id), { nameTextId: newName });
+        updatedCount++;
+      }
+    });
+
+    // 3. 迁移图库分类引用
+    galleryCategories.forEach(gc => {
+      const newName = migrate(gc.nameTextId);
+      if (newName !== gc.nameTextId) {
+        updateDocumentNonBlocking(doc(firestore, 'galleryCategories', gc.id), { nameTextId: newName });
+        updatedCount++;
+      }
+    });
+
+    setTimeout(() => {
+      setIsMerging(false);
+      toast({ title: "合并迁移完成", description: `已成功将引用关系重定向至主 ID。受影响的 ${updatedCount} 个实体已排队更新。` });
+    }, 1000);
+  };
+
+  const handleAutoCleanup = () => {
+    if (!firestore || semanticDuplicates.size === 0) return;
+    if (!confirm(`系统检测到 ${duplicatableCount} 组内容重叠且可安全移除的闲置词条。确定要启动清理吗？`)) return;
+    
+    setIsCleaning(true);
+    let deleteCount = 0;
+
+    semanticDuplicates.forEach((ids) => {
+      const referencedOnes = ids.filter(id => usedIds.has(id));
+      const masterId = referencedOnes.length > 0 ? referencedOnes[0] : ids[0];
+      const removableIds = ids.filter(id => id !== masterId && !usedIds.has(id));
+      
+      removableIds.forEach(id => {
+        deleteDocumentNonBlocking(doc(firestore, 'localizedStrings', id));
+        deleteCount++;
+      });
+    });
+
+    setIsCleaning(false);
+    toast({ title: "清理完成", description: `已安全移除 ${deleteCount} 个闲置冗余项。` });
+  };
+
   const filteredTranslations = useMemo(() => {
     if (!translations) return [];
     return translations.filter(t => {
@@ -198,28 +304,6 @@ export default function TranslationsPage() {
       return matchesSearch;
     });
   }, [translations, searchQuery, showOnlyDuplicates, semanticDuplicates]);
-
-  const handleAutoCleanup = () => {
-    if (!firestore || semanticDuplicates.size === 0) return;
-    if (!confirm(`系统检测到 ${duplicatableCount} 组内容重叠的词条。确定要启动安全清理吗？\n\n逻辑：如果多个 ID 内容相同，系统将保留正在被引用的 ID，并删除闲置的重复 ID。`)) return;
-    
-    setIsCleaning(true);
-    let deleteCount = 0;
-
-    semanticDuplicates.forEach((ids) => {
-      const referencedOnes = ids.filter(id => usedIds.has(id));
-      const masterId = referencedOnes.length > 0 ? referencedOnes[0] : ids[0];
-      const removableIds = ids.filter(id => id !== masterId && !usedIds.has(id));
-      
-      removableIds.forEach(id => {
-        deleteDocumentNonBlocking(doc(firestore, 'localizedStrings', id));
-        deleteCount++;
-      });
-    });
-
-    setIsCleaning(false);
-    toast({ title: "清理完成", description: `已安全移除 ${deleteCount} 个闲置冗余项。正在被引用的项已受保护。` });
-  };
 
   const handleSave = () => {
     if (!firestore || !formData.id) return;
@@ -245,7 +329,7 @@ export default function TranslationsPage() {
           <h2 className="text-2xl font-headline font-bold text-primary flex items-center gap-2">
             <Languages className="h-6 w-6" /> 全球语言资产管理
           </h2>
-          <p className="text-sm text-muted-foreground">管理全站翻译锚点。系统已启用<b>概念去重 (Concept-Aware)</b> 与同义词识别逻辑。</p>
+          <p className="text-sm text-muted-foreground">管理全站翻译锚点。支持<b>跨产品引用重定向</b>，解决在用词条的冗余合并问题。</p>
         </div>
         
         <div className="flex gap-2">
@@ -253,7 +337,7 @@ export default function TranslationsPage() {
             <Button 
               variant="outline" 
               onClick={handleAutoCleanup} 
-              disabled={isCleaning}
+              disabled={isCleaning || isMerging}
               className="rounded-xl h-12 border-orange-200 bg-orange-50 text-orange-700 hover:bg-orange-100 gap-2 shadow-sm"
             >
               {isCleaning ? <Loader2 className="h-4 w-4 animate-spin" /> : <Zap className="h-4 w-4 fill-current" />}
@@ -335,7 +419,6 @@ export default function TranslationsPage() {
                 }
               });
               const isDuplicate = semanticIds.length > 1;
-              const canBeCleaned = isDuplicate && refs.length === 0;
 
               return (
                 <TableRow key={t.id} className={cn("group transition-colors", isDuplicate ? "bg-orange-50/50" : "hover:bg-muted/5", refs.length > 0 ? "border-l-4 border-l-primary/30" : "border-l-4 border-l-transparent")}>
@@ -352,17 +435,45 @@ export default function TranslationsPage() {
                                 </Badge>
                               </TooltipTrigger>
                               <TooltipContent className="p-4 rounded-xl max-w-xs bg-white border-orange-200 shadow-2xl">
-                                <div className="space-y-2">
-                                  <p className="text-[10px] font-bold uppercase text-orange-700 border-b border-orange-100 pb-1">检测到以下关联词条</p>
-                                  {semanticIds.map(sid => (
-                                    <div key={sid} className="flex flex-col gap-0.5">
-                                      <span className={cn("text-[10px] font-mono", sid === t.id ? "font-bold text-primary" : "opacity-40")}>{sid}</span>
-                                      <span className="text-[9px] italic opacity-60">
-                                        {translations?.find(tr => tr.id === sid)?.zh} / {translations?.find(tr => tr.id === sid)?.en}
-                                      </span>
+                                <div className="space-y-4">
+                                  <div className="space-y-1">
+                                    <p className="text-[10px] font-bold uppercase text-orange-700 border-b border-orange-100 pb-1 flex items-center justify-between">
+                                      检测到以下关联词条
+                                      <GitMerge className="h-3 w-3" />
+                                    </p>
+                                    <div className="space-y-2 pt-2">
+                                      {semanticIds.map(sid => {
+                                        const sRefs = referenceMap.get(sid) || [];
+                                        return (
+                                          <div key={sid} className="flex flex-col gap-0.5 border-l-2 border-orange-100 pl-2">
+                                            <div className="flex items-center justify-between">
+                                              <span className={cn("text-[10px] font-mono", sid === t.id ? "font-bold text-primary" : "opacity-40")}>{sid}</span>
+                                              {sRefs.length > 0 && <Badge variant="outline" className="text-[7px] h-3 px-1">{sRefs.length} 引用</Badge>}
+                                            </div>
+                                            <span className="text-[9px] italic opacity-60">
+                                              {translations?.find(tr => tr.id === sid)?.zh} / {translations?.find(tr => tr.id === sid)?.en}
+                                            </span>
+                                          </div>
+                                        );
+                                      })}
                                     </div>
-                                  ))}
-                                  {refs.length > 0 && <p className="text-[9px] text-green-700 font-bold pt-2 flex items-center gap-1"><ShieldCheck className="h-3 w-3" /> 当前词条正在被引用，受安全保护</p>}
+                                  </div>
+                                  
+                                  {/* 高级功能：在用项一键合并 */}
+                                  <div className="pt-2 border-t border-orange-100">
+                                    <Button 
+                                      size="sm" 
+                                      disabled={isMerging}
+                                      className="w-full h-8 text-[9px] font-bold bg-orange-600 hover:bg-orange-700 rounded-lg gap-1.5"
+                                      onClick={() => handleMergeReferences(t.id, semanticIds.filter(id => id !== t.id))}
+                                    >
+                                      {isMerging ? <Loader2 className="h-3 w-3 animate-spin" /> : <GitMerge className="h-3 w-3" />}
+                                      设为主锚点并合并其他项
+                                    </Button>
+                                    <p className="text-[8px] text-muted-foreground mt-2 leading-relaxed">
+                                      * 该操作会将其他 ID 的所有产品/分类引用关系一次性迁移到当前 ID。
+                                    </p>
+                                  </div>
                                 </div>
                               </TooltipContent>
                             </Tooltip>
