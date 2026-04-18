@@ -107,23 +107,23 @@ export default function GalleryCategoriesPage() {
   };
 
   return (
-    <div className="space-y-8 animate-in fade-in duration-500">
+    <div className="space-y-6 animate-in fade-in duration-500">
       <div className="flex items-center gap-4">
         <Link href="/admin/gallery">
-          <Button variant="ghost" size="icon" className="rounded-full">
+          <Button variant="ghost" size="icon" className="rounded-full h-10 w-10">
             <ArrowLeft className="h-5 w-5" />
           </Button>
         </Link>
         <div>
-          <h2 className="text-2xl font-headline font-bold text-primary flex items-center gap-2">
-            <Layers className="h-6 w-6" />
+          <h2 className="text-xl font-headline font-bold text-primary flex items-center gap-2">
+            <Layers className="h-5 w-5" />
             图库分类管理
           </h2>
-          <p className="text-sm text-muted-foreground">定义素材的层级分类，支持多语言自动切换。</p>
+          <p className="text-xs text-muted-foreground">定义素材的层级分类，支持多语言自动切换。</p>
         </div>
       </div>
 
-      <div className="bg-white p-8 rounded-[2.5rem] border border-border/40 shadow-sm space-y-6">
+      <div className="bg-white p-6 rounded-2xl border border-border/40 shadow-sm space-y-6">
         <div className="flex items-center gap-2 text-primary">
           <Languages className="h-4 w-4" />
           <Label className="text-[10px] font-bold uppercase tracking-widest">新增多语言分类</Label>
@@ -133,21 +133,21 @@ export default function GalleryCategoriesPage() {
             placeholder="中文分类名称 (例如: 产品样机)" 
             value={formData.zh} 
             onChange={e => setFormData({...formData, zh: e.target.value})}
-            className="rounded-xl h-12"
+            className="rounded-lg h-10 text-sm"
           />
           <Input 
             placeholder="English Category Name (e.g. Mockups)" 
             value={formData.en} 
             onChange={e => setFormData({...formData, en: e.target.value})}
-            className="rounded-xl h-12"
+            className="rounded-lg h-10 text-sm"
           />
         </div>
-        <Button onClick={handleAdd} className="w-full rounded-xl h-12 font-bold uppercase tracking-widest gap-2 shadow-lg">
+        <Button onClick={handleAdd} className="w-full rounded-lg h-10 font-bold uppercase tracking-widest gap-2 shadow-sm">
           <Plus className="h-4 w-4" /> 添加分类
         </Button>
       </div>
 
-      <div className="bg-white rounded-[2rem] border border-border/40 shadow-xl overflow-hidden">
+      <div className="bg-white rounded-xl border border-border/40 shadow-sm overflow-hidden">
         <Table>
           <TableHeader className="bg-muted/30">
             <TableRow>
@@ -182,13 +182,13 @@ export default function GalleryCategoriesPage() {
                     </Button>
                   </div>
                 </TableCell>
-                <TableCell className="font-bold text-primary">{getT(cat.nameTextId)}</TableCell>
-                <TableCell className="text-xs font-mono opacity-50">{cat.nameTextId}</TableCell>
+                <TableCell className="font-bold text-primary text-sm">{getT(cat.nameTextId)}</TableCell>
+                <TableCell className="text-[10px] font-mono opacity-50">{cat.nameTextId}</TableCell>
                 <TableCell className="pr-6 text-right">
                   <Button 
                     size="icon" 
                     variant="ghost" 
-                    className="h-9 w-9 text-destructive opacity-0 group-hover:opacity-100 transition-all rounded-full"
+                    className="h-8 w-8 text-destructive opacity-0 group-hover:opacity-100 transition-all rounded-md"
                     onClick={() => handleDelete(cat)}
                   >
                     <Trash2 className="h-4 w-4" />
@@ -198,7 +198,7 @@ export default function GalleryCategoriesPage() {
             ))}
             {categories?.length === 0 && (
               <TableRow>
-                <TableCell colSpan={4} className="h-40 text-center text-muted-foreground italic">暂无分类数据</TableCell>
+                <TableCell colSpan={4} className="h-40 text-center text-muted-foreground italic text-xs">暂无分类数据</TableCell>
               </TableRow>
             )}
           </TableBody>
