@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useState, useMemo, useRef, useEffect, useCallback } from 'react';
@@ -637,9 +636,15 @@ export default function GalleryPage() {
         
         <div className="flex gap-2">
           {/* 分类设置弹窗 */}
-          <Dialog open={isCategoryDialogOpen} onOpenChange={setIsCategoryDialogOpen}>
+          <Dialog 
+            open={isCategoryDialogOpen} 
+            onOpenChange={(open) => {
+              setIsCategoryDialogOpen(open);
+              if (!open) resetCatForm();
+            }}
+          >
             <DialogTrigger asChild>
-              <Button variant="outline" className="rounded-xl h-12 gap-2">
+              <Button variant="outline" className="rounded-xl h-12 gap-2" onClick={resetCatForm}>
                 <Settings2 className="h-4 w-4" /> 分类设置
               </Button>
             </DialogTrigger>

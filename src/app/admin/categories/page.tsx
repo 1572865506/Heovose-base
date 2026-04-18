@@ -140,10 +140,32 @@ export default function CategoriesPage() {
           <p className="text-sm text-muted-foreground">定义产品的所属大类。系统已启用智能翻译复用机制（不区分大小写）。</p>
         </div>
         
-        <Dialog open={isAdding} onOpenChange={setIsAdding}>
-          <DialogTrigger asChild><Button className="rounded-xl h-12 px-6 font-bold uppercase gap-2"><Plus className="h-4 w-4" /> 新增分类</Button></DialogTrigger>
+        <Dialog 
+          open={isAdding} 
+          onOpenChange={(open) => {
+            if (!open) resetForm();
+            else setIsAdding(true);
+          }}
+        >
+          <DialogTrigger asChild>
+            <Button 
+              onClick={() => {
+                setEditingCategory(null);
+                setFormData({ id: '', slug: '', thumbnailImageUrl: '', nameEn: '', nameZh: '' });
+              }}
+              className="rounded-xl h-12 px-6 font-bold uppercase gap-2"
+            >
+              <Plus className="h-4 w-4" /> 新增分类
+            </Button>
+          </DialogTrigger>
           <DialogContent className="rounded-[2rem] max-w-lg p-0 overflow-hidden shadow-2xl">
-            <div className="bg-primary p-8 text-white"><DialogHeader><DialogTitle className="text-2xl font-bold flex items-center gap-3"><Layers className="h-6 w-6" /> {editingCategory ? '编辑分类' : '添加分类'}</DialogTitle></DialogHeader></div>
+            <div className="bg-primary p-8 text-white">
+              <DialogHeader>
+                <DialogTitle className="text-2xl font-bold flex items-center gap-3">
+                  <Layers className="h-6 w-6" /> {editingCategory ? '编辑分类' : '添加分类'}
+                </DialogTitle>
+              </DialogHeader>
+            </div>
             <div className="p-8 space-y-6 bg-white">
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2"><Label className="text-[10px] font-bold uppercase text-primary">分类唯一 ID</Label><Input disabled={!!editingCategory} value={formData.id} onChange={e => setFormData({...formData, id: e.target.value})} className="h-12 rounded-xl" /></div>
