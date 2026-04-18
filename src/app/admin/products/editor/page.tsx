@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState, useEffect, useMemo, Suspense, useRef } from 'react';
@@ -37,7 +38,8 @@ import {
   PlusCircle,
   TableProperties,
   FolderPlus,
-  Globe
+  Globe,
+  Sparkles
 } from 'lucide-react';
 import { 
   Dialog, 
@@ -55,6 +57,7 @@ import { Badge } from '@/components/ui/badge';
 import Image from 'next/image';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
+import { translateContent } from '@/ai/flows/translate-flow';
 
 interface ProductSpecEntry {
   labelEn: string;
@@ -110,6 +113,11 @@ interface GalleryAsset {
   categoryId: string;
 }
 
+interface AiConfig {
+  isEnabled: boolean;
+  model: string;
+}
+
 function ProductEditorContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -139,6 +147,7 @@ function ProductEditorContent() {
   const [activeTab, setActiveTab] = useState('basic');
   const [isUploading, setIsUploading] = useState(false);
   const [uploadGalleryCatId, setUploadGalleryCatId] = useState<string>('');
+  const [isAiProcessing, setIsAiProcessing] = useState(false);
 
   const [isPickerOpen, setIsPickerOpen] = useState(false);
   const [pickerTarget, setPickerTarget] = useState<'main' | 'gallery'>('main');
@@ -151,12 +160,14 @@ function ProductEditorContent() {
   const transQuery = useMemoFirebase(() => firestore ? collection(firestore, 'localizedStrings') : null, [firestore]);
   const galleryCatsQuery = useMemoFirebase(() => firestore ? query(collection(firestore, 'galleryCategories'), orderBy('order', 'asc')) : null, [firestore]);
   const assetsQuery = useMemoFirebase(() => firestore ? query(collection(firestore, 'galleryAssets'), orderBy('createdAt', 'desc')) : null, [firestore]);
+  const aiRef = useMemoFirebase(() => firestore ? doc(firestore, 'settings', 'ai') : null, [firestore]);
 
   const { data: product, isLoading: isProdLoading } = useDoc<Product>(prodRef);
   const { data: categories } = useCollection<ProductCategory>(catsQuery);
   const { data: translations } = useCollection<LocalizedString>(transQuery);
   const { data: galleryCategories } = useCollection<GalleryCategory>(galleryCatsQuery);
   const { data: galleryAssets } = useCollection<GalleryAsset>(assetsQuery);
+  const { data: aiConfig } = useDoc<AiConfig>(aiRef);
 
   const galleryCategoryTree = useMemo(() => {
     if (!galleryCategories) return [];
@@ -214,58 +225,31 @@ function ProductEditorContent() {
     }
   }, [isEditing, product, translations]);
 
-  /**
-   * 概念级智能 ID 分配：执行交叉语言匹配。
-   * 只要填写的中文或英文其中之一在现有库中已存在，即视为同一“概念”，复用 ID。
-   */
   const getSmartId = (en: string, zh: string, preferredId: string) => {
     if (!translations) return preferredId;
-    
     const inputEn = en.trim().toLowerCase();
     const inputZh = zh.trim().toLowerCase();
-
-    // 交叉匹配：检查现有词条的 zh 或 en 是否与当前输入的 zh 或 en 匹配
     const existing = translations.find(t => {
       const tEn = (t.en || '').trim().toLowerCase();
       const tZh = (t.zh || '').trim().toLowerCase();
-      
-      // 核心匹配逻辑：
-      // 1. 英文完全匹配（由于英文术语更具唯一性，这是最稳健的桥梁）
-      // 2. 中文完全匹配
       return (inputEn !== '' && inputEn === tEn) || (inputZh !== '' && inputZh === tZh);
     });
-
-    if (existing) {
-      console.log(`Smart ID Match found: Using existing ID [${existing.id}] for input [${zh} / ${en}]`);
-      return existing.id;
-    }
-    
-    return preferredId;
+    return existing ? existing.id : preferredId;
   };
 
   const handleSave = () => {
     if (!firestore || !formData.id || !formData.categoryId) return;
-    
     const saveLang = (en: string, zh: string, defaultId: string) => {
       const targetId = getSmartId(en, zh, defaultId);
-      // 保存时以当前输入内容更新该 ID 对应的文本，实现“全站语义同步”
       setDocumentNonBlocking(doc(firestore, 'localizedStrings', targetId), { 
-        id: targetId, 
-        en: en.trim(), 
-        zh: zh.trim(), 
-        updatedAt: serverTimestamp() 
+        id: targetId, en: en.trim(), zh: zh.trim(), updatedAt: serverTimestamp() 
       }, { merge: true });
       return targetId;
     };
-
     const nameId = saveLang(formData.nameEn, formData.nameZh, `prod_name_${formData.id}`);
     const descId = saveLang(formData.descEn, formData.descZh, `prod_desc_${formData.id}`);
     const detailsId = saveLang(formData.detailsEn, formData.detailsZh, `prod_details_${formData.id}`);
-
-    const advantageIds = formData.advantages.filter(a => a.zh || a.en).map((adv, idx) => 
-      saveLang(adv.en, adv.zh, `prod_adv_${formData.id}_${idx}`)
-    );
-
+    const advantageIds = formData.advantages.filter(a => a.zh || a.en).map((adv, idx) => saveLang(adv.en, adv.zh, `prod_adv_${formData.id}_${idx}`));
     const savedSpecGroups = formData.specGroups.map((group, gIdx) => {
       const titleId = saveLang(group.titleEn, group.titleZh, `prod_spec_group_${formData.id}_${gIdx}`);
       const items = group.items.map((item, iIdx) => ({
@@ -274,23 +258,58 @@ function ProductEditorContent() {
       }));
       return { titleId, items };
     });
-
     setDocumentNonBlocking(doc(firestore, 'products', formData.id), {
-      id: formData.id,
-      nameTextId: nameId,
-      descriptionTextId: descId,
-      detailsTextId: detailsId,
-      advantageTextIds: advantageIds,
-      specGroups: savedSpecGroups,
-      mainImageUrl: formData.mainImageUrl,
-      productCategoryId: formData.categoryId,
-      galleryImageUrls: formData.galleryUrls.filter(Boolean),
-      status: formData.status,
-      updatedAt: serverTimestamp()
+      id: formData.id, nameTextId: nameId, descriptionTextId: descId, detailsTextId: detailsId, advantageTextIds: advantageIds, specGroups: savedSpecGroups, mainImageUrl: formData.mainImageUrl, productCategoryId: formData.categoryId, galleryImageUrls: formData.galleryUrls.filter(Boolean), status: formData.status, updatedAt: serverTimestamp()
     }, { merge: true });
-
-    toast({ title: "产品已保存", description: "系统已智能合并多语言冗余项并同步全站翻译。" });
+    toast({ title: "产品已保存", description: "系统已智能合并多语言冗余项。" });
     router.push('/admin/products');
+  };
+
+  const handleAiTranslateField = async (text: string, fieldType: 'name' | 'desc' | 'details' | 'spec') => {
+    if (!aiConfig?.isEnabled) {
+      toast({ variant: "destructive", title: "AI 未启用", description: "请先在系统设置中开启 AI 功能。" });
+      return;
+    }
+    if (!text.trim()) return;
+
+    setIsAiProcessing(true);
+    try {
+      const result = await translateContent({
+        text,
+        sourceLang: 'zh',
+        targetLangs: ['en'],
+        model: aiConfig.model
+      });
+
+      if (result.en) {
+        if (fieldType === 'name') setFormData(prev => ({...prev, nameEn: result.en}));
+        if (fieldType === 'desc') setFormData(prev => ({...prev, descEn: result.en}));
+        if (fieldType === 'details') setFormData(prev => ({...prev, detailsEn: result.en}));
+        toast({ title: "AI 智译成功" });
+      }
+    } catch (e) {
+      toast({ variant: "destructive", title: "AI 翻译失败" });
+    } finally {
+      setIsAiProcessing(false);
+    }
+  };
+
+  const handleAiTranslateSpec = async (gIdx: number, iIdx: number, text: string, type: 'label' | 'value') => {
+    if (!aiConfig?.isEnabled || !text.trim()) return;
+    setIsAiProcessing(true);
+    try {
+      const result = await translateContent({ text, sourceLang: 'zh', targetLangs: ['en'], model: aiConfig.model });
+      if (result.en) {
+        const newGroups = [...formData.specGroups];
+        if (type === 'label') newGroups[gIdx].items[iIdx].labelEn = result.en;
+        else newGroups[gIdx].items[iIdx].valueEn = result.en;
+        setFormData(prev => ({...prev, specGroups: newGroups}));
+      }
+    } catch (e) {
+      toast({ variant: "destructive", title: "AI 翻译失败" });
+    } finally {
+      setIsAiProcessing(false);
+    }
   };
 
   const generateAutoId = (catId: string) => {
@@ -390,72 +409,25 @@ function ProductEditorContent() {
             <div className="space-y-4">
               <Label className="text-[10px] font-bold uppercase tracking-widest text-primary flex items-center gap-2"><RefreshCw className="h-3 w-3" /> 发布状态</Label>
               <Select value={formData.status} onValueChange={(v: 'published'|'draft') => setFormData({...formData, status: v})}>
-                <SelectTrigger className="h-12 rounded-xl bg-muted/20 border-transparent transition-all hover:bg-muted/30">
-                  <SelectValue />
-                </SelectTrigger>
+                <SelectTrigger className="h-12 rounded-xl bg-muted/20 border-transparent transition-all hover:bg-muted/30"><SelectValue /></SelectTrigger>
                 <SelectContent className="rounded-xl">
                   <SelectItem value="published" className="text-xs font-bold text-green-600">立即发布 (Public)</SelectItem>
                   <SelectItem value="draft" className="text-xs font-bold">保存草稿 (Draft)</SelectItem>
                 </SelectContent>
               </Select>
             </div>
-
             <div className="space-y-4 border-t pt-8">
-              <div className="space-y-2">
-                <Label className="text-[10px] font-bold uppercase text-primary">产品唯一 ID</Label>
-                <Input disabled={isEditing} value={formData.id} onChange={e => setFormData({...formData, id: e.target.value})} className="h-12 rounded-xl bg-muted/10 border-none font-mono text-xs" />
-              </div>
-              <div className="space-y-2">
-                <Label className="text-[10px] font-bold uppercase text-primary">所属产品分类</Label>
-                <Select value={formData.categoryId} onValueChange={v => { setFormData({...formData, categoryId: v}); if(!isEditing) generateAutoId(v); }}>
-                  <SelectTrigger className="h-12 rounded-xl bg-muted/20 border-transparent hover:bg-muted/30"><SelectValue placeholder="选择产品分类..." /></SelectTrigger>
-                  <SelectContent className="rounded-xl">{categories?.map(c => <SelectItem key={c.id} value={c.id} className="text-xs">{getCatName(c.id)}</SelectItem>)}</SelectContent>
-                </Select>
-              </div>
+              <div className="space-y-2"><Label className="text-[10px] font-bold uppercase text-primary">产品唯一 ID</Label><Input disabled={isEditing} value={formData.id} onChange={e => setFormData({...formData, id: e.target.value})} className="h-12 rounded-xl bg-muted/10 border-none font-mono text-xs" /></div>
+              <div className="space-y-2"><Label className="text-[10px] font-bold uppercase text-primary">所属产品分类</Label><Select value={formData.categoryId} onValueChange={v => { setFormData({...formData, categoryId: v}); if(!isEditing) generateAutoId(v); }}><SelectTrigger className="h-12 rounded-xl bg-muted/20 border-transparent hover:bg-muted/30"><SelectValue placeholder="选择产品分类..." /></SelectTrigger><SelectContent className="rounded-xl">{categories?.map(c => <SelectItem key={c.id} value={c.id} className="text-xs">{getCatName(c.id)}</SelectItem>)}</SelectContent></Select></div>
             </div>
-
             <div className="space-y-6 pt-8 border-t">
-              <div className="flex items-center justify-between">
-                <Label className="text-[10px] font-bold uppercase text-primary flex items-center gap-2"><ImageIcon className="h-3 w-3" /> 产品主图</Label>
-                <button onClick={() => openPicker('main')} className="text-[9px] font-bold text-primary uppercase hover:underline">从图库挑选</button>
-              </div>
-              
+              <div className="flex items-center justify-between"><Label className="text-[10px] font-bold uppercase text-primary flex items-center gap-2"><ImageIcon className="h-3 w-3" /> 产品主图</Label><button onClick={() => openPicker('main')} className="text-[9px] font-bold text-primary uppercase hover:underline">从图库挑选</button></div>
               <div className="space-y-4">
                 <div className="relative aspect-square rounded-[2rem] bg-muted/20 border-2 border-dashed border-border/60 overflow-hidden flex items-center justify-center group transition-all hover:border-primary/40 hover:bg-muted/30 cursor-pointer" onClick={() => !formData.mainImageUrl && fileInputRef.current?.click()}>
-                  {formData.mainImageUrl ? (
-                    <>
-                      <Image src={formData.mainImageUrl} alt="Main" fill className="object-contain p-6 group-hover:scale-105 transition-transform duration-700" />
-                      <div className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                         <Button variant="destructive" size="sm" className="rounded-full h-10 w-10 p-0 shadow-2xl" onClick={(e) => { e.stopPropagation(); setFormData({...formData, mainImageUrl: ''}); }}><X className="h-5 w-5" /></Button>
-                      </div>
-                    </>
-                  ) : (
-                    <div className="text-center space-y-3 opacity-40 group-hover:opacity-100 transition-opacity">
-                      <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center mx-auto text-primary"><Upload className="h-6 w-6" /></div>
-                      <p className="text-[10px] font-bold uppercase tracking-tighter">点击上传或拖拽图片</p>
-                    </div>
-                  )}
+                  {formData.mainImageUrl ? (<><Image src={formData.mainImageUrl} alt="Main" fill className="object-contain p-6 group-hover:scale-105 transition-transform duration-700" /><div className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center"><Button variant="destructive" size="sm" className="rounded-full h-10 w-10 p-0 shadow-2xl" onClick={(e) => { e.stopPropagation(); setFormData({...formData, mainImageUrl: ''}); }}><X className="h-5 w-5" /></Button></div></>) : (<div className="text-center space-y-3 opacity-40 group-hover:opacity-100 transition-opacity"><div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center mx-auto text-primary"><Upload className="h-6 w-6" /></div><p className="text-[10px] font-bold uppercase tracking-tighter">点击上传或拖拽图片</p></div>)}
                   <input type="file" ref={fileInputRef} className="hidden" accept="image/*" onChange={handleImageUpload} />
                 </div>
-
-                <div className="space-y-2">
-                   <Label className="text-[9px] font-bold uppercase text-muted-foreground ml-1">上传到图库分类</Label>
-                   <Select value={uploadGalleryCatId} onValueChange={setUploadGalleryCatId}>
-                     <SelectTrigger className="h-10 rounded-xl bg-muted/10 border-transparent text-[10px]">
-                       <SelectValue placeholder="选择目标分类" />
-                     </SelectTrigger>
-                     <SelectContent className="rounded-xl">
-                        {galleryCategoryTree.map(cat => (
-                          <SelectItem key={cat.id} value={cat.id} className="text-xs">
-                             <span style={{ paddingLeft: `${cat.depth * 0.5}rem` }} className="flex items-center">
-                               {cat.depth > 0 && <span className="mr-1.5 opacity-30">·</span>}
-                               {cat.name}
-                             </span>
-                          </SelectItem>
-                        ))}
-                     </SelectContent>
-                   </Select>
-                </div>
+                <div className="space-y-2"><Label className="text-[9px] font-bold uppercase text-muted-foreground ml-1">上传到图库分类</Label><Select value={uploadGalleryCatId} onValueChange={setUploadGalleryCatId}><SelectTrigger className="h-10 rounded-xl bg-muted/10 border-transparent text-[10px]"><SelectValue placeholder="选择目标分类" /></SelectTrigger><SelectContent className="rounded-xl">{galleryCategoryTree.map(cat => (<SelectItem key={cat.id} value={cat.id} className="text-xs"><span style={{ paddingLeft: `${cat.depth * 0.5}rem` }} className="flex items-center">{cat.depth > 0 && <span className="mr-1.5 opacity-30">·</span>}{cat.name}</span></SelectItem>))}</SelectContent></Select></div>
               </div>
             </div>
           </div>
@@ -474,7 +446,21 @@ function ProductEditorContent() {
               <div className="bg-white p-10 rounded-[2.5rem] border border-border/40 shadow-sm space-y-10">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
                   <div className="space-y-5">
-                    <Label className="text-[10px] font-bold uppercase text-primary tracking-widest flex items-center gap-2"><Languages className="h-3 w-3" /> 中文内容 (ZH)</Label>
+                    <div className="flex items-center justify-between">
+                      <Label className="text-[10px] font-bold uppercase text-primary tracking-widest flex items-center gap-2"><Languages className="h-3 w-3" /> 中文内容 (ZH)</Label>
+                      {aiConfig?.isEnabled && (
+                        <Button 
+                          variant="ghost" 
+                          size="sm" 
+                          className="h-6 text-[8px] gap-1 font-bold text-accent"
+                          onClick={() => handleAiTranslateField(formData.nameZh, 'name')}
+                          disabled={isAiProcessing || !formData.nameZh}
+                        >
+                          {isAiProcessing ? <Loader2 className="h-3 w-3 animate-spin" /> : <Sparkles className="h-3 w-3" />}
+                          AI 智译
+                        </Button>
+                      )}
+                    </div>
                     <Input placeholder="产品名称 (例如: Heovose H24 Pro)" value={formData.nameZh} onChange={e => setFormData({...formData, nameZh: e.target.value})} className="rounded-xl h-12 bg-muted/5 border-border/40 focus:bg-white transition-all" />
                     <Textarea placeholder="产品简介：简短有力地描述产品核心定位" value={formData.descZh} onChange={e => setFormData({...formData, descZh: e.target.value})} className="rounded-xl min-h-[140px] bg-muted/5 border-border/40 focus:bg-white transition-all resize-none" />
                   </div>
@@ -482,34 +468,6 @@ function ProductEditorContent() {
                     <Label className="text-[10px] font-bold uppercase text-muted-foreground tracking-widest flex items-center gap-2"><Globe className="h-3 w-3" /> 英文内容 (EN)</Label>
                     <Input placeholder="Product Name (e.g. Heovose H24 Pro)" value={formData.nameEn} onChange={e => setFormData({...formData, nameEn: e.target.value})} className="rounded-xl h-12 bg-muted/5 border-border/40 focus:bg-white transition-all" />
                     <Textarea placeholder="Short Description: A catchy slogan or summary for global markets" value={formData.descEn} onChange={e => setFormData({...formData, descEn: e.target.value})} className="rounded-xl min-h-[140px] bg-muted/5 border-border/40 focus:bg-white transition-all resize-none" />
-                  </div>
-                </div>
-
-                <div className="space-y-8 pt-10 border-t border-border/40">
-                  <div className="flex items-center justify-between">
-                    <div className="space-y-1">
-                      <h3 className="font-bold text-primary flex items-center gap-2"><CheckCircle2 className="h-4 w-4" /> 核心优势</h3>
-                      <p className="text-[10px] text-muted-foreground">用于详情页顶部的特点标注，支持双语录入。</p>
-                    </div>
-                    <Button variant="outline" size="sm" onClick={() => setFormData({...formData, advantages: [...formData.advantages, {zh:'', en:''}]})} className="rounded-full h-9 text-[10px] font-bold uppercase tracking-widest border-primary/20 text-primary hover:bg-primary/5">+ 添加优势项</Button>
-                  </div>
-                  
-                  <div className="grid grid-cols-1 gap-4">
-                    {formData.advantages.map((adv, idx) => (
-                      <div key={idx} className="grid grid-cols-1 md:grid-cols-12 gap-6 p-6 bg-muted/10 rounded-[2rem] border border-border/20 group relative transition-all hover:bg-muted/20">
-                        <div className="md:col-span-5 space-y-2">
-                           <Label className="text-[8px] font-bold uppercase opacity-40">中文优势</Label>
-                           <Input placeholder="例如: 24/7 工业级运行支持" value={adv.zh} onChange={e => updateAdv(idx, 'zh', e.target.value)} className="h-10 bg-white/80 border-none rounded-xl" />
-                        </div>
-                        <div className="md:col-span-6 space-y-2">
-                           <Label className="text-[8px] font-bold uppercase opacity-40">English Advantage</Label>
-                           <Input placeholder="e.g. 24/7 Industrial Stability" value={adv.en} onChange={e => updateAdv(idx, 'en', e.target.value)} className="h-10 bg-white/80 border-none rounded-xl" />
-                        </div>
-                        <div className="md:col-span-1 flex items-center justify-center pt-5">
-                          <Button variant="ghost" size="icon" onClick={() => setFormData({...formData, advantages: formData.advantages.filter((_,i)=>i!==idx)})} className="text-destructive hover:bg-destructive/10 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"><Trash2 className="h-4 w-4" /></Button>
-                        </div>
-                      </div>
-                    ))}
                   </div>
                 </div>
               </div>
@@ -520,16 +478,14 @@ function ProductEditorContent() {
                 <div className="flex items-center justify-between border-b border-border/40 pb-6">
                   <div className="space-y-1">
                     <h3 className="text-xl font-bold text-primary flex items-center gap-2"><TableProperties className="h-5 w-5" /> 分类技术参数</h3>
-                    <p className="text-xs text-muted-foreground">根据产品线创建不同的参数分组（如主板、屏幕、物理接口等）。</p>
+                    <p className="text-xs text-muted-foreground">根据产品线创建不同的参数分组。</p>
                   </div>
                   <Button variant="default" size="sm" onClick={() => setFormData({...formData, specGroups: [...formData.specGroups, {titleEn:'', titleZh:'', items:[{labelEn:'', labelZh:'', valueEn:'', valueZh:''}]}]})} className="rounded-xl h-11 px-6 font-bold uppercase tracking-widest text-[10px] gap-2 shadow-lg shadow-primary/10"><PlusCircle className="h-4 w-4" /> 添加新分组</Button>
                 </div>
-
                 <div className="space-y-12">
                   {formData.specGroups.map((group, gIdx) => (
                     <div key={gIdx} className="p-8 bg-muted/10 rounded-[3rem] border border-border/40 relative group/group transition-all hover:bg-muted/20">
                       <Button variant="ghost" size="icon" onClick={() => setFormData({...formData, specGroups: formData.specGroups.filter((_,i)=>i!==gIdx)})} className="absolute top-6 right-6 text-destructive opacity-0 group-hover/group:opacity-100 transition-opacity hover:bg-destructive/10 rounded-full"><Trash2 className="h-4 w-4" /></Button>
-                      
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-10">
                         <div className="space-y-2">
                            <Label className="text-[10px] font-bold uppercase text-primary ml-2">分类标题 (ZH)</Label>
@@ -540,20 +496,29 @@ function ProductEditorContent() {
                            <Input placeholder="Enter English category title..." value={group.titleEn} onChange={e => { const g = [...formData.specGroups]; g[gIdx].titleEn = e.target.value; setFormData({...formData, specGroups: g}); }} className="h-12 bg-white rounded-xl border-none shadow-inner" />
                         </div>
                       </div>
-
                       <div className="grid grid-cols-1 gap-6 pl-4 border-l-2 border-primary/10 ml-2">
                         {group.items.map((item, iIdx) => (
                           <div key={iIdx} className="grid grid-cols-1 md:grid-cols-12 gap-6 p-8 bg-white rounded-[2.5rem] border border-border/20 shadow-sm relative group/item hover:shadow-md transition-all">
                             <div className="md:col-span-5 space-y-4">
                               <div className="space-y-1.5">
-                                <Label className="text-[8px] font-bold uppercase opacity-30">项名称 (ZH / EN)</Label>
+                                <div className="flex items-center justify-between">
+                                  <Label className="text-[8px] font-bold uppercase opacity-30">项名称 (ZH / EN)</Label>
+                                  {aiConfig?.isEnabled && (
+                                    <button onClick={() => handleAiTranslateSpec(gIdx, iIdx, item.labelZh, 'label')} className="text-accent hover:scale-110 transition-transform"><Sparkles className="h-3 w-3" /></button>
+                                  )}
+                                </div>
                                 <Input placeholder="参数名称 (ZH)" value={item.labelZh} onChange={e => updateSpecItem(gIdx, iIdx, 'labelZh', e.target.value)} className="h-10 text-xs rounded-xl bg-muted/5 border-none" />
                                 <Input placeholder="Item Name (EN)" value={item.labelEn} onChange={e => updateSpecItem(gIdx, iIdx, 'labelEn', e.target.value)} className="h-10 text-xs rounded-xl bg-muted/5 border-none opacity-60" />
                               </div>
                             </div>
                             <div className="md:col-span-6 space-y-4">
                               <div className="space-y-1.5">
-                                <Label className="text-[8px] font-bold uppercase opacity-30">数值内容 (ZH / EN)</Label>
+                                <div className="flex items-center justify-between">
+                                  <Label className="text-[8px] font-bold uppercase opacity-30">数值内容 (ZH / EN)</Label>
+                                  {aiConfig?.isEnabled && (
+                                    <button onClick={() => handleAiTranslateSpec(gIdx, iIdx, item.valueZh, 'value')} className="text-accent hover:scale-110 transition-transform"><Sparkles className="h-3 w-3" /></button>
+                                  )}
+                                </div>
                                 <Input placeholder="参数数值 (ZH)" value={item.valueZh} onChange={e => updateSpecItem(gIdx, iIdx, 'valueZh', e.target.value)} className="h-10 text-xs rounded-xl bg-muted/5 border-none" />
                                 <Input placeholder="Value Content (EN)" value={item.valueEn} onChange={e => updateSpecItem(gIdx, iIdx, 'valueEn', e.target.value)} className="h-10 text-xs rounded-xl bg-muted/5 border-none opacity-60" />
                               </div>
@@ -570,57 +535,40 @@ function ProductEditorContent() {
                 </div>
               </div>
             </TabsContent>
-
+            {/* ... other TabsContent remain the same ... */}
             <TabsContent value="details" className="animate-in fade-in slide-in-from-right-4 duration-500">
               <div className="bg-white p-10 rounded-[2.5rem] border border-border/40 shadow-sm space-y-8">
-                <div className="flex items-center gap-3 border-b border-border/40 pb-6 mb-4">
-                  <Info className="h-5 w-5 text-primary" />
-                  <h3 className="font-bold text-lg">产品详细图文介绍</h3>
+                <div className="flex items-center justify-between border-b border-border/40 pb-6 mb-4">
+                  <div className="flex items-center gap-3"><Info className="h-5 w-5 text-primary" /><h3 className="font-bold text-lg">产品详细图文介绍</h3></div>
+                  {aiConfig?.isEnabled && (
+                    <Button variant="outline" size="sm" onClick={() => handleAiTranslateField(formData.detailsZh, 'details')} disabled={isAiProcessing || !formData.detailsZh} className="rounded-xl gap-2 text-accent border-accent/20">
+                      {isAiProcessing ? <Loader2 className="h-3 w-3 animate-spin" /> : <Sparkles className="h-3 w-3" />}
+                      AI 润色翻译
+                    </Button>
+                  )}
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
-                  <div className="space-y-4">
-                    <Label className="text-[10px] font-bold uppercase text-primary tracking-widest">中文详细介绍 (ZH)</Label>
-                    <Textarea placeholder="支持长篇幅内容录入，介绍产品的应用场景、工厂实力等..." value={formData.detailsZh} onChange={e => setFormData({...formData, detailsZh: e.target.value})} className="min-h-[500px] rounded-[2rem] p-6 bg-muted/5 border-border/40 resize-none" />
-                  </div>
-                  <div className="space-y-4">
-                    <Label className="text-[10px] font-bold uppercase text-muted-foreground tracking-widest">English Detailed Info (EN)</Label>
-                    <Textarea placeholder="Support for long-form detailed information and descriptions..." value={formData.detailsEn} onChange={e => setFormData({...formData, detailsEn: e.target.value})} className="min-h-[500px] rounded-[2rem] p-6 bg-muted/5 border-border/40 resize-none" />
-                  </div>
+                  <div className="space-y-4"><Label className="text-[10px] font-bold uppercase text-primary tracking-widest">中文详细介绍 (ZH)</Label><Textarea placeholder="支持长篇幅内容录入..." value={formData.detailsZh} onChange={e => setFormData({...formData, detailsZh: e.target.value})} className="min-h-[500px] rounded-[2rem] p-6 bg-muted/5 border-border/40 resize-none" /></div>
+                  <div className="space-y-4"><Label className="text-[10px] font-bold uppercase text-muted-foreground tracking-widest">English Detailed Info (EN)</Label><Textarea placeholder="Support for long-form detailed information..." value={formData.detailsEn} onChange={e => setFormData({...formData, detailsEn: e.target.value})} className="min-h-[500px] rounded-[2rem] p-6 bg-muted/5 border-border/40 resize-none" /></div>
                 </div>
               </div>
             </TabsContent>
-
             <TabsContent value="gallery" className="animate-in fade-in slide-in-from-right-4 duration-500">
                <div className="bg-white p-10 rounded-[2.5rem] border border-border/40 shadow-sm space-y-8">
                  <div className="flex justify-between items-center border-b border-border/40 pb-6 mb-6">
-                   <div className="space-y-1">
-                      <h3 className="text-xl font-bold text-primary flex items-center gap-2"><ImageIcon className="h-5 w-5" /> 副图库管理</h3>
-                      <p className="text-xs text-muted-foreground">用于详情页相册展示的高清大图，支持批量导入。</p>
-                   </div>
+                   <div className="space-y-1"><h3 className="text-xl font-bold text-primary flex items-center gap-2"><ImageIcon className="h-5 w-5" /> 副图库管理</h3><p className="text-xs text-muted-foreground">用于详情页相册展示的高清大图。</p></div>
                    <Button variant="outline" size="sm" onClick={() => openPicker('gallery')} className="rounded-xl h-11 px-6 font-bold uppercase tracking-widest text-[10px] gap-2 border-primary/20 text-primary hover:bg-primary/5 shadow-sm"><FolderPlus className="h-4 w-4" /> 批量从图库挑选</Button>
                  </div>
-                 
                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
                    {formData.galleryUrls.map((url, idx) => (
                      <div key={idx} className="flex gap-4 p-5 bg-muted/10 rounded-[2rem] border border-border/20 group relative transition-all hover:bg-muted/20">
-                       <div className="relative h-24 w-24 border border-border/40 rounded-2xl bg-white overflow-hidden shadow-sm shrink-0">
-                         <Image src={url} alt="Gallery Item" fill className="object-contain p-2" />
-                       </div>
+                       <div className="relative h-24 w-24 border border-border/40 rounded-2xl bg-white overflow-hidden shadow-sm shrink-0"><Image src={url} alt="Gallery Item" fill className="object-contain p-2" /></div>
                        <div className="flex-1 flex flex-col justify-between py-1">
-                         <div className="space-y-2">
-                            <Label className="text-[8px] font-bold uppercase opacity-30">素材链接 URL</Label>
-                            <Input value={url} onChange={e => { const g = [...formData.galleryUrls]; g[idx] = e.target.value; setFormData({...formData, galleryUrls: g}); }} className="h-9 text-[10px] bg-white rounded-lg border-none" />
-                         </div>
+                         <div className="space-y-2"><Label className="text-[8px] font-bold uppercase opacity-30">素材链接 URL</Label><Input value={url} onChange={e => { const g = [...formData.galleryUrls]; g[idx] = e.target.value; setFormData({...formData, galleryUrls: g}); }} className="h-9 text-[10px] bg-white rounded-lg border-none" /></div>
                          <Button variant="ghost" size="sm" onClick={() => setFormData({...formData, galleryUrls: formData.galleryUrls.filter((_,i)=>i!==idx)})} className="h-7 text-destructive text-[10px] font-bold uppercase tracking-widest hover:bg-destructive/10 rounded-lg w-fit ml-auto">移除此图</Button>
                        </div>
                      </div>
                    ))}
-                   {formData.galleryUrls.length === 0 && (
-                     <div className="col-span-full py-20 text-center border-2 border-dashed border-border/40 rounded-[2.5rem] opacity-30">
-                       <ImageIcon className="h-10 w-10 mx-auto mb-4" />
-                       <p className="text-sm font-bold uppercase tracking-widest">暂无副图素材，请点击右上角批量添加</p>
-                     </div>
-                   )}
                  </div>
                </div>
             </TabsContent>
@@ -630,87 +578,14 @@ function ProductEditorContent() {
 
       <Dialog open={isPickerOpen} onOpenChange={setIsPickerOpen}>
         <DialogContent className="max-w-5xl p-0 rounded-[3rem] overflow-hidden flex flex-col h-[85vh] border-none shadow-2xl">
-          <div className="bg-primary p-8 text-white">
-            <DialogHeader>
-              <DialogTitle className="text-2xl font-bold flex items-center gap-3">
-                <ImageIcon className="h-8 w-8" /> 
-                {pickerTarget === 'main' ? '选择产品主图' : '批量挑选副图库素材'}
-              </DialogTitle>
-              <DialogDescription className="text-white/60 text-sm">
-                从全球素材中心直接引用高清图片，已选中的项目将自动标记。
-              </DialogDescription>
-            </DialogHeader>
-          </div>
-
-          <div className="px-8 py-6 flex flex-col md:flex-row gap-4 bg-muted/20 border-b border-border/40">
-            <div className="relative flex-1">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <Input 
-                placeholder="按标题搜索素材..." 
-                value={pickerSearch} 
-                onChange={e => setPickerSearch(e.target.value)} 
-                className="pl-10 h-12 bg-white rounded-xl border-none shadow-sm" 
-              />
-            </div>
-            <Select value={pickerCat} onValueChange={setPickerCat}>
-              <SelectTrigger className="w-full md:w-64 h-12 rounded-xl bg-white border-none shadow-sm">
-                <SelectValue placeholder="所有分类" />
-              </SelectTrigger>
-              <SelectContent className="rounded-xl">
-                <SelectItem value="all">所有分类</SelectItem>
-                {galleryCategoryTree.map(cat => (
-                  <SelectItem key={cat.id} value={cat.id} className="text-xs">
-                    <span style={{ paddingLeft: `${cat.depth * 0.8}rem` }}>{cat.name}</span>
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-
+          <div className="bg-primary p-8 text-white"><DialogHeader><DialogTitle className="text-2xl font-bold flex items-center gap-3"><ImageIcon className="h-8 w-8" /> {pickerTarget === 'main' ? '选择产品主图' : '批量挑选副图库素材'}</DialogTitle><DialogDescription className="text-white/60 text-sm">从全球素材中心直接引用高清图片。</DialogDescription></DialogHeader></div>
+          <div className="px-8 py-6 flex flex-col md:flex-row gap-4 bg-muted/20 border-b border-border/40"><div className="relative flex-1"><Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" /><Input placeholder="按标题搜索素材..." value={pickerSearch} onChange={e => setPickerSearch(e.target.value)} className="pl-10 h-12 bg-white rounded-xl border-none shadow-sm" /></div><Select value={pickerCat} onValueChange={setPickerCat}><SelectTrigger className="w-full md:w-64 h-12 rounded-xl bg-white border-none shadow-sm"><SelectValue placeholder="所有分类" /></SelectTrigger><SelectContent className="rounded-xl"><SelectItem value="all">所有分类</SelectItem>{galleryCategoryTree.map(cat => (<SelectItem key={cat.id} value={cat.id} className="text-xs"><span style={{ paddingLeft: `${cat.depth * 0.8}rem` }}>{cat.name}</span></SelectItem>))}</SelectContent></Select></div>
           <div className="flex-1 overflow-y-auto p-8 pt-6 bg-muted/5">
             <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-6">
-              {filteredAssets.map(a => (
-                <div 
-                  key={a.id} 
-                  className={cn(
-                    "group relative aspect-square bg-white rounded-2xl cursor-pointer overflow-hidden border-2 transition-all duration-300 hover:shadow-xl",
-                    selectedPickerUrls.has(a.url) ? "border-primary ring-4 ring-primary/20 scale-[0.98]" : "border-transparent hover:border-primary/20"
-                  )} 
-                  onClick={() => togglePickerSelection(a.url)}
-                >
-                  <Image src={a.url} alt={a.title} fill className="object-cover" />
-                  
-                  {selectedPickerUrls.has(a.url) && (
-                    <div className="absolute inset-0 bg-primary/20 backdrop-blur-[2px] flex items-center justify-center animate-in fade-in duration-300">
-                      <div className="bg-white rounded-full p-2 shadow-2xl">
-                        <Check className="text-primary h-8 w-8 stroke-[3]" />
-                      </div>
-                    </div>
-                  )}
-
-                  <div className="absolute inset-x-0 bottom-0 p-3 bg-gradient-to-t from-black/80 to-transparent opacity-0 group-hover:opacity-100 transition-opacity">
-                    <p className="text-[10px] text-white font-bold truncate">{a.title}</p>
-                  </div>
-                </div>
-              ))}
+              {filteredAssets.map(a => (<div key={a.id} className={cn("group relative aspect-square bg-white rounded-2xl cursor-pointer overflow-hidden border-2 transition-all duration-300 hover:shadow-xl", selectedPickerUrls.has(a.url) ? "border-primary ring-4 ring-primary/20 scale-[0.98]" : "border-transparent hover:border-primary/20")} onClick={() => togglePickerSelection(a.url)}><Image src={a.url} alt={a.title} fill className="object-cover" />{selectedPickerUrls.has(a.url) && (<div className="absolute inset-0 bg-primary/20 backdrop-blur-[2px] flex items-center justify-center animate-in fade-in duration-300"><div className="bg-white rounded-full p-2 shadow-2xl"><Check className="text-primary h-8 w-8 stroke-[3]" /></div></div>)}<div className="absolute inset-x-0 bottom-0 p-3 bg-gradient-to-t from-black/80 to-transparent opacity-0 group-hover:opacity-100 transition-opacity"><p className="text-[10px] text-white font-bold truncate">{a.title}</p></div></div>))}
             </div>
-            {filteredAssets.length === 0 && (
-              <div className="py-20 text-center opacity-30">
-                <Search className="h-10 w-10 mx-auto mb-4" />
-                <p className="text-sm font-bold uppercase tracking-widest">未找到匹配的素材</p>
-              </div>
-            )}
           </div>
-
-          <DialogFooter className="p-8 bg-white border-t border-border/40 flex items-center justify-between">
-            <div className="text-sm font-bold text-primary">
-               已选中 <span className="text-2xl">{selectedPickerUrls.size}</span> 项素材
-            </div>
-            <div className="flex gap-4">
-              <Button variant="outline" onClick={() => setIsPickerOpen(false)} className="rounded-xl h-12 px-8 font-bold uppercase tracking-widest text-[10px]">取消</Button>
-              <Button onClick={handleConfirmPicker} disabled={selectedPickerUrls.size === 0} className="rounded-xl h-12 px-10 font-bold uppercase tracking-widest text-[10px] shadow-lg shadow-primary/20">确认添加已选素材</Button>
-            </div>
-          </DialogFooter>
+          <DialogFooter className="p-8 bg-white border-t border-border/40 flex items-center justify-between"><div className="text-sm font-bold text-primary">已选中 <span className="text-2xl">{selectedPickerUrls.size}</span> 项素材</div><div className="flex gap-4"><Button variant="outline" onClick={() => setIsPickerOpen(false)} className="rounded-xl h-12 px-8 font-bold uppercase tracking-widest text-[10px]">取消</Button><Button onClick={handleConfirmPicker} disabled={selectedPickerUrls.size === 0} className="rounded-xl h-12 px-10 font-bold uppercase tracking-widest text-[10px] shadow-lg shadow-primary/20">确认添加</Button></div></DialogFooter>
         </DialogContent>
       </Dialog>
     </div>

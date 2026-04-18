@@ -123,6 +123,18 @@
           } 
         }
       }
+    },
+    "AiConfig": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "AiConfig",
+      "type": "object",
+      "description": "Settings for Generative AI features.",
+      "properties": {
+        "isEnabled": { "type": "boolean" },
+        "model": { "type": "string" },
+        "temperature": { "type": "number" },
+        "systemInstruction": { "type": "string" }
+      }
     }
   },
   "auth": {
@@ -184,6 +196,14 @@
           "entityName": "AppConfig",
           "schema": { "$ref": "#/backend/entities/AppConfig" },
           "description": "Multilingual support configuration."
+        }
+      },
+      {
+        "path": "/settings/ai",
+        "definition": {
+          "entityName": "AiConfig",
+          "schema": { "$ref": "#/backend/entities/AiConfig" },
+          "description": "AI feature and model configuration."
         }
       }
     ]
