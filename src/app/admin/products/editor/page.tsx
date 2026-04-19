@@ -589,7 +589,7 @@ function ProductEditorContent() {
                 <Label className="text-[10px] font-bold uppercase text-primary tracking-widest">产品主展示图</Label>
                 <button onClick={() => openPicker('main')} className="text-[9px] font-bold text-primary hover:underline">库选取</button>
               </div>
-              <div className="relative flex-1 min-h-[280px] rounded-xl bg-muted/20 border border-dashed border-border/60 overflow-hidden flex items-center justify-center group cursor-pointer" onClick={() => !formData.mainImageUrl && fileInputRef.current?.click()}>
+              <div className="relative h-[280px] rounded-xl bg-muted/20 border border-dashed border-border/60 overflow-hidden flex items-center justify-center group cursor-pointer" onClick={() => !formData.mainImageUrl && fileInputRef.current?.click()}>
                 {formData.mainImageUrl ? (
                   <>
                     <Image src={formData.mainImageUrl} alt="Main" fill className="object-contain p-4 transition-transform duration-700 group-hover:scale-105" unoptimized />
@@ -607,14 +607,14 @@ function ProductEditorContent() {
               </div>
             </div>
 
-            {/* 副图库列表列 */}
+            {/* 副图库列表列 - 水平滚动模式 */}
             <div className="lg:col-span-9 flex flex-col">
               <div className="flex items-center justify-between mb-3">
                 <Label className="text-[10px] font-bold uppercase text-primary tracking-widest">产品详情幻灯片副图 ({formData.galleryUrls.length})</Label>
               </div>
-              <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-4 flex-1 min-h-[280px] p-4 bg-muted/10 rounded-xl border border-border/40 content-start overflow-y-auto">
+              <div className="flex flex-nowrap gap-4 p-4 bg-muted/10 rounded-xl border border-border/40 overflow-x-auto h-[280px] items-center">
                 {formData.galleryUrls.map((url, idx) => (
-                  <div key={`gal-top-${idx}`} className="group relative aspect-square bg-white rounded-lg border border-border/20 overflow-hidden shadow-sm hover:shadow-md transition-all">
+                  <div key={`gal-top-${idx}`} className="group relative shrink-0 w-[200px] h-full bg-white rounded-lg border border-border/20 overflow-hidden shadow-sm hover:shadow-md transition-all">
                     <Image src={url} alt="Gallery" fill className="object-contain p-2" unoptimized />
                     <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center gap-2">
                       <div className="flex gap-1.5">
@@ -645,7 +645,7 @@ function ProductEditorContent() {
                   </div>
                 ))}
                 {formData.galleryUrls.length === 0 && (
-                  <div className="col-span-full h-full flex flex-col items-center justify-center text-muted-foreground/30 py-8">
+                  <div className="w-full h-full flex flex-col items-center justify-center text-muted-foreground/30 py-8">
                     <ImageIcon className="h-8 w-8 mb-2" />
                     <p className="text-[10px] font-bold uppercase tracking-widest">暂未添加副图库</p>
                   </div>
