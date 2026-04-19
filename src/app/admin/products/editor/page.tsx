@@ -459,46 +459,20 @@ function ProductEditorContent() {
   if (isEditing && isProdLoading) return <div className="h-[60vh] flex flex-col items-center justify-center gap-4"><Loader2 className="h-8 w-8 animate-spin text-primary opacity-20" /></div>;
 
   return (
-    <div className="max-w-6xl mx-auto space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-500 pb-20">
-      <div className="flex items-center justify-between sticky top-16 z-40 bg-background/95 backdrop-blur-md py-4 border-b border-border/40 px-2">
-        <div className="flex items-center gap-3">
-          <Button variant="ghost" size="icon" onClick={() => router.back()} className="rounded-full h-9 w-9"><ArrowLeft className="h-4 w-4" /></Button>
-          <div className="space-y-1">
-            <h2 className="text-xl font-headline font-bold text-primary leading-none">{isEditing ? '编辑产品' : '发布产品'}</h2>
-            <div className="flex items-center gap-2">
-               <p className="text-[10px] text-muted-foreground uppercase tracking-wider font-bold">ID: {formData.id || '待选择分类...'}</p>
-               <Badge variant={formData.status === 'published' ? 'default' : 'secondary'} className={cn("text-[8px] uppercase px-1.5 py-0", formData.status === 'published' ? "bg-green-600 hover:bg-green-600" : "")}>{formData.status === 'published' ? '已发布' : '草稿'}</Badge>
-            </div>
+    <div className="max-w-[1400px] mx-auto space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-500 pb-20">
+      {/* 整合后的吸顶控制栏 */}
+      <div className="flex items-center justify-between sticky top-16 z-40 bg-background/95 backdrop-blur-md py-3 border-b border-border/40 px-4 shadow-sm">
+        <div className="flex items-center gap-6 flex-1">
+          <div className="flex items-center gap-2">
+            <Button variant="ghost" size="icon" onClick={() => router.back()} className="rounded-full h-8 w-8"><ArrowLeft className="h-4 w-4" /></Button>
+            <h2 className="text-lg font-headline font-bold text-primary whitespace-nowrap">{isEditing ? '编辑产品' : '发布产品'}</h2>
           </div>
-        </div>
-        <div className="flex items-center gap-4">
-          <div className="hidden md:flex flex-col items-end gap-1 min-w-[120px]">
-            <span className="text-[9px] font-bold text-muted-foreground uppercase tracking-tighter">多语言覆盖率 {Math.round(translationMetrics)}%</span>
-            <Progress value={translationMetrics} className="h-1 w-full bg-muted" />
-          </div>
-          <div className="flex gap-2">
-            <Button variant="outline" size="sm" onClick={() => router.back()} className="rounded-lg h-9 px-4 font-bold uppercase tracking-widest text-[10px]">取消</Button>
-            <Button size="sm" onClick={handleSave} className="rounded-lg h-9 px-5 font-bold uppercase tracking-widest text-[10px] gap-2 shadow-sm"><Save className="h-3.5 w-3.5" /> 保存并发布</Button>
-          </div>
-        </div>
-      </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-        <div className="lg:col-span-4 space-y-6">
-          <div className="bg-white p-6 rounded-2xl border border-border/40 shadow-sm space-y-6">
-            <div className="space-y-3">
-              <Label className="text-[10px] font-bold uppercase tracking-widest text-primary flex items-center gap-2">发布状态</Label>
-              <Select value={formData.status} onValueChange={(v: 'published'|'draft') => setFormData({...formData, status: v})}>
-                <SelectTrigger className="h-10 rounded-lg bg-muted/20 border-transparent"><SelectValue /></SelectTrigger>
-                <SelectContent className="rounded-xl">
-                  <SelectItem value="published" className="text-xs font-bold text-green-600">已发布 (Public)</SelectItem>
-                  <SelectItem value="draft" className="text-xs font-bold">草稿 (Draft)</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="space-y-4 border-t pt-6">
-              <div className="space-y-1.5">
-                <Label className="text-[10px] font-bold uppercase text-primary">所属产品分类</Label>
+          <div className="h-6 w-px bg-border/60 mx-1 hidden md:block" />
+
+          {/* 全局操作项：分类、ID、状态 */}
+          <div className="flex items-center gap-3 flex-1 max-w-4xl">
+             <div className="flex-1 max-w-[200px]">
                 <Select 
                   value={formData.categoryId} 
                   onValueChange={v => {
@@ -517,54 +491,93 @@ function ProductEditorContent() {
                     });
                   }}
                 >
-                  <SelectTrigger className="h-10 rounded-lg bg-muted/20 border-transparent"><SelectValue placeholder="选择分类以填充 ID..." /></SelectTrigger>
+                  <SelectTrigger className="h-9 rounded-lg bg-muted/20 border-transparent text-xs">
+                    <SelectValue placeholder="选择产品分类..." />
+                  </SelectTrigger>
                   <SelectContent className="rounded-xl">
                     {categories?.map(c => <SelectItem key={c.id} value={c.id} className="text-xs">{c.id}</SelectItem>)}
                   </SelectContent>
                 </Select>
-              </div>
-              <div className="space-y-1.5">
-                <Label className="text-[10px] font-bold uppercase text-primary">产品唯一 ID</Label>
-                <div className="relative">
-                  <input 
-                    type="text"
-                    disabled={isEditing} 
-                    value={formData.id} 
-                    onChange={e => setFormData({...formData, id: e.target.value})} 
-                    className={cn(
-                      "flex h-10 w-full rounded-lg bg-muted/10 border-none px-3 py-2 text-xs font-mono ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 pr-8",
-                      idConflict && "text-destructive"
-                    )} 
-                    placeholder="选择分类后自动生成..."
-                  />
-                  {idConflict && <AlertCircle className="absolute right-2 top-1/2 -translate-y-1/2 h-4 w-4 text-destructive animate-pulse" />}
-                </div>
-                {idConflict && <p className="text-[9px] font-bold text-destructive flex items-center gap-1 uppercase mt-1"><AlertCircle className="h-3 w-3" /> 该 ID 已存在，保存将导致覆盖！</p>}
-              </div>
-            </div>
-            <div className="space-y-4 pt-6 border-t">
-              <div className="flex items-center justify-between"><Label className="text-[10px] font-bold uppercase text-primary">产品主图</Label><button onClick={() => openPicker('main')} className="text-[9px] font-bold text-primary uppercase hover:underline">库中挑选</button></div>
-              <div className="relative aspect-square rounded-xl bg-muted/20 border border-dashed border-border/60 overflow-hidden flex items-center justify-center group cursor-pointer" onClick={() => !formData.mainImageUrl && fileInputRef.current?.click()}>
-                {formData.mainImageUrl ? (
-                  <>
-                    <Image src={formData.mainImageUrl} alt="Main" fill className="object-contain p-4" unoptimized />
-                    <div className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                      <Button variant="destructive" size="sm" className="rounded-full h-8 w-8 p-0" onClick={(e) => { e.stopPropagation(); setFormData({...formData, mainImageUrl: ''}); }}><X className="h-4 w-4" /></Button>
-                    </div>
-                  </>
-                ) : (
-                  <div className="text-center opacity-40">
-                    {isUploading ? <Loader2 className="h-6 w-6 mx-auto animate-spin" /> : <Upload className="h-6 w-6 mx-auto mb-1" />}
-                    <p className="text-[9px] font-bold uppercase">{isUploading ? '处理中...' : '上传图片'}</p>
-                  </div>
+             </div>
+
+             <div className="flex-[1.5] max-w-[300px] relative group">
+                <input 
+                  type="text"
+                  disabled={isEditing} 
+                  value={formData.id} 
+                  onChange={e => setFormData({...formData, id: e.target.value})} 
+                  className={cn(
+                    "flex h-9 w-full rounded-lg bg-muted/10 border border-transparent px-3 py-2 text-xs font-mono ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary/20 disabled:cursor-not-allowed disabled:opacity-50 pr-8 transition-all",
+                    idConflict && "text-destructive border-destructive/30 bg-destructive/5"
+                  )} 
+                  placeholder="产品 ID..."
+                />
+                {idConflict && (
+                  <TooltipProvider>
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <AlertCircle className="absolute right-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-destructive cursor-help animate-pulse" />
+                      </PopoverTrigger>
+                      <PopoverContent className="w-56 p-3 text-[10px] bg-destructive text-white border-none rounded-xl">
+                        此 ID 已被占用，保存将导致数据覆盖。请修改或重新选择分类。
+                      </PopoverContent>
+                    </Popover>
+                  </TooltipProvider>
                 )}
-                <input type="file" ref={fileInputRef} className="hidden" accept="image/*" onChange={handleImageUpload} />
-              </div>
+             </div>
+
+             <div className="flex-1 max-w-[140px]">
+                <Select value={formData.status} onValueChange={(v: 'published'|'draft') => setFormData({...formData, status: v})}>
+                  <SelectTrigger className={cn("h-9 rounded-lg border-transparent text-[10px] font-bold uppercase tracking-wider", formData.status === 'published' ? "bg-green-50 text-green-700" : "bg-muted/30 text-muted-foreground")}>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent className="rounded-xl">
+                    <SelectItem value="published" className="text-xs font-bold text-green-600">已发布 (Public)</SelectItem>
+                    <SelectItem value="draft" className="text-xs font-bold">草稿 (Draft)</SelectItem>
+                  </SelectContent>
+                </Select>
+             </div>
+          </div>
+        </div>
+
+        <div className="flex items-center gap-6">
+          <div className="hidden lg:flex flex-col items-end gap-1 min-w-[100px]">
+            <span className="text-[9px] font-bold text-muted-foreground uppercase tracking-tighter">翻译完成度 {Math.round(translationMetrics)}%</span>
+            <Progress value={translationMetrics} className="h-1 w-full bg-muted" />
+          </div>
+          <div className="flex gap-2">
+            <Button variant="outline" size="sm" onClick={() => router.back()} className="rounded-lg h-9 px-4 font-bold uppercase tracking-widest text-[10px]">取消</Button>
+            <Button size="sm" onClick={handleSave} className="rounded-lg h-9 px-5 font-bold uppercase tracking-widest text-[10px] gap-2 shadow-sm bg-primary hover:bg-primary/90"><Save className="h-3.5 w-3.5" /> 保存变更</Button>
+          </div>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 px-4">
+        {/* 侧边栏：仅保留主图上传 */}
+        <div className="lg:col-span-3 space-y-6">
+          <div className="bg-white p-6 rounded-2xl border border-border/40 shadow-sm space-y-4">
+            <div className="flex items-center justify-between"><Label className="text-[10px] font-bold uppercase text-primary tracking-widest">产品主图展示</Label><button onClick={() => openPicker('main')} className="text-[9px] font-bold text-primary uppercase hover:underline">素材库</button></div>
+            <div className="relative aspect-square rounded-xl bg-muted/20 border border-dashed border-border/60 overflow-hidden flex items-center justify-center group cursor-pointer" onClick={() => !formData.mainImageUrl && fileInputRef.current?.click()}>
+              {formData.mainImageUrl ? (
+                <>
+                  <Image src={formData.mainImageUrl} alt="Main" fill className="object-contain p-4 transition-transform duration-700 group-hover:scale-105" unoptimized />
+                  <div className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                    <Button variant="destructive" size="sm" className="rounded-full h-8 w-8 p-0" onClick={(e) => { e.stopPropagation(); setFormData({...formData, mainImageUrl: ''}); }}><X className="h-4 w-4" /></Button>
+                  </div>
+                </>
+              ) : (
+                <div className="text-center opacity-40">
+                  {isUploading ? <Loader2 className="h-6 w-6 mx-auto animate-spin" /> : <Upload className="h-6 w-6 mx-auto mb-1" />}
+                  <p className="text-[9px] font-bold uppercase">{isUploading ? '处理中...' : '上传图片'}</p>
+                </div>
+              )}
+              <input type="file" ref={fileInputRef} className="hidden" accept="image/*" onChange={handleImageUpload} />
             </div>
           </div>
         </div>
 
-        <div className="lg:col-span-8">
+        {/* 主编辑区 */}
+        <div className="lg:col-span-9">
           <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
             <TabsList className="bg-muted/30 w-full justify-start gap-1 rounded-xl p-1 mb-4 h-11">
               <TabsTrigger value="basic" className="rounded-lg px-4 text-[11px] font-bold uppercase tracking-wider data-[state=active]:bg-white data-[state=active]:shadow-sm">基础信息</TabsTrigger>
