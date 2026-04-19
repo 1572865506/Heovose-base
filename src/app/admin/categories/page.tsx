@@ -33,6 +33,7 @@ import {
 import { setDocumentNonBlocking, deleteDocumentNonBlocking } from '@/firebase/non-blocking-updates';
 import { Label } from '@/components/ui/label';
 import Image from 'next/image';
+import { useToast } from '@/hooks/use-toast';
 
 interface ProductCategory {
   id: string;
@@ -49,6 +50,7 @@ interface LocalizedString {
 
 export default function CategoriesPage() {
   const firestore = useFirestore();
+  const { toast } = useToast();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingCategory, setEditingCategory] = useState<ProductCategory | null>(null);
   
@@ -99,7 +101,10 @@ export default function CategoriesPage() {
   };
 
   const handleSave = () => {
-    if (!firestore || !formData.id || !formData.slug) return;
+    if (!firestore || !formData.id || !formData.slug) {
+      toast({ variant: "destructive", title: "请填写 ID 和 SLUG" });
+      return;
+    }
     
     const defaultId = editingCategory?.nameTextId || `cat_name_${formData.id}`;
     const nameTextId = getSmartId(formData.nameEn, formData.nameZh, defaultId);
@@ -123,6 +128,7 @@ export default function CategoriesPage() {
 
     setIsDialogOpen(false);
     resetForm();
+    toast({ title: "分类已保存" });
   };
 
   const handleDelete = (id: string) => {
@@ -156,12 +162,30 @@ export default function CategoriesPage() {
           <div className="p-6 space-y-5 bg-white">
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-1.5">
-                <Label className="text-[10px] font-bold uppercase text-primary tracking-wider">唯一 ID</Label>
-                <Input disabled={!!editingCategory} value={formData.id} onChange={e => setFormData({...formData, id: e.target.value})} className="h-10 rounded-lg bg-muted/5 font-mono text-xs" />
+                <Label className="text-[10px] font-bold uppercase text-primary tracking-wider">SLUG (用于 ID 生成)</Label>
+                <Input 
+                  placeholder="如: aio" 
+                  value={formData.slug} 
+                  onChange={e => {
+                    const val = e.target.value;
+                    setFormData(prev => ({
+                      ...prev, 
+                      slug: val,
+                      // 如果是新增，同步生成规范 ID
+                      id: !editingCategory ? `CAT_NAME_${val.toUpperCase().replace(/\s+/g, '_')}` : prev.id
+                    }));
+                  }} 
+                  className="h-10 rounded-lg bg-muted/5 text-xs" 
+                />
               </div>
               <div className="space-y-1.5">
-                <Label className="text-[10px] font-bold uppercase text-primary tracking-wider">SLUG</Label>
-                <Input value={formData.slug} onChange={e => setFormData({...formData, slug: e.target.value})} className="h-10 rounded-lg bg-muted/5 text-xs" />
+                <Label className="text-[10px] font-bold uppercase text-primary tracking-wider">唯一 ID</Label>
+                <Input 
+                  disabled={!!editingCategory} 
+                  value={formData.id} 
+                  onChange={e => setFormData({...formData, id: e.target.value})} 
+                  className="h-10 rounded-lg bg-muted/5 font-mono text-xs" 
+                />
               </div>
             </div>
             <div className="space-y-3 pt-4 border-t border-border/40">
@@ -187,7 +211,7 @@ export default function CategoriesPage() {
             <TableRow>
               <TableHead className="w-14 pl-5">图标</TableHead>
               <TableHead className="font-bold uppercase text-[9px] tracking-wider">名称 (中/英)</TableHead>
-              <TableHead className="font-bold uppercase text-[9px] tracking-wider">Slug</TableHead>
+              <TableHead className="font-bold uppercase text-[9px] tracking-wider">Slug / 规范 ID</TableHead>
               <TableHead className="w-24 text-right pr-5 font-bold uppercase text-[9px] tracking-wider">操作</TableHead>
             </TableRow>
           </TableHeader>
@@ -209,7 +233,12 @@ export default function CategoriesPage() {
                       <span className="text-[9px] text-muted-foreground uppercase opacity-70">{translations?.find(t => t.id === cat.nameTextId)?.en || 'No English'}</span>
                    </div>
                 </TableCell>
-                <TableCell className="text-[10px] font-mono opacity-50">{cat.slug}</TableCell>
+                <TableCell>
+                  <div className="flex flex-col">
+                    <span className="text-[10px] font-mono opacity-50">{cat.slug}</span>
+                    <span className="text-[8px] font-bold text-primary/40 uppercase tracking-tighter">{cat.id}</span>
+                  </div>
+                </TableCell>
                 <TableCell className="pr-5 text-right">
                   <div className="flex items-center justify-end gap-0.5">
                     <Button size="icon" variant="ghost" className="h-8 w-8" onClick={() => handleStartEdit(cat)}><Edit2 className="h-3.5 w-3.5" /></Button>
