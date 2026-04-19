@@ -4,7 +4,7 @@
 import { useState, useEffect, useMemo, Suspense, useRef } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useFirestore, useDoc, useCollection, useMemoFirebase } from '@/firebase';
-import { doc, collection, serverTimestamp, query, orderBy } from 'firebase/firestore';
+import { doc, collection, serverTimestamp, query, orderBy, deleteDoc } from 'firebase/firestore';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -51,9 +51,15 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
-import { setDocumentNonBlocking } from '@/firebase/non-blocking-updates';
+import { 
+  Tabs, 
+  TabsContent, 
+  TabsList, 
+  TabsTrigger 
+} from "@/components/ui/tabs";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { setDocumentNonBlocking, deleteDocumentNonBlocking } from '@/firebase/non-blocking-updates';
 import { Label } from '@/components/ui/label';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from '@/components/ui/badge';
 import Image from 'next/image';
 import { useToast } from '@/hooks/use-toast';
@@ -154,6 +160,8 @@ function ProductEditorContent() {
 
   // 模板相关状态
   const [isSaveTemplateDialogOpen, setIsSaveTemplateDialogOpen] = useState(false);
+  const [saveTemplateMode, setSaveTemplateMode] = useState<'create' | 'update'>('create');
+  const [targetTemplateId, setTargetTemplateId] = useState<string>('');
   const [newTemplateName, setNewTemplateName] = useState('');
 
   const [isPickerOpen, setIsPickerOpen] = useState(false);
@@ -167,7 +175,7 @@ function ProductEditorContent() {
   const assetsQuery = useMemoFirebase(() => firestore ? query(collection(firestore, 'galleryAssets'), orderBy('createdAt', 'desc')) : null, [firestore]);
   const allProdsQuery = useMemoFirebase(() => firestore ? collection(firestore, 'products') : null, [firestore]);
   const aiRef = useMemoFirebase(() => firestore ? doc(firestore, 'settings', 'ai') : null, [firestore]);
-  const templatesQuery = useMemoFirebase(() => firestore ? collection(firestore, 'specTemplates') : null, [firestore]);
+  const templatesQuery = useMemoFirebase(() => firestore ? query(collection(firestore, 'specTemplates'), orderBy('createdAt', 'desc')) : null, [firestore]);
 
   const { data: product, isLoading: isProdLoading } = useDoc<Product>(prodRef);
   const { data: categories } = useCollection<ProductCategory>(catsQuery);
@@ -284,13 +292,30 @@ function ProductEditorContent() {
     router.push('/admin/products');
   };
 
-  // --- 模板逻辑 ---
+  // --- 模板逻辑增强 ---
   const handleSaveTemplate = () => {
-    if (!firestore || !newTemplateName.trim() || formData.specGroups.length === 0) return;
-    const templateId = `tpl_${Date.now()}`;
+    if (!firestore || formData.specGroups.length === 0) return;
+    
+    let templateId = `tpl_${Date.now()}`;
+    let templateName = newTemplateName.trim();
+
+    if (saveTemplateMode === 'update') {
+      if (!targetTemplateId) {
+        toast({ variant: "destructive", title: "请选择要覆盖的模板" });
+        return;
+      }
+      templateId = targetTemplateId;
+      templateName = specTemplates?.find(t => t.id === targetTemplateId)?.name || templateName;
+    } else {
+      if (!templateName) {
+        toast({ variant: "destructive", title: "请输入模板名称" });
+        return;
+      }
+    }
+
     setDocumentNonBlocking(doc(firestore, 'specTemplates', templateId), {
       id: templateId,
-      name: newTemplateName.trim(),
+      name: templateName,
       specGroups: formData.specGroups.map(g => ({
         titleEn: g.titleEn,
         titleZh: g.titleZh,
@@ -306,7 +331,15 @@ function ProductEditorContent() {
 
     setIsSaveTemplateDialogOpen(false);
     setNewTemplateName('');
-    toast({ title: "模板已存入云端库" });
+    setTargetTemplateId('');
+    toast({ title: saveTemplateMode === 'update' ? "模板已更新" : "模板已存入云端库" });
+  };
+
+  const handleDeleteTemplate = (id: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (!firestore || !confirm('确定要删除此规格模板吗？')) return;
+    deleteDocumentNonBlocking(doc(firestore, 'specTemplates', id));
+    toast({ title: "模板已移除" });
   };
 
   const handleApplyTemplate = (tpl: SpecTemplate) => {
@@ -594,14 +627,26 @@ function ProductEditorContent() {
                             <div className="p-8 text-center text-[10px] text-muted-foreground italic">暂无模板</div>
                           ) : (
                             specTemplates?.map(tpl => (
-                              <button 
+                              <div 
                                 key={tpl.id} 
-                                onClick={() => handleApplyTemplate(tpl)}
-                                className="w-full text-left p-3 text-[11px] hover:bg-muted/50 border-b border-border/20 last:border-0 flex items-center justify-between group"
+                                className="w-full text-left p-1 border-b border-border/20 last:border-0 flex items-center group hover:bg-muted/50"
                               >
-                                <span className="font-bold text-primary">{tpl.name}</span>
-                                <FileDown className="h-3 w-3 opacity-0 group-hover:opacity-40 transition-opacity" />
-                              </button>
+                                <button 
+                                  onClick={() => handleApplyTemplate(tpl)}
+                                  className="flex-1 text-left p-2 text-[11px] flex items-center justify-between"
+                                >
+                                  <span className="font-bold text-primary">{tpl.name}</span>
+                                  <FileDown className="h-3 w-3 opacity-0 group-hover:opacity-40" />
+                                </button>
+                                <Button 
+                                  variant="ghost" 
+                                  size="icon" 
+                                  className="h-7 w-7 text-destructive opacity-0 group-hover:opacity-100" 
+                                  onClick={(e) => handleDeleteTemplate(tpl.id, e)}
+                                >
+                                  <Trash2 className="h-3 w-3" />
+                                </Button>
+                              </div>
                             ))
                           )}
                         </div>
@@ -618,19 +663,48 @@ function ProductEditorContent() {
                   </div>
                 </div>
 
-                <Dialog open={isSaveTemplateDialogOpen} onOpenChange={setIsSaveTemplateDialogOpen}>
+                <Dialog open={isSaveTemplateDialogOpen} onOpenChange={(open) => { setIsSaveTemplateDialogOpen(open); if(!open) { setNewTemplateName(''); setTargetTemplateId(''); } }}>
                   <DialogContent className="max-w-sm rounded-2xl">
                     <DialogHeader>
-                      <DialogTitle className="text-base font-bold">另存为规格模板</DialogTitle>
-                      <DialogDescription>将当前录入的所有规格结构保存到云端，供其他产品快速复用。</DialogDescription>
+                      <DialogTitle className="text-base font-bold">规格模板管理</DialogTitle>
+                      <DialogDescription>保存当前规格结构至云端，供其他产品快速复用。</DialogDescription>
                     </DialogHeader>
-                    <div className="py-4 space-y-3">
-                      <Label className="text-[10px] font-bold uppercase opacity-60">模板显示名称</Label>
-                      <Input placeholder="例如：标准一体机规格、显示器基础规格..." value={newTemplateName} onChange={e => setNewTemplateName(e.target.value)} className="rounded-xl h-11" />
+                    
+                    <div className="py-4 space-y-6">
+                      <RadioGroup value={saveTemplateMode} onValueChange={(v: 'create'|'update') => setSaveTemplateMode(v)} className="grid grid-cols-2 gap-4">
+                        <div className={cn("flex items-center space-x-2 border rounded-xl p-3 cursor-pointer", saveTemplateMode === 'create' && "border-primary bg-primary/5")}>
+                          <RadioGroupItem value="create" id="r-create" />
+                          <Label htmlFor="r-create" className="text-xs font-bold cursor-pointer">存为新模板</Label>
+                        </div>
+                        <div className={cn("flex items-center space-x-2 border rounded-xl p-3 cursor-pointer", saveTemplateMode === 'update' && "border-primary bg-primary/5")}>
+                          <RadioGroupItem value="update" id="r-update" />
+                          <Label htmlFor="r-update" className="text-xs font-bold cursor-pointer">覆盖旧模板</Label>
+                        </div>
+                      </RadioGroup>
+
+                      {saveTemplateMode === 'create' ? (
+                        <div className="space-y-2 animate-in fade-in slide-in-from-top-2">
+                          <Label className="text-[10px] font-bold uppercase opacity-60">新模板显示名称</Label>
+                          <Input placeholder="输入模板名称..." value={newTemplateName} onChange={e => setNewTemplateName(e.target.value)} className="rounded-xl h-11" />
+                        </div>
+                      ) : (
+                        <div className="space-y-2 animate-in fade-in slide-in-from-top-2">
+                          <Label className="text-[10px] font-bold uppercase opacity-60">选择要覆盖的模板</Label>
+                          <Select value={targetTemplateId} onValueChange={setTargetTemplateId}>
+                            <SelectTrigger className="h-11 rounded-xl">
+                              <SelectValue placeholder="选择模板..." />
+                            </SelectTrigger>
+                            <SelectContent className="rounded-xl">
+                              {specTemplates?.map(tpl => <SelectItem key={tpl.id} value={tpl.id} className="text-xs">{tpl.name}</SelectItem>)}
+                            </SelectContent>
+                          </Select>
+                        </div>
+                      )}
                     </div>
+
                     <DialogFooter className="gap-2">
                       <Button variant="outline" onClick={() => setIsSaveTemplateDialogOpen(false)} className="rounded-xl flex-1">取消</Button>
-                      <Button onClick={handleSaveTemplate} disabled={!newTemplateName.trim()} className="rounded-xl flex-1">确认保存</Button>
+                      <Button onClick={handleSaveTemplate} className="rounded-xl flex-1">确认并保存</Button>
                     </DialogFooter>
                   </DialogContent>
                 </Dialog>
