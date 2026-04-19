@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useState, useEffect, useMemo, Suspense, useRef } from 'react';
@@ -365,7 +364,10 @@ function ProductEditorContent() {
   };
 
   const handleAiTranslateBasicInfo = async () => {
-    if (!aiConfig?.isEnabled) return;
+    if (!aiConfig?.isEnabled) {
+      toast({ variant: "destructive", title: "AI 翻译未启用", description: "请先在 AI 设置页面开启引擎。" });
+      return;
+    }
     setIsAiProcessing(true);
     try {
       const tasks = [];
@@ -380,8 +382,8 @@ function ProductEditorContent() {
       results.forEach(r => { if (r.text) updates[r.field] = r.text; });
       setFormData(prev => ({ ...prev, ...updates }));
       toast({ title: "基础信息智译成功" });
-    } catch (e) {
-      toast({ variant: "destructive", title: "AI 翻译失败" });
+    } catch (e: any) {
+      toast({ variant: "destructive", title: "AI 翻译失败", description: e.message || "请求超时或模型异常。" });
     } finally {
       setIsAiProcessing(false);
     }
@@ -389,7 +391,14 @@ function ProductEditorContent() {
 
   const handleAiTranslateDetails = async () => {
     const sourceHtml = formData.localizedDetails.zh;
-    if (!aiConfig?.isEnabled || !sourceHtml.trim()) return;
+    if (!aiConfig?.isEnabled) {
+      toast({ variant: "destructive", title: "AI 智译未就绪", description: "请前往系统设置启用 AI 引擎。" });
+      return;
+    }
+    if (!sourceHtml || sourceHtml.replace(/<[^>]*>?/gm, '').trim().length === 0) {
+      toast({ variant: "destructive", title: "内容为空", description: "请先录入中文详情后再进行翻译。" });
+      return;
+    }
     
     setIsAiProcessing(true);
     try {
@@ -410,9 +419,12 @@ function ProductEditorContent() {
           }
         }));
         toast({ title: `详情介绍 (${targetDetailsLang.toUpperCase()}) 智译成功` });
+      } else {
+        toast({ variant: "destructive", title: "翻译返回异常", description: "AI 未返回有效译文，请重试。" });
       }
-    } catch (e) {
-      toast({ variant: "destructive", title: "AI 翻译失败", description: "如果内容过长，请尝试分段复制翻译。" });
+    } catch (e: any) {
+      console.error("Detail Translation Error:", e);
+      toast({ variant: "destructive", title: "AI 智译中断", description: e.message || "长文内容可能超限，请尝试分段处理。" });
     } finally {
       setIsAiProcessing(false);
     }
@@ -471,7 +483,6 @@ function ProductEditorContent() {
     } else if (pickerTarget === 'gallery') {
       setFormData({ ...formData, galleryUrls: [...formData.galleryUrls, ...urls] });
     } else if (pickerTarget === 'richtext-zh') {
-      // 使用编辑器实例插入图片，确保插入到光标位置且逻辑严谨
       zhEditorRef.current?.editor?.commands.setImage({ src: urls[0] });
     } else if (pickerTarget === 'richtext-target') {
       targetEditorRef.current?.editor?.commands.setImage({ src: urls[0] });
@@ -662,11 +673,9 @@ function ProductEditorContent() {
                   <div className="space-y-4">
                     <div className="flex items-center justify-between border-b pb-2 mb-2 h-8">
                       <Label className="text-[10px] font-bold uppercase text-primary tracking-widest flex items-center gap-1.5"><Languages className="h-3 w-3" /> 中文内容</Label>
-                      {aiConfig?.isEnabled && (
-                        <Button variant="ghost" size="sm" className="h-6 text-[9px] gap-1 px-2 font-bold text-accent" onClick={handleAiTranslateBasicInfo} disabled={isAiProcessing}>
-                          {isAiProcessing ? <Loader2 className="h-2.5 w-2.5 animate-spin" /> : <Sparkles className="h-2.5 w-2.5" />} AI 智译
-                        </Button>
-                      )}
+                      <Button variant="ghost" size="sm" className="h-6 text-[9px] gap-1 px-2 font-bold text-accent" onClick={handleAiTranslateBasicInfo} disabled={isAiProcessing || !aiConfig?.isEnabled}>
+                        {isAiProcessing ? <Loader2 className="h-2.5 w-2.5 animate-spin" /> : <Sparkles className="h-2.5 w-2.5" />} AI 智译
+                      </Button>
                     </div>
                     <div className="space-y-4">
                       <Input placeholder="产品名称" value={formData.nameZh} onChange={e => setFormData({...formData, nameZh: e.target.value})} className="rounded-lg h-10 bg-muted/5" />
@@ -791,11 +800,9 @@ function ProductEditorContent() {
                         </SelectContent>
                       </Select>
                     </div>
-                    {aiConfig?.isEnabled && (
-                      <Button variant="ghost" size="sm" className="h-7 text-[10px] gap-1.5 px-3 font-bold text-accent bg-accent/5 hover:bg-accent/10 border border-accent/10" onClick={handleAiTranslateDetails} disabled={isAiProcessing}>
-                        {isAiProcessing ? <Loader2 className="h-3 w-3 animate-spin" /> : <Sparkles className="h-3 w-3" />} AI 智译至 {targetDetailsLang.toUpperCase()}
-                      </Button>
-                    )}
+                    <Button variant="ghost" size="sm" className="h-7 text-[10px] gap-1.5 px-3 font-bold text-accent bg-accent/5 hover:bg-accent/10 border border-accent/10" onClick={handleAiTranslateDetails} disabled={isAiProcessing || !aiConfig?.isEnabled}>
+                      {isAiProcessing ? <Loader2 className="h-3 w-3 animate-spin" /> : <Sparkles className="h-3 w-3" />} AI 智译至 {targetDetailsLang.toUpperCase()}
+                    </Button>
                   </div>
                 </div>
                 
