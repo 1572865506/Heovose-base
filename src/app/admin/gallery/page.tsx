@@ -336,66 +336,7 @@ export default function GalleryPage() {
 
   return (
     <div className="space-y-6 animate-in fade-in duration-500 relative min-h-[80vh] select-none" onMouseUp={handleMouseUp} onMouseMove={handleMouseMove}>
-      {/* 框选矩形视觉元素 */}
-      {selectionBox && (
-        <div 
-          className="absolute z-[300] bg-primary/20 border border-primary pointer-events-none"
-          style={{
-            left: Math.min(selectionBox.startX, selectionBox.currentX),
-            top: Math.min(selectionBox.startY, selectionBox.currentY),
-            width: Math.abs(selectionBox.startX - selectionBox.currentX),
-            height: Math.abs(selectionBox.startY - selectionBox.currentY)
-          }}
-        />
-      )}
-
-      {/* 批量管理悬浮条 */}
-      {selectedIds.size > 0 && (
-        <div className="fixed top-[72px] left-1/2 -translate-x-1/2 z-[200] bg-white border border-primary/20 shadow-2xl rounded-full px-5 py-2 flex items-center gap-5 animate-in slide-in-from-top-4 duration-300">
-          <div className="flex items-center gap-3">
-            <Checkbox 
-              checked={selectedIds.size === filteredAssets.length} 
-              onCheckedChange={(v) => v ? setSelectedIds(new Set(filteredAssets.map(a => a.id))) : setSelectedIds(new Set())} 
-              className="rounded" 
-            />
-            <span className="text-xs font-bold text-primary whitespace-nowrap">已选中 {selectedIds.size} 项</span>
-          </div>
-          <div className="h-6 w-px bg-border/60" />
-          <div className="flex items-center gap-2">
-            <Dialog open={isBatchCategoryDialogOpen} onOpenChange={setIsBatchCategoryDialogOpen}>
-              <DialogTrigger asChild>
-                <Button variant="outline" size="sm" className="rounded-full h-8 px-4 gap-2 text-[10px] font-bold uppercase tracking-wider">
-                  <Layers className="h-3 w-3" /> 修改分类
-                </Button>
-              </DialogTrigger>
-              <DialogContent className="rounded-2xl max-w-sm">
-                <DialogHeader>
-                  <DialogTitle className="text-base font-bold">批量移动至分类</DialogTitle>
-                  <DialogDescription>将选中的素材移动到指定的架构分类下。</DialogDescription>
-                </DialogHeader>
-                <div className="py-4 space-y-3">
-                  <Label className="text-[10px] font-bold uppercase opacity-60">目标分类</Label>
-                  <Select value={batchTargetCategoryId} onValueChange={setBatchTargetCategoryId}>
-                    <SelectTrigger className="rounded-xl h-11"><SelectValue placeholder="请选择..." /></SelectTrigger>
-                    <SelectContent className="rounded-xl">{categoryTree.map(cat => (<SelectItem key={cat.id} value={cat.id}><span style={{ paddingLeft: `${cat.depth * 0.8}rem` }} className={cn("text-xs", cat.depth > 0 && "text-muted-foreground")}>{cat.name}</span></SelectItem>))}</SelectContent>
-                  </Select>
-                </div>
-                <DialogFooter className="flex gap-2">
-                  <Button variant="outline" onClick={() => setIsBatchCategoryDialogOpen(false)} className="rounded-xl h-10 flex-1 text-xs">取消</Button>
-                  <Button onClick={handleBatchUpdateCategory} disabled={!batchTargetCategoryId} className="rounded-xl h-10 flex-1 text-xs">确认移动</Button>
-                </DialogFooter>
-              </DialogContent>
-            </Dialog>
-            <Button variant="destructive" size="sm" className="rounded-full h-8 px-4 text-[10px] font-bold uppercase tracking-wider" onClick={handleBatchDelete}>
-              <Trash2 className="h-3 w-3 mr-1.5" /> 批量删除
-            </Button>
-            <Button variant="ghost" size="icon" className="rounded-full h-8 w-8 hover:bg-muted" onClick={() => setSelectedIds(new Set())}>
-              <X className="h-4 w-4" />
-            </Button>
-          </div>
-        </div>
-      )}
-
+      
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <h2 className="text-xl font-headline font-bold text-primary flex items-center gap-2"><ImageIcon className="h-5 w-5" /> 全球素材图库</h2>
@@ -497,6 +438,68 @@ export default function GalleryPage() {
         </div>
       )}
 
+      {/* --- Overlay / Fixed elements moved to bottom to avoid space-y logic issues --- */}
+
+      {/* 框选矩形视觉元素 */}
+      {selectionBox && (
+        <div 
+          className="absolute z-[300] bg-primary/20 border border-primary pointer-events-none"
+          style={{
+            left: Math.min(selectionBox.startX, selectionBox.currentX),
+            top: Math.min(selectionBox.startY, selectionBox.currentY),
+            width: Math.abs(selectionBox.startX - selectionBox.currentX),
+            height: Math.abs(selectionBox.startY - selectionBox.currentY)
+          }}
+        />
+      )}
+
+      {/* 批量管理悬浮条 - 定位于 header 下方 */}
+      {selectedIds.size > 0 && (
+        <div className="fixed top-[72px] left-1/2 -translate-x-1/2 z-[200] bg-white border border-primary/20 shadow-[0_20px_50px_rgba(0,0,0,0.15)] rounded-full px-5 py-2 flex items-center gap-5 animate-in slide-in-from-top-4 duration-300">
+          <div className="flex items-center gap-3">
+            <Checkbox 
+              checked={selectedIds.size === filteredAssets.length} 
+              onCheckedChange={(v) => v ? setSelectedIds(new Set(filteredAssets.map(a => a.id))) : setSelectedIds(new Set())} 
+              className="rounded" 
+            />
+            <span className="text-xs font-bold text-primary whitespace-nowrap">已选中 {selectedIds.size} 项</span>
+          </div>
+          <div className="h-6 w-px bg-border/60" />
+          <div className="flex items-center gap-2">
+            <Dialog open={isBatchCategoryDialogOpen} onOpenChange={setIsBatchCategoryDialogOpen}>
+              <DialogTrigger asChild>
+                <Button variant="outline" size="sm" className="rounded-full h-8 px-4 gap-2 text-[10px] font-bold uppercase tracking-wider">
+                  <Layers className="h-3 w-3" /> 修改分类
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="rounded-2xl max-w-sm">
+                <DialogHeader>
+                  <DialogTitle className="text-base font-bold">批量移动至分类</DialogTitle>
+                  <DialogDescription>将选中的素材移动到指定的架构分类下。</DialogDescription>
+                </DialogHeader>
+                <div className="py-4 space-y-3">
+                  <Label className="text-[10px] font-bold uppercase opacity-60">目标分类</Label>
+                  <Select value={batchTargetCategoryId} onValueChange={setBatchTargetCategoryId}>
+                    <SelectTrigger className="rounded-xl h-11"><SelectValue placeholder="请选择..." /></SelectTrigger>
+                    <SelectContent className="rounded-xl">{categoryTree.map(cat => (<SelectItem key={cat.id} value={cat.id}><span style={{ paddingLeft: `${cat.depth * 0.8}rem` }} className={cn("text-xs", cat.depth > 0 && "text-muted-foreground")}>{cat.name}</span></SelectItem>))}</SelectContent>
+                  </Select>
+                </div>
+                <DialogFooter className="flex gap-2">
+                  <Button variant="outline" onClick={() => setIsBatchCategoryDialogOpen(false)} className="rounded-xl h-10 flex-1 text-xs">取消</Button>
+                  <Button onClick={handleBatchUpdateCategory} disabled={!batchTargetCategoryId} className="rounded-xl h-10 flex-1 text-xs">确认移动</Button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
+            <Button variant="destructive" size="sm" className="rounded-full h-8 px-4 text-[10px] font-bold uppercase tracking-wider" onClick={handleBatchDelete}>
+              <Trash2 className="h-3 w-3 mr-1.5" /> 批量删除
+            </Button>
+            <Button variant="ghost" size="icon" className="rounded-full h-8 w-8 hover:bg-muted" onClick={() => setSelectedIds(new Set())}>
+              <X className="h-4 w-4" />
+            </Button>
+          </div>
+        </div>
+      )}
+
       {/* 任务管理器面板 */}
       {isTasksPanelOpen && (
         <div className={cn("fixed bottom-6 right-6 z-[400] w-80 bg-white border border-border/60 shadow-2xl rounded-2xl overflow-hidden transition-all duration-500", isTasksPanelMinimized ? "h-14" : "h-[400px]")}>
@@ -520,7 +523,10 @@ export default function GalleryPage() {
       {/* 增强版大图预览弹窗 */}
       <Dialog open={!!previewAsset} onOpenChange={o => !o && setPreviewAsset(null)}>
         <DialogContent className="max-w-[95vw] w-full h-[90vh] p-0 overflow-hidden bg-black/95 border-none shadow-2xl rounded-2xl flex flex-col z-[500]">
-          <DialogHeader className="sr-only"><DialogTitle>图片预览: {previewAsset?.title}</DialogTitle><DialogDescription>查看全屏高清素材详情。</DialogDescription></DialogHeader>
+          <DialogHeader className="sr-only">
+            <DialogTitle>图片预览: {previewAsset?.title}</DialogTitle>
+            <DialogDescription>查看全屏高清素材详情。</DialogDescription>
+          </DialogHeader>
           
           <div className="absolute top-4 right-4 z-50 flex gap-2">
              {/* 缩放控制组 */}
