@@ -429,10 +429,6 @@ function ProductEditorContent() {
     } else if (pickerTarget === 'gallery') {
       setFormData({ ...formData, galleryUrls: [...formData.galleryUrls, ...urls] });
     } else if (pickerTarget === 'richtext-zh') {
-      // 插入图片到富文本，这种逻辑通常需要编辑器实例的引用
-      // 这里我们通过简单的方式处理：将图片地址通过一种信号传递给编辑器
-      // 为了更严谨，我们可以直接在编辑器组件内维护一个 ref 或使用事件监听
-      // 这里的实现简化为在编辑器外部包裹一个简单的插入逻辑
       const imgHtml = `<img src="${urls[0]}" />`;
       setFormData(prev => ({ ...prev, detailsZh: prev.detailsZh + imgHtml }));
     } else if (pickerTarget === 'richtext-en') {
@@ -540,7 +536,6 @@ function ProductEditorContent() {
       </div>
 
       <div className="space-y-6 px-4">
-        {/* 媒体素材中心整合区 */}
         <div className="bg-white p-6 rounded-2xl border border-border/40 shadow-sm space-y-4">
           <div className="flex items-center justify-between border-b border-border/40 pb-3 h-8">
             <div className="space-y-0.5">
@@ -557,7 +552,6 @@ function ProductEditorContent() {
           </div>
 
           <div className="flex gap-6 items-start h-[240px]">
-            {/* 主展示图列 */}
             <div className="flex flex-col h-full w-[264px] shrink-0">
               <div className="flex items-center justify-between mb-1.5 h-6">
                 <Label className="text-[10px] font-bold uppercase text-primary tracking-widest">主图预览</Label>
@@ -581,7 +575,6 @@ function ProductEditorContent() {
               </div>
             </div>
 
-            {/* 副图库横向滚动区 */}
             <div className="flex flex-col h-full flex-1 overflow-hidden">
               <div className="flex items-center justify-between mb-1.5 h-6">
                 <Label className="text-[10px] font-bold uppercase text-primary tracking-widest">详情幻灯片 ({formData.galleryUrls.length})</Label>
@@ -740,11 +733,13 @@ function ProductEditorContent() {
               <div className="bg-white p-6 rounded-2xl border border-border/40 shadow-sm space-y-4 h-[calc(100vh-280px)] min-h-[600px] flex flex-col">
                 <div className="flex items-center justify-between border-b pb-3 mb-2 shrink-0 h-8">
                   <div className="flex items-center gap-2"><Film className="h-4 w-4 text-primary" /><h3 className="font-bold text-sm">富文本详情编辑</h3></div>
-                  <div className="flex gap-8 flex-1 justify-end">
-                    <span className="text-[10px] font-bold uppercase text-primary/40">中文排版</span>
-                    <span className="text-[10px] font-bold uppercase text-primary/40 mr-[25%]">英文排版</span>
-                  </div>
                 </div>
+                
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 shrink-0">
+                  <Label className="text-[10px] font-bold uppercase text-primary/40 flex items-center gap-1.5"><Languages className="h-3 w-3" /> 中文排版</Label>
+                  <Label className="text-[10px] font-bold uppercase text-primary/40 flex items-center gap-1.5"><Globe className="h-3 w-3" /> 英文排版</Label>
+                </div>
+
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6 flex-1 overflow-hidden">
                   <RichTextEditor 
                     content={formData.detailsZh} 
@@ -765,7 +760,6 @@ function ProductEditorContent() {
         </div>
       </div>
 
-      {/* 模板保存对话框 */}
       <Dialog open={isSaveTemplateDialogOpen} onOpenChange={setIsSaveTemplateDialogOpen}>
         <DialogContent className="rounded-2xl max-w-md p-0 overflow-hidden border-none shadow-2xl">
           <div className="bg-primary p-6 text-white">
