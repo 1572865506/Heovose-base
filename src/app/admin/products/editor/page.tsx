@@ -410,10 +410,11 @@ function ProductEditorContent() {
                   onValueChange={v => {
                     setFormData(prev => {
                       const updates: any = { categoryId: v };
-                      // 核心修复：如果是新建产品，根据选择的分类前缀自动生成 ID
                       if (!isEditing) {
-                        const prefix = v.toLowerCase().replace(/\s+/g, '_');
-                        updates.id = `${prefix}_${Date.now().toString().slice(-4)}`;
+                        const catName = v.toLowerCase().replace(/\s+/g, '_');
+                        const ts = Date.now().toString().slice(-4);
+                        const rc = Math.random().toString(36).substring(2, 6).toUpperCase();
+                        updates.id = `PROD_${catName}_${ts}_${rc}`;
                       }
                       return { ...prev, ...updates };
                     });
@@ -601,7 +602,8 @@ function ProductEditorContent() {
 
       <Dialog open={isPickerOpen} onOpenChange={setIsPickerOpen}>
         <DialogContent className="max-w-5xl p-0 rounded-2xl overflow-hidden flex flex-col h-[85vh] border-none shadow-2xl">
-          <div className="bg-primary p-6 text-white"><DialogHeader><DialogTitle className="text-xl font-bold flex items-center gap-2"><ImageIcon className="h-6 w-6" /> 素材中心</DialogTitle><DialogDescription className="text-white/60 text-xs">从已有素材库中选择。</DialogDescription></DialogHeader></div>
+          <DialogHeader className="sr-only"><DialogTitle>素材选择中心</DialogTitle><DialogDescription>浏览并选择库中已有的图片素材。</DialogDescription></DialogHeader>
+          <div className="bg-primary p-6 text-white"><div className="flex items-center gap-2"><ImageIcon className="h-6 w-6" /><h3 className="text-xl font-bold">素材中心</h3></div></div>
           <div className="px-6 py-4 flex flex-col md:flex-row gap-3 bg-muted/20 border-b">
             <div className="relative flex-1"><Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" /><Input placeholder="搜索素材标题..." value={pickerSearch} onChange={e => setPickerSearch(e.target.value)} className="pl-9 h-10 bg-white" /></div>
           </div>
