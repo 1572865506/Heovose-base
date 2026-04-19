@@ -35,7 +35,8 @@ import {
   AlertCircle,
   LayoutTemplate,
   History,
-  FileDown
+  FileDown,
+  Film
 } from 'lucide-react';
 import { 
   Dialog, 
@@ -65,6 +66,7 @@ import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 import { translateContent } from '@/ai/flows/translate-flow';
 import { Progress } from '@/components/ui/progress';
+import { TooltipProvider } from '@/components/ui/tooltip';
 
 interface ProductSpecEntry {
   uid: string;
@@ -552,38 +554,86 @@ function ProductEditorContent() {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 px-4">
-        {/* 侧边栏：仅保留主图上传 */}
-        <div className="lg:col-span-3 space-y-6">
-          <div className="bg-white p-6 rounded-2xl border border-border/40 shadow-sm space-y-4">
-            <div className="flex items-center justify-between"><Label className="text-[10px] font-bold uppercase text-primary tracking-widest">产品主图展示</Label><button onClick={() => openPicker('main')} className="text-[9px] font-bold text-primary uppercase hover:underline">素材库</button></div>
-            <div className="relative aspect-square rounded-xl bg-muted/20 border border-dashed border-border/60 overflow-hidden flex items-center justify-center group cursor-pointer" onClick={() => !formData.mainImageUrl && fileInputRef.current?.click()}>
-              {formData.mainImageUrl ? (
-                <>
-                  <Image src={formData.mainImageUrl} alt="Main" fill className="object-contain p-4 transition-transform duration-700 group-hover:scale-105" unoptimized />
-                  <div className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                    <Button variant="destructive" size="sm" className="rounded-full h-8 w-8 p-0" onClick={(e) => { e.stopPropagation(); setFormData({...formData, mainImageUrl: ''}); }}><X className="h-4 w-4" /></Button>
+      <div className="space-y-6 px-4">
+        {/* 媒体素材中心整合区 */}
+        <div className="bg-white p-6 rounded-2xl border border-border/40 shadow-sm space-y-6">
+          <div className="flex items-center justify-between border-b border-border/40 pb-4">
+            <div className="space-y-0.5">
+              <h3 className="text-sm font-bold text-primary flex items-center gap-2">
+                <ImageIcon className="h-4 w-4" /> 产品视觉素材管理
+              </h3>
+              <p className="text-[10px] text-muted-foreground uppercase tracking-widest">整合主图展示与幻灯片副图库</p>
+            </div>
+            <div className="flex gap-2">
+              <Button variant="outline" size="sm" onClick={() => openPicker('gallery')} className="h-8 rounded-lg text-[10px] font-bold uppercase gap-1.5 border-primary/20 text-primary">
+                <FolderPlus className="h-3.5 w-3.5" /> 从素材库添加副图
+              </Button>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+            {/* 主展示图列 */}
+            <div className="lg:col-span-3 space-y-3">
+              <div className="flex items-center justify-between">
+                <Label className="text-[10px] font-bold uppercase text-primary/60 tracking-widest">产品主展示图</Label>
+                <button onClick={() => openPicker('main')} className="text-[9px] font-bold text-primary hover:underline">库选取</button>
+              </div>
+              <div className="relative aspect-square rounded-xl bg-muted/20 border border-dashed border-border/60 overflow-hidden flex items-center justify-center group cursor-pointer" onClick={() => !formData.mainImageUrl && fileInputRef.current?.click()}>
+                {formData.mainImageUrl ? (
+                  <>
+                    <Image src={formData.mainImageUrl} alt="Main" fill className="object-contain p-4 transition-transform duration-700 group-hover:scale-105" unoptimized />
+                    <div className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                      <Button variant="destructive" size="sm" className="rounded-full h-8 w-8 p-0" onClick={(e) => { e.stopPropagation(); setFormData({...formData, mainImageUrl: ''}); }}><X className="h-4 w-4" /></Button>
+                    </div>
+                  </>
+                ) : (
+                  <div className="text-center opacity-40">
+                    {isUploading ? <Loader2 className="h-6 w-6 mx-auto animate-spin" /> : <Upload className="h-6 w-6 mx-auto mb-1" />}
+                    <p className="text-[9px] font-bold uppercase">{isUploading ? '处理中...' : '上传主图'}</p>
                   </div>
-                </>
-              ) : (
-                <div className="text-center opacity-40">
-                  {isUploading ? <Loader2 className="h-6 w-6 mx-auto animate-spin" /> : <Upload className="h-6 w-6 mx-auto mb-1" />}
-                  <p className="text-[9px] font-bold uppercase">{isUploading ? '处理中...' : '上传图片'}</p>
-                </div>
-              )}
-              <input type="file" ref={fileInputRef} className="hidden" accept="image/*" onChange={handleImageUpload} />
+                )}
+                <input type="file" ref={fileInputRef} className="hidden" accept="image/*" onChange={handleImageUpload} />
+              </div>
+            </div>
+
+            {/* 副图库列表列 */}
+            <div className="lg:col-span-9 space-y-3">
+              <Label className="text-[10px] font-bold uppercase text-primary/60 tracking-widest">产品详情幻灯片副图 ({formData.galleryUrls.length})</Label>
+              <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-4 min-h-[160px] p-4 bg-muted/10 rounded-xl border border-border/40">
+                {formData.galleryUrls.map((url, idx) => (
+                  <div key={`gal-top-${idx}`} className="group relative aspect-square bg-white rounded-lg border border-border/20 overflow-hidden shadow-sm hover:shadow-md transition-all">
+                    <Image src={url} alt="Gallery" fill className="object-contain p-2" unoptimized />
+                    <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                      <Button variant="destructive" size="icon" className="h-7 w-7 rounded-full" onClick={() => setFormData({...formData, galleryUrls: formData.galleryUrls.filter((_,i)=>i!==idx)})}>
+                        <Trash2 className="h-3.5 w-3.5" />
+                      </Button>
+                    </div>
+                  </div>
+                ))}
+                {formData.galleryUrls.length === 0 && (
+                  <div className="col-span-full flex flex-col items-center justify-center text-muted-foreground/30 py-8">
+                    <ImageIcon className="h-8 w-8 mb-2" />
+                    <p className="text-[10px] font-bold uppercase tracking-widest">暂未添加副图库</p>
+                  </div>
+                )}
+              </div>
             </div>
           </div>
         </div>
 
-        {/* 主编辑区 */}
-        <div className="lg:col-span-9">
+        {/* 核心内容编辑区 */}
+        <div className="w-full">
           <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
             <TabsList className="bg-muted/30 w-full justify-start gap-1 rounded-xl p-1 mb-4 h-11">
-              <TabsTrigger value="basic" className="rounded-lg px-4 text-[11px] font-bold uppercase tracking-wider data-[state=active]:bg-white data-[state=active]:shadow-sm">基础信息</TabsTrigger>
-              <TabsTrigger value="specs" className="rounded-lg px-4 text-[11px] font-bold uppercase tracking-wider data-[state=active]:bg-white data-[state=active]:shadow-sm">技术规格</TabsTrigger>
-              <TabsTrigger value="details" className="rounded-lg px-4 text-[11px] font-bold uppercase tracking-wider data-[state=active]:bg-white data-[state=active]:shadow-sm">详细介绍</TabsTrigger>
-              <TabsTrigger value="gallery" className="rounded-lg px-4 text-[11px] font-bold uppercase tracking-wider data-[state=active]:bg-white data-[state=active]:shadow-sm">副图库</TabsTrigger>
+              <TabsTrigger value="basic" className="rounded-lg px-6 text-[11px] font-bold uppercase tracking-wider data-[state=active]:bg-white data-[state=active]:shadow-sm flex items-center gap-2">
+                <Info className="h-3.5 w-3.5" /> 基础信息
+              </TabsTrigger>
+              <TabsTrigger value="specs" className="rounded-lg px-6 text-[11px] font-bold uppercase tracking-wider data-[state=active]:bg-white data-[state=active]:shadow-sm flex items-center gap-2">
+                <TableProperties className="h-3.5 w-3.5" /> 技术规格
+              </TabsTrigger>
+              <TabsTrigger value="details" className="rounded-lg px-6 text-[11px] font-bold uppercase tracking-wider data-[state=active]:bg-white data-[state=active]:shadow-sm flex items-center gap-2">
+                <Film className="h-3.5 w-3.5" /> 详细介绍
+              </TabsTrigger>
             </TabsList>
 
             <TabsContent value="basic" className="space-y-4">
@@ -812,26 +862,6 @@ function ProductEditorContent() {
                   <Textarea placeholder="Detailed information in English..." value={formData.detailsEn} onChange={e => setFormData({...formData, detailsEn: e.target.value})} className="h-full rounded-xl p-4 bg-muted/5 text-xs opacity-80 resize-none" />
                 </div>
               </div>
-            </TabsContent>
-
-            <TabsContent value="gallery" className="space-y-4">
-               <div className="bg-white p-6 rounded-2xl border border-border/40 shadow-sm space-y-4">
-                 <div className="flex justify-between items-center border-b pb-3">
-                   <div className="space-y-0.5"><h3 className="text-sm font-bold text-primary">副图库管理</h3><p className="text-[10px] text-muted-foreground">用于前端幻灯片展示的高清素材。</p></div>
-                   <Button variant="outline" size="sm" onClick={() => openPicker('gallery')} className="h-8 rounded-lg text-[10px] font-bold uppercase gap-1.5"><FolderPlus className="h-3.5 w-3.5" /> 批量添加</Button>
-                 </div>
-                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                   {formData.galleryUrls.map((url, idx) => (
-                     <div key={`gallery-${idx}-${url.substring(0, 10)}`} className="flex gap-3 p-3 bg-muted/10 rounded-xl border border-border/20">
-                       <div className="relative h-16 w-16 border rounded-lg bg-white overflow-hidden shadow-sm shrink-0"><Image src={url} alt="Gallery" fill className="object-contain p-1" unoptimized /></div>
-                       <div className="flex-1 flex flex-col justify-between">
-                         <input type="text" value={url} onChange={e => { const g = [...formData.galleryUrls]; g[idx] = e.target.value; setFormData({...formData, galleryUrls: g}); }} className="flex h-7 w-full rounded-md border border-input bg-white px-2 py-1 text-[9px] ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50" />
-                         <Button variant="ghost" size="sm" onClick={() => setFormData({...formData, galleryUrls: formData.galleryUrls.filter((_,i)=>i!==idx)})} className="h-6 text-destructive text-[9px] font-bold uppercase hover:bg-destructive/5 ml-auto">移除</Button>
-                       </div>
-                     </div>
-                   ))}
-                 </div>
-               </div>
             </TabsContent>
           </Tabs>
         </div>
