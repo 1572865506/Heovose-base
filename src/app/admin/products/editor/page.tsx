@@ -157,14 +157,6 @@ function ProductEditorContent() {
   const { data: allProducts } = useCollection<Product>(allProdsQuery);
   const { data: aiConfig } = useDoc<AiConfig>(aiRef);
 
-  // 核心功能：自动填充 ID
-  useEffect(() => {
-    if (!isEditing && !formData.id) {
-      const autoId = `prod_${Date.now().toString().slice(-6)}`;
-      setFormData(prev => ({ ...prev, id: autoId }));
-    }
-  }, [isEditing]);
-
   useEffect(() => {
     if (isEditing && product && translations) {
       const getT = (id?: string) => translations.find(t => t.id === id) || { en: '', zh: '' };
@@ -272,7 +264,6 @@ function ProductEditorContent() {
     router.push('/admin/products');
   };
 
-  // 核心功能：全量翻译基础信息（名称 + 简介）
   const handleAiTranslateBasicInfo = async () => {
     if (!aiConfig?.isEnabled) return;
     setIsAiProcessing(true);
@@ -285,6 +276,11 @@ function ProductEditorContent() {
         tasks.push(translateContent({ text: formData.descZh, sourceLang: 'zh', targetLangs: ['en'], model: aiConfig.model }).then(res => ({ field: 'descEn', text: res.en })));
       }
       
+      if (tasks.length === 0) {
+        toast({ variant: "destructive", title: "无内容可翻译", description: "请先填写中文名称或简介。" });
+        return;
+      }
+
       const results = await Promise.all(tasks);
       const updates: any = {};
       results.forEach(r => { if (r.text) updates[r.field] = r.text; });
@@ -376,7 +372,7 @@ function ProductEditorContent() {
           <div className="space-y-1">
             <h2 className="text-xl font-headline font-bold text-primary leading-none">{isEditing ? '编辑产品' : '发布产品'}</h2>
             <div className="flex items-center gap-2">
-               <p className="text-[10px] text-muted-foreground uppercase tracking-wider font-bold">ID: {formData.id || 'GENERATING...'}</p>
+               <p className="text-[10px] text-muted-foreground uppercase tracking-wider font-bold">ID: {formData.id || '待选择分类...'}</p>
                <Badge variant={formData.status === 'published' ? 'default' : 'secondary'} className={cn("text-[8px] uppercase px-1.5 py-0", formData.status === 'published' ? "bg-green-600 hover:bg-green-600" : "")}>{formData.status === 'published' ? '已发布' : '草稿'}</Badge>
             </div>
           </div>
@@ -408,6 +404,28 @@ function ProductEditorContent() {
             </div>
             <div className="space-y-4 border-t pt-6">
               <div className="space-y-1.5">
+                <Label className="text-[10px] font-bold uppercase text-primary">所属产品分类</Label>
+                <Select 
+                  value={formData.categoryId} 
+                  onValueChange={v => {
+                    setFormData(prev => {
+                      const updates: any = { categoryId: v };
+                      // 核心修复：如果是新建产品，根据选择的分类前缀自动生成 ID
+                      if (!isEditing) {
+                        const prefix = v.toLowerCase().replace(/\s+/g, '_');
+                        updates.id = `${prefix}_${Date.now().toString().slice(-4)}`;
+                      }
+                      return { ...prev, ...updates };
+                    });
+                  }}
+                >
+                  <SelectTrigger className="h-10 rounded-lg bg-muted/20 border-transparent"><SelectValue placeholder="选择分类以填充 ID..." /></SelectTrigger>
+                  <SelectContent className="rounded-xl">
+                    {categories?.map(c => <SelectItem key={c.id} value={c.id} className="text-xs">{c.id}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-1.5">
                 <Label className="text-[10px] font-bold uppercase text-primary">产品唯一 ID</Label>
                 <div className="relative">
                   <Input 
@@ -418,19 +436,11 @@ function ProductEditorContent() {
                       "h-10 rounded-lg bg-muted/10 border-none font-mono text-xs pr-8",
                       idConflict && "text-destructive"
                     )} 
+                    placeholder="选择分类后自动生成..."
                   />
                   {idConflict && <AlertCircle className="absolute right-2 top-1/2 -translate-y-1/2 h-4 w-4 text-destructive animate-pulse" />}
                 </div>
-                {idConflict && <p className="text-[9px] font-bold text-destructive flex items-center gap-1 uppercase mt-1"><AlertCircle className="h-3 w-3" /> 该 ID 已在数据库中存在，保存将导致覆盖！</p>}
-              </div>
-              <div className="space-y-1.5">
-                <Label className="text-[10px] font-bold uppercase text-primary">所属产品分类</Label>
-                <Select value={formData.categoryId} onValueChange={v => setFormData({...formData, categoryId: v})}>
-                  <SelectTrigger className="h-10 rounded-lg bg-muted/20 border-transparent"><SelectValue placeholder="选择分类..." /></SelectTrigger>
-                  <SelectContent className="rounded-xl">
-                    {categories?.map(c => <SelectItem key={c.id} value={c.id} className="text-xs">{c.id}</SelectItem>)}
-                  </SelectContent>
-                </Select>
+                {idConflict && <p className="text-[9px] font-bold text-destructive flex items-center gap-1 uppercase mt-1"><AlertCircle className="h-3 w-3" /> 该 ID 已存在，保存将导致覆盖！</p>}
               </div>
             </div>
             <div className="space-y-4 pt-6 border-t">
