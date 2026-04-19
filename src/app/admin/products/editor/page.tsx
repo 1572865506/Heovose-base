@@ -33,7 +33,10 @@ import {
   FolderPlus,
   Globe,
   Sparkles,
-  AlertCircle
+  AlertCircle,
+  LayoutTemplate,
+  History,
+  FileDown
 } from 'lucide-react';
 import { 
   Dialog, 
@@ -43,6 +46,11 @@ import {
   DialogTitle, 
   DialogDescription
 } from '@/components/ui/dialog';
+import { 
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 import { setDocumentNonBlocking } from '@/firebase/non-blocking-updates';
 import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -82,6 +90,12 @@ interface Product {
   productCategoryId: string;
   galleryImageUrls: string[];
   status?: 'published' | 'draft';
+}
+
+interface SpecTemplate {
+  id: string;
+  name: string;
+  specGroups: any[];
 }
 
 interface LocalizedString {
@@ -138,6 +152,10 @@ function ProductEditorContent() {
   const [isAiProcessing, setIsAiProcessing] = useState(false);
   const [idConflict, setIdConflict] = useState(false);
 
+  // 模板相关状态
+  const [isSaveTemplateDialogOpen, setIsSaveTemplateDialogOpen] = useState(false);
+  const [newTemplateName, setNewTemplateName] = useState('');
+
   const [isPickerOpen, setIsPickerOpen] = useState(false);
   const [pickerTarget, setPickerTarget] = useState<'main' | 'gallery'>('main');
   const [pickerSearch, setPickerSearch] = useState('');
@@ -149,6 +167,7 @@ function ProductEditorContent() {
   const assetsQuery = useMemoFirebase(() => firestore ? query(collection(firestore, 'galleryAssets'), orderBy('createdAt', 'desc')) : null, [firestore]);
   const allProdsQuery = useMemoFirebase(() => firestore ? collection(firestore, 'products') : null, [firestore]);
   const aiRef = useMemoFirebase(() => firestore ? doc(firestore, 'settings', 'ai') : null, [firestore]);
+  const templatesQuery = useMemoFirebase(() => firestore ? collection(firestore, 'specTemplates') : null, [firestore]);
 
   const { data: product, isLoading: isProdLoading } = useDoc<Product>(prodRef);
   const { data: categories } = useCollection<ProductCategory>(catsQuery);
@@ -156,6 +175,7 @@ function ProductEditorContent() {
   const { data: galleryAssets } = useCollection<GalleryAsset>(assetsQuery);
   const { data: allProducts } = useCollection<Product>(allProdsQuery);
   const { data: aiConfig } = useDoc<AiConfig>(aiRef);
+  const { data: specTemplates } = useCollection<SpecTemplate>(templatesQuery);
 
   useEffect(() => {
     if (isEditing && product && translations) {
@@ -262,6 +282,49 @@ function ProductEditorContent() {
 
     toast({ title: "产品已保存" });
     router.push('/admin/products');
+  };
+
+  // --- 模板逻辑 ---
+  const handleSaveTemplate = () => {
+    if (!firestore || !newTemplateName.trim() || formData.specGroups.length === 0) return;
+    const templateId = `tpl_${Date.now()}`;
+    setDocumentNonBlocking(doc(firestore, 'specTemplates', templateId), {
+      id: templateId,
+      name: newTemplateName.trim(),
+      specGroups: formData.specGroups.map(g => ({
+        titleEn: g.titleEn,
+        titleZh: g.titleZh,
+        items: g.items.map(i => ({
+          labelEn: i.labelEn,
+          labelZh: i.labelZh,
+          valueEn: i.valueEn,
+          valueZh: i.valueZh
+        }))
+      })),
+      createdAt: serverTimestamp()
+    }, { merge: true });
+
+    setIsSaveTemplateDialogOpen(false);
+    setNewTemplateName('');
+    toast({ title: "模板已存入云端库" });
+  };
+
+  const handleApplyTemplate = (tpl: SpecTemplate) => {
+    const newGroups: ProductSpecGroup[] = tpl.specGroups.map((g, gIdx) => ({
+      uid: `tpl_g_${gIdx}_${Date.now()}`,
+      titleEn: g.titleEn || '',
+      titleZh: g.titleZh || '',
+      items: g.items.map((i: any, iIdx: number) => ({
+        uid: `tpl_i_${gIdx}_${iIdx}_${Date.now()}`,
+        labelEn: i.labelEn || '',
+        labelZh: i.labelZh || '',
+        valueEn: i.valueEn || '',
+        valueZh: i.valueZh || ''
+      }))
+    }));
+
+    setFormData({ ...formData, specGroups: newGroups });
+    toast({ title: "模板已应用", description: "当前规格已替换为模板结构。" });
   };
 
   const handleAiTranslateBasicInfo = async () => {
@@ -515,10 +578,63 @@ function ProductEditorContent() {
                     <h3 className="text-sm font-bold text-primary flex items-center gap-2"><TableProperties className="h-4 w-4" /> 技术规格配置</h3>
                     <p className="text-[10px] text-muted-foreground">定义多语言参数分组，AI 助手将基于行业词库进行精准翻译。</p>
                   </div>
-                  <Button variant="default" size="sm" onClick={() => setFormData({...formData, specGroups: [...formData.specGroups, {uid: `group_${Date.now()}`, titleEn:'', titleZh:'', items:[{uid: `item_${Date.now()}`, labelEn:'', labelZh:'', valueEn:'', valueZh:''}]}]})} className="rounded-lg h-9 px-4 font-bold uppercase tracking-widest text-[10px] gap-1.5 shadow-sm">
-                    <PlusCircle className="h-3.5 w-3.5" /> 新增分组
-                  </Button>
+                  <div className="flex items-center gap-2">
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <Button variant="outline" size="sm" className="rounded-lg h-9 px-4 font-bold uppercase tracking-widest text-[10px] gap-1.5">
+                          <LayoutTemplate className="h-3.5 w-3.5" /> 加载模板
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-64 p-0 rounded-xl shadow-2xl border-border/40 overflow-hidden">
+                        <div className="bg-primary p-3 text-white text-[10px] font-bold uppercase tracking-widest flex items-center gap-2">
+                          <History className="h-3 w-3" /> 云端规格库
+                        </div>
+                        <div className="max-h-60 overflow-y-auto">
+                          {specTemplates?.length === 0 ? (
+                            <div className="p-8 text-center text-[10px] text-muted-foreground italic">暂无模板</div>
+                          ) : (
+                            specTemplates?.map(tpl => (
+                              <button 
+                                key={tpl.id} 
+                                onClick={() => handleApplyTemplate(tpl)}
+                                className="w-full text-left p-3 text-[11px] hover:bg-muted/50 border-b border-border/20 last:border-0 flex items-center justify-between group"
+                              >
+                                <span className="font-bold text-primary">{tpl.name}</span>
+                                <FileDown className="h-3 w-3 opacity-0 group-hover:opacity-40 transition-opacity" />
+                              </button>
+                            ))
+                          )}
+                        </div>
+                      </PopoverContent>
+                    </Popover>
+
+                    <Button variant="outline" size="sm" onClick={() => setIsSaveTemplateDialogOpen(true)} disabled={formData.specGroups.length === 0} className="rounded-lg h-9 px-4 font-bold uppercase tracking-widest text-[10px] gap-1.5">
+                      <Save className="h-3.5 w-3.5" /> 存为模板
+                    </Button>
+
+                    <Button variant="default" size="sm" onClick={() => setFormData({...formData, specGroups: [...formData.specGroups, {uid: `group_${Date.now()}`, titleEn:'', titleZh:'', items:[{uid: `item_${Date.now()}`, labelEn:'', labelZh:'', valueEn:'', valueZh:''}]}]})} className="rounded-lg h-9 px-4 font-bold uppercase tracking-widest text-[10px] gap-1.5 shadow-sm">
+                      <PlusCircle className="h-3.5 w-3.5" /> 新增分组
+                    </Button>
+                  </div>
                 </div>
+
+                <Dialog open={isSaveTemplateDialogOpen} onOpenChange={setIsSaveTemplateDialogOpen}>
+                  <DialogContent className="max-w-sm rounded-2xl">
+                    <DialogHeader>
+                      <DialogTitle className="text-base font-bold">另存为规格模板</DialogTitle>
+                      <DialogDescription>将当前录入的所有规格结构保存到云端，供其他产品快速复用。</DialogDescription>
+                    </DialogHeader>
+                    <div className="py-4 space-y-3">
+                      <Label className="text-[10px] font-bold uppercase opacity-60">模板显示名称</Label>
+                      <Input placeholder="例如：标准一体机规格、显示器基础规格..." value={newTemplateName} onChange={e => setNewTemplateName(e.target.value)} className="rounded-xl h-11" />
+                    </div>
+                    <DialogFooter className="gap-2">
+                      <Button variant="outline" onClick={() => setIsSaveTemplateDialogOpen(false)} className="rounded-xl flex-1">取消</Button>
+                      <Button onClick={handleSaveTemplate} disabled={!newTemplateName.trim()} className="rounded-xl flex-1">确认保存</Button>
+                    </DialogFooter>
+                  </DialogContent>
+                </Dialog>
+
                 <div className="space-y-8">
                   {formData.specGroups.map((group, gIdx) => (
                     <div key={group.uid} className="bg-muted/10 rounded-xl border border-border/40 overflow-hidden">

@@ -2,7 +2,7 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    // 部署时间戳: 2024-05-24 12:00:00
+    // 部署时间戳: 2024-05-26 15:00:00
     
     function isAdmin() {
       return request.auth != null && exists(/databases/$(database)/documents/admins/$(request.auth.uid));
@@ -21,6 +21,10 @@ service cloud.firestore {
     match /products/{productId} {
       allow read: if true;
       allow write: if isAdmin();
+    }
+
+    match /specTemplates/{templateId} {
+      allow read, write: if isAdmin();
     }
 
     match /localizedStrings/{localizedStringId} {

@@ -65,6 +65,19 @@
       },
       "required": ["id", "nameTextId", "productCategoryId", "mainImageUrl"]
     },
+    "SpecTemplate": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "SpecTemplate",
+      "type": "object",
+      "description": "Reusable technical specification templates.",
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string", "description": "Template name for management." },
+        "specGroups": { "type": "array", "items": { "type": "object" } },
+        "createdAt": { "type": "object" }
+      },
+      "required": ["id", "name", "specGroups"]
+    },
     "GalleryCategory": {
       "$schema": "http://json-schema.org/draft-07/schema#",
       "title": "GalleryCategory",
@@ -164,6 +177,14 @@
           "entityName": "Product",
           "schema": { "$ref": "#/backend/entities/Product" },
           "description": "Hardware product records."
+        }
+      },
+      {
+        "path": "/specTemplates/{templateId}",
+        "definition": {
+          "entityName": "SpecTemplate",
+          "schema": { "$ref": "#/backend/entities/SpecTemplate" },
+          "description": "Reusable technical specification templates."
         }
       },
       {
