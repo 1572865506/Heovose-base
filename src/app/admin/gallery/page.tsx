@@ -164,17 +164,19 @@ export default function GalleryPage() {
 
   // --- 框选逻辑开始 ---
   const handleMouseDown = (e: React.MouseEvent) => {
-    // 仅在空白处或网格区域开始框选，不响应按钮点击
-    if ((e.target as HTMLElement).closest('button') || (e.target as HTMLElement).closest('input')) return;
+    // 仅在空白处或网格区域开始框选，不响应按钮、输入框、复选框点击
+    const target = e.target as HTMLElement;
+    if (target.closest('button') || target.closest('input') || target.closest('label') || target.closest('.group')) return;
     
-    const rect = containerRef.current?.getBoundingClientRect();
-    if (!rect) return;
+    const rect = e.currentTarget.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
 
     setSelectionBox({
-      startX: e.clientX - rect.left,
-      startY: e.clientY - rect.top,
-      currentX: e.clientX - rect.left,
-      currentY: e.clientY - rect.top
+      startX: x,
+      startY: y,
+      currentX: x,
+      currentY: y
     });
 
     if (!e.shiftKey) {
@@ -183,17 +185,20 @@ export default function GalleryPage() {
   };
 
   const handleMouseMove = (e: React.MouseEvent) => {
-    if (!selectionBox || !containerRef.current) return;
-    const rect = containerRef.current.getBoundingClientRect();
+    if (!selectionBox) return;
     
+    const rect = e.currentTarget.getBoundingClientRect();
+    const nextX = e.clientX - rect.left;
+    const nextY = e.clientY - rect.top;
+
     const nextBox = {
       ...selectionBox,
-      currentX: e.clientX - rect.left,
-      currentY: e.clientY - rect.top
+      currentX: nextX,
+      currentY: nextY
     };
     setSelectionBox(nextBox);
 
-    // 计算框选区域
+    // 计算当前框选区域
     const boxX = Math.min(nextBox.startX, nextBox.currentX);
     const boxY = Math.min(nextBox.startY, nextBox.currentY);
     const boxWidth = Math.abs(nextBox.startX - nextBox.currentX);
@@ -202,6 +207,8 @@ export default function GalleryPage() {
     const newSelected = new Set(e.shiftKey ? selectedIds : []);
     itemRefs.current.forEach((el, id) => {
       if (!el) return;
+      
+      // 检查矩形交集
       const elRect = {
         left: el.offsetLeft,
         top: el.offsetTop,
@@ -335,7 +342,13 @@ export default function GalleryPage() {
   };
 
   return (
-    <div className="space-y-6 animate-in fade-in duration-500 relative min-h-[80vh] select-none" onMouseUp={handleMouseUp} onMouseMove={handleMouseMove}>
+    <div 
+      className="space-y-6 animate-in fade-in duration-500 relative min-h-[80vh] select-none" 
+      onMouseUp={handleMouseUp} 
+      onMouseMove={handleMouseMove}
+      onMouseDown={handleMouseDown}
+      ref={containerRef}
+    >
       
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
@@ -395,7 +408,7 @@ export default function GalleryPage() {
       {isLoading ? (
         <div className="py-24 text-center"><Loader2 className="h-10 w-10 animate-spin text-primary opacity-10 mx-auto mb-3" /><p className="text-[10px] font-bold uppercase tracking-widest opacity-40">正在同步云端媒体库...</p></div>
       ) : (
-        <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-6" onMouseDown={handleMouseDown} ref={containerRef}>
+        <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-6">
           {filteredAssets.map((asset) => (
             <div 
               key={asset.id} 
@@ -440,10 +453,10 @@ export default function GalleryPage() {
 
       {/* --- Overlay / Fixed elements moved to bottom to avoid space-y logic issues --- */}
 
-      {/* 框选矩形视觉元素 */}
+      {/* 框选矩形视觉元素 - 添加 !m-0 以防受 space-y 影响偏移 */}
       {selectionBox && (
         <div 
-          className="absolute z-[300] bg-primary/20 border border-primary pointer-events-none"
+          className="absolute z-[300] bg-primary/20 border border-primary pointer-events-none !m-0"
           style={{
             left: Math.min(selectionBox.startX, selectionBox.currentX),
             top: Math.min(selectionBox.startY, selectionBox.currentY),
@@ -529,7 +542,6 @@ export default function GalleryPage() {
           </DialogHeader>
           
           <div className="absolute top-4 right-4 z-50 flex gap-2">
-             {/* 缩放控制组 */}
              <div className="flex bg-white/10 backdrop-blur-md rounded-full border border-white/10 overflow-hidden p-1 mr-4">
                 <Button 
                   variant="ghost" 
