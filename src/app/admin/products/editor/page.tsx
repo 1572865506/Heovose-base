@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useMemo, Suspense, useRef } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { useFirestore, useDoc, useCollection, useMemoFirebase } from '@/firebase';
+import { useUser, useAuth, useFirestore, useDoc, useCollection, useMemoFirebase } from '@/firebase';
 import { doc, collection, serverTimestamp, query, orderBy } from 'firebase/firestore';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -383,6 +383,7 @@ function ProductEditorContent() {
       setFormData(prev => ({ ...prev, ...updates }));
       toast({ title: "基础信息智译成功" });
     } catch (e: any) {
+      console.error("Basic Translation Error:", e);
       toast({ variant: "destructive", title: "AI 翻译失败", description: e.message || "请求超时或模型异常。" });
     } finally {
       setIsAiProcessing(false);
@@ -409,7 +410,7 @@ function ProductEditorContent() {
         model: aiConfig.model
       });
       
-      const translatedHtml = result[targetDetailsLang];
+      const translatedHtml = result?.[targetDetailsLang];
       if (translatedHtml) {
         setFormData(prev => ({ 
           ...prev, 
@@ -420,11 +421,11 @@ function ProductEditorContent() {
         }));
         toast({ title: `详情介绍 (${targetDetailsLang.toUpperCase()}) 智译成功` });
       } else {
-        toast({ variant: "destructive", title: "翻译返回异常", description: "AI 未返回有效译文，请重试。" });
+        toast({ variant: "destructive", title: "翻译返回异常", description: "AI 未返回有效译文，内容可能过长。" });
       }
     } catch (e: any) {
       console.error("Detail Translation Error:", e);
-      toast({ variant: "destructive", title: "AI 智译中断", description: e.message || "长文内容可能超限，请尝试分段处理。" });
+      toast({ variant: "destructive", title: "AI 智译中断", description: e.message || "服务器响应异常，请尝试分段处理。" });
     } finally {
       setIsAiProcessing(false);
     }
@@ -441,7 +442,8 @@ function ProductEditorContent() {
         else newGroups[gIdx].items[iIdx].valueEn = result.en;
         setFormData(prev => ({...prev, specGroups: newGroups}));
       }
-    } catch (e) {
+    } catch (e: any) {
+      console.error("Spec Translation Error:", e);
       toast({ variant: "destructive", title: "AI 翻译失败" });
     } finally {
       setIsAiProcessing(false);
@@ -836,12 +838,15 @@ function ProductEditorContent() {
                       placeholder={`在此编辑 ${targetDetailsLang.toUpperCase()} 版本的排版...`}
                     />
                     {isAiProcessing && (
-                      <div className="absolute inset-0 bg-white/60 backdrop-blur-sm z-50 flex flex-col items-center justify-center gap-4 animate-in fade-in duration-300">
+                      <div className="absolute inset-0 bg-white/60 backdrop-blur-sm z-50 flex flex-col items-center justify-center gap-4 animate-in fade-in duration-300 text-center px-6">
                         <div className="relative">
                           <Cpu className="h-12 w-12 text-primary animate-pulse" />
                           <Sparkles className="absolute -top-1 -right-1 h-5 w-5 text-accent animate-bounce" />
                         </div>
-                        <p className="text-[11px] font-bold text-primary uppercase tracking-widest">AI 正在深度重组长文排版...</p>
+                        <div className="space-y-2">
+                          <p className="text-[11px] font-bold text-primary uppercase tracking-widest">AI 正在深度重组长文排版...</p>
+                          <p className="text-[9px] text-muted-foreground leading-relaxed">翻译较长 HTML 内容可能需要 15-30 秒，请勿关闭窗口。</p>
+                        </div>
                         <div className="w-48 h-1.5 bg-muted rounded-full overflow-hidden">
                           <div className="h-full bg-primary animate-[shimmer_2s_infinite] w-1/2 rounded-full" />
                         </div>

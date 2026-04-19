@@ -52,12 +52,22 @@ const translateFlow = ai.defineFlow(
     outputSchema: TranslateOutputSchema,
   },
   async (input) => {
-    // 使用传入的模型，或回退到默认模型
-    const { output } = await translatePrompt(input);
-    if (!output) {
-      throw new Error('AI Translation returned empty output.');
+    try {
+      // 使用传入的模型配置进行调用，如果未指定则使用 ai 实例默认值
+      const { output } = await translatePrompt(input, {
+        config: {
+          model: input.model || undefined,
+        }
+      });
+      
+      if (!output) {
+        throw new Error('AI Translation returned empty output.');
+      }
+      return output;
+    } catch (error: any) {
+      console.error('Translation Flow Error:', error);
+      throw new Error(`Translation failed: ${error.message || 'Unknown error'}`);
     }
-    return output;
   }
 );
 
