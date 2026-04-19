@@ -32,7 +32,8 @@ import {
   TableProperties,
   FolderPlus,
   Globe,
-  Sparkles
+  Sparkles,
+  AlertCircle
 } from 'lucide-react';
 import { 
   Dialog, 
@@ -50,9 +51,10 @@ import Image from 'next/image';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 import { translateContent } from '@/ai/flows/translate-flow';
+import { Progress } from '@/components/ui/progress';
 
 interface ProductSpecEntry {
-  uid: string; // 内部唯一 ID，确保删除行后数据不偏移
+  uid: string;
   labelEn: string;
   labelZh: string;
   valueEn: string;
@@ -91,13 +93,6 @@ interface LocalizedString {
 interface ProductCategory {
   id: string;
   nameTextId: string;
-}
-
-interface GalleryCategory {
-  id: string;
-  name: string;
-  parentId?: string | null;
-  order: number;
 }
 
 interface GalleryAsset {
@@ -141,22 +136,26 @@ function ProductEditorContent() {
   const [activeTab, setActiveTab] = useState('basic');
   const [isUploading, setIsUploading] = useState(false);
   const [isAiProcessing, setIsAiProcessing] = useState(false);
+  const [isIdChecking, setIsIdChecking] = useState(false);
+  const [idConflict, setIdConflict] = useState(false);
 
   const [isPickerOpen, setIsPickerOpen] = useState(false);
   const [pickerTarget, setPickerTarget] = useState<'main' | 'gallery'>('main');
   const [pickerSearch, setPickerSearch] = useState('');
   const [selectedPickerUrls, setSelectedPickerUrls] = useState<Set<string>>(new Set());
 
-  const prodRef = useMemoFirebase(() => productId ? doc(firestore, 'products', productId) : null, [firestore, productId]);
+  const prodRef = useMemoFirebase(() => productId ? doc(firestore!, 'products', productId) : null, [firestore, productId]);
   const catsQuery = useMemoFirebase(() => firestore ? collection(firestore, 'productCategories') : null, [firestore]);
   const transQuery = useMemoFirebase(() => firestore ? collection(firestore, 'localizedStrings') : null, [firestore]);
   const assetsQuery = useMemoFirebase(() => firestore ? query(collection(firestore, 'galleryAssets'), orderBy('createdAt', 'desc')) : null, [firestore]);
+  const allProdsQuery = useMemoFirebase(() => firestore ? collection(firestore, 'products') : null, [firestore]);
   const aiRef = useMemoFirebase(() => firestore ? doc(firestore, 'settings', 'ai') : null, [firestore]);
 
   const { data: product, isLoading: isProdLoading } = useDoc<Product>(prodRef);
   const { data: categories } = useCollection<ProductCategory>(catsQuery);
   const { data: translations } = useCollection<LocalizedString>(transQuery);
   const { data: galleryAssets } = useCollection<GalleryAsset>(assetsQuery);
+  const { data: allProducts } = useCollection<Product>(allProdsQuery);
   const { data: aiConfig } = useDoc<AiConfig>(aiRef);
 
   useEffect(() => {
@@ -198,9 +197,32 @@ function ProductEditorContent() {
     }
   }, [isEditing, product, translations]);
 
+  // 自动化测试 findings: 实时 ID 冲突检测
+  useEffect(() => {
+    if (!isEditing && formData.id && allProducts) {
+      const exists = allProducts.some(p => p.id === formData.id);
+      setIdConflict(exists);
+    } else {
+      setIdConflict(false);
+    }
+  }, [formData.id, allProducts, isEditing]);
+
+  // 计算翻译覆盖率 (模拟测试中新增的辅助功能)
+  const translationMetrics = useMemo(() => {
+    const fields = [formData.nameZh, formData.nameEn, formData.descZh, formData.descEn];
+    const filled = fields.filter(f => f.trim().length > 0).length;
+    const total = fields.length;
+    return (filled / total) * 100;
+  }, [formData]);
+
   const handleSave = () => {
     if (!firestore || !formData.id || !formData.categoryId) {
       toast({ variant: "destructive", title: "请填写完整产品 ID 和分类" });
+      return;
+    }
+
+    if (idConflict) {
+      toast({ variant: "destructive", title: "ID 已被占用", description: "请更换唯一的 ID 后再尝试保存。" });
       return;
     }
 
@@ -215,7 +237,6 @@ function ProductEditorContent() {
     const descId = saveLang(formData.descEn, formData.descZh, `prod_desc_${formData.id}`);
     const detailsId = saveLang(formData.detailsEn, formData.detailsZh, `prod_details_${formData.id}`);
     
-    // 使用稳定的索引 ID 存入翻译库
     const advantageIds = formData.advantages.filter(a => a.zh || a.en).map((adv, idx) => 
       saveLang(adv.en, adv.zh, `prod_adv_${formData.id}_${idx}`)
     );
@@ -324,17 +345,23 @@ function ProductEditorContent() {
       <div className="flex items-center justify-between sticky top-16 z-40 bg-background/95 backdrop-blur-md py-4 border-b border-border/40 px-2">
         <div className="flex items-center gap-3">
           <Button variant="ghost" size="icon" onClick={() => router.back()} className="rounded-full h-9 w-9"><ArrowLeft className="h-4 w-4" /></Button>
-          <div>
-            <h2 className="text-xl font-headline font-bold text-primary">{isEditing ? '编辑产品' : '发布产品'}</h2>
+          <div className="space-y-1">
+            <h2 className="text-xl font-headline font-bold text-primary leading-none">{isEditing ? '编辑产品' : '发布产品'}</h2>
             <div className="flex items-center gap-2">
                <p className="text-[10px] text-muted-foreground uppercase tracking-wider font-bold">ID: {formData.id || 'NEW'}</p>
                <Badge variant={formData.status === 'published' ? 'default' : 'secondary'} className={cn("text-[8px] uppercase px-1.5 py-0", formData.status === 'published' ? "bg-green-600 hover:bg-green-600" : "")}>{formData.status === 'published' ? '已发布' : '草稿'}</Badge>
             </div>
           </div>
         </div>
-        <div className="flex gap-2">
-          <Button variant="outline" size="sm" onClick={() => router.back()} className="rounded-lg h-9 px-4 font-bold uppercase tracking-widest text-[10px]">取消</Button>
-          <Button size="sm" onClick={handleSave} className="rounded-lg h-9 px-5 font-bold uppercase tracking-widest text-[10px] gap-2 shadow-sm"><Save className="h-3.5 w-3.5" /> 保存并发布</Button>
+        <div className="flex items-center gap-4">
+          <div className="hidden md:flex flex-col items-end gap-1 min-w-[120px]">
+            <span className="text-[9px] font-bold text-muted-foreground uppercase tracking-tighter">多语言覆盖率 {Math.round(translationMetrics)}%</span>
+            <Progress value={translationMetrics} className="h-1 w-full bg-muted" />
+          </div>
+          <div className="flex gap-2">
+            <Button variant="outline" size="sm" onClick={() => router.back()} className="rounded-lg h-9 px-4 font-bold uppercase tracking-widest text-[10px]">取消</Button>
+            <Button size="sm" onClick={handleSave} className="rounded-lg h-9 px-5 font-bold uppercase tracking-widest text-[10px] gap-2 shadow-sm"><Save className="h-3.5 w-3.5" /> 保存并发布</Button>
+          </div>
         </div>
       </div>
 
@@ -354,7 +381,19 @@ function ProductEditorContent() {
             <div className="space-y-4 border-t pt-6">
               <div className="space-y-1.5">
                 <Label className="text-[10px] font-bold uppercase text-primary">产品唯一 ID</Label>
-                <Input disabled={isEditing} value={formData.id} onChange={e => setFormData({...formData, id: e.target.value})} className="h-10 rounded-lg bg-muted/10 border-none font-mono text-xs" />
+                <div className="relative">
+                  <Input 
+                    disabled={isEditing} 
+                    value={formData.id} 
+                    onChange={e => setFormData({...formData, id: e.target.value})} 
+                    className={cn(
+                      "h-10 rounded-lg bg-muted/10 border-none font-mono text-xs pr-8",
+                      idConflict && "text-destructive"
+                    )} 
+                  />
+                  {idConflict && <AlertCircle className="absolute right-2 top-1/2 -translate-y-1/2 h-4 w-4 text-destructive animate-pulse" />}
+                </div>
+                {idConflict && <p className="text-[9px] font-bold text-destructive flex items-center gap-1 uppercase mt-1"><AlertCircle className="h-3 w-3" /> 该 ID 已在数据库中存在，保存将导致覆盖！</p>}
               </div>
               <div className="space-y-1.5">
                 <Label className="text-[10px] font-bold uppercase text-primary">所属产品分类</Label>
