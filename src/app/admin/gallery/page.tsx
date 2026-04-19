@@ -260,7 +260,11 @@ export default function GalleryPage() {
     toast({ title: `已移动 ${selectedIds.size} 项素材` });
   };
 
-  const resetCatForm = () => { setEditingCatId(null); setCatForm({ name: '', parentId: 'none' }); };
+  const resetCatForm = () => { 
+    setEditingCatId(null); 
+    setCatForm({ name: '', parentId: 'none' }); 
+  };
+
   const handleSaveCategory = () => {
     if (!firestore || !catForm.name.trim()) return;
     const pId = catForm.parentId === 'none' ? null : catForm.parentId;
@@ -273,9 +277,15 @@ export default function GalleryPage() {
     resetCatForm();
   };
 
+  const resetAllStates = () => {
+    resetCatForm();
+    setIsCategoryDialogOpen(false);
+    setIsUploadDialogOpen(false);
+  };
+
   return (
     <div className="space-y-6 animate-in fade-in duration-500 relative min-h-[80vh] select-none">
-      {/* 批量管理悬浮条 - 恢复并优化层级 */}
+      {/* 批量管理悬浮条 */}
       {selectedIds.size > 0 && (
         <div className="fixed top-[72px] left-1/2 -translate-x-1/2 z-[200] bg-white border border-primary/20 shadow-2xl rounded-full px-5 py-2 flex items-center gap-5 animate-in slide-in-from-top-4 duration-300">
           <div className="flex items-center gap-3">
@@ -295,7 +305,10 @@ export default function GalleryPage() {
                 </Button>
               </DialogTrigger>
               <DialogContent className="rounded-2xl max-w-sm">
-                <DialogHeader><DialogTitle className="text-base font-bold">批量移动至分类</DialogTitle></DialogHeader>
+                <DialogHeader>
+                  <DialogTitle className="text-base font-bold">批量移动至分类</DialogTitle>
+                  <DialogDescription>将选中的素材移动到指定的架构分类下。</DialogDescription>
+                </DialogHeader>
                 <div className="py-4 space-y-3">
                   <Label className="text-[10px] font-bold uppercase opacity-60">目标分类</Label>
                   <Select value={batchTargetCategoryId} onValueChange={setBatchTargetCategoryId}>
@@ -329,7 +342,10 @@ export default function GalleryPage() {
             <DialogTrigger asChild><Button variant="outline" className="rounded-xl h-10 gap-2 text-xs font-bold uppercase tracking-wider shadow-sm"><Settings2 className="h-4 w-4" /> 架构设置</Button></DialogTrigger>
             <DialogContent className="rounded-2xl max-w-2xl p-0 overflow-hidden border-none shadow-2xl">
               <div className="p-6 space-y-6">
-                <DialogHeader><DialogTitle className="text-lg font-bold flex items-center gap-2 text-primary"><Layers className="h-5 w-5" /> 树状分类管理</DialogTitle></DialogHeader>
+                <DialogHeader>
+                  <DialogTitle className="text-lg font-bold flex items-center gap-2 text-primary"><Layers className="h-5 w-5" /> 树状分类管理</DialogTitle>
+                  <DialogDescription>定义和管理图库的层级结构。</DialogDescription>
+                </DialogHeader>
                 <div className={cn("space-y-4 p-5 rounded-2xl border", editingCatId ? "bg-primary/5 border-primary/20" : "bg-muted/30 border-border/40")}>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div className="space-y-2"><Label className="text-[10px] font-bold uppercase opacity-60">分类名称</Label><Input value={catForm.name} onChange={e => setCatForm({...catForm, name: e.target.value})} className="rounded-xl h-10 bg-white" /></div>
@@ -345,7 +361,12 @@ export default function GalleryPage() {
           <Dialog open={isUploadDialogOpen} onOpenChange={setIsUploadDialogOpen}>
             <DialogTrigger asChild><Button className="rounded-xl h-10 px-5 font-bold uppercase tracking-widest gap-2 text-xs shadow-md"><CloudUpload className="h-4 w-4" /> 批量上传</Button></DialogTrigger>
             <DialogContent className="rounded-2xl max-w-3xl p-0 overflow-hidden border-none shadow-2xl">
-              <div className="bg-primary p-6 text-white"><DialogHeader><DialogTitle className="text-xl font-bold flex items-center gap-3"><CloudUpload className="h-6 w-6" /> 上传资产中心</DialogTitle></DialogHeader></div>
+              <div className="bg-primary p-6 text-white">
+                <DialogHeader>
+                  <DialogTitle className="text-xl font-bold flex items-center gap-3"><CloudUpload className="h-6 w-6" /> 上传资产中心</DialogTitle>
+                  <DialogDescription className="text-white/60">上传图片并选择冲突处理策略。</DialogDescription>
+                </DialogHeader>
+              </div>
               <div className="p-6 grid grid-cols-1 md:grid-cols-12 gap-8 bg-white">
                 <div className="md:col-span-7"><div onDragOver={e => e.preventDefault()} onDrop={e => { e.preventDefault(); handleFileUpload(e.dataTransfer.files); }} className="h-64 border-2 border-dashed border-muted rounded-2xl flex flex-col items-center justify-center hover:bg-muted/10 transition-all cursor-pointer group" onClick={() => fileInputRef.current?.click()}><Upload className="h-12 w-12 text-muted-foreground/40 mb-3 group-hover:text-primary transition-colors" /><p className="text-sm font-bold opacity-60">点击或拖拽图片至此处</p><p className="text-[10px] opacity-40 mt-1 uppercase tracking-widest">支持 JPG, PNG, WEBP (MAX 2MB)</p><input type="file" ref={fileInputRef} multiple accept="image/*" className="hidden" onChange={e => handleFileUpload(e.target.files)} /></div></div>
                 <div className="md:col-span-5 space-y-6"><div className="space-y-5"><div className="space-y-2"><Label className="text-[10px] font-bold uppercase opacity-60">上传目标分类</Label><Select value={targetUploadCategoryId} onValueChange={setTargetUploadCategoryId}><SelectTrigger className="h-11 rounded-xl bg-muted/20 border-transparent"><SelectValue placeholder="选择目标分类" /></SelectTrigger><SelectContent className="rounded-xl">{categoryTree.map(cat => (<SelectItem key={cat.id} value={cat.id} className="text-xs"><span style={{ paddingLeft: `${cat.depth * 0.6}rem` }}>{cat.name}</span></SelectItem>))}</SelectContent></Select></div><div className="space-y-2"><Label className="text-[10px] font-bold uppercase opacity-60">重名冲突处理策略</Label><Select value={duplicateStrategy} onValueChange={(v: DuplicateStrategy) => setDuplicateStrategy(v)}><SelectTrigger className="h-11 rounded-xl bg-muted/20 border-transparent"><SelectValue /></SelectTrigger><SelectContent className="rounded-xl"><SelectItem value="rename" className="text-xs">自动重命名 (生成副本)</SelectItem><SelectItem value="overwrite" className="text-xs text-orange-600 font-bold">覆盖现有文件 (全站同步更新)</SelectItem></SelectContent></Select><p className="text-[9px] text-muted-foreground leading-relaxed mt-2 italic">提示：选择“覆盖”将直接替换所有引用该文件名的前端展示内容。</p></div></div></div>
@@ -373,7 +394,7 @@ export default function GalleryPage() {
               <div className="relative aspect-square bg-muted/10 overflow-hidden flex items-center justify-center">
                 <Image src={asset.url} alt={asset.title} fill className="object-cover group-hover:scale-110 transition-transform duration-700" />
                 
-                {/* 悬浮预览按钮 - 恢复大图功能 */}
+                {/* 悬浮预览按钮 */}
                 <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
                   <Button size="icon" variant="secondary" className="h-10 w-10 rounded-full shadow-2xl" onClick={() => setPreviewAsset(asset)}>
                     <Maximize className="h-4 w-4" />
@@ -412,15 +433,24 @@ export default function GalleryPage() {
       {/* 资源编辑弹窗 */}
       <Dialog open={!!editingAsset} onOpenChange={o => !o && setEditingAsset(null)}>
         <DialogContent className="rounded-2xl max-w-sm p-0 overflow-hidden border-none shadow-2xl">
-          <div className="bg-muted/10 p-6 border-b border-border/40"><DialogHeader><DialogTitle className="text-lg font-bold flex items-center gap-2 text-primary">编辑素材属性</DialogTitle></DialogHeader></div>
+          <div className="bg-muted/10 p-6 border-b border-border/40">
+            <DialogHeader>
+              <DialogTitle className="text-lg font-bold flex items-center gap-2 text-primary">编辑素材属性</DialogTitle>
+              <DialogDescription>修改素材的显示标题或归属分类。</DialogDescription>
+            </DialogHeader>
+          </div>
           {editingAsset && (<div className="p-6 space-y-5 bg-white"><div className="space-y-2"><Label className="text-[10px] font-bold uppercase opacity-60">素材标题</Label><Input value={editingAsset.title} onChange={e => setEditingAsset({...editingAsset, title: e.target.value})} className="rounded-xl h-11" /></div><div className="space-y-2"><Label className="text-[10px] font-bold uppercase opacity-60">归属分类</Label><Select value={editingAsset.categoryId} onValueChange={v => setEditingAsset({...editingAsset, categoryId: v})}><SelectTrigger className="h-11 rounded-xl"><SelectValue /></SelectTrigger><SelectContent className="rounded-xl">{categoryTree.map(cat => (<SelectItem key={cat.id} value={cat.id} className="text-xs"><span style={{ paddingLeft: `${cat.depth * 0.6}rem` }}>{cat.name}</span></SelectItem>))}</SelectContent></Select></div></div>)}
           <DialogFooter className="p-6 bg-muted/5 flex gap-2 border-t border-border/40"><Button variant="outline" onClick={() => setEditingAsset(null)} className="rounded-xl h-11 flex-1 text-xs">放弃修改</Button><Button onClick={() => { if(firestore && editingAsset) { updateDocumentNonBlocking(doc(firestore, 'galleryAssets', editingAsset.id), editingAsset); setEditingAsset(null); toast({ title: "属性已同步至云端" }); } }} className="rounded-xl h-11 flex-1 text-xs">保存变更</Button></DialogFooter>
         </DialogContent>
       </Dialog>
 
-      {/* 大图预览弹窗 - 恢复功能 */}
+      {/* 大图预览弹窗 */}
       <Dialog open={!!previewAsset} onOpenChange={o => !o && setPreviewAsset(null)}>
         <DialogContent className="max-w-[90vw] md:max-w-4xl p-0 overflow-hidden bg-black/95 border-none shadow-2xl rounded-2xl flex flex-col">
+          <DialogHeader className="sr-only">
+            <DialogTitle>图片预览: {previewAsset?.title}</DialogTitle>
+            <DialogDescription>查看全屏高清素材详情。</DialogDescription>
+          </DialogHeader>
           <div className="absolute top-4 right-4 z-50 flex gap-2">
              <Button variant="secondary" size="icon" className="h-10 w-10 rounded-full bg-white/10 hover:bg-white/20 text-white border-white/10" onClick={() => { window.open(previewAsset?.url, '_blank'); }}>
                 <Download className="h-4 w-4" />
