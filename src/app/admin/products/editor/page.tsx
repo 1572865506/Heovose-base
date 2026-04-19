@@ -52,6 +52,7 @@ import { cn } from '@/lib/utils';
 import { translateContent } from '@/ai/flows/translate-flow';
 
 interface ProductSpecEntry {
+  uid: string; // 内部唯一 ID，确保删除行后数据不偏移
   labelEn: string;
   labelZh: string;
   valueEn: string;
@@ -59,6 +60,7 @@ interface ProductSpecEntry {
 }
 
 interface ProductSpecGroup {
+  uid: string;
   titleEn: string;
   titleZh: string;
   items: ProductSpecEntry[];
@@ -131,52 +133,51 @@ function ProductEditorContent() {
     descZh: '',
     detailsEn: '',
     detailsZh: '',
-    advantages: [] as { zh: string, en: string }[],
+    advantages: [] as { uid: string, zh: string, en: string }[],
     specGroups: [] as ProductSpecGroup[],
     status: 'draft' as 'published' | 'draft'
   });
 
   const [activeTab, setActiveTab] = useState('basic');
   const [isUploading, setIsUploading] = useState(false);
-  const [uploadGalleryCatId, setUploadGalleryCatId] = useState<string>('');
   const [isAiProcessing, setIsAiProcessing] = useState(false);
 
   const [isPickerOpen, setIsPickerOpen] = useState(false);
   const [pickerTarget, setPickerTarget] = useState<'main' | 'gallery'>('main');
   const [pickerSearch, setPickerSearch] = useState('');
-  const [pickerCat, setPickerCat] = useState('all');
   const [selectedPickerUrls, setSelectedPickerUrls] = useState<Set<string>>(new Set());
 
   const prodRef = useMemoFirebase(() => productId ? doc(firestore, 'products', productId) : null, [firestore, productId]);
   const catsQuery = useMemoFirebase(() => firestore ? collection(firestore, 'productCategories') : null, [firestore]);
   const transQuery = useMemoFirebase(() => firestore ? collection(firestore, 'localizedStrings') : null, [firestore]);
-  const galleryCatsQuery = useMemoFirebase(() => firestore ? query(collection(firestore, 'galleryCategories'), orderBy('order', 'asc')) : null, [firestore]);
   const assetsQuery = useMemoFirebase(() => firestore ? query(collection(firestore, 'galleryAssets'), orderBy('createdAt', 'desc')) : null, [firestore]);
   const aiRef = useMemoFirebase(() => firestore ? doc(firestore, 'settings', 'ai') : null, [firestore]);
 
   const { data: product, isLoading: isProdLoading } = useDoc<Product>(prodRef);
   const { data: categories } = useCollection<ProductCategory>(catsQuery);
   const { data: translations } = useCollection<LocalizedString>(transQuery);
-  const { data: galleryCategories } = useCollection<GalleryCategory>(galleryCatsQuery);
   const { data: galleryAssets } = useCollection<GalleryAsset>(assetsQuery);
   const { data: aiConfig } = useDoc<AiConfig>(aiRef);
 
   useEffect(() => {
     if (isEditing && product && translations) {
       const getT = (id?: string) => translations.find(t => t.id === id) || { en: '', zh: '' };
-      const advantages = (product.advantageTextIds || []).map(id => {
+      
+      const advantages = (product.advantageTextIds || []).map((id, idx) => {
         const t = getT(id);
-        return { zh: t.zh || '', en: t.en || '' };
+        return { uid: `adv_${idx}_${Date.now()}`, zh: t.zh || '', en: t.en || '' };
       });
-      const specGroups = (product.specGroups || []).map(g => {
+
+      const specGroups = (product.specGroups || []).map((g, gIdx) => {
         const titleT = getT(g.titleId);
-        const items = g.items.map(item => ({
+        const items = g.items.map((item, iIdx) => ({
+          uid: `spec_item_${gIdx}_${iIdx}_${Date.now()}`,
           labelEn: getT(item.labelId).en || '',
           labelZh: getT(item.labelId).zh || '',
           valueEn: getT(item.valueId).en || '',
           valueZh: getT(item.valueId).zh || ''
         }));
-        return { titleEn: titleT.en || '', titleZh: titleT.zh || '', items };
+        return { uid: `spec_group_${gIdx}_${Date.now()}`, titleEn: titleT.en || '', titleZh: titleT.zh || '', items };
       });
 
       setFormData({
@@ -190,7 +191,7 @@ function ProductEditorContent() {
         descZh: getT(product.descriptionTextId).zh || '',
         detailsEn: getT(product.detailsTextId).en || '',
         detailsZh: getT(product.detailsTextId).zh || '',
-        advantages: advantages.length > 0 ? advantages : [{ zh: '', en: '' }],
+        advantages: advantages.length > 0 ? advantages : [{ uid: 'initial', zh: '', en: '' }],
         specGroups: specGroups.length > 0 ? specGroups : [],
         status: product.status || 'draft'
       });
@@ -202,17 +203,23 @@ function ProductEditorContent() {
       toast({ variant: "destructive", title: "请填写完整产品 ID 和分类" });
       return;
     }
+
     const saveLang = (en: string, zh: string, defaultId: string) => {
-      const targetId = defaultId;
-      setDocumentNonBlocking(doc(firestore, 'localizedStrings', targetId), { 
-        id: targetId, en: en.trim(), zh: zh.trim(), updatedAt: serverTimestamp() 
+      setDocumentNonBlocking(doc(firestore, 'localizedStrings', defaultId), { 
+        id: defaultId, en: en.trim(), zh: zh.trim(), updatedAt: serverTimestamp() 
       }, { merge: true });
-      return targetId;
+      return defaultId;
     };
+
     const nameId = saveLang(formData.nameEn, formData.nameZh, `prod_name_${formData.id}`);
     const descId = saveLang(formData.descEn, formData.descZh, `prod_desc_${formData.id}`);
     const detailsId = saveLang(formData.detailsEn, formData.detailsZh, `prod_details_${formData.id}`);
-    const advantageIds = formData.advantages.filter(a => a.zh || a.en).map((adv, idx) => saveLang(adv.en, adv.zh, `prod_adv_${formData.id}_${idx}`));
+    
+    // 使用稳定的索引 ID 存入翻译库
+    const advantageIds = formData.advantages.filter(a => a.zh || a.en).map((adv, idx) => 
+      saveLang(adv.en, adv.zh, `prod_adv_${formData.id}_${idx}`)
+    );
+
     const savedSpecGroups = formData.specGroups.map((group, gIdx) => {
       const titleId = saveLang(group.titleEn, group.titleZh, `prod_spec_group_${formData.id}_${gIdx}`);
       const items = group.items.map((item, iIdx) => ({
@@ -221,9 +228,21 @@ function ProductEditorContent() {
       }));
       return { titleId, items };
     });
+
     setDocumentNonBlocking(doc(firestore, 'products', formData.id), {
-      id: formData.id, nameTextId: nameId, descriptionTextId: descId, detailsTextId: detailsId, advantageTextIds: advantageIds, specGroups: savedSpecGroups, mainImageUrl: formData.mainImageUrl, productCategoryId: formData.categoryId, galleryImageUrls: formData.galleryUrls.filter(Boolean), status: formData.status, updatedAt: serverTimestamp()
+      id: formData.id, 
+      nameTextId: nameId, 
+      descriptionTextId: descId, 
+      detailsTextId: detailsId, 
+      advantageTextIds: advantageIds, 
+      specGroups: savedSpecGroups, 
+      mainImageUrl: formData.mainImageUrl, 
+      productCategoryId: formData.categoryId, 
+      galleryImageUrls: formData.galleryUrls.filter(Boolean), 
+      status: formData.status, 
+      updatedAt: serverTimestamp()
     }, { merge: true });
+
     toast({ title: "产品已保存" });
     router.push('/admin/products');
   };
@@ -359,8 +378,8 @@ function ProductEditorContent() {
                   </>
                 ) : (
                   <div className="text-center opacity-40">
-                    <Upload className="h-6 w-6 mx-auto mb-1" />
-                    <p className="text-[9px] font-bold uppercase">上传图片</p>
+                    {isUploading ? <Loader2 className="h-6 w-6 mx-auto animate-spin" /> : <Upload className="h-6 w-6 mx-auto mb-1" />}
+                    <p className="text-[9px] font-bold uppercase">{isUploading ? '处理中...' : '上传图片'}</p>
                   </div>
                 )}
                 <input type="file" ref={fileInputRef} className="hidden" accept="image/*" onChange={handleImageUpload} />
@@ -385,7 +404,7 @@ function ProductEditorContent() {
                     <div className="flex items-center justify-between border-b pb-2 mb-2">
                       <Label className="text-[10px] font-bold uppercase text-primary tracking-widest flex items-center gap-1.5"><Languages className="h-3 w-3" /> 中文内容 (ZH)</Label>
                       {aiConfig?.isEnabled && (
-                        <Button variant="ghost" size="sm" className="h-6 text-[9px] gap-1 font-bold text-accent" onClick={() => handleAiTranslateField(formData.nameZh, 'name')} disabled={isAiProcessing || !formData.nameZh}>
+                        <Button variant="ghost" size="sm" className="h-6 text-[9px] gap-1 px-2 font-bold text-accent hover:bg-accent/10" onClick={() => handleAiTranslateField(formData.nameZh, 'name')} disabled={isAiProcessing || !formData.nameZh}>
                           <Sparkles className="h-2.5 w-2.5" /> AI 智译
                         </Button>
                       )}
@@ -415,13 +434,13 @@ function ProductEditorContent() {
                     <h3 className="text-sm font-bold text-primary flex items-center gap-2"><TableProperties className="h-4 w-4" /> 技术规格配置</h3>
                     <p className="text-[10px] text-muted-foreground">定义多语言参数分组，AI 助手将基于行业词库进行精准翻译。</p>
                   </div>
-                  <Button variant="default" size="sm" onClick={() => setFormData({...formData, specGroups: [...formData.specGroups, {titleEn:'', titleZh:'', items:[{labelEn:'', labelZh:'', valueEn:'', valueZh:''}]}]})} className="rounded-lg h-9 px-4 font-bold uppercase tracking-widest text-[10px] gap-1.5 shadow-sm">
+                  <Button variant="default" size="sm" onClick={() => setFormData({...formData, specGroups: [...formData.specGroups, {uid: `group_${Date.now()}`, titleEn:'', titleZh:'', items:[{uid: `item_${Date.now()}`, labelEn:'', labelZh:'', valueEn:'', valueZh:''}]}]})} className="rounded-lg h-9 px-4 font-bold uppercase tracking-widest text-[10px] gap-1.5 shadow-sm">
                     <PlusCircle className="h-3.5 w-3.5" /> 新增分组
                   </Button>
                 </div>
                 <div className="space-y-8">
                   {formData.specGroups.map((group, gIdx) => (
-                    <div key={gIdx} className="bg-muted/10 rounded-xl border border-border/40 overflow-hidden">
+                    <div key={group.uid} className="bg-muted/10 rounded-xl border border-border/40 overflow-hidden">
                       <div className="flex items-center justify-between bg-muted/30 px-4 py-3 border-b">
                         <div className="grid grid-cols-2 gap-3 flex-1 max-w-2xl">
                            <Input placeholder="分组标题 (ZH)" value={group.titleZh} onChange={e => { const g = [...formData.specGroups]; g[gIdx].titleZh = e.target.value; setFormData({...formData, specGroups: g}); }} className="h-8 text-[11px] bg-white rounded-md border-none shadow-sm" />
@@ -431,18 +450,26 @@ function ProductEditorContent() {
                       </div>
                       <div className="p-0">
                         {group.items.map((item, iIdx) => (
-                          <div key={iIdx} className="grid grid-cols-1 md:grid-cols-12 gap-3 px-4 py-3 transition-colors border-b last:border-b-0 border-border/20">
+                          <div key={item.uid} className="grid grid-cols-1 md:grid-cols-12 gap-3 px-4 py-3 transition-colors border-b last:border-b-0 border-border/20">
                             <div className="md:col-span-5 grid grid-cols-1 gap-1.5">
-                              <div className="relative">
-                                <Input placeholder="参数名 (ZH)" value={item.labelZh} onChange={e => { const g = [...formData.specGroups]; g[gIdx].items[iIdx].labelZh = e.target.value; setFormData({...formData, specGroups: g}); }} className="h-8 text-[11px] rounded-md bg-white pr-7" />
-                                {aiConfig?.isEnabled && <button onClick={() => handleAiTranslateSpec(gIdx, iIdx, item.labelZh, 'label')} className="absolute right-2 top-1.5 text-accent"><Sparkles className="h-2.5 w-2.5" /></button>}
+                              <div className="relative group/field">
+                                <Input placeholder="参数名 (ZH)" value={item.labelZh} onChange={e => { const g = [...formData.specGroups]; g[gIdx].items[iIdx].labelZh = e.target.value; setFormData({...formData, specGroups: g}); }} className="h-8 text-[11px] rounded-md bg-white pr-8" />
+                                {aiConfig?.isEnabled && (
+                                  <button onClick={() => handleAiTranslateSpec(gIdx, iIdx, item.labelZh, 'label')} className="absolute right-1.5 top-1.5 p-0.5 text-accent opacity-0 group-hover/field:opacity-100 transition-opacity hover:bg-accent/10 rounded">
+                                    <Sparkles className="h-3 w-3" />
+                                  </button>
+                                )}
                               </div>
                               <Input placeholder="Label (EN)" value={item.labelEn} onChange={e => { const g = [...formData.specGroups]; g[gIdx].items[iIdx].labelEn = e.target.value; setFormData({...formData, specGroups: g}); }} className="h-8 text-[11px] rounded-md bg-white/60 opacity-60" />
                             </div>
                             <div className="md:col-span-6 grid grid-cols-1 gap-1.5">
-                              <div className="relative">
-                                <Input placeholder="数值 (ZH)" value={item.valueZh} onChange={e => { const g = [...formData.specGroups]; g[gIdx].items[iIdx].valueZh = e.target.value; setFormData({...formData, specGroups: g}); }} className="h-8 text-[11px] rounded-md bg-white pr-7" />
-                                {aiConfig?.isEnabled && <button onClick={() => handleAiTranslateSpec(gIdx, iIdx, item.valueZh, 'value')} className="absolute right-2 top-1.5 text-accent"><Sparkles className="h-2.5 w-2.5" /></button>}
+                              <div className="relative group/field">
+                                <Input placeholder="数值 (ZH)" value={item.valueZh} onChange={e => { const g = [...formData.specGroups]; g[gIdx].items[iIdx].valueZh = e.target.value; setFormData({...formData, specGroups: g}); }} className="h-8 text-[11px] rounded-md bg-white pr-8" />
+                                {aiConfig?.isEnabled && (
+                                  <button onClick={() => handleAiTranslateSpec(gIdx, iIdx, item.valueZh, 'value')} className="absolute right-1.5 top-1.5 p-0.5 text-accent opacity-0 group-hover/field:opacity-100 transition-opacity hover:bg-accent/10 rounded">
+                                    <Sparkles className="h-3 w-3" />
+                                  </button>
+                                )}
                               </div>
                               <Input placeholder="Value (EN)" value={item.valueEn} onChange={e => { const g = [...formData.specGroups]; g[gIdx].items[iIdx].valueEn = e.target.value; setFormData({...formData, specGroups: g}); }} className="h-8 text-[11px] rounded-md bg-white/60 opacity-60" />
                             </div>
@@ -451,7 +478,7 @@ function ProductEditorContent() {
                             </div>
                           </div>
                         ))}
-                        <button onClick={() => { const g = [...formData.specGroups]; g[gIdx].items.push({labelEn:'', labelZh:'', valueEn:'', valueZh:''}); setFormData({...formData, specGroups: g}); }} className="w-full h-9 text-[10px] uppercase font-bold tracking-widest text-primary/40 hover:text-primary hover:bg-primary/5 transition-colors border-t border-border/20">+ 添加一行</button>
+                        <button onClick={() => { const g = [...formData.specGroups]; g[gIdx].items.push({uid: `item_${Date.now()}_${Math.random()}`, labelEn:'', labelZh:'', valueEn:'', valueZh:''}); setFormData({...formData, specGroups: g}); }} className="w-full h-9 text-[10px] uppercase font-bold tracking-widest text-primary/40 hover:text-primary hover:bg-primary/5 transition-colors border-t border-border/20">+ 添加一行</button>
                       </div>
                     </div>
                   ))}
@@ -460,14 +487,14 @@ function ProductEditorContent() {
             </TabsContent>
 
             <TabsContent value="details" className="space-y-4">
-              <div className="bg-white p-6 rounded-2xl border border-border/40 shadow-sm space-y-4">
-                <div className="flex items-center justify-between border-b pb-3 mb-2">
+              <div className="bg-white p-6 rounded-2xl border border-border/40 shadow-sm space-y-4 h-[calc(100vh-280px)] min-h-[500px] flex flex-col">
+                <div className="flex items-center justify-between border-b pb-3 mb-2 shrink-0">
                   <div className="flex items-center gap-2"><Info className="h-4 w-4 text-primary" /><h3 className="font-bold text-sm">详细图文说明</h3></div>
                   {aiConfig?.isEnabled && <Button variant="outline" size="sm" onClick={() => handleAiTranslateField(formData.detailsZh, 'details')} disabled={isAiProcessing || !formData.detailsZh} className="h-7 rounded-lg text-[9px] font-bold text-accent">AI 润色翻译</Button>}
                 </div>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <Textarea placeholder="中文介绍..." value={formData.detailsZh} onChange={e => setFormData({...formData, detailsZh: e.target.value})} className="min-h-[400px] rounded-xl p-4 bg-muted/5 text-xs" />
-                  <Textarea placeholder="Detailed information in English..." value={formData.detailsEn} onChange={e => setFormData({...formData, detailsEn: e.target.value})} className="min-h-[400px] rounded-xl p-4 bg-muted/5 text-xs opacity-80" />
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 flex-1 overflow-hidden">
+                  <Textarea placeholder="中文介绍..." value={formData.detailsZh} onChange={e => setFormData({...formData, detailsZh: e.target.value})} className="h-full rounded-xl p-4 bg-muted/5 text-xs resize-none" />
+                  <Textarea placeholder="Detailed information in English..." value={formData.detailsEn} onChange={e => setFormData({...formData, detailsEn: e.target.value})} className="h-full rounded-xl p-4 bg-muted/5 text-xs opacity-80 resize-none" />
                 </div>
               </div>
             </TabsContent>

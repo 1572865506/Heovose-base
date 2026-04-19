@@ -115,11 +115,14 @@ export default function GalleryPage() {
   const [isTasksPanelOpen, setIsTasksPanelOpen] = useState(false);
   const [isTasksPanelMinimized, setIsTasksPanelMinimized] = useState(false);
 
-  const [collapsedIds, setCollapsedIds] = useState<Set<string>>(new Set());
-
   // 框选相关状态
   const [selectionBox, setSelectionBox] = useState<{ startX: number, startY: number, currentX: number, currentY: number } | null>(null);
   const itemRefs = useRef<Map<string, HTMLDivElement>>(new Map());
+
+  // 安全保障：当筛选或搜索条件改变时，清空选中项，防止误操作不可见的旧选中项
+  useEffect(() => {
+    setSelectedIds(new Set());
+  }, [filterCategory, searchQuery]);
 
   const categoriesQuery = useMemoFirebase(() => firestore ? query(collection(firestore, 'galleryCategories'), orderBy('order', 'asc')) : null, [firestore]);
   const assetsQuery = useMemoFirebase(() => firestore ? query(collection(firestore, 'galleryAssets'), orderBy('createdAt', 'desc')) : null, [firestore]);
@@ -162,9 +165,8 @@ export default function GalleryPage() {
     });
   }, [assets, searchQuery, filterCategory]);
 
-  // --- 框选逻辑开始 ---
-  const handleMouseDown = (e: React.MouseEvent) => {
-    // 仅在空白处或网格区域开始框选，不响应按钮、输入框、复选框点击
+  // --- 框选逻辑优化 ---
+  const handleMouseDown = useCallback((e: React.MouseEvent) => {
     const target = e.target as HTMLElement;
     if (target.closest('button') || target.closest('input') || target.closest('label') || target.closest('.group')) return;
     
@@ -182,9 +184,9 @@ export default function GalleryPage() {
     if (!e.shiftKey) {
       setSelectedIds(new Set());
     }
-  };
+  }, [selectedIds]);
 
-  const handleMouseMove = (e: React.MouseEvent) => {
+  const handleMouseMove = useCallback((e: React.MouseEvent) => {
     if (!selectionBox) return;
     
     const rect = e.currentTarget.getBoundingClientRect();
@@ -198,17 +200,18 @@ export default function GalleryPage() {
     };
     setSelectionBox(nextBox);
 
-    // 计算当前框选区域
     const boxX = Math.min(nextBox.startX, nextBox.currentX);
     const boxY = Math.min(nextBox.startY, nextBox.currentY);
     const boxWidth = Math.abs(nextBox.startX - nextBox.currentX);
     const boxHeight = Math.abs(nextBox.startY - nextBox.currentY);
 
     const newSelected = new Set(e.shiftKey ? selectedIds : []);
-    itemRefs.current.forEach((el, id) => {
+    
+    // 只在过滤后的可见范围内进行碰撞检测
+    filteredAssets.forEach(asset => {
+      const el = itemRefs.current.get(asset.id);
       if (!el) return;
       
-      // 检查矩形交集
       const elRect = {
         left: el.offsetLeft,
         top: el.offsetTop,
@@ -223,15 +226,14 @@ export default function GalleryPage() {
         elRect.bottom < boxY
       );
 
-      if (intersects) newSelected.add(id);
+      if (intersects) newSelected.add(asset.id);
     });
     setSelectedIds(newSelected);
-  };
+  }, [selectionBox, selectedIds, filteredAssets]);
 
-  const handleMouseUp = () => {
+  const handleMouseUp = useCallback(() => {
     setSelectionBox(null);
-  };
-  // --- 框选逻辑结束 ---
+  }, []);
 
   const handleFileUpload = async (files: FileList | null) => {
     if (!files || !firestore) return;
@@ -353,7 +355,7 @@ export default function GalleryPage() {
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <h2 className="text-xl font-headline font-bold text-primary flex items-center gap-2"><ImageIcon className="h-5 w-5" /> 全球素材图库</h2>
-          <p className="text-xs text-muted-foreground">多级分类管理、同名冲突校验及高效批量处理。支持点击或框选。</p>
+          <p className="text-xs text-muted-foreground">支持点击、Shift 加选或鼠标框选。筛选条件改变时会自动重置选区。</p>
         </div>
         <div className="flex gap-2">
           <Dialog open={isCategoryDialogOpen} onOpenChange={(o) => { setIsCategoryDialogOpen(o); if (!o) resetCatForm(); }}>
@@ -451,9 +453,6 @@ export default function GalleryPage() {
         </div>
       )}
 
-      {/* --- Overlay / Fixed elements moved to bottom to avoid space-y logic issues --- */}
-
-      {/* 框选矩形视觉元素 - 添加 !m-0 以防受 space-y 影响偏移 */}
       {selectionBox && (
         <div 
           className="absolute z-[300] bg-primary/20 border border-primary pointer-events-none !m-0"
@@ -466,7 +465,6 @@ export default function GalleryPage() {
         />
       )}
 
-      {/* 批量管理悬浮条 - 定位于 header 下方 */}
       {selectedIds.size > 0 && (
         <div className="fixed top-[72px] left-1/2 -translate-x-1/2 z-[200] bg-white border border-primary/20 shadow-[0_20px_50px_rgba(0,0,0,0.15)] rounded-full px-5 py-2 flex items-center gap-5 animate-in slide-in-from-top-4 duration-300">
           <div className="flex items-center gap-3">
@@ -504,7 +502,7 @@ export default function GalleryPage() {
               </DialogContent>
             </Dialog>
             <Button variant="destructive" size="sm" className="rounded-full h-8 px-4 text-[10px] font-bold uppercase tracking-wider" onClick={handleBatchDelete}>
-              <Trash2 className="h-3 w-3 mr-1.5" /> 批量删除
+              <Trash2 className="h-3.5 w-3.5 mr-1.5" /> 批量删除
             </Button>
             <Button variant="ghost" size="icon" className="rounded-full h-8 w-8 hover:bg-muted" onClick={() => setSelectedIds(new Set())}>
               <X className="h-4 w-4" />
@@ -513,7 +511,6 @@ export default function GalleryPage() {
         </div>
       )}
 
-      {/* 任务管理器面板 */}
       {isTasksPanelOpen && (
         <div className={cn("fixed bottom-6 right-6 z-[400] w-80 bg-white border border-border/60 shadow-2xl rounded-2xl overflow-hidden transition-all duration-500", isTasksPanelMinimized ? "h-14" : "h-[400px]")}>
           <div className="bg-primary px-5 h-14 flex items-center justify-between text-white"><div className="flex items-center gap-3"><PanelTop className="h-4 w-4" /><span className="text-[10px] font-bold uppercase tracking-[0.2em]">任务队列</span></div><div className="flex items-center gap-1"><Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-white/10" onClick={() => setIsTasksPanelMinimized(!isTasksPanelMinimized)}>{isTasksPanelMinimized ? <Maximize2 className="h-4 w-4" /> : <Minimize2 className="h-4 w-4" />}</Button><Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-white/10" onClick={() => { setIsTasksPanelOpen(false); setUploadTasks([]); }}><X className="h-4 w-4" /></Button></div></div>
@@ -521,7 +518,6 @@ export default function GalleryPage() {
         </div>
       )}
 
-      {/* 资源编辑弹窗 */}
       <Dialog open={!!editingAsset} onOpenChange={o => !o && setEditingAsset(null)}>
         <DialogContent className="rounded-2xl max-w-sm p-0 overflow-hidden border-none shadow-2xl">
           <DialogHeader className="p-6 bg-muted/10 border-b border-border/40">
@@ -533,7 +529,6 @@ export default function GalleryPage() {
         </DialogContent>
       </Dialog>
 
-      {/* 增强版大图预览弹窗 */}
       <Dialog open={!!previewAsset} onOpenChange={o => !o && setPreviewAsset(null)}>
         <DialogContent className="max-w-[95vw] w-full h-[90vh] p-0 overflow-hidden bg-black/95 border-none shadow-2xl rounded-2xl flex flex-col z-[500]">
           <DialogHeader className="sr-only">
