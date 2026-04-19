@@ -7,7 +7,7 @@ import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import { useUser, useFirestore, useDoc, useCollection, useMemoFirebase } from '@/firebase';
 import { doc, collection } from 'firebase/firestore';
-import { Locale, translations } from '@/lib/translations';
+import { Locale } from '@/lib/translations';
 import { Navbar } from '@/components/Navbar';
 import { Footer } from '@/components/Footer';
 import { 
@@ -17,12 +17,10 @@ import {
   Download, 
   Mail, 
   ChevronRight,
-  Maximize2,
   Zap,
   Loader2
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { cn } from '@/lib/utils';
 
@@ -226,16 +224,10 @@ export default function ProductDetailPage() {
               </TabsList>
               
               <TabsContent value="desc" className="max-w-4xl animate-in fade-in slide-in-from-bottom-4 duration-700">
-                <div className="prose prose-lg dark:prose-invert">
-                  <p className="text-xl text-muted-foreground leading-relaxed font-light italic border-l-4 border-accent pl-8 whitespace-pre-wrap">
-                    {getT(product.descriptionTextId)}
-                  </p>
-                  {product.detailsTextId && (
-                    <div className="mt-8 text-base text-muted-foreground/80 leading-relaxed whitespace-pre-wrap">
-                      {getT(product.detailsTextId)}
-                    </div>
-                  )}
-                </div>
+                <div 
+                  className="prose prose-lg dark:prose-invert max-w-none prose-headings:font-headline prose-headings:text-primary prose-headings:mb-8 prose-p:text-muted-foreground prose-p:leading-relaxed prose-img:rounded-3xl prose-img:shadow-2xl prose-blockquote:border-accent"
+                  dangerouslySetInnerHTML={{ __html: getT(product.detailsTextId) || `<p class="italic text-xl border-l-4 border-accent pl-8">${getT(product.descriptionTextId)}</p>` }}
+                />
               </TabsContent>
 
               <TabsContent value="specs" className="animate-in fade-in slide-in-from-bottom-4 duration-700">

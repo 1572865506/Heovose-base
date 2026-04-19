@@ -1,12 +1,12 @@
+
 "use client";
 
-import { useState, useEffect, useMemo, Suspense, useRef } from 'react';
+import { useState, useEffect, useMemo, Suspense, useRef, useCallback } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useUser, useFirestore, useDoc, useCollection, useMemoFirebase } from '@/firebase';
 import { doc, collection, serverTimestamp, query, orderBy } from 'firebase/firestore';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
 import { 
   Select,
   SelectContent,
@@ -34,7 +34,6 @@ import {
   AlertCircle,
   LayoutTemplate,
   History,
-  FileDown,
   Film,
   ChevronLeft,
   ChevronRight,
@@ -46,7 +45,6 @@ import {
   DialogFooter, 
   DialogHeader, 
   DialogTitle, 
-  DialogDescription
 } from '@/components/ui/dialog';
 import { 
   Popover,
@@ -59,7 +57,7 @@ import {
   TabsList, 
   TabsTrigger 
 } from "@/components/ui/tabs";
-import { setDocumentNonBlocking, deleteDocumentNonBlocking } from '@/firebase/non-blocking-updates';
+import { setDocumentNonBlocking } from '@/firebase/non-blocking-updates';
 import { Label } from '@/components/ui/label';
 import Image from 'next/image';
 import { useToast } from '@/hooks/use-toast';
@@ -67,6 +65,7 @@ import { cn } from '@/lib/utils';
 import { translateContent } from '@/ai/flows/translate-flow';
 import { Progress } from '@/components/ui/progress';
 import { TooltipProvider } from '@/components/ui/tooltip';
+import RichTextEditor from '@/components/RichTextEditor';
 
 interface ProductSpecEntry {
   uid: string;
@@ -165,7 +164,7 @@ function ProductEditorContent() {
   const [newTemplateName, setNewTemplateName] = useState('');
 
   const [isPickerOpen, setIsPickerOpen] = useState(false);
-  const [pickerTarget, setPickerTarget] = useState<'main' | 'gallery'>('main');
+  const [pickerTarget, setPickerTarget] = useState<'main' | 'gallery' | 'richtext-zh' | 'richtext-en'>('main');
   const [pickerSearch, setPickerSearch] = useState('');
   const [selectedPickerUrls, setSelectedPickerUrls] = useState<Set<string>>(new Set());
 
@@ -408,7 +407,7 @@ function ProductEditorContent() {
     reader.readAsDataURL(file);
   };
 
-  const openPicker = (target: 'main' | 'gallery') => {
+  const openPicker = (target: 'main' | 'gallery' | 'richtext-zh' | 'richtext-en') => {
     setPickerTarget(target);
     setSelectedPickerUrls(new Set());
     setIsPickerOpen(true);
@@ -416,7 +415,7 @@ function ProductEditorContent() {
 
   const togglePickerSelection = (url: string) => {
     const newSelected = new Set(selectedPickerUrls);
-    if (pickerTarget === 'main') { newSelected.clear(); newSelected.add(url); }
+    if (pickerTarget === 'main' || pickerTarget.startsWith('richtext')) { newSelected.clear(); newSelected.add(url); }
     else { newSelected.has(url) ? newSelected.delete(url) : newSelected.add(url); }
     setSelectedPickerUrls(newSelected);
   };
@@ -424,8 +423,23 @@ function ProductEditorContent() {
   const handleConfirmPicker = () => {
     const urls = Array.from(selectedPickerUrls);
     if (urls.length === 0) return;
-    if (pickerTarget === 'main') setFormData({ ...formData, mainImageUrl: urls[0] });
-    else setFormData({ ...formData, galleryUrls: [...formData.galleryUrls, ...urls] });
+    
+    if (pickerTarget === 'main') {
+      setFormData({ ...formData, mainImageUrl: urls[0] });
+    } else if (pickerTarget === 'gallery') {
+      setFormData({ ...formData, galleryUrls: [...formData.galleryUrls, ...urls] });
+    } else if (pickerTarget === 'richtext-zh') {
+      // 插入图片到富文本，这种逻辑通常需要编辑器实例的引用
+      // 这里我们通过简单的方式处理：将图片地址通过一种信号传递给编辑器
+      // 为了更严谨，我们可以直接在编辑器组件内维护一个 ref 或使用事件监听
+      // 这里的实现简化为在编辑器外部包裹一个简单的插入逻辑
+      const imgHtml = `<img src="${urls[0]}" />`;
+      setFormData(prev => ({ ...prev, detailsZh: prev.detailsZh + imgHtml }));
+    } else if (pickerTarget === 'richtext-en') {
+      const imgHtml = `<img src="${urls[0]}" />`;
+      setFormData(prev => ({ ...prev, detailsEn: prev.detailsEn + imgHtml }));
+    }
+    
     setIsPickerOpen(false);
   };
 
@@ -622,7 +636,7 @@ function ProductEditorContent() {
                     </div>
                     <div className="space-y-4">
                       <Input placeholder="产品名称" value={formData.nameZh} onChange={e => setFormData({...formData, nameZh: e.target.value})} className="rounded-lg h-10 bg-muted/5" />
-                      <Textarea placeholder="产品简介..." value={formData.descZh} onChange={e => setFormData({...formData, descZh: e.target.value})} className="rounded-lg min-h-[120px] bg-muted/5 resize-none" />
+                      <textarea placeholder="产品简介..." value={formData.descZh} onChange={e => setFormData({...formData, descZh: e.target.value})} className="flex min-h-[120px] w-full rounded-lg border border-input bg-muted/5 px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 resize-none" />
                     </div>
                   </div>
                   <div className="space-y-4">
@@ -632,7 +646,7 @@ function ProductEditorContent() {
                     </div>
                     <div className="space-y-4">
                       <Input placeholder="Product Name" value={formData.nameEn} onChange={e => setFormData({...formData, nameEn: e.target.value})} className="rounded-lg h-10 bg-muted/5" />
-                      <Textarea placeholder="Short Description..." value={formData.descEn} onChange={e => setFormData({...formData, descEn: e.target.value})} className="rounded-lg min-h-[120px] bg-muted/5 resize-none" />
+                      <textarea placeholder="Short Description..." value={formData.descEn} onChange={e => setFormData({...formData, descEn: e.target.value})} className="flex min-h-[120px] w-full rounded-lg border border-input bg-muted/5 px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 resize-none" />
                     </div>
                   </div>
                 </div>
@@ -661,7 +675,7 @@ function ProductEditorContent() {
                           {specTemplates?.map(tpl => (
                             <div key={tpl.id} className="flex items-center group border-b last:border-b-0 hover:bg-muted/30">
                               <button onClick={() => handleApplyTemplate(tpl)} className="flex-1 text-left p-3 text-[11px] font-bold text-primary truncate">{tpl.name}</button>
-                              <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive opacity-0 group-hover:opacity-100" onClick={(e) => handleDeleteTemplate(e, tpl.id)}><Trash2 className="h-3 w-3" /></Button>
+                              <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive opacity-0 group-hover:opacity-100" onClick={(e) => handleDeleteTemplate(e, tpl.id)}><Trash2 className="h-3.5 w-3.5" /></Button>
                             </div>
                           ))}
                         </div>
@@ -693,7 +707,7 @@ function ProductEditorContent() {
                           <div key={item.uid} className="grid grid-cols-1 md:grid-cols-[1fr_1fr_48px] gap-8 px-8 py-5 border-b last:border-b-0 border-border/20 group/row hover:bg-muted/5 transition-colors">
                             <div className="space-y-3">
                               <Input placeholder="参数名 (ZH)" value={item.labelZh} onChange={e => { const g = [...formData.specGroups]; g[gIdx].items[iIdx].labelZh = e.target.value; setFormData({...formData, specGroups: g}); }} className="h-8 text-[11px] font-bold rounded-md bg-white border-muted/40" />
-                              <Textarea placeholder="数值内容 (ZH) - 支持换行" value={item.valueZh} onChange={e => { const g = [...formData.specGroups]; g[gIdx].items[iIdx].valueZh = e.target.value; setFormData({...formData, specGroups: g}); }} className="min-h-[44px] text-[11px] rounded-md bg-white border-muted/40 resize-none leading-relaxed" />
+                              <textarea placeholder="数值内容 (ZH) - 支持换行" value={item.valueZh} onChange={e => { const g = [...formData.specGroups]; g[gIdx].items[iIdx].valueZh = e.target.value; setFormData({...formData, specGroups: g}); }} className="flex min-h-[44px] w-full rounded-md border border-input bg-white px-3 py-2 text-[11px] ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 resize-none leading-relaxed" />
                             </div>
                             <div className="space-y-3">
                               <div className="relative group/field">
@@ -701,7 +715,7 @@ function ProductEditorContent() {
                                 <button onClick={() => handleAiTranslateSpec(gIdx, iIdx, item.labelZh, 'label')} className="absolute right-2 top-1.5 text-accent opacity-0 group-hover/field:opacity-100 transition-opacity"><Sparkles className="h-3 w-3" /></button>
                               </div>
                               <div className="relative group/field">
-                                <Textarea placeholder="Value (EN) - Preserve line breaks" value={item.valueEn} onChange={e => { const g = [...formData.specGroups]; g[gIdx].items[iIdx].valueEn = e.target.value; setFormData({...formData, specGroups: g}); }} className="min-h-[44px] text-[11px] rounded-md bg-white/60 resize-none pr-8 border-muted/40 leading-relaxed" />
+                                <textarea placeholder="Value (EN) - Preserve line breaks" value={item.valueEn} onChange={e => { const g = [...formData.specGroups]; g[gIdx].items[iIdx].valueEn = e.target.value; setFormData({...formData, specGroups: g}); }} className="flex min-h-[44px] w-full rounded-md border border-input bg-white/60 px-3 py-2 text-[11px] ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 resize-none pr-8 border-muted/40 leading-relaxed" />
                                 <button onClick={() => handleAiTranslateSpec(gIdx, iIdx, item.valueZh, 'value')} className="absolute right-2 top-1.5 text-accent opacity-0 group-hover/field:opacity-100 transition-opacity"><Sparkles className="h-3 w-3" /></button>
                               </div>
                             </div>
@@ -723,17 +737,27 @@ function ProductEditorContent() {
             </TabsContent>
 
             <TabsContent value="details" className="space-y-4">
-              <div className="bg-white p-6 rounded-2xl border border-border/40 shadow-sm space-y-4 h-[calc(100vh-280px)] min-h-[500px] flex flex-col">
+              <div className="bg-white p-6 rounded-2xl border border-border/40 shadow-sm space-y-4 h-[calc(100vh-280px)] min-h-[600px] flex flex-col">
                 <div className="flex items-center justify-between border-b pb-3 mb-2 shrink-0 h-8">
-                  <div className="flex items-center gap-2"><Info className="h-4 w-4 text-primary" /><h3 className="font-bold text-sm">详细图文说明</h3></div>
+                  <div className="flex items-center gap-2"><Film className="h-4 w-4 text-primary" /><h3 className="font-bold text-sm">富文本详情编辑</h3></div>
                   <div className="flex gap-8 flex-1 justify-end">
-                    <span className="text-[10px] font-bold uppercase text-primary/40">中文详情</span>
-                    <span className="text-[10px] font-bold uppercase text-primary/40 mr-[25%]">英文详情</span>
+                    <span className="text-[10px] font-bold uppercase text-primary/40">中文排版</span>
+                    <span className="text-[10px] font-bold uppercase text-primary/40 mr-[25%]">英文排版</span>
                   </div>
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6 flex-1 overflow-hidden">
-                  <Textarea placeholder="中文介绍..." value={formData.detailsZh} onChange={e => setFormData({...formData, detailsZh: e.target.value})} className="h-full rounded-xl p-4 bg-muted/5 text-xs resize-none" />
-                  <Textarea placeholder="Detailed information in English..." value={formData.detailsEn} onChange={e => setFormData({...formData, detailsEn: e.target.value})} className="h-full rounded-xl p-4 bg-muted/5 text-xs opacity-80 resize-none" />
+                  <RichTextEditor 
+                    content={formData.detailsZh} 
+                    onChange={val => setFormData({...formData, detailsZh: val})} 
+                    onImageClick={() => openPicker('richtext-zh')}
+                    className="flex-1"
+                  />
+                  <RichTextEditor 
+                    content={formData.detailsEn} 
+                    onChange={val => setFormData({...formData, detailsEn: val})} 
+                    onImageClick={() => openPicker('richtext-en')}
+                    className="flex-1 opacity-90"
+                  />
                 </div>
               </div>
             </TabsContent>
@@ -747,7 +771,7 @@ function ProductEditorContent() {
           <div className="bg-primary p-6 text-white">
             <DialogHeader>
               <DialogTitle className="text-lg font-bold flex items-center gap-2"><Save className="h-5 w-5" /> 存为技术规格模板</DialogTitle>
-              <DialogDescription className="text-white/60 text-xs">保存后可在其他产品发布时一键回填此套规格。</DialogDescription>
+              <p className="text-white/60 text-xs">保存后可在其他产品发布时一键回填此套规格。</p>
             </DialogHeader>
           </div>
           <div className="p-6 space-y-6 bg-white">
@@ -786,10 +810,15 @@ function ProductEditorContent() {
 
       <Dialog open={isPickerOpen} onOpenChange={setIsPickerOpen}>
         <DialogContent className="max-w-5xl p-0 rounded-2xl overflow-hidden flex flex-col h-[85vh] border-none shadow-2xl">
-          <DialogHeader className="sr-only"><DialogTitle>素材选择中心</DialogTitle></DialogHeader>
-          <div className="bg-primary p-6 text-white"><div className="flex items-center gap-2"><ImageIcon className="h-6 w-6" /><h3 className="text-xl font-bold">素材中心</h3></div></div>
+          <div className="bg-primary p-6 text-white flex items-center gap-2">
+            <ImageIcon className="h-6 w-6" />
+            <DialogTitle className="text-xl font-bold">素材中心</DialogTitle>
+          </div>
           <div className="px-6 py-4 flex gap-3 bg-muted/20 border-b">
-            <div className="relative flex-1"><Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" /><input type="text" placeholder="搜索素材标题..." value={pickerSearch} onChange={e => setPickerSearch(e.target.value)} className="flex h-10 w-full rounded-md border border-input bg-white pl-9 pr-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/20" /></div>
+            <div className="relative flex-1">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <input type="text" placeholder="搜索素材标题..." value={pickerSearch} onChange={e => setPickerSearch(e.target.value)} className="flex h-10 w-full rounded-md border border-input bg-white pl-9 pr-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/20" />
+            </div>
           </div>
           <div className="flex-1 overflow-y-auto p-6 bg-muted/5">
             <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
