@@ -1,4 +1,3 @@
-
 'use server';
 /**
  * @fileOverview AI Translation Flow for Heovose Admin.
@@ -45,7 +44,8 @@ const translateFlow = ai.defineFlow(
          - Barebone should be translated as technical semi-finished products.
          - Ensure units like "inch", "GB", "Hz" are handled correctly per target locale.
       2. Maintain the tone of a high-end technology brand.
-      3. Return a JSON object mapping language codes to their translations.
+      3. Preserve all line breaks (\n) and formatting structure of the source text exactly.
+      4. Return a JSON object mapping language codes to their translations.
       
       Text to translate: {{{text}}}`
     });

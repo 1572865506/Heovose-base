@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useState, useEffect, useMemo, Suspense, useRef } from 'react';
@@ -38,7 +37,8 @@ import {
   FileDown,
   Film,
   ChevronLeft,
-  ChevronRight
+  ChevronRight,
+  Plus
 } from 'lucide-react';
 import { 
   Dialog, 
@@ -59,7 +59,7 @@ import {
   TabsList, 
   TabsTrigger 
 } from "@/components/ui/tabs";
-import { setDocumentNonBlocking } from '@/firebase/non-blocking-updates';
+import { setDocumentNonBlocking, deleteDocumentNonBlocking } from '@/firebase/non-blocking-updates';
 import { Label } from '@/components/ui/label';
 import Image from 'next/image';
 import { useToast } from '@/hooks/use-toast';
@@ -310,6 +310,50 @@ function ProductEditorContent() {
     toast({ title: "模板已应用" });
   };
 
+  const handleSaveTemplate = () => {
+    if (!firestore) return;
+    if (saveTemplateMode === 'create' && !newTemplateName) {
+      toast({ variant: "destructive", title: "请输入模板名称" });
+      return;
+    }
+    if (saveTemplateMode === 'update' && !targetTemplateId) {
+      toast({ variant: "destructive", title: "请选择要覆盖的模板" });
+      return;
+    }
+
+    const tplName = saveTemplateMode === 'create' ? newTemplateName : specTemplates?.find(t => t.id === targetTemplateId)?.name || '未命名模板';
+    const tplId = saveTemplateMode === 'create' ? `tpl_${Date.now()}` : targetTemplateId;
+
+    const tplData = {
+      id: tplId,
+      name: tplName,
+      specGroups: formData.specGroups.map(g => ({
+        titleZh: g.titleZh,
+        titleEn: g.titleEn,
+        items: g.items.map(i => ({
+          labelZh: i.labelZh,
+          labelEn: i.labelEn,
+          valueZh: i.valueZh,
+          valueEn: i.valueEn
+        }))
+      })),
+      createdAt: serverTimestamp(),
+      updatedAt: serverTimestamp()
+    };
+
+    setDocumentNonBlocking(doc(firestore, 'specTemplates', tplId), tplData, { merge: true });
+    setIsSaveTemplateDialogOpen(false);
+    setNewTemplateName('');
+    toast({ title: `模板 "${tplName}" 已保存` });
+  };
+
+  const handleDeleteTemplate = (e: React.MouseEvent, id: string) => {
+    e.stopPropagation();
+    if (!firestore || !confirm('确定要删除此模板吗？')) return;
+    deleteDocumentNonBlocking(doc(firestore, 'specTemplates', id));
+    toast({ title: "模板已删除" });
+  };
+
   const handleAiTranslateBasicInfo = async () => {
     if (!aiConfig?.isEnabled) return;
     setIsAiProcessing(true);
@@ -482,7 +526,7 @@ function ProductEditorContent() {
       </div>
 
       <div className="space-y-6 px-4">
-        {/* 媒体素材中心整合区 - 锁定 240px 总高度，子项精确计算 11:9 宽度 */}
+        {/* 媒体素材中心整合区 */}
         <div className="bg-white p-6 rounded-2xl border border-border/40 shadow-sm space-y-4">
           <div className="flex items-center justify-between border-b border-border/40 pb-3 h-8">
             <div className="space-y-0.5">
@@ -499,7 +543,7 @@ function ProductEditorContent() {
           </div>
 
           <div className="flex gap-6 items-start h-[240px]">
-            {/* 主展示图列 - 基于高度 216px 计算出 11:9 宽度为 264px */}
+            {/* 主展示图列 */}
             <div className="flex flex-col h-full w-[264px] shrink-0">
               <div className="flex items-center justify-between mb-1.5 h-6">
                 <Label className="text-[10px] font-bold uppercase text-primary tracking-widest">主图预览</Label>
@@ -523,11 +567,11 @@ function ProductEditorContent() {
               </div>
             </div>
 
-            {/* 副图库横向滚动区 - 基于卡片净高 192px 计算出宽度为 235px */}
+            {/* 副图库横向滚动区 */}
             <div className="flex flex-col h-full flex-1 overflow-hidden">
               <div className="flex items-center justify-between mb-1.5 h-6">
                 <Label className="text-[10px] font-bold uppercase text-primary tracking-widest">详情幻灯片 ({formData.galleryUrls.length})</Label>
-                <div className="w-10 h-1" /> {/* 占位平衡 */}
+                <div className="w-10 h-1" />
               </div>
               <div className="flex flex-nowrap gap-4 p-3 bg-muted/10 rounded-xl border border-border/40 overflow-x-auto h-full items-center">
                 {formData.galleryUrls.map((url, idx) => (
@@ -584,7 +628,7 @@ function ProductEditorContent() {
                   <div className="space-y-4">
                     <div className="flex items-center justify-between border-b pb-2 mb-2 h-8">
                       <Label className="text-[10px] font-bold uppercase text-muted-foreground tracking-widest flex items-center gap-1.5"><Globe className="h-3 w-3" /> 英文内容</Label>
-                      <div className="w-10 h-1" /> {/* 平衡占位 */}
+                      <div className="w-10 h-1" />
                     </div>
                     <div className="space-y-4">
                       <Input placeholder="Product Name" value={formData.nameEn} onChange={e => setFormData({...formData, nameEn: e.target.value})} className="rounded-lg h-10 bg-muted/5" />
@@ -600,60 +644,80 @@ function ProductEditorContent() {
                 <div className="flex items-center justify-between h-9">
                   <div className="space-y-0.5">
                     <h3 className="text-sm font-bold text-primary flex items-center gap-2"><TableProperties className="h-4 w-4" /> 技术规格配置</h3>
-                    <p className="text-[10px] text-muted-foreground">采用分栏布局，左侧为中文，右侧为英文，保持对齐美观。</p>
+                    <p className="text-[10px] text-muted-foreground">采用分栏布局，支持换行录入，AI 翻译自动对齐结构。</p>
                   </div>
                   <div className="flex items-center gap-2">
                     <Popover>
                       <PopoverTrigger asChild>
                         <Button variant="outline" size="sm" className="rounded-lg h-9 px-4 font-bold uppercase tracking-widest text-[10px] gap-1.5"><LayoutTemplate className="h-3.5 w-3.5" /> 加载模板</Button>
                       </PopoverTrigger>
-                      <PopoverContent className="w-64 p-0 rounded-xl shadow-2xl border-border/40 overflow-hidden">
-                        <div className="bg-primary p-3 text-white text-[10px] font-bold uppercase tracking-widest">云端规格库</div>
-                        <div className="max-h-60 overflow-y-auto">
+                      <PopoverContent className="w-72 p-0 rounded-xl shadow-2xl border-border/40 overflow-hidden">
+                        <div className="bg-primary p-3 text-white text-[10px] font-bold uppercase tracking-widest flex justify-between items-center">
+                          <span>云端规格库</span>
+                          <History className="h-3 w-3 opacity-60" />
+                        </div>
+                        <div className="max-h-72 overflow-y-auto bg-white">
+                          {specTemplates?.length === 0 && <div className="p-8 text-center text-[10px] text-muted-foreground italic uppercase">暂无模板数据</div>}
                           {specTemplates?.map(tpl => (
-                            <button key={tpl.id} onClick={() => handleApplyTemplate(tpl)} className="w-full text-left p-3 border-b text-[11px] hover:bg-muted/50 font-bold text-primary">{tpl.name}</button>
+                            <div key={tpl.id} className="flex items-center group border-b last:border-b-0 hover:bg-muted/30">
+                              <button onClick={() => handleApplyTemplate(tpl)} className="flex-1 text-left p-3 text-[11px] font-bold text-primary truncate">{tpl.name}</button>
+                              <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive opacity-0 group-hover:opacity-100" onClick={(e) => handleDeleteTemplate(e, tpl.id)}><Trash2 className="h-3 w-3" /></Button>
+                            </div>
                           ))}
                         </div>
                       </PopoverContent>
                     </Popover>
+                    <Button variant="outline" size="sm" onClick={() => { setSaveTemplateMode('create'); setIsSaveTemplateDialogOpen(true); }} className="rounded-lg h-9 px-4 font-bold uppercase tracking-widest text-[10px] gap-1.5 border-primary/20 text-primary hover:bg-primary/5"><Save className="h-3.5 w-3.5" /> 存为模板</Button>
                     <Button variant="default" size="sm" onClick={() => setFormData({...formData, specGroups: [...formData.specGroups, {uid: `group_${Date.now()}`, titleEn:'', titleZh:'', items:[{uid: `item_${Date.now()}`, labelEn:'', labelZh:'', valueEn:'', valueZh:''}]}]})} className="rounded-lg h-9 px-4 font-bold uppercase tracking-widest text-[10px] gap-1.5 shadow-sm"><PlusCircle className="h-3.5 w-3.5" /> 新增分组</Button>
                   </div>
                 </div>
 
                 <div className="space-y-8">
                   {formData.specGroups.map((group, gIdx) => (
-                    <div key={group.uid} className="bg-muted/10 rounded-xl border border-border/40 overflow-hidden">
-                      <div className="flex items-center justify-between bg-muted/30 px-4 py-3 border-b">
-                        <div className="grid grid-cols-2 gap-3 flex-1 max-w-2xl">
-                           <Input placeholder="分组标题 (ZH)" value={group.titleZh} onChange={e => { const g = [...formData.specGroups]; g[gIdx].titleZh = e.target.value; setFormData({...formData, specGroups: g}); }} className="h-8 text-[11px] bg-white border-none shadow-sm" />
-                           <Input placeholder="Group Title (EN)" value={group.titleEn} onChange={e => { const g = [...formData.specGroups]; g[gIdx].titleEn = e.target.value; setFormData({...formData, specGroups: g}); }} className="h-8 text-[11px] bg-white border-none shadow-sm opacity-60" />
+                    <div key={group.uid} className="bg-white rounded-xl border border-border/40 overflow-hidden shadow-sm transition-all hover:shadow-md">
+                      <div className="flex items-center justify-between bg-muted/20 px-5 py-3.5 border-b border-border/40">
+                        <div className="grid grid-cols-2 gap-4 flex-1 max-w-3xl">
+                           <div className="space-y-1">
+                             <Label className="text-[8px] font-bold uppercase text-primary/40">分组标题 (ZH)</Label>
+                             <Input placeholder="例如: 核心配置" value={group.titleZh} onChange={e => { const g = [...formData.specGroups]; g[gIdx].titleZh = e.target.value; setFormData({...formData, specGroups: g}); }} className="h-9 text-xs bg-white border-transparent focus:border-primary/20 shadow-inner" />
+                           </div>
+                           <div className="space-y-1">
+                             <Label className="text-[8px] font-bold uppercase text-primary/40">Group Title (EN)</Label>
+                             <Input placeholder="e.g. Core System" value={group.titleEn} onChange={e => { const g = [...formData.specGroups]; g[gIdx].titleEn = e.target.value; setFormData({...formData, specGroups: g}); }} className="h-9 text-xs bg-white border-transparent focus:border-primary/20 opacity-80 shadow-inner" />
+                           </div>
                         </div>
-                        <Button variant="ghost" size="icon" onClick={() => setFormData({...formData, specGroups: formData.specGroups.filter((_,i)=>i!==gIdx)})} className="h-7 w-7 text-destructive"><Trash2 className="h-3.5 w-3.5" /></Button>
+                        <Button variant="ghost" size="icon" onClick={() => setFormData({...formData, specGroups: formData.specGroups.filter((_,i)=>i!==gIdx)})} className="h-8 w-8 text-destructive hover:bg-destructive/5 rounded-full ml-4"><Trash2 className="h-3.5 w-3.5" /></Button>
                       </div>
                       <div className="p-0">
                         {group.items.map((item, iIdx) => (
-                          <div key={item.uid} className="grid grid-cols-1 md:grid-cols-[1fr_1fr_40px] gap-6 px-6 py-4 border-b last:border-b-0 border-border/20">
-                            <div className="space-y-2">
-                              <Input placeholder="参数名 (ZH)" value={item.labelZh} onChange={e => { const g = [...formData.specGroups]; g[gIdx].items[iIdx].labelZh = e.target.value; setFormData({...formData, specGroups: g}); }} className="h-8 text-[11px] rounded-md bg-white" />
-                              <Textarea placeholder="数值内容 (ZH)" value={item.valueZh} onChange={e => { const g = [...formData.specGroups]; g[gIdx].items[iIdx].valueZh = e.target.value; setFormData({...formData, specGroups: g}); }} className="min-h-[40px] text-[11px] rounded-md bg-white resize-none" />
+                          <div key={item.uid} className="grid grid-cols-1 md:grid-cols-[1fr_1fr_48px] gap-8 px-8 py-5 border-b last:border-b-0 border-border/20 group/row hover:bg-muted/5 transition-colors">
+                            <div className="space-y-3">
+                              <Input placeholder="参数名 (ZH)" value={item.labelZh} onChange={e => { const g = [...formData.specGroups]; g[gIdx].items[iIdx].labelZh = e.target.value; setFormData({...formData, specGroups: g}); }} className="h-8 text-[11px] font-bold rounded-md bg-white border-muted/40" />
+                              <Textarea placeholder="数值内容 (ZH) - 支持换行" value={item.valueZh} onChange={e => { const g = [...formData.specGroups]; g[gIdx].items[iIdx].valueZh = e.target.value; setFormData({...formData, specGroups: g}); }} className="min-h-[44px] text-[11px] rounded-md bg-white border-muted/40 resize-none leading-relaxed" />
                             </div>
-                            <div className="space-y-2">
+                            <div className="space-y-3">
                               <div className="relative group/field">
-                                <Input placeholder="Label (EN)" value={item.labelEn} onChange={e => { const g = [...formData.specGroups]; g[gIdx].items[iIdx].labelEn = e.target.value; setFormData({...formData, specGroups: g}); }} className="h-8 text-[11px] rounded-md bg-white/60 pr-8" />
-                                <button onClick={() => handleAiTranslateSpec(gIdx, iIdx, item.labelZh, 'label')} className="absolute right-1.5 top-1.5 text-accent opacity-0 group-hover/field:opacity-100"><Sparkles className="h-3 w-3" /></button>
+                                <Input placeholder="Label (EN)" value={item.labelEn} onChange={e => { const g = [...formData.specGroups]; g[gIdx].items[iIdx].labelEn = e.target.value; setFormData({...formData, specGroups: g}); }} className="h-8 text-[11px] rounded-md bg-white/60 pr-8 border-muted/40" />
+                                <button onClick={() => handleAiTranslateSpec(gIdx, iIdx, item.labelZh, 'label')} className="absolute right-2 top-1.5 text-accent opacity-0 group-hover/field:opacity-100 transition-opacity"><Sparkles className="h-3 w-3" /></button>
                               </div>
                               <div className="relative group/field">
-                                <Textarea placeholder="Value (EN)" value={item.valueEn} onChange={e => { const g = [...formData.specGroups]; g[gIdx].items[iIdx].valueEn = e.target.value; setFormData({...formData, specGroups: g}); }} className="min-h-[40px] text-[11px] rounded-md bg-white/60 resize-none pr-8" />
-                                <button onClick={() => handleAiTranslateSpec(gIdx, iIdx, item.valueZh, 'value')} className="absolute right-1.5 top-1.5 text-accent opacity-0 group-hover/field:opacity-100"><Sparkles className="h-3 w-3" /></button>
+                                <Textarea placeholder="Value (EN) - Preserve line breaks" value={item.valueEn} onChange={e => { const g = [...formData.specGroups]; g[gIdx].items[iIdx].valueEn = e.target.value; setFormData({...formData, specGroups: g}); }} className="min-h-[44px] text-[11px] rounded-md bg-white/60 resize-none pr-8 border-muted/40 leading-relaxed" />
+                                <button onClick={() => handleAiTranslateSpec(gIdx, iIdx, item.valueZh, 'value')} className="absolute right-2 top-1.5 text-accent opacity-0 group-hover/field:opacity-100 transition-opacity"><Sparkles className="h-3 w-3" /></button>
                               </div>
                             </div>
-                            <div className="pt-7"><Button variant="ghost" size="icon" onClick={() => { const g = [...formData.specGroups]; g[gIdx].items = g[gIdx].items.filter((_,i)=>i!==iIdx); setFormData({...formData, specGroups: g}); }} className="h-8 w-8 text-destructive/40"><X className="h-4 w-4" /></Button></div>
+                            <div className="pt-10 flex justify-center"><Button variant="ghost" size="icon" onClick={() => { const g = [...formData.specGroups]; g[gIdx].items = g[gIdx].items.filter((_,i)=>i!==iIdx); setFormData({...formData, specGroups: g}); }} className="h-8 w-8 text-destructive/20 hover:text-destructive hover:bg-destructive/5 rounded-full"><X className="h-4 w-4" /></Button></div>
                           </div>
                         ))}
-                        <button onClick={() => { const g = [...formData.specGroups]; g[gIdx].items.push({uid: `item_${Date.now()}`, labelEn:'', labelZh:'', valueEn:'', valueZh:''}); setFormData({...formData, specGroups: g}); }} className="w-full h-10 text-[10px] uppercase font-bold text-primary/40 hover:text-primary transition-colors border-t border-border/20">+ 添加规格项</button>
+                        <button onClick={() => { const g = [...formData.specGroups]; g[gIdx].items.push({uid: `item_${Date.now()}`, labelEn:'', labelZh:'', valueEn:'', valueZh:''}); setFormData({...formData, specGroups: g}); }} className="w-full h-11 text-[10px] uppercase font-bold text-primary/40 hover:text-primary transition-all bg-muted/5 hover:bg-muted/10 border-t border-border/20 flex items-center justify-center gap-2"><Plus className="h-3 w-3" /> 添加规格项</button>
                       </div>
                     </div>
                   ))}
+                  {formData.specGroups.length === 0 && (
+                    <div className="py-24 text-center border-2 border-dashed rounded-[2rem] border-border/40 bg-muted/5">
+                       <TableProperties className="h-10 w-10 mx-auto text-muted-foreground/20 mb-3" />
+                       <p className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground/40">点击上方按钮开始配置技术规格</p>
+                    </div>
+                  )}
                 </div>
               </div>
             </TabsContent>
@@ -676,6 +740,49 @@ function ProductEditorContent() {
           </Tabs>
         </div>
       </div>
+
+      {/* 模板保存对话框 */}
+      <Dialog open={isSaveTemplateDialogOpen} onOpenChange={setIsSaveTemplateDialogOpen}>
+        <DialogContent className="rounded-2xl max-w-md p-0 overflow-hidden border-none shadow-2xl">
+          <div className="bg-primary p-6 text-white">
+            <DialogHeader>
+              <DialogTitle className="text-lg font-bold flex items-center gap-2"><Save className="h-5 w-5" /> 存为技术规格模板</DialogTitle>
+              <DialogDescription className="text-white/60 text-xs">保存后可在其他产品发布时一键回填此套规格。</DialogDescription>
+            </DialogHeader>
+          </div>
+          <div className="p-6 space-y-6 bg-white">
+            <Tabs value={saveTemplateMode} onValueChange={(v:any) => setSaveTemplateMode(v)} className="w-full">
+              <TabsList className="grid grid-cols-2 w-full mb-6">
+                <TabsTrigger value="create" className="text-xs font-bold uppercase">新建模板</TabsTrigger>
+                <TabsTrigger value="update" className="text-xs font-bold uppercase">覆盖已有</TabsTrigger>
+              </TabsList>
+              
+              <TabsContent value="create" className="space-y-4">
+                <div className="space-y-2">
+                  <Label className="text-[10px] font-bold uppercase opacity-60">模板显示名称</Label>
+                  <Input value={newTemplateName} onChange={e => setNewTemplateName(e.target.value)} placeholder="如: 标准一体机规格 v1" className="rounded-xl h-11" />
+                </div>
+              </TabsContent>
+              
+              <TabsContent value="update" className="space-y-4">
+                <div className="space-y-2">
+                  <Label className="text-[10px] font-bold uppercase opacity-60">目标模板</Label>
+                  <Select value={targetTemplateId} onValueChange={setTargetTemplateId}>
+                    <SelectTrigger className="h-11 rounded-xl"><SelectValue placeholder="选择要覆盖的模板..." /></SelectTrigger>
+                    <SelectContent className="rounded-xl">
+                      {specTemplates?.map(tpl => <SelectItem key={tpl.id} value={tpl.id} className="text-xs">{tpl.name}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </TabsContent>
+            </Tabs>
+          </div>
+          <DialogFooter className="bg-muted/10 p-4 border-t gap-2">
+            <Button variant="outline" onClick={() => setIsSaveTemplateDialogOpen(false)} className="h-10 rounded-xl flex-1 text-xs">取消</Button>
+            <Button onClick={handleSaveTemplate} className="h-10 rounded-xl flex-1 text-xs">立即保存</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       <Dialog open={isPickerOpen} onOpenChange={setIsPickerOpen}>
         <DialogContent className="max-w-5xl p-0 rounded-2xl overflow-hidden flex flex-col h-[85vh] border-none shadow-2xl">
