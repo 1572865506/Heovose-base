@@ -36,7 +36,11 @@
         "id": { "type": "string" },
         "nameTextId": { "type": "string" },
         "descriptionTextId": { "type": "string" },
-        "detailsTextId": { "type": "string" },
+        "localizedDetails": { 
+          "type": "object", 
+          "description": "Decentralized long-form HTML content mapping language codes to values.",
+          "additionalProperties": { "type": "string" }
+        },
         "advantageTextIds": { "type": "array", "items": { "type": "string" } },
         "specGroups": { 
           "type": "array",

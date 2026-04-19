@@ -1,8 +1,10 @@
+
 'use server';
 /**
  * @fileOverview AI Translation Flow for Heovose Admin.
  * 
  * Handles multi-language translation for hardware specifications and marketing content.
+ * Optimized for long HTML rich-text processing.
  */
 
 import { ai } from '@/ai/genkit';
@@ -35,17 +37,22 @@ const translateFlow = ai.defineFlow(
       name: 'translatePrompt',
       input: { schema: TranslateInputSchema },
       output: { schema: TranslateOutputSchema },
-      prompt: `You are a professional industrial hardware manufacturing translator specializing in computer equipment (AIO, Mini PC, Monitors). 
+      prompt: `You are a professional industrial hardware manufacturing translator. 
       Translate the provided text from {{{sourceLang}}} to these languages: {{#each targetLangs}}{{{this}}}{{#unless @last}}, {{/unless}}{{/each}}.
       
-      Requirements:
-      1. Use professional industry terminology. 
-         - AIO should remain "AIO" or "All-in-One PC".
-         - Barebone should be translated as technical semi-finished products.
-         - Ensure units like "inch", "GB", "Hz" are handled correctly per target locale.
-      2. Maintain the tone of a high-end technology brand.
-      3. Preserve all line breaks (\n) and formatting structure of the source text exactly.
-      4. Return a JSON object mapping language codes to their translations.
+      CRITICAL INSTRUCTIONS FOR RICH TEXT (HTML):
+      1. If the input contains HTML tags (e.g., <p>, <h3>, <img>, <ul>), you MUST preserve the EXACT HTML structure.
+      2. ONLY translate the visible text content within the tags.
+      3. Do NOT modify attributes like "src", "class", "style", or "href".
+      4. Ensure that for every source tag, there is a corresponding target tag in the translation.
+      5. For long content, do NOT summarize. Translate every sentence accurately.
+      
+      TECHNICAL TERMINOLOGY:
+      - AIO should remain "AIO" or "All-in-One PC".
+      - Barebone should be translated as technical semi-finished products.
+      - Ensure units like "inch", "GB", "Hz" are handled correctly per target locale.
+      
+      Return a JSON object mapping language codes to their translations.
       
       Text to translate: {{{text}}}`
     });

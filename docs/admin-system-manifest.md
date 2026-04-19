@@ -35,6 +35,7 @@
 
 ### 2.5 详细介绍录入规范 (Rich Text)
 *   **排版标准**: 采用 Tiptap 富文本引擎，支持 H3 标题、加粗、下划线、列表及引用。
+*   **去中心化存储**: 为了性能优化，超长 HTML 内容（详细介绍）不再存入全局 `localizedStrings` 集合，而是以 `localizedDetails` 对象形式内嵌在产品文档中。
 *   **前端渲染**: 前端展示必须包裹在 `prose` 类名下，遵循 `@tailwindcss/typography` 的标准间距。
 
 ### 2.6 分类编辑器 (Category Editor)

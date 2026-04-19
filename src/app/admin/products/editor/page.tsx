@@ -1,9 +1,9 @@
 
 "use client";
 
-import { useState, useEffect, useMemo, Suspense, useRef, useCallback } from 'react';
+import { useState, useEffect, useMemo, Suspense, useRef } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { useUser, useFirestore, useDoc, useCollection, useMemoFirebase } from '@/firebase';
+import { useFirestore, useDoc, useCollection, useMemoFirebase } from '@/firebase';
 import { doc, collection, serverTimestamp, query, orderBy } from 'firebase/firestore';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -37,7 +37,8 @@ import {
   Film,
   ChevronLeft,
   ChevronRight,
-  Plus
+  Plus,
+  Cpu
 } from 'lucide-react';
 import { 
   Dialog, 
@@ -86,7 +87,7 @@ interface Product {
   id: string;
   nameTextId: string;
   descriptionTextId: string;
-  detailsTextId?: string;
+  localizedDetails?: Record<string, string>;
   advantageTextIds?: string[];
   specGroups?: { 
     titleId: string, 
@@ -127,6 +128,10 @@ interface AiConfig {
   model: string;
 }
 
+interface AppConfig {
+  supportedLanguages: { code: string, label: string }[];
+}
+
 function ProductEditorContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -146,14 +151,14 @@ function ProductEditorContent() {
     nameZh: '',
     descEn: '',
     descZh: '',
-    detailsEn: '',
-    detailsZh: '',
+    localizedDetails: { zh: '', en: '' } as Record<string, string>,
     advantages: [] as { uid: string, zh: string, en: string }[],
     specGroups: [] as ProductSpecGroup[],
     status: 'draft' as 'published' | 'draft'
   });
 
   const [activeTab, setActiveTab] = useState('basic');
+  const [targetDetailsLang, setTargetDetailsLang] = useState('en');
   const [isUploading, setIsUploading] = useState(false);
   const [isAiProcessing, setIsAiProcessing] = useState(false);
   const [idConflict, setIdConflict] = useState(false);
@@ -164,7 +169,7 @@ function ProductEditorContent() {
   const [newTemplateName, setNewTemplateName] = useState('');
 
   const [isPickerOpen, setIsPickerOpen] = useState(false);
-  const [pickerTarget, setPickerTarget] = useState<'main' | 'gallery' | 'richtext-zh' | 'richtext-en'>('main');
+  const [pickerTarget, setPickerTarget] = useState<'main' | 'gallery' | 'richtext-zh' | 'richtext-target'>('main');
   const [pickerSearch, setPickerSearch] = useState('');
   const [selectedPickerUrls, setSelectedPickerUrls] = useState<Set<string>>(new Set());
 
@@ -174,6 +179,7 @@ function ProductEditorContent() {
   const assetsQuery = useMemoFirebase(() => firestore ? query(collection(firestore, 'galleryAssets'), orderBy('createdAt', 'desc')) : null, [firestore]);
   const allProdsQuery = useMemoFirebase(() => firestore ? collection(firestore, 'products') : null, [firestore]);
   const aiRef = useMemoFirebase(() => firestore ? doc(firestore, 'settings', 'ai') : null, [firestore]);
+  const langRef = useMemoFirebase(() => firestore ? doc(firestore, 'settings', 'languages') : null, [firestore]);
   const templatesQuery = useMemoFirebase(() => firestore ? query(collection(firestore, 'specTemplates'), orderBy('createdAt', 'desc')) : null, [firestore]);
 
   const { data: product, isLoading: isProdLoading } = useDoc<Product>(prodRef);
@@ -182,7 +188,10 @@ function ProductEditorContent() {
   const { data: galleryAssets } = useCollection<GalleryAsset>(assetsQuery);
   const { data: allProducts } = useCollection<Product>(allProdsQuery);
   const { data: aiConfig } = useDoc<AiConfig>(aiRef);
+  const { data: langConfig } = useDoc<AppConfig>(langRef);
   const { data: specTemplates } = useCollection<SpecTemplate>(templatesQuery);
+
+  const supportedLangs = useMemo(() => langConfig?.supportedLanguages || [{ code: 'zh', label: '中文' }, { code: 'en', label: 'English' }], [langConfig]);
 
   useEffect(() => {
     if (isEditing && product && translations) {
@@ -214,8 +223,7 @@ function ProductEditorContent() {
         nameZh: getT(product.nameTextId).zh || '',
         descEn: getT(product.descriptionTextId).en || '',
         descZh: getT(product.descriptionTextId).zh || '',
-        detailsEn: getT(product.detailsTextId).en || '',
-        detailsZh: getT(product.detailsTextId).zh || '',
+        localizedDetails: product.localizedDetails || { zh: '', en: '' },
         advantages: advantages.length > 0 ? advantages : [{ uid: 'initial', zh: '', en: '' }],
         specGroups: specGroups.length > 0 ? specGroups : [],
         status: product.status || 'draft'
@@ -233,8 +241,8 @@ function ProductEditorContent() {
   }, [formData.id, allProducts, isEditing]);
 
   const translationMetrics = useMemo(() => {
-    const fields = [formData.nameZh, formData.nameEn, formData.descZh, formData.descEn, formData.detailsZh, formData.detailsEn];
-    const filled = fields.filter(f => f.trim().length > 0).length;
+    const fields = [formData.nameZh, formData.nameEn, formData.descZh, formData.descEn, formData.localizedDetails.zh, formData.localizedDetails.en];
+    const filled = fields.filter(f => f && f.trim().length > 0).length;
     return (filled / fields.length) * 100;
   }, [formData]);
 
@@ -258,7 +266,6 @@ function ProductEditorContent() {
 
     const nameId = saveLang(formData.nameEn, formData.nameZh, `prod_name_${formData.id}`);
     const descId = saveLang(formData.descEn, formData.descZh, `prod_desc_${formData.id}`);
-    const detailsId = saveLang(formData.detailsEn, formData.detailsZh, `prod_details_${formData.id}`);
     
     const advantageIds = formData.advantages.filter(a => a.zh || a.en).map((adv, idx) => 
       saveLang(adv.en, adv.zh, `prod_adv_${formData.id}_${idx}`)
@@ -277,7 +284,7 @@ function ProductEditorContent() {
       id: formData.id, 
       nameTextId: nameId, 
       descriptionTextId: descId, 
-      detailsTextId: detailsId, 
+      localizedDetails: formData.localizedDetails,
       advantageTextIds: advantageIds, 
       specGroups: savedSpecGroups, 
       mainImageUrl: formData.mainImageUrl, 
@@ -377,21 +384,31 @@ function ProductEditorContent() {
   };
 
   const handleAiTranslateDetails = async () => {
-    if (!aiConfig?.isEnabled || !formData.detailsZh.trim()) return;
+    const sourceHtml = formData.localizedDetails.zh;
+    if (!aiConfig?.isEnabled || !sourceHtml.trim()) return;
+    
     setIsAiProcessing(true);
     try {
       const result = await translateContent({
-        text: formData.detailsZh,
+        text: sourceHtml,
         sourceLang: 'zh',
-        targetLangs: ['en'],
+        targetLangs: [targetDetailsLang],
         model: aiConfig.model
       });
-      if (result.en) {
-        setFormData(prev => ({ ...prev, detailsEn: result.en }));
-        toast({ title: "详情介绍智译成功" });
+      
+      const translatedHtml = result[targetDetailsLang];
+      if (translatedHtml) {
+        setFormData(prev => ({ 
+          ...prev, 
+          localizedDetails: {
+            ...prev.localizedDetails,
+            [targetDetailsLang]: translatedHtml
+          }
+        }));
+        toast({ title: `详情介绍 (${targetDetailsLang.toUpperCase()}) 智译成功` });
       }
     } catch (e) {
-      toast({ variant: "destructive", title: "AI 翻译失败" });
+      toast({ variant: "destructive", title: "AI 翻译失败", description: "如果内容过长，请尝试分段复制翻译。" });
     } finally {
       setIsAiProcessing(false);
     }
@@ -428,7 +445,7 @@ function ProductEditorContent() {
     reader.readAsDataURL(file);
   };
 
-  const openPicker = (target: 'main' | 'gallery' | 'richtext-zh' | 'richtext-en') => {
+  const openPicker = (target: 'main' | 'gallery' | 'richtext-zh' | 'richtext-target') => {
     setPickerTarget(target);
     setSelectedPickerUrls(new Set());
     setIsPickerOpen(true);
@@ -451,10 +468,16 @@ function ProductEditorContent() {
       setFormData({ ...formData, galleryUrls: [...formData.galleryUrls, ...urls] });
     } else if (pickerTarget === 'richtext-zh') {
       const imgHtml = `<img src="${urls[0]}" />`;
-      setFormData(prev => ({ ...prev, detailsZh: prev.detailsZh + imgHtml }));
-    } else if (pickerTarget === 'richtext-en') {
+      setFormData(prev => ({ 
+        ...prev, 
+        localizedDetails: { ...prev.localizedDetails, zh: (prev.localizedDetails.zh || '') + imgHtml } 
+      }));
+    } else if (pickerTarget === 'richtext-target') {
       const imgHtml = `<img src="${urls[0]}" />`;
-      setFormData(prev => ({ ...prev, detailsEn: prev.detailsEn + imgHtml }));
+      setFormData(prev => ({ 
+        ...prev, 
+        localizedDetails: { ...prev.localizedDetails, [targetDetailsLang]: (prev.localizedDetails[targetDetailsLang] || '') + imgHtml } 
+      }));
     }
     
     setIsPickerOpen(false);
@@ -753,32 +776,72 @@ function ProductEditorContent() {
             <TabsContent value="details" className="space-y-4">
               <div className="bg-white p-6 rounded-2xl border border-border/40 shadow-sm space-y-4 h-[calc(100vh-280px)] min-h-[600px] flex flex-col">
                 <div className="flex items-center justify-between border-b pb-3 mb-2 shrink-0 h-8">
-                  <div className="flex items-center gap-2"><Film className="h-4 w-4 text-primary" /><h3 className="font-bold text-sm">富文本详情编辑</h3></div>
-                  {aiConfig?.isEnabled && (
-                    <Button variant="ghost" size="sm" className="h-6 text-[9px] gap-1 px-2 font-bold text-accent" onClick={handleAiTranslateDetails} disabled={isAiProcessing}>
-                      {isAiProcessing ? <Loader2 className="h-2.5 w-2.5 animate-spin" /> : <Sparkles className="h-2.5 w-2.5" />} AI 智译
-                    </Button>
-                  )}
+                  <div className="flex items-center gap-2">
+                    <Film className="h-4 w-4 text-primary" />
+                    <h3 className="font-bold text-sm">详情介绍工作区 (Decentralized)</h3>
+                  </div>
+                  <div className="flex items-center gap-4">
+                    <div className="flex items-center bg-muted/30 p-1 rounded-lg">
+                      <span className="text-[9px] font-bold uppercase text-primary/40 px-2">目标语种</span>
+                      <Select value={targetDetailsLang} onValueChange={setTargetDetailsLang}>
+                        <SelectTrigger className="h-7 border-none bg-white rounded-md text-[10px] font-bold w-24">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent className="rounded-xl">
+                          {supportedLangs.filter(l => l.code !== 'zh').map(l => (
+                            <SelectItem key={l.code} value={l.code} className="text-xs uppercase">{l.label}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    {aiConfig?.isEnabled && (
+                      <Button variant="ghost" size="sm" className="h-7 text-[10px] gap-1.5 px-3 font-bold text-accent bg-accent/5 hover:bg-accent/10 border border-accent/10" onClick={handleAiTranslateDetails} disabled={isAiProcessing}>
+                        {isAiProcessing ? <Loader2 className="h-3 w-3 animate-spin" /> : <Sparkles className="h-3 w-3" />} AI 智译至 {targetDetailsLang.toUpperCase()}
+                      </Button>
+                    )}
+                  </div>
                 </div>
                 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6 shrink-0">
-                  <Label className="text-[10px] font-bold uppercase text-primary/40 flex items-center gap-1.5"><Languages className="h-3 w-3" /> 中文排版</Label>
-                  <Label className="text-[10px] font-bold uppercase text-primary/40 flex items-center gap-1.5"><Globe className="h-3 w-3" /> 英文排版</Label>
+                  <Label className="text-[10px] font-bold uppercase text-primary/40 flex items-center gap-1.5"><Languages className="h-3 w-3" /> 中文源文 (ZH)</Label>
+                  <Label className="text-[10px] font-bold uppercase text-primary/40 flex items-center gap-1.5"><Globe className="h-3 w-3" /> 目标译文 ({targetDetailsLang.toUpperCase()})</Label>
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6 flex-1 overflow-hidden">
                   <RichTextEditor 
-                    content={formData.detailsZh} 
-                    onChange={val => setFormData({...formData, detailsZh: val})} 
+                    content={formData.localizedDetails.zh || ''} 
+                    onChange={val => setFormData({
+                      ...formData, 
+                      localizedDetails: { ...formData.localizedDetails, zh: val }
+                    })} 
                     onImageClick={() => openPicker('richtext-zh')}
                     className="flex-1"
+                    placeholder="在此输入或粘贴中文排版内容..."
                   />
-                  <RichTextEditor 
-                    content={formData.detailsEn} 
-                    onChange={val => setFormData({...formData, detailsEn: val})} 
-                    onImageClick={() => openPicker('richtext-en')}
-                    className="flex-1 opacity-90"
-                  />
+                  <div className="flex flex-col flex-1 overflow-hidden group">
+                    <RichTextEditor 
+                      content={formData.localizedDetails[targetDetailsLang] || ''} 
+                      onChange={val => setFormData({
+                        ...formData, 
+                        localizedDetails: { ...formData.localizedDetails, [targetDetailsLang]: val }
+                      })} 
+                      onImageClick={() => openPicker('richtext-target')}
+                      className="flex-1 border-primary/20"
+                      placeholder={`在此编辑 ${targetDetailsLang.toUpperCase()} 版本的排版...`}
+                    />
+                    {isAiProcessing && (
+                      <div className="absolute inset-0 bg-white/60 backdrop-blur-sm z-50 flex flex-col items-center justify-center gap-4 animate-in fade-in duration-300">
+                        <div className="relative">
+                          <Cpu className="h-12 w-12 text-primary animate-pulse" />
+                          <Sparkles className="absolute -top-1 -right-1 h-5 w-5 text-accent animate-bounce" />
+                        </div>
+                        <p className="text-[11px] font-bold text-primary uppercase tracking-widest">AI 正在深度重组长文排版...</p>
+                        <div className="w-48 h-1.5 bg-muted rounded-full overflow-hidden">
+                          <div className="h-full bg-primary animate-[shimmer_2s_infinite] w-1/2 rounded-full" />
+                        </div>
+                      </div>
+                    )}
+                  </div>
                 </div>
               </div>
             </TabsContent>

@@ -28,7 +28,7 @@ interface Product {
   id: string;
   nameTextId: string;
   descriptionTextId: string;
-  detailsTextId?: string;
+  localizedDetails?: Record<string, string>;
   advantageTextIds?: string[];
   specGroups?: { 
     titleId: string, 
@@ -61,12 +61,18 @@ export default function ProductDetailPage() {
   const { data: product, isLoading: isProdLoading } = useDoc<Product>(prodRef);
   const { data: translationsData } = useCollection<LocalizedString>(transRef);
 
-  // 2. 翻译工具
+  // 2. 翻译工具 (用于短词条)
   const getT = (textId?: string) => {
     if (!textId) return '';
     const entry = translationsData?.find(t => t.id === textId);
     return entry ? (locale === 'zh' ? entry.zh : entry.en) : textId;
   };
+
+  // 3. 详情介绍 (去中心化读取)
+  const productDetails = useMemo(() => {
+    if (!product?.localizedDetails) return getT(product?.descriptionTextId);
+    return product.localizedDetails[locale] || product.localizedDetails['zh'] || getT(product?.descriptionTextId);
+  }, [product, locale, translationsData]);
 
   useEffect(() => {
     if (product?.mainImageUrl) setActiveImage(product.mainImageUrl);
@@ -226,7 +232,7 @@ export default function ProductDetailPage() {
               <TabsContent value="desc" className="max-w-4xl animate-in fade-in slide-in-from-bottom-4 duration-700">
                 <div 
                   className="prose prose-lg dark:prose-invert max-w-none prose-headings:font-headline prose-headings:text-primary prose-headings:mb-8 prose-p:text-muted-foreground prose-p:leading-relaxed prose-img:rounded-3xl prose-img:shadow-2xl prose-blockquote:border-accent"
-                  dangerouslySetInnerHTML={{ __html: getT(product.detailsTextId) || `<p class="italic text-xl border-l-4 border-accent pl-8">${getT(product.descriptionTextId)}</p>` }}
+                  dangerouslySetInnerHTML={{ __html: productDetails }}
                 />
               </TabsContent>
 
