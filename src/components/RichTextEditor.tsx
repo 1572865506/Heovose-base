@@ -36,7 +36,7 @@ import {
 } from "@/components/ui/select";
 import { cn } from '@/lib/utils';
 
-// 自定义字号扩展
+// Custom Font Size Extension
 const FontSize = Extension.create({
   name: 'fontSize',
   addOptions() {
@@ -90,17 +90,17 @@ const MenuBar = ({ editor, onImageClick }: { editor: any, onImageClick?: () => v
 
   return (
     <div className="flex flex-wrap items-center gap-1 p-2 bg-muted/20 border-b border-border/40 sticky top-0 z-10 backdrop-blur-sm">
-      {/* 字体与字号 */}
+      {/* Font & Size */}
       <div className="flex items-center gap-2 pr-2 border-r border-border/40">
         <Select 
           value={editor.getAttributes('textStyle').fontFamily || 'Inter'} 
           onValueChange={(val) => editor.chain().focus().setFontFamily(val).run()}
         >
           <SelectTrigger className="h-8 w-[110px] text-[10px] font-bold bg-white border-none shadow-none">
-            <SelectValue placeholder="字体" />
+            <SelectValue placeholder="Font" />
           </SelectTrigger>
           <SelectContent className="rounded-lg">
-            <SelectItem value="Inter" className="text-xs">Inter (默认)</SelectItem>
+            <SelectItem value="Inter" className="text-xs">Inter (Default)</SelectItem>
             <SelectItem value="Space Grotesk" className="text-xs font-headline">Space Grotesk</SelectItem>
             <SelectItem value="monospace" className="text-xs font-mono">Monospace</SelectItem>
           </SelectContent>
@@ -111,7 +111,7 @@ const MenuBar = ({ editor, onImageClick }: { editor: any, onImageClick?: () => v
           onValueChange={(val) => editor.chain().focus().setFontSize(val).run()}
         >
           <SelectTrigger className="h-8 w-[70px] text-[10px] font-bold bg-white border-none shadow-none">
-            <SelectValue placeholder="字号" />
+            <SelectValue placeholder="Size" />
           </SelectTrigger>
           <SelectContent className="rounded-lg">
             {['12px', '14px', '16px', '18px', '20px', '24px', '32px'].map(size => (
@@ -121,7 +121,7 @@ const MenuBar = ({ editor, onImageClick }: { editor: any, onImageClick?: () => v
         </Select>
       </div>
 
-      {/* 基础样式 */}
+      {/* Basic Styles */}
       <div className="flex items-center gap-1 px-2 border-r border-border/40">
         <Button
           variant="ghost"
@@ -149,7 +149,7 @@ const MenuBar = ({ editor, onImageClick }: { editor: any, onImageClick?: () => v
         </Button>
       </div>
 
-      {/* 对齐方式 */}
+      {/* Alignment */}
       <div className="flex items-center gap-1 px-2 border-r border-border/40">
         <Button
           variant="ghost"
@@ -185,7 +185,7 @@ const MenuBar = ({ editor, onImageClick }: { editor: any, onImageClick?: () => v
         </Button>
       </div>
 
-      {/* 段落与列表 */}
+      {/* Headers & Lists */}
       <div className="flex items-center gap-1 px-2 border-r border-border/40">
         <Button
           variant="ghost"
@@ -227,7 +227,7 @@ const MenuBar = ({ editor, onImageClick }: { editor: any, onImageClick?: () => v
           size="icon"
           onClick={onImageClick}
           className="h-8 w-8 text-accent hover:text-accent hover:bg-accent/5"
-          title="插入库素材"
+          title="Insert Image from Gallery"
         >
           <ImageIcon className="h-4 w-4" />
         </Button>
@@ -304,14 +304,16 @@ const RichTextEditor = forwardRef<any, RichTextEditorProps>(({ content, onChange
     },
   });
 
-  // 暴露 editor 实例给外部
+  // Expose editor instance to parent
   useImperativeHandle(ref, () => ({
     editor
   }));
 
   useEffect(() => {
+    // Only update content if it's different from current editor HTML to avoid infinite loops
+    // but ensure complex HTML (with images) is rendered correctly
     if (editor && content !== editor.getHTML()) {
-      editor.commands.setContent(content);
+      editor.commands.setContent(content, false);
     }
   }, [content, editor]);
 
@@ -323,10 +325,10 @@ const RichTextEditor = forwardRef<any, RichTextEditorProps>(({ content, onChange
       </div>
       <div className="px-3 py-1 border-t border-border/10 bg-muted/20 flex justify-between items-center shrink-0 h-6">
         <span className="text-[9px] font-mono text-muted-foreground opacity-40 uppercase tracking-tighter">
-          Editor: Tiptap v2 • Full Capabilities
+          Tiptap Editor v2.x • HTML Enabled
         </span>
         <span className="text-[9px] font-bold text-primary/30 uppercase">
-          {content.length} characters
+          {content.length} chars
         </span>
       </div>
     </div>

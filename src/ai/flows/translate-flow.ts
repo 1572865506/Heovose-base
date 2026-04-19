@@ -1,10 +1,9 @@
-
 'use server';
 /**
  * @fileOverview AI Translation Flow for Heovose Admin.
  * 
  * Handles multi-language translation for hardware specifications and marketing content.
- * Optimized for long HTML rich-text processing.
+ * Optimized for long HTML rich-text processing with image preservation logic.
  */
 
 import { ai } from '@/ai/genkit';
@@ -37,22 +36,18 @@ const translateFlow = ai.defineFlow(
       name: 'translatePrompt',
       input: { schema: TranslateInputSchema },
       output: { schema: TranslateOutputSchema },
-      prompt: `You are a professional industrial hardware manufacturing translator. 
+      prompt: `You are a professional industrial hardware manufacturing translator and HTML structure expert. 
       Translate the provided text from {{{sourceLang}}} to these languages: {{#each targetLangs}}{{{this}}}{{#unless @last}}, {{/unless}}{{/each}}.
       
       CRITICAL INSTRUCTIONS FOR RICH TEXT (HTML):
-      1. If the input contains HTML tags (e.g., <p>, <h3>, <img>, <ul>), you MUST preserve the EXACT HTML structure.
-      2. ONLY translate the visible text content within the tags.
-      3. Do NOT modify attributes like "src", "class", "style", or "href".
-      4. Ensure that for every source tag, there is a corresponding target tag in the translation.
-      5. For long content, do NOT summarize. Translate every sentence accurately.
+      1. You MUST preserve EVERY HTML tag from the source. This is mandatory.
+      2. NEVER delete or omit <img> tags. Even if they have no accompanying text, they MUST stay in their exact relative positions.
+      3. Do NOT modify any attributes like "src", "class", "style", "alt", or "width/height". These must be copied verbatim.
+      4. ONLY translate the visible text content within the tags (e.g., inside <p>, <h3>, <li>, <td>).
+      5. Maintain the EXACT structure: for every <p> in the source, there must be a <p> in the target.
+      6. If you see technical terms like "AIO", "Mini PC", "Barebone", "IP65", keep them as they are or use standard technical translations.
       
-      TECHNICAL TERMINOLOGY:
-      - AIO should remain "AIO" or "All-in-One PC".
-      - Barebone should be translated as technical semi-finished products.
-      - Ensure units like "inch", "GB", "Hz" are handled correctly per target locale.
-      
-      Return a JSON object mapping language codes to their translations.
+      Return a JSON object where keys are language codes and values are the translated HTML.
       
       Text to translate: {{{text}}}`
     });
