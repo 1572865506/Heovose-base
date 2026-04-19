@@ -146,7 +146,11 @@ const MenuBar = ({ editor, onImageClick }: { editor: any, onImageClick?: () => v
 export default function RichTextEditor({ content, onChange, onImageClick, placeholder, className }: RichTextEditorProps) {
   const editor = useEditor({
     extensions: [
-      StarterKit,
+      StarterKit.configure({
+        heading: {
+          levels: [1, 2, 3],
+        },
+      }),
       Underline,
       Link.configure({ openOnClick: false }),
       Image.configure({
@@ -163,7 +167,7 @@ export default function RichTextEditor({ content, onChange, onImageClick, placeh
           'prose-headings:font-headline prose-headings:text-primary prose-headings:mb-4 prose-headings:mt-8',
           'prose-p:mb-4 prose-p:text-muted-foreground/80',
           'prose-blockquote:border-l-4 prose-blockquote:border-accent prose-blockquote:bg-accent/5 prose-blockquote:py-2 prose-blockquote:px-4 prose-blockquote:rounded-r-lg',
-          'prose-li:text-muted-foreground/80'
+          'prose-li:text-muted-foreground/80 prose-ul:list-disc prose-ol:list-decimal'
         ),
       },
     },

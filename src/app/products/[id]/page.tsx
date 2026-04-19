@@ -231,7 +231,7 @@ export default function ProductDetailPage() {
               
               <TabsContent value="desc" className="max-w-4xl animate-in fade-in slide-in-from-bottom-4 duration-700">
                 <div 
-                  className="prose prose-lg dark:prose-invert max-w-none prose-headings:font-headline prose-headings:text-primary prose-headings:mb-8 prose-p:text-muted-foreground prose-p:leading-relaxed prose-img:rounded-3xl prose-img:shadow-2xl prose-blockquote:border-accent"
+                  className="prose prose-lg dark:prose-invert max-w-none prose-headings:font-headline prose-headings:text-primary prose-headings:mb-8 prose-p:text-muted-foreground prose-p:leading-relaxed prose-img:rounded-3xl prose-img:shadow-2xl prose-blockquote:border-accent prose-ul:list-disc prose-ol:list-decimal"
                   dangerouslySetInnerHTML={{ __html: productDetails }}
                 />
               </TabsContent>
