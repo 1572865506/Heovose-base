@@ -482,27 +482,27 @@ function ProductEditorContent() {
       </div>
 
       <div className="space-y-6 px-4">
-        {/* 媒体素材中心整合区 - 锁定 240px 高度 & 11:9 比例 */}
-        <div className="bg-white p-6 rounded-2xl border border-border/40 shadow-sm space-y-6">
-          <div className="flex items-center justify-between border-b border-border/40 pb-4">
+        {/* 媒体素材中心整合区 - 锁定 240px 总高度，子项精确计算 11:9 宽度 */}
+        <div className="bg-white p-6 rounded-2xl border border-border/40 shadow-sm space-y-4">
+          <div className="flex items-center justify-between border-b border-border/40 pb-3">
             <div className="space-y-0.5">
-              <h3 className="text-sm font-bold text-primary flex items-center gap-2">
+              <h3 className="text-xs font-bold text-primary flex items-center gap-2">
                 <ImageIcon className="h-4 w-4" /> 产品视觉素材管理
               </h3>
-              <p className="text-[10px] text-muted-foreground uppercase tracking-widest">主图及副图库 (11:9 比例展示)</p>
+              <p className="text-[9px] text-muted-foreground uppercase tracking-widest">锁定 11:9 比例展示 (基于 240px 总高校准)</p>
             </div>
             <div className="flex gap-2">
-              <Button variant="outline" size="sm" onClick={() => openPicker('gallery')} className="h-8 rounded-lg text-[10px] font-bold uppercase gap-1.5 border-primary/20 text-primary">
-                <FolderPlus className="h-3.5 w-3.5" /> 从素材库添加
+              <Button variant="outline" size="sm" onClick={() => openPicker('gallery')} className="h-7 rounded-lg text-[9px] font-bold uppercase gap-1.5 border-primary/20 text-primary">
+                <FolderPlus className="h-3 w-3" /> 素材库批量导入
               </Button>
             </div>
           </div>
 
-          <div className="flex gap-8 items-start h-[240px]">
-            {/* 主展示图列 - 固定 11:9 宽度 */}
-            <div className="flex flex-col h-full w-[294px] shrink-0">
-              <div className="flex items-center justify-between mb-2">
-                <Label className="text-[10px] font-bold uppercase text-primary tracking-widest">产品主图</Label>
+          <div className="flex gap-6 items-start h-[240px]">
+            {/* 主展示图列 - 基于高度 216px 计算出 11:9 宽度为 264px */}
+            <div className="flex flex-col h-full w-[264px] shrink-0">
+              <div className="flex items-center justify-between mb-1.5">
+                <Label className="text-[10px] font-bold uppercase text-primary tracking-widest">主图预览</Label>
                 <button onClick={() => openPicker('main')} className="text-[9px] font-bold text-primary hover:underline">库选取</button>
               </div>
               <div className="relative flex-1 rounded-xl bg-muted/20 border border-dashed border-border/60 overflow-hidden flex items-center justify-center group cursor-pointer" onClick={() => !formData.mainImageUrl && fileInputRef.current?.click()}>
@@ -523,14 +523,14 @@ function ProductEditorContent() {
               </div>
             </div>
 
-            {/* 副图库横向滚动区 - 卡片保持 11:9 比例 */}
+            {/* 副图库横向滚动区 - 基于卡片净高 192px 计算出宽度为 235px */}
             <div className="flex flex-col h-full flex-1 overflow-hidden">
-              <div className="flex items-center justify-between mb-2">
-                <Label className="text-[10px] font-bold uppercase text-primary tracking-widest">详情副图 ({formData.galleryUrls.length})</Label>
+              <div className="flex items-center justify-between mb-1.5">
+                <Label className="text-[10px] font-bold uppercase text-primary tracking-widest">详情幻灯片 ({formData.galleryUrls.length})</Label>
               </div>
-              <div className="flex flex-nowrap gap-4 p-4 bg-muted/10 rounded-xl border border-border/40 overflow-x-auto h-full items-center">
+              <div className="flex flex-nowrap gap-4 p-3 bg-muted/10 rounded-xl border border-border/40 overflow-x-auto h-full items-center">
                 {formData.galleryUrls.map((url, idx) => (
-                  <div key={`gal-top-${idx}`} className="group relative shrink-0 w-[294px] h-full bg-white rounded-lg border border-border/20 overflow-hidden shadow-sm hover:shadow-md transition-all">
+                  <div key={`gal-top-${idx}`} className="group relative shrink-0 w-[235px] h-full bg-white rounded-lg border border-border/20 overflow-hidden shadow-sm hover:shadow-md transition-all">
                     <Image src={url} alt="Gallery" fill className="object-contain p-2" unoptimized />
                     <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center gap-2">
                       <div className="flex gap-1.5">
@@ -541,13 +541,13 @@ function ProductEditorContent() {
                         <Trash2 className="h-3.5 w-3.5" />
                       </Button>
                     </div>
-                    <div className="absolute bottom-1 right-1 bg-black/50 px-1 rounded text-[8px] text-white font-mono">{idx + 1}</div>
+                    <div className="absolute bottom-1 right-1 bg-black/50 px-1.5 rounded text-[8px] text-white font-mono z-10">{idx + 1}</div>
                   </div>
                 ))}
                 {formData.galleryUrls.length === 0 && (
                   <div className="w-full h-full flex flex-col items-center justify-center text-muted-foreground/30">
                     <ImageIcon className="h-8 w-8 mb-2" />
-                    <p className="text-[10px] font-bold uppercase tracking-widest">暂无副图</p>
+                    <p className="text-[10px] font-bold uppercase tracking-widest">暂无详情图</p>
                   </div>
                 )}
               </div>
