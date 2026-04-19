@@ -59,7 +59,7 @@ export default function AiSettingsPage() {
 
   const [formData, setFormData] = useState<AiConfig>({
     isEnabled: true,
-    model: 'google-genai/gemini-1.5-flash',
+    model: 'googleai/gemini-1.5-flash',
     temperature: 0.7,
     systemInstruction: ''
   });
@@ -73,8 +73,8 @@ export default function AiSettingsPage() {
 
   useEffect(() => {
     if (aiConfig) {
-      // 自动迁移旧前缀数据到新前缀
-      const normalizedModel = aiConfig.model?.replace('googleai/', 'google-genai/') || 'google-genai/gemini-1.5-flash';
+      // 自动迁移所有前缀到正确的 googleai/
+      const normalizedModel = aiConfig.model?.replace('google-genai/', 'googleai/') || 'googleai/gemini-1.5-flash';
       setFormData({ ...aiConfig, model: normalizedModel });
     }
   }, [aiConfig]);
@@ -175,12 +175,12 @@ export default function AiSettingsPage() {
                       <SelectValue placeholder="选择 AI 模型" />
                     </SelectTrigger>
                     <SelectContent className="rounded-xl">
-                      <SelectItem value="google-genai/gemini-1.5-flash" className="text-xs font-bold">Gemini 1.5 Flash (极速/均衡)</SelectItem>
-                      <SelectItem value="google-genai/gemini-1.5-pro" className="text-xs font-bold">Gemini 1.5 Pro (超长上下文/高精度)</SelectItem>
-                      <SelectItem value="google-genai/gemini-2.0-flash-exp" className="text-xs font-bold text-accent-foreground bg-accent/10">Gemini 2.0 Flash Exp (前沿测试)</SelectItem>
+                      <SelectItem value="googleai/gemini-1.5-flash" className="text-xs font-bold">Gemini 1.5 Flash (极速/均衡)</SelectItem>
+                      <SelectItem value="googleai/gemini-1.5-pro" className="text-xs font-bold">Gemini 1.5 Pro (超长上下文/高精度)</SelectItem>
+                      <SelectItem value="googleai/gemini-2.0-flash-exp" className="text-xs font-bold text-accent-foreground bg-accent/10">Gemini 2.0 Flash Exp (前沿测试)</SelectItem>
                     </SelectContent>
                   </Select>
-                  <p className="text-[9px] text-muted-foreground leading-relaxed italic">注：前缀已更新为 google-genai/ 以确保连接稳定性。</p>
+                  <p className="text-[9px] text-muted-foreground leading-relaxed italic">注：前缀已修正为 googleai/ 以适配插件规范。</p>
                 </div>
 
                 <div className="space-y-3">

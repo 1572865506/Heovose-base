@@ -23,8 +23,10 @@ const TestOutputSchema = z.object({
 export async function testAiConnection(input: z.infer<typeof TestInputSchema>) {
   const startTime = Date.now();
   try {
-    // 确保使用正确的前缀，如果用户手动输入且漏掉了前缀，在此处尝试补全
-    const finalModel = input.model.includes('/') ? input.model : `google-genai/${input.model}`;
+    // 确保使用正确的前缀 googleai/
+    const finalModel = input.model.includes('/') 
+      ? input.model.replace('google-genai/', 'googleai/') 
+      : `googleai/${input.model}`;
     
     const { output } = await ai.generate({
       model: finalModel,
