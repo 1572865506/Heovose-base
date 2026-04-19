@@ -15,8 +15,6 @@ import {
   Settings2, 
   Edit3, 
   Layers, 
-  ChevronRight, 
-  ChevronDown, 
   X, 
   CheckCircle2, 
   PanelTop, 
@@ -26,7 +24,6 @@ import {
   Check,
   Maximize,
   Download,
-  MoreVertical,
   Maximize2 as FitIcon,
   ZoomIn,
   Move
@@ -49,7 +46,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -115,11 +111,9 @@ export default function GalleryPage() {
   const [isTasksPanelOpen, setIsTasksPanelOpen] = useState(false);
   const [isTasksPanelMinimized, setIsTasksPanelMinimized] = useState(false);
 
-  // 框选相关状态
   const [selectionBox, setSelectionBox] = useState<{ startX: number, startY: number, currentX: number, currentY: number } | null>(null);
   const itemRefs = useRef<Map<string, HTMLDivElement>>(new Map());
 
-  // 安全保障：当筛选或搜索条件改变时，清空选中项，防止误操作不可见的旧选中项
   useEffect(() => {
     setSelectedIds(new Set());
   }, [filterCategory, searchQuery]);
@@ -165,7 +159,6 @@ export default function GalleryPage() {
     });
   }, [assets, searchQuery, filterCategory]);
 
-  // --- 框选逻辑优化 ---
   const handleMouseDown = useCallback((e: React.MouseEvent) => {
     const target = e.target as HTMLElement;
     if (target.closest('button') || target.closest('input') || target.closest('label') || target.closest('.group')) return;
@@ -184,7 +177,7 @@ export default function GalleryPage() {
     if (!e.shiftKey) {
       setSelectedIds(new Set());
     }
-  }, [selectedIds]);
+  }, []);
 
   const handleMouseMove = useCallback((e: React.MouseEvent) => {
     if (!selectionBox) return;
@@ -207,7 +200,6 @@ export default function GalleryPage() {
 
     const newSelected = new Set(e.shiftKey ? selectedIds : []);
     
-    // 只在过滤后的可见范围内进行碰撞检测
     filteredAssets.forEach(asset => {
       const el = itemRefs.current.get(asset.id);
       if (!el) return;
@@ -429,7 +421,7 @@ export default function GalleryPage() {
               </div>
               
               <div className="relative aspect-square bg-muted/10 overflow-hidden flex items-center justify-center">
-                <Image src={asset.url} alt={asset.title} fill className="object-cover group-hover:scale-110 transition-transform duration-700" />
+                <Image src={asset.url} alt={asset.title} fill className="object-cover group-hover:scale-110 transition-transform duration-700" unoptimized />
                 <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
                   <Button size="icon" variant="secondary" className="h-10 w-10 rounded-full shadow-2xl" onClick={(e) => { e.stopPropagation(); setPreviewAsset(asset); setPreviewZoom('fit'); }}>
                     <Maximize className="h-4 w-4" />
@@ -445,7 +437,7 @@ export default function GalleryPage() {
                     <Button size="icon" variant="ghost" className="h-7 w-7 text-muted-foreground hover:text-primary" onClick={() => { navigator.clipboard.writeText(asset.url); toast({ title: "链接已复制" }); }} title="复制地址"><Copy className="h-3.5 w-3.5" /></Button>
                     <Button size="icon" variant="ghost" className="h-7 w-7 text-muted-foreground hover:text-primary" onClick={() => setEditingAsset(asset)} title="编辑属性"><Edit3 className="h-3.5 w-3.5" /></Button>
                   </div>
-                  <Button size="icon" variant="ghost" className="h-7 w-7 text-destructive/40 hover:text-destructive hover:bg-destructive/5" onClick={() => confirm('永久移除该图片？') && deleteDocumentNonBlocking(doc(firestore, 'galleryAssets', asset.id))} title="删除素材"><Trash2 className="h-3.5 w-3.5" /></Button>
+                  <Button size="icon" variant="ghost" className="h-7 w-7 text-destructive/40 hover:text-destructive hover:bg-destructive/5" onClick={() => confirm('永久移除该图片？') && deleteDocumentNonBlocking(doc(firestore!, 'galleryAssets', asset.id))} title="删除素材"><Trash2 className="h-3.5 w-3.5" /></Button>
                 </div>
               </div>
             </div>

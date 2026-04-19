@@ -4,7 +4,7 @@
 import { useState, useEffect, useMemo, Suspense, useRef } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useUser, useFirestore, useDoc, useCollection, useMemoFirebase } from '@/firebase';
-import { doc, collection, serverTimestamp, query, orderBy, deleteDoc } from 'firebase/firestore';
+import { doc, collection, serverTimestamp, query, orderBy } from 'firebase/firestore';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -20,7 +20,6 @@ import {
   Save, 
   Loader2, 
   Image as ImageIcon, 
-  Plus, 
   X,
   Languages,
   Info,
@@ -158,7 +157,6 @@ function ProductEditorContent() {
   const [isAiProcessing, setIsAiProcessing] = useState(false);
   const [idConflict, setIdConflict] = useState(false);
 
-  // 模板相关状态
   const [isSaveTemplateDialogOpen, setIsSaveTemplateDialogOpen] = useState(false);
   const [saveTemplateMode, setSaveTemplateMode] = useState<'create' | 'update'>('create');
   const [targetTemplateId, setTargetTemplateId] = useState<string>('');
@@ -169,7 +167,7 @@ function ProductEditorContent() {
   const [pickerSearch, setPickerSearch] = useState('');
   const [selectedPickerUrls, setSelectedPickerUrls] = useState<Set<string>>(new Set());
 
-  const prodRef = useMemoFirebase(() => productId ? doc(firestore!, 'products', productId) : null, [firestore, productId]);
+  const prodRef = useMemoFirebase(() => (firestore && productId) ? doc(firestore, 'products', productId) : null, [firestore, productId]);
   const catsQuery = useMemoFirebase(() => firestore ? collection(firestore, 'productCategories') : null, [firestore]);
   const transQuery = useMemoFirebase(() => firestore ? collection(firestore, 'localizedStrings') : null, [firestore]);
   const assetsQuery = useMemoFirebase(() => firestore ? query(collection(firestore, 'galleryAssets'), orderBy('createdAt', 'desc')) : null, [firestore]);
@@ -373,6 +371,7 @@ function ProductEditorContent() {
       
       if (tasks.length === 0) {
         toast({ variant: "destructive", title: "无内容可翻译", description: "请先填写中文名称或简介。" });
+        setIsAiProcessing(false);
         return;
       }
 
@@ -381,7 +380,7 @@ function ProductEditorContent() {
       results.forEach(r => { if (r.text) updates[r.field] = r.text; });
       
       setFormData(prev => ({ ...prev, ...updates }));
-      toast({ title: "基础信息智译成功", description: `已同步更新 ${results.length} 个字段。` });
+      toast({ title: "基础信息智译成功" });
     } catch (e) {
       toast({ variant: "destructive", title: "AI 翻译失败" });
     } finally {
@@ -548,7 +547,7 @@ function ProductEditorContent() {
               <div className="relative aspect-square rounded-xl bg-muted/20 border border-dashed border-border/60 overflow-hidden flex items-center justify-center group cursor-pointer" onClick={() => !formData.mainImageUrl && fileInputRef.current?.click()}>
                 {formData.mainImageUrl ? (
                   <>
-                    <Image src={formData.mainImageUrl} alt="Main" fill className="object-contain p-4" />
+                    <Image src={formData.mainImageUrl} alt="Main" fill className="object-contain p-4" unoptimized />
                     <div className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
                       <Button variant="destructive" size="sm" className="rounded-full h-8 w-8 p-0" onClick={(e) => { e.stopPropagation(); setFormData({...formData, mainImageUrl: ''}); }}><X className="h-4 w-4" /></Button>
                     </div>
@@ -623,10 +622,10 @@ function ProductEditorContent() {
                           <History className="h-3 w-3" /> 云端规格库
                         </div>
                         <div className="max-h-60 overflow-y-auto">
-                          {specTemplates?.length === 0 ? (
+                          {(!specTemplates || specTemplates.length === 0) ? (
                             <div className="p-8 text-center text-[10px] text-muted-foreground italic">暂无模板</div>
                           ) : (
-                            specTemplates?.map(tpl => (
+                            specTemplates.map(tpl => (
                               <div 
                                 key={tpl.id} 
                                 className="w-full text-left p-1 border-b border-border/20 last:border-0 flex items-center group hover:bg-muted/50"
@@ -657,7 +656,7 @@ function ProductEditorContent() {
                       <Save className="h-3.5 w-3.5" /> 存为模板
                     </Button>
 
-                    <Button variant="default" size="sm" onClick={() => setFormData({...formData, specGroups: [...formData.specGroups, {uid: `group_${Date.now()}`, titleEn:'', titleZh:'', items:[{uid: `item_${Date.now()}`, labelEn:'', labelZh:'', valueEn:'', valueZh:''}]}]})} className="rounded-lg h-9 px-4 font-bold uppercase tracking-widest text-[10px] gap-1.5 shadow-sm">
+                    <Button variant="default" size="sm" onClick={() => setFormData({...formData, specGroups: [...formData.specGroups, {uid: `group_${Date.now()}_${Math.random()}`, titleEn:'', titleZh:'', items:[{uid: `item_${Date.now()}_${Math.random()}`, labelEn:'', labelZh:'', valueEn:'', valueZh:''}]}]})} className="rounded-lg h-9 px-4 font-bold uppercase tracking-widest text-[10px] gap-1.5 shadow-sm">
                       <PlusCircle className="h-3.5 w-3.5" /> 新增分组
                     </Button>
                   </div>
@@ -722,7 +721,6 @@ function ProductEditorContent() {
                       <div className="p-0">
                         {group.items.map((item, iIdx) => (
                           <div key={item.uid} className="grid grid-cols-1 md:grid-cols-[1fr_1fr_40px] gap-6 px-6 py-4 transition-colors border-b last:border-b-0 border-border/20 group/row">
-                            {/* 左侧：中文栏 (ZH) */}
                             <div className="space-y-3">
                               <div className="flex items-center gap-2 text-[9px] font-bold text-primary/40 uppercase tracking-widest">
                                 <Languages className="h-2.5 w-2.5" /> 参数内容 (ZH)
@@ -743,7 +741,6 @@ function ProductEditorContent() {
                               </div>
                             </div>
                             
-                            {/* 右侧：英文栏 (EN) */}
                             <div className="space-y-3">
                               <div className="flex items-center gap-2 text-[9px] font-bold text-muted-foreground/40 uppercase tracking-widest">
                                 <Globe className="h-2.5 w-2.5" /> English Value (EN)
@@ -778,7 +775,6 @@ function ProductEditorContent() {
                               </div>
                             </div>
 
-                            {/* 删除按钮 */}
                             <div className="flex items-start pt-7">
                               <Button variant="ghost" size="icon" onClick={() => { const g = [...formData.specGroups]; g[gIdx].items = g[gIdx].items.filter((_,i)=>i!==iIdx); setFormData({...formData, specGroups: g}); }} className="h-8 w-8 text-destructive/40 hover:text-destructive hover:bg-destructive/5"><X className="h-4 w-4" /></Button>
                             </div>
@@ -813,8 +809,8 @@ function ProductEditorContent() {
                  </div>
                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                    {formData.galleryUrls.map((url, idx) => (
-                     <div key={idx} className="flex gap-3 p-3 bg-muted/10 rounded-xl border border-border/20">
-                       <div className="relative h-16 w-16 border rounded-lg bg-white overflow-hidden shadow-sm shrink-0"><Image src={url} alt="Gallery" fill className="object-contain p-1" /></div>
+                     <div key={`gallery-${idx}-${url.substring(0, 10)}`} className="flex gap-3 p-3 bg-muted/10 rounded-xl border border-border/20">
+                       <div className="relative h-16 w-16 border rounded-lg bg-white overflow-hidden shadow-sm shrink-0"><Image src={url} alt="Gallery" fill className="object-contain p-1" unoptimized /></div>
                        <div className="flex-1 flex flex-col justify-between">
                          <input type="text" value={url} onChange={e => { const g = [...formData.galleryUrls]; g[idx] = e.target.value; setFormData({...formData, galleryUrls: g}); }} className="flex h-7 w-full rounded-md border border-input bg-white px-2 py-1 text-[9px] ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50" />
                          <Button variant="ghost" size="sm" onClick={() => setFormData({...formData, galleryUrls: formData.galleryUrls.filter((_,i)=>i!==idx)})} className="h-6 text-destructive text-[9px] font-bold uppercase hover:bg-destructive/5 ml-auto">移除</Button>
@@ -839,7 +835,7 @@ function ProductEditorContent() {
             <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
               {galleryAssets?.filter(a => a.title.toLowerCase().includes(pickerSearch.toLowerCase())).map(a => (
                 <div key={a.id} className={cn("group relative aspect-square bg-white rounded-lg cursor-pointer overflow-hidden border-2 transition-all", selectedPickerUrls.has(a.url) ? "border-primary ring-2 ring-primary/20" : "border-transparent")} onClick={() => togglePickerSelection(a.url)}>
-                  <Image src={a.url} alt={a.title} fill className="object-cover" />
+                  <Image src={a.url} alt={a.title} fill className="object-cover" unoptimized />
                   {selectedPickerUrls.has(a.url) && <div className="absolute inset-0 bg-primary/20 flex items-center justify-center"><Check className="text-primary h-6 w-6 bg-white rounded-full p-1 shadow-lg" /></div>}
                 </div>
               ))}
@@ -859,5 +855,9 @@ function ProductEditorContent() {
 }
 
 export default function ProductEditorPage() {
-  return <Suspense fallback={<div className="h-screen flex items-center justify-center"><Loader2 className="h-8 w-8 animate-spin text-primary opacity-20" /></div>}><ProductEditorContent /></Suspense>;
+  return (
+    <Suspense fallback={<div className="h-screen flex items-center justify-center"><Loader2 className="h-8 w-8 animate-spin text-primary opacity-20" /></div>}>
+      <ProductEditorContent />
+    </Suspense>
+  );
 }
