@@ -1,11 +1,15 @@
 
 "use client";
 
-import { useEditor, EditorContent } from '@tiptap/react';
+import React, { useEffect, useImperativeHandle, forwardRef } from 'react';
+import { useEditor, EditorContent, Extension } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
 import Underline from '@tiptap/extension-underline';
 import Link from '@tiptap/extension-link';
 import Image from '@tiptap/extension-image';
+import TextAlign from '@tiptap/extension-text-align';
+import TextStyle from '@tiptap/extension-text-style';
+import FontFamily from '@tiptap/extension-font-family';
 import { 
   Bold, 
   Italic, 
@@ -17,12 +21,63 @@ import {
   Redo, 
   Type,
   ImageIcon,
-  Link as LinkIcon,
-  Eraser
+  Eraser,
+  AlignLeft,
+  AlignCenter,
+  AlignRight,
+  AlignJustify,
+  ChevronDown
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { 
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { cn } from '@/lib/utils';
-import { useEffect } from 'react';
+
+// 自定义字号扩展
+const FontSize = Extension.create({
+  name: 'fontSize',
+  addOptions() {
+    return {
+      types: ['textStyle'],
+    }
+  },
+  addGlobalAttributes() {
+    return [
+      {
+        types: this.options.types,
+        attributes: {
+          fontSize: {
+            default: null,
+            parseHTML: element => element.style.fontSize?.replace(/['"]+/g, ''),
+            renderHTML: attributes => {
+              if (!attributes.fontSize) {
+                return {}
+              }
+              return {
+                style: `font-size: ${attributes.fontSize}`,
+              }
+            },
+          },
+        },
+      },
+    ]
+  },
+  addCommands() {
+    return {
+      setFontSize: (fontSize: string) => ({ chain }: any) => {
+        return chain().setMark('textStyle', { fontSize }).run()
+      },
+      unsetFontSize: () => ({ chain }: any) => {
+        return chain().setMark('textStyle', { fontSize: null }).removeEmptyTextStyle().run()
+      },
+    }
+  } as any,
+});
 
 interface RichTextEditorProps {
   content: string;
@@ -37,7 +92,39 @@ const MenuBar = ({ editor, onImageClick }: { editor: any, onImageClick?: () => v
 
   return (
     <div className="flex flex-wrap items-center gap-1 p-2 bg-muted/20 border-b border-border/40 sticky top-0 z-10 backdrop-blur-sm">
-      <div className="flex items-center gap-1 pr-2 border-r border-border/40">
+      {/* 字体与字号 */}
+      <div className="flex items-center gap-2 pr-2 border-r border-border/40">
+        <Select 
+          value={editor.getAttributes('textStyle').fontFamily || 'Inter'} 
+          onValueChange={(val) => editor.chain().focus().setFontFamily(val).run()}
+        >
+          <SelectTrigger className="h-8 w-[110px] text-[10px] font-bold bg-white border-none shadow-none">
+            <SelectValue placeholder="字体" />
+          </SelectTrigger>
+          <SelectContent className="rounded-lg">
+            <SelectItem value="Inter" className="text-xs">Inter (默认)</SelectItem>
+            <SelectItem value="Space Grotesk" className="text-xs font-headline">Space Grotesk</SelectItem>
+            <SelectItem value="monospace" className="text-xs font-mono">Monospace</SelectItem>
+          </SelectContent>
+        </Select>
+
+        <Select 
+          value={editor.getAttributes('textStyle').fontSize || '14px'} 
+          onValueChange={(val) => editor.chain().focus().setFontSize(val).run()}
+        >
+          <SelectTrigger className="h-8 w-[70px] text-[10px] font-bold bg-white border-none shadow-none">
+            <SelectValue placeholder="字号" />
+          </SelectTrigger>
+          <SelectContent className="rounded-lg">
+            {['12px', '14px', '16px', '18px', '20px', '24px', '32px'].map(size => (
+              <SelectItem key={size} value={size} className="text-xs">{size}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
+
+      {/* 基础样式 */}
+      <div className="flex items-center gap-1 px-2 border-r border-border/40">
         <Button
           variant="ghost"
           size="icon"
@@ -64,6 +151,43 @@ const MenuBar = ({ editor, onImageClick }: { editor: any, onImageClick?: () => v
         </Button>
       </div>
 
+      {/* 对齐方式 */}
+      <div className="flex items-center gap-1 px-2 border-r border-border/40">
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={() => editor.chain().focus().setTextAlign('left').run()}
+          className={cn("h-8 w-8", editor.isActive({ textAlign: 'left' }) && 'bg-primary/10 text-primary')}
+        >
+          <AlignLeft className="h-4 w-4" />
+        </Button>
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={() => editor.chain().focus().setTextAlign('center').run()}
+          className={cn("h-8 w-8", editor.isActive({ textAlign: 'center' }) && 'bg-primary/10 text-primary')}
+        >
+          <AlignCenter className="h-4 w-4" />
+        </Button>
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={() => editor.chain().focus().setTextAlign('right').run()}
+          className={cn("h-8 w-8", editor.isActive({ textAlign: 'right' }) && 'bg-primary/10 text-primary')}
+        >
+          <AlignRight className="h-4 w-4" />
+        </Button>
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={() => editor.chain().focus().setTextAlign('justify').run()}
+          className={cn("h-8 w-8", editor.isActive({ textAlign: 'justify' }) && 'bg-primary/10 text-primary')}
+        >
+          <AlignJustify className="h-4 w-4" />
+        </Button>
+      </div>
+
+      {/* 段落与列表 */}
       <div className="flex items-center gap-1 px-2 border-r border-border/40">
         <Button
           variant="ghost"
@@ -143,7 +267,7 @@ const MenuBar = ({ editor, onImageClick }: { editor: any, onImageClick?: () => v
   );
 };
 
-export default function RichTextEditor({ content, onChange, onImageClick, placeholder, className }: RichTextEditorProps) {
+const RichTextEditor = forwardRef<any, RichTextEditorProps>(({ content, onChange, onImageClick, placeholder, className }, ref) => {
   const editor = useEditor({
     extensions: [
       StarterKit.configure({
@@ -158,12 +282,18 @@ export default function RichTextEditor({ content, onChange, onImageClick, placeh
           class: 'rounded-xl max-w-full h-auto border border-border/20 shadow-lg my-6 mx-auto block',
         },
       }),
+      TextAlign.configure({
+        types: ['heading', 'paragraph'],
+      }),
+      TextStyle,
+      FontFamily,
+      FontSize,
     ],
     content,
     editorProps: {
       attributes: {
         class: cn(
-          'prose prose-sm max-w-none focus:outline-none min-h-full p-6 text-[13px] leading-relaxed',
+          'prose prose-sm max-w-none focus:outline-none min-h-full p-6 text-[14px] leading-relaxed',
           'prose-headings:font-headline prose-headings:text-primary prose-headings:mb-4 prose-headings:mt-8',
           'prose-p:mb-4 prose-p:text-muted-foreground/80',
           'prose-blockquote:border-l-4 prose-blockquote:border-accent prose-blockquote:bg-accent/5 prose-blockquote:py-2 prose-blockquote:px-4 prose-blockquote:rounded-r-lg',
@@ -176,7 +306,11 @@ export default function RichTextEditor({ content, onChange, onImageClick, placeh
     },
   });
 
-  // Sync content when it changes externally (e.g. from state reset)
+  // 暴露 editor 实例给外部
+  useImperativeHandle(ref, () => ({
+    editor
+  }));
+
   useEffect(() => {
     if (editor && content !== editor.getHTML()) {
       editor.commands.setContent(content);
@@ -184,14 +318,14 @@ export default function RichTextEditor({ content, onChange, onImageClick, placeh
   }, [content, editor]);
 
   return (
-    <div className={cn("border border-border/40 rounded-xl overflow-hidden bg-white flex flex-col group", className)}>
+    <div className={cn("border border-border/40 rounded-xl overflow-hidden bg-white flex flex-col group relative", className)}>
       <MenuBar editor={editor} onImageClick={onImageClick} />
-      <div className="flex-1 overflow-y-auto bg-muted/5 min-h-[300px]">
+      <div className="flex-1 overflow-y-auto bg-muted/5 min-h-[400px]">
         <EditorContent editor={editor} />
       </div>
       <div className="px-3 py-1 border-t border-border/10 bg-muted/20 flex justify-between items-center shrink-0 h-6">
         <span className="text-[9px] font-mono text-muted-foreground opacity-40 uppercase tracking-tighter">
-          Editor: Tiptap v2 • {editor?.storage.starterKit ? 'Rich Text Mode' : 'Standard'}
+          Editor: Tiptap v2 • Full Capabilities
         </span>
         <span className="text-[9px] font-bold text-primary/30 uppercase">
           {content.length} characters
@@ -199,4 +333,8 @@ export default function RichTextEditor({ content, onChange, onImageClick, placeh
       </div>
     </div>
   );
-}
+});
+
+RichTextEditor.displayName = 'RichTextEditor';
+
+export default RichTextEditor;

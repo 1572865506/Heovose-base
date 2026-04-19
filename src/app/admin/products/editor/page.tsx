@@ -139,6 +139,10 @@ function ProductEditorContent() {
   const { toast } = useToast();
   const fileInputRef = useRef<HTMLInputElement>(null);
   
+  // 富文本编辑器引用
+  const zhEditorRef = useRef<any>(null);
+  const targetEditorRef = useRef<any>(null);
+  
   const productId = searchParams.get('id');
   const isEditing = !!productId;
 
@@ -467,17 +471,10 @@ function ProductEditorContent() {
     } else if (pickerTarget === 'gallery') {
       setFormData({ ...formData, galleryUrls: [...formData.galleryUrls, ...urls] });
     } else if (pickerTarget === 'richtext-zh') {
-      const imgHtml = `<img src="${urls[0]}" />`;
-      setFormData(prev => ({ 
-        ...prev, 
-        localizedDetails: { ...prev.localizedDetails, zh: (prev.localizedDetails.zh || '') + imgHtml } 
-      }));
+      // 使用编辑器实例插入图片，确保插入到光标位置且逻辑严谨
+      zhEditorRef.current?.editor?.commands.setImage({ src: urls[0] });
     } else if (pickerTarget === 'richtext-target') {
-      const imgHtml = `<img src="${urls[0]}" />`;
-      setFormData(prev => ({ 
-        ...prev, 
-        localizedDetails: { ...prev.localizedDetails, [targetDetailsLang]: (prev.localizedDetails[targetDetailsLang] || '') + imgHtml } 
-      }));
+      targetEditorRef.current?.editor?.commands.setImage({ src: urls[0] });
     }
     
     setIsPickerOpen(false);
@@ -809,6 +806,7 @@ function ProductEditorContent() {
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6 flex-1 overflow-hidden">
                   <RichTextEditor 
+                    ref={zhEditorRef}
                     content={formData.localizedDetails.zh || ''} 
                     onChange={val => setFormData({
                       ...formData, 
@@ -818,8 +816,9 @@ function ProductEditorContent() {
                     className="flex-1"
                     placeholder="在此输入或粘贴中文排版内容..."
                   />
-                  <div className="flex flex-col flex-1 overflow-hidden group">
+                  <div className="flex flex-col flex-1 overflow-hidden group relative">
                     <RichTextEditor 
+                      ref={targetEditorRef}
                       content={formData.localizedDetails[targetDetailsLang] || ''} 
                       onChange={val => setFormData({
                         ...formData, 
