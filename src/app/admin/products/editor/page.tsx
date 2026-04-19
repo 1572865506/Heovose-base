@@ -411,10 +411,13 @@ function ProductEditorContent() {
                     setFormData(prev => {
                       const updates: any = { categoryId: v };
                       if (!isEditing) {
-                        const catName = v.toLowerCase().replace(/\s+/g, '_');
-                        const ts = Date.now().toString().slice(-4);
+                        const catName = v.toUpperCase().replace(/\s+/g, '_');
+                        const date = new Date();
+                        const mm = String(date.getMonth() + 1).padStart(2, '0');
+                        const dd = String(date.getDate()).padStart(2, '0');
+                        const dateStr = `${mm}${dd}`;
                         const rc = Math.random().toString(36).substring(2, 6).toUpperCase();
-                        updates.id = `PROD_${catName}_${ts}_${rc}`;
+                        updates.id = `PROD_${catName}_${dateStr}_${rc}`;
                       }
                       return { ...prev, ...updates };
                     });
