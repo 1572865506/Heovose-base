@@ -36,7 +36,9 @@ import {
   LayoutTemplate,
   History,
   FileDown,
-  Film
+  Film,
+  ChevronLeft,
+  ChevronRight
 } from 'lucide-react';
 import { 
   Dialog, 
@@ -458,6 +460,15 @@ function ProductEditorContent() {
     setIsPickerOpen(false);
   };
 
+  const moveGalleryImage = (index: number, direction: 'left' | 'right') => {
+    const newUrls = [...formData.galleryUrls];
+    const targetIndex = direction === 'left' ? index - 1 : index + 1;
+    if (targetIndex < 0 || targetIndex >= newUrls.length) return;
+    
+    [newUrls[index], newUrls[targetIndex]] = [newUrls[targetIndex], newUrls[index]];
+    setFormData({ ...formData, galleryUrls: newUrls });
+  };
+
   if (isEditing && isProdLoading) return <div className="h-[60vh] flex flex-col items-center justify-center gap-4"><Loader2 className="h-8 w-8 animate-spin text-primary opacity-20" /></div>;
 
   return (
@@ -571,14 +582,14 @@ function ProductEditorContent() {
             </div>
           </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-stretch">
             {/* 主展示图列 */}
-            <div className="lg:col-span-3 space-y-3">
-              <div className="flex items-center justify-between">
-                <Label className="text-[10px] font-bold uppercase text-primary/60 tracking-widest">产品主展示图</Label>
+            <div className="lg:col-span-3 flex flex-col">
+              <div className="flex items-center justify-between mb-3">
+                <Label className="text-[10px] font-bold uppercase text-primary tracking-widest">产品主展示图</Label>
                 <button onClick={() => openPicker('main')} className="text-[9px] font-bold text-primary hover:underline">库选取</button>
               </div>
-              <div className="relative aspect-square rounded-xl bg-muted/20 border border-dashed border-border/60 overflow-hidden flex items-center justify-center group cursor-pointer" onClick={() => !formData.mainImageUrl && fileInputRef.current?.click()}>
+              <div className="relative flex-1 min-h-[280px] rounded-xl bg-muted/20 border border-dashed border-border/60 overflow-hidden flex items-center justify-center group cursor-pointer" onClick={() => !formData.mainImageUrl && fileInputRef.current?.click()}>
                 {formData.mainImageUrl ? (
                   <>
                     <Image src={formData.mainImageUrl} alt="Main" fill className="object-contain p-4 transition-transform duration-700 group-hover:scale-105" unoptimized />
@@ -597,21 +608,44 @@ function ProductEditorContent() {
             </div>
 
             {/* 副图库列表列 */}
-            <div className="lg:col-span-9 space-y-3">
-              <Label className="text-[10px] font-bold uppercase text-primary/60 tracking-widest">产品详情幻灯片副图 ({formData.galleryUrls.length})</Label>
-              <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-4 min-h-[160px] p-4 bg-muted/10 rounded-xl border border-border/40">
+            <div className="lg:col-span-9 flex flex-col">
+              <div className="flex items-center justify-between mb-3">
+                <Label className="text-[10px] font-bold uppercase text-primary tracking-widest">产品详情幻灯片副图 ({formData.galleryUrls.length})</Label>
+              </div>
+              <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-4 flex-1 min-h-[280px] p-4 bg-muted/10 rounded-xl border border-border/40 content-start overflow-y-auto">
                 {formData.galleryUrls.map((url, idx) => (
                   <div key={`gal-top-${idx}`} className="group relative aspect-square bg-white rounded-lg border border-border/20 overflow-hidden shadow-sm hover:shadow-md transition-all">
                     <Image src={url} alt="Gallery" fill className="object-contain p-2" unoptimized />
-                    <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                    <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center gap-2">
+                      <div className="flex gap-1.5">
+                        <Button 
+                          variant="secondary" 
+                          size="icon" 
+                          className="h-7 w-7 rounded-full disabled:opacity-30" 
+                          disabled={idx === 0}
+                          onClick={() => moveGalleryImage(idx, 'left')}
+                        >
+                          <ChevronLeft className="h-4 w-4" />
+                        </Button>
+                        <Button 
+                          variant="secondary" 
+                          size="icon" 
+                          className="h-7 w-7 rounded-full disabled:opacity-30" 
+                          disabled={idx === formData.galleryUrls.length - 1}
+                          onClick={() => moveGalleryImage(idx, 'right')}
+                        >
+                          <ChevronRight className="h-4 w-4" />
+                        </Button>
+                      </div>
                       <Button variant="destructive" size="icon" className="h-7 w-7 rounded-full" onClick={() => setFormData({...formData, galleryUrls: formData.galleryUrls.filter((_,i)=>i!==idx)})}>
                         <Trash2 className="h-3.5 w-3.5" />
                       </Button>
                     </div>
+                    <div className="absolute bottom-1 right-1 bg-black/50 px-1 rounded text-[8px] text-white font-mono">{idx + 1}</div>
                   </div>
                 ))}
                 {formData.galleryUrls.length === 0 && (
-                  <div className="col-span-full flex flex-col items-center justify-center text-muted-foreground/30 py-8">
+                  <div className="col-span-full h-full flex flex-col items-center justify-center text-muted-foreground/30 py-8">
                     <ImageIcon className="h-8 w-8 mb-2" />
                     <p className="text-[10px] font-bold uppercase tracking-widest">暂未添加副图库</p>
                   </div>
@@ -724,52 +758,6 @@ function ProductEditorContent() {
                     </Button>
                   </div>
                 </div>
-
-                <Dialog open={isSaveTemplateDialogOpen} onOpenChange={(open) => { setIsSaveTemplateDialogOpen(open); if(!open) { setNewTemplateName(''); setTargetTemplateId(''); } }}>
-                  <DialogContent className="max-w-sm rounded-2xl">
-                    <DialogHeader>
-                      <DialogTitle className="text-base font-bold">规格模板管理</DialogTitle>
-                      <DialogDescription>保存当前规格结构至云端，供其他产品快速复用。</DialogDescription>
-                    </DialogHeader>
-                    
-                    <div className="py-4 space-y-6">
-                      <RadioGroup value={saveTemplateMode} onValueChange={(v: 'create'|'update') => setSaveTemplateMode(v)} className="grid grid-cols-2 gap-4">
-                        <div className={cn("flex items-center space-x-2 border rounded-xl p-3 cursor-pointer", saveTemplateMode === 'create' && "border-primary bg-primary/5")}>
-                          <RadioGroupItem value="create" id="r-create" />
-                          <Label htmlFor="r-create" className="text-xs font-bold cursor-pointer">存为新模板</Label>
-                        </div>
-                        <div className={cn("flex items-center space-x-2 border rounded-xl p-3 cursor-pointer", saveTemplateMode === 'update' && "border-primary bg-primary/5")}>
-                          <RadioGroupItem value="update" id="r-update" />
-                          <Label htmlFor="r-update" className="text-xs font-bold cursor-pointer">覆盖旧模板</Label>
-                        </div>
-                      </RadioGroup>
-
-                      {saveTemplateMode === 'create' ? (
-                        <div className="space-y-2 animate-in fade-in slide-in-from-top-2">
-                          <Label className="text-[10px] font-bold uppercase opacity-60">新模板显示名称</Label>
-                          <Input placeholder="输入模板名称..." value={newTemplateName} onChange={e => setNewTemplateName(e.target.value)} className="rounded-xl h-11" />
-                        </div>
-                      ) : (
-                        <div className="space-y-2 animate-in fade-in slide-in-from-top-2">
-                          <Label className="text-[10px] font-bold uppercase opacity-60">选择要覆盖的模板</Label>
-                          <Select value={targetTemplateId} onValueChange={setTargetTemplateId}>
-                            <SelectTrigger className="h-11 rounded-xl">
-                              <SelectValue placeholder="选择模板..." />
-                            </SelectTrigger>
-                            <SelectContent className="rounded-xl">
-                              {specTemplates?.map(tpl => <SelectItem key={tpl.id} value={tpl.id} className="text-xs">{tpl.name}</SelectItem>)}
-                            </SelectContent>
-                          </Select>
-                        </div>
-                      )}
-                    </div>
-
-                    <DialogFooter className="gap-2">
-                      <Button variant="outline" onClick={() => setIsSaveTemplateDialogOpen(false)} className="rounded-xl flex-1">取消</Button>
-                      <Button onClick={handleSaveTemplate} className="rounded-xl flex-1">确认并保存</Button>
-                    </DialogFooter>
-                  </DialogContent>
-                </Dialog>
 
                 <div className="space-y-8">
                   {formData.specGroups.map((group, gIdx) => (
