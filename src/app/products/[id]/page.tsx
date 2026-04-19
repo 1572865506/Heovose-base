@@ -254,7 +254,7 @@ export default function ProductDetailPage() {
                                   <span className="text-xs font-bold text-primary uppercase tracking-wider">{item.label}</span>
                                 </div>
                                 <div className="flex-1 p-6">
-                                  <span className="text-sm text-muted-foreground font-medium">{item.value}</span>
+                                  <span className="text-sm text-muted-foreground font-medium whitespace-pre-wrap">{item.value}</span>
                                 </div>
                               </div>
                             ))}

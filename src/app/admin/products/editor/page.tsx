@@ -3,7 +3,7 @@
 
 import { useState, useEffect, useMemo, Suspense, useRef } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { useFirestore, useDoc, useCollection, useMemoFirebase } from '@/firebase';
+import { useUser, useFirestore, useDoc, useCollection, useMemoFirebase } from '@/firebase';
 import { doc, collection, serverTimestamp, query, orderBy, deleteDoc } from 'firebase/firestore';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -292,7 +292,6 @@ function ProductEditorContent() {
     router.push('/admin/products');
   };
 
-  // --- 模板逻辑增强 ---
   const handleSaveTemplate = () => {
     if (!firestore || formData.specGroups.length === 0) return;
     
@@ -528,12 +527,13 @@ function ProductEditorContent() {
               <div className="space-y-1.5">
                 <Label className="text-[10px] font-bold uppercase text-primary">产品唯一 ID</Label>
                 <div className="relative">
-                  <Input 
+                  <input 
+                    type="text"
                     disabled={isEditing} 
                     value={formData.id} 
                     onChange={e => setFormData({...formData, id: e.target.value})} 
                     className={cn(
-                      "h-10 rounded-lg bg-muted/10 border-none font-mono text-xs pr-8",
+                      "flex h-10 w-full rounded-lg bg-muted/10 border-none px-3 py-2 text-xs font-mono ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 pr-8",
                       idConflict && "text-destructive"
                     )} 
                     placeholder="选择分类后自动生成..."
@@ -735,14 +735,14 @@ function ProductEditorContent() {
                             </div>
                             <div className="md:col-span-6 grid grid-cols-1 gap-1.5">
                               <div className="relative group/field">
-                                <Input placeholder="数值 (ZH)" value={item.valueZh} onChange={e => { const g = [...formData.specGroups]; g[gIdx].items[iIdx].valueZh = e.target.value; setFormData({...formData, specGroups: g}); }} className="h-8 text-[11px] rounded-md bg-white pr-8" />
+                                <Textarea placeholder="数值 (ZH)" value={item.valueZh} onChange={e => { const g = [...formData.specGroups]; g[gIdx].items[iIdx].valueZh = e.target.value; setFormData({...formData, specGroups: g}); }} className="min-h-[40px] h-auto text-[11px] rounded-md bg-white pr-8 py-1.5 leading-relaxed" />
                                 {aiConfig?.isEnabled && (
                                   <button onClick={() => handleAiTranslateSpec(gIdx, iIdx, item.valueZh, 'value')} className="absolute right-1.5 top-1.5 p-0.5 text-accent opacity-0 group-hover/field:opacity-100 transition-opacity hover:bg-accent/10 rounded">
                                     <Sparkles className="h-3 w-3" />
                                   </button>
                                 )}
                               </div>
-                              <Input placeholder="Value (EN)" value={item.valueEn} onChange={e => { const g = [...formData.specGroups]; g[gIdx].items[iIdx].valueEn = e.target.value; setFormData({...formData, specGroups: g}); }} className="h-8 text-[11px] rounded-md bg-white/60 opacity-60" />
+                              <Textarea placeholder="Value (EN)" value={item.valueEn} onChange={e => { const g = [...formData.specGroups]; g[gIdx].items[iIdx].valueEn = e.target.value; setFormData({...formData, specGroups: g}); }} className="min-h-[40px] h-auto text-[11px] rounded-md bg-white/60 opacity-60 pr-8 py-1.5 leading-relaxed" />
                             </div>
                             <div className="md:col-span-1 flex items-center justify-center">
                               <Button variant="ghost" size="icon" onClick={() => { const g = [...formData.specGroups]; g[gIdx].items = g[gIdx].items.filter((_,i)=>i!==iIdx); setFormData({...formData, specGroups: g}); }} className="h-7 w-7 text-destructive"><X className="h-3.5 w-3.5" /></Button>
@@ -781,7 +781,7 @@ function ProductEditorContent() {
                      <div key={idx} className="flex gap-3 p-3 bg-muted/10 rounded-xl border border-border/20">
                        <div className="relative h-16 w-16 border rounded-lg bg-white overflow-hidden shadow-sm shrink-0"><Image src={url} alt="Gallery" fill className="object-contain p-1" /></div>
                        <div className="flex-1 flex flex-col justify-between">
-                         <Input value={url} onChange={e => { const g = [...formData.galleryUrls]; g[idx] = e.target.value; setFormData({...formData, galleryUrls: g}); }} className="h-7 text-[9px] bg-white" />
+                         <input type="text" value={url} onChange={e => { const g = [...formData.galleryUrls]; g[idx] = e.target.value; setFormData({...formData, galleryUrls: g}); }} className="flex h-7 w-full rounded-md border border-input bg-white px-2 py-1 text-[9px] ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50" />
                          <Button variant="ghost" size="sm" onClick={() => setFormData({...formData, galleryUrls: formData.galleryUrls.filter((_,i)=>i!==idx)})} className="h-6 text-destructive text-[9px] font-bold uppercase hover:bg-destructive/5 ml-auto">移除</Button>
                        </div>
                      </div>
@@ -798,7 +798,7 @@ function ProductEditorContent() {
           <DialogHeader className="sr-only"><DialogTitle>素材选择中心</DialogTitle><DialogDescription>浏览并选择库中已有的图片素材。</DialogDescription></DialogHeader>
           <div className="bg-primary p-6 text-white"><div className="flex items-center gap-2"><ImageIcon className="h-6 w-6" /><h3 className="text-xl font-bold">素材中心</h3></div></div>
           <div className="px-6 py-4 flex flex-col md:flex-row gap-3 bg-muted/20 border-b">
-            <div className="relative flex-1"><Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" /><Input placeholder="搜索素材标题..." value={pickerSearch} onChange={e => setPickerSearch(e.target.value)} className="pl-9 h-10 bg-white" /></div>
+            <div className="relative flex-1"><Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" /><input type="text" placeholder="搜索素材标题..." value={pickerSearch} onChange={e => setPickerSearch(e.target.value)} className="flex h-10 w-full rounded-md border border-input bg-white pl-9 pr-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50" /></div>
           </div>
           <div className="flex-1 overflow-y-auto p-6 bg-muted/5">
             <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
