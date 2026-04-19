@@ -233,7 +233,7 @@ function ProductEditorContent() {
   }, [formData.id, allProducts, isEditing]);
 
   const translationMetrics = useMemo(() => {
-    const fields = [formData.nameZh, formData.nameEn, formData.descZh, formData.descEn];
+    const fields = [formData.nameZh, formData.nameEn, formData.descZh, formData.descEn, formData.detailsZh, formData.detailsEn];
     const filled = fields.filter(f => f.trim().length > 0).length;
     return (filled / fields.length) * 100;
   }, [formData]);
@@ -369,6 +369,27 @@ function ProductEditorContent() {
       results.forEach(r => { if (r.text) updates[r.field] = r.text; });
       setFormData(prev => ({ ...prev, ...updates }));
       toast({ title: "基础信息智译成功" });
+    } catch (e) {
+      toast({ variant: "destructive", title: "AI 翻译失败" });
+    } finally {
+      setIsAiProcessing(false);
+    }
+  };
+
+  const handleAiTranslateDetails = async () => {
+    if (!aiConfig?.isEnabled || !formData.detailsZh.trim()) return;
+    setIsAiProcessing(true);
+    try {
+      const result = await translateContent({
+        text: formData.detailsZh,
+        sourceLang: 'zh',
+        targetLangs: ['en'],
+        model: aiConfig.model
+      });
+      if (result.en) {
+        setFormData(prev => ({ ...prev, detailsEn: result.en }));
+        toast({ title: "详情介绍智译成功" });
+      }
     } catch (e) {
       toast({ variant: "destructive", title: "AI 翻译失败" });
     } finally {
@@ -733,6 +754,11 @@ function ProductEditorContent() {
               <div className="bg-white p-6 rounded-2xl border border-border/40 shadow-sm space-y-4 h-[calc(100vh-280px)] min-h-[600px] flex flex-col">
                 <div className="flex items-center justify-between border-b pb-3 mb-2 shrink-0 h-8">
                   <div className="flex items-center gap-2"><Film className="h-4 w-4 text-primary" /><h3 className="font-bold text-sm">富文本详情编辑</h3></div>
+                  {aiConfig?.isEnabled && (
+                    <Button variant="ghost" size="sm" className="h-6 text-[9px] gap-1 px-2 font-bold text-accent" onClick={handleAiTranslateDetails} disabled={isAiProcessing}>
+                      {isAiProcessing ? <Loader2 className="h-2.5 w-2.5 animate-spin" /> : <Sparkles className="h-2.5 w-2.5" />} AI 智译
+                    </Button>
+                  )}
                 </div>
                 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6 shrink-0">
@@ -797,7 +823,7 @@ function ProductEditorContent() {
           </div>
           <DialogFooter className="bg-muted/10 p-4 border-t gap-2">
             <Button variant="outline" onClick={() => setIsSaveTemplateDialogOpen(false)} className="h-10 rounded-xl flex-1 text-xs">取消</Button>
-            <Button onClick={handleSaveTemplate} className="h-10 rounded-xl flex-1 text-xs">立即保存</Button>
+            <Button onClick={handleSaveTemplate} className="rounded-xl h-10 flex-1 text-xs">立即保存</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
