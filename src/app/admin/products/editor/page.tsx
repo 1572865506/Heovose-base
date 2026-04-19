@@ -484,7 +484,7 @@ function ProductEditorContent() {
       <div className="space-y-6 px-4">
         {/* 媒体素材中心整合区 - 锁定 240px 总高度，子项精确计算 11:9 宽度 */}
         <div className="bg-white p-6 rounded-2xl border border-border/40 shadow-sm space-y-4">
-          <div className="flex items-center justify-between border-b border-border/40 pb-3">
+          <div className="flex items-center justify-between border-b border-border/40 pb-3 h-8">
             <div className="space-y-0.5">
               <h3 className="text-xs font-bold text-primary flex items-center gap-2">
                 <ImageIcon className="h-4 w-4" /> 产品视觉素材管理
@@ -501,7 +501,7 @@ function ProductEditorContent() {
           <div className="flex gap-6 items-start h-[240px]">
             {/* 主展示图列 - 基于高度 216px 计算出 11:9 宽度为 264px */}
             <div className="flex flex-col h-full w-[264px] shrink-0">
-              <div className="flex items-center justify-between mb-1.5">
+              <div className="flex items-center justify-between mb-1.5 h-6">
                 <Label className="text-[10px] font-bold uppercase text-primary tracking-widest">主图预览</Label>
                 <button onClick={() => openPicker('main')} className="text-[9px] font-bold text-primary hover:underline">库选取</button>
               </div>
@@ -525,8 +525,9 @@ function ProductEditorContent() {
 
             {/* 副图库横向滚动区 - 基于卡片净高 192px 计算出宽度为 235px */}
             <div className="flex flex-col h-full flex-1 overflow-hidden">
-              <div className="flex items-center justify-between mb-1.5">
+              <div className="flex items-center justify-between mb-1.5 h-6">
                 <Label className="text-[10px] font-bold uppercase text-primary tracking-widest">详情幻灯片 ({formData.galleryUrls.length})</Label>
+                <div className="w-10 h-1" /> {/* 占位平衡 */}
               </div>
               <div className="flex flex-nowrap gap-4 p-3 bg-muted/10 rounded-xl border border-border/40 overflow-x-auto h-full items-center">
                 {formData.galleryUrls.map((url, idx) => (
@@ -567,7 +568,7 @@ function ProductEditorContent() {
               <div className="bg-white p-6 rounded-2xl border border-border/40 shadow-sm space-y-8">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                   <div className="space-y-4">
-                    <div className="flex items-center justify-between border-b pb-2 mb-2">
+                    <div className="flex items-center justify-between border-b pb-2 mb-2 h-8">
                       <Label className="text-[10px] font-bold uppercase text-primary tracking-widest flex items-center gap-1.5"><Languages className="h-3 w-3" /> 中文内容</Label>
                       {aiConfig?.isEnabled && (
                         <Button variant="ghost" size="sm" className="h-6 text-[9px] gap-1 px-2 font-bold text-accent" onClick={handleAiTranslateBasicInfo} disabled={isAiProcessing}>
@@ -581,8 +582,9 @@ function ProductEditorContent() {
                     </div>
                   </div>
                   <div className="space-y-4">
-                    <div className="flex items-center justify-between border-b pb-2 mb-2">
+                    <div className="flex items-center justify-between border-b pb-2 mb-2 h-8">
                       <Label className="text-[10px] font-bold uppercase text-muted-foreground tracking-widest flex items-center gap-1.5"><Globe className="h-3 w-3" /> 英文内容</Label>
+                      <div className="w-10 h-1" /> {/* 平衡占位 */}
                     </div>
                     <div className="space-y-4">
                       <Input placeholder="Product Name" value={formData.nameEn} onChange={e => setFormData({...formData, nameEn: e.target.value})} className="rounded-lg h-10 bg-muted/5" />
@@ -595,7 +597,7 @@ function ProductEditorContent() {
 
             <TabsContent value="specs" className="space-y-4">
               <div className="bg-white p-6 rounded-2xl border border-border/40 shadow-sm space-y-6">
-                <div className="flex items-center justify-between">
+                <div className="flex items-center justify-between h-9">
                   <div className="space-y-0.5">
                     <h3 className="text-sm font-bold text-primary flex items-center gap-2"><TableProperties className="h-4 w-4" /> 技术规格配置</h3>
                     <p className="text-[10px] text-muted-foreground">采用分栏布局，左侧为中文，右侧为英文，保持对齐美观。</p>
@@ -658,8 +660,12 @@ function ProductEditorContent() {
 
             <TabsContent value="details" className="space-y-4">
               <div className="bg-white p-6 rounded-2xl border border-border/40 shadow-sm space-y-4 h-[calc(100vh-280px)] min-h-[500px] flex flex-col">
-                <div className="flex items-center justify-between border-b pb-3 mb-2 shrink-0">
+                <div className="flex items-center justify-between border-b pb-3 mb-2 shrink-0 h-8">
                   <div className="flex items-center gap-2"><Info className="h-4 w-4 text-primary" /><h3 className="font-bold text-sm">详细图文说明</h3></div>
+                  <div className="flex gap-8 flex-1 justify-end">
+                    <span className="text-[10px] font-bold uppercase text-primary/40">中文详情</span>
+                    <span className="text-[10px] font-bold uppercase text-primary/40 mr-[25%]">英文详情</span>
+                  </div>
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6 flex-1 overflow-hidden">
                   <Textarea placeholder="中文介绍..." value={formData.detailsZh} onChange={e => setFormData({...formData, detailsZh: e.target.value})} className="h-full rounded-xl p-4 bg-muted/5 text-xs resize-none" />
