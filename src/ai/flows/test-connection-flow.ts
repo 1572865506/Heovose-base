@@ -23,8 +23,11 @@ const TestOutputSchema = z.object({
 export async function testAiConnection(input: z.infer<typeof TestInputSchema>) {
   const startTime = Date.now();
   try {
+    // 确保使用正确的前缀，如果用户手动输入且漏掉了前缀，在此处尝试补全
+    const finalModel = input.model.includes('/') ? input.model : `google-genai/${input.model}`;
+    
     const { output } = await ai.generate({
-      model: input.model,
+      model: finalModel,
       system: input.systemInstruction || "You are a helpful assistant.",
       prompt: "Respond with exactly the word 'SUCCESS' in JSON format under the key 'result'.",
       output: {
@@ -39,12 +42,13 @@ export async function testAiConnection(input: z.infer<typeof TestInputSchema>) {
         status: 'ok',
         latency: endTime - startTime,
         message: '连接成功，模型响应正常。',
-        modelUsed: input.model
+        modelUsed: finalModel
       } as z.infer<typeof TestOutputSchema>;
     }
     
     throw new Error('模型响应格式不符合预期');
   } catch (error: any) {
+    console.error('AI Connection Test Error:', error);
     return {
       status: 'error',
       latency: Date.now() - startTime,

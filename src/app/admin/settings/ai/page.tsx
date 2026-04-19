@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useState, useEffect } from 'react';
@@ -60,7 +59,7 @@ export default function AiSettingsPage() {
 
   const [formData, setFormData] = useState<AiConfig>({
     isEnabled: true,
-    model: 'googleai/gemini-1.5-flash',
+    model: 'google-genai/gemini-1.5-flash',
     temperature: 0.7,
     systemInstruction: ''
   });
@@ -74,7 +73,9 @@ export default function AiSettingsPage() {
 
   useEffect(() => {
     if (aiConfig) {
-      setFormData(aiConfig);
+      // 自动迁移旧前缀数据到新前缀
+      const normalizedModel = aiConfig.model?.replace('googleai/', 'google-genai/') || 'google-genai/gemini-1.5-flash';
+      setFormData({ ...aiConfig, model: normalizedModel });
     }
   }, [aiConfig]);
 
@@ -174,12 +175,12 @@ export default function AiSettingsPage() {
                       <SelectValue placeholder="选择 AI 模型" />
                     </SelectTrigger>
                     <SelectContent className="rounded-xl">
-                      <SelectItem value="googleai/gemini-1.5-flash" className="text-xs font-bold">Gemini 1.5 Flash (极速/均衡)</SelectItem>
-                      <SelectItem value="googleai/gemini-1.5-pro" className="text-xs font-bold">Gemini 1.5 Pro (超长上下文/高精度)</SelectItem>
-                      <SelectItem value="googleai/gemini-2.0-flash-exp" className="text-xs font-bold text-accent-foreground bg-accent/10">Gemini 2.0 Flash Exp (前沿测试)</SelectItem>
+                      <SelectItem value="google-genai/gemini-1.5-flash" className="text-xs font-bold">Gemini 1.5 Flash (极速/均衡)</SelectItem>
+                      <SelectItem value="google-genai/gemini-1.5-pro" className="text-xs font-bold">Gemini 1.5 Pro (超长上下文/高精度)</SelectItem>
+                      <SelectItem value="google-genai/gemini-2.0-flash-exp" className="text-xs font-bold text-accent-foreground bg-accent/10">Gemini 2.0 Flash Exp (前沿测试)</SelectItem>
                     </SelectContent>
                   </Select>
-                  <p className="text-[9px] text-muted-foreground leading-relaxed italic">注：详细介绍翻译建议使用 1.5 Pro 以确保排版不丢失。</p>
+                  <p className="text-[9px] text-muted-foreground leading-relaxed italic">注：前缀已更新为 google-genai/ 以确保连接稳定性。</p>
                 </div>
 
                 <div className="space-y-3">
@@ -249,7 +250,7 @@ export default function AiSettingsPage() {
                     <Info className="h-4 w-4 text-muted-foreground mt-0.5" />}
                    <div className="space-y-1">
                       <p className="text-[11px] font-bold uppercase tracking-tight">自检状态报告</p>
-                      <p className="text-[10px] text-muted-foreground leading-relaxed">{testReport.message}</p>
+                      <p className="text-[10px] text-muted-foreground leading-relaxed break-words">{testReport.message}</p>
                       {testReport.latency && <p className="text-[10px] font-mono font-bold text-primary">Latency: {testReport.latency}ms</p>}
                    </div>
                 </div>
@@ -266,38 +267,18 @@ export default function AiSettingsPage() {
 
               <div className="pt-4 space-y-4">
                  <div className="space-y-2">
-                    <p className="text-[9px] font-bold text-primary/40 uppercase tracking-widest">API 配额状态 (模拟)</p>
+                    <p className="text-[9px] font-bold text-primary/40 uppercase tracking-widest">API 配置状态</p>
                     <div className="h-1.5 w-full bg-muted rounded-full overflow-hidden">
-                       <div className="h-full bg-primary w-[12%] rounded-full animate-pulse" />
+                       <div className={cn("h-full transition-all duration-1000", testReport.status === 'success' ? "bg-green-500 w-full" : "bg-primary w-[12%] animate-pulse")} />
                     </div>
                     <div className="flex justify-between text-[8px] text-muted-foreground font-mono">
-                       <span>RPM: 2/15</span>
-                       <span>OK</span>
+                       <span>RPM LIMIT: AUTO</span>
+                       <span>{testReport.status === 'success' ? 'CONNECTED' : 'WAITING'}</span>
                     </div>
                  </div>
-                 <p className="text-[9px] text-muted-foreground leading-relaxed italic border-l-2 border-accent pl-3">
-                   检测通过后，系统将自动激活全站的“AI 智译”功能。
-                 </p>
               </div>
             </CardContent>
           </Card>
-
-          <div className="p-6 bg-primary rounded-2xl text-white space-y-4 shadow-2xl">
-             <div className="flex items-center gap-2">
-               <Sparkles className="h-5 w-5 text-accent" />
-               <h4 className="font-bold text-sm uppercase tracking-tight">智译能力说明</h4>
-             </div>
-             <div className="space-y-3">
-                <div className="flex items-start gap-3">
-                  <div className="h-5 w-5 rounded-full bg-white/10 flex items-center justify-center text-[10px] font-bold shrink-0">1</div>
-                  <p className="text-[10px] text-white/70 leading-relaxed"><b>语义一致性</b>：AI 会识别相似含义的文本，辅助减少冗余条目。</p>
-                </div>
-                <div className="flex items-start gap-3">
-                  <div className="h-5 w-5 rounded-full bg-white/10 flex items-center justify-center text-[10px] font-bold shrink-0">2</div>
-                  <p className="text-[10px] text-white/70 leading-relaxed"><b>排版保留</b>：针对超长详情介绍，AI 能精准锁定 HTML 结构不走样。</p>
-                </div>
-             </div>
-          </div>
         </div>
       </div>
     </div>
