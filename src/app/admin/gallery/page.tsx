@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useState, useMemo, useRef, useEffect } from 'react';
+import { useState, useMemo, useRef, useEffect, useCallback } from 'react';
 import { useFirestore, useCollection, useMemoFirebase } from '@/firebase';
 import { collection, doc, serverTimestamp, query, orderBy } from 'firebase/firestore';
 import { 
@@ -26,7 +26,10 @@ import {
   Check,
   Maximize,
   Download,
-  MoreVertical
+  MoreVertical,
+  Maximize2 as FitIcon,
+  ZoomIn,
+  Move
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -88,11 +91,13 @@ export default function GalleryPage() {
   const firestore = useFirestore();
   const { toast } = useToast();
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
   
   const [searchQuery, setSearchQuery] = useState('');
   const [filterCategory, setFilterCategory] = useState<string>('all');
   const [editingAsset, setEditingAsset] = useState<GalleryAsset | null>(null);
   const [previewAsset, setPreviewAsset] = useState<GalleryAsset | null>(null);
+  const [previewZoom, setPreviewZoom] = useState<'fit' | '1:1'>('fit');
   const [isCategoryDialogOpen, setIsCategoryDialogOpen] = useState(false);
   const [isUploadDialogOpen, setIsUploadDialogOpen] = useState(false);
   
@@ -111,6 +116,10 @@ export default function GalleryPage() {
   const [isTasksPanelMinimized, setIsTasksPanelMinimized] = useState(false);
 
   const [collapsedIds, setCollapsedIds] = useState<Set<string>>(new Set());
+
+  // 框选相关状态
+  const [selectionBox, setSelectionBox] = useState<{ startX: number, startY: number, currentX: number, currentY: number } | null>(null);
+  const itemRefs = useRef<Map<string, HTMLDivElement>>(new Map());
 
   const categoriesQuery = useMemoFirebase(() => firestore ? query(collection(firestore, 'galleryCategories'), orderBy('order', 'asc')) : null, [firestore]);
   const assetsQuery = useMemoFirebase(() => firestore ? query(collection(firestore, 'galleryAssets'), orderBy('createdAt', 'desc')) : null, [firestore]);
@@ -144,22 +153,6 @@ export default function GalleryPage() {
     if (categoryTree.length > 0 && !targetUploadCategoryId) setTargetUploadCategoryId(categoryTree[0].id);
   }, [categoryTree, targetUploadCategoryId]);
 
-  const visibleCategories = useMemo(() => categoryTree.filter(cat => {
-    let currentParentId = cat.parentId;
-    while (currentParentId) {
-      if (collapsedIds.has(currentParentId)) return false;
-      const parent = categories?.find(c => c.id === currentParentId);
-      currentParentId = parent?.parentId || null;
-    }
-    return true;
-  }), [categoryTree, collapsedIds, categories]);
-
-  const toggleCollapse = (id: string) => {
-    const newCollapsed = new Set(collapsedIds);
-    newCollapsed.has(id) ? newCollapsed.delete(id) : newCollapsed.add(id);
-    setCollapsedIds(newCollapsed);
-  };
-
   const filteredAssets = useMemo(() => {
     if (!assets) return [];
     return assets.filter(a => {
@@ -168,6 +161,70 @@ export default function GalleryPage() {
       return ms && mc;
     });
   }, [assets, searchQuery, filterCategory]);
+
+  // --- 框选逻辑开始 ---
+  const handleMouseDown = (e: React.MouseEvent) => {
+    // 仅在空白处或网格区域开始框选，不响应按钮点击
+    if ((e.target as HTMLElement).closest('button') || (e.target as HTMLElement).closest('input')) return;
+    
+    const rect = containerRef.current?.getBoundingClientRect();
+    if (!rect) return;
+
+    setSelectionBox({
+      startX: e.clientX - rect.left,
+      startY: e.clientY - rect.top,
+      currentX: e.clientX - rect.left,
+      currentY: e.clientY - rect.top
+    });
+
+    if (!e.shiftKey) {
+      setSelectedIds(new Set());
+    }
+  };
+
+  const handleMouseMove = (e: React.MouseEvent) => {
+    if (!selectionBox || !containerRef.current) return;
+    const rect = containerRef.current.getBoundingClientRect();
+    
+    const nextBox = {
+      ...selectionBox,
+      currentX: e.clientX - rect.left,
+      currentY: e.clientY - rect.top
+    };
+    setSelectionBox(nextBox);
+
+    // 计算框选区域
+    const boxX = Math.min(nextBox.startX, nextBox.currentX);
+    const boxY = Math.min(nextBox.startY, nextBox.currentY);
+    const boxWidth = Math.abs(nextBox.startX - nextBox.currentX);
+    const boxHeight = Math.abs(nextBox.startY - nextBox.currentY);
+
+    const newSelected = new Set(e.shiftKey ? selectedIds : []);
+    itemRefs.current.forEach((el, id) => {
+      if (!el) return;
+      const elRect = {
+        left: el.offsetLeft,
+        top: el.offsetTop,
+        right: el.offsetLeft + el.offsetWidth,
+        bottom: el.offsetTop + el.offsetHeight
+      };
+
+      const intersects = !(
+        elRect.left > boxX + boxWidth ||
+        elRect.right < boxX ||
+        elRect.top > boxY + boxHeight ||
+        elRect.bottom < boxY
+      );
+
+      if (intersects) newSelected.add(id);
+    });
+    setSelectedIds(newSelected);
+  };
+
+  const handleMouseUp = () => {
+    setSelectionBox(null);
+  };
+  // --- 框选逻辑结束 ---
 
   const handleFileUpload = async (files: FileList | null) => {
     if (!files || !firestore) return;
@@ -277,14 +334,21 @@ export default function GalleryPage() {
     resetCatForm();
   };
 
-  const resetAllStates = () => {
-    resetCatForm();
-    setIsCategoryDialogOpen(false);
-    setIsUploadDialogOpen(false);
-  };
-
   return (
-    <div className="space-y-6 animate-in fade-in duration-500 relative min-h-[80vh] select-none">
+    <div className="space-y-6 animate-in fade-in duration-500 relative min-h-[80vh] select-none" onMouseUp={handleMouseUp} onMouseMove={handleMouseMove}>
+      {/* 框选矩形视觉元素 */}
+      {selectionBox && (
+        <div 
+          className="absolute z-[300] bg-primary/20 border border-primary pointer-events-none"
+          style={{
+            left: Math.min(selectionBox.startX, selectionBox.currentX),
+            top: Math.min(selectionBox.startY, selectionBox.currentY),
+            width: Math.abs(selectionBox.startX - selectionBox.currentX),
+            height: Math.abs(selectionBox.startY - selectionBox.currentY)
+          }}
+        />
+      )}
+
       {/* 批量管理悬浮条 */}
       {selectedIds.size > 0 && (
         <div className="fixed top-[72px] left-1/2 -translate-x-1/2 z-[200] bg-white border border-primary/20 shadow-2xl rounded-full px-5 py-2 flex items-center gap-5 animate-in slide-in-from-top-4 duration-300">
@@ -335,7 +399,7 @@ export default function GalleryPage() {
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <h2 className="text-xl font-headline font-bold text-primary flex items-center gap-2"><ImageIcon className="h-5 w-5" /> 全球素材图库</h2>
-          <p className="text-xs text-muted-foreground">多级分类管理、同名冲突校验及高效批量处理。</p>
+          <p className="text-xs text-muted-foreground">多级分类管理、同名冲突校验及高效批量处理。支持点击或框选。</p>
         </div>
         <div className="flex gap-2">
           <Dialog open={isCategoryDialogOpen} onOpenChange={(o) => { setIsCategoryDialogOpen(o); if (!o) resetCatForm(); }}>
@@ -353,7 +417,6 @@ export default function GalleryPage() {
                   </div>
                   <Button onClick={handleSaveCategory} className="w-full rounded-xl h-10 font-bold uppercase text-xs tracking-widest">{editingCatId ? '保存架构变更' : '确认添加分类'}</Button>
                 </div>
-                <div className="max-h-[35vh] overflow-y-auto rounded-2xl border border-border/40 bg-white overflow-hidden shadow-inner"><Table><TableHeader className="bg-muted/50 sticky top-0"><TableRow><TableHead className="pl-6 h-10 text-[10px] font-bold uppercase tracking-widest">组织结构</TableHead><TableHead className="w-32 text-right pr-6 h-10 text-[10px] font-bold uppercase tracking-widest">操作</TableHead></TableRow></TableHeader><TableBody>{visibleCategories.map(cat => (<TableRow key={cat.id} className={cn(editingCatId === cat.id && "bg-primary/5")}><TableCell className="pl-6 py-2"><div className="flex items-center gap-1" style={{ paddingLeft: `${cat.depth * 1.5}rem` }}>{cat.hasChildren ? (<Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => toggleCollapse(cat.id)}>{collapsedIds.has(cat.id) ? <ChevronRight className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}</Button>) : <div className="w-6 h-6" />}<span className={cn("text-xs", !cat.parentId ? "font-bold text-primary" : "text-muted-foreground")}>{cat.name}</span></div></TableCell><TableCell className="pr-6 text-right"><div className="flex justify-end gap-1"><Button size="icon" variant="ghost" className="h-8 w-8 hover:text-primary" onClick={() => setEditingCatId(cat.id) || setCatForm({ name: cat.name, parentId: cat.parentId || 'none' })}><Edit3 className="h-3.5 w-3.5" /></Button><Button size="icon" variant="ghost" className="h-8 w-8 text-destructive hover:bg-destructive/5" onClick={() => confirm('确定删除该分类及其所有子分类映射吗？') && deleteDocumentNonBlocking(doc(firestore, 'galleryCategories', cat.id))}><Trash2 className="h-3.5 w-3.5" /></Button></div></TableCell></TableRow>))}</TableBody></Table></div>
               </div>
             </DialogContent>
           </Dialog>
@@ -379,28 +442,43 @@ export default function GalleryPage() {
 
       <div className="flex flex-col md:flex-row items-center gap-3 bg-white p-3 rounded-2xl border border-border/40 shadow-sm">
         <div className="relative flex-1 w-full"><Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" /><Input placeholder="按标题搜索云端素材..." className="pl-10 border-none bg-muted/30 h-10 text-xs rounded-xl focus-visible:ring-0" value={searchQuery} onChange={e => setSearchQuery(e.target.value)} /></div>
-        <Select value={filterCategory} onValueChange={setFilterCategory}><SelectTrigger className="w-full md:w-56 rounded-xl h-10 text-xs border-none bg-muted/30"><SelectValue placeholder="全部分类" /></SelectTrigger><SelectContent className="rounded-xl"><SelectItem value="all" className="text-xs">全部分类</SelectItem>{categoryTree.map(cat => (<SelectItem key={cat.id} value={cat.id} className="text-xs"><span style={{ paddingLeft: `${cat.depth * 0.8}rem` }}>{cat.name}</span></SelectItem>))}</SelectContent></Select>
+        <Select value={filterCategory} onValueChange={setFilterCategory}>
+          <SelectTrigger className="w-full md:w-56 rounded-xl h-10 text-xs border-none bg-muted/30"><SelectValue placeholder="全部分类" /></SelectTrigger>
+          <SelectContent className="rounded-xl">
+            <SelectItem value="all" className="text-xs">全部分类</SelectItem>
+            {categoryTree.map(cat => (<SelectItem key={cat.id} value={cat.id} className="text-xs"><span style={{ paddingLeft: `${cat.depth * 0.8}rem` }}>{cat.name}</span></SelectItem>))}
+          </SelectContent>
+        </Select>
       </div>
 
       {isLoading ? (
         <div className="py-24 text-center"><Loader2 className="h-10 w-10 animate-spin text-primary opacity-10 mx-auto mb-3" /><p className="text-[10px] font-bold uppercase tracking-widest opacity-40">正在同步云端媒体库...</p></div>
       ) : (
-        <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-6">
+        <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-6" onMouseDown={handleMouseDown} ref={containerRef}>
           {filteredAssets.map((asset) => (
-            <div key={asset.id} className={cn("group relative bg-white rounded-2xl border transition-all duration-300 overflow-hidden", selectedIds.has(asset.id) ? "border-primary ring-2 ring-primary/10 shadow-xl" : "border-border/40 hover:shadow-2xl")}>
-              <div className="absolute top-2 left-2 z-20 transition-opacity"><Checkbox checked={selectedIds.has(asset.id)} onCheckedChange={() => toggleSelectAsset(asset.id)} className={cn("rounded-md bg-white/60 backdrop-blur-md border-white/60 shadow-sm", selectedIds.has(asset.id) ? "opacity-100" : "opacity-0 group-hover:opacity-100")} /></div>
+            <div 
+              key={asset.id} 
+              ref={el => { if(el) itemRefs.current.set(asset.id, el); else itemRefs.current.delete(asset.id); }}
+              className={cn(
+                "group relative bg-white rounded-2xl border transition-all duration-300 overflow-hidden", 
+                selectedIds.has(asset.id) ? "border-primary ring-2 ring-primary/10 shadow-xl" : "border-border/40 hover:shadow-2xl"
+              )}
+            >
+              <div className="absolute top-2 left-2 z-20 transition-opacity">
+                <Checkbox 
+                  checked={selectedIds.has(asset.id)} 
+                  onCheckedChange={() => toggleSelectAsset(asset.id)} 
+                  className={cn("rounded-md bg-white/60 backdrop-blur-md border-white/60 shadow-sm", selectedIds.has(asset.id) ? "opacity-100" : "opacity-0 group-hover:opacity-100")} 
+                />
+              </div>
               
-              {/* 图片预览区域 */}
               <div className="relative aspect-square bg-muted/10 overflow-hidden flex items-center justify-center">
                 <Image src={asset.url} alt={asset.title} fill className="object-cover group-hover:scale-110 transition-transform duration-700" />
-                
-                {/* 悬浮预览按钮 */}
                 <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
-                  <Button size="icon" variant="secondary" className="h-10 w-10 rounded-full shadow-2xl" onClick={() => setPreviewAsset(asset)}>
+                  <Button size="icon" variant="secondary" className="h-10 w-10 rounded-full shadow-2xl" onClick={(e) => { e.stopPropagation(); setPreviewAsset(asset); setPreviewZoom('fit'); }}>
                     <Maximize className="h-4 w-4" />
                   </Button>
                 </div>
-
                 <div className="absolute bottom-2 left-2 pointer-events-none"><Badge className="text-[8px] bg-black/50 border-none px-2 h-4 max-w-[100px] truncate">{categoryTree.find(c => c.id === asset.categoryId)?.name || '未分类'}</Badge></div>
               </div>
 
@@ -416,15 +494,12 @@ export default function GalleryPage() {
               </div>
             </div>
           ))}
-          {filteredAssets.length === 0 && (
-            <div className="col-span-full py-32 border-2 border-dashed rounded-3xl text-center opacity-30 italic text-sm">在该分类下暂无素材记录</div>
-          )}
         </div>
       )}
 
       {/* 任务管理器面板 */}
       {isTasksPanelOpen && (
-        <div className={cn("fixed bottom-6 right-6 z-[200] w-80 bg-white border border-border/60 shadow-2xl rounded-2xl overflow-hidden transition-all duration-500", isTasksPanelMinimized ? "h-14" : "h-[400px]")}>
+        <div className={cn("fixed bottom-6 right-6 z-[400] w-80 bg-white border border-border/60 shadow-2xl rounded-2xl overflow-hidden transition-all duration-500", isTasksPanelMinimized ? "h-14" : "h-[400px]")}>
           <div className="bg-primary px-5 h-14 flex items-center justify-between text-white"><div className="flex items-center gap-3"><PanelTop className="h-4 w-4" /><span className="text-[10px] font-bold uppercase tracking-[0.2em]">任务队列</span></div><div className="flex items-center gap-1"><Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-white/10" onClick={() => setIsTasksPanelMinimized(!isTasksPanelMinimized)}>{isTasksPanelMinimized ? <Maximize2 className="h-4 w-4" /> : <Minimize2 className="h-4 w-4" />}</Button><Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-white/10" onClick={() => { setIsTasksPanelOpen(false); setUploadTasks([]); }}><X className="h-4 w-4" /></Button></div></div>
           {!isTasksPanelMinimized && (<div className="flex flex-col h-[calc(400px-56px)] p-5 space-y-5 overflow-y-auto bg-white/50 backdrop-blur-sm">{uploadTasks.map(task => (<div key={task.id} className="space-y-2"><div className="flex justify-between text-[10px] font-bold"><span className="truncate max-w-[180px]">{task.fileName}</span>{task.status === 'completed' ? <CheckCircle2 className="h-4 w-4 text-green-500" /> : task.status === 'error' ? <span className="text-destructive font-mono">{task.error}</span> : <span className="opacity-40 animate-pulse">{task.isUpdate ? '同步更新中' : '上传入库中'}</span>}</div><Progress value={task.progress} className={cn("h-1.5 rounded-full bg-muted/40", task.isUpdate ? "[&>div]:bg-orange-500" : "[&>div]:bg-primary")} /></div>))}</div>)}
         </div>
@@ -433,49 +508,73 @@ export default function GalleryPage() {
       {/* 资源编辑弹窗 */}
       <Dialog open={!!editingAsset} onOpenChange={o => !o && setEditingAsset(null)}>
         <DialogContent className="rounded-2xl max-w-sm p-0 overflow-hidden border-none shadow-2xl">
-          <div className="bg-muted/10 p-6 border-b border-border/40">
-            <DialogHeader>
-              <DialogTitle className="text-lg font-bold flex items-center gap-2 text-primary">编辑素材属性</DialogTitle>
-              <DialogDescription>修改素材的显示标题或归属分类。</DialogDescription>
-            </DialogHeader>
-          </div>
+          <DialogHeader className="p-6 bg-muted/10 border-b border-border/40">
+            <DialogTitle className="text-lg font-bold flex items-center gap-2 text-primary">编辑素材属性</DialogTitle>
+            <DialogDescription>修改素材的显示标题或归属分类。</DialogDescription>
+          </DialogHeader>
           {editingAsset && (<div className="p-6 space-y-5 bg-white"><div className="space-y-2"><Label className="text-[10px] font-bold uppercase opacity-60">素材标题</Label><Input value={editingAsset.title} onChange={e => setEditingAsset({...editingAsset, title: e.target.value})} className="rounded-xl h-11" /></div><div className="space-y-2"><Label className="text-[10px] font-bold uppercase opacity-60">归属分类</Label><Select value={editingAsset.categoryId} onValueChange={v => setEditingAsset({...editingAsset, categoryId: v})}><SelectTrigger className="h-11 rounded-xl"><SelectValue /></SelectTrigger><SelectContent className="rounded-xl">{categoryTree.map(cat => (<SelectItem key={cat.id} value={cat.id} className="text-xs"><span style={{ paddingLeft: `${cat.depth * 0.6}rem` }}>{cat.name}</span></SelectItem>))}</SelectContent></Select></div></div>)}
           <DialogFooter className="p-6 bg-muted/5 flex gap-2 border-t border-border/40"><Button variant="outline" onClick={() => setEditingAsset(null)} className="rounded-xl h-11 flex-1 text-xs">放弃修改</Button><Button onClick={() => { if(firestore && editingAsset) { updateDocumentNonBlocking(doc(firestore, 'galleryAssets', editingAsset.id), editingAsset); setEditingAsset(null); toast({ title: "属性已同步至云端" }); } }} className="rounded-xl h-11 flex-1 text-xs">保存变更</Button></DialogFooter>
         </DialogContent>
       </Dialog>
 
-      {/* 大图预览弹窗 */}
+      {/* 增强版大图预览弹窗 */}
       <Dialog open={!!previewAsset} onOpenChange={o => !o && setPreviewAsset(null)}>
-        <DialogContent className="max-w-[90vw] md:max-w-4xl p-0 overflow-hidden bg-black/95 border-none shadow-2xl rounded-2xl flex flex-col">
-          <DialogHeader className="sr-only">
-            <DialogTitle>图片预览: {previewAsset?.title}</DialogTitle>
-            <DialogDescription>查看全屏高清素材详情。</DialogDescription>
-          </DialogHeader>
+        <DialogContent className="max-w-[95vw] w-full h-[90vh] p-0 overflow-hidden bg-black/95 border-none shadow-2xl rounded-2xl flex flex-col z-[500]">
+          <DialogHeader className="sr-only"><DialogTitle>图片预览: {previewAsset?.title}</DialogTitle><DialogDescription>查看全屏高清素材详情。</DialogDescription></DialogHeader>
+          
           <div className="absolute top-4 right-4 z-50 flex gap-2">
-             <Button variant="secondary" size="icon" className="h-10 w-10 rounded-full bg-white/10 hover:bg-white/20 text-white border-white/10" onClick={() => { window.open(previewAsset?.url, '_blank'); }}>
+             {/* 缩放控制组 */}
+             <div className="flex bg-white/10 backdrop-blur-md rounded-full border border-white/10 overflow-hidden p-1 mr-4">
+                <Button 
+                  variant="ghost" 
+                  size="sm" 
+                  onClick={() => setPreviewZoom('fit')}
+                  className={cn("h-8 rounded-full px-3 gap-2 text-[10px] font-bold uppercase transition-all", previewZoom === 'fit' ? "bg-white text-black" : "text-white hover:bg-white/10")}
+                >
+                  <FitIcon className="h-3 w-3" /> 适合窗口
+                </Button>
+                <Button 
+                  variant="ghost" 
+                  size="sm" 
+                  onClick={() => setPreviewZoom('1:1')}
+                  className={cn("h-8 rounded-full px-3 gap-2 text-[10px] font-bold uppercase transition-all", previewZoom === '1:1' ? "bg-white text-black" : "text-white hover:bg-white/10")}
+                >
+                  <ZoomIn className="h-3 w-3" /> 1:1 像素
+                </Button>
+             </div>
+             
+             <Button variant="secondary" size="icon" className="h-10 w-10 rounded-full bg-white/10 hover:bg-white/20 text-white border-white/10" onClick={() => { window.open(previewAsset?.url, '_blank'); }} title="下载原图">
                 <Download className="h-4 w-4" />
              </Button>
              <Button variant="secondary" size="icon" className="h-10 w-10 rounded-full bg-white/10 hover:bg-white/20 text-white border-white/10" onClick={() => setPreviewAsset(null)}>
                 <X className="h-4 w-4" />
              </Button>
           </div>
-          <div className="relative flex-1 min-h-[60vh] flex items-center justify-center p-8">
+
+          <div className={cn("relative flex-1 overflow-auto flex items-center justify-center p-4", previewZoom === '1:1' ? "cursor-move" : "p-12")}>
             {previewAsset && (
-              <Image 
-                src={previewAsset.url} 
-                alt={previewAsset.title} 
-                width={1200} 
-                height={800} 
-                className="object-contain max-h-[80vh] w-auto shadow-2xl rounded-lg"
-              />
+              <div className={cn("relative transition-all duration-500", previewZoom === '1:1' ? "w-auto h-auto" : "w-full h-full flex items-center justify-center")}>
+                <img 
+                  src={previewAsset.url} 
+                  alt={previewAsset.title} 
+                  className={cn(
+                    "shadow-2xl rounded-sm transition-all duration-300", 
+                    previewZoom === 'fit' ? "max-w-full max-h-full object-contain" : "max-w-none w-auto h-auto"
+                  )}
+                />
+              </div>
             )}
           </div>
-          <div className="bg-white/10 backdrop-blur-md p-5 border-t border-white/10 flex items-center justify-between text-white">
+          
+          <div className="bg-white/10 backdrop-blur-md p-5 border-t border-white/10 flex items-center justify-between text-white shrink-0">
             <div className="space-y-1">
               <h4 className="font-bold text-sm">{previewAsset?.title}</h4>
               <p className="text-[10px] opacity-60 uppercase tracking-widest">{previewAsset?.fileName} • {( (previewAsset?.fileSize || 0) / 1024).toFixed(1)} KB</p>
             </div>
-            <Button variant="outline" size="sm" className="rounded-full border-white/20 text-white bg-transparent hover:bg-white/10 text-[10px] uppercase font-bold" onClick={() => { navigator.clipboard.writeText(previewAsset?.url || ''); toast({ title: "链接已复制" }); }}>复制地址</Button>
+            <div className="flex gap-3">
+              {previewZoom === '1:1' && <span className="flex items-center gap-2 text-[10px] font-bold text-accent animate-pulse uppercase tracking-widest"><Move className="h-3 w-3" /> 拖动或滚动以查看细节</span>}
+              <Button variant="outline" size="sm" className="rounded-full border-white/20 text-white bg-transparent hover:bg-white/10 text-[10px] uppercase font-bold px-5" onClick={() => { navigator.clipboard.writeText(previewAsset?.url || ''); toast({ title: "链接已复制" }); }}>复制图片地址</Button>
+            </div>
           </div>
         </DialogContent>
       </Dialog>
