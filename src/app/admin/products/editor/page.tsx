@@ -136,7 +136,6 @@ function ProductEditorContent() {
   const [activeTab, setActiveTab] = useState('basic');
   const [isUploading, setIsUploading] = useState(false);
   const [isAiProcessing, setIsAiProcessing] = useState(false);
-  const [isIdChecking, setIsIdChecking] = useState(false);
   const [idConflict, setIdConflict] = useState(false);
 
   const [isPickerOpen, setIsPickerOpen] = useState(false);
@@ -157,6 +156,14 @@ function ProductEditorContent() {
   const { data: galleryAssets } = useCollection<GalleryAsset>(assetsQuery);
   const { data: allProducts } = useCollection<Product>(allProdsQuery);
   const { data: aiConfig } = useDoc<AiConfig>(aiRef);
+
+  // 核心功能：自动填充 ID
+  useEffect(() => {
+    if (!isEditing && !formData.id) {
+      const autoId = `prod_${Date.now().toString().slice(-6)}`;
+      setFormData(prev => ({ ...prev, id: autoId }));
+    }
+  }, [isEditing]);
 
   useEffect(() => {
     if (isEditing && product && translations) {
@@ -197,7 +204,6 @@ function ProductEditorContent() {
     }
   }, [isEditing, product, translations]);
 
-  // 自动化测试 findings: 实时 ID 冲突检测
   useEffect(() => {
     if (!isEditing && formData.id && allProducts) {
       const exists = allProducts.some(p => p.id === formData.id);
@@ -207,12 +213,10 @@ function ProductEditorContent() {
     }
   }, [formData.id, allProducts, isEditing]);
 
-  // 计算翻译覆盖率 (模拟测试中新增的辅助功能)
   const translationMetrics = useMemo(() => {
     const fields = [formData.nameZh, formData.nameEn, formData.descZh, formData.descEn];
     const filled = fields.filter(f => f.trim().length > 0).length;
-    const total = fields.length;
-    return (filled / total) * 100;
+    return (filled / fields.length) * 100;
   }, [formData]);
 
   const handleSave = () => {
@@ -268,16 +272,40 @@ function ProductEditorContent() {
     router.push('/admin/products');
   };
 
-  const handleAiTranslateField = async (text: string, fieldType: 'name' | 'desc' | 'details') => {
-    if (!aiConfig?.isEnabled || !text.trim()) return;
+  // 核心功能：全量翻译基础信息（名称 + 简介）
+  const handleAiTranslateBasicInfo = async () => {
+    if (!aiConfig?.isEnabled) return;
     setIsAiProcessing(true);
     try {
-      const result = await translateContent({ text, sourceLang: 'zh', targetLangs: ['en'], model: aiConfig.model });
+      const tasks = [];
+      if (formData.nameZh.trim()) {
+        tasks.push(translateContent({ text: formData.nameZh, sourceLang: 'zh', targetLangs: ['en'], model: aiConfig.model }).then(res => ({ field: 'nameEn', text: res.en })));
+      }
+      if (formData.descZh.trim()) {
+        tasks.push(translateContent({ text: formData.descZh, sourceLang: 'zh', targetLangs: ['en'], model: aiConfig.model }).then(res => ({ field: 'descEn', text: res.en })));
+      }
+      
+      const results = await Promise.all(tasks);
+      const updates: any = {};
+      results.forEach(r => { if (r.text) updates[r.field] = r.text; });
+      
+      setFormData(prev => ({ ...prev, ...updates }));
+      toast({ title: "基础信息智译成功", description: `已同步更新 ${results.length} 个字段。` });
+    } catch (e) {
+      toast({ variant: "destructive", title: "AI 翻译失败" });
+    } finally {
+      setIsAiProcessing(false);
+    }
+  };
+
+  const handleAiTranslateDetails = async () => {
+    if (!aiConfig?.isEnabled || !formData.detailsZh.trim()) return;
+    setIsAiProcessing(true);
+    try {
+      const result = await translateContent({ text: formData.detailsZh, sourceLang: 'zh', targetLangs: ['en'], model: aiConfig.model });
       if (result.en) {
-        if (fieldType === 'name') setFormData(prev => ({...prev, nameEn: result.en}));
-        if (fieldType === 'desc') setFormData(prev => ({...prev, descEn: result.en}));
-        if (fieldType === 'details') setFormData(prev => ({...prev, detailsEn: result.en}));
-        toast({ title: "AI 智译成功" });
+        setFormData(prev => ({ ...prev, detailsEn: result.en }));
+        toast({ title: "详细介绍智译成功" });
       }
     } catch (e) {
       toast({ variant: "destructive", title: "AI 翻译失败" });
@@ -348,7 +376,7 @@ function ProductEditorContent() {
           <div className="space-y-1">
             <h2 className="text-xl font-headline font-bold text-primary leading-none">{isEditing ? '编辑产品' : '发布产品'}</h2>
             <div className="flex items-center gap-2">
-               <p className="text-[10px] text-muted-foreground uppercase tracking-wider font-bold">ID: {formData.id || 'NEW'}</p>
+               <p className="text-[10px] text-muted-foreground uppercase tracking-wider font-bold">ID: {formData.id || 'GENERATING...'}</p>
                <Badge variant={formData.status === 'published' ? 'default' : 'secondary'} className={cn("text-[8px] uppercase px-1.5 py-0", formData.status === 'published' ? "bg-green-600 hover:bg-green-600" : "")}>{formData.status === 'published' ? '已发布' : '草稿'}</Badge>
             </div>
           </div>
@@ -443,8 +471,8 @@ function ProductEditorContent() {
                     <div className="flex items-center justify-between border-b pb-2 mb-2">
                       <Label className="text-[10px] font-bold uppercase text-primary tracking-widest flex items-center gap-1.5"><Languages className="h-3 w-3" /> 中文内容 (ZH)</Label>
                       {aiConfig?.isEnabled && (
-                        <Button variant="ghost" size="sm" className="h-6 text-[9px] gap-1 px-2 font-bold text-accent hover:bg-accent/10" onClick={() => handleAiTranslateField(formData.nameZh, 'name')} disabled={isAiProcessing || !formData.nameZh}>
-                          <Sparkles className="h-2.5 w-2.5" /> AI 智译
+                        <Button variant="ghost" size="sm" className="h-6 text-[9px] gap-1 px-2 font-bold text-accent hover:bg-accent/10" onClick={handleAiTranslateBasicInfo} disabled={isAiProcessing || (!formData.nameZh && !formData.descZh)}>
+                          {isAiProcessing ? <Loader2 className="h-2.5 w-2.5 animate-spin" /> : <Sparkles className="h-2.5 w-2.5" />} AI 智译全量
                         </Button>
                       )}
                     </div>
@@ -529,7 +557,7 @@ function ProductEditorContent() {
               <div className="bg-white p-6 rounded-2xl border border-border/40 shadow-sm space-y-4 h-[calc(100vh-280px)] min-h-[500px] flex flex-col">
                 <div className="flex items-center justify-between border-b pb-3 mb-2 shrink-0">
                   <div className="flex items-center gap-2"><Info className="h-4 w-4 text-primary" /><h3 className="font-bold text-sm">详细图文说明</h3></div>
-                  {aiConfig?.isEnabled && <Button variant="outline" size="sm" onClick={() => handleAiTranslateField(formData.detailsZh, 'details')} disabled={isAiProcessing || !formData.detailsZh} className="h-7 rounded-lg text-[9px] font-bold text-accent">AI 润色翻译</Button>}
+                  {aiConfig?.isEnabled && <Button variant="outline" size="sm" onClick={handleAiTranslateDetails} disabled={isAiProcessing || !formData.detailsZh.trim()} className="h-7 rounded-lg text-[9px] font-bold text-accent">AI 润色翻译</Button>}
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6 flex-1 overflow-hidden">
                   <Textarea placeholder="中文介绍..." value={formData.detailsZh} onChange={e => setFormData({...formData, detailsZh: e.target.value})} className="h-full rounded-xl p-4 bg-muted/5 text-xs resize-none" />
