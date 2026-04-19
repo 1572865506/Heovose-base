@@ -1,4 +1,3 @@
-
 "use client";
 
 import React, { useEffect, useImperativeHandle, forwardRef } from 'react';
@@ -25,8 +24,7 @@ import {
   AlignLeft,
   AlignCenter,
   AlignRight,
-  AlignJustify,
-  ChevronDown
+  AlignJustify
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { 
@@ -75,8 +73,8 @@ const FontSize = Extension.create({
       unsetFontSize: () => ({ chain }: any) => {
         return chain().setMark('textStyle', { fontSize: null }).removeEmptyTextStyle().run()
       },
-    }
-  } as any,
+    } as any
+  },
 });
 
 interface RichTextEditorProps {
