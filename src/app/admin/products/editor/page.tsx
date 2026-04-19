@@ -721,35 +721,70 @@ function ProductEditorContent() {
                       </div>
                       <div className="p-0">
                         {group.items.map((item, iIdx) => (
-                          <div key={item.uid} className="grid grid-cols-1 md:grid-cols-12 gap-3 px-4 py-3 transition-colors border-b last:border-b-0 border-border/20">
-                            <div className="md:col-span-5 grid grid-cols-1 gap-1.5">
-                              <div className="relative group/field">
-                                <Input placeholder="参数名 (ZH)" value={item.labelZh} onChange={e => { const g = [...formData.specGroups]; g[gIdx].items[iIdx].labelZh = e.target.value; setFormData({...formData, specGroups: g}); }} className="h-8 text-[11px] rounded-md bg-white pr-8" />
-                                {aiConfig?.isEnabled && (
-                                  <button onClick={() => handleAiTranslateSpec(gIdx, iIdx, item.labelZh, 'label')} className="absolute right-1.5 top-1.5 p-0.5 text-accent opacity-0 group-hover/field:opacity-100 transition-opacity hover:bg-accent/10 rounded">
-                                    <Sparkles className="h-3 w-3" />
-                                  </button>
-                                )}
+                          <div key={item.uid} className="grid grid-cols-1 md:grid-cols-[1fr_1fr_40px] gap-6 px-6 py-4 transition-colors border-b last:border-b-0 border-border/20 group/row">
+                            {/* 左侧：中文栏 (ZH) */}
+                            <div className="space-y-3">
+                              <div className="flex items-center gap-2 text-[9px] font-bold text-primary/40 uppercase tracking-widest">
+                                <Languages className="h-2.5 w-2.5" /> 参数内容 (ZH)
                               </div>
-                              <Input placeholder="Label (EN)" value={item.labelEn} onChange={e => { const g = [...formData.specGroups]; g[gIdx].items[iIdx].labelEn = e.target.value; setFormData({...formData, specGroups: g}); }} className="h-8 text-[11px] rounded-md bg-white/60 opacity-60" />
-                            </div>
-                            <div className="md:col-span-6 grid grid-cols-1 gap-1.5">
-                              <div className="relative group/field">
-                                <Textarea placeholder="数值 (ZH)" value={item.valueZh} onChange={e => { const g = [...formData.specGroups]; g[gIdx].items[iIdx].valueZh = e.target.value; setFormData({...formData, specGroups: g}); }} className="min-h-[40px] h-auto text-[11px] rounded-md bg-white pr-8 py-1.5 leading-relaxed" />
-                                {aiConfig?.isEnabled && (
-                                  <button onClick={() => handleAiTranslateSpec(gIdx, iIdx, item.valueZh, 'value')} className="absolute right-1.5 top-1.5 p-0.5 text-accent opacity-0 group-hover/field:opacity-100 transition-opacity hover:bg-accent/10 rounded">
-                                    <Sparkles className="h-3 w-3" />
-                                  </button>
-                                )}
+                              <div className="space-y-2">
+                                <Input 
+                                  placeholder="参数名 (如: 屏幕尺寸)" 
+                                  value={item.labelZh} 
+                                  onChange={e => { const g = [...formData.specGroups]; g[gIdx].items[iIdx].labelZh = e.target.value; setFormData({...formData, specGroups: g}); }} 
+                                  className="h-8 text-[11px] rounded-md bg-white border-muted/30 focus:border-primary/30" 
+                                />
+                                <Textarea 
+                                  placeholder="详细数值内容..." 
+                                  value={item.valueZh} 
+                                  onChange={e => { const g = [...formData.specGroups]; g[gIdx].items[iIdx].valueZh = e.target.value; setFormData({...formData, specGroups: g}); }} 
+                                  className="min-h-[40px] h-auto text-[11px] rounded-md bg-white border-muted/30 py-1.5 leading-relaxed focus:border-primary/30" 
+                                />
                               </div>
-                              <Textarea placeholder="Value (EN)" value={item.valueEn} onChange={e => { const g = [...formData.specGroups]; g[gIdx].items[iIdx].valueEn = e.target.value; setFormData({...formData, specGroups: g}); }} className="min-h-[40px] h-auto text-[11px] rounded-md bg-white/60 opacity-60 pr-8 py-1.5 leading-relaxed" />
                             </div>
-                            <div className="md:col-span-1 flex items-center justify-center">
-                              <Button variant="ghost" size="icon" onClick={() => { const g = [...formData.specGroups]; g[gIdx].items = g[gIdx].items.filter((_,i)=>i!==iIdx); setFormData({...formData, specGroups: g}); }} className="h-7 w-7 text-destructive"><X className="h-3.5 w-3.5" /></Button>
+                            
+                            {/* 右侧：英文栏 (EN) */}
+                            <div className="space-y-3">
+                              <div className="flex items-center gap-2 text-[9px] font-bold text-muted-foreground/40 uppercase tracking-widest">
+                                <Globe className="h-2.5 w-2.5" /> English Value (EN)
+                              </div>
+                              <div className="space-y-2">
+                                <div className="relative group/field">
+                                  <Input 
+                                    placeholder="Label (EN)" 
+                                    value={item.labelEn} 
+                                    onChange={e => { const g = [...formData.specGroups]; g[gIdx].items[iIdx].labelEn = e.target.value; setFormData({...formData, specGroups: g}); }} 
+                                    className="h-8 text-[11px] rounded-md bg-white/60 border-muted/30 pr-8 focus:border-primary/30" 
+                                  />
+                                  {aiConfig?.isEnabled && (
+                                    <button onClick={() => handleAiTranslateSpec(gIdx, iIdx, item.labelZh, 'label')} className="absolute right-1.5 top-1.5 p-0.5 text-accent opacity-0 group-hover/field:opacity-100 transition-opacity hover:bg-accent/10 rounded">
+                                      <Sparkles className="h-3 w-3" />
+                                    </button>
+                                  )}
+                                </div>
+                                <div className="relative group/field">
+                                  <Textarea 
+                                    placeholder="Value (EN)" 
+                                    value={item.valueEn} 
+                                    onChange={e => { const g = [...formData.specGroups]; g[gIdx].items[iIdx].valueEn = e.target.value; setFormData({...formData, specGroups: g}); }} 
+                                    className="min-h-[40px] h-auto text-[11px] rounded-md bg-white/60 border-muted/30 py-1.5 leading-relaxed pr-8 focus:border-primary/30" 
+                                  />
+                                  {aiConfig?.isEnabled && (
+                                    <button onClick={() => handleAiTranslateSpec(gIdx, iIdx, item.valueZh, 'value')} className="absolute right-1.5 top-1.5 p-0.5 text-accent opacity-0 group-hover/field:opacity-100 transition-opacity hover:bg-accent/10 rounded">
+                                      <Sparkles className="h-3 w-3" />
+                                    </button>
+                                  )}
+                                </div>
+                              </div>
+                            </div>
+
+                            {/* 删除按钮 */}
+                            <div className="flex items-start pt-7">
+                              <Button variant="ghost" size="icon" onClick={() => { const g = [...formData.specGroups]; g[gIdx].items = g[gIdx].items.filter((_,i)=>i!==iIdx); setFormData({...formData, specGroups: g}); }} className="h-8 w-8 text-destructive/40 hover:text-destructive hover:bg-destructive/5"><X className="h-4 w-4" /></Button>
                             </div>
                           </div>
                         ))}
-                        <button onClick={() => { const g = [...formData.specGroups]; g[gIdx].items.push({uid: `item_${Date.now()}_${Math.random()}`, labelEn:'', labelZh:'', valueEn:'', valueZh:''}); setFormData({...formData, specGroups: g}); }} className="w-full h-9 text-[10px] uppercase font-bold tracking-widest text-primary/40 hover:text-primary hover:bg-primary/5 transition-colors border-t border-border/20">+ 添加一行</button>
+                        <button onClick={() => { const g = [...formData.specGroups]; g[gIdx].items.push({uid: `item_${Date.now()}_${Math.random()}`, labelEn:'', labelZh:'', valueEn:'', valueZh:''}); setFormData({...formData, specGroups: g}); }} className="w-full h-10 text-[10px] uppercase font-bold tracking-widest text-primary/40 hover:text-primary hover:bg-primary/5 transition-colors border-t border-border/20">+ 添加规格项</button>
                       </div>
                     </div>
                   ))}
