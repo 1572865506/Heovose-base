@@ -409,8 +409,7 @@ function ProductEditorContent() {
 
   return (
     <div className="max-w-full w-full mx-auto space-y-6 pb-20 animate-in fade-in duration-500">
-      {/* 吸顶工具栏：抵消 AdminLayout 的 p-6 容器内边距 */}
-      <div className="flex items-center justify-between sticky top-[-24px] z-40 bg-background/95 backdrop-blur-md py-3 border-b shadow-sm -mx-6 px-6">
+      <div className="flex items-center justify-between sticky top-0 z-40 bg-background/95 backdrop-blur-md py-3 border-b shadow-sm -mx-6 px-6">
         <div className="flex items-center gap-6 flex-1 min-w-0">
           <div className="flex items-center gap-2 shrink-0">
             <Button variant="ghost" size="icon" onClick={() => router.back()} className="rounded-full h-8 w-8"><ArrowLeft className="h-4 w-4" /></Button>
@@ -450,7 +449,6 @@ function ProductEditorContent() {
       </div>
 
       <div className="space-y-6">
-        {/* 视觉素材中心 */}
         <div className="bg-white p-6 rounded-2xl border shadow-sm space-y-4">
           <div className="flex items-center justify-between border-b pb-4 mb-2">
             <div className="space-y-0.5">
@@ -464,10 +462,10 @@ function ProductEditorContent() {
             </Button>
           </div>
           
-          <div className="flex flex-col md:flex-row gap-6 h-auto md:h-[240px] min-w-0">
+          <div className="flex flex-col md:flex-row gap-6 min-w-0">
             <div className="w-full md:w-[264px] flex flex-col gap-2 shrink-0">
               <Label className="text-[10px] font-bold uppercase text-primary/40 tracking-wider">产品主图</Label>
-              <div className="relative flex-1 rounded-xl bg-muted/10 border border-dashed border-border/40 overflow-hidden flex items-center justify-center group cursor-pointer transition-colors hover:bg-muted/20">
+              <div className="relative aspect-square rounded-xl bg-muted/10 border border-dashed border-border/40 overflow-hidden flex items-center justify-center group cursor-pointer transition-colors hover:bg-muted/20">
                 {formData.mainImageUrl ? (
                   <>
                     <Image src={formData.mainImageUrl} alt="M" fill className="object-contain p-2" unoptimized />
@@ -496,7 +494,7 @@ function ProductEditorContent() {
               <Label className="text-[10px] font-bold uppercase text-primary/40 tracking-wider">细节轮播图 ({formData.galleryUrls.length})</Label>
               <div className="flex-1 flex gap-4 p-3 bg-muted/5 rounded-xl border border-border/20 overflow-x-auto items-center min-w-0 scrollbar-thin">
                 {formData.galleryUrls.map((url, idx) => (
-                  <div key={idx} className="group relative shrink-0 w-[220px] h-full bg-white rounded-lg border border-border/10 overflow-hidden shadow-sm transition-all">
+                  <div key={idx} className="group relative shrink-0 w-[180px] aspect-square bg-white rounded-lg border border-border/10 overflow-hidden shadow-sm transition-all">
                     <Image src={url} alt="G" fill className="object-contain p-2" unoptimized />
                     <div className="absolute top-2 right-2 z-10 opacity-0 group-hover:opacity-100 flex gap-1">
                       <Button variant="destructive" size="icon" className="h-7 w-7 shadow-lg" onClick={() => setFormData({...formData, galleryUrls: formData.galleryUrls.filter((_,i)=>i!==idx)})}><Trash2 className="h-3.5 w-3.5" /></Button>
@@ -520,7 +518,6 @@ function ProductEditorContent() {
             <TabsTrigger value="details" className="rounded-lg px-8 text-xs font-bold uppercase tracking-wider gap-2"><Film className="h-4 w-4" /> 产品详细介绍</TabsTrigger>
           </TabsList>
 
-          {/* 基础信息 */}
           <TabsContent value="basic" className="space-y-4">
             <div className="bg-white p-8 rounded-2xl border shadow-sm space-y-8">
               <div className="border-b pb-4 mb-6 h-12 flex items-center">
@@ -551,7 +548,6 @@ function ProductEditorContent() {
             </div>
           </TabsContent>
 
-          {/* 技术规格：还原 5 列矩阵布局 */}
           <TabsContent value="specs" className="space-y-4">
             <div className="bg-white p-8 rounded-2xl border shadow-sm space-y-8">
               <div className="flex items-center justify-between border-b pb-4 mb-6 h-12">
@@ -579,27 +575,25 @@ function ProductEditorContent() {
                       <Button variant="ghost" size="icon" onClick={() => setFormData({...formData, specGroups: formData.specGroups.filter((_,i)=>i!==gIdx)})} className="ml-4 h-9 w-9 text-destructive/40 hover:text-destructive hover:bg-destructive/5"><Trash2 className="h-4 w-4" /></Button>
                     </div>
                     {group.items.map((item, iIdx) => (
-                      <div key={item.uid} className="grid grid-cols-[1fr_1.5fr_1fr_1.5fr_40px] gap-4 px-6 py-4 border-b last:border-b-0 hover:bg-muted/5 transition-colors items-center">
-                        <Input placeholder="名称 (ZH)" value={item.labelZh} onChange={e => { const g=[...formData.specGroups]; g[gIdx].items[iIdx].labelZh=e.target.value; setFormData({...formData, specGroups:g}); }} className="h-10 text-xs" />
-                        <Input placeholder="参数值 (ZH)" value={item.valueZh} onChange={e => { const g=[...formData.specGroups]; g[gIdx].items[iIdx].valueZh=e.target.value; setFormData({...formData, specGroups:g}); }} className="h-10 text-xs bg-muted/10 border-none font-medium" />
-                        <Input placeholder="LABEL (EN)" value={item.labelEn} onChange={e => { const g=[...formData.specGroups]; g[gIdx].items[iIdx].labelEn=e.target.value; setFormData({...formData, specGroups:g}); }} className="h-10 text-xs" />
-                        <Input placeholder="VALUE (EN)" value={item.valueEn} onChange={e => { const g=[...formData.specGroups]; g[gIdx].items[iIdx].valueEn=e.target.value; setFormData({...formData, specGroups:g}); }} className="h-10 text-xs bg-muted/10 border-none font-medium" />
-                        <Button variant="ghost" size="icon" onClick={() => { const g=[...formData.specGroups]; g[gIdx].items=g[gIdx].items.filter((_,i)=>i!==iIdx); setFormData({...formData, specGroups:g}); }} className="h-9 w-9 self-center text-destructive/20 hover:text-destructive hover:bg-destructive/5"><X className="h-4 w-4" /></Button>
+                      <div key={item.uid} className="grid grid-cols-[1fr_1fr_40px] gap-6 px-6 py-4 border-b last:border-b-0 hover:bg-muted/5 transition-colors">
+                        <div className="space-y-3">
+                           <Input placeholder="参数名称 (ZH)" value={item.labelZh} onChange={e => { const g=[...formData.specGroups]; g[gIdx].items[iIdx].labelZh=e.target.value; setFormData({...formData, specGroups:g}); }} className="h-10 text-xs" />
+                           <Input placeholder="LABEL (EN)" value={item.labelEn} onChange={e => { const g=[...formData.specGroups]; g[gIdx].items[iIdx].labelEn=e.target.value; setFormData({...formData, specGroups:g}); }} className="h-10 text-xs border-dashed" />
+                        </div>
+                        <div className="space-y-3">
+                           <Input placeholder="参数值 (ZH)" value={item.valueZh} onChange={e => { const g=[...formData.specGroups]; g[gIdx].items[iIdx].valueZh=e.target.value; setFormData({...formData, specGroups:g}); }} className="h-10 text-xs font-medium" />
+                           <Input placeholder="VALUE (EN)" value={item.valueEn} onChange={e => { const g=[...formData.specGroups]; g[gIdx].items[iIdx].valueEn=e.target.value; setFormData({...formData, specGroups:g}); }} className="h-10 text-xs border-dashed font-medium" />
+                        </div>
+                        <Button variant="ghost" size="icon" onClick={() => { const g=[...formData.specGroups]; g[gIdx].items=g[gIdx].items.filter((_,i)=>i!==iIdx); setFormData({...formData, specGroups:g}); }} className="h-10 w-10 self-center text-destructive/20 hover:text-destructive hover:bg-destructive/5"><X className="h-4 w-4" /></Button>
                       </div>
                     ))}
                     <button onClick={() => { const g=[...formData.specGroups]; g[gIdx].items.push({uid:`i_${Date.now()}`,labelEn:'',labelZh:'',valueEn:'',valueZh:''}); setFormData({...formData, specGroups:g}); }} className="w-full py-2.5 text-[10px] font-bold uppercase text-primary/40 hover:text-primary hover:bg-muted/10 transition-all border-t">+ 追加规格条目</button>
                   </div>
                 ))}
-                {formData.specGroups.length === 0 && (
-                  <div className="py-20 text-center border-2 border-dashed rounded-2xl border-muted/40">
-                    <p className="text-[10px] font-bold uppercase text-muted-foreground/30 tracking-widest">暂无规格分组，请从模板导入或手动新增</p>
-                  </div>
-                )}
               </div>
             </div>
           </TabsContent>
 
-          {/* 详情介绍 */}
           <TabsContent value="details" className="space-y-4">
             <div className="bg-white p-8 rounded-2xl border shadow-sm min-h-[800px] flex flex-col space-y-6">
               <div className="flex items-center justify-between border-b pb-4 mb-6 h-12">
@@ -632,7 +626,6 @@ function ProductEditorContent() {
         </Tabs>
       </div>
 
-      {/* 弹窗：存为模板 */}
       <Dialog open={isSaveTemplateDialogOpen} onOpenChange={setIsSaveTemplateDialogOpen}>
         <DialogContent className="max-w-sm p-0 rounded-2xl overflow-hidden border-none shadow-2xl">
           <div className="bg-primary p-6 text-white"><DialogHeader><DialogTitle className="text-sm font-bold uppercase tracking-widest">存为硬件规格模板</DialogTitle></DialogHeader></div>
@@ -643,7 +636,6 @@ function ProductEditorContent() {
         </DialogContent>
       </Dialog>
 
-      {/* 弹窗：资产拾取器 */}
       <Dialog open={isPickerOpen} onOpenChange={setIsPickerOpen}>
         <DialogContent className="max-w-5xl p-0 h-[85vh] rounded-[2rem] overflow-hidden flex flex-col shadow-2xl border-none">
           <div className="bg-primary p-8 text-white flex items-center justify-between">
@@ -680,8 +672,8 @@ function ProductEditorContent() {
 }
 
 export default function ProductEditorPage({ params, searchParams }: { params: Promise<any>, searchParams: Promise<any> }) { 
-  const resolvedParams = use(params);
-  const resolvedSearchParams = use(searchParams);
+  use(params);
+  use(searchParams);
   return (
     <Suspense fallback={<div className="h-screen flex items-center justify-center"><Loader2 className="animate-spin opacity-20" /></div>}>
       <ProductEditorContent />

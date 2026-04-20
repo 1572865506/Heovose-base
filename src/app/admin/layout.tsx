@@ -192,9 +192,8 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           </SidebarFooter>
         </Sidebar>
         
-        {/* 主布局：固定视口高度，强制内部滚动 */}
         <main className="flex-1 flex flex-col min-w-0 w-full relative h-screen overflow-hidden bg-background">
-          <header className="h-16 border-b border-border/40 bg-white/80 backdrop-blur-md flex items-center justify-between px-6 z-50 shrink-0">
+          <header className="h-16 border-b border-border/40 bg-white/80 backdrop-blur-md flex items-center justify-between px-6 sticky top-0 z-50 shrink-0">
             <div className="flex items-center gap-4">
               <SidebarTrigger />
               <div className="h-5 w-px bg-border/60 mx-1" />
@@ -215,7 +214,6 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             </div>
           </header>
           
-          {/* 核心滚动区：独立于 Header */}
           <div className="flex-1 overflow-y-auto p-6 min-w-0">
             <div className="max-w-7xl w-full mx-auto">
               {children}
