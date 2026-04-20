@@ -1,3 +1,4 @@
+
 "use client";
 
 import React, { useState, useEffect, useMemo, Suspense, useRef, use } from 'react';
@@ -68,7 +69,7 @@ import { cn } from '@/lib/utils';
 import { translateContent } from '@/ai/flows/translate-flow';
 import RichTextEditor from '@/components/RichTextEditor';
 
-// AI 极光渐变定义组件 - 增强色距与饱和度
+// AI 极光渐变定义组件
 const AiGradientDef = () => (
   <svg width="0" height="0" className="absolute">
     <defs>
@@ -190,7 +191,6 @@ function ProductEditorContent() {
   const [isAiProcessing, setIsAiProcessing] = useState(false);
   const [idConflict, setIdConflict] = useState(false);
 
-  // 模板保存相关状态
   const [isSaveTemplateDialogOpen, setIsSaveTemplateDialogOpen] = useState(false);
   const [saveMode, setSaveMode] = useState<'create' | 'overwrite'>('create');
   const [newTemplateName, setNewTemplateName] = useState('');
@@ -691,29 +691,26 @@ function ProductEditorContent() {
       </div>
 
       <Dialog open={isSaveTemplateDialogOpen} onOpenChange={setIsSaveTemplateDialogOpen}>
-        <DialogContent className="max-w-md p-0 rounded-[2rem] overflow-hidden border-none shadow-2xl">
-          <div className="bg-primary p-8 text-white relative">
-            <DialogHeader className="space-y-3">
-              <div className="flex items-center gap-3">
-                 <div className="h-10 w-10 rounded-xl bg-white/10 flex items-center justify-center">
-                    <Save className="h-5 w-5" />
-                 </div>
-                 <DialogTitle className="text-2xl font-bold tracking-tight">存为技术规格模板</DialogTitle>
+        <DialogContent className="max-w-md p-0 rounded-2xl overflow-hidden border-none shadow-2xl">
+          <div className="bg-primary p-6 text-white">
+            <DialogHeader>
+              <div className="flex items-center gap-2">
+                 <Save className="h-4 w-4" />
+                 <DialogTitle className="text-sm font-bold uppercase tracking-widest">存为技术规格模板</DialogTitle>
               </div>
-              <DialogDescription className="text-white/60 text-sm font-medium">
+              <DialogDescription className="text-white/60 text-[10px] uppercase tracking-tight mt-1 font-medium">
                 保存后可在其他产品发布时一键回填此套规格。
               </DialogDescription>
             </DialogHeader>
           </div>
 
-          <div className="p-8 space-y-8 bg-white">
-            {/* 模式切换器 */}
-            <div className="bg-muted/30 p-1.5 rounded-2xl flex items-center">
+          <div className="p-6 space-y-6 bg-white">
+            <div className="bg-muted/20 p-1 rounded-lg flex items-center h-10">
               <button 
                 onClick={() => setSaveMode('create')}
                 className={cn(
-                  "flex-1 h-12 rounded-xl text-sm font-bold transition-all",
-                  saveMode === 'create' ? "bg-white shadow-lg text-primary" : "text-muted-foreground/60 hover:text-muted-foreground"
+                  "flex-1 h-8 rounded-md text-[10px] font-bold uppercase tracking-wider transition-all",
+                  saveMode === 'create' ? "bg-white shadow-sm text-primary" : "text-muted-foreground/60 hover:text-muted-foreground"
                 )}
               >
                 新建模板
@@ -721,36 +718,35 @@ function ProductEditorContent() {
               <button 
                 onClick={() => setSaveMode('overwrite')}
                 className={cn(
-                  "flex-1 h-12 rounded-xl text-sm font-bold transition-all",
-                  saveMode === 'overwrite' ? "bg-white shadow-lg text-primary" : "text-muted-foreground/60 hover:text-muted-foreground"
+                  "flex-1 h-8 rounded-md text-[10px] font-bold uppercase tracking-wider transition-all",
+                  saveMode === 'overwrite' ? "bg-white shadow-sm text-primary" : "text-muted-foreground/60 hover:text-muted-foreground"
                 )}
               >
                 覆盖已有
               </button>
             </div>
 
-            {/* 输入/选择区域 */}
             <div className="space-y-4">
               {saveMode === 'create' ? (
-                <div className="space-y-3">
-                  <Label className="text-xs font-bold text-muted-foreground uppercase tracking-widest">模板显示名称</Label>
+                <div className="space-y-1.5">
+                  <Label className="text-[10px] font-bold text-primary uppercase tracking-widest">模板显示名称</Label>
                   <Input 
                     value={newTemplateName} 
                     onChange={e => setNewTemplateName(e.target.value)} 
                     placeholder="如：标准一体机规格 v1" 
-                    className="h-14 rounded-2xl text-base px-6 border-muted/60"
+                    className="h-10 rounded-lg text-xs"
                   />
                 </div>
               ) : (
-                <div className="space-y-3">
-                  <Label className="text-xs font-bold text-muted-foreground uppercase tracking-widest">选择目标模板</Label>
+                <div className="space-y-1.5">
+                  <Label className="text-[10px] font-bold text-primary uppercase tracking-widest">选择目标模板</Label>
                   <Select value={selectedTemplateId} onValueChange={setSelectedTemplateId}>
-                    <SelectTrigger className="h-14 rounded-2xl text-base px-6 border-muted/60">
+                    <SelectTrigger className="h-10 rounded-lg text-xs">
                       <SelectValue placeholder="请选择要覆盖的模板..." />
                     </SelectTrigger>
-                    <SelectContent className="rounded-2xl">
+                    <SelectContent className="rounded-xl">
                       {specTemplates?.map(tpl => (
-                        <SelectItem key={tpl.id} value={tpl.id} className="h-12 text-sm">{tpl.name}</SelectItem>
+                        <SelectItem key={tpl.id} value={tpl.id} className="text-xs">{tpl.name}</SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
@@ -759,17 +755,17 @@ function ProductEditorContent() {
             </div>
           </div>
 
-          <DialogFooter className="p-8 bg-muted/5 border-t flex gap-4">
+          <DialogFooter className="p-4 bg-muted/10 border-t flex gap-2">
             <Button 
               variant="outline" 
               onClick={() => setIsSaveTemplateDialogOpen(false)} 
-              className="flex-1 h-14 rounded-2xl text-sm font-bold uppercase tracking-widest border-muted-foreground/20"
+              className="flex-1 h-10 rounded-lg text-xs font-bold uppercase tracking-widest"
             >
               取消
             </Button>
             <Button 
               onClick={handleSaveTemplate} 
-              className="flex-1 h-14 rounded-2xl text-sm font-bold uppercase tracking-widest shadow-xl"
+              className="flex-1 h-10 rounded-lg text-xs font-bold uppercase tracking-widest"
             >
               立即保存
             </Button>
@@ -778,32 +774,35 @@ function ProductEditorContent() {
       </Dialog>
 
       <Dialog open={isPickerOpen} onOpenChange={setIsPickerOpen}>
-        <DialogContent className="max-w-5xl p-0 h-[85vh] rounded-[2rem] overflow-hidden flex flex-col shadow-2xl border-none">
-          <div className="bg-primary p-8 text-white flex items-center justify-between">
-            <div className="flex items-center gap-3"><ImageIcon className="h-7 w-7 text-accent" /><div><DialogTitle className="text-xl font-bold uppercase">媒体资产库</DialogTitle><p className="text-[10px] text-white/50 uppercase mt-1">拾取资产将自动关联至当前产品。支持多选导入。</p></div></div>
-            <Button variant="ghost" size="icon" onClick={()=>setIsPickerOpen(false)} className="text-white"><X className="h-6 w-6" /></Button>
+        <DialogContent className="max-w-5xl p-0 h-[80vh] rounded-2xl overflow-hidden flex flex-col shadow-2xl border-none">
+          <div className="bg-primary p-6 text-white flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <ImageIcon className="h-4 w-4" />
+              <DialogTitle className="text-sm font-bold uppercase tracking-widest">媒体资产库</DialogTitle>
+            </div>
+            <Button variant="ghost" size="icon" onClick={()=>setIsPickerOpen(false)} className="text-white hover:bg-white/10 h-8 w-8"><X className="h-4 w-4" /></Button>
           </div>
-          <div className="px-8 py-4 bg-muted/30 border-b flex gap-6 items-center">
-            <div className="relative flex-1"><Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 opacity-30" /><Input placeholder="搜索素材..." value={pickerSearch} onChange={e => setPickerSearch(e.target.value)} className="pl-10 h-10 border-none bg-white text-xs" /></div>
-            <Badge variant="secondary" className="h-10 px-6 text-xs font-bold uppercase bg-white text-primary">已选中 {selectedPickerUrls.size} 项</Badge>
+          <div className="px-6 py-3 bg-muted/30 border-b flex gap-6 items-center">
+            <div className="relative flex-1"><Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 opacity-30" /><Input placeholder="搜索素材..." value={pickerSearch} onChange={e => setPickerSearch(e.target.value)} className="pl-9 h-9 border-none bg-white text-xs" /></div>
+            <Badge variant="secondary" className="h-9 px-4 text-[10px] font-bold uppercase bg-white text-primary border-none">已选中 {selectedPickerUrls.size} 项</Badge>
           </div>
-          <div className="flex-1 overflow-y-auto p-8 grid grid-cols-2 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-7 gap-6 bg-muted/5">
+          <div className="flex-1 overflow-y-auto p-6 grid grid-cols-2 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-7 gap-4 bg-muted/5">
             {galleryAssets?.filter(a=>a.title.toLowerCase().includes(pickerSearch.toLowerCase())).map(a=>(
-              <div key={a.id} className={cn("group relative aspect-square rounded-2xl overflow-hidden border-2 transition-all cursor-pointer", selectedPickerUrls.has(a.url) ? "border-primary scale-95" : "border-transparent bg-white hover:border-primary/20")} onClick={()=>{
+              <div key={a.id} className={cn("group relative aspect-square rounded-lg overflow-hidden border-2 transition-all cursor-pointer shadow-sm", selectedPickerUrls.has(a.url) ? "border-primary scale-95" : "border-transparent bg-white hover:border-primary/20")} onClick={()=>{
                 const n=new Set(selectedPickerUrls); 
                 if(pickerTarget.includes('main')||pickerTarget.includes('richtext')){ n.clear(); n.add(a.url); } else { n.has(a.url) ? n.delete(a.url) : n.add(a.url); } 
                 setSelectedPickerUrls(n); 
               }}>
                 <Image src={a.url} alt={a.title} fill className="object-cover" unoptimized />
-                {selectedPickerUrls.has(a.url) && <div className="absolute inset-0 bg-primary/20 flex items-center justify-center"><div className="bg-white text-primary rounded-full p-1.5"><Check className="h-4 w-4" /></div></div>}
+                {selectedPickerUrls.has(a.url) && <div className="absolute inset-0 bg-primary/20 flex items-center justify-center"><div className="bg-white text-primary rounded-full p-1 shadow-lg"><Check className="h-3.5 w-3.5" /></div></div>}
               </div>
             ))}
           </div>
-          <DialogFooter className="p-8 border-t flex items-center justify-between bg-white">
-            <Button variant="ghost" size="sm" onClick={()=>setSelectedPickerUrls(new Set())} className="text-[10px] font-bold text-destructive uppercase">清除选中</Button>
-            <div className="flex gap-4">
-              <Button variant="outline" onClick={()=>setIsPickerOpen(false)} className="px-10 h-11 rounded-xl text-xs font-bold uppercase">取消</Button>
-              <Button onClick={handleConfirmPicker} disabled={selectedPickerUrls.size===0} className="px-12 h-11 rounded-xl text-xs font-bold uppercase">确认插入</Button>
+          <DialogFooter className="p-4 border-t flex items-center justify-between bg-white">
+            <Button variant="ghost" size="sm" onClick={()=>setSelectedPickerUrls(new Set())} className="text-[10px] font-bold text-destructive uppercase tracking-wider">清除选中</Button>
+            <div className="flex gap-2">
+              <Button variant="outline" size="sm" onClick={()=>setIsPickerOpen(false)} className="px-6 h-10 rounded-lg text-xs font-bold uppercase tracking-widest">取消</Button>
+              <Button size="sm" onClick={handleConfirmPicker} disabled={selectedPickerUrls.size===0} className="px-8 h-10 rounded-lg text-xs font-bold uppercase tracking-widest">确认插入</Button>
             </div>
           </DialogFooter>
         </DialogContent>
@@ -813,7 +812,6 @@ function ProductEditorContent() {
 }
 
 export default function ProductEditorPage({ params, searchParams }: { params: Promise<any>, searchParams: Promise<any> }) { 
-  // Next.js 15 Client Page props must be unwrapped with React.use()
   use(params);
   use(searchParams);
   return (
