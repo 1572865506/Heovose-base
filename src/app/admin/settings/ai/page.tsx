@@ -62,6 +62,7 @@ import { Badge } from '@/components/ui/badge';
 import { testAiConnection } from '@/ai/flows/test-connection-flow';
 import { cn } from '@/lib/utils';
 import { Progress } from '@/components/ui/progress';
+import { AI_MODELS, getModelQuota } from '@/lib/ai-models';
 
 interface DiagnosisRecord {
   status: 'idle' | 'running' | 'success' | 'failed' | 'quota';
@@ -80,36 +81,6 @@ interface AiConfig {
   systemInstruction: string;
   lastDiagnosis?: DiagnosisRecord;
 }
-
-const STATIC_QUOTA_LIST = [
-  { 
-    id: 'googleai/gemini-2.5-flash', 
-    name: 'Gemini 2.5 Flash', 
-    rpm: 10, 
-    rpd: 250, 
-    tpm: '1M', 
-    recommendation: '通用翻译 / 速度优先',
-    color: 'text-blue-600'
-  },
-  { 
-    id: 'googleai/gemini-2.5-flash-lite', 
-    name: 'Gemini 2.5 Flash-Lite', 
-    rpm: 15, 
-    rpd: 1000, 
-    tpm: '4M', 
-    recommendation: '高频并发 / 批量处理',
-    color: 'text-green-600'
-  },
-  { 
-    id: 'googleai/gemini-2.5-pro', 
-    name: 'Gemini 2.5 Pro', 
-    rpm: 5, 
-    rpd: 100, 
-    tpm: '32K', 
-    recommendation: '超长排版 / 深度逻辑',
-    color: 'text-purple-600'
-  }
-];
 
 export default function AiSettingsPage() {
   const firestore = useFirestore();
@@ -150,7 +121,7 @@ export default function AiSettingsPage() {
   }, [aiConfig]);
 
   const currentQuota = useMemo(() => {
-    return STATIC_QUOTA_LIST.find(q => q.id === formData.model) || STATIC_QUOTA_LIST[0];
+    return getModelQuota(formData.model);
   }, [formData.model]);
 
   const handleSave = () => {
@@ -313,7 +284,7 @@ export default function AiSettingsPage() {
                       <SelectValue placeholder="选择 AI 模型" />
                     </SelectTrigger>
                     <SelectContent className="rounded-xl">
-                      {STATIC_QUOTA_LIST.map(m => (
+                      {AI_MODELS.map(m => (
                         <SelectItem key={m.id} value={m.id} className="text-xs font-bold">{m.name}</SelectItem>
                       ))}
                     </SelectContent>
@@ -404,7 +375,7 @@ export default function AiSettingsPage() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {STATIC_QUOTA_LIST.map((item) => (
+                  {AI_MODELS.map((item) => (
                     <TableRow key={item.id} className={cn(formData.model === item.id && "bg-primary/5")}>
                       <TableCell className="pl-6 font-bold text-xs">
                         <div className="flex flex-col">
@@ -417,7 +388,7 @@ export default function AiSettingsPage() {
                       <TableCell className="font-mono text-xs">{item.tpm}</TableCell>
                       <TableCell className="pr-6">
                         <Badge variant="outline" className={cn("text-[9px] border-none px-0 font-medium", item.color)}>
-                          {item.recommendation}
+                          {item.id.includes('pro') ? '超长排版 / 深度逻辑' : item.id.includes('lite') ? '高频并发 / 批量处理' : '通用翻译 / 速度优先'}
                         </Badge>
                       </TableCell>
                     </TableRow>

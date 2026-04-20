@@ -33,13 +33,16 @@ import {
   AlertCircle,
   Image as ImageIcon,
   Bot,
-  ScrollText
+  ScrollText,
+  Clock,
+  Zap
 } from 'lucide-react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { getModelQuota } from '@/lib/ai-models';
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   const { user, isUserLoading } = useUser();
@@ -149,6 +152,10 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     }
   ];
 
+  // 计算 AI 模型配额信息
+  const activeModel = aiConfig?.model ? getModelQuota(aiConfig.model) : null;
+  const aiStatus = aiConfig?.lastDiagnosis?.status;
+
   return (
     <SidebarProvider>
       <div className="flex h-screen w-full bg-muted/20 overflow-hidden">
@@ -209,29 +216,37 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
               </h1>
             </div>
             <div className="flex items-center gap-4">
-              {/* AI API Status shortcut */}
+              {/* AI Quota Dashboard Shortcut */}
               <Link href="/admin/settings/ai">
                 <Button 
                   variant="ghost" 
                   size="sm" 
                   className={cn(
                     "rounded-full h-9 px-4 flex items-center gap-2 border transition-all shrink-0",
-                    aiConfig?.lastDiagnosis?.status === 'success' 
+                    aiStatus === 'success' 
                       ? "bg-green-50 border-green-200 text-green-700 hover:bg-green-100" 
-                      : aiConfig?.lastDiagnosis?.status === 'quota'
+                      : aiStatus === 'quota'
                         ? "bg-orange-50 border-orange-200 text-orange-700 hover:bg-orange-100"
-                        : aiConfig?.lastDiagnosis?.status === 'failed'
+                        : aiStatus === 'failed'
                           ? "bg-destructive/5 border-destructive/10 text-destructive hover:bg-destructive/10"
                           : "bg-muted/30 border-border/20 text-muted-foreground hover:bg-muted/50"
                   )}
                 >
-                  <Bot className={cn("h-4 w-4", aiConfig?.lastDiagnosis?.status === 'success' ? "text-green-600" : "text-muted-foreground")} />
-                  <span className="text-[10px] font-bold tracking-widest uppercase">
-                    AI API: {
-                      aiConfig?.lastDiagnosis?.status === 'success' ? 'Ready' : 
-                      aiConfig?.lastDiagnosis?.status === 'quota' ? 'Quota' :
-                      aiConfig?.lastDiagnosis?.status === 'failed' ? 'Error' : 'Setup'
-                    }
+                  {aiStatus === 'success' ? <Zap className="h-3.5 w-3.5 text-green-600" /> : <Bot className="h-3.5 w-3.5" />}
+                  <span className="text-[10px] font-bold tracking-widest uppercase flex items-center gap-1.5">
+                    {aiStatus === 'success' && activeModel ? (
+                      <>
+                        <span className="opacity-60">{activeModel.shortName}</span>
+                        <span className="w-px h-2 bg-current opacity-20" />
+                        <span>{activeModel.rpm} RPM</span>
+                      </>
+                    ) : aiStatus === 'quota' ? (
+                      <span className="flex items-center gap-1"><Clock className="h-3 w-3" /> Quota Limit</span>
+                    ) : aiStatus === 'failed' ? (
+                      'API Error'
+                    ) : (
+                      'Setup AI'
+                    )}
                   </span>
                 </Button>
               </Link>
