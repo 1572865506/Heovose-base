@@ -2,7 +2,7 @@
 "use client";
 
 import { useState, useMemo } from 'react';
-import { useFirestore, useCollection, useMemoFirebase } from '@/firebase';
+import { useFirestore, useCollection, useMemoFirebase, useDoc } from '@/firebase';
 import { collection, doc, serverTimestamp } from 'firebase/firestore';
 import { 
   Table, 
@@ -25,7 +25,8 @@ import {
   Search,
   Filter,
   X,
-  ExternalLink
+  ExternalLink,
+  Globe
 } from 'lucide-react';
 import { 
   Select,
@@ -34,6 +35,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Switch } from '@/components/ui/switch';
 import { deleteDocumentNonBlocking, updateDocumentNonBlocking } from '@/firebase/non-blocking-updates';
 import Link from 'next/link';
 import Image from 'next/image';
@@ -49,6 +51,7 @@ interface Product {
   productCategoryId: string;
   galleryImageUrls: string[];
   status?: 'published' | 'draft';
+  enabledLanguages?: string[];
 }
 
 interface LocalizedString {
@@ -60,6 +63,10 @@ interface LocalizedString {
 interface ProductCategory {
   id: string;
   nameTextId: string;
+}
+
+interface LanguageSettings {
+  supportedLanguages: { code: string, label: string }[];
 }
 
 export default function AdminProductsPage() {
@@ -84,9 +91,17 @@ export default function AdminProductsPage() {
     return collection(firestore, 'localizedStrings');
   }, [firestore]);
 
+  const langConfigRef = useMemoFirebase(() => firestore ? doc(firestore, 'settings', 'languages') : null, [firestore]);
+
   const { data: products, isLoading: isProdsLoading } = useCollection<Product>(productsQuery);
   const { data: categories } = useCollection<ProductCategory>(catsQuery);
   const { data: translations } = useCollection<LocalizedString>(transQuery);
+  const { data: langSettings } = useDoc<LanguageSettings>(langConfigRef);
+
+  const activeLanguages = useMemo(() => langSettings?.supportedLanguages || [
+    { code: 'zh', label: '中文' }, 
+    { code: 'en', label: 'English' }
+  ], [langSettings]);
 
   const getTranslation = (id: string, lang: 'zh' | 'en' = 'zh') => {
     const t = translations?.find(t => t.id === id);
@@ -126,6 +141,18 @@ export default function AdminProductsPage() {
     });
     toast({
       title: newStatus === 'published' ? "产品已发布" : "产品已下架",
+    });
+  };
+
+  const handleToggleLanguage = (p: Product, langCode: string, currentEnabled: string[]) => {
+    if (!firestore) return;
+    const newList = currentEnabled.includes(langCode) 
+      ? currentEnabled.filter(c => c !== langCode)
+      : [...currentEnabled, langCode];
+    
+    updateDocumentNonBlocking(doc(firestore, 'products', p.id), {
+      enabledLanguages: newList,
+      updatedAt: serverTimestamp()
     });
   };
 
@@ -180,49 +207,70 @@ export default function AdminProductsPage() {
               <TableHead className="w-14 pl-5">预览</TableHead>
               <TableHead className="font-bold uppercase text-[9px] tracking-wider">名称 / 英文</TableHead>
               <TableHead className="font-bold uppercase text-[9px] tracking-wider">分类</TableHead>
-              <TableHead className="font-bold uppercase text-[9px] tracking-wider">状态</TableHead>
+              <TableHead className="font-bold uppercase text-[9px] tracking-wider">全局状态</TableHead>
+              <TableHead className="font-bold uppercase text-[9px] tracking-wider">展示语种控制</TableHead>
               <TableHead className="font-bold uppercase text-[9px] tracking-wider">产品 ID</TableHead>
-              <TableHead className="w-32 text-right pr-5 font-bold uppercase text-[9px] tracking-wider">操作</TableHead>
+              <TableHead className="w-24 text-right pr-5 font-bold uppercase text-[9px] tracking-wider">操作</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {isProdsLoading ? (
-              <TableRow><TableCell colSpan={6} className="h-32 text-center"><Loader2 className="h-5 w-5 animate-spin mx-auto opacity-20" /></TableCell></TableRow>
+              <TableRow><TableCell colSpan={7} className="h-32 text-center"><Loader2 className="h-5 w-5 animate-spin mx-auto opacity-20" /></TableCell></TableRow>
             ) : filteredProducts.length === 0 ? (
-              <TableRow><TableCell colSpan={6} className="h-32 text-center text-[10px] text-muted-foreground italic uppercase">暂无数据</TableCell></TableRow>
-            ) : filteredProducts.map((p) => (
-              <TableRow key={p.id} className="group hover:bg-muted/5 transition-colors">
-                <TableCell className="pl-5">
-                  <div className="relative h-10 w-10 rounded-md border bg-muted/10 overflow-hidden">
-                    {p.mainImageUrl && <Image src={p.mainImageUrl} alt={p.id} fill className="object-contain p-1" />}
-                  </div>
-                </TableCell>
-                <TableCell>
-                  <div className="flex flex-col">
-                    <span className="font-bold text-xs text-primary">{getTranslation(p.nameTextId, 'zh')}</span>
-                    <span className="text-[9px] text-muted-foreground line-clamp-1">{getTranslation(p.nameTextId, 'en')}</span>
-                  </div>
-                </TableCell>
-                <TableCell>
-                  <span className="text-[10px] bg-muted px-2 py-0.5 rounded-md font-medium text-muted-foreground">{getCategoryName(p.productCategoryId)}</span>
-                </TableCell>
-                <TableCell>
-                  <div className="flex items-center gap-1.5">
-                    <Badge variant={p.status === 'published' ? 'default' : 'secondary'} className={cn("text-[8px] uppercase h-4 px-1.5", p.status === 'published' ? "bg-green-600/90" : "bg-muted-foreground/20 text-muted-foreground")}>{p.status === 'published' ? '已发' : '草稿'}</Badge>
-                    <button className="h-6 w-6 rounded-full hover:bg-muted flex items-center justify-center transition-opacity opacity-0 group-hover:opacity-100" onClick={() => toggleStatus(p)}>
-                      {p.status === 'published' ? <EyeOff className="h-3 w-3" /> : <Eye className="h-3 w-3 text-green-600" />}
-                    </button>
-                  </div>
-                </TableCell>
-                <TableCell className="text-[9px] font-mono opacity-40">{p.id}</TableCell>
-                <TableCell className="pr-5 text-right space-x-0.5">
-                  <Link href={`/admin/products/editor?id=${p.id}`}>
-                    <Button size="icon" variant="ghost" className="h-8 w-8 hover:text-primary"><Edit2 className="h-3.5 w-3.5" /></Button>
-                  </Link>
-                  <Button size="icon" variant="ghost" className="h-8 w-8 text-destructive hover:bg-destructive/5" onClick={() => handleDelete(p)}><Trash2 className="h-3.5 w-3.5" /></Button>
-                </TableCell>
-              </TableRow>
-            ))}
+              <TableRow><TableCell colSpan={7} className="h-32 text-center text-[10px] text-muted-foreground italic uppercase">暂无数据</TableCell></TableRow>
+            ) : filteredProducts.map((p) => {
+              const enabledLangs = p.enabledLanguages || ['zh', 'en']; // 默认中英可见
+              return (
+                <TableRow key={p.id} className="group hover:bg-muted/5 transition-colors">
+                  <TableCell className="pl-5">
+                    <div className="relative h-10 w-10 rounded-md border bg-muted/10 overflow-hidden">
+                      {p.mainImageUrl && <Image src={p.mainImageUrl} alt={p.id} fill className="object-contain p-1" unoptimized />}
+                    </div>
+                  </TableCell>
+                  <TableCell>
+                    <div className="flex flex-col">
+                      <span className="font-bold text-xs text-primary">{getTranslation(p.nameTextId, 'zh')}</span>
+                      <span className="text-[9px] text-muted-foreground line-clamp-1">{getTranslation(p.nameTextId, 'en')}</span>
+                    </div>
+                  </TableCell>
+                  <TableCell>
+                    <span className="text-[10px] bg-muted px-2 py-0.5 rounded-md font-medium text-muted-foreground">{getCategoryName(p.productCategoryId)}</span>
+                  </TableCell>
+                  <TableCell>
+                    <div className="flex items-center gap-1.5">
+                      <Badge variant={p.status === 'published' ? 'default' : 'secondary'} className={cn("text-[8px] uppercase h-4 px-1.5", p.status === 'published' ? "bg-green-600/90" : "bg-muted-foreground/20 text-muted-foreground")}>{p.status === 'published' ? '已发' : '草稿'}</Badge>
+                      <button className="h-6 w-6 rounded-full hover:bg-muted flex items-center justify-center transition-opacity opacity-0 group-hover:opacity-100" onClick={() => toggleStatus(p)}>
+                        {p.status === 'published' ? <EyeOff className="h-3 w-3" /> : <Eye className="h-3 w-3 text-green-600" />}
+                      </button>
+                    </div>
+                  </TableCell>
+                  <TableCell>
+                    <div className="flex items-center gap-3">
+                      {activeLanguages.map(lang => (
+                        <div key={lang.code} className="flex flex-col items-center gap-1">
+                          <span className="text-[8px] font-bold opacity-40 uppercase">{lang.code}</span>
+                          <Switch 
+                            size="sm"
+                            className="scale-75"
+                            checked={enabledLangs.includes(lang.code)}
+                            onCheckedChange={() => handleToggleLanguage(p, lang.code, enabledLangs)}
+                          />
+                        </div>
+                      ))}
+                    </div>
+                  </TableCell>
+                  <TableCell className="text-[9px] font-mono opacity-40">{p.id}</TableCell>
+                  <TableCell className="pr-5 text-right space-x-0.5">
+                    <div className="flex justify-end items-center gap-1">
+                      <Link href={`/admin/products/editor?id=${p.id}`}>
+                        <Button size="icon" variant="ghost" className="h-8 w-8 hover:text-primary"><Edit2 className="h-3.5 w-3.5" /></Button>
+                      </Link>
+                      <Button size="icon" variant="ghost" className="h-8 w-8 text-destructive hover:bg-destructive/5" onClick={() => handleDelete(p)}><Trash2 className="h-3.5 w-3.5" /></Button>
+                    </div>
+                  </TableCell>
+                </TableRow>
+              );
+            })}
           </TableBody>
         </Table>
       </div>
