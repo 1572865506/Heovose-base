@@ -3,7 +3,7 @@
 
 import { useState, useEffect, useMemo, Suspense, useRef } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { useUser, useAuth, useFirestore, useDoc, useCollection, useMemoFirebase } from '@/firebase';
+import { useUser, useFirestore, useDoc, useCollection, useMemoFirebase } from '@/firebase';
 import { doc, collection, serverTimestamp, query, orderBy } from 'firebase/firestore';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -451,7 +451,7 @@ function ProductEditorContent() {
                <SelectContent className="rounded-lg">{categories?.map(c => <SelectItem key={c.id} value={c.id} className="text-xs">{c.id}</SelectItem>)}</SelectContent>
              </Select>
              <div className="relative flex-1 max-w-none">
-                <Input disabled={isEditing} value={formData.id} onChange={e => setFormData({...formData, id: e.target.value})} className={cn("h-10 rounded-lg font-mono text-xs border-muted/40 bg-muted/5", idConflict && "border-destructive")} placeholder="产品 ID (由系统按规范生成)..." />
+                <Input disabled={isEditing} value={formData.id} onChange={e => setFormData({...formData, id: e.target.value})} className={cn("h-10 rounded-lg font-mono text-xs border-muted/40 bg-muted/5", idConflict && "border-destructive")} placeholder="产品 ID (按规范生成)" />
                 {idConflict && <AlertCircle className="absolute right-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-destructive" />}
              </div>
              <Select value={formData.status} onValueChange={(v:any) => setFormData({...formData, status: v})}>
@@ -537,8 +537,8 @@ function ProductEditorContent() {
                   <Label className="text-[10px] font-bold uppercase text-primary flex items-center gap-2 tracking-widest"><Languages className="h-3.5 w-3.5" /> 源文: 中文 (ZH)</Label>
                 </div>
                 <div className="space-y-4">
-                   <div className="space-y-2"><Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">产品标题</Label><Input placeholder="输入中文产品名称..." value={formData.nameZh} onChange={e => setFormData({...formData, nameZh: e.target.value})} className="h-10 bg-muted/5 text-xs rounded-lg border-muted/40" /></div>
-                   <div className="space-y-2"><Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">简短描述</Label><textarea placeholder="输入中文简介，建议 100 字以内..." value={formData.descZh} onChange={e => setFormData({...formData, descZh: e.target.value})} className="w-full min-h-[120px] rounded-lg border border-muted/40 bg-muted/5 p-4 text-xs resize-none focus:outline-none focus:ring-1 focus:ring-primary/20" /></div>
+                   <div className="space-y-2"><Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">产品标题</Label><Input placeholder="输入中文产品名称" value={formData.nameZh} onChange={e => setFormData({...formData, nameZh: e.target.value})} className="h-10 bg-muted/5 text-xs rounded-lg border-muted/40" /></div>
+                   <div className="space-y-2"><Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">简短描述</Label><Textarea placeholder="输入中文简介，建议 100 字以内" value={formData.descZh} onChange={e => setFormData({...formData, descZh: e.target.value})} className="w-full min-h-[120px] rounded-lg border border-muted/40 bg-muted/5 p-4 text-xs resize-none focus:outline-none focus:ring-1 focus:ring-primary/20" /></div>
                 </div>
               </div>
               <div className="space-y-6">
@@ -549,8 +549,8 @@ function ProductEditorContent() {
                   </Button>
                 </div>
                 <div className="space-y-4">
-                   <div className="space-y-2"><Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">PRODUCT TITLE</Label><Input placeholder="Product Name in English..." value={formData.nameEn} onChange={e => setFormData({...formData, nameEn: e.target.value})} className="h-10 bg-muted/5 text-xs rounded-lg border-muted/40" /></div>
-                   <div className="space-y-2"><Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">SHORT DESCRIPTION</Label><textarea placeholder="English description for international markets..." value={formData.descEn} onChange={e => setFormData({...formData, descEn: e.target.value})} className="w-full min-h-[120px] rounded-lg border border-muted/40 bg-muted/5 p-4 text-xs resize-none focus:outline-none focus:ring-1 focus:ring-primary/20" /></div>
+                   <div className="space-y-2"><Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">PRODUCT TITLE</Label><Input placeholder="Product Name in English" value={formData.nameEn} onChange={e => setFormData({...formData, nameEn: e.target.value})} className="h-10 bg-muted/5 text-xs rounded-lg border-muted/40" /></div>
+                   <div className="space-y-2"><Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">SHORT DESCRIPTION</Label><Textarea placeholder="English description for international markets" value={formData.descEn} onChange={e => setFormData({...formData, descEn: e.target.value})} className="w-full min-h-[120px] rounded-lg border border-muted/40 bg-muted/5 p-4 text-xs resize-none focus:outline-none focus:ring-1 focus:ring-primary/20" /></div>
                 </div>
               </div>
             </div>
@@ -589,8 +589,8 @@ function ProductEditorContent() {
                   <div key={group.uid} className="rounded-xl border border-border/40 overflow-hidden shadow-sm group/g transition-shadow hover:shadow-md">
                     <div className="bg-muted/10 px-6 py-4 flex items-center justify-between border-b border-border/40">
                       <div className="grid grid-cols-2 gap-6 flex-1">
-                        <div className="space-y-1"><Label className="text-[9px] font-bold opacity-40 uppercase">分组标题 (ZH)</Label><Input placeholder="如：核心配置" value={group.titleZh} onChange={e => { const g=[...formData.specGroups]; g[gIdx].titleZh=e.target.value; setFormData({...formData, specGroups:g}); }} className="h-10 text-xs font-bold rounded-lg border-none bg-white/50" /></div>
-                        <div className="space-y-1"><Label className="text-[9px] font-bold opacity-40 uppercase">GROUP TITLE (EN)</Label><Input placeholder="e.g. Core Hardware" value={group.titleEn} onChange={e => { const g=[...formData.specGroups]; g[gIdx].titleEn=e.target.value; setFormData({...formData, specGroups:g}); }} className="h-10 text-xs font-bold rounded-lg border-none bg-white/50" /></div>
+                        <div className="space-y-1"><Label className="text-[9px] font-bold opacity-40 uppercase">分组标题 (ZH)</Label><Input placeholder="如：核心配置" value={group.titleZh} onChange={e => { const g=[...formData.specGroups]; g[gIdx].titleZh=e.target.value; setFormData({...formData, specGroups:g}); }} className="h-10 text-xs font-medium rounded-lg border-none bg-white/50" /></div>
+                        <div className="space-y-1"><Label className="text-[9px] font-bold opacity-40 uppercase">GROUP TITLE (EN)</Label><Input placeholder="e.g. Core Hardware" value={group.titleEn} onChange={e => { const g=[...formData.specGroups]; g[gIdx].titleEn=e.target.value; setFormData({...formData, specGroups:g}); }} className="h-10 text-xs font-medium rounded-lg border-none bg-white/50" /></div>
                       </div>
                       <Button variant="ghost" size="icon" onClick={() => setFormData({...formData, specGroups: formData.specGroups.filter((_,i)=>i!==gIdx)})} className="ml-6 h-10 w-10 text-destructive/40 hover:text-destructive hover:bg-destructive/5 rounded-lg"><Trash2 className="h-4 w-4" /></Button>
                     </div>
@@ -598,12 +598,12 @@ function ProductEditorContent() {
                       {group.items.map((item, iIdx) => (
                         <div key={item.uid} className="grid grid-cols-[1fr_1fr_48px] gap-8 px-8 py-5 border-b last:border-b-0 hover:bg-muted/5 transition-colors">
                           <div className="space-y-3">
-                            <Input placeholder="参数名称 (如: 处理器)" value={item.labelZh} onChange={e => { const g=[...formData.specGroups]; g[gIdx].items[iIdx].labelZh=e.target.value; setFormData({...formData, specGroups:g}); }} className="h-10 text-xs font-bold border-none bg-muted/10 rounded-lg" />
-                            <textarea placeholder="参数值 (如: 第12代英特尔酷睿)" value={item.valueZh} onChange={e => { const g=[...formData.specGroups]; g[gIdx].items[iIdx].valueZh=e.target.value; setFormData({...formData, specGroups:g}); }} className="w-full min-h-[50px] border-none bg-muted/10 rounded-lg p-3 text-xs resize-none focus:outline-none" />
+                            <Input placeholder="参数名称 (如: 处理器)" value={item.labelZh} onChange={e => { const g=[...formData.specGroups]; g[gIdx].items[iIdx].labelZh=e.target.value; setFormData({...formData, specGroups:g}); }} className="h-10 text-xs font-medium border-none bg-muted/10 rounded-lg" />
+                            <Textarea placeholder="参数值 (如: 第12代英特尔酷睿)" value={item.valueZh} onChange={e => { const g=[...formData.specGroups]; g[gIdx].items[iIdx].valueZh=e.target.value; setFormData({...formData, specGroups:g}); }} className="w-full min-h-[50px] border-none bg-muted/10 rounded-lg p-3 text-xs resize-none focus:outline-none" />
                           </div>
                           <div className="space-y-3">
-                            <div className="relative"><Input placeholder="Label (e.g. CPU)" value={item.labelEn} onChange={e => { const g=[...formData.specGroups]; g[gIdx].items[iIdx].labelEn=e.target.value; setFormData({...formData, specGroups:g}); }} className="h-10 text-xs rounded-lg border-muted/30 pr-10" /><Sparkles className="absolute right-2.5 top-2.5 h-4 w-4 text-accent/40 cursor-pointer hover:text-accent transition-colors" onClick={() => handleAiTranslateSpec(gIdx, iIdx, item.labelZh, 'label')} /></div>
-                            <div className="relative"><textarea placeholder="Value (e.g. 12th Gen Intel Core)" value={item.valueEn} onChange={e => { const g=[...formData.specGroups]; g[gIdx].items[iIdx].valueEn=e.target.value; setFormData({...formData, specGroups:g}); }} className="w-full min-h-[50px] border border-muted/30 rounded-lg p-3 text-xs resize-none pr-10 focus:outline-none" /><Sparkles className="absolute right-2.5 top-3 h-4 w-4 text-accent/40 cursor-pointer hover:text-accent transition-colors" onClick={() => handleAiTranslateSpec(gIdx, iIdx, item.valueZh, 'value')} /></div>
+                            <div className="relative"><Input placeholder="Label (e.g. CPU)" value={item.labelEn} onChange={e => { const g=[...formData.specGroups]; g[gIdx].items[iIdx].labelEn=e.target.value; setFormData({...formData, specGroups:g}); }} className="h-10 text-xs rounded-lg border-muted/30 pr-10 font-medium" /><Sparkles className="absolute right-2.5 top-2.5 h-4 w-4 text-accent/40 cursor-pointer hover:text-accent transition-colors" onClick={() => handleAiTranslateSpec(gIdx, iIdx, item.labelZh, 'label')} /></div>
+                            <div className="relative"><Textarea placeholder="Value (e.g. 12th Gen Intel Core)" value={item.valueEn} onChange={e => { const g=[...formData.specGroups]; g[gIdx].items[iIdx].valueEn=e.target.value; setFormData({...formData, specGroups:g}); }} className="w-full min-h-[50px] border border-muted/30 rounded-lg p-3 text-xs resize-none pr-10 focus:outline-none" /><Sparkles className="absolute right-2.5 top-3 h-4 w-4 text-accent/40 cursor-pointer hover:text-accent transition-colors" onClick={() => handleAiTranslateSpec(gIdx, iIdx, item.valueZh, 'value')} /></div>
                           </div>
                           <div className="flex items-center justify-center"><Button variant="ghost" size="icon" onClick={() => { const g=[...formData.specGroups]; g[gIdx].items=g[gIdx].items.filter((_,i)=>i!==iIdx); setFormData({...formData, specGroups:g}); }} className="h-10 w-10 text-destructive/20 hover:text-destructive hover:bg-destructive/5 rounded-lg"><X className="h-4 w-4" /></Button></div>
                         </div>
@@ -668,7 +668,7 @@ function ProductEditorContent() {
           <div className="p-8 space-y-5 bg-white">
             <div className="space-y-2">
               <Label className="text-[10px] font-bold uppercase opacity-50 tracking-wider">模板显示名称</Label>
-              <Input value={newTemplateName} onChange={e => setNewTemplateName(e.target.value)} placeholder="如: 标配 AIO 规格模板..." className="h-10 rounded-lg text-xs" />
+              <Input value={newTemplateName} onChange={e => setNewTemplateName(e.target.value)} placeholder="如: 标配 AIO 规格模板" className="h-10 rounded-lg text-xs" />
             </div>
           </div>
           <DialogFooter className="p-6 bg-muted/20 border-t gap-3">
@@ -693,7 +693,7 @@ function ProductEditorContent() {
           <div className="px-8 py-4 bg-muted/30 border-b border-border/40 flex gap-6 items-center">
             <div className="relative flex-1">
               <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 opacity-30" />
-              <Input placeholder="输入素材标题、分类或文件名搜索云端资产..." value={pickerSearch} onChange={e => setPickerSearch(e.target.value)} className="pl-10 h-10 border-none bg-white rounded-lg shadow-inner text-xs" />
+              <Input placeholder="搜索云端资产..." value={pickerSearch} onChange={e => setPickerSearch(e.target.value)} className="pl-10 h-10 border-none bg-white rounded-lg shadow-inner text-xs" />
             </div>
             <div className="h-8 w-px bg-border/60" />
             <Badge variant="secondary" className="h-10 px-6 rounded-lg text-xs font-bold uppercase tracking-widest bg-white border-border/40 text-primary shadow-sm">已选中 {selectedPickerUrls.size} 项</Badge>

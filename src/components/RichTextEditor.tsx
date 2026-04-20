@@ -1,3 +1,4 @@
+
 "use client";
 
 import React, { useEffect, useImperativeHandle, forwardRef } from 'react';
@@ -107,14 +108,14 @@ const MenuBar = ({ editor, onImageClick }: { editor: any, onImageClick?: () => v
         </Select>
 
         <Select 
-          value={editor.getAttributes('textStyle').fontSize || '14px'} 
+          value={editor.getAttributes('textStyle').fontSize || '12px'} 
           onValueChange={(val) => editor.chain().focus().setFontSize(val).run()}
         >
           <SelectTrigger className="h-8 w-[70px] text-[10px] font-bold bg-white border-none shadow-none">
             <SelectValue placeholder="Size" />
           </SelectTrigger>
           <SelectContent className="rounded-lg">
-            {['12px', '14px', '16px', '18px', '20px', '24px', '32px'].map(size => (
+            {['10px', '12px', '14px', '16px', '18px', '20px', '24px'].map(size => (
               <SelectItem key={size} value={size} className="text-xs">{size}</SelectItem>
             ))}
           </SelectContent>
@@ -291,7 +292,7 @@ const RichTextEditor = forwardRef<any, RichTextEditorProps>(({ content, onChange
     editorProps: {
       attributes: {
         class: cn(
-          'prose prose-sm max-w-none focus:outline-none min-h-full p-6 text-[14px] leading-relaxed',
+          'prose prose-sm max-w-none focus:outline-none min-h-full p-6 text-[12px] leading-relaxed',
           'prose-headings:font-headline prose-headings:text-primary prose-headings:mb-4 prose-headings:mt-8',
           'prose-p:mb-4 prose-p:text-muted-foreground/80',
           'prose-blockquote:border-l-4 prose-blockquote:border-accent prose-blockquote:bg-accent/5 prose-blockquote:py-2 prose-blockquote:px-4 prose-blockquote:rounded-r-lg',
@@ -310,8 +311,6 @@ const RichTextEditor = forwardRef<any, RichTextEditorProps>(({ content, onChange
   }));
 
   useEffect(() => {
-    // Only update content if it's different from current editor HTML to avoid infinite loops
-    // but ensure complex HTML (with images) is rendered correctly
     if (editor && content !== editor.getHTML()) {
       editor.commands.setContent(content, false);
     }
