@@ -15,6 +15,12 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { 
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { 
   ArrowLeft, 
   Save, 
   Loader2, 
@@ -158,8 +164,6 @@ function ProductEditorContent() {
   const [idConflict, setIdConflict] = useState(false);
 
   const [isSaveTemplateDialogOpen, setIsSaveTemplateDialogOpen] = useState(false);
-  const [saveTemplateMode, setSaveTemplateMode] = useState<'create' | 'update'>('create');
-  const [targetTemplateId, setTargetTemplateId] = useState<string>('');
   const [newTemplateName, setNewTemplateName] = useState('');
 
   const [isPickerOpen, setIsPickerOpen] = useState(false);
@@ -286,6 +290,57 @@ function ProductEditorContent() {
     router.push('/admin/products');
   };
 
+  const handleSaveTemplate = () => {
+    if (!firestore || !newTemplateName.trim()) {
+      toast({ variant: "destructive", title: "请输入模板名称" });
+      return;
+    }
+
+    const templateId = `tpl_${Date.now()}`;
+    const cleanSpecGroups = formData.specGroups.map(group => ({
+      titleEn: group.titleEn,
+      titleZh: group.titleZh,
+      items: group.items.map(item => ({
+        labelEn: item.labelEn,
+        labelZh: item.labelZh,
+        valueEn: item.valueEn,
+        valueZh: item.valueZh
+      }))
+    }));
+
+    setDocumentNonBlocking(doc(firestore, 'specTemplates', templateId), {
+      id: templateId,
+      name: newTemplateName.trim(),
+      specGroups: cleanSpecGroups,
+      createdAt: serverTimestamp()
+    }, { merge: true });
+
+    setIsSaveTemplateDialogOpen(false);
+    setNewTemplateName('');
+    toast({ title: "规格模板已存入云端库" });
+  };
+
+  const handleApplyTemplate = (template: SpecTemplate) => {
+    const mappedGroups = template.specGroups.map((group: any, gIdx: number) => ({
+      uid: `tpl_g_${gIdx}_${Date.now()}`,
+      titleEn: group.titleEn || '',
+      titleZh: group.titleZh || '',
+      items: (group.items || []).map((item: any, iIdx: number) => ({
+        uid: `tpl_i_${gIdx}_${iIdx}_${Date.now()}`,
+        labelEn: item.labelEn || '',
+        labelZh: item.labelZh || '',
+        valueEn: item.valueEn || '',
+        valueZh: item.valueZh || ''
+      }))
+    }));
+
+    setFormData(prev => ({
+      ...prev,
+      specGroups: [...prev.specGroups, ...mappedGroups]
+    }));
+    toast({ title: "已从模板导入规格" });
+  };
+
   const handleAiTranslateBasicInfo = async () => {
     if (!aiConfig?.isEnabled) return;
     setIsAiProcessing(true);
@@ -372,7 +427,6 @@ function ProductEditorContent() {
 
   return (
     <div className="max-w-[1400px] mx-auto space-y-6 pb-20 animate-in fade-in duration-500">
-      {/* 顶部操作栏 */}
       <div className="flex items-center justify-between sticky top-16 z-40 bg-background/95 backdrop-blur-md py-3 border-b px-6 shadow-sm">
         <div className="flex items-center gap-6 flex-1">
           <div className="flex items-center gap-2">
@@ -393,16 +447,16 @@ function ProductEditorContent() {
                  return { ...prev, ...up };
                });
              }}>
-               <SelectTrigger className="h-10 rounded-lg bg-muted/20 border-transparent text-xs w-[160px] shrink-0"><SelectValue placeholder="选择分类..." /></SelectTrigger>
-               <SelectContent>{categories?.map(c => <SelectItem key={c.id} value={c.id} className="text-xs">{c.id}</SelectItem>)}</SelectContent>
+               <SelectTrigger className="h-10 rounded-lg bg-muted/20 border-transparent text-xs w-[160px] shrink-0 font-medium"><SelectValue placeholder="选择分类..." /></SelectTrigger>
+               <SelectContent className="rounded-lg">{categories?.map(c => <SelectItem key={c.id} value={c.id} className="text-xs">{c.id}</SelectItem>)}</SelectContent>
              </Select>
-             <div className="relative flex-1 max-w-[400px]">
-                <Input disabled={isEditing} value={formData.id} onChange={e => setFormData({...formData, id: e.target.value})} className={cn("h-10 rounded-lg font-mono text-xs", idConflict && "border-destructive")} placeholder="产品 ID (由系统按规范生成)..." />
-                {idConflict && <AlertCircle className="absolute right-2 top-1/2 -translate-y-1/2 h-3 w-3 text-destructive" />}
+             <div className="relative flex-1 max-w-none">
+                <Input disabled={isEditing} value={formData.id} onChange={e => setFormData({...formData, id: e.target.value})} className={cn("h-10 rounded-lg font-mono text-xs border-muted/40 bg-muted/5", idConflict && "border-destructive")} placeholder="产品 ID (由系统按规范生成)..." />
+                {idConflict && <AlertCircle className="absolute right-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-destructive" />}
              </div>
              <Select value={formData.status} onValueChange={(v:any) => setFormData({...formData, status: v})}>
                <SelectTrigger className={cn("h-10 rounded-lg border-transparent text-xs font-bold uppercase w-[100px] shrink-0", formData.status === 'published' ? "bg-green-50 text-green-700" : "bg-muted/30")}><SelectValue /></SelectTrigger>
-               <SelectContent><SelectItem value="published" className="text-xs font-bold text-green-600">已发布</SelectItem><SelectItem value="draft" className="text-xs">草稿</SelectItem></SelectContent>
+               <SelectContent className="rounded-lg"><SelectItem value="published" className="text-xs font-bold text-green-600">已发布</SelectItem><SelectItem value="draft" className="text-xs">草稿</SelectItem></SelectContent>
              </Select>
           </div>
         </div>
@@ -413,11 +467,10 @@ function ProductEditorContent() {
       </div>
 
       <div className="space-y-6 px-6">
-        {/* 视觉素材中心 */}
         <div className="bg-white p-6 rounded-2xl border shadow-sm space-y-4">
           <div className="flex items-center justify-between border-b pb-3">
-            <h3 className="text-xs font-bold text-primary flex items-center gap-2 uppercase tracking-widest"><ImageIcon className="h-4 w-4" /> 视觉素材中心</h3>
-            <Button variant="outline" size="sm" onClick={() => openPicker('gallery')} className="h-8 text-[11px] font-bold uppercase tracking-wider gap-1.5 rounded-lg"><FolderPlus className="h-3.5 w-3.5" /> 批量导入细节图</Button>
+            <h3 className="text-[10px] font-bold text-primary flex items-center gap-2 uppercase tracking-widest"><ImageIcon className="h-4 w-4" /> 视觉素材中心</h3>
+            <Button variant="outline" size="sm" onClick={() => openPicker('gallery')} className="h-9 text-[11px] font-bold uppercase tracking-wider gap-1.5 rounded-lg"><FolderPlus className="h-3.5 w-3.5" /> 批量导入细节图</Button>
           </div>
           <div className="flex gap-6 h-[240px]">
             <div className="w-[264px] flex flex-col gap-2">
@@ -484,20 +537,20 @@ function ProductEditorContent() {
                   <Label className="text-[10px] font-bold uppercase text-primary flex items-center gap-2 tracking-widest"><Languages className="h-3.5 w-3.5" /> 源文: 中文 (ZH)</Label>
                 </div>
                 <div className="space-y-4">
-                   <div className="space-y-1.5"><Label className="text-[9px] font-bold text-muted-foreground uppercase">产品标题</Label><Input placeholder="输入中文产品名称..." value={formData.nameZh} onChange={e => setFormData({...formData, nameZh: e.target.value})} className="h-10 bg-muted/5 text-xs rounded-lg" /></div>
-                   <div className="space-y-1.5"><Label className="text-[9px] font-bold text-muted-foreground uppercase">简短描述</Label><textarea placeholder="输入中文简介，建议 100 字以内..." value={formData.descZh} onChange={e => setFormData({...formData, descZh: e.target.value})} className="w-full min-h-[120px] rounded-lg border bg-muted/5 p-4 text-xs resize-none focus:outline-none focus:ring-1 focus:ring-primary/20" /></div>
+                   <div className="space-y-2"><Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">产品标题</Label><Input placeholder="输入中文产品名称..." value={formData.nameZh} onChange={e => setFormData({...formData, nameZh: e.target.value})} className="h-10 bg-muted/5 text-xs rounded-lg border-muted/40" /></div>
+                   <div className="space-y-2"><Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">简短描述</Label><textarea placeholder="输入中文简介，建议 100 字以内..." value={formData.descZh} onChange={e => setFormData({...formData, descZh: e.target.value})} className="w-full min-h-[120px] rounded-lg border border-muted/40 bg-muted/5 p-4 text-xs resize-none focus:outline-none focus:ring-1 focus:ring-primary/20" /></div>
                 </div>
               </div>
               <div className="space-y-6">
                 <div className="flex items-center justify-between h-10 border-b pb-2">
                   <Label className="text-[10px] font-bold uppercase text-muted-foreground flex items-center gap-2 tracking-widest"><Globe className="h-3.5 w-3.5" /> 目标: 英文 (EN)</Label>
-                  <Button variant="ghost" size="sm" className="h-7 px-4 text-[10px] gap-1.5 font-bold text-accent bg-accent/5 hover:bg-accent/10 rounded-full transition-all border border-accent/10" onClick={handleAiTranslateBasicInfo} disabled={isAiProcessing}>
+                  <Button variant="ghost" size="sm" className="h-8 px-4 text-[10px] gap-1.5 font-bold text-accent bg-accent/5 hover:bg-accent/10 rounded-full transition-all border border-accent/10" onClick={handleAiTranslateBasicInfo} disabled={isAiProcessing}>
                     <Sparkles className="h-3 w-3" /> AI 智译一键同步
                   </Button>
                 </div>
                 <div className="space-y-4">
-                   <div className="space-y-1.5"><Label className="text-[9px] font-bold text-muted-foreground uppercase">PRODUCT TITLE</Label><Input placeholder="Product Name in English..." value={formData.nameEn} onChange={e => setFormData({...formData, nameEn: e.target.value})} className="h-10 bg-muted/5 text-xs rounded-lg" /></div>
-                   <div className="space-y-1.5"><Label className="text-[9px] font-bold text-muted-foreground uppercase">SHORT DESCRIPTION</Label><textarea placeholder="English description for international markets..." value={formData.descEn} onChange={e => setFormData({...formData, descEn: e.target.value})} className="w-full min-h-[120px] rounded-lg border bg-muted/5 p-4 text-xs resize-none focus:outline-none focus:ring-1 focus:ring-primary/20" /></div>
+                   <div className="space-y-2"><Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">PRODUCT TITLE</Label><Input placeholder="Product Name in English..." value={formData.nameEn} onChange={e => setFormData({...formData, nameEn: e.target.value})} className="h-10 bg-muted/5 text-xs rounded-lg border-muted/40" /></div>
+                   <div className="space-y-2"><Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">SHORT DESCRIPTION</Label><textarea placeholder="English description for international markets..." value={formData.descEn} onChange={e => setFormData({...formData, descEn: e.target.value})} className="w-full min-h-[120px] rounded-lg border border-muted/40 bg-muted/5 p-4 text-xs resize-none focus:outline-none focus:ring-1 focus:ring-primary/20" /></div>
                 </div>
               </div>
             </div>
@@ -507,10 +560,26 @@ function ProductEditorContent() {
             <div className="bg-white p-8 rounded-2xl border shadow-sm space-y-8">
               <div className="flex items-center justify-between">
                 <div className="space-y-1">
-                  <h3 className="text-sm font-bold text-primary flex items-center gap-2 uppercase tracking-widest"><TableProperties className="h-4 w-4" /> 硬件规格矩阵</h3>
-                  <p className="text-[10px] text-muted-foreground uppercase tracking-tight">定义产品的技术参数，建议使用 AI 同步翻译以确保术语专业。</p>
+                  <h3 className="text-[10px] font-bold text-primary flex items-center gap-2 uppercase tracking-widest"><TableProperties className="h-4 w-4" /> 硬件规格矩阵</h3>
+                  <p className="text-[9px] text-muted-foreground uppercase tracking-tight">定义产品的技术参数，支持一键存取云端模板。</p>
                 </div>
                 <div className="flex gap-3">
+                  {specTemplates && specTemplates.length > 0 && (
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="outline" size="sm" className="h-10 px-5 text-xs font-bold uppercase tracking-wider rounded-lg border-muted-foreground/20 gap-2">
+                          <Library className="h-4 w-4" /> 模板导入
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent className="rounded-xl w-56">
+                        {specTemplates.map(tpl => (
+                          <DropdownMenuItem key={tpl.id} onClick={() => handleApplyTemplate(tpl)} className="text-xs">
+                            {tpl.name}
+                          </DropdownMenuItem>
+                        ))}
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  )}
                   <Button variant="outline" size="sm" onClick={() => setIsSaveTemplateDialogOpen(true)} className="h-10 px-5 text-xs font-bold uppercase tracking-wider rounded-lg border-muted-foreground/20">保存当前为模板</Button>
                   <Button size="sm" onClick={() => setFormData({...formData, specGroups: [...formData.specGroups, {uid:`g_${Date.now()}`,titleEn:'',titleZh:'',items:[{uid:`i_${Date.now()}`,labelEn:'',labelZh:'',valueEn:'',valueZh:''}]}]})} className="h-10 px-6 text-xs font-bold uppercase tracking-wider gap-2 rounded-lg shadow-md"><PlusCircle className="h-4 w-4" /> 新增规格分组</Button>
                 </div>
@@ -520,23 +589,23 @@ function ProductEditorContent() {
                   <div key={group.uid} className="rounded-xl border border-border/40 overflow-hidden shadow-sm group/g transition-shadow hover:shadow-md">
                     <div className="bg-muted/10 px-6 py-4 flex items-center justify-between border-b border-border/40">
                       <div className="grid grid-cols-2 gap-6 flex-1">
-                        <div className="space-y-1"><Label className="text-[8px] font-bold opacity-40 uppercase">分组标题 (ZH)</Label><Input placeholder="如：核心配置" value={group.titleZh} onChange={e => { const g=[...formData.specGroups]; g[gIdx].titleZh=e.target.value; setFormData({...formData, specGroups:g}); }} className="h-9 text-xs font-bold rounded-lg border-none bg-white/50" /></div>
-                        <div className="space-y-1"><Label className="text-[8px] font-bold opacity-40 uppercase">GROUP TITLE (EN)</Label><Input placeholder="e.g. Core Hardware" value={group.titleEn} onChange={e => { const g=[...formData.specGroups]; g[gIdx].titleEn=e.target.value; setFormData({...formData, specGroups:g}); }} className="h-9 text-xs font-bold rounded-lg border-none bg-white/50" /></div>
+                        <div className="space-y-1"><Label className="text-[9px] font-bold opacity-40 uppercase">分组标题 (ZH)</Label><Input placeholder="如：核心配置" value={group.titleZh} onChange={e => { const g=[...formData.specGroups]; g[gIdx].titleZh=e.target.value; setFormData({...formData, specGroups:g}); }} className="h-10 text-xs font-bold rounded-lg border-none bg-white/50" /></div>
+                        <div className="space-y-1"><Label className="text-[9px] font-bold opacity-40 uppercase">GROUP TITLE (EN)</Label><Input placeholder="e.g. Core Hardware" value={group.titleEn} onChange={e => { const g=[...formData.specGroups]; g[gIdx].titleEn=e.target.value; setFormData({...formData, specGroups:g}); }} className="h-10 text-xs font-bold rounded-lg border-none bg-white/50" /></div>
                       </div>
-                      <Button variant="ghost" size="icon" onClick={() => setFormData({...formData, specGroups: formData.specGroups.filter((_,i)=>i!==gIdx)})} className="ml-6 h-9 w-9 text-destructive/40 hover:text-destructive hover:bg-destructive/5 rounded-lg"><Trash2 className="h-4 w-4" /></Button>
+                      <Button variant="ghost" size="icon" onClick={() => setFormData({...formData, specGroups: formData.specGroups.filter((_,i)=>i!==gIdx)})} className="ml-6 h-10 w-10 text-destructive/40 hover:text-destructive hover:bg-destructive/5 rounded-lg"><Trash2 className="h-4 w-4" /></Button>
                     </div>
                     <div className="p-0 bg-white">
                       {group.items.map((item, iIdx) => (
                         <div key={item.uid} className="grid grid-cols-[1fr_1fr_48px] gap-8 px-8 py-5 border-b last:border-b-0 hover:bg-muted/5 transition-colors">
                           <div className="space-y-3">
-                            <Input placeholder="参数名称 (如: 处理器)" value={item.labelZh} onChange={e => { const g=[...formData.specGroups]; g[gIdx].items[iIdx].labelZh=e.target.value; setFormData({...formData, specGroups:g}); }} className="h-9 text-xs font-bold border-none bg-muted/10" />
+                            <Input placeholder="参数名称 (如: 处理器)" value={item.labelZh} onChange={e => { const g=[...formData.specGroups]; g[gIdx].items[iIdx].labelZh=e.target.value; setFormData({...formData, specGroups:g}); }} className="h-10 text-xs font-bold border-none bg-muted/10 rounded-lg" />
                             <textarea placeholder="参数值 (如: 第12代英特尔酷睿)" value={item.valueZh} onChange={e => { const g=[...formData.specGroups]; g[gIdx].items[iIdx].valueZh=e.target.value; setFormData({...formData, specGroups:g}); }} className="w-full min-h-[50px] border-none bg-muted/10 rounded-lg p-3 text-xs resize-none focus:outline-none" />
                           </div>
                           <div className="space-y-3">
-                            <div className="relative"><Input placeholder="Label (e.g. CPU)" value={item.labelEn} onChange={e => { const g=[...formData.specGroups]; g[gIdx].items[iIdx].labelEn=e.target.value; setFormData({...formData, specGroups:g}); }} className="h-9 text-xs rounded-lg border-muted/30 pr-10" /><Sparkles className="absolute right-2.5 top-2.5 h-4 w-4 text-accent/40 cursor-pointer hover:text-accent transition-colors" onClick={() => handleAiTranslateSpec(gIdx, iIdx, item.labelZh, 'label')} /></div>
+                            <div className="relative"><Input placeholder="Label (e.g. CPU)" value={item.labelEn} onChange={e => { const g=[...formData.specGroups]; g[gIdx].items[iIdx].labelEn=e.target.value; setFormData({...formData, specGroups:g}); }} className="h-10 text-xs rounded-lg border-muted/30 pr-10" /><Sparkles className="absolute right-2.5 top-2.5 h-4 w-4 text-accent/40 cursor-pointer hover:text-accent transition-colors" onClick={() => handleAiTranslateSpec(gIdx, iIdx, item.labelZh, 'label')} /></div>
                             <div className="relative"><textarea placeholder="Value (e.g. 12th Gen Intel Core)" value={item.valueEn} onChange={e => { const g=[...formData.specGroups]; g[gIdx].items[iIdx].valueEn=e.target.value; setFormData({...formData, specGroups:g}); }} className="w-full min-h-[50px] border border-muted/30 rounded-lg p-3 text-xs resize-none pr-10 focus:outline-none" /><Sparkles className="absolute right-2.5 top-3 h-4 w-4 text-accent/40 cursor-pointer hover:text-accent transition-colors" onClick={() => handleAiTranslateSpec(gIdx, iIdx, item.valueZh, 'value')} /></div>
                           </div>
-                          <div className="flex items-center justify-center"><Button variant="ghost" size="icon" onClick={() => { const g=[...formData.specGroups]; g[gIdx].items=g[gIdx].items.filter((_,i)=>i!==iIdx); setFormData({...formData, specGroups:g}); }} className="h-9 w-9 text-destructive/20 hover:text-destructive hover:bg-destructive/5 rounded-lg"><X className="h-4 w-4" /></Button></div>
+                          <div className="flex items-center justify-center"><Button variant="ghost" size="icon" onClick={() => { const g=[...formData.specGroups]; g[gIdx].items=g[gIdx].items.filter((_,i)=>i!==iIdx); setFormData({...formData, specGroups:g}); }} className="h-10 w-10 text-destructive/20 hover:text-destructive hover:bg-destructive/5 rounded-lg"><X className="h-4 w-4" /></Button></div>
                         </div>
                       ))}
                       <button onClick={() => { const g=[...formData.specGroups]; g[gIdx].items.push({uid:`i_${Date.now()}`,labelEn:'',labelZh:'',valueEn:'',valueZh:''}); setFormData({...formData, specGroups:g}); }} className="w-full py-3 text-[10px] font-bold uppercase tracking-[0.2em] opacity-30 hover:opacity-100 transition-all bg-muted/5 hover:bg-muted/10 border-t border-border/40">+ 点击追加规格条目</button>
@@ -554,18 +623,18 @@ function ProductEditorContent() {
                   <div className="h-10 w-10 rounded-xl bg-primary/5 text-primary flex items-center justify-center shadow-inner"><Film className="h-5 w-5" /></div>
                   <div className="space-y-0.5">
                     <h3 className="font-bold text-sm uppercase tracking-widest">多语言详情编辑器</h3>
-                    <p className="text-[10px] text-muted-foreground uppercase">支持 Tiptap 渲染引擎，可直接从素材库插入带阴影圆角的媒体资产。</p>
+                    <p className="text-[10px] text-muted-foreground uppercase tracking-tight">支持 Tiptap 渲染引擎，可直接从素材库插入带阴影圆角的媒体资产。</p>
                   </div>
                 </div>
                 <div className="flex items-center gap-4">
                   <div className="flex items-center gap-2">
                     <Label className="text-[10px] font-bold uppercase opacity-40">目标语言:</Label>
                     <Select value={targetDetailsLang} onValueChange={setTargetDetailsLang}>
-                      <SelectTrigger className="h-9 w-28 text-xs font-bold uppercase rounded-lg border-muted/40"><SelectValue /></SelectTrigger>
-                      <SelectContent>{supportedLangs.filter(l=>l.code!=='zh').map(l=><SelectItem key={l.code} value={l.code} className="text-xs uppercase">{l.label}</SelectItem>)}</SelectContent>
+                      <SelectTrigger className="h-10 w-28 text-xs font-bold uppercase rounded-lg border-muted/40"><SelectValue /></SelectTrigger>
+                      <SelectContent className="rounded-xl">{supportedLangs.filter(l=>l.code!=='zh').map(l=><SelectItem key={l.code} value={l.code} className="text-xs uppercase">{l.label}</SelectItem>)}</SelectContent>
                     </Select>
                   </div>
-                  <Button variant="outline" size="sm" className="h-9 px-6 text-xs font-bold text-accent border-accent/20 bg-accent/5 hover:bg-accent/10 rounded-lg gap-2" onClick={handleAiTranslateDetails} disabled={isAiProcessing}>
+                  <Button variant="outline" size="sm" className="h-10 px-6 text-xs font-bold text-accent border-accent/20 bg-accent/5 hover:bg-accent/10 rounded-lg gap-2" onClick={handleAiTranslateDetails} disabled={isAiProcessing}>
                     <Sparkles className="h-4 w-4" /> AI 智译 ({targetDetailsLang.toUpperCase()})
                   </Button>
                 </div>
@@ -593,19 +662,18 @@ function ProductEditorContent() {
         </Tabs>
       </div>
 
-      {/* 弹窗组件统一修正 */}
       <Dialog open={isSaveTemplateDialogOpen} onOpenChange={setIsSaveTemplateDialogOpen}>
         <DialogContent className="max-w-md p-0 overflow-hidden rounded-2xl shadow-2xl border-none">
           <div className="bg-primary p-6 text-white"><DialogTitle className="text-lg font-bold flex items-center gap-2"><Save className="h-5 w-5" /> 保存为规格模板</DialogTitle></div>
           <div className="p-8 space-y-5 bg-white">
             <div className="space-y-2">
               <Label className="text-[10px] font-bold uppercase opacity-50 tracking-wider">模板显示名称</Label>
-              <Input value={newTemplateName} onChange={e => setNewTemplateName(e.target.value)} placeholder="如: 标配 AIO 规格模板..." className="h-11 rounded-xl text-sm" />
+              <Input value={newTemplateName} onChange={e => setNewTemplateName(e.target.value)} placeholder="如: 标配 AIO 规格模板..." className="h-10 rounded-lg text-xs" />
             </div>
           </div>
           <DialogFooter className="p-6 bg-muted/20 border-t gap-3">
-            <Button variant="outline" onClick={()=>setIsSaveTemplateDialogOpen(false)} className="flex-1 h-11 rounded-xl text-xs font-bold uppercase">放弃</Button>
-            <Button onClick={handleSaveTemplate} className="flex-1 h-11 rounded-xl text-xs font-bold uppercase shadow-lg">立即存入云端库</Button>
+            <Button variant="outline" onClick={()=>setIsSaveTemplateDialogOpen(false)} className="flex-1 h-10 rounded-lg text-xs font-bold uppercase">放弃</Button>
+            <Button onClick={handleSaveTemplate} className="flex-1 h-10 rounded-lg text-xs font-bold uppercase shadow-lg">立即存入云端库</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -625,10 +693,10 @@ function ProductEditorContent() {
           <div className="px-8 py-4 bg-muted/30 border-b border-border/40 flex gap-6 items-center">
             <div className="relative flex-1">
               <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 opacity-30" />
-              <Input placeholder="输入素材标题、分类或文件名搜索云端资产..." value={pickerSearch} onChange={e => setPickerSearch(e.target.value)} className="pl-10 h-11 border-none bg-white rounded-xl shadow-inner text-xs" />
+              <Input placeholder="输入素材标题、分类或文件名搜索云端资产..." value={pickerSearch} onChange={e => setPickerSearch(e.target.value)} className="pl-10 h-10 border-none bg-white rounded-lg shadow-inner text-xs" />
             </div>
             <div className="h-8 w-px bg-border/60" />
-            <Badge variant="secondary" className="h-11 px-6 rounded-xl text-xs font-bold uppercase tracking-widest bg-white border-border/40 text-primary shadow-sm">已选中 {selectedPickerUrls.size} 项</Badge>
+            <Badge variant="secondary" className="h-10 px-6 rounded-lg text-xs font-bold uppercase tracking-widest bg-white border-border/40 text-primary shadow-sm">已选中 {selectedPickerUrls.size} 项</Badge>
           </div>
           <div className="flex-1 overflow-y-auto p-8 grid grid-cols-2 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-7 gap-6 bg-muted/5">
             {galleryAssets?.filter(a=>a.title.toLowerCase().includes(pickerSearch.toLowerCase())).map(a=>(
@@ -669,8 +737,8 @@ function ProductEditorContent() {
               {selectedPickerUrls.size > 0 && <Button variant="ghost" size="sm" onClick={()=>setSelectedPickerUrls(new Set())} className="text-[10px] font-bold text-destructive uppercase tracking-widest px-4 h-9 hover:bg-destructive/5 rounded-lg border border-destructive/10">清除所有选择</Button>}
             </div>
             <div className="flex gap-4">
-              <Button variant="outline" onClick={()=>setIsPickerOpen(false)} className="rounded-xl h-12 px-10 text-xs font-bold uppercase tracking-widest border-muted-foreground/20">取消退出</Button>
-              <Button onClick={handleConfirmPicker} disabled={selectedPickerUrls.size===0} className="rounded-xl h-12 px-12 text-xs font-bold uppercase tracking-widest shadow-xl">确认插入 {selectedPickerUrls.size} 项素材</Button>
+              <Button variant="outline" onClick={()=>setIsPickerOpen(false)} className="rounded-lg h-10 px-10 text-xs font-bold uppercase tracking-widest border-muted-foreground/20">取消退出</Button>
+              <Button onClick={handleConfirmPicker} disabled={selectedPickerUrls.size===0} className="rounded-lg h-10 px-12 text-xs font-bold uppercase tracking-widest shadow-xl">确认插入 {selectedPickerUrls.size} 项素材</Button>
             </div>
           </DialogFooter>
         </DialogContent>
