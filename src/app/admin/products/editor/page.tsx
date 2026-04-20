@@ -429,14 +429,14 @@ function ProductEditorContent() {
   if (isEditing && isProdLoading) return <div className="h-[60vh] flex items-center justify-center"><Loader2 className="h-8 w-8 animate-spin opacity-20" /></div>;
 
   return (
-    <div className="max-w-[1400px] mx-auto space-y-6 pb-20 animate-in fade-in duration-500">
+    <div className="max-w-[1400px] w-full mx-auto space-y-6 pb-20 animate-in fade-in duration-500 overflow-hidden">
       <div className="flex items-center justify-between sticky top-16 z-40 bg-background/95 backdrop-blur-md py-3 border-b px-6 shadow-sm">
-        <div className="flex items-center gap-6 flex-1">
-          <div className="flex items-center gap-2">
+        <div className="flex items-center gap-6 flex-1 min-w-0">
+          <div className="flex items-center gap-2 shrink-0">
             <Button variant="ghost" size="icon" onClick={() => router.back()} className="rounded-full h-8 w-8"><ArrowLeft className="h-4 w-4" /></Button>
             <h2 className="text-sm font-headline font-bold text-primary whitespace-nowrap uppercase tracking-wider">{isEditing ? '编辑产品' : '发布新产品'}</h2>
           </div>
-          <div className="flex items-center gap-3 flex-1">
+          <div className="flex items-center gap-3 flex-1 min-w-0 overflow-hidden">
              <Select value={formData.categoryId} onValueChange={v => {
                setFormData(prev => {
                  const up: any = { categoryId: v };
@@ -453,8 +453,8 @@ function ProductEditorContent() {
                <SelectTrigger className="h-10 rounded-lg bg-muted/20 border-transparent text-xs w-[160px] shrink-0 font-medium"><SelectValue placeholder="选择分类..." /></SelectTrigger>
                <SelectContent className="rounded-lg">{categories?.map(c => <SelectItem key={c.id} value={c.id} className="text-xs">{c.id}</SelectItem>)}</SelectContent>
              </Select>
-             <div className="relative flex-1 max-w-none">
-                <Input disabled={isEditing} value={formData.id} onChange={e => setFormData({...formData, id: e.target.value})} className={cn("h-10 rounded-lg font-mono text-xs border-muted/40 bg-muted/5", idConflict && "border-destructive")} placeholder="产品 ID (按规范生成)" />
+             <div className="relative flex-1 min-w-0">
+                <Input disabled={isEditing} value={formData.id} onChange={e => setFormData({...formData, id: e.target.value})} className={cn("h-10 rounded-lg font-mono text-xs border-muted/40 bg-muted/5 w-full", idConflict && "border-destructive")} placeholder="产品 ID (按规范生成)" />
                 {idConflict && <AlertCircle className="absolute right-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-destructive" />}
              </div>
              <Select value={formData.status} onValueChange={(v:any) => setFormData({...formData, status: v})}>
@@ -463,14 +463,14 @@ function ProductEditorContent() {
              </Select>
           </div>
         </div>
-        <div className="flex gap-2 ml-4">
+        <div className="flex gap-2 ml-4 shrink-0">
           <Button variant="outline" size="sm" onClick={() => router.back()} className="rounded-lg h-10 px-5 text-xs font-bold uppercase tracking-wider">取消</Button>
           <Button size="sm" onClick={handleSave} className="rounded-lg h-10 px-6 text-xs font-bold uppercase tracking-wider gap-2 shadow-md"><Save className="h-4 w-4" /> 保存变更</Button>
         </div>
       </div>
 
-      <div className="space-y-6 px-6">
-        <div className="bg-white p-6 rounded-2xl border shadow-sm space-y-4">
+      <div className="space-y-6 px-6 w-full max-w-full overflow-hidden">
+        <div className="bg-white p-6 rounded-2xl border shadow-sm space-y-4 overflow-hidden">
           <div className="flex items-center justify-between border-b pb-4 mb-2">
             <div className="space-y-0.5">
               <h3 className="text-sm font-bold text-primary flex items-center gap-2 uppercase tracking-widest">
@@ -482,7 +482,7 @@ function ProductEditorContent() {
               <FolderPlus className="h-3.5 w-3.5" /> 批量导入细节图
             </Button>
           </div>
-          <div className="flex gap-6 h-[240px]">
+          <div className="flex gap-6 h-[240px] min-w-0 overflow-hidden">
             <div className="w-[264px] flex flex-col gap-2 shrink-0">
               <Label className="text-[10px] font-bold uppercase text-primary/40 tracking-wider">产品主图 (Main Image)</Label>
               <div className="relative flex-1 rounded-xl bg-muted/10 border border-dashed border-border/40 overflow-hidden flex items-center justify-center group cursor-pointer transition-colors hover:bg-muted/20">
@@ -516,7 +516,7 @@ function ProductEditorContent() {
             </div>
             <div className="flex-1 min-w-0 flex flex-col gap-2 overflow-hidden">
               <Label className="text-[10px] font-bold uppercase text-primary/40 tracking-wider">细节轮播图 ({formData.galleryUrls.length})</Label>
-              <div className="flex-1 flex gap-4 p-3 bg-muted/5 rounded-xl border border-border/20 overflow-x-auto items-center scrollbar-thin scrollbar-thumb-muted-foreground/20">
+              <div className="flex-1 flex gap-4 p-3 bg-muted/5 rounded-xl border border-border/20 overflow-x-auto items-center scrollbar-thin scrollbar-thumb-muted-foreground/20 overflow-y-hidden">
                 {formData.galleryUrls.map((url, idx) => (
                   <div key={idx} className="group relative shrink-0 w-[220px] h-full bg-white rounded-lg border border-border/10 overflow-hidden shadow-sm hover:shadow-md transition-all">
                     <Image src={url} alt="G" fill className="object-contain p-2" unoptimized />
