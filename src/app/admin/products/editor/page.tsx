@@ -634,14 +634,13 @@ function ProductEditorContent() {
           </TabsContent>
 
           <TabsContent value="details" className="space-y-4 animate-in fade-in slide-in-from-bottom-2">
-            <div className="bg-white p-8 rounded-2xl border shadow-sm h-[calc(100vh-280px)] min-h-[600px] flex flex-col space-y-6">
+            <div className="bg-white p-8 rounded-2xl border shadow-sm h-[calc(100vh-260px)] min-h-[800px] flex flex-col space-y-6">
               <div className="flex items-center justify-between border-b pb-4 mb-2">
-                <div className="flex items-center gap-3">
-                  <div className="h-10 w-10 rounded-xl bg-primary/5 text-primary flex items-center justify-center shadow-inner"><Film className="h-5 w-5" /></div>
-                  <div className="space-y-0.5">
-                    <h3 className="text-sm font-bold text-primary flex items-center gap-2 uppercase tracking-widest">多语言详情编辑器</h3>
-                    <p className="text-[10px] text-muted-foreground font-medium uppercase tracking-tight">支持 Tiptap 渲染引擎，可直接从素材库插入带阴影圆角的媒体资产。</p>
-                  </div>
+                <div className="space-y-0.5">
+                  <h3 className="text-sm font-bold text-primary flex items-center gap-2 uppercase tracking-widest">
+                    <Film className="h-4 w-4" /> 多语言详情编辑器
+                  </h3>
+                  <p className="text-[10px] text-muted-foreground font-medium uppercase tracking-tight">支持 Tiptap 渲染引擎，可直接从素材库插入带阴影圆角的媒体资产。</p>
                 </div>
                 <div className="flex items-center gap-4">
                   <div className="flex items-center gap-2">
@@ -656,7 +655,7 @@ function ProductEditorContent() {
                   </Button>
                 </div>
               </div>
-              <div className="grid grid-cols-2 gap-8 flex-1 overflow-hidden">
+              <div className="grid grid-cols-2 gap-8 flex-1">
                 <RichTextEditor ref={zhEditorRef} content={formData.localizedDetails.zh || ''} onChange={v => setFormData({...formData, localizedDetails: {...formData.localizedDetails, zh: v}})} onImageClick={() => openPicker('richtext-zh')} placeholder="录入中文详情内容..." className="rounded-xl border-muted/40" />
                 <div className="relative flex flex-col">
                   <RichTextEditor ref={targetEditorRef} content={formData.localizedDetails[targetDetailsLang] || ''} onChange={v => setFormData({...formData, localizedDetails: {...formData.localizedDetails, [targetDetailsLang]: v}})} onImageClick={() => openPicker('richtext-target')} placeholder="待同步的目标语言译文..." className="rounded-xl border-muted/40" />

@@ -1,4 +1,3 @@
-
 "use client";
 
 import React, { useEffect, useImperativeHandle, forwardRef } from 'react';
@@ -214,6 +213,7 @@ const MenuBar = ({ editor, onImageClick }: { editor: any, onImageClick?: () => v
         </Button>
       </div>
 
+      {/* Blocks & Images */}
       <div className="flex items-center gap-1 px-2 border-r border-border/40">
         <Button
           variant="ghost"
@@ -234,6 +234,7 @@ const MenuBar = ({ editor, onImageClick }: { editor: any, onImageClick?: () => v
         </Button>
       </div>
 
+      {/* History & Cleanup */}
       <div className="flex items-center gap-1 pl-2">
         <Button
           variant="ghost"
@@ -317,9 +318,9 @@ const RichTextEditor = forwardRef<any, RichTextEditorProps>(({ content, onChange
   }, [content, editor]);
 
   return (
-    <div className={cn("border border-border/40 rounded-xl overflow-hidden bg-white flex flex-col group relative", className)}>
+    <div className={cn("border border-border/40 rounded-xl overflow-hidden bg-white flex flex-col group relative shadow-sm", className)}>
       <MenuBar editor={editor} onImageClick={onImageClick} />
-      <div className="flex-1 overflow-y-auto bg-muted/5 min-h-[400px]">
+      <div className="flex-1 overflow-y-auto bg-muted/5 min-h-[500px]">
         <EditorContent editor={editor} />
       </div>
       <div className="px-3 py-1 border-t border-border/10 bg-muted/20 flex justify-between items-center shrink-0 h-6">
