@@ -689,7 +689,7 @@ function ProductEditorContent() {
                           translationCoverage.global > 70 ? "text-orange-600 bg-orange-50" : "text-muted-foreground bg-muted/20"
                         )}
                       >
-                        覆盖率 {translationCoverage.global}%
+                        翻译覆盖率 {translationCoverage.global}%
                       </Badge>
                     </div>
                   </TooltipTrigger>
