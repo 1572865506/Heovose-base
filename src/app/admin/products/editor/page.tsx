@@ -1,4 +1,3 @@
-
 "use client";
 
 import React, { useState, useEffect, useMemo, Suspense, useRef, use } from 'react';
@@ -409,8 +408,8 @@ function ProductEditorContent() {
   if (isEditing && isProdLoading) return <div className="h-[60vh] flex items-center justify-center"><Loader2 className="h-8 w-8 animate-spin opacity-20" /></div>;
 
   return (
-    <div className="max-w-full w-full mx-auto space-y-6 pb-20 animate-in fade-in duration-500 overflow-hidden">
-      {/* 修正后的吸顶工具栏：top-[-24px] 抵消 AdminLayout 的 p-6 容器内边距 */}
+    <div className="max-w-full w-full mx-auto space-y-6 pb-20 animate-in fade-in duration-500">
+      {/* 修正后的吸顶工具栏：抵消 AdminLayout 的 p-6 容器内边距 */}
       <div className="flex items-center justify-between sticky top-[-24px] z-40 bg-background/95 backdrop-blur-md py-3 border-b shadow-sm -mx-6 px-6">
         <div className="flex items-center gap-6 flex-1 min-w-0">
           <div className="flex items-center gap-2 shrink-0">
@@ -675,9 +674,8 @@ function ProductEditorContent() {
 }
 
 export default function ProductEditorPage({ params, searchParams }: { params: Promise<any>, searchParams: Promise<any> }) { 
-  // Next.js 15: props 是 Promise，必须使用 React.use() 解包
-  use(params);
-  use(searchParams);
+  const resolvedParams = use(params);
+  const resolvedSearchParams = use(searchParams);
   return (
     <Suspense fallback={<div className="h-screen flex items-center justify-center"><Loader2 className="animate-spin opacity-20" /></div>}>
       <ProductEditorContent />
