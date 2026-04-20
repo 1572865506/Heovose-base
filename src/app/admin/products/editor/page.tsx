@@ -51,6 +51,7 @@ import {
   DialogFooter, 
   DialogHeader, 
   DialogTitle, 
+  DialogDescription
 } from '@/components/ui/dialog';
 import { 
   Tabs, 
@@ -124,6 +125,7 @@ interface SpecTemplate {
   id: string;
   name: string;
   specGroups: any[];
+  createdAt: any;
 }
 
 interface LocalizedString {
@@ -188,8 +190,11 @@ function ProductEditorContent() {
   const [isAiProcessing, setIsAiProcessing] = useState(false);
   const [idConflict, setIdConflict] = useState(false);
 
+  // 模板保存相关状态
   const [isSaveTemplateDialogOpen, setIsSaveTemplateDialogOpen] = useState(false);
+  const [saveMode, setSaveMode] = useState<'create' | 'overwrite'>('create');
   const [newTemplateName, setNewTemplateName] = useState('');
+  const [selectedTemplateId, setSelectedTemplateId] = useState<string>('');
 
   const [isPickerOpen, setIsPickerOpen] = useState(false);
   const [pickerTarget, setPickerTarget] = useState<'main' | 'gallery' | 'richtext-zh' | 'richtext-target'>('main');
@@ -309,11 +314,27 @@ function ProductEditorContent() {
   };
 
   const handleSaveTemplate = () => {
-    if (!firestore || !newTemplateName.trim()) {
-      toast({ variant: "destructive", title: "请输入模板名称" });
-      return;
+    if (!firestore) return;
+    
+    let templateId = '';
+    let templateName = '';
+
+    if (saveMode === 'create') {
+      if (!newTemplateName.trim()) {
+        toast({ variant: "destructive", title: "请输入模板名称" });
+        return;
+      }
+      templateId = `tpl_${Date.now()}`;
+      templateName = newTemplateName.trim();
+    } else {
+      if (!selectedTemplateId) {
+        toast({ variant: "destructive", title: "请选择要覆盖的模板" });
+        return;
+      }
+      templateId = selectedTemplateId;
+      templateName = specTemplates?.find(t => t.id === selectedTemplateId)?.name || '';
     }
-    const templateId = `tpl_${Date.now()}`;
+
     const cleanSpecGroups = formData.specGroups.map(group => ({
       titleEn: group.titleEn,
       titleZh: group.titleZh,
@@ -324,15 +345,19 @@ function ProductEditorContent() {
         valueZh: item.valueZh
       }))
     }));
+
     setDocumentNonBlocking(doc(firestore, 'specTemplates', templateId), {
       id: templateId,
-      name: newTemplateName.trim(),
+      name: templateName,
       specGroups: cleanSpecGroups,
-      createdAt: serverTimestamp()
+      createdAt: saveMode === 'create' ? serverTimestamp() : (specTemplates?.find(t => t.id === templateId)?.createdAt || serverTimestamp()),
+      updatedAt: serverTimestamp()
     }, { merge: true });
+
     setIsSaveTemplateDialogOpen(false);
     setNewTemplateName('');
-    toast({ title: "规格模板已存入云端库" });
+    setSelectedTemplateId('');
+    toast({ title: saveMode === 'create' ? "规格模板已存入云端库" : "模板内容已更新成功" });
   };
 
   const handleApplyTemplate = (template: SpecTemplate) => {
@@ -666,12 +691,89 @@ function ProductEditorContent() {
       </div>
 
       <Dialog open={isSaveTemplateDialogOpen} onOpenChange={setIsSaveTemplateDialogOpen}>
-        <DialogContent className="max-w-sm p-0 rounded-2xl overflow-hidden border-none shadow-2xl">
-          <div className="bg-primary p-6 text-white"><DialogHeader><DialogTitle className="text-sm font-bold uppercase tracking-widest">存为硬件规格模板</DialogTitle></DialogHeader></div>
-          <div className="p-6 space-y-4 bg-white">
-            <div className="space-y-1.5"><Label className="text-[10px] font-bold uppercase opacity-60">模板显示名称</Label><Input value={newTemplateName} onChange={e => setNewTemplateName(e.target.value)} placeholder="如: 工业显示器标准规格" className="h-10 text-xs rounded-lg" /></div>
+        <DialogContent className="max-w-md p-0 rounded-[2rem] overflow-hidden border-none shadow-2xl">
+          <div className="bg-primary p-8 text-white relative">
+            <DialogHeader className="space-y-3">
+              <div className="flex items-center gap-3">
+                 <div className="h-10 w-10 rounded-xl bg-white/10 flex items-center justify-center">
+                    <Save className="h-5 w-5" />
+                 </div>
+                 <DialogTitle className="text-2xl font-bold tracking-tight">存为技术规格模板</DialogTitle>
+              </div>
+              <DialogDescription className="text-white/60 text-sm font-medium">
+                保存后可在其他产品发布时一键回填此套规格。
+              </DialogDescription>
+            </DialogHeader>
           </div>
-          <DialogFooter className="p-4 bg-muted/20 border-t gap-2"><Button variant="outline" onClick={()=>setIsSaveTemplateDialogOpen(false)} className="flex-1 h-10 rounded-lg text-xs font-bold uppercase">取消</Button><Button onClick={handleSaveTemplate} className="flex-1 h-10 rounded-lg text-xs font-bold uppercase">立即保存</Button></DialogFooter>
+
+          <div className="p-8 space-y-8 bg-white">
+            {/* 模式切换器 */}
+            <div className="bg-muted/30 p-1.5 rounded-2xl flex items-center">
+              <button 
+                onClick={() => setSaveMode('create')}
+                className={cn(
+                  "flex-1 h-12 rounded-xl text-sm font-bold transition-all",
+                  saveMode === 'create' ? "bg-white shadow-lg text-primary" : "text-muted-foreground/60 hover:text-muted-foreground"
+                )}
+              >
+                新建模板
+              </button>
+              <button 
+                onClick={() => setSaveMode('overwrite')}
+                className={cn(
+                  "flex-1 h-12 rounded-xl text-sm font-bold transition-all",
+                  saveMode === 'overwrite' ? "bg-white shadow-lg text-primary" : "text-muted-foreground/60 hover:text-muted-foreground"
+                )}
+              >
+                覆盖已有
+              </button>
+            </div>
+
+            {/* 输入/选择区域 */}
+            <div className="space-y-4">
+              {saveMode === 'create' ? (
+                <div className="space-y-3">
+                  <Label className="text-xs font-bold text-muted-foreground uppercase tracking-widest">模板显示名称</Label>
+                  <Input 
+                    value={newTemplateName} 
+                    onChange={e => setNewTemplateName(e.target.value)} 
+                    placeholder="如：标准一体机规格 v1" 
+                    className="h-14 rounded-2xl text-base px-6 border-muted/60"
+                  />
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  <Label className="text-xs font-bold text-muted-foreground uppercase tracking-widest">选择目标模板</Label>
+                  <Select value={selectedTemplateId} onValueChange={setSelectedTemplateId}>
+                    <SelectTrigger className="h-14 rounded-2xl text-base px-6 border-muted/60">
+                      <SelectValue placeholder="请选择要覆盖的模板..." />
+                    </SelectTrigger>
+                    <SelectContent className="rounded-2xl">
+                      {specTemplates?.map(tpl => (
+                        <SelectItem key={tpl.id} value={tpl.id} className="h-12 text-sm">{tpl.name}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
+            </div>
+          </div>
+
+          <DialogFooter className="p-8 bg-muted/5 border-t flex gap-4">
+            <Button 
+              variant="outline" 
+              onClick={() => setIsSaveTemplateDialogOpen(false)} 
+              className="flex-1 h-14 rounded-2xl text-sm font-bold uppercase tracking-widest border-muted-foreground/20"
+            >
+              取消
+            </Button>
+            <Button 
+              onClick={handleSaveTemplate} 
+              className="flex-1 h-14 rounded-2xl text-sm font-bold uppercase tracking-widest shadow-xl"
+            >
+              立即保存
+            </Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
 
