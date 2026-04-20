@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useState, useEffect, useMemo, Suspense, useRef } from 'react';
@@ -7,6 +6,7 @@ import { useUser, useFirestore, useDoc, useCollection, useMemoFirebase } from '@
 import { doc, collection, serverTimestamp, query, orderBy } from 'firebase/firestore';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
 import { 
   Select,
   SelectContent,
@@ -589,8 +589,8 @@ function ProductEditorContent() {
                   <div key={group.uid} className="rounded-xl border border-border/40 overflow-hidden shadow-sm group/g transition-shadow hover:shadow-md">
                     <div className="bg-muted/10 px-6 py-4 flex items-center justify-between border-b border-border/40">
                       <div className="grid grid-cols-2 gap-6 flex-1">
-                        <div className="space-y-1"><Label className="text-[9px] font-bold opacity-40 uppercase">分组标题 (ZH)</Label><Input placeholder="如：核心配置" value={group.titleZh} onChange={e => { const g=[...formData.specGroups]; g[gIdx].titleZh=e.target.value; setFormData({...formData, specGroups:g}); }} className="h-10 text-xs font-medium rounded-lg border-none bg-white/50" /></div>
-                        <div className="space-y-1"><Label className="text-[9px] font-bold opacity-40 uppercase">GROUP TITLE (EN)</Label><Input placeholder="e.g. Core Hardware" value={group.titleEn} onChange={e => { const g=[...formData.specGroups]; g[gIdx].titleEn=e.target.value; setFormData({...formData, specGroups:g}); }} className="h-10 text-xs font-medium rounded-lg border-none bg-white/50" /></div>
+                        <div className="space-y-1"><Label className="text-[10px] font-bold opacity-40 uppercase">分组标题 (ZH)</Label><Input placeholder="如：核心配置" value={group.titleZh} onChange={e => { const g=[...formData.specGroups]; g[gIdx].titleZh=e.target.value; setFormData({...formData, specGroups:g}); }} className="h-10 text-xs font-medium rounded-lg border-none bg-white/50" /></div>
+                        <div className="space-y-1"><Label className="text-[10px] font-bold opacity-40 uppercase">GROUP TITLE (EN)</Label><Input placeholder="e.g. Core Hardware" value={group.titleEn} onChange={e => { const g=[...formData.specGroups]; g[gIdx].titleEn=e.target.value; setFormData({...formData, specGroups:g}); }} className="h-10 text-xs font-medium rounded-lg border-none bg-white/50" /></div>
                       </div>
                       <Button variant="ghost" size="icon" onClick={() => setFormData({...formData, specGroups: formData.specGroups.filter((_,i)=>i!==gIdx)})} className="ml-6 h-10 w-10 text-destructive/40 hover:text-destructive hover:bg-destructive/5 rounded-lg"><Trash2 className="h-4 w-4" /></Button>
                     </div>
