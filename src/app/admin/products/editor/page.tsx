@@ -483,7 +483,7 @@ function ProductEditorContent() {
             </Button>
           </div>
           <div className="flex gap-6 h-[240px]">
-            <div className="w-[264px] flex flex-col gap-2">
+            <div className="w-[264px] flex flex-col gap-2 shrink-0">
               <Label className="text-[10px] font-bold uppercase text-primary/40 tracking-wider">产品主图 (Main Image)</Label>
               <div className="relative flex-1 rounded-xl bg-muted/10 border border-dashed border-border/40 overflow-hidden flex items-center justify-center group cursor-pointer transition-colors hover:bg-muted/20">
                 {formData.mainImageUrl ? (
@@ -514,14 +514,13 @@ function ProductEditorContent() {
                 <input type="file" ref={fileInputRef} className="hidden" onChange={handleImageUpload} />
               </div>
             </div>
-            <div className="flex-1 flex flex-col gap-2 overflow-hidden">
+            <div className="flex-1 min-w-0 flex flex-col gap-2 overflow-hidden">
               <Label className="text-[10px] font-bold uppercase text-primary/40 tracking-wider">细节轮播图 ({formData.galleryUrls.length})</Label>
               <div className="flex-1 flex gap-4 p-3 bg-muted/5 rounded-xl border border-border/20 overflow-x-auto items-center scrollbar-thin scrollbar-thumb-muted-foreground/20">
                 {formData.galleryUrls.map((url, idx) => (
                   <div key={idx} className="group relative shrink-0 w-[220px] h-full bg-white rounded-lg border border-border/10 overflow-hidden shadow-sm hover:shadow-md transition-all">
                     <Image src={url} alt="G" fill className="object-contain p-2" unoptimized />
                     
-                    {/* 操作控制层 */}
                     <div className="absolute top-2 right-2 flex gap-1 z-10 opacity-0 group-hover:opacity-100 transition-all">
                       <Button variant="destructive" size="icon" className="h-7 w-7 shadow-lg" onClick={() => setFormData({...formData, galleryUrls: formData.galleryUrls.filter((_,i)=>i!==idx)})}><Trash2 className="h-3.5 w-3.5" /></Button>
                     </div>
@@ -567,7 +566,7 @@ function ProductEditorContent() {
 
           <TabsContent value="basic" className="space-y-4 animate-in fade-in slide-in-from-bottom-2">
             <div className="bg-white p-8 rounded-2xl border shadow-sm space-y-8">
-              <div className="border-b pb-4">
+              <div className="border-b pb-4 mb-6">
                 <h3 className="text-sm font-bold text-primary flex items-center gap-2 uppercase tracking-widest">
                   <Info className="h-4 w-4" /> 基础信息配置
                 </h3>
@@ -601,7 +600,7 @@ function ProductEditorContent() {
 
           <TabsContent value="specs" className="space-y-4 animate-in fade-in slide-in-from-bottom-2">
             <div className="bg-white p-8 rounded-2xl border shadow-sm space-y-8">
-              <div className="flex items-center justify-between border-b pb-4">
+              <div className="flex items-center justify-between border-b pb-4 mb-6">
                 <div className="space-y-0.5">
                   <h3 className="text-sm font-bold text-primary flex items-center gap-2 uppercase tracking-widest">
                     <TableProperties className="h-4 w-4" /> 硬件规格矩阵
@@ -662,8 +661,8 @@ function ProductEditorContent() {
           </TabsContent>
 
           <TabsContent value="details" className="space-y-4 animate-in fade-in slide-in-from-bottom-2">
-            <div className="bg-white p-8 rounded-2xl border shadow-sm h-[calc(100vh-260px)] min-h-[800px] flex flex-col space-y-6">
-              <div className="flex items-center justify-between border-b pb-4 mb-2">
+            <div className="bg-white p-8 rounded-2xl border shadow-sm min-h-[800px] flex flex-col space-y-6">
+              <div className="flex items-center justify-between border-b pb-4 mb-6">
                 <div className="space-y-0.5">
                   <h3 className="text-sm font-bold text-primary flex items-center gap-2 uppercase tracking-widest">
                     <Film className="h-4 w-4" /> 多语言详情编辑器
