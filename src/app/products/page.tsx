@@ -92,7 +92,7 @@ function ProductListContent() {
 
   const activeCategoryName = useMemo(() => {
     if (!selectedCategoryId) return t.allCategories;
-    const cat = categories?.find(c => c.id === selectedCategoryId);
+    const cat = categories?.find(c => i.id === selectedCategoryId);
     return cat ? getT(cat.nameTextId) : t.allCategories;
   }, [selectedCategoryId, categories, allTranslations, locale, t.allCategories]);
 
@@ -222,10 +222,10 @@ function ProductListContent() {
   );
 }
 
-export default function ProductListPage(props: { searchParams: Promise<any> }) {
-  // 在 Next.js 15 中，即使不显式使用，解开 Page 组件接收到的 searchParams Promise 
-  // 也能防止某些环境下的枚举错误（enumeration error）。
-  use(props.searchParams);
+export default function ProductListPage({ searchParams }: { searchParams: Promise<any> }) {
+  // 在 Next.js 15 中，Client Component 页面 props 必须使用 React.use() 解包。
+  // 这防止了 Next.js 内部序列化逻辑（如 JSON.stringify）在 Proxy 上触发枚举错误。
+  use(searchParams);
 
   return (
     <Suspense fallback={<div className="min-h-screen flex items-center justify-center">Loading...</div>}>

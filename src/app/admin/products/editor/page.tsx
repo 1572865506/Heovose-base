@@ -665,10 +665,15 @@ function ProductEditorContent() {
   );
 }
 
-export default function ProductEditorPage(props: { params: Promise<any>, searchParams: Promise<any> }) { 
-  // 解开 params 和 searchParams Promise 以符合 Next.js 15 规范，防止枚举错误
-  use(props.params);
-  use(props.searchParams);
+export default function ProductEditorPage({ params, searchParams }: { params: Promise<any>, searchParams: Promise<any> }) { 
+  // 在 Next.js 15 中，Client Component 必须解开 params/searchParams Promise
+  // 使用 React.use() 来安全地消费这些异步属性，防止枚举错误。
+  use(params);
+  use(searchParams);
   
-  return <Suspense fallback={<div className="h-screen flex items-center justify-center"><Loader2 className="animate-spin opacity-20" /></div>}><ProductEditorContent /></Suspense>; 
+  return (
+    <Suspense fallback={<div className="h-screen flex items-center justify-center"><Loader2 className="animate-spin opacity-20" /></div>}>
+      <ProductEditorContent />
+    </Suspense>
+  ); 
 }

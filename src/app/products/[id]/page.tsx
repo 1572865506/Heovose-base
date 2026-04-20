@@ -48,9 +48,9 @@ interface LocalizedString {
 /**
  * Next.js 15 Page 组件现在接收 params 作为 Promise
  */
-export default function ProductDetailPage(props: { params: Promise<{ id: string }> }) {
-  // 使用 React.use() 解包 params
-  const resolvedParams = use(props.params);
+export default function ProductDetailPage({ params }: { params: Promise<{ id: string }> }) {
+  // 使用 React.use() 正确解包 params Promise
+  const resolvedParams = use(params);
   const id = resolvedParams.id;
 
   const { user } = useUser();
