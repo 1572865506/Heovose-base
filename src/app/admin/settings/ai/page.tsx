@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState, useEffect } from 'react';
@@ -14,6 +15,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
+import { Input } from '@/components/ui/input';
 import { 
   Select,
   SelectContent,
@@ -33,7 +35,10 @@ import {
   CheckCircle2,
   AlertCircle,
   Loader2,
-  Terminal
+  Terminal,
+  Key,
+  Eye,
+  EyeOff
 } from 'lucide-react';
 import { setDocumentNonBlocking } from '@/firebase/non-blocking-updates';
 import { useToast } from '@/hooks/use-toast';
@@ -44,6 +49,7 @@ import { cn } from '@/lib/utils';
 interface AiConfig {
   isEnabled: boolean;
   model: string;
+  apiKey: string;
   temperature: number;
   systemInstruction?: string;
 }
@@ -58,21 +64,27 @@ export default function AiSettingsPage() {
   const [formData, setFormData] = useState<AiConfig>({
     isEnabled: true,
     model: 'googleai/gemini-1.5-flash',
+    apiKey: '',
     temperature: 0.7,
     systemInstruction: ''
   });
 
+  const [showKey, setShowKey] = useState(false);
   const [isTesting, setIsTesting] = useState(false);
   const [testReport, setTestResult] = useState<{
     status: 'idle' | 'running' | 'success' | 'failed',
     message: string,
     latency?: number,
-    modelUsed?: string
+    modelUsed?: string,
+    keySource?: string
   }>({ status: 'idle', message: '尚未运行自检' });
 
   useEffect(() => {
     if (aiConfig) {
-      setFormData(aiConfig);
+      setFormData({
+        ...aiConfig,
+        apiKey: aiConfig.apiKey || ''
+      });
     }
   }, [aiConfig]);
 
@@ -82,35 +94,40 @@ export default function AiSettingsPage() {
       ...formData,
       updatedAt: serverTimestamp()
     }, { merge: true });
-    toast({ title: "配置已保存" });
+    toast({ title: "配置已同步至云端" });
   };
 
   const runAutoTest = async () => {
     setIsTesting(true);
-    setTestResult({ status: 'running', message: '正在启动模型连接测试...' });
+    setTestResult({ status: 'running', message: '正在建立动态连接进行测试...' });
     
     try {
       const result = await testAiConnection({
         model: formData.model,
-        systemInstruction: formData.systemInstruction
+        systemInstruction: formData.systemInstruction,
+        apiKey: formData.apiKey // 传入当前输入的 API Key
       });
 
       if (result.status === 'ok') {
         setTestResult({ 
           status: 'success', 
-          message: '连接成功：模型已识别并正确响应指令。', 
+          message: result.message, 
           latency: result.latency,
-          modelUsed: result.modelUsed
+          modelUsed: result.modelUsed,
+          keySource: result.keySource
         });
+        toast({ title: "连接自检通过" });
       } else {
         setTestResult({ 
           status: 'failed', 
           message: result.message,
-          modelUsed: result.modelUsed
+          modelUsed: result.modelUsed,
+          keySource: result.keySource
         });
+        toast({ variant: "destructive", title: "自检失败", description: result.message });
       }
     } catch (e: any) {
-      setTestResult({ status: 'failed', message: `检测异常: ${e.message}` });
+      setTestResult({ status: 'failed', message: `内部通讯异常: ${e.message}` });
     } finally {
       setIsTesting(false);
     }
@@ -123,7 +140,7 @@ export default function AiSettingsPage() {
           <h2 className="text-xl font-headline font-bold text-primary flex items-center gap-2">
             <BrainCircuit className="h-5 w-5" /> AI 智译中枢管理
           </h2>
-          <p className="text-xs text-muted-foreground">控制全站自动翻译与内容生成的底层 AI 模型配置。</p>
+          <p className="text-xs text-muted-foreground">配置 Google AI Studio API 密钥及模型参数。</p>
         </div>
         <Badge variant="outline" className={cn(
           "h-9 px-3 rounded-lg gap-2 font-bold text-[10px] uppercase",
@@ -143,7 +160,7 @@ export default function AiSettingsPage() {
                   <Bot className="h-6 w-6" />
                   <div>
                     <CardTitle className="text-lg font-bold">核心引擎配置</CardTitle>
-                    <CardDescription className="text-white/60 text-xs uppercase tracking-widest">Model & Intelligence Settings</CardDescription>
+                    <CardDescription className="text-white/60 text-xs uppercase tracking-widest">Model & API Key Settings</CardDescription>
                   </div>
                 </div>
                 <Switch 
@@ -154,9 +171,33 @@ export default function AiSettingsPage() {
               </CardHeader>
             </div>
             <CardContent className="p-8 space-y-8 bg-white">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+              <div className="space-y-4">
+                <Label className="text-[10px] font-bold uppercase text-primary tracking-widest flex items-center gap-2">
+                  <Key className="h-3.5 w-3.5" /> Google AI API 密钥 (Studio Key)
+                </Label>
+                <div className="relative group">
+                  <Input 
+                    type={showKey ? "text" : "password"}
+                    placeholder="在此粘贴您的 AI Studio API Key..."
+                    value={formData.apiKey}
+                    onChange={(e) => setFormData({...formData, apiKey: e.target.value})}
+                    className="h-11 rounded-xl bg-muted/5 pr-10 font-mono text-sm border-muted/40 focus:bg-white transition-all"
+                  />
+                  <button 
+                    onClick={() => setShowKey(!showKey)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-primary transition-colors"
+                  >
+                    {showKey ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                  </button>
+                </div>
+                <p className="text-[9px] text-muted-foreground leading-relaxed">
+                  提示：可在 <a href="https://aistudio.google.com/app/apikey" target="_blank" className="text-primary font-bold underline">Google AI Studio</a> 免费获取。手动输入 Key 后可立即运行自检测试。
+                </p>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-8 pt-4">
                 <div className="space-y-3">
-                  <Label className="text-[10px] font-bold uppercase text-primary tracking-widest flex items-center gap-2"><Cpu className="h-3.5 w-3.5" /> 选用模型 (Standard IDs)</Label>
+                  <Label className="text-[10px] font-bold uppercase text-primary tracking-widest flex items-center gap-2"><Cpu className="h-3.5 w-3.5" /> 选用模型 (Preferred Model)</Label>
                   <Select 
                     value={formData.model} 
                     onValueChange={(v) => setFormData({...formData, model: v})}
@@ -166,12 +207,10 @@ export default function AiSettingsPage() {
                     </SelectTrigger>
                     <SelectContent className="rounded-xl">
                       <SelectItem value="googleai/gemini-1.5-flash" className="text-xs font-bold">Gemini 1.5 Flash (速度平衡)</SelectItem>
-                      <SelectItem value="googleai/gemini-1.5-pro" className="text-xs font-bold">Gemini 1.5 Pro (超长上下文)</SelectItem>
+                      <SelectItem value="googleai/gemini-1.5-pro" className="text-xs font-bold">Gemini 1.5 Pro (排版精准)</SelectItem>
                       <SelectItem value="googleai/gemini-2.0-flash" className="text-xs font-bold">Gemini 2.0 Flash (最新架构)</SelectItem>
-                      <SelectItem value="googleai/gemini-pro" className="text-xs font-bold opacity-40 text-muted-foreground">Gemini 1.0 Pro (备用方案)</SelectItem>
                     </SelectContent>
                   </Select>
-                  <p className="text-[9px] text-muted-foreground italic">注：若遇到 404，请确认 API Key 是否属于受支持的地区。</p>
                 </div>
 
                 <div className="space-y-3">
@@ -185,16 +224,16 @@ export default function AiSettingsPage() {
                     />
                   </div>
                   <div className="flex justify-between text-[8px] font-bold text-muted-foreground uppercase">
-                    <span>严格 (适合翻译)</span>
-                    <span>发散 (适合文案)</span>
+                    <span>严格 (翻译)</span>
+                    <span>发散 (文案)</span>
                   </div>
                 </div>
               </div>
 
               <div className="pt-8 border-t space-y-4">
-                <Label className="text-[10px] font-bold uppercase text-primary tracking-widest flex items-center gap-2"><ShieldCheck className="h-3.5 w-3.5" /> 系统级人设 (System Context)</Label>
+                <Label className="text-[10px] font-bold uppercase text-primary tracking-widest flex items-center gap-2"><ShieldCheck className="h-3.5 w-3.5" /> 系统级人设 (Context)</Label>
                 <textarea 
-                  className="w-full min-h-[160px] rounded-2xl border p-5 text-sm bg-muted/5 focus:bg-white transition-all resize-none leading-relaxed font-medium"
+                  className="w-full min-h-[120px] rounded-2xl border p-5 text-sm bg-muted/5 focus:bg-white transition-all resize-none leading-relaxed font-medium"
                   placeholder="例如：你是一位资深的工业电脑专家，擅长将技术参数精准地翻译为地道的行业术语..."
                   value={formData.systemInstruction}
                   onChange={(e) => setFormData({...formData, systemInstruction: e.target.value})}
@@ -203,7 +242,7 @@ export default function AiSettingsPage() {
             </CardContent>
             <CardFooter className="bg-muted/10 p-6 flex justify-end">
               <Button onClick={handleSave} className="rounded-xl h-11 px-8 gap-2 font-bold uppercase tracking-widest text-xs shadow-lg">
-                <Save className="h-4 w-4" /> 签署并同步配置
+                <Save className="h-4 w-4" /> 部署配置并生效
               </Button>
             </CardFooter>
           </Card>
@@ -214,7 +253,7 @@ export default function AiSettingsPage() {
             <CardHeader className="p-6 pb-2 border-b">
               <CardTitle className="text-[10px] font-bold flex items-center gap-2 text-primary uppercase tracking-[0.2em]">
                 <Activity className="h-4 w-4 text-accent" />
-                自动化连通性自检
+                动态连通性自检
               </CardTitle>
             </CardHeader>
             <CardContent className="p-6 space-y-6">
@@ -230,12 +269,17 @@ export default function AiSettingsPage() {
                    <div className="space-y-1 flex-1">
                       <p className="font-bold uppercase tracking-tighter">自检报告</p>
                       <p className="opacity-80 leading-relaxed">{testReport.message}</p>
-                      {testReport.modelUsed && (
-                        <div className="mt-3 flex items-center gap-1.5 font-mono text-[9px] bg-black/5 p-1 rounded">
-                          <Terminal className="h-2.5 w-2.5 opacity-40" /> {testReport.modelUsed}
+                      {(testReport.modelUsed || testReport.keySource) && (
+                        <div className="mt-3 space-y-1.5">
+                           <div className="flex items-center gap-1.5 font-mono text-[9px] bg-black/5 p-1 rounded">
+                             <Terminal className="h-2.5 w-2.5 opacity-40" /> ID: {testReport.modelUsed}
+                           </div>
+                           <div className="flex items-center gap-1.5 font-mono text-[9px] bg-black/5 p-1 rounded">
+                             <Key className="h-2.5 w-2.5 opacity-40" /> Key: {testReport.keySource}
+                           </div>
                         </div>
                       )}
-                      {testReport.latency && <p className="mt-1 font-mono font-bold text-primary">Latency: {testReport.latency}ms</p>}
+                      {testReport.latency && <p className="mt-2 font-mono font-bold text-primary">Latency: {testReport.latency}ms</p>}
                    </div>
                 </div>
               </div>
@@ -246,21 +290,21 @@ export default function AiSettingsPage() {
                 onClick={runAutoTest}
                 className="w-full rounded-xl h-10 font-bold text-[10px] uppercase tracking-widest border-primary/20 text-primary hover:bg-primary/5 shadow-inner"
               >
-                {isTesting ? '自检运行中...' : '立即开始自动化测试'}
+                {isTesting ? '正在尝试握手...' : '立即测试当前配置'}
               </Button>
 
               <div className="space-y-4 pt-2">
                  <div className="space-y-1.5">
                     <div className="flex justify-between text-[9px] font-bold uppercase text-primary/40">
-                       <span>API 路由检测</span>
-                       <span>{testReport.status === 'success' ? 'VALID' : 'PENDING'}</span>
+                       <span>动态密钥解析</span>
+                       <span>{formData.apiKey ? 'PRESENT' : 'MISSING'}</span>
                     </div>
                     <div className="h-1 bg-muted rounded-full overflow-hidden">
                        <div className={cn("h-full transition-all duration-1000", testReport.status === 'success' ? "bg-green-500 w-full" : "bg-primary w-[10%] animate-pulse")} />
                     </div>
                  </div>
                  <p className="text-[9px] text-muted-foreground leading-relaxed italic">
-                   提示：所有连接均通过 Firebase 生产终结点路由。自检失败通常由于 Key 额度用尽或地区限制。
+                   注意：手动输入的密钥在点击“自检”时会立即生效，但需点击下方“部署配置”才会持久化存入系统。
                  </p>
               </div>
             </CardContent>

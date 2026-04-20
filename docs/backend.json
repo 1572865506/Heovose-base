@@ -149,6 +149,7 @@
       "properties": {
         "isEnabled": { "type": "boolean" },
         "model": { "type": "string" },
+        "apiKey": { "type": "string", "description": "Manual Google AI Studio API Key." },
         "temperature": { "type": "number" },
         "systemInstruction": { "type": "string" }
       }
