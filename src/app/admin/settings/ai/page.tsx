@@ -99,13 +99,13 @@ export default function AiSettingsPage() {
 
   const runAutoTest = async () => {
     setIsTesting(true);
-    setTestResult({ status: 'running', message: '正在建立动态连接进行测试...' });
+    setTestResult({ status: 'running', message: '正在建立动态连接进行诊断...' });
     
     try {
       const result = await testAiConnection({
         model: formData.model,
         systemInstruction: formData.systemInstruction,
-        apiKey: formData.apiKey // 传入当前输入的 API Key
+        apiKey: formData.apiKey
       });
 
       if (result.status === 'ok') {
@@ -124,7 +124,7 @@ export default function AiSettingsPage() {
           modelUsed: result.modelUsed,
           keySource: result.keySource
         });
-        toast({ variant: "destructive", title: "自检失败", description: result.message });
+        toast({ variant: "destructive", title: "自检失败", description: "请查看诊断报告" });
       }
     } catch (e: any) {
       setTestResult({ status: 'failed', message: `内部通讯异常: ${e.message}` });
@@ -140,14 +140,14 @@ export default function AiSettingsPage() {
           <h2 className="text-xl font-headline font-bold text-primary flex items-center gap-2">
             <BrainCircuit className="h-5 w-5" /> AI 智译中枢管理
           </h2>
-          <p className="text-xs text-muted-foreground">配置 Google AI Studio API 密钥及模型参数。</p>
+          <p className="text-xs text-muted-foreground">配置 Google AI Studio API 密钥及多版本模型变体。</p>
         </div>
         <Badge variant="outline" className={cn(
           "h-9 px-3 rounded-lg gap-2 font-bold text-[10px] uppercase",
           testReport.status === 'success' ? "bg-green-50 text-green-700 border-green-200" : "bg-primary/5 text-primary border-primary/20"
         )}>
           {testReport.status === 'success' ? <CheckCircle2 className="h-3 w-3" /> : <div className="h-1.5 w-1.5 rounded-full bg-blue-400 animate-pulse" />}
-          状态: {testReport.status === 'success' ? '已就绪' : '待自检'}
+          状态: {testReport.status === 'success' ? '已就绪' : '待诊断'}
         </Badge>
       </div>
 
@@ -190,14 +190,11 @@ export default function AiSettingsPage() {
                     {showKey ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                   </button>
                 </div>
-                <p className="text-[9px] text-muted-foreground leading-relaxed">
-                  提示：可在 <a href="https://aistudio.google.com/app/apikey" target="_blank" className="text-primary font-bold underline">Google AI Studio</a> 免费获取。手动输入 Key 后可立即运行自检测试。
-                </p>
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-8 pt-4">
                 <div className="space-y-3">
-                  <Label className="text-[10px] font-bold uppercase text-primary tracking-widest flex items-center gap-2"><Cpu className="h-3.5 w-3.5" /> 选用模型 (Preferred Model)</Label>
+                  <Label className="text-[10px] font-bold uppercase text-primary tracking-widest flex items-center gap-2"><Cpu className="h-3.5 w-3.5" /> 选用模型 (多变体支持)</Label>
                   <Select 
                     value={formData.model} 
                     onValueChange={(v) => setFormData({...formData, model: v})}
@@ -206,11 +203,14 @@ export default function AiSettingsPage() {
                       <SelectValue placeholder="选择 AI 模型" />
                     </SelectTrigger>
                     <SelectContent className="rounded-xl">
-                      <SelectItem value="googleai/gemini-1.5-flash" className="text-xs font-bold">Gemini 1.5 Flash (速度平衡)</SelectItem>
+                      <SelectItem value="googleai/gemini-1.5-flash" className="text-xs font-bold">Gemini 1.5 Flash (标准版)</SelectItem>
+                      <SelectItem value="googleai/gemini-1.5-flash-latest" className="text-xs font-bold">Gemini 1.5 Flash (最新稳定版)</SelectItem>
+                      <SelectItem value="googleai/gemini-1.5-flash-002" className="text-xs font-bold">Gemini 1.5 Flash (002 稳定版)</SelectItem>
                       <SelectItem value="googleai/gemini-1.5-pro" className="text-xs font-bold">Gemini 1.5 Pro (排版精准)</SelectItem>
                       <SelectItem value="googleai/gemini-2.0-flash" className="text-xs font-bold">Gemini 2.0 Flash (最新架构)</SelectItem>
                     </SelectContent>
                   </Select>
+                  <p className="text-[9px] text-muted-foreground italic">提示：若报 404，请优先尝试选择带有 "latest" 或 "002" 后缀的模型变体。</p>
                 </div>
 
                 <div className="space-y-3">
@@ -223,21 +223,7 @@ export default function AiSettingsPage() {
                       className="flex-1 h-1.5 bg-muted rounded-lg appearance-none cursor-pointer accent-primary"
                     />
                   </div>
-                  <div className="flex justify-between text-[8px] font-bold text-muted-foreground uppercase">
-                    <span>严格 (翻译)</span>
-                    <span>发散 (文案)</span>
-                  </div>
                 </div>
-              </div>
-
-              <div className="pt-8 border-t space-y-4">
-                <Label className="text-[10px] font-bold uppercase text-primary tracking-widest flex items-center gap-2"><ShieldCheck className="h-3.5 w-3.5" /> 系统级人设 (Context)</Label>
-                <textarea 
-                  className="w-full min-h-[120px] rounded-2xl border p-5 text-sm bg-muted/5 focus:bg-white transition-all resize-none leading-relaxed font-medium"
-                  placeholder="例如：你是一位资深的工业电脑专家，擅长将技术参数精准地翻译为地道的行业术语..."
-                  value={formData.systemInstruction}
-                  onChange={(e) => setFormData({...formData, systemInstruction: e.target.value})}
-                />
               </div>
             </CardContent>
             <CardFooter className="bg-muted/10 p-6 flex justify-end">
@@ -253,12 +239,12 @@ export default function AiSettingsPage() {
             <CardHeader className="p-6 pb-2 border-b">
               <CardTitle className="text-[10px] font-bold flex items-center gap-2 text-primary uppercase tracking-[0.2em]">
                 <Activity className="h-4 w-4 text-accent" />
-                动态连通性自检
+                动态连通性诊断
               </CardTitle>
             </CardHeader>
             <CardContent className="p-6 space-y-6">
               <div className={cn(
-                "p-4 rounded-xl border transition-all text-xs",
+                "p-4 rounded-xl border transition-all text-xs min-h-[120px]",
                 testReport.status === 'success' ? "bg-green-50 border-green-100 text-green-800" : 
                 testReport.status === 'failed' ? "bg-destructive/5 border-destructive/10 text-destructive" : "bg-muted/30 border-border/40 text-muted-foreground"
               )}>
@@ -267,15 +253,12 @@ export default function AiSettingsPage() {
                     testReport.status === 'success' ? <CheckCircle2 className="h-4 w-4" /> :
                     testReport.status === 'failed' ? <AlertCircle className="h-4 w-4" /> : <Bot className="h-4 w-4" />}
                    <div className="space-y-1 flex-1">
-                      <p className="font-bold uppercase tracking-tighter">自检报告</p>
-                      <p className="opacity-80 leading-relaxed">{testReport.message}</p>
-                      {(testReport.modelUsed || testReport.keySource) && (
+                      <p className="font-bold uppercase tracking-tighter">诊断报告</p>
+                      <p className="opacity-80 leading-relaxed text-[11px]">{testReport.message}</p>
+                      {testReport.modelUsed && (
                         <div className="mt-3 space-y-1.5">
                            <div className="flex items-center gap-1.5 font-mono text-[9px] bg-black/5 p-1 rounded">
                              <Terminal className="h-2.5 w-2.5 opacity-40" /> ID: {testReport.modelUsed}
-                           </div>
-                           <div className="flex items-center gap-1.5 font-mono text-[9px] bg-black/5 p-1 rounded">
-                             <Key className="h-2.5 w-2.5 opacity-40" /> Key: {testReport.keySource}
                            </div>
                         </div>
                       )}
@@ -290,21 +273,12 @@ export default function AiSettingsPage() {
                 onClick={runAutoTest}
                 className="w-full rounded-xl h-10 font-bold text-[10px] uppercase tracking-widest border-primary/20 text-primary hover:bg-primary/5 shadow-inner"
               >
-                {isTesting ? '正在尝试握手...' : '立即测试当前配置'}
+                {isTesting ? '正在尝试握手...' : '立即诊断当前配置'}
               </Button>
 
               <div className="space-y-4 pt-2">
-                 <div className="space-y-1.5">
-                    <div className="flex justify-between text-[9px] font-bold uppercase text-primary/40">
-                       <span>动态密钥解析</span>
-                       <span>{formData.apiKey ? 'PRESENT' : 'MISSING'}</span>
-                    </div>
-                    <div className="h-1 bg-muted rounded-full overflow-hidden">
-                       <div className={cn("h-full transition-all duration-1000", testReport.status === 'success' ? "bg-green-500 w-full" : "bg-primary w-[10%] animate-pulse")} />
-                    </div>
-                 </div>
                  <p className="text-[9px] text-muted-foreground leading-relaxed italic">
-                   注意：手动输入的密钥在点击“自检”时会立即生效，但需点击下方“部署配置”才会持久化存入系统。
+                   注意：手动输入的密钥和模型在点击“诊断”时会实时模拟请求。若显示成功，请点击“部署配置”保存到生产环境。
                  </p>
               </div>
             </CardContent>

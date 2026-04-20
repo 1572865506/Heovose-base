@@ -1,10 +1,10 @@
 
 'use server';
 /**
- * @fileOverview AI 多语言翻译流 (增强版)
+ * @fileOverview AI 多语言翻译流 (增强动态版)
  * 
  * 专门针对工业硬件规格和超长富文本排版优化的智译引擎。
- * 支持动态加载管理员配置的 API Key。
+ * 支持动态加载管理员配置的 API Key 和指定的模型 ID。
  */
 
 import { genkit, z } from 'genkit';
@@ -35,20 +35,15 @@ export async function translateContent(input: TranslateInput): Promise<Translate
   });
 
   // 2. 模型标识符标准化
-  let modelId = input.model || 'gemini-1.5-flash';
-  modelId = modelId.toLowerCase();
-  if (modelId.includes('/')) {
-    modelId = modelId.split('/').pop() || modelId;
+  let rawModel = input.model || 'googleai/gemini-1.5-flash';
+  if (rawModel.includes('/')) {
+    rawModel = rawModel.split('/').pop() || rawModel;
   }
-  const finalModel = `googleai/${modelId}`;
+  const finalModel = `googleai/${rawModel}`;
 
   // 3. 执行翻译
   const { output } = await activeAi.generate({
     model: finalModel as any,
-    input: {
-      schema: TranslateInputSchema,
-      data: input,
-    },
     output: {
       schema: TranslateOutputSchema
     },
@@ -60,10 +55,11 @@ export async function translateContent(input: TranslateInput): Promise<Translate
     2. NEVER modify attributes like "src", "class", or "style".
     3. Ensure the output is a valid JSON object where keys are language codes.
     4. If the content contains technical specs, maintain professional terminology.
+    5. Return ONLY raw JSON, NO Markdown formatting.
     
-    Source: ${input.text}`
+    Source Content: ${input.text}`
   });
   
-  if (!output) throw new Error('AI Translation returned empty results.');
+  if (!output) throw new Error('AI 智译未返回有效结果。请检查模型配额或内容长度。');
   return output;
 }
