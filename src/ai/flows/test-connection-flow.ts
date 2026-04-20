@@ -31,13 +31,12 @@ export async function testAiConnection(input: z.infer<typeof TestInputSchema>) {
   const startTime = Date.now();
   
   // 1. 模型 ID 标准化逻辑
-  // 移除可能存在的冗余前缀，统一使用 googleai/ 前缀
   let rawId = input.model.trim().toLowerCase();
   if (rawId.includes('/')) {
     rawId = rawId.split('/').pop() || rawId;
   }
   
-  // 强制前缀补全，这是适配 @genkit-ai/google-genai 的正确 Provider ID
+  // 统一使用 googleai/ 前缀以匹配 Genkit 1.x 注册表
   const finalModel = `googleai/${rawId}`;
 
   // 2. 动态实例化 AI 以绕过全局配置
@@ -80,13 +79,13 @@ export async function testAiConnection(input: z.infer<typeof TestInputSchema>) {
     
     // 5. 针对性错误诊断 (2026 规范版)
     if (userMessage.includes('404') || userMessage.includes('not found')) {
-      userMessage = `模型未找到 (404)。在您的区域或 API 版本下，当前模型 ID 可能不可用。请尝试在下拉菜单中切换至 Gemini 2.5 Flash 或 Flash-Lite 变体。`;
+      userMessage = `模型未找到 (404)。在您的区域或 API 版本下，当前模型 ID 可能不可用。请尝试在下拉菜单中切换至 Gemini 2.5 Flash 系列。`;
     } else if (userMessage.includes('401') || userMessage.includes('API_KEY_INVALID')) {
       userMessage = `API 密钥无效 (401)。请检查输入的密钥是否完整。`;
     } else if (userMessage.includes('403') || userMessage.includes('LOCATION_NOT_SUPPORTED')) {
-      userMessage = `权限/地区受限 (403)。您的 IP 或 API Key 所属项目可能不支持此模型，请尝试更换 API Key 或开启代理。`;
+      userMessage = `权限/地区受限 (403)。您的 IP 或 API Key 所属项目可能不支持此模型，请尝试更换 API Key。`;
     } else if (userMessage.includes('429')) {
-      userMessage = `配额超限 (429)。免费层级请求过快，对于 Gemini 2.5 Pro 每分钟仅限 5 次，Flash 系列限 10-15 次。请稍后重试。`;
+      userMessage = `配额超限 (429)。免费层级请求过快，对于 Gemini 2.5 Pro 每分钟仅限 5 次，Flash 系列限 10-15 次。此报错说明配置有效。`;
     }
 
     return {

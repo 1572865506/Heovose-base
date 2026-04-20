@@ -68,7 +68,7 @@ export async function translateContent(input: TranslateInput): Promise<Translate
       throw new Error('API 配额已耗尽（免费层级限制），请等候一分钟后再试。');
     }
     if (error.message.includes('404')) {
-      throw new Error(`模型 ${finalModel} 在当前区域或 Key 下不可用，请前往设置切换至 Gemini 2.5 Flash。`);
+      throw new Error(`模型 ${finalModel} 在当前区域或 Key 下不可用，请前往设置切换至 Gemini 2.5 系列。`);
     }
     throw error;
   }

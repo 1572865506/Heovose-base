@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useFirestore, useDoc, useMemoFirebase } from '@/firebase';
 import { doc, serverTimestamp } from 'firebase/firestore';
 import { 
@@ -44,13 +44,16 @@ import {
   ListChecks,
   Hammer,
   ShieldAlert,
-  Info
+  Info,
+  BarChart3,
+  Gauge
 } from 'lucide-react';
 import { setDocumentNonBlocking } from '@/firebase/non-blocking-updates';
 import { useToast } from '@/hooks/use-toast';
 import { Badge } from '@/components/ui/badge';
 import { testAiConnection } from '@/ai/flows/test-connection-flow';
 import { cn } from '@/lib/utils';
+import { Progress } from '@/components/ui/progress';
 
 interface AiConfig {
   isEnabled: boolean;
@@ -59,6 +62,13 @@ interface AiConfig {
   temperature: number;
   systemInstruction: string;
 }
+
+// 2026 免费层级配额映射表
+const QUOTA_DATA: Record<string, { rpm: number, rpd: number, tpm: string, desc: string }> = {
+  'googleai/gemini-2.5-flash': { rpm: 10, rpd: 250, tpm: '1M', desc: '适合常规产品信息翻译。' },
+  'googleai/gemini-2.5-flash-lite': { rpm: 15, rpd: 1000, tpm: '4M', desc: '高频并发首选，配额最充裕。' },
+  'googleai/gemini-2.5-pro': { rpm: 5, rpd: 100, tpm: '32K', desc: '深度排版专用，极易触发 429。' }
+};
 
 export default function AiSettingsPage() {
   const firestore = useFirestore();
@@ -95,6 +105,11 @@ export default function AiSettingsPage() {
       });
     }
   }, [aiConfig]);
+
+  // 计算当前选中模型的配额
+  const currentQuota = useMemo(() => {
+    return QUOTA_DATA[formData.model] || QUOTA_DATA['googleai/gemini-2.5-flash'];
+  }, [formData.model]);
 
   const handleSave = () => {
     if (!firestore) return;
@@ -229,7 +244,11 @@ export default function AiSettingsPage() {
                   <Label className="text-[10px] font-bold uppercase text-primary tracking-widest flex items-center gap-2"><Cpu className="h-3.5 w-3.5" /> 选用模型 (2026 最新版)</Label>
                   <Select 
                     value={formData.model} 
-                    onValueChange={(v) => setFormData({...formData, model: v})}
+                    onValueChange={(v) => {
+                      setFormData({...formData, model: v});
+                      // 切换模型后重置诊断状态
+                      setTestResult({ status: 'idle', message: '切换模型后请重新测试' });
+                    }}
                   >
                     <SelectTrigger className="h-11 rounded-xl bg-muted/10 border-transparent font-medium">
                       <SelectValue placeholder="选择 AI 模型" />
@@ -315,50 +334,12 @@ export default function AiSettingsPage() {
               </Button>
             </CardFooter>
           </Card>
-
-          {/* 3. Quota Table (2026 Updated) */}
-          <Card className="rounded-2xl border-border/40 shadow-sm bg-white overflow-hidden">
-            <CardHeader className="p-6 bg-muted/10 border-b">
-              <div className="flex items-center gap-3">
-                <ShieldAlert className="h-5 w-5 text-primary" />
-                <div>
-                  <CardTitle className="text-sm font-bold uppercase tracking-widest">免费层级配额参考 (截至 2026年4月)</CardTitle>
-                </div>
-              </div>
-            </CardHeader>
-            <CardContent className="p-0">
-              <div className="grid grid-cols-1 md:grid-cols-3 divide-y md:divide-y-0 md:divide-x border-b">
-                <div className="p-6 space-y-3">
-                  <div className="flex justify-between items-center"><Badge className="bg-blue-100 text-blue-700 hover:bg-blue-100 border-none text-[9px]">2.5 FLASH</Badge><span className="text-[10px] font-bold text-green-600">10 RPM</span></div>
-                  <p className="text-[9px] opacity-50">适合常规产品信息翻译。250 RPD 上限。</p>
-                </div>
-                <div className="p-6 space-y-3 bg-muted/5">
-                  <div className="flex justify-between items-center"><Badge className="bg-green-100 text-green-700 hover:bg-green-100 border-none text-[9px]">2.5 FLASH-LITE</Badge><span className="text-[10px] font-bold text-blue-600">15 RPM</span></div>
-                  <p className="text-[9px] opacity-50">高频并发首选。1,000 RPD 上限。</p>
-                </div>
-                <div className="p-6 space-y-3">
-                  <div className="flex justify-between items-center"><Badge className="bg-purple-100 text-purple-700 hover:bg-purple-100 border-none text-[9px]">2.5 PRO</Badge><span className="text-[10px] font-bold text-orange-600">5 RPM</span></div>
-                  <p className="text-[9px] opacity-50">深度排版专用。100 RPD 上限，极易触发 429。</p>
-                </div>
-              </div>
-              <div className="p-5 bg-orange-50/50 flex gap-4 items-start">
-                 <Info className="h-4 w-4 text-orange-600 shrink-0 mt-0.5" />
-                 <div className="space-y-1.5">
-                    <p className="text-[10px] text-orange-800 font-bold uppercase">重要提示：数据隐私与限制</p>
-                    <ul className="text-[9px] text-orange-900/60 list-disc list-inside space-y-1">
-                      <li>免费层级下，输入和输出数据可能会被 Google 用于改进模型。</li>
-                      <li>较新的旗舰机型（如 3.1 Pro）通常仅提供短期试用，永久免费层级主要覆盖 Flash 系列。</li>
-                      <li>超过 RPM 限制时会返回 429 错误，请在自检通过后减少连续点击。</li>
-                    </ul>
-                 </div>
-              </div>
-            </CardContent>
-          </Card>
         </div>
 
-        {/* Diagnostic Panel */}
+        {/* Diagnostic Panel & Quota Card (Right Sidebar) */}
         <div className="lg:col-span-4 space-y-6">
-          <Card className="rounded-2xl border-none bg-white shadow-xl overflow-hidden h-fit sticky top-24">
+          {/* 3. Diagnostic Panel */}
+          <Card className="rounded-2xl border-none bg-white shadow-xl overflow-hidden h-fit">
             <CardHeader className="p-6 pb-2 border-b">
               <CardTitle className="text-[10px] font-bold flex items-center gap-2 text-primary uppercase tracking-[0.2em]">
                 <Activity className="h-4 w-4 text-accent" />
@@ -409,6 +390,67 @@ export default function AiSettingsPage() {
               </Button>
             </CardContent>
           </Card>
+
+          {/* 4. Quota Board (New Visual Placement) */}
+          <Card className="rounded-2xl border-none bg-white shadow-xl overflow-hidden">
+            <CardHeader className="p-6 pb-2 border-b bg-muted/10">
+              <CardTitle className="text-[10px] font-bold flex items-center gap-2 text-primary uppercase tracking-[0.2em]">
+                <Gauge className="h-4 w-4 text-blue-500" />
+                当前模型配额看板
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="p-6 space-y-6">
+              <div className="space-y-5">
+                <div className="flex justify-between items-end">
+                   <div className="space-y-1">
+                      <p className="text-[10px] font-bold text-muted-foreground uppercase">选用模型</p>
+                      <Badge className="bg-primary/10 text-primary border-none text-[9px] uppercase">{formData.model.split('/').pop()}</Badge>
+                   </div>
+                   <div className="text-right">
+                      <p className="text-[10px] font-bold text-muted-foreground uppercase">RPM 限制</p>
+                      <p className="text-xl font-headline font-bold text-primary">{currentQuota.rpm}</p>
+                   </div>
+                </div>
+
+                <div className="space-y-2">
+                  <div className="flex justify-between text-[10px] font-bold uppercase opacity-60">
+                    <span>每日上限 (RPD)</span>
+                    <span>{currentQuota.rpd} / DAY</span>
+                  </div>
+                  <Progress value={(currentQuota.rpd / 1000) * 100} className="h-1.5" />
+                </div>
+
+                <div className="grid grid-cols-2 gap-4 pt-2">
+                  <div className="p-3 bg-muted/20 rounded-xl space-y-1">
+                     <p className="text-[9px] font-bold opacity-40 uppercase">TPM 流量</p>
+                     <p className="text-sm font-bold">{currentQuota.tpm}</p>
+                  </div>
+                  <div className="p-3 bg-muted/20 rounded-xl space-y-1">
+                     <p className="text-[9px] font-bold opacity-40 uppercase">并发建议</p>
+                     <p className="text-[10px] font-bold text-green-600">{currentQuota.rpm > 10 ? '高并发' : '低频'}</p>
+                  </div>
+                </div>
+
+                <div className="p-4 bg-orange-50/50 rounded-xl border border-orange-100 flex gap-3">
+                   <ShieldAlert className="h-4 w-4 text-orange-600 shrink-0 mt-0.5" />
+                   <p className="text-[9px] text-orange-800 leading-relaxed italic">
+                     <b>隐私提醒：</b>免费层级下，您的输入数据可能会被 Google 用于改进模型，请勿传输公司机密。
+                   </p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* 5. System Info */}
+          <div className="p-6 bg-primary rounded-2xl text-white space-y-4 shadow-xl">
+             <div className="flex items-center gap-2">
+               <Info className="h-5 w-5 text-accent" />
+               <h4 className="font-bold text-sm uppercase tracking-tight">API 版本说明</h4>
+             </div>
+             <p className="text-[10px] opacity-60 leading-relaxed">
+               当前智译中枢对接 Google AI Studio (2026.04) 预览版终结点。支持 Gemini 2.5 系列原生协议。
+             </p>
+          </div>
         </div>
       </div>
     </div>
