@@ -143,7 +143,6 @@ export default function AiSettingsPage() {
         systemInstruction: aiConfig.systemInstruction || formData.systemInstruction
       });
       
-      // 如果数据库中有诊断记录，则加载它
       if (aiConfig.lastDiagnosis) {
         setTestResult(aiConfig.lastDiagnosis);
       }
@@ -158,7 +157,6 @@ export default function AiSettingsPage() {
     if (!firestore) return;
     setIsSaving(true);
     
-    // 保存时包含最后的诊断结果，实现持久化
     setDocumentNonBlocking(doc(firestore, 'settings', 'ai'), {
       ...formData,
       lastDiagnosis: testReport,
@@ -233,12 +231,22 @@ export default function AiSettingsPage() {
         </div>
         <div className="flex items-center gap-3">
           {testReport.timestamp && (
-            <span className="text-[9px] text-muted-foreground font-mono uppercase">
+            <span className="text-[9px] text-muted-foreground font-mono uppercase mr-2">
               上次测试: {new Date(testReport.timestamp).toLocaleString()}
             </span>
           )}
+          
+          <Button 
+            onClick={handleSave} 
+            disabled={isSaving}
+            className="h-10 px-6 gap-2 font-bold uppercase tracking-widest text-xs shadow-md"
+          >
+            {isSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
+            部署配置并保存状态
+          </Button>
+
           <Badge variant="outline" className={cn(
-            "h-9 px-3 rounded-lg gap-2 font-bold text-[10px] uppercase",
+            "h-10 px-4 rounded-lg gap-2 font-bold text-[10px] uppercase",
             testReport.status === 'success' ? "bg-green-50 text-green-700 border-green-200" : 
             testReport.status === 'quota' ? "bg-orange-50 text-orange-700 border-orange-200" :
             testReport.status === 'failed' ? "bg-destructive/5 text-destructive border-destructive/10" :
@@ -282,10 +290,7 @@ export default function AiSettingsPage() {
                     type={showKey ? "text" : "password"}
                     placeholder="在此粘贴您的 API Key..."
                     value={formData.apiKey}
-                    onChange={(e) => {
-                      setFormData({...formData, apiKey: e.target.value});
-                      // 如果 Key 变化，逻辑上应该重置诊断状态，但为了让用户决定是否覆盖，这里保持现状
-                    }}
+                    onChange={(e) => setFormData({...formData, apiKey: e.target.value})}
                     className="h-11 rounded-xl bg-muted/5 pr-10 font-mono text-sm border-muted/40 focus:bg-white transition-all"
                   />
                   <button 
@@ -512,16 +517,6 @@ export default function AiSettingsPage() {
                 </div>
               </div>
             </CardContent>
-            <CardFooter className="bg-muted/5 p-6 border-t">
-              <Button 
-                onClick={handleSave} 
-                disabled={isSaving}
-                className="w-full rounded-xl h-11 gap-2 font-bold uppercase tracking-widest text-xs shadow-lg"
-              >
-                {isSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
-                部署配置并保存状态
-              </Button>
-            </CardFooter>
           </Card>
         </div>
       </div>
