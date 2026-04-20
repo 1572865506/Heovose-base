@@ -25,6 +25,14 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { 
+  Table, 
+  TableBody, 
+  TableCell, 
+  TableHead, 
+  TableHeader, 
+  TableRow 
+} from '@/components/ui/table';
+import { 
   Sparkles, 
   Cpu, 
   Save, 
@@ -45,8 +53,8 @@ import {
   Hammer,
   ShieldAlert,
   Info,
-  BarChart3,
-  Gauge
+  Gauge,
+  LayoutGrid
 } from 'lucide-react';
 import { setDocumentNonBlocking } from '@/firebase/non-blocking-updates';
 import { useToast } from '@/hooks/use-toast';
@@ -63,12 +71,36 @@ interface AiConfig {
   systemInstruction: string;
 }
 
-// 2026 免费层级配额映射表
-const QUOTA_DATA: Record<string, { rpm: number, rpd: number, tpm: string, desc: string }> = {
-  'googleai/gemini-2.5-flash': { rpm: 10, rpd: 250, tpm: '1M', desc: '适合常规产品信息翻译。' },
-  'googleai/gemini-2.5-flash-lite': { rpm: 15, rpd: 1000, tpm: '4M', desc: '高频并发首选，配额最充裕。' },
-  'googleai/gemini-2.5-pro': { rpm: 5, rpd: 100, tpm: '32K', desc: '深度排版专用，极易触发 429。' }
-};
+// 2026 免费层级静态配额参考数据
+const STATIC_QUOTA_LIST = [
+  { 
+    id: 'googleai/gemini-2.5-flash', 
+    name: 'Gemini 2.5 Flash', 
+    rpm: 10, 
+    rpd: 250, 
+    tpm: '1M', 
+    recommendation: '通用翻译 / 速度优先',
+    color: 'text-blue-600'
+  },
+  { 
+    id: 'googleai/gemini-2.5-flash-lite', 
+    name: 'Gemini 2.5 Flash-Lite', 
+    rpm: 15, 
+    rpd: 1000, 
+    tpm: '4M', 
+    recommendation: '高频并发 / 批量处理',
+    color: 'text-green-600'
+  },
+  { 
+    id: 'googleai/gemini-2.5-pro', 
+    name: 'Gemini 2.5 Pro', 
+    rpm: 5, 
+    rpd: 100, 
+    tpm: '32K', 
+    recommendation: '超长排版 / 深度逻辑',
+    color: 'text-purple-600'
+  }
+];
 
 export default function AiSettingsPage() {
   const firestore = useFirestore();
@@ -106,9 +138,9 @@ export default function AiSettingsPage() {
     }
   }, [aiConfig]);
 
-  // 计算当前选中模型的配额
+  // 计算当前选中模型的动态配额
   const currentQuota = useMemo(() => {
-    return QUOTA_DATA[formData.model] || QUOTA_DATA['googleai/gemini-2.5-flash'];
+    return STATIC_QUOTA_LIST.find(q => q.id === formData.model) || STATIC_QUOTA_LIST[0];
   }, [formData.model]);
 
   const handleSave = () => {
@@ -176,13 +208,13 @@ export default function AiSettingsPage() {
   };
 
   return (
-    <div className="space-y-6 animate-in fade-in duration-500 max-w-6xl mx-auto pb-20">
+    <div className="space-y-6 animate-in fade-in duration-500 max-w-7xl mx-auto pb-20">
       <div className="flex items-center justify-between">
         <div className="space-y-1">
           <h2 className="text-xl font-headline font-bold text-primary flex items-center gap-2">
             <BrainCircuit className="h-5 w-5" /> AI 智译中枢管理
           </h2>
-          <p className="text-xs text-muted-foreground">配置 Google AI Studio API 密钥、2026 版 Gemini 2.5 模型及专家指令。</p>
+          <p className="text-xs text-muted-foreground">配置 2026 版 Gemini 2.5 核心引擎、API 密钥及专家技能指令。</p>
         </div>
         <Badge variant="outline" className={cn(
           "h-9 px-3 rounded-lg gap-2 font-bold text-[10px] uppercase",
@@ -197,9 +229,10 @@ export default function AiSettingsPage() {
         </Badge>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-        <div className="lg:col-span-8 space-y-6">
-          {/* 1. Core Config Card */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+        {/* 左侧主列：核心配置与静态看板 */}
+        <div className="lg:col-span-8 space-y-8">
+          {/* 1. 核心引擎配置 */}
           <Card className="rounded-2xl border-none shadow-2xl overflow-hidden">
             <div className="bg-primary p-6 text-white">
               <CardHeader className="p-0 flex flex-row items-center justify-between">
@@ -241,22 +274,18 @@ export default function AiSettingsPage() {
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-8 pt-4">
                 <div className="space-y-3">
-                  <Label className="text-[10px] font-bold uppercase text-primary tracking-widest flex items-center gap-2"><Cpu className="h-3.5 w-3.5" /> 选用模型 (2026 最新版)</Label>
+                  <Label className="text-[10px] font-bold uppercase text-primary tracking-widest flex items-center gap-2"><Cpu className="h-3.5 w-3.5" /> 选用模型</Label>
                   <Select 
                     value={formData.model} 
-                    onValueChange={(v) => {
-                      setFormData({...formData, model: v});
-                      // 切换模型后重置诊断状态
-                      setTestResult({ status: 'idle', message: '切换模型后请重新测试' });
-                    }}
+                    onValueChange={(v) => setFormData({...formData, model: v})}
                   >
                     <SelectTrigger className="h-11 rounded-xl bg-muted/10 border-transparent font-medium">
                       <SelectValue placeholder="选择 AI 模型" />
                     </SelectTrigger>
                     <SelectContent className="rounded-xl">
-                      <SelectItem value="googleai/gemini-2.5-flash" className="text-xs font-bold">Gemini 2.5 Flash (综合均衡)</SelectItem>
-                      <SelectItem value="googleai/gemini-2.5-flash-lite" className="text-xs font-bold">Gemini 2.5 Flash-Lite (高频并发)</SelectItem>
-                      <SelectItem value="googleai/gemini-2.5-pro" className="text-xs font-bold">Gemini 2.5 Pro (深度长文排版)</SelectItem>
+                      {STATIC_QUOTA_LIST.map(m => (
+                        <SelectItem key={m.id} value={m.id} className="text-xs font-bold">{m.name}</SelectItem>
+                      ))}
                     </SelectContent>
                   </Select>
                 </div>
@@ -276,7 +305,7 @@ export default function AiSettingsPage() {
             </CardContent>
           </Card>
 
-          {/* 2. Expert Persona & Skill Card */}
+          {/* 2. 专家技能中枢 */}
           <Card className="rounded-2xl border border-border/40 shadow-xl overflow-hidden bg-white">
             <CardHeader className="p-6 border-b bg-muted/10">
               <div className="flex items-center justify-between">
@@ -303,42 +332,78 @@ export default function AiSettingsPage() {
                 <Textarea 
                   value={formData.systemInstruction}
                   onChange={(e) => setFormData({...formData, systemInstruction: e.target.value})}
-                  className="min-h-[160px] rounded-xl border-muted/60 bg-muted/5 focus:bg-white transition-all text-sm leading-relaxed"
-                  placeholder="在此输入专家指令，例如：你是一位硬件制造专家..."
+                  className="min-h-[140px] rounded-xl border-muted/60 bg-muted/5 focus:bg-white transition-all text-sm leading-relaxed"
+                  placeholder="在此输入专家指令..."
                 />
               </div>
 
               <div className="p-4 bg-primary/5 rounded-xl border border-primary/10 space-y-3">
                 <div className="flex items-center gap-2 text-primary">
                   <ListChecks className="h-4 w-4" />
-                  <span className="text-[10px] font-bold uppercase tracking-wider">当前挂载的静态技能 (Hardcoded Skills)</span>
+                  <span className="text-[10px] font-bold uppercase tracking-wider">已激活的静态技能</span>
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
                    <div className="flex items-center gap-2 p-2 bg-white rounded-lg border border-primary/10 text-[10px] font-medium">
-                      <div className="w-1.5 h-1.5 rounded-full bg-green-500" /> 硬件专业术语动态检索 (Glossary)
+                      <div className="w-1.5 h-1.5 rounded-full bg-green-500" /> 硬件专业术语库动态关联
                    </div>
                    <div className="flex items-center gap-2 p-2 bg-white rounded-lg border border-primary/10 text-[10px] font-medium">
-                      <div className="w-1.5 h-1.5 rounded-full bg-green-500" /> HTML 长文排版无损重排 (DOM Integrity)
+                      <div className="w-1.5 h-1.5 rounded-full bg-green-500" /> HTML 长文排版无损映射
                    </div>
                 </div>
               </div>
             </CardContent>
-            <CardFooter className="bg-muted/5 p-6 flex justify-end border-t">
-               <Button 
-                onClick={handleSave} 
-                disabled={isSaving}
-                className="rounded-xl h-11 px-8 gap-2 font-bold uppercase tracking-widest text-xs shadow-lg min-w-[160px]"
-              >
-                {isSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
-                部署配置并生效
-              </Button>
-            </CardFooter>
+          </Card>
+
+          {/* 3. 静态模型配额看板（管理人员参考用） */}
+          <Card className="rounded-2xl border border-border/40 shadow-sm overflow-hidden bg-white">
+            <CardHeader className="p-6 bg-muted/10 border-b">
+              <div className="flex items-center gap-3">
+                <LayoutGrid className="h-5 w-5 text-primary" />
+                <div>
+                  <CardTitle className="text-sm font-bold uppercase tracking-widest">全系列模型配额参考看板</CardTitle>
+                  <CardDescription className="text-[10px]">静态参数查询表，用于管理人员进行翻译策略规划。</CardDescription>
+                </div>
+              </div>
+            </CardHeader>
+            <CardContent className="p-0">
+              <Table>
+                <TableHeader className="bg-muted/20">
+                  <TableRow>
+                    <TableHead className="pl-6 text-[9px] font-bold uppercase">模型名称</TableHead>
+                    <TableHead className="text-[9px] font-bold uppercase">RPM (分钟)</TableHead>
+                    <TableHead className="text-[9px] font-bold uppercase">RPD (日限)</TableHead>
+                    <TableHead className="text-[9px] font-bold uppercase">TPM (流量)</TableHead>
+                    <TableHead className="pr-6 text-[9px] font-bold uppercase">核心场景建议</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {STATIC_QUOTA_LIST.map((item) => (
+                    <TableRow key={item.id} className={cn(formData.model === item.id && "bg-primary/5")}>
+                      <TableCell className="pl-6 font-bold text-xs">
+                        <div className="flex flex-col">
+                          <span>{item.name}</span>
+                          {formData.model === item.id && <span className="text-[8px] text-primary uppercase font-bold tracking-tighter">当前选用</span>}
+                        </div>
+                      </TableCell>
+                      <TableCell className="font-mono text-xs">{item.rpm}</TableCell>
+                      <TableCell className="font-mono text-xs">{item.rpd}</TableCell>
+                      <TableCell className="font-mono text-xs">{item.tpm}</TableCell>
+                      <TableCell className="pr-6">
+                        <Badge variant="outline" className={cn("text-[9px] border-none px-0 font-medium", item.color)}>
+                          {item.recommendation}
+                        </Badge>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </CardContent>
           </Card>
         </div>
 
-        {/* Diagnostic Panel & Quota Card (Right Sidebar) */}
+        {/* 右侧边栏：诊断与动态监控 */}
         <div className="lg:col-span-4 space-y-6">
-          {/* 3. Diagnostic Panel */}
+          {/* 4. 动态连通性诊断 */}
           <Card className="rounded-2xl border-none bg-white shadow-xl overflow-hidden h-fit">
             <CardHeader className="p-6 pb-2 border-b">
               <CardTitle className="text-[10px] font-bold flex items-center gap-2 text-primary uppercase tracking-[0.2em]">
@@ -364,7 +429,7 @@ export default function AiSettingsPage() {
                       
                       {testReport.status === 'quota' && (
                         <div className="mt-3 p-2 bg-white/50 rounded border border-orange-200 text-[10px] text-orange-900 italic">
-                          <b>验证结果：</b>这说明您的 Key 和模型 ID 是有效的！只需点击“部署配置”保存即可。
+                          <b>验证结果：</b>这说明您的配置已成功通过鉴权！只需点击“部署配置”保存即可开始工作。
                         </div>
                       )}
 
@@ -375,7 +440,6 @@ export default function AiSettingsPage() {
                            </div>
                         </div>
                       )}
-                      {testReport.latency && <p className="mt-2 font-mono font-bold text-primary">Latency: {testReport.latency}ms</p>}
                    </div>
                 </div>
               </div>
@@ -391,20 +455,20 @@ export default function AiSettingsPage() {
             </CardContent>
           </Card>
 
-          {/* 4. Quota Board (New Visual Placement) */}
+          {/* 5. 动态额度看板（当前选用模型余额监控） */}
           <Card className="rounded-2xl border-none bg-white shadow-xl overflow-hidden">
             <CardHeader className="p-6 pb-2 border-b bg-muted/10">
               <CardTitle className="text-[10px] font-bold flex items-center gap-2 text-primary uppercase tracking-[0.2em]">
                 <Gauge className="h-4 w-4 text-blue-500" />
-                当前模型配额看板
+                当前模型调用仪表盘
               </CardTitle>
             </CardHeader>
             <CardContent className="p-6 space-y-6">
               <div className="space-y-5">
                 <div className="flex justify-between items-end">
                    <div className="space-y-1">
-                      <p className="text-[10px] font-bold text-muted-foreground uppercase">选用模型</p>
-                      <Badge className="bg-primary/10 text-primary border-none text-[9px] uppercase">{formData.model.split('/').pop()}</Badge>
+                      <p className="text-[10px] font-bold text-muted-foreground uppercase">当前选用</p>
+                      <Badge className="bg-primary/10 text-primary border-none text-[9px] uppercase">{currentQuota.name.split(' ').pop()}</Badge>
                    </div>
                    <div className="text-right">
                       <p className="text-[10px] font-bold text-muted-foreground uppercase">RPM 限制</p>
@@ -414,41 +478,39 @@ export default function AiSettingsPage() {
 
                 <div className="space-y-2">
                   <div className="flex justify-between text-[10px] font-bold uppercase opacity-60">
-                    <span>每日上限 (RPD)</span>
+                    <span>每日额度 (RPD)</span>
                     <span>{currentQuota.rpd} / DAY</span>
                   </div>
                   <Progress value={(currentQuota.rpd / 1000) * 100} className="h-1.5" />
                 </div>
 
-                <div className="grid grid-cols-2 gap-4 pt-2">
-                  <div className="p-3 bg-muted/20 rounded-xl space-y-1">
-                     <p className="text-[9px] font-bold opacity-40 uppercase">TPM 流量</p>
-                     <p className="text-sm font-bold">{currentQuota.tpm}</p>
-                  </div>
-                  <div className="p-3 bg-muted/20 rounded-xl space-y-1">
-                     <p className="text-[9px] font-bold opacity-40 uppercase">并发建议</p>
-                     <p className="text-[10px] font-bold text-green-600">{currentQuota.rpm > 10 ? '高并发' : '低频'}</p>
-                  </div>
-                </div>
-
                 <div className="p-4 bg-orange-50/50 rounded-xl border border-orange-100 flex gap-3">
                    <ShieldAlert className="h-4 w-4 text-orange-600 shrink-0 mt-0.5" />
                    <p className="text-[9px] text-orange-800 leading-relaxed italic">
-                     <b>隐私提醒：</b>免费层级下，您的输入数据可能会被 Google 用于改进模型，请勿传输公司机密。
+                     <b>隐私提醒：</b>免费层级输入数据会被 Google 用于改进模型，请勿传输机密文档。
                    </p>
                 </div>
               </div>
             </CardContent>
+            <CardFooter className="bg-muted/5 p-6 border-t">
+              <Button 
+                onClick={handleSave} 
+                disabled={isSaving}
+                className="w-full rounded-xl h-11 gap-2 font-bold uppercase tracking-widest text-xs shadow-lg"
+              >
+                {isSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
+                部署配置并生效
+              </Button>
+            </CardFooter>
           </Card>
 
-          {/* 5. System Info */}
           <div className="p-6 bg-primary rounded-2xl text-white space-y-4 shadow-xl">
              <div className="flex items-center gap-2">
                <Info className="h-5 w-5 text-accent" />
                <h4 className="font-bold text-sm uppercase tracking-tight">API 版本说明</h4>
              </div>
              <p className="text-[10px] opacity-60 leading-relaxed">
-               当前智译中枢对接 Google AI Studio (2026.04) 预览版终结点。支持 Gemini 2.5 系列原生协议。
+               智译中枢已升级至 Gemini 2.5 原生协议。支持 Flash-Lite 极速并发特性。
              </p>
           </div>
         </div>
