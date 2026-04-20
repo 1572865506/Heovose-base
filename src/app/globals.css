@@ -52,22 +52,22 @@
 }
 
 @layer components {
-  /* AI 极光流动渐变效果 - 增强色彩跨度 */
+  /* AI 极光流动渐变效果 - 增强对比度 */
   .ai-icon-gradient {
     @apply transition-all duration-700;
     stroke: url(#ai-aurora-gradient);
-    filter: drop-shadow(0 0 3px rgba(96, 165, 250, 0.5));
+    filter: drop-shadow(0 0 4px rgba(99, 102, 241, 0.4));
   }
 
-  /* AI 按钮流动边框与光晕 - 使用淡黄色背景 */
+  /* AI 按钮流动边框与光晕 - 使用淡黄色背景并锁定权重 */
   .ai-btn-glow {
-    @apply relative overflow-hidden transition-all duration-500 border-transparent bg-accent/5 shadow-sm;
+    @apply relative overflow-hidden transition-all duration-500 border-transparent shadow-sm !bg-accent/5 !text-primary;
   }
 
   .ai-btn-glow::before {
     content: '';
     @apply absolute inset-0 rounded-[inherit] p-[1.5px] -z-10;
-    background: linear-gradient(135deg, #22D3EE, #6366F1, #D946EF, #F43F5E, #22D3EE);
+    background: linear-gradient(135deg, #06B6D4, #4F46E5, #D946EF, #F43F5E, #06B6D4);
     background-size: 400% 400%;
     animation: ai-gradient-shift 5s linear infinite;
     -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
@@ -75,13 +75,13 @@
   }
 
   .ai-btn-glow:hover {
-    /* 悬停时使用更饱满的淡黄色背景，配合紫罗兰色光晕 */
-    @apply shadow-[0_0_20px_rgba(99,102,241,0.25)] scale-[1.02] bg-accent/15;
+    /* 悬停时背景略微加深，强化淡黄色感 */
+    @apply shadow-[0_0_25px_rgba(99,102,241,0.2)] scale-[1.02] !bg-accent/15;
   }
 
   .ai-btn-glow:hover .ai-icon-gradient {
-    filter: drop-shadow(0 0 8px rgba(168, 85, 247, 0.8));
-    transform: scale(1.1) rotate(10deg);
+    filter: drop-shadow(0 0 10px rgba(168, 85, 247, 0.8));
+    transform: scale(1.1) rotate(5deg);
   }
 
   @keyframes ai-gradient-shift {

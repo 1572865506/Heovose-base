@@ -60,22 +60,22 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { translateContent } from '@/ai/flows/translate-flow';
 
-// AI 极光渐变定义组件 - 增强色距
+// AI 极光渐变定义组件 - 增强色距与饱和度
 const AiGradientDef = () => (
   <svg width="0" height="0" className="absolute">
     <defs>
       <linearGradient id="ai-aurora-gradient" x1="0%" y1="0%" x2="100%" y2="100%">
-        <stop stopColor="#22D3EE" offset="0%">
-          <animate attributeName="stop-color" values="#22D3EE;#6366F1;#22D3EE" dur="4s" repeatCount="indefinite" />
+        <stop stopColor="#06B6D4" offset="0%">
+          <animate attributeName="stop-color" values="#06B6D4;#4F46E5;#06B6D4" dur="4s" repeatCount="indefinite" />
         </stop>
-        <stop stopColor="#6366F1" offset="33%">
-          <animate attributeName="stop-color" values="#6366F1;#D946EF;#6366F1" dur="4s" repeatCount="indefinite" />
+        <stop stopColor="#4F46E5" offset="33%">
+          <animate attributeName="stop-color" values="#4F46E5;#D946EF;#4F46E5" dur="4s" repeatCount="indefinite" />
         </stop>
         <stop stopColor="#D946EF" offset="66%">
           <animate attributeName="stop-color" values="#D946EF;#F43F5E;#D946EF" dur="4s" repeatCount="indefinite" />
         </stop>
         <stop stopColor="#F43F5E" offset="100%">
-          <animate attributeName="stop-color" values="#F43F5E;#22D3EE;#F43F5E" dur="4s" repeatCount="indefinite" />
+          <animate attributeName="stop-color" values="#F43F5E;#06B6D4;#F43F5E" dur="4s" repeatCount="indefinite" />
         </stop>
       </linearGradient>
     </defs>
@@ -389,7 +389,7 @@ export default function TranslationsPage() {
             </TableHeader>
             <TableBody>
               {isLoading ? (
-                <TableRow><TableCell colSpan={10} className="h-40 text-center"><Loader2 className="h-40 w-40 animate-spin mx-auto opacity-20" /></TableCell></TableRow>
+                <TableRow><TableCell colSpan={10} className="h-40 text-center"><Loader2 className="h-10 w-10 animate-spin mx-auto opacity-20" /></TableCell></TableRow>
               ) : filteredTranslations.length === 0 ? (
                 <TableRow><TableCell colSpan={10} className="h-40 text-center text-[10px] text-muted-foreground italic uppercase">暂无数据</TableCell></TableRow>
               ) : filteredTranslations.map((t) => {
@@ -432,6 +432,7 @@ export default function TranslationsPage() {
                          <div className="flex justify-end items-center gap-0.5">
                            {aiConfig?.isEnabled && (
                              <Button 
+                              variant="ghost"
                               size="icon" 
                               className="h-8 w-8 text-primary ai-btn-glow" 
                               onClick={() => handleAiTranslate(t)} 

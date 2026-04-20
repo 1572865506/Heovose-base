@@ -67,22 +67,22 @@ import { cn } from '@/lib/utils';
 import { translateContent } from '@/ai/flows/translate-flow';
 import RichTextEditor from '@/components/RichTextEditor';
 
-// AI 极光渐变定义组件 - 增强色距
+// AI 极光渐变定义组件 - 增强色距与饱和度
 const AiGradientDef = () => (
   <svg width="0" height="0" className="absolute">
     <defs>
       <linearGradient id="ai-aurora-gradient" x1="0%" y1="0%" x2="100%" y2="100%">
-        <stop stopColor="#22D3EE" offset="0%">
-          <animate attributeName="stop-color" values="#22D3EE;#6366F1;#22D3EE" dur="4s" repeatCount="indefinite" />
+        <stop stopColor="#06B6D4" offset="0%">
+          <animate attributeName="stop-color" values="#06B6D4;#4F46E5;#06B6D4" dur="4s" repeatCount="indefinite" />
         </stop>
-        <stop stopColor="#6366F1" offset="33%">
-          <animate attributeName="stop-color" values="#6366F1;#D946EF;#6366F1" dur="4s" repeatCount="indefinite" />
+        <stop stopColor="#4F46E5" offset="33%">
+          <animate attributeName="stop-color" values="#4F46E5;#D946EF;#4F46E5" dur="4s" repeatCount="indefinite" />
         </stop>
         <stop stopColor="#D946EF" offset="66%">
           <animate attributeName="stop-color" values="#D946EF;#F43F5E;#D946EF" dur="4s" repeatCount="indefinite" />
         </stop>
         <stop stopColor="#F43F5E" offset="100%">
-          <animate attributeName="stop-color" values="#F43F5E;#22D3EE;#F43F5E" dur="4s" repeatCount="indefinite" />
+          <animate attributeName="stop-color" values="#F43F5E;#06B6D4;#F43F5E" dur="4s" repeatCount="indefinite" />
         </stop>
       </linearGradient>
     </defs>
@@ -561,6 +561,7 @@ function ProductEditorContent() {
                   <div className="flex items-center justify-between">
                     <Label className="text-[10px] font-bold uppercase text-muted-foreground tracking-widest">目标: 英文 (EN)</Label>
                     <Button 
+                      variant="ghost"
                       size="sm" 
                       className="h-8 px-3 text-[10px] gap-1 font-bold text-primary rounded-full ai-btn-glow" 
                       onClick={handleAiTranslateBasicInfo} 
@@ -637,6 +638,7 @@ function ProductEditorContent() {
                     <SelectContent className="rounded-lg">{supportedLangs.filter(l=>l.code!=='zh').map(l=><SelectItem key={l.code} value={l.code} className="text-xs uppercase">{l.label}</SelectItem>)}</SelectContent>
                   </Select>
                   <Button 
+                    variant="ghost"
                     size="sm" 
                     className="h-10 px-5 text-xs font-bold text-primary rounded-lg ai-btn-glow" 
                     onClick={handleAiTranslateDetails} 
@@ -709,6 +711,7 @@ function ProductEditorContent() {
 }
 
 export default function ProductEditorPage({ params, searchParams }: { params: Promise<any>, searchParams: Promise<any> }) { 
+  // Next.js 15 Client Page props must be unwrapped with React.use()
   use(params);
   use(searchParams);
   return (
