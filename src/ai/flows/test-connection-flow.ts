@@ -23,17 +23,27 @@ const TestOutputSchema = z.object({
 export async function testAiConnection(input: z.infer<typeof TestInputSchema>) {
   const startTime = Date.now();
   try {
-    // 确保使用正确的前缀 googleai/
-    const finalModel = input.model.includes('/') 
-      ? input.model.replace('google-genai/', 'googleai/') 
-      : `googleai/${input.model}`;
+    // 强制使用 googleai/ 前缀，并确保不包含重复前缀
+    let modelId = input.model.includes('/') 
+      ? input.model.split('/').pop() 
+      : input.model;
+    
+    // 补充 -latest 后缀以确保在 v1beta 终结点下的可用性
+    if (modelId && !modelId.endsWith('-latest') && !modelId.includes('exp')) {
+      modelId = `${modelId}-latest`;
+    }
+
+    const finalModel = `googleai/${modelId}`;
     
     const { output } = await ai.generate({
-      model: finalModel,
+      model: finalModel as any,
       system: input.systemInstruction || "You are a helpful assistant.",
       prompt: "Respond with exactly the word 'SUCCESS' in JSON format under the key 'result'.",
       output: {
         schema: z.object({ result: z.string() })
+      },
+      config: {
+        temperature: 0.1, // 自检使用低温度确保确定性
       }
     });
 

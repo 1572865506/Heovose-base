@@ -59,7 +59,7 @@ export default function AiSettingsPage() {
 
   const [formData, setFormData] = useState<AiConfig>({
     isEnabled: true,
-    model: 'googleai/gemini-1.5-flash',
+    model: 'googleai/gemini-1.5-flash-latest',
     temperature: 0.7,
     systemInstruction: ''
   });
@@ -73,9 +73,16 @@ export default function AiSettingsPage() {
 
   useEffect(() => {
     if (aiConfig) {
-      // 自动迁移所有前缀到正确的 googleai/
-      const normalizedModel = aiConfig.model?.replace('google-genai/', 'googleai/') || 'googleai/gemini-1.5-flash';
-      setFormData({ ...aiConfig, model: normalizedModel });
+      // 核心修正逻辑：将旧的前缀和不带后缀的名称迁移到最新的标准
+      let normalized = aiConfig.model || 'googleai/gemini-1.5-flash-latest';
+      normalized = normalized.replace('google-genai/', 'googleai/');
+      
+      // 确保以 -latest 结尾以避免 v1beta 路由 404
+      if (normalized.includes('gemini-1.5') && !normalized.endsWith('-latest')) {
+        normalized = `${normalized}-latest`;
+      }
+      
+      setFormData({ ...aiConfig, model: normalized });
     }
   }, [aiConfig]);
 
@@ -90,7 +97,7 @@ export default function AiSettingsPage() {
 
   const runAutoTest = async () => {
     setIsTesting(true);
-    setTestResult({ status: 'running', message: '正在启动自动化连接测试...' });
+    setTestResult({ status: 'running', message: '正在通过 Google AI (v1beta) 终结点启动压力测试...' });
     
     try {
       const result = await testAiConnection({
@@ -101,7 +108,7 @@ export default function AiSettingsPage() {
       if (result.status === 'ok') {
         setTestResult({ 
           status: 'success', 
-          message: `连接正常：${result.message}`, 
+          message: `连接成功：模型已识别并响应。`, 
           latency: result.latency 
         });
         toast({ title: "配置自检通过", description: `响应耗时: ${result.latency}ms` });
@@ -175,12 +182,12 @@ export default function AiSettingsPage() {
                       <SelectValue placeholder="选择 AI 模型" />
                     </SelectTrigger>
                     <SelectContent className="rounded-xl">
-                      <SelectItem value="googleai/gemini-1.5-flash" className="text-xs font-bold">Gemini 1.5 Flash (极速/均衡)</SelectItem>
-                      <SelectItem value="googleai/gemini-1.5-pro" className="text-xs font-bold">Gemini 1.5 Pro (超长上下文/高精度)</SelectItem>
-                      <SelectItem value="googleai/gemini-2.0-flash-exp" className="text-xs font-bold text-accent-foreground bg-accent/10">Gemini 2.0 Flash Exp (前沿测试)</SelectItem>
+                      <SelectItem value="googleai/gemini-1.5-flash-latest" className="text-xs font-bold">Gemini 1.5 Flash (极速/稳定版)</SelectItem>
+                      <SelectItem value="googleai/gemini-1.5-pro-latest" className="text-xs font-bold">Gemini 1.5 Pro (高精度/稳定版)</SelectItem>
+                      <SelectItem value="googleai/gemini-2.0-flash-exp" className="text-xs font-bold text-accent-foreground bg-accent/10">Gemini 2.0 Flash Exp (试验版)</SelectItem>
                     </SelectContent>
                   </Select>
-                  <p className="text-[9px] text-muted-foreground leading-relaxed italic">注：前缀已修正为 googleai/ 以适配插件规范。</p>
+                  <p className="text-[9px] text-muted-foreground leading-relaxed italic">注：使用 -latest 后缀以解决特定 API 版本的 404 路由问题。</p>
                 </div>
 
                 <div className="space-y-3">
