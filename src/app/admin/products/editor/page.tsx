@@ -38,7 +38,8 @@ import {
   ChevronLeft,
   ChevronRight,
   Plus,
-  Cpu
+  Cpu,
+  Library
 } from 'lucide-react';
 import { 
   Dialog, 
@@ -67,6 +68,7 @@ import { translateContent } from '@/ai/flows/translate-flow';
 import { Progress } from '@/components/ui/progress';
 import { TooltipProvider } from '@/components/ui/tooltip';
 import RichTextEditor from '@/components/RichTextEditor';
+import { Badge } from '@/components/ui/badge';
 
 interface ProductSpecEntry {
   uid: string;
@@ -437,9 +439,9 @@ function ProductEditorContent() {
         <div className="flex items-center gap-6 flex-1">
           <div className="flex items-center gap-2">
             <Button variant="ghost" size="icon" onClick={() => router.back()} className="rounded-full h-8 w-8"><ArrowLeft className="h-4 w-4" /></Button>
-            <h2 className="text-lg font-headline font-bold text-primary">{isEditing ? '编辑产品' : '发布产品'}</h2>
+            <h2 className="text-lg font-headline font-bold text-primary whitespace-nowrap">{isEditing ? '编辑产品' : '发布产品'}</h2>
           </div>
-          <div className="flex items-center gap-3 flex-1 max-w-4xl">
+          <div className="flex items-center gap-3 flex-1">
              <Select value={formData.categoryId} onValueChange={v => {
                setFormData(prev => {
                  const up: any = { categoryId: v };
@@ -453,20 +455,20 @@ function ProductEditorContent() {
                  return { ...prev, ...up };
                });
              }}>
-               <SelectTrigger className="h-9 rounded-lg bg-muted/20 border-transparent text-xs w-[180px]"><SelectValue placeholder="选择分类..." /></SelectTrigger>
+               <SelectTrigger className="h-9 rounded-lg bg-muted/20 border-transparent text-xs w-[160px] shrink-0"><SelectValue placeholder="选择分类..." /></SelectTrigger>
                <SelectContent>{categories?.map(c => <SelectItem key={c.id} value={c.id} className="text-xs">{c.id}</SelectItem>)}</SelectContent>
              </Select>
-             <div className="relative flex-1 max-w-[280px]">
+             <div className="relative flex-1 min-w-[200px] max-w-[400px]">
                 <Input disabled={isEditing} value={formData.id} onChange={e => setFormData({...formData, id: e.target.value})} className={cn("h-9 rounded-lg font-mono text-xs", idConflict && "border-destructive")} placeholder="产品 ID..." />
                 {idConflict && <AlertCircle className="absolute right-2 top-1/2 -translate-y-1/2 h-3 w-3 text-destructive" />}
              </div>
              <Select value={formData.status} onValueChange={(v:any) => setFormData({...formData, status: v})}>
-               <SelectTrigger className={cn("h-9 rounded-lg border-transparent text-[10px] font-bold uppercase", formData.status === 'published' ? "bg-green-50 text-green-700" : "bg-muted/30")}><SelectValue /></SelectTrigger>
+               <SelectTrigger className={cn("h-9 rounded-lg border-transparent text-[10px] font-bold uppercase w-[100px] shrink-0", formData.status === 'published' ? "bg-green-50 text-green-700" : "bg-muted/30")}><SelectValue /></SelectTrigger>
                <SelectContent><SelectItem value="published" className="text-xs font-bold text-green-600">已发布</SelectItem><SelectItem value="draft" className="text-xs">草稿</SelectItem></SelectContent>
              </Select>
           </div>
         </div>
-        <div className="flex gap-2">
+        <div className="flex gap-2 ml-4">
           <Button variant="outline" size="sm" onClick={() => router.back()} className="rounded-lg h-9 text-[10px] font-bold uppercase">取消</Button>
           <Button size="sm" onClick={handleSave} className="rounded-lg h-9 px-5 text-[10px] font-bold uppercase gap-2"><Save className="h-3.5 w-3.5" /> 保存变更</Button>
         </div>
@@ -476,15 +478,37 @@ function ProductEditorContent() {
         <div className="bg-white p-6 rounded-2xl border shadow-sm space-y-4">
           <div className="flex items-center justify-between border-b pb-3">
             <h3 className="text-xs font-bold text-primary flex items-center gap-2"><ImageIcon className="h-4 w-4" /> 视觉素材</h3>
-            <Button variant="outline" size="sm" onClick={() => openPicker('gallery')} className="h-7 text-[9px] font-bold uppercase gap-1.5"><FolderPlus className="h-3 w-3" /> 素材库导入</Button>
+            <Button variant="outline" size="sm" onClick={() => openPicker('gallery')} className="h-7 text-[9px] font-bold uppercase gap-1.5"><FolderPlus className="h-3 w-3" /> 批量导入细节图</Button>
           </div>
           <div className="flex gap-6 h-[240px]">
             <div className="w-[264px] flex flex-col gap-1.5">
               <Label className="text-[10px] font-bold uppercase text-primary/40">主图预览</Label>
-              <div className="relative flex-1 rounded-xl bg-muted/10 border border-dashed border-border/40 overflow-hidden flex items-center justify-center group cursor-pointer" onClick={() => !formData.mainImageUrl && fileInputRef.current?.click()}>
+              <div className="relative flex-1 rounded-xl bg-muted/10 border border-dashed border-border/40 overflow-hidden flex items-center justify-center group cursor-pointer">
                 {formData.mainImageUrl ? (
-                  <><Image src={formData.mainImageUrl} alt="M" fill className="object-contain p-2" unoptimized /><Button variant="destructive" size="sm" className="absolute opacity-0 group-hover:opacity-100 h-8 w-8 rounded-full" onClick={(e) => { e.stopPropagation(); setFormData({...formData, mainImageUrl:''}); }}><X className="h-4 w-4" /></Button></>
-                ) : <div className="text-center opacity-30">{isUploading ? <Loader2 className="animate-spin h-5 w-5 mx-auto" /> : <Upload className="h-5 w-5 mx-auto" />}<p className="text-[9px] mt-1 font-bold">上传</p></div>}
+                  <><Image src={formData.mainImageUrl} alt="M" fill className="object-contain p-2" unoptimized /><Button variant="destructive" size="sm" className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 h-8 w-8 rounded-full" onClick={(e) => { e.stopPropagation(); setFormData({...formData, mainImageUrl:''}); }}><X className="h-4 w-4" /></Button></>
+                ) : (
+                  <div className="text-center space-y-3 opacity-30">
+                    <div className="flex justify-center gap-2">
+                       <Button variant="ghost" size="sm" onClick={() => fileInputRef.current?.click()} className="flex flex-col h-auto p-2 hover:bg-transparent">
+                          <Upload className="h-5 w-5 mx-auto mb-1" />
+                          <span className="text-[9px] font-bold">本地上传</span>
+                       </Button>
+                       <Button variant="ghost" size="sm" onClick={() => openPicker('main')} className="flex flex-col h-auto p-2 hover:bg-transparent">
+                          <Library className="h-5 w-5 mx-auto mb-1" />
+                          <span className="text-[9px] font-bold">素材库</span>
+                       </Button>
+                    </div>
+                  </div>
+                )}
+                
+                {formData.mainImageUrl && (
+                  <div className="absolute inset-x-0 bottom-0 p-2 opacity-0 group-hover:opacity-100 transition-opacity bg-gradient-to-t from-black/60 to-transparent">
+                    <Button variant="secondary" size="sm" onClick={() => openPicker('main')} className="w-full h-7 rounded-lg text-[9px] font-bold uppercase gap-1.5">
+                      <Library className="h-3 w-3" /> 从库更换
+                    </Button>
+                  </div>
+                )}
+                
                 <input type="file" ref={fileInputRef} className="hidden" onChange={handleImageUpload} />
               </div>
             </div>
@@ -497,6 +521,11 @@ function ProductEditorContent() {
                     <Button variant="destructive" size="icon" className="absolute top-2 right-2 h-6 w-6 opacity-0 group-hover:opacity-100" onClick={() => setFormData({...formData, galleryUrls: formData.galleryUrls.filter((_,i)=>i!==idx)})}><Trash2 className="h-3 w-3" /></Button>
                   </div>
                 ))}
+                {formData.galleryUrls.length === 0 && (
+                  <div className="flex-1 flex items-center justify-center text-muted-foreground/30 text-[10px] font-bold uppercase tracking-widest italic">
+                    暂无细节图片
+                  </div>
+                )}
               </div>
             </div>
           </div>
@@ -512,12 +541,19 @@ function ProductEditorContent() {
           <TabsContent value="basic" className="space-y-4">
             <div className="bg-white p-6 rounded-2xl border shadow-sm grid grid-cols-2 gap-8">
               <div className="space-y-4">
-                <div className="flex items-center justify-between border-b pb-2"><Label className="text-[10px] font-bold uppercase text-primary flex items-center gap-1.5"><Languages className="h-3 w-3" /> 中文 (ZH)</Label><Button variant="ghost" size="sm" className="h-6 text-[9px] gap-1 font-bold text-accent" onClick={handleAiTranslateBasicInfo} disabled={isAiProcessing}><Sparkles className="h-2.5 w-2.5" /> AI 智译</Button></div>
+                <div className="flex items-center h-8 border-b pb-2">
+                  <Label className="text-[10px] font-bold uppercase text-primary flex items-center gap-1.5"><Languages className="h-3 w-3" /> 中文 (ZH)</Label>
+                </div>
                 <Input placeholder="产品名称" value={formData.nameZh} onChange={e => setFormData({...formData, nameZh: e.target.value})} className="h-10 bg-muted/5" />
                 <textarea placeholder="简介..." value={formData.descZh} onChange={e => setFormData({...formData, descZh: e.target.value})} className="w-full min-h-[100px] rounded-lg border bg-muted/5 p-3 text-sm resize-none" />
               </div>
               <div className="space-y-4">
-                <div className="flex items-center justify-between border-b pb-2"><Label className="text-[10px] font-bold uppercase text-muted-foreground flex items-center gap-1.5"><Globe className="h-3 w-3" /> 英文 (EN)</Label></div>
+                <div className="flex items-center justify-between h-8 border-b pb-2">
+                  <Label className="text-[10px] font-bold uppercase text-muted-foreground flex items-center gap-1.5"><Globe className="h-3 w-3" /> 英文 (EN)</Label>
+                  <Button variant="ghost" size="sm" className="h-6 px-3 text-[9px] gap-1 font-bold text-accent bg-accent/5 hover:bg-accent/10 rounded-full" onClick={handleAiTranslateBasicInfo} disabled={isAiProcessing}>
+                    <Sparkles className="h-2.5 w-2.5" /> AI 智译
+                  </Button>
+                </div>
                 <Input placeholder="Product Name" value={formData.nameEn} onChange={e => setFormData({...formData, nameEn: e.target.value})} className="h-10 bg-muted/5" />
                 <textarea placeholder="Description..." value={formData.descEn} onChange={e => setFormData({...formData, descEn: e.target.value})} className="w-full min-h-[100px] rounded-lg border bg-muted/5 p-3 text-sm resize-none" />
               </div>
@@ -570,7 +606,10 @@ function ProductEditorContent() {
               <div className="flex items-center justify-between border-b pb-3">
                 <div className="flex items-center gap-2"><Film className="h-4 w-4" /><h3 className="font-bold text-sm">详情编辑器</h3></div>
                 <div className="flex items-center gap-3">
-                  <Select value={targetDetailsLang} onValueChange={setTargetDetailsLang}><SelectTrigger className="h-7 w-24 text-[10px] font-bold uppercase"><SelectValue /></SelectTrigger><SelectContent>{supportedLangs.filter(l=>l.code!=='zh').map(l=><SelectItem key={l.code} value={l.code} className="text-xs uppercase">{l.label}</SelectItem>)}</SelectContent></Select>
+                  <Select value={targetDetailsLang} onValueChange={setTargetDetailsLang}>
+                    <SelectTrigger className="h-7 w-24 text-[10px] font-bold uppercase"><SelectValue /></SelectTrigger>
+                    <SelectContent>{supportedLangs.filter(l=>l.code!=='zh').map(l=><SelectItem key={l.code} value={l.code} className="text-xs uppercase">{l.label}</SelectItem>)}</SelectContent>
+                  </Select>
                   <Button variant="ghost" size="sm" className="h-7 text-[10px] font-bold text-accent bg-accent/5" onClick={handleAiTranslateDetails} disabled={isAiProcessing}><Sparkles className="h-3 w-3 mr-1" /> AI 智译 ({targetDetailsLang.toUpperCase()})</Button>
                 </div>
               </div>
@@ -591,7 +630,56 @@ function ProductEditorContent() {
       </Dialog>
 
       <Dialog open={isPickerOpen} onOpenChange={setIsPickerOpen}>
-        <DialogContent className="max-w-5xl p-0 overflow-hidden flex flex-col h-[85vh] rounded-2xl shadow-2xl border-none"><div className="bg-primary p-6 text-white flex items-center gap-2"><ImageIcon className="h-6 w-6" /><DialogTitle className="text-xl font-bold">素材库</DialogTitle></div><div className="px-6 py-3 bg-muted/20 border-b flex gap-4"><div className="relative flex-1"><Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 opacity-30" /><Input placeholder="搜索素材..." value={pickerSearch} onChange={e => setPickerSearch(e.target.value)} className="pl-9 h-10 border-none bg-white" /></div></div><div className="flex-1 overflow-y-auto p-6 grid grid-cols-6 gap-4 bg-muted/5">{galleryAssets?.filter(a=>a.title.toLowerCase().includes(pickerSearch.toLowerCase())).map(a=>(<div key={a.id} className={cn("relative aspect-square rounded-lg overflow-hidden border-2 cursor-pointer transition-all", selectedPickerUrls.has(a.url) ? "border-primary scale-95 shadow-inner" : "border-transparent")} onClick={()=>{const n=new Set(selectedPickerUrls); if(pickerTarget.includes('main')||pickerTarget.includes('richtext')){n.clear();n.add(a.url)}else{n.has(a.url)?n.delete(a.url):n.add(a.url)} setSelectedPickerUrls(n); }}><Image src={a.url} alt={a.title} fill className="object-cover" unoptimized />{selectedPickerUrls.has(a.url) && <div className="absolute inset-0 bg-primary/20 flex items-center justify-center"><Check className="bg-white text-primary rounded-full p-1 h-6 w-6" /></div>}</div>))}</div><DialogFooter className="p-6 border-t flex items-center justify-between"><div>已选中 {selectedPickerUrls.size} 项</div><div className="flex gap-2"><Button variant="outline" onClick={()=>setIsPickerOpen(false)}>取消</Button><Button onClick={handleConfirmPicker} disabled={selectedPickerUrls.size===0}>确认插入</Button></div></DialogFooter></DialogContent>
+        <DialogContent className="max-w-5xl p-0 overflow-hidden flex flex-col h-[85vh] rounded-2xl shadow-2xl border-none">
+          <div className="bg-primary p-6 text-white flex items-center gap-2">
+            <ImageIcon className="h-6 w-6" />
+            <DialogTitle className="text-xl font-bold">素材库资产</DialogTitle>
+          </div>
+          <div className="px-6 py-3 bg-muted/20 border-b flex gap-4">
+            <div className="relative flex-1">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 opacity-30" />
+              <Input placeholder="搜索素材标题..." value={pickerSearch} onChange={e => setPickerSearch(e.target.value)} className="pl-9 h-10 border-none bg-white" />
+            </div>
+          </div>
+          <div className="flex-1 overflow-y-auto p-6 grid grid-cols-6 gap-4 bg-muted/5">
+            {galleryAssets?.filter(a=>a.title.toLowerCase().includes(pickerSearch.toLowerCase())).map(a=>(
+              <div 
+                key={a.id} 
+                className={cn(
+                  "relative aspect-square rounded-lg overflow-hidden border-2 cursor-pointer transition-all", 
+                  selectedPickerUrls.has(a.url) ? "border-primary scale-95 shadow-inner" : "border-transparent hover:border-muted-foreground/20"
+                )} 
+                onClick={()=>{
+                  const n=new Set(selectedPickerUrls); 
+                  if(pickerTarget.includes('main')||pickerTarget.includes('richtext')){
+                    n.clear();
+                    n.add(a.url);
+                  } else {
+                    n.has(a.url) ? n.delete(a.url) : n.add(a.url);
+                  } 
+                  setSelectedPickerUrls(n); 
+                }}
+              >
+                <Image src={a.url} alt={a.title} fill className="object-cover" unoptimized />
+                {selectedPickerUrls.has(a.url) && (
+                  <div className="absolute inset-0 bg-primary/20 flex items-center justify-center">
+                    <Check className="bg-white text-primary rounded-full p-1 h-6 w-6" />
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+          <DialogFooter className="p-6 border-t flex items-center justify-between bg-white">
+            <div className="flex items-center gap-3">
+              <Badge variant="secondary" className="h-8 px-4 rounded-full text-xs font-bold uppercase tracking-widest bg-primary/5 text-primary border-primary/20">已选中 {selectedPickerUrls.size} 项素材</Badge>
+              {selectedPickerUrls.size > 0 && <Button variant="ghost" size="sm" onClick={()=>setSelectedPickerUrls(new Set())} className="text-[10px] font-bold text-destructive uppercase tracking-widest px-3 h-8 hover:bg-destructive/5 rounded-full">清除全部</Button>}
+            </div>
+            <div className="flex gap-2">
+              <Button variant="outline" onClick={()=>setIsPickerOpen(false)} className="rounded-xl h-10 px-8 text-xs font-bold uppercase tracking-widest">取消</Button>
+              <Button onClick={handleConfirmPicker} disabled={selectedPickerUrls.size===0} className="rounded-xl h-10 px-8 text-xs font-bold uppercase tracking-widest">确认插入选择</Button>
+            </div>
+          </DialogFooter>
+        </DialogContent>
       </Dialog>
     </div>
   );
