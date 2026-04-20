@@ -1,3 +1,4 @@
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -52,14 +53,14 @@
 }
 
 @layer components {
-  /* AI 极光流动渐变效果 - 增强对比度 */
+  /* AI 极光流动渐变效果 */
   .ai-icon-gradient {
     @apply transition-all duration-700;
     stroke: url(#ai-aurora-gradient);
     filter: drop-shadow(0 0 4px rgba(99, 102, 241, 0.4));
   }
 
-  /* AI 按钮流动边框与光晕 - 使用淡黄色背景并锁定权重 */
+  /* AI 按钮标准配置 - 常规态使用淡黄色 */
   .ai-btn-glow {
     @apply relative overflow-hidden transition-all duration-500 border-transparent shadow-sm !bg-accent/5 !text-primary;
   }
@@ -74,9 +75,16 @@
     mask-composite: exclude;
   }
 
+  /* 悬停态 - 加深背景与强化投影 */
   .ai-btn-glow:hover {
-    /* 悬停时背景略微加深，强化淡黄色感 */
-    @apply shadow-[0_0_25px_rgba(99,102,241,0.2)] scale-[1.02] !bg-accent/15;
+    @apply shadow-[0_0_25px_rgba(168,85,247,0.2)] scale-[1.02] !bg-accent/15;
+  }
+
+  /* 激活态/操作态 - 核心修正：仅在激活时变为全黄色 */
+  .ai-btn-glow:active, 
+  .ai-btn-glow[data-state=open],
+  .ai-btn-glow[disabled] {
+    @apply !bg-accent !text-accent-foreground;
   }
 
   .ai-btn-glow:hover .ai-icon-gradient {

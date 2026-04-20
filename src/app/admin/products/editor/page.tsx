@@ -620,7 +620,10 @@ function ProductEditorContent() {
                 <div className="flex gap-2">
                   <Popover>
                     <PopoverTrigger asChild>
-                      <Button variant="default" className="h-10 text-xs font-bold uppercase gap-2 bg-accent text-accent-foreground hover:bg-accent/90 rounded-lg shadow-sm">
+                      <Button 
+                        variant="outline" 
+                        className="h-10 text-xs font-bold uppercase gap-2 rounded-lg shadow-sm transition-all data-[state=open]:bg-accent data-[state=open]:text-accent-foreground data-[state=open]:border-transparent"
+                      >
                         <Library className="h-4 w-4" /> 加载模板
                       </Button>
                     </PopoverTrigger>
@@ -852,8 +855,8 @@ function ProductEditorContent() {
 }
 
 export default function ProductEditorPage({ params, searchParams }: { params: Promise<any>, searchParams: Promise<any> }) { 
-  use(params);
-  use(searchParams);
+  const resolvedParams = use(params);
+  const resolvedSearchParams = use(searchParams);
   return (
     <Suspense fallback={<div className="h-screen flex items-center justify-center"><Loader2 className="animate-spin opacity-20" /></div>}>
       <ProductEditorContent />
