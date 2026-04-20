@@ -151,7 +151,17 @@
         "model": { "type": "string" },
         "apiKey": { "type": "string", "description": "Manual Google AI Studio API Key." },
         "temperature": { "type": "number" },
-        "systemInstruction": { "type": "string" }
+        "systemInstruction": { "type": "string" },
+        "lastDiagnosis": {
+          "type": "object",
+          "properties": {
+            "status": { "type": "string" },
+            "message": { "type": "string" },
+            "latency": { "type": "number" },
+            "modelUsed": { "type": "string" },
+            "timestamp": { "type": "object" }
+          }
+        }
       }
     }
   },

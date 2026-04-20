@@ -63,15 +63,24 @@ import { testAiConnection } from '@/ai/flows/test-connection-flow';
 import { cn } from '@/lib/utils';
 import { Progress } from '@/components/ui/progress';
 
+interface DiagnosisRecord {
+  status: 'idle' | 'running' | 'success' | 'failed' | 'quota';
+  message: string;
+  latency?: number;
+  modelUsed?: string;
+  keySource?: string;
+  timestamp?: any;
+}
+
 interface AiConfig {
   isEnabled: boolean;
   model: string;
   apiKey: string;
   temperature: number;
   systemInstruction: string;
+  lastDiagnosis?: DiagnosisRecord;
 }
 
-// 2026 免费层级静态配额参考数据
 const STATIC_QUOTA_LIST = [
   { 
     id: 'googleai/gemini-2.5-flash', 
@@ -120,13 +129,11 @@ export default function AiSettingsPage() {
   const [showKey, setShowKey] = useState(false);
   const [isTesting, setIsTesting] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
-  const [testReport, setTestResult] = useState<{
-    status: 'idle' | 'running' | 'success' | 'failed' | 'quota',
-    message: string,
-    latency?: number,
-    modelUsed?: string,
-    keySource?: string
-  }>({ status: 'idle', message: '尚未运行自检' });
+  
+  const [testReport, setTestResult] = useState<DiagnosisRecord>({ 
+    status: 'idle', 
+    message: '尚未运行自检' 
+  });
 
   useEffect(() => {
     if (aiConfig) {
@@ -135,10 +142,14 @@ export default function AiSettingsPage() {
         apiKey: aiConfig.apiKey || '',
         systemInstruction: aiConfig.systemInstruction || formData.systemInstruction
       });
+      
+      // 如果数据库中有诊断记录，则加载它
+      if (aiConfig.lastDiagnosis) {
+        setTestResult(aiConfig.lastDiagnosis);
+      }
     }
   }, [aiConfig]);
 
-  // 计算当前选中模型的动态配额
   const currentQuota = useMemo(() => {
     return STATIC_QUOTA_LIST.find(q => q.id === formData.model) || STATIC_QUOTA_LIST[0];
   }, [formData.model]);
@@ -147,8 +158,10 @@ export default function AiSettingsPage() {
     if (!firestore) return;
     setIsSaving(true);
     
+    // 保存时包含最后的诊断结果，实现持久化
     setDocumentNonBlocking(doc(firestore, 'settings', 'ai'), {
       ...formData,
+      lastDiagnosis: testReport,
       updatedAt: serverTimestamp()
     }, { merge: true });
 
@@ -156,7 +169,7 @@ export default function AiSettingsPage() {
       setIsSaving(false);
       toast({ 
         title: "配置已同步至云端", 
-        description: "AI 智译引擎及其专家人设已根据新参数重新就绪。" 
+        description: "AI 引擎配置及诊断状态已持久化保存。" 
       });
     }, 800);
   };
@@ -172,33 +185,35 @@ export default function AiSettingsPage() {
         apiKey: formData.apiKey
       });
 
+      const newReport: DiagnosisRecord = result.status === 'ok' 
+        ? { 
+            status: 'success', 
+            message: result.message, 
+            latency: result.latency,
+            modelUsed: result.modelUsed,
+            keySource: result.keySource,
+            timestamp: new Date().toISOString()
+          }
+        : { 
+            status: result.message.includes('429') ? 'quota' : 'failed', 
+            message: result.message,
+            modelUsed: result.modelUsed,
+            keySource: result.keySource,
+            timestamp: new Date().toISOString()
+          };
+
+      setTestResult(newReport);
+
       if (result.status === 'ok') {
-        setTestResult({ 
-          status: 'success', 
-          message: result.message, 
-          latency: result.latency,
-          modelUsed: result.modelUsed,
-          keySource: result.keySource
-        });
         toast({ title: "连接自检通过" });
-      } else {
-        const isQuotaError = result.message.includes('429');
-        setTestResult({ 
-          status: isQuotaError ? 'quota' : 'failed', 
-          message: result.message,
-          modelUsed: result.modelUsed,
-          keySource: result.keySource
+      } else if (newReport.status === 'quota') {
+        toast({ 
+          variant: "default",
+          title: "验证通过，但配额受限", 
+          description: "配置有效。请点击下方“部署配置”保存状态。" 
         });
-        
-        if (isQuotaError) {
-          toast({ 
-            variant: "default",
-            title: "验证通过，但配额受限", 
-            description: "这意味着您的 Key 和模型 ID 是有效的。点击下方“部署配置”即可保存。" 
-          });
-        } else {
-          toast({ variant: "destructive", title: "自检失败", description: "请查看诊断报告" });
-        }
+      } else {
+        toast({ variant: "destructive", title: "自检失败" });
       }
     } catch (e: any) {
       setTestResult({ status: 'failed', message: `内部通讯异常: ${e.message}` });
@@ -216,23 +231,30 @@ export default function AiSettingsPage() {
           </h2>
           <p className="text-xs text-muted-foreground">配置 2026 版 Gemini 2.5 核心引擎、API 密钥及专家技能指令。</p>
         </div>
-        <Badge variant="outline" className={cn(
-          "h-9 px-3 rounded-lg gap-2 font-bold text-[10px] uppercase",
-          testReport.status === 'success' ? "bg-green-50 text-green-700 border-green-200" : 
-          testReport.status === 'quota' ? "bg-orange-50 text-orange-700 border-orange-200" :
-          "bg-primary/5 text-primary border-primary/20"
-        )}>
-          {testReport.status === 'success' ? <CheckCircle2 className="h-3 w-3" /> : 
-           testReport.status === 'quota' ? <Clock className="h-3 w-3" /> :
-           <div className="h-1.5 w-1.5 rounded-full bg-blue-400 animate-pulse" />}
-          状态: {testReport.status === 'success' ? '已就绪' : testReport.status === 'quota' ? '配额受限' : '待诊断'}
-        </Badge>
+        <div className="flex items-center gap-3">
+          {testReport.timestamp && (
+            <span className="text-[9px] text-muted-foreground font-mono uppercase">
+              上次测试: {new Date(testReport.timestamp).toLocaleString()}
+            </span>
+          )}
+          <Badge variant="outline" className={cn(
+            "h-9 px-3 rounded-lg gap-2 font-bold text-[10px] uppercase",
+            testReport.status === 'success' ? "bg-green-50 text-green-700 border-green-200" : 
+            testReport.status === 'quota' ? "bg-orange-50 text-orange-700 border-orange-200" :
+            testReport.status === 'failed' ? "bg-destructive/5 text-destructive border-destructive/10" :
+            "bg-primary/5 text-primary border-primary/20"
+          )}>
+            {testReport.status === 'success' ? <CheckCircle2 className="h-3 w-3" /> : 
+             testReport.status === 'quota' ? <Clock className="h-3 w-3" /> :
+             testReport.status === 'failed' ? <AlertCircle className="h-3 w-3" /> :
+             <div className="h-1.5 w-1.5 rounded-full bg-blue-400 animate-pulse" />}
+            状态: {testReport.status === 'success' ? '已就绪' : testReport.status === 'quota' ? '配额受限' : testReport.status === 'failed' ? '诊断失败' : '待自检'}
+          </Badge>
+        </div>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-        {/* 左侧主列：核心配置与静态看板 */}
         <div className="lg:col-span-8 space-y-8">
-          {/* 1. 核心引擎配置 */}
           <Card className="rounded-2xl border-none shadow-2xl overflow-hidden">
             <div className="bg-primary p-6 text-white">
               <CardHeader className="p-0 flex flex-row items-center justify-between">
@@ -258,9 +280,12 @@ export default function AiSettingsPage() {
                 <div className="relative group">
                   <Input 
                     type={showKey ? "text" : "password"}
-                    placeholder="在此粘贴您的 AI Studio API Key..."
+                    placeholder="在此粘贴您的 API Key..."
                     value={formData.apiKey}
-                    onChange={(e) => setFormData({...formData, apiKey: e.target.value})}
+                    onChange={(e) => {
+                      setFormData({...formData, apiKey: e.target.value});
+                      // 如果 Key 变化，逻辑上应该重置诊断状态，但为了让用户决定是否覆盖，这里保持现状
+                    }}
                     className="h-11 rounded-xl bg-muted/5 pr-10 font-mono text-sm border-muted/40 focus:bg-white transition-all"
                   />
                   <button 
@@ -305,7 +330,6 @@ export default function AiSettingsPage() {
             </CardContent>
           </Card>
 
-          {/* 2. 专家技能中枢 */}
           <Card className="rounded-2xl border border-border/40 shadow-xl overflow-hidden bg-white">
             <CardHeader className="p-6 border-b bg-muted/10">
               <div className="flex items-center justify-between">
@@ -333,7 +357,6 @@ export default function AiSettingsPage() {
                   value={formData.systemInstruction}
                   onChange={(e) => setFormData({...formData, systemInstruction: e.target.value})}
                   className="min-h-[140px] rounded-xl border-muted/60 bg-muted/5 focus:bg-white transition-all text-sm leading-relaxed"
-                  placeholder="在此输入专家指令..."
                 />
               </div>
 
@@ -354,14 +377,13 @@ export default function AiSettingsPage() {
             </CardContent>
           </Card>
 
-          {/* 3. 静态模型配额看板（管理人员参考用） */}
           <Card className="rounded-2xl border border-border/40 shadow-sm overflow-hidden bg-white">
             <CardHeader className="p-6 bg-muted/10 border-b">
               <div className="flex items-center gap-3">
                 <LayoutGrid className="h-5 w-5 text-primary" />
                 <div>
                   <CardTitle className="text-sm font-bold uppercase tracking-widest">全系列模型配额参考看板</CardTitle>
-                  <CardDescription className="text-[10px]">静态参数查询表，用于管理人员进行翻译策略规划。</CardDescription>
+                  <CardDescription className="text-[10px]">静态参数查询表，用于管理人员进行策略规划。</CardDescription>
                 </div>
               </div>
             </CardHeader>
@@ -401,9 +423,7 @@ export default function AiSettingsPage() {
           </Card>
         </div>
 
-        {/* 右侧边栏：诊断与动态监控 */}
         <div className="lg:col-span-4 space-y-6">
-          {/* 4. 动态连通性诊断 */}
           <Card className="rounded-2xl border-none bg-white shadow-xl overflow-hidden h-fit">
             <CardHeader className="p-6 pb-2 border-b">
               <CardTitle className="text-[10px] font-bold flex items-center gap-2 text-primary uppercase tracking-[0.2em]">
@@ -429,7 +449,7 @@ export default function AiSettingsPage() {
                       
                       {testReport.status === 'quota' && (
                         <div className="mt-3 p-2 bg-white/50 rounded border border-orange-200 text-[10px] text-orange-900 italic">
-                          <b>验证结果：</b>这说明您的配置已成功通过鉴权！只需点击“部署配置”保存即可开始工作。
+                          这说明配置已鉴权成功。
                         </div>
                       )}
 
@@ -438,6 +458,7 @@ export default function AiSettingsPage() {
                            <div className="flex items-center gap-1.5 font-mono text-[9px] bg-black/5 p-1 rounded">
                              <Terminal className="h-2.5 w-2.5 opacity-40" /> ID: {testReport.modelUsed}
                            </div>
+                           {testReport.latency && <div className="text-[8px] font-bold opacity-40 uppercase">Latency: {testReport.latency}ms</div>}
                         </div>
                       )}
                    </div>
@@ -455,7 +476,6 @@ export default function AiSettingsPage() {
             </CardContent>
           </Card>
 
-          {/* 5. 动态额度看板（当前选用模型余额监控） */}
           <Card className="rounded-2xl border-none bg-white shadow-xl overflow-hidden">
             <CardHeader className="p-6 pb-2 border-b bg-muted/10">
               <CardTitle className="text-[10px] font-bold flex items-center gap-2 text-primary uppercase tracking-[0.2em]">
@@ -487,7 +507,7 @@ export default function AiSettingsPage() {
                 <div className="p-4 bg-orange-50/50 rounded-xl border border-orange-100 flex gap-3">
                    <ShieldAlert className="h-4 w-4 text-orange-600 shrink-0 mt-0.5" />
                    <p className="text-[9px] text-orange-800 leading-relaxed italic">
-                     <b>隐私提醒：</b>免费层级输入数据会被 Google 用于改进模型，请勿传输机密文档。
+                     <b>隐私提醒：</b>免费层级输入数据会被 Google 用于改进模型。
                    </p>
                 </div>
               </div>
@@ -499,20 +519,10 @@ export default function AiSettingsPage() {
                 className="w-full rounded-xl h-11 gap-2 font-bold uppercase tracking-widest text-xs shadow-lg"
               >
                 {isSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
-                部署配置并生效
+                部署配置并保存状态
               </Button>
             </CardFooter>
           </Card>
-
-          <div className="p-6 bg-primary rounded-2xl text-white space-y-4 shadow-xl">
-             <div className="flex items-center gap-2">
-               <Info className="h-5 w-5 text-accent" />
-               <h4 className="font-bold text-sm uppercase tracking-tight">API 版本说明</h4>
-             </div>
-             <p className="text-[10px] opacity-60 leading-relaxed">
-               智译中枢已升级至 Gemini 2.5 原生协议。支持 Flash-Lite 极速并发特性。
-             </p>
-          </div>
         </div>
       </div>
     </div>
