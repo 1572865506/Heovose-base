@@ -1,8 +1,11 @@
 import {genkit} from 'genkit';
 import {googleAI} from '@genkit-ai/google-genai';
 
+/**
+ * Genkit 全局初始化配置
+ * 使用 googleAI 插件连接 Google AI Studio (Generative Language API)。
+ */
 export const ai = genkit({
   plugins: [googleAI()],
-  // 使用标准模型名称，不带 -latest 后缀，以确保在 v1beta 终结点下的最大兼容性
-  model: 'googleai/gemini-1.5-flash',
+  // 移除全局默认模型设置，改由各 Flow 显式指定，以增强多模型切换的稳定性
 });

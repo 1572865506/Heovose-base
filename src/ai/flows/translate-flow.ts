@@ -1,50 +1,44 @@
 'use server';
 /**
- * @fileOverview AI Translation Flow for Heovose Admin.
+ * @fileOverview AI 多语言翻译流
  * 
- * Handles multi-language translation for hardware specifications and marketing content.
- * Optimized for long HTML rich-text processing with image preservation logic.
+ * 专门针对工业硬件规格和超长富文本排版优化的智译引擎。
  */
 
 import { ai } from '@/ai/genkit';
 import { z } from 'genkit';
 
 const TranslateInputSchema = z.object({
-  text: z.string().describe('The source text to translate.'),
-  sourceLang: z.string().default('zh').describe('The source language code.'),
-  targetLangs: z.array(z.string()).describe('List of target language codes.'),
-  model: z.string().optional().describe('Optional model override.'),
+  text: z.string().describe('待翻译的源文本或 HTML。'),
+  sourceLang: z.string().default('zh'),
+  targetLangs: z.array(z.string()),
+  model: z.string().optional().describe('覆盖默认模型设置。'),
 });
 
-export type TranslateInput = z.infer<typeof TranslateInputSchema>;
+const TranslateOutputSchema = z.record(z.string(), z.string()).describe('语种代码到译文的映射。');
 
-const TranslateOutputSchema = z.record(z.string(), z.string()).describe('A map of language codes to translated text.');
+export type TranslateInput = z.infer<typeof TranslateInputSchema>;
 export type TranslateOutput = z.infer<typeof TranslateOutputSchema>;
 
-// 1. 在顶层定义 Prompt
 const translatePrompt = ai.definePrompt({
   name: 'translatePrompt',
   input: { schema: TranslateInputSchema },
   output: { schema: TranslateOutputSchema },
-  prompt: `You are a professional industrial hardware manufacturing translator and HTML structure expert. 
+  prompt: `You are a professional industrial hardware manufacturing translator. 
   Translate the provided text from {{{sourceLang}}} to these languages: {{#each targetLangs}}{{{this}}}{{#unless @last}}, {{/unless}}{{/each}}.
   
-  CRITICAL INSTRUCTIONS FOR RICH TEXT (HTML):
-  1. You MUST preserve EVERY HTML tag from the source. This is mandatory.
-  2. NEVER delete or omit <img> tags. Even if they have no accompanying text, they MUST stay in their exact relative positions.
-  3. Do NOT modify any attributes like "src", "class", "style", "alt", or "width/height". These must be copied verbatim.
-  4. ONLY translate the visible text content within the tags (e.g., inside <p>, <h3>, <li>, <td>).
-  5. Maintain the EXACT structure: for every <p> in the source, there must be a <p> in the target.
-  6. If you see technical terms like "AIO", "Mini PC", "Barebone", "IP65", keep them as they are or use standard technical translations.
+  CRITICAL INSTRUCTIONS:
+  1. For HTML content: Preserve ALL tags (尤其是 <img>, <table>, <div>)。
+  2. NEVER modify attributes like "src", "class", or "style"。
+  3. Ensure the output is a valid JSON object where keys are language codes.
   
-  OUTPUT FORMAT:
-  Return a valid JSON object ONLY. The keys MUST be the language codes (e.g., "en", "id", "vi") and the values MUST be the translated HTML strings.
-  Do NOT include Markdown formatting or "json" code blocks in your response.
-  
-  Text to translate: {{{text}}}`
+  Source: {{{text}}}`
 });
 
-// 2. 在顶层定义 Flow
+export async function translateContent(input: TranslateInput): Promise<TranslateOutput> {
+  return translateFlow(input);
+}
+
 const translateFlow = ai.defineFlow(
   {
     name: 'translateFlow',
@@ -52,28 +46,18 @@ const translateFlow = ai.defineFlow(
     outputSchema: TranslateOutputSchema,
   },
   async (input) => {
-    try {
-      // 使用传入的模型配置进行调用，如果未指定则使用 ai 实例默认值
-      const { output } = await translatePrompt(input, {
-        config: {
-          model: input.model || undefined,
-        }
-      });
-      
-      if (!output) {
-        throw new Error('AI Translation returned empty output.');
-      }
-      return output;
-    } catch (error: any) {
-      console.error('Translation Flow Error:', error);
-      throw new Error(`Translation failed: ${error.message || 'Unknown error'}`);
+    // 处理模型标识符
+    let modelId = input.model || 'googleai/gemini-1.5-flash';
+    if (!modelId.startsWith('googleai/')) {
+      const core = modelId.includes('/') ? modelId.split('/').pop() : modelId;
+      modelId = `googleai/${core}`;
     }
+
+    const { output } = await translatePrompt(input, {
+      config: { model: modelId as any }
+    });
+    
+    if (!output) throw new Error('AI Translation returned empty results.');
+    return output;
   }
 );
-
-/**
- * 包装函数，用于从客户端调用服务器端的 Flow
- */
-export async function translateContent(input: TranslateInput): Promise<TranslateOutput> {
-  return translateFlow(input);
-}

@@ -9,7 +9,7 @@ import { ai } from '@/ai/genkit';
 import { z } from 'genkit';
 
 const TestInputSchema = z.object({
-  model: z.string(),
+  model: z.string().describe('模型标识符，如 googleai/gemini-1.5-flash'),
   systemInstruction: z.string().optional(),
 });
 
@@ -20,22 +20,27 @@ const TestOutputSchema = z.object({
   modelUsed: z.string(),
 });
 
+/**
+ * 执行 AI 连接自检
+ * 采用极简 Token 消耗模式验证 API 通路。
+ */
 export async function testAiConnection(input: z.infer<typeof TestInputSchema>) {
   const startTime = Date.now();
+  
+  // 核心逻辑：标准化模型标识符
+  // 确保标识符始终以 googleai/ 开头，且不包含重复前缀
+  let modelId = input.model.trim();
+  if (modelId.includes('/')) {
+    modelId = modelId.split('/').pop() || modelId;
+  }
+  const finalModel = `googleai/${modelId}`;
+
   try {
-    // 强制确保前缀为 googleai/
-    let finalModel = input.model;
-    if (!finalModel.startsWith('googleai/')) {
-      // 提取核心 ID 并重新拼接
-      const coreId = finalModel.includes('/') ? finalModel.split('/').pop() : finalModel;
-      finalModel = `googleai/${coreId}`;
-    }
-    
     // 执行生成测试
     const { output } = await ai.generate({
       model: finalModel as any,
       system: input.systemInstruction || "You are a helpful assistant.",
-      prompt: "Respond with exactly the word 'SUCCESS' in JSON format under the key 'result'.",
+      prompt: "Respond with exactly the word 'SUCCESS'.",
       output: {
         schema: z.object({ result: z.string() })
       },
@@ -46,7 +51,8 @@ export async function testAiConnection(input: z.infer<typeof TestInputSchema>) {
 
     const endTime = Date.now();
     
-    if (output?.result === 'SUCCESS') {
+    // 验证响应内容
+    if (output?.result?.toUpperCase().includes('SUCCESS')) {
       return {
         status: 'ok',
         latency: endTime - startTime,
@@ -58,11 +64,18 @@ export async function testAiConnection(input: z.infer<typeof TestInputSchema>) {
     throw new Error('模型响应格式不符合预期');
   } catch (error: any) {
     console.error('AI Connection Test Error:', error);
+    
+    // 解析常见的 404 错误并提供更友好的建议
+    let userMessage = error.message || '未知连接错误';
+    if (userMessage.includes('404')) {
+      userMessage = `模型路径未找到 (404)。请尝试切换其他模型变体（如 1.5-flash 或 2.0-flash）。`;
+    }
+
     return {
       status: 'error',
       latency: Date.now() - startTime,
-      message: error.message || '连接失败，请检查 API 配置或尝试更换模型版本后缀。',
-      modelUsed: input.model
+      message: userMessage,
+      modelUsed: finalModel
     } as z.infer<typeof TestOutputSchema>;
   }
 }
