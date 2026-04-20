@@ -410,7 +410,8 @@ function ProductEditorContent() {
 
   return (
     <div className="max-w-full w-full mx-auto space-y-6 pb-20 animate-in fade-in duration-500 overflow-hidden">
-      <div className="flex items-center justify-between sticky top-16 z-40 bg-background/95 backdrop-blur-md py-3 border-b px-6 shadow-sm">
+      {/* 修正后的吸顶工具栏：top-[-24px] 抵消 AdminLayout 的 p-6 容器内边距 */}
+      <div className="flex items-center justify-between sticky top-[-24px] z-40 bg-background/95 backdrop-blur-md py-3 border-b shadow-sm -mx-6 px-6">
         <div className="flex items-center gap-6 flex-1 min-w-0">
           <div className="flex items-center gap-2 shrink-0">
             <Button variant="ghost" size="icon" onClick={() => router.back()} className="rounded-full h-8 w-8"><ArrowLeft className="h-4 w-4" /></Button>
@@ -449,7 +450,7 @@ function ProductEditorContent() {
         </div>
       </div>
 
-      <div className="space-y-6 px-6">
+      <div className="space-y-6">
         {/* 视觉素材中心 */}
         <div className="bg-white p-6 rounded-2xl border shadow-sm space-y-4">
           <div className="flex items-center justify-between border-b pb-4 mb-2">
@@ -674,6 +675,7 @@ function ProductEditorContent() {
 }
 
 export default function ProductEditorPage({ params, searchParams }: { params: Promise<any>, searchParams: Promise<any> }) { 
+  // Next.js 15: props 是 Promise，必须使用 React.use() 解包
   use(params);
   use(searchParams);
   return (

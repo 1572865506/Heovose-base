@@ -193,8 +193,9 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           </SidebarFooter>
         </Sidebar>
         
-        <main className="flex-1 flex flex-col min-w-0 w-full overflow-hidden">
-          <header className="h-16 border-b border-border/40 bg-white/80 backdrop-blur-md flex items-center justify-between px-6 sticky top-0 z-50">
+        {/* 主布局加固：min-w-0 防止侧边栏宽度样式 (--sidebar-width) 导致的横向溢出问题 */}
+        <main className="flex-1 flex flex-col min-w-0 w-full overflow-hidden relative">
+          <header className="h-16 border-b border-border/40 bg-white/80 backdrop-blur-md flex items-center justify-between px-6 sticky top-0 z-50 shrink-0">
             <div className="flex items-center gap-4">
               <SidebarTrigger />
               <div className="h-5 w-px bg-border/60 mx-1" />
@@ -203,9 +204,9 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
               </h1>
             </div>
             <div className="flex items-center gap-4">
-              <div className="flex flex-col items-end">
+              <div className="flex items-col items-end">
                 <span className="text-[11px] font-bold text-primary">{user.email}</span>
-                <span className="text-[9px] text-muted-foreground uppercase tracking-widest font-medium">
+                <span className="text-[9px] text-muted-foreground uppercase tracking-widest font-medium text-right block">
                   {adminData?.role === 'superadmin' ? '超级管理员' : '编辑员'}
                 </span>
               </div>
@@ -215,7 +216,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             </div>
           </header>
           
-          <div className="flex-1 overflow-y-auto p-6 max-w-7xl w-full mx-auto">
+          <div className="flex-1 overflow-y-auto p-6 max-w-7xl w-full mx-auto min-w-0">
             {children}
           </div>
         </main>
