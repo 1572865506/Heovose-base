@@ -468,9 +468,16 @@ function ProductEditorContent() {
 
       <div className="space-y-6 px-6">
         <div className="bg-white p-6 rounded-2xl border shadow-sm space-y-4">
-          <div className="flex items-center justify-between border-b pb-3">
-            <h3 className="text-[10px] font-bold text-primary flex items-center gap-2 uppercase tracking-widest"><ImageIcon className="h-4 w-4" /> 视觉素材中心</h3>
-            <Button variant="outline" size="sm" onClick={() => openPicker('gallery')} className="h-9 text-[11px] font-bold uppercase tracking-wider gap-1.5 rounded-lg"><FolderPlus className="h-3.5 w-3.5" /> 批量导入细节图</Button>
+          <div className="flex items-center justify-between border-b pb-4 mb-2">
+            <div className="space-y-0.5">
+              <h3 className="text-sm font-bold text-primary flex items-center gap-2 uppercase tracking-widest">
+                <ImageIcon className="h-4 w-4" /> 视觉素材中心
+              </h3>
+              <p className="text-[10px] text-muted-foreground font-medium uppercase tracking-tight">配置产品主图及细节轮播图，支持从素材库直接拾取。</p>
+            </div>
+            <Button variant="outline" size="sm" onClick={() => openPicker('gallery')} className="h-10 text-[11px] font-bold uppercase tracking-wider gap-1.5 rounded-lg border-muted-foreground/20">
+              <FolderPlus className="h-3.5 w-3.5" /> 批量导入细节图
+            </Button>
           </div>
           <div className="flex gap-6 h-[240px]">
             <div className="w-[264px] flex flex-col gap-2">
@@ -531,26 +538,34 @@ function ProductEditorContent() {
           </TabsList>
 
           <TabsContent value="basic" className="space-y-4 animate-in fade-in slide-in-from-bottom-2">
-            <div className="bg-white p-8 rounded-2xl border shadow-sm grid grid-cols-2 gap-10">
-              <div className="space-y-6">
-                <div className="flex items-center h-10 border-b pb-2">
-                  <Label className="text-[10px] font-bold uppercase text-primary flex items-center gap-2 tracking-widest"><Languages className="h-3.5 w-3.5" /> 源文: 中文 (ZH)</Label>
-                </div>
-                <div className="space-y-4">
-                   <div className="space-y-2"><Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">产品标题</Label><Input placeholder="输入中文产品名称" value={formData.nameZh} onChange={e => setFormData({...formData, nameZh: e.target.value})} className="h-10 bg-muted/5 text-xs rounded-lg border-muted/40" /></div>
-                   <div className="space-y-2"><Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">简短描述</Label><Textarea placeholder="输入中文简介，建议 100 字以内" value={formData.descZh} onChange={e => setFormData({...formData, descZh: e.target.value})} className="w-full min-h-[120px] rounded-lg border border-muted/40 bg-muted/5 p-4 text-xs resize-none focus:outline-none focus:ring-1 focus:ring-primary/20" /></div>
-                </div>
+            <div className="bg-white p-8 rounded-2xl border shadow-sm space-y-8">
+              <div className="border-b pb-4">
+                <h3 className="text-sm font-bold text-primary flex items-center gap-2 uppercase tracking-widest">
+                  <Info className="h-4 w-4" /> 基础信息配置
+                </h3>
+                <p className="text-[10px] text-muted-foreground font-medium uppercase tracking-tight">定义产品的双语标题和简短描述，支持一键 AI 智译。</p>
               </div>
-              <div className="space-y-6">
-                <div className="flex items-center justify-between h-10 border-b pb-2">
-                  <Label className="text-[10px] font-bold uppercase text-muted-foreground flex items-center gap-2 tracking-widest"><Globe className="h-3.5 w-3.5" /> 目标: 英文 (EN)</Label>
-                  <Button variant="ghost" size="sm" className="h-8 px-4 text-[10px] gap-1.5 font-bold text-accent bg-accent/5 hover:bg-accent/10 rounded-full transition-all border border-accent/10" onClick={handleAiTranslateBasicInfo} disabled={isAiProcessing}>
-                    <Sparkles className="h-3 w-3" /> AI 智译一键同步
-                  </Button>
+              <div className="grid grid-cols-2 gap-10">
+                <div className="space-y-6">
+                  <div className="flex items-center h-10 border-b pb-2">
+                    <Label className="text-[10px] font-bold uppercase text-primary flex items-center gap-2 tracking-widest"><Languages className="h-3.5 w-3.5" /> 源文: 中文 (ZH)</Label>
+                  </div>
+                  <div className="space-y-4">
+                     <div className="space-y-2"><Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">产品标题</Label><Input placeholder="输入中文产品名称" value={formData.nameZh} onChange={e => setFormData({...formData, nameZh: e.target.value})} className="h-10 bg-muted/5 text-xs rounded-lg border-muted/40" /></div>
+                     <div className="space-y-2"><Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">简短描述</Label><Textarea placeholder="输入中文简介，建议 100 字以内" value={formData.descZh} onChange={e => setFormData({...formData, descZh: e.target.value})} className="w-full min-h-[120px] rounded-lg border border-muted/40 bg-muted/5 p-4 text-xs resize-none focus:outline-none focus:ring-1 focus:ring-primary/20" /></div>
+                  </div>
                 </div>
-                <div className="space-y-4">
-                   <div className="space-y-2"><Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">PRODUCT TITLE</Label><Input placeholder="Product Name in English" value={formData.nameEn} onChange={e => setFormData({...formData, nameEn: e.target.value})} className="h-10 bg-muted/5 text-xs rounded-lg border-muted/40" /></div>
-                   <div className="space-y-2"><Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">SHORT DESCRIPTION</Label><Textarea placeholder="English description for international markets" value={formData.descEn} onChange={e => setFormData({...formData, descEn: e.target.value})} className="w-full min-h-[120px] rounded-lg border border-muted/40 bg-muted/5 p-4 text-xs resize-none focus:outline-none focus:ring-1 focus:ring-primary/20" /></div>
+                <div className="space-y-6">
+                  <div className="flex items-center justify-between h-10 border-b pb-2">
+                    <Label className="text-[10px] font-bold uppercase text-muted-foreground flex items-center gap-2 tracking-widest"><Globe className="h-3.5 w-3.5" /> 目标: 英文 (EN)</Label>
+                    <Button variant="ghost" size="sm" className="h-8 px-4 text-[10px] gap-1.5 font-bold text-accent bg-accent/5 hover:bg-accent/10 rounded-full transition-all border border-accent/10" onClick={handleAiTranslateBasicInfo} disabled={isAiProcessing}>
+                      <Sparkles className="h-3 w-3" /> AI 智译一键同步
+                    </Button>
+                  </div>
+                  <div className="space-y-4">
+                     <div className="space-y-2"><Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">PRODUCT TITLE</Label><Input placeholder="Product Name in English" value={formData.nameEn} onChange={e => setFormData({...formData, nameEn: e.target.value})} className="h-10 bg-muted/5 text-xs rounded-lg border-muted/40" /></div>
+                     <div className="space-y-2"><Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">SHORT DESCRIPTION</Label><Textarea placeholder="English description for international markets" value={formData.descEn} onChange={e => setFormData({...formData, descEn: e.target.value})} className="w-full min-h-[120px] rounded-lg border border-muted/40 bg-muted/5 p-4 text-xs resize-none focus:outline-none focus:ring-1 focus:ring-primary/20" /></div>
+                  </div>
                 </div>
               </div>
             </div>
@@ -558,10 +573,12 @@ function ProductEditorContent() {
 
           <TabsContent value="specs" className="space-y-4 animate-in fade-in slide-in-from-bottom-2">
             <div className="bg-white p-8 rounded-2xl border shadow-sm space-y-8">
-              <div className="flex items-center justify-between">
-                <div className="space-y-1">
-                  <h3 className="text-[10px] font-bold text-primary flex items-center gap-2 uppercase tracking-widest"><TableProperties className="h-4 w-4" /> 硬件规格矩阵</h3>
-                  <p className="text-[9px] text-muted-foreground uppercase tracking-tight">定义产品的技术参数，支持一键存取云端模板。</p>
+              <div className="flex items-center justify-between border-b pb-4">
+                <div className="space-y-0.5">
+                  <h3 className="text-sm font-bold text-primary flex items-center gap-2 uppercase tracking-widest">
+                    <TableProperties className="h-4 w-4" /> 硬件规格矩阵
+                  </h3>
+                  <p className="text-[10px] text-muted-foreground font-medium uppercase tracking-tight">定义产品的技术参数，支持一键存取云端模板。</p>
                 </div>
                 <div className="flex gap-3">
                   {specTemplates && specTemplates.length > 0 && (
@@ -618,12 +635,12 @@ function ProductEditorContent() {
 
           <TabsContent value="details" className="space-y-4 animate-in fade-in slide-in-from-bottom-2">
             <div className="bg-white p-8 rounded-2xl border shadow-sm h-[calc(100vh-280px)] min-h-[600px] flex flex-col space-y-6">
-              <div className="flex items-center justify-between border-b pb-4">
+              <div className="flex items-center justify-between border-b pb-4 mb-2">
                 <div className="flex items-center gap-3">
                   <div className="h-10 w-10 rounded-xl bg-primary/5 text-primary flex items-center justify-center shadow-inner"><Film className="h-5 w-5" /></div>
                   <div className="space-y-0.5">
-                    <h3 className="font-bold text-sm uppercase tracking-widest">多语言详情编辑器</h3>
-                    <p className="text-[10px] text-muted-foreground uppercase tracking-tight">支持 Tiptap 渲染引擎，可直接从素材库插入带阴影圆角的媒体资产。</p>
+                    <h3 className="text-sm font-bold text-primary flex items-center gap-2 uppercase tracking-widest">多语言详情编辑器</h3>
+                    <p className="text-[10px] text-muted-foreground font-medium uppercase tracking-tight">支持 Tiptap 渲染引擎，可直接从素材库插入带阴影圆角的媒体资产。</p>
                   </div>
                 </div>
                 <div className="flex items-center gap-4">
