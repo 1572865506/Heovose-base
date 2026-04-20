@@ -1,10 +1,10 @@
 
 'use server';
 /**
- * @fileOverview AI 连接自检流 (深度诊断版)
+ * @fileOverview AI 连接自检流 (Gemini 2.5 适配版)
  * 
  * 用于验证 AI 中枢配置的有效性。
- * 支持详细的错误码解析，帮助用户定位 404、401、403 等连接问题。
+ * 适配 2026 最新 Gemini 2.5 Flash / Pro 终结点。
  */
 
 import { genkit, z } from 'genkit';
@@ -32,13 +32,15 @@ export async function testAiConnection(input: z.infer<typeof TestInputSchema>) {
   
   // 1. 模型 ID 标准化逻辑
   // 移除可能存在的冗余前缀，统一使用 googleai/ 前缀
-  let rawId = input.model.trim();
+  let rawId = input.model.trim().toLowerCase();
   if (rawId.includes('/')) {
     rawId = rawId.split('/').pop() || rawId;
   }
+  
+  // 强制前缀补全，这是适配 @genkit-ai/google-genai 的正确 Provider ID
   const finalModel = `googleai/${rawId}`;
 
-  // 2. 动态实例化 AI
+  // 2. 动态实例化 AI 以绕过全局配置
   const testAi = genkit({
     plugins: [
       googleAI(input.apiKey ? { apiKey: input.apiKey } : undefined)
@@ -76,15 +78,15 @@ export async function testAiConnection(input: z.infer<typeof TestInputSchema>) {
     
     let userMessage = error.message || '未知连接错误';
     
-    // 5. 针对性错误诊断
+    // 5. 针对性错误诊断 (2026 规范版)
     if (userMessage.includes('404') || userMessage.includes('not found')) {
-      userMessage = `模型未找到 (404)。请尝试切换模型变体（如 gemini-1.5-flash-latest 或 gemini-1.5-flash-002）。这通常是由于该 API Key 在当前区域下对特定基础模型 ID 的访问限制。`;
+      userMessage = `模型未找到 (404)。在您的区域或 API 版本下，当前模型 ID 可能不可用。请尝试在下拉菜单中切换至 Gemini 2.5 Flash 或 Flash-Lite 变体。`;
     } else if (userMessage.includes('401') || userMessage.includes('API_KEY_INVALID')) {
       userMessage = `API 密钥无效 (401)。请检查输入的密钥是否完整。`;
     } else if (userMessage.includes('403') || userMessage.includes('LOCATION_NOT_SUPPORTED')) {
       userMessage = `权限/地区受限 (403)。您的 IP 或 API Key 所属项目可能不支持此模型，请尝试更换 API Key 或开启代理。`;
     } else if (userMessage.includes('429')) {
-      userMessage = `配额超限 (429)。免费层级请求过快，请稍后重试。`;
+      userMessage = `配额超限 (429)。免费层级请求过快，对于 Gemini 2.5 Pro 每分钟仅限 5 次，Flash 系列限 10-15 次。请稍后重试。`;
     }
 
     return {
