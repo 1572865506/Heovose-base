@@ -1,6 +1,7 @@
+
 "use client";
 
-import { useState, useEffect, useMemo, Suspense, useRef } from 'react';
+import React, { useState, useEffect, useMemo, Suspense, useRef, use } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useUser, useFirestore, useDoc, useCollection, useMemoFirebase } from '@/firebase';
 import { doc, collection, serverTimestamp, query, orderBy } from 'firebase/firestore';
@@ -390,21 +391,6 @@ function ProductEditorContent() {
     }
   };
 
-  const handleAiTranslateSpec = async (gIdx: number, iIdx: number, text: string, type: 'label' | 'value') => {
-    if (!aiConfig?.isEnabled || !text.trim()) return;
-    setIsAiProcessing(true);
-    try {
-      const result = await translateContent({ text, targetLangs: ['en'], apiKey: aiConfig.apiKey });
-      if (result.en) {
-        const newGroups = [...formData.specGroups];
-        if (type === 'label') newGroups[gIdx].items[iIdx].labelEn = result.en;
-        else newGroups[gIdx].items[iIdx].valueEn = result.en;
-        setFormData(prev => ({...prev, specGroups: newGroups}));
-      }
-    } catch (e) { toast({ variant: "destructive", title: "翻译失败" }); }
-    finally { setIsAiProcessing(false); }
-  };
-
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -482,7 +468,6 @@ function ProductEditorContent() {
               <FolderPlus className="h-3.5 w-3.5" /> 批量导入细节图
             </Button>
           </div>
-          {/* 这里是修复水平滚动的关键 Flex 容器结构 */}
           <div className="flex flex-col md:flex-row gap-6 h-auto md:h-[240px] min-w-0">
             <div className="w-full md:w-[264px] flex flex-col gap-2 shrink-0">
               <Label className="text-[10px] font-bold uppercase text-primary/40 tracking-wider">产品主图 (Main Image)</Label>
@@ -504,7 +489,6 @@ function ProductEditorContent() {
                 <input type="file" ref={fileInputRef} className="hidden" onChange={handleImageUpload} />
               </div>
             </div>
-            {/* 核心修正：添加 min-w-0 防止 flex 子项被内容撑开 */}
             <div className="flex-1 min-w-0 flex flex-col gap-2">
               <Label className="text-[10px] font-bold uppercase text-primary/40 tracking-wider">细节轮播图 ({formData.galleryUrls.length})</Label>
               <div className="flex-1 flex gap-4 p-3 bg-muted/5 rounded-xl border border-border/20 overflow-x-auto items-center min-w-0 scrollbar-thin scrollbar-thumb-muted-foreground/20">
@@ -681,4 +665,10 @@ function ProductEditorContent() {
   );
 }
 
-export default function ProductEditorPage() { return <Suspense fallback={<div className="h-screen flex items-center justify-center"><Loader2 className="animate-spin opacity-20" /></div>}><ProductEditorContent /></Suspense>; }
+export default function ProductEditorPage(props: { params: Promise<any>, searchParams: Promise<any> }) { 
+  // 解开 params 和 searchParams Promise 以符合 Next.js 15 规范，防止枚举错误
+  use(props.params);
+  use(props.searchParams);
+  
+  return <Suspense fallback={<div className="h-screen flex items-center justify-center"><Loader2 className="animate-spin opacity-20" /></div>}><ProductEditorContent /></Suspense>; 
+}

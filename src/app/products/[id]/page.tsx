@@ -1,10 +1,9 @@
 
 "use client";
 
-import { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo, useEffect, use } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
-import { useParams } from 'next/navigation';
 import { useUser, useFirestore, useDoc, useCollection, useMemoFirebase } from '@/firebase';
 import { doc, collection } from 'firebase/firestore';
 import { Locale } from '@/lib/translations';
@@ -46,8 +45,14 @@ interface LocalizedString {
   zh: string;
 }
 
-export default function ProductDetailPage() {
-  const { id } = useParams();
+/**
+ * Next.js 15 Page 组件现在接收 params 作为 Promise
+ */
+export default function ProductDetailPage(props: { params: Promise<{ id: string }> }) {
+  // 使用 React.use() 解包 params
+  const resolvedParams = use(props.params);
+  const id = resolvedParams.id;
+
   const { user } = useUser();
   const [locale, setLocale] = useState<Locale>('en');
   const [activeImage, setActiveImage] = useState<string | null>(null);
@@ -55,7 +60,7 @@ export default function ProductDetailPage() {
   const firestore = useFirestore();
   
   // 1. 获取文档与翻译
-  const prodRef = useMemoFirebase(() => id ? doc(firestore, 'products', id as string) : null, [firestore, id]);
+  const prodRef = useMemoFirebase(() => id ? doc(firestore, 'products', id) : null, [firestore, id]);
   const transRef = useMemoFirebase(() => collection(firestore, 'localizedStrings'), [firestore]);
 
   const { data: product, isLoading: isProdLoading } = useDoc<Product>(prodRef);

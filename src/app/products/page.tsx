@@ -1,11 +1,11 @@
 
 "use client";
 
-import { useState, useMemo, useEffect, Suspense } from 'react';
+import React, { useState, useMemo, useEffect, Suspense, use } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
-import { useFirestore, useCollection, useMemoFirebase } from '@/firebase';
+import { useUser, useFirestore, useCollection, useMemoFirebase } from '@/firebase';
 import { collection } from 'firebase/firestore';
 import { Locale, translations } from '@/lib/translations';
 import { Navbar } from '@/components/Navbar';
@@ -38,7 +38,7 @@ interface Category {
   nameTextId: string;
   slug: string;
   thumbnailImageUrl?: string;
-  parentId?: string; // 支持层级，虽然目前 backend.json 较简单
+  parentId?: string;
 }
 
 interface LocalizedString {
@@ -57,7 +57,6 @@ function ProductListContent() {
   const categoryParam = searchParams.get('category');
   const t = translations[locale].products;
 
-  // 1. 获取 Firestore 数据
   const prodsRef = useMemoFirebase(() => collection(firestore, 'products'), [firestore]);
   const catsRef = useMemoFirebase(() => collection(firestore, 'productCategories'), [firestore]);
   const transRef = useMemoFirebase(() => collection(firestore, 'localizedStrings'), [firestore]);
@@ -66,13 +65,11 @@ function ProductListContent() {
   const { data: categories, isLoading: isCatsLoading } = useCollection<Category>(catsRef);
   const { data: allTranslations } = useCollection<LocalizedString>(transRef);
 
-  // 2. 翻译查找工具
   const getT = (id: string) => {
     const entry = allTranslations?.find(item => item.id === id);
     return entry ? (locale === 'zh' ? entry.zh : entry.en) : id;
   };
 
-  // 3. 处理 URL 参数
   useEffect(() => {
     if (categoryParam && categories) {
       const found = categories.find(c => c.slug === categoryParam || c.id === categoryParam);
@@ -80,11 +77,9 @@ function ProductListContent() {
     }
   }, [categoryParam, categories]);
 
-  // 4. 过滤逻辑：只显示 published 状态的产品
   const filteredProducts = useMemo(() => {
     if (!products) return [];
     return products.filter(p => {
-      // 核心过滤：状态必须为已发布
       const isPublished = p.status === 'published';
       if (!isPublished) return false;
 
@@ -227,11 +222,14 @@ function ProductListContent() {
   );
 }
 
-export default function ProductListPage() {
+export default function ProductListPage(props: { searchParams: Promise<any> }) {
+  // 在 Next.js 15 中，即使不显式使用，解开 Page 组件接收到的 searchParams Promise 
+  // 也能防止某些环境下的枚举错误（enumeration error）。
+  use(props.searchParams);
+
   return (
     <Suspense fallback={<div className="min-h-screen flex items-center justify-center">Loading...</div>}>
       <ProductListContent />
     </Suspense>
   );
 }
-
