@@ -4,7 +4,7 @@
 import React, { useState, useEffect, useMemo, Suspense, useRef, use } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useUser, useFirestore, useDoc, useCollection, useMemoFirebase } from '@/firebase';
-import { doc, collection, serverTimestamp, query, orderBy } from 'firebase/firestore';
+import { doc, collection, serverTimestamp, query, orderBy, deleteDoc } from 'firebase/firestore';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -15,12 +15,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { 
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
 import { 
   ArrowLeft, 
   Save, 
@@ -36,7 +30,6 @@ import {
   PlusCircle,
   TableProperties,
   FolderPlus,
-  Globe,
   Sparkles,
   AlertCircle,
   Film,
@@ -44,7 +37,9 @@ import {
   Library,
   ChevronRight,
   ChevronLeft,
-  Settings
+  Settings,
+  History,
+  RotateCcw
 } from 'lucide-react';
 import { 
   Dialog, 
@@ -60,8 +55,13 @@ import {
   TabsList, 
   TabsTrigger 
 } from "@/components/ui/tabs";
+import { 
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 import { Badge } from '@/components/ui/badge';
-import { setDocumentNonBlocking } from '@/firebase/non-blocking-updates';
+import { setDocumentNonBlocking, deleteDocumentNonBlocking } from '@/firebase/non-blocking-updates';
 import { Label } from '@/components/ui/label';
 import Image from 'next/image';
 import { useToast } from '@/hooks/use-toast';
@@ -360,6 +360,12 @@ function ProductEditorContent() {
     toast({ title: saveMode === 'create' ? "规格模板已存入云端库" : "模板内容已更新成功" });
   };
 
+  const handleDeleteTemplate = (id: string, name: string) => {
+    if (!firestore || !confirm(`确定要从云端规格库中永久删除模板“${name}”吗？`)) return;
+    deleteDocumentNonBlocking(doc(firestore, 'specTemplates', id));
+    toast({ title: "模板已移除" });
+  };
+
   const handleApplyTemplate = (template: SpecTemplate) => {
     const mappedGroups = template.specGroups.map((group: any, gIdx: number) => ({
       uid: `tpl_g_${gIdx}_${Date.now()}`,
@@ -612,12 +618,46 @@ function ProductEditorContent() {
                   <p className="text-[10px] text-muted-foreground font-medium uppercase tracking-tight">技术参数多语言对照管理。</p>
                 </div>
                 <div className="flex gap-2">
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild><Button variant="outline" size="sm" className="h-10 text-xs font-bold uppercase gap-2"><Library className="h-4 w-4" /> 模板库</Button></DropdownMenuTrigger>
-                    <DropdownMenuContent className="rounded-xl w-56">{specTemplates?.map(tpl => <DropdownMenuItem key={tpl.id} onClick={() => handleApplyTemplate(tpl)} className="text-xs">{tpl.name}</DropdownMenuItem>)}</DropdownMenuContent>
-                  </DropdownMenu>
-                  <Button variant="outline" size="sm" onClick={() => setIsSaveTemplateDialogOpen(true)} className="h-10 text-xs font-bold uppercase">存为模板</Button>
-                  <Button size="sm" onClick={() => setFormData({...formData, specGroups: [...formData.specGroups, {uid:`g_${Date.now()}`,titleEn:'',titleZh:'',items:[{uid:`i_${Date.now()}`,labelEn:'',labelZh:'',valueEn:'',valueZh:''}]}]})} className="h-10 text-xs font-bold uppercase gap-2"><PlusCircle className="h-4 w-4" /> 新增分组</Button>
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <Button variant="default" className="h-10 text-xs font-bold uppercase gap-2 bg-accent text-accent-foreground hover:bg-accent/90 rounded-lg shadow-sm">
+                        <Library className="h-4 w-4" /> 加载模板
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-72 p-0 rounded-2xl overflow-hidden shadow-2xl border-none" align="end">
+                      <div className="bg-primary p-4 text-white flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <Library className="h-4 w-4" />
+                          <h4 className="text-[11px] font-bold uppercase tracking-widest">云端规格库</h4>
+                        </div>
+                        <Button variant="ghost" size="icon" className="h-7 w-7 text-white/60 hover:text-white hover:bg-white/10" onClick={() => router.refresh()}>
+                          <RotateCcw className="h-3.5 w-3.5" />
+                        </Button>
+                      </div>
+                      <div className="max-h-[300px] overflow-y-auto bg-white p-1">
+                        {specTemplates?.length === 0 ? (
+                          <div className="p-8 text-center text-[10px] text-muted-foreground italic uppercase">暂无模板数据</div>
+                        ) : specTemplates?.map(tpl => (
+                          <div key={tpl.id} className="group flex items-center justify-between p-3 hover:bg-muted/10 transition-colors rounded-xl cursor-pointer" onClick={() => handleApplyTemplate(tpl)}>
+                            <span className="text-xs font-medium text-primary line-clamp-1">{tpl.name}</span>
+                            <Button 
+                              variant="ghost" 
+                              size="icon" 
+                              className="h-8 w-8 text-destructive/40 hover:text-destructive hover:bg-destructive/10 opacity-0 group-hover:opacity-100 transition-opacity"
+                              onClick={(e) => { e.stopPropagation(); handleDeleteTemplate(tpl.id, tpl.name); }}
+                            >
+                              <Trash2 className="h-3.5 w-3.5" />
+                            </Button>
+                          </div>
+                        ))}
+                      </div>
+                    </PopoverContent>
+                  </Popover>
+
+                  <Button variant="outline" size="sm" onClick={() => setIsSaveTemplateDialogOpen(true)} className="h-10 text-xs font-bold uppercase gap-2 rounded-lg">
+                    <Save className="h-4 w-4" /> 存为模板
+                  </Button>
+                  <Button size="sm" onClick={() => setFormData({...formData, specGroups: [...formData.specGroups, {uid:`g_${Date.now()}`,titleEn:'',titleZh:'',items:[{uid:`i_${Date.now()}`,labelEn:'',labelZh:'',valueEn:'',valueZh:''}]}]})} className="h-10 text-xs font-bold uppercase gap-2 rounded-lg"><PlusCircle className="h-4 w-4" /> 新增分组</Button>
                 </div>
               </div>
               <div className="space-y-6">
