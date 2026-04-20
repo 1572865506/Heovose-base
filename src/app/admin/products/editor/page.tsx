@@ -1,4 +1,3 @@
-
 "use client";
 
 import React, { useState, useEffect, useMemo, Suspense, useRef, use } from 'react';
@@ -67,6 +66,18 @@ import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 import { translateContent } from '@/ai/flows/translate-flow';
 import RichTextEditor from '@/components/RichTextEditor';
+
+// AI 渐变定义组件
+const AiGradientDef = () => (
+  <svg width="0" height="0" className="absolute">
+    <defs>
+      <linearGradient id="ai-glow-gradient" x1="0%" y1="0%" x2="100%" y2="100%">
+        <stop stopColor="#60A5FA" offset="0%" />
+        <stop stopColor="#A855F7" offset="100%" />
+      </linearGradient>
+    </defs>
+  </svg>
+);
 
 interface ProductSpecEntry {
   uid: string;
@@ -410,6 +421,7 @@ function ProductEditorContent() {
 
   return (
     <div className="max-w-full w-full mx-auto space-y-6 pb-20 animate-in fade-in duration-500">
+      <AiGradientDef />
       <div className="flex items-center justify-between sticky top-[-24px] z-40 bg-background/95 backdrop-blur-md py-3 border-b shadow-sm -mx-6 px-6">
         <div className="flex items-center gap-6 flex-1 min-w-0">
           <div className="flex items-center gap-2 shrink-0">
@@ -538,7 +550,16 @@ function ProductEditorContent() {
                 <div className="space-y-4">
                   <div className="flex items-center justify-between">
                     <Label className="text-[10px] font-bold uppercase text-muted-foreground tracking-widest">目标: 英文 (EN)</Label>
-                    <Button variant="ghost" size="sm" className="h-8 px-3 text-[10px] gap-1 font-bold text-accent bg-accent/5 hover:bg-accent/10 rounded-full border border-accent/10" onClick={handleAiTranslateBasicInfo} disabled={isAiProcessing}><Sparkles className="h-3 w-3" /> 一键智译</Button>
+                    {/* 简短版按钮样式 (Short) */}
+                    <Button 
+                      variant="ghost" 
+                      size="sm" 
+                      className="h-8 px-3 text-[10px] gap-1 font-bold text-accent bg-accent/5 hover:bg-accent/10 rounded-full border border-accent/10 ai-btn-glow" 
+                      onClick={handleAiTranslateBasicInfo} 
+                      disabled={isAiProcessing}
+                    >
+                      <Sparkles className="h-3.5 w-3.5 ai-icon-gradient" /> 智译
+                    </Button>
                   </div>
                   <div className="space-y-4">
                      <div className="space-y-2"><Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">PRODUCT TITLE</Label><Input placeholder="ENGLISH PRODUCT NAME" value={formData.nameEn} onChange={e => setFormData({...formData, nameEn: e.target.value})} className="h-10 text-xs rounded-lg" /></div>
@@ -607,7 +628,16 @@ function ProductEditorContent() {
                     <SelectTrigger className="h-10 w-28 text-xs font-bold uppercase"><SelectValue /></SelectTrigger>
                     <SelectContent className="rounded-lg">{supportedLangs.filter(l=>l.code!=='zh').map(l=><SelectItem key={l.code} value={l.code} className="text-xs uppercase">{l.label}</SelectItem>)}</SelectContent>
                   </Select>
-                  <Button variant="outline" size="sm" className="h-10 px-5 text-xs font-bold text-accent gap-2 rounded-lg border-accent/20" onClick={handleAiTranslateDetails} disabled={isAiProcessing}><Sparkles className="h-4 w-4" /> AI 智译 ({targetDetailsLang.toUpperCase()})</Button>
+                  {/* 完整版按钮样式 (Full) */}
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    className="h-10 px-5 text-xs font-bold text-accent gap-2 rounded-lg border-accent/20 ai-btn-glow shadow-sm" 
+                    onClick={handleAiTranslateDetails} 
+                    disabled={isAiProcessing}
+                  >
+                    <Sparkles className="h-4 w-4 ai-icon-gradient" /> AI 智译 ({targetDetailsLang.toUpperCase()})
+                  </Button>
                 </div>
               </div>
               <div className="grid grid-cols-2 gap-8 flex-1">
@@ -673,8 +703,8 @@ function ProductEditorContent() {
 }
 
 export default function ProductEditorPage({ params, searchParams }: { params: Promise<any>, searchParams: Promise<any> }) { 
-  use(params);
-  use(searchParams);
+  const p = use(params);
+  const s = use(searchParams);
   return (
     <Suspense fallback={<div className="h-screen flex items-center justify-center"><Loader2 className="animate-spin opacity-20" /></div>}>
       <ProductEditorContent />

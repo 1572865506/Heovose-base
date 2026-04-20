@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useState, useMemo } from 'react';
@@ -61,6 +60,18 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { translateContent } from '@/ai/flows/translate-flow';
 
+// AI 渐变定义组件
+const AiGradientDef = () => (
+  <svg width="0" height="0" className="absolute">
+    <defs>
+      <linearGradient id="ai-glow-gradient" x1="0%" y1="0%" x2="100%" y2="100%">
+        <stop stopColor="#60A5FA" offset="0%" />
+        <stop stopColor="#A855F7" offset="100%" />
+      </linearGradient>
+    </defs>
+  </svg>
+);
+
 interface LocalizedString {
   id: string;
   [key: string]: string;
@@ -107,7 +118,7 @@ export default function TranslationsPage() {
 
   const productsQuery = useMemoFirebase(() => firestore ? collection(firestore, 'products') : null, [firestore]);
   const catsQuery = useMemoFirebase(() => firestore ? collection(firestore, 'productCategories') : null, [firestore]);
-  const galCatsQuery = useMemoFirebase(() => firestore ? collection(firestore, 'galleryCategories') : null, [firestore]);
+  const galCatsQuery = useMemoFirebase(() => collection(firestore, 'galleryCategories'), [firestore]);
   
   const { data: products } = useCollection(productsQuery);
   const { data: categories } = useCollection(catsQuery);
@@ -129,7 +140,9 @@ export default function TranslationsPage() {
       const pName = p.id;
       addRef(p.nameTextId, '产品名称', pName, p.id);
       addRef(p.descriptionTextId, '产品描述', pName, p.id);
-      if (p.detailsTextId) addRef(p.detailsTextId, '详细内容', pName, p.id);
+      if (p.localizedDetails) {
+        Object.keys(p.localizedDetails).forEach(k => addRef(p.localizedDetails[k], '详情内容', pName, p.id));
+      }
       p.advantageTextIds?.forEach((id: string) => addRef(id, '核心优势', pName, p.id));
       p.specGroups?.forEach((g: any) => {
         addRef(g.titleId, '规格分组', pName, p.id);
@@ -209,7 +222,6 @@ export default function TranslationsPage() {
       let changed = false;
       const newName = migrate(p.nameTextId); if (newName !== p.nameTextId) changed = true;
       const newDesc = migrate(p.descriptionTextId); if (newDesc !== p.descriptionTextId) changed = true;
-      const newDetails = p.detailsTextId ? migrate(p.detailsTextId) : undefined; if (newDetails !== p.detailsTextId) changed = true;
       const newAdvs = p.advantageTextIds?.map((id: string) => { const mid = migrate(id); if (mid !== id) changed = true; return mid; });
       const newSpecs = p.specGroups?.map((g: any) => {
         let gChanged = false;
@@ -225,7 +237,7 @@ export default function TranslationsPage() {
 
       if (changed) {
         updateDocumentNonBlocking(doc(firestore, 'products', p.id), {
-          nameTextId: newName, descriptionTextId: newDesc, detailsTextId: newDetails, advantageTextIds: newAdvs, specGroups: newSpecs, updatedAt: serverTimestamp()
+          nameTextId: newName, descriptionTextId: newDesc, advantageTextIds: newAdvs, specGroups: newSpecs, updatedAt: serverTimestamp()
         });
       }
     });
@@ -291,6 +303,7 @@ export default function TranslationsPage() {
 
   return (
     <div className="space-y-6 animate-in fade-in duration-500 pb-20">
+      <AiGradientDef />
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <h2 className="text-xl font-headline font-bold text-primary flex items-center gap-2"><Languages className="h-5 w-5" /> 翻译资产管理</h2>
@@ -312,7 +325,7 @@ export default function TranslationsPage() {
                  <div className="space-y-2">
                    {activeLanguages.map(l => (
                      <div key={l.code} className="flex items-center justify-between p-2.5 bg-muted/30 rounded-lg border text-xs">
-                       <span className="font-bold">{l.label}</span><span className="font-mono opacity-40 uppercase">{l.code}</span>
+                       <span className="font-bold">{l.label}</span><span className="font-mono uppercase opacity-40">{l.code}</span>
                      </div>
                    ))}
                  </div>
@@ -408,8 +421,15 @@ export default function TranslationsPage() {
                        ) : (
                          <div className="flex justify-end items-center gap-0.5">
                            {aiConfig?.isEnabled && (
-                             <Button size="icon" variant="ghost" className="h-7 w-7 text-accent hover:bg-accent/10" onClick={() => handleAiTranslate(t)} disabled={translatingId === t.id}>
-                               {translatingId === t.id ? <Loader2 className="h-3 w-3 animate-spin" /> : <Sparkles className="h-3 w-3" />}
+                             /* 精简版按钮样式 (Minimal) */
+                             <Button 
+                              size="icon" 
+                              variant="ghost" 
+                              className="h-7 w-7 text-accent hover:bg-accent/10 ai-btn-glow" 
+                              onClick={() => handleAiTranslate(t)} 
+                              disabled={translatingId === t.id}
+                             >
+                               {translatingId === t.id ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Sparkles className="h-3.5 w-3.5 ai-icon-gradient" />}
                              </Button>
                            )}
                            <Button size="icon" variant="ghost" onClick={() => { setFormData(t); setEditingId(t.id); }} className="h-7 w-7 opacity-0 group-hover:opacity-100 transition-opacity"><Edit2 className="h-3.5 w-3.5" /></Button>
