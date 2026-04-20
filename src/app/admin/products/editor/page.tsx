@@ -4,7 +4,7 @@
 import React, { useState, useEffect, useMemo, Suspense, useRef, use } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useUser, useFirestore, useDoc, useCollection, useMemoFirebase } from '@/firebase';
-import { doc, collection, serverTimestamp, query, orderBy, deleteDoc } from 'firebase/firestore';
+import { doc, collection, serverTimestamp, query, orderBy } from 'firebase/firestore';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -38,7 +38,6 @@ import {
   ChevronRight,
   ChevronLeft,
   Settings,
-  History,
   RotateCcw
 } from 'lucide-react';
 import { 
@@ -189,6 +188,7 @@ function ProductEditorContent() {
   const [targetDetailsLang, setTargetDetailsLang] = useState('en');
   const [isUploading, setIsUploading] = useState(false);
   const [isAiProcessing, setIsAiProcessing] = useState(false);
+  const [processingItems, setProcessingItems] = useState<Set<string>>(new Set());
   const [idConflict, setIdConflict] = useState(false);
 
   const [isSaveTemplateDialogOpen, setIsSaveTemplateDialogOpen] = useState(false);
@@ -442,23 +442,39 @@ function ProductEditorContent() {
     const item = formData.specGroups[gIdx].items[iIdx];
     if (!item.labelZh && !item.valueZh) return;
     
-    setIsAiProcessing(true);
-    try {
-      const results = await Promise.all([
-        item.labelZh ? translateContent({ text: item.labelZh, targetLangs: ['en'], apiKey: aiConfig.apiKey }) : null,
-        item.valueZh ? translateContent({ text: item.valueZh, targetLangs: ['en'], apiKey: aiConfig.apiKey }) : null
-      ]);
+    const itemKey = `${gIdx}-${iIdx}`;
+    setProcessingItems(prev => new Set(prev).add(itemKey));
 
-      const newSpecGroups = [...formData.specGroups];
-      if (results[0]?.en) newSpecGroups[gIdx].items[iIdx].labelEn = results[0].en;
-      if (results[1]?.en) newSpecGroups[gIdx].items[iIdx].valueEn = results[1].en;
-      
-      setFormData({ ...formData, specGroups: newSpecGroups });
-      toast({ title: "单条规格智译成功" });
+    try {
+      // 优化：将 label 和 value 合并到一个请求中以节省配额并防止 503
+      const combinedPayload = JSON.stringify({ label: item.labelZh, value: item.valueZh });
+      const res = await translateContent({ 
+        text: `Translate this hardware spec entry (return JSON only): ${combinedPayload}`, 
+        targetLangs: ['en'], 
+        apiKey: aiConfig.apiKey 
+      });
+
+      if (res?.en) {
+        try {
+          const parsed = JSON.parse(res.en);
+          const newSpecGroups = [...formData.specGroups];
+          newSpecGroups[gIdx].items[iIdx].labelEn = parsed.label || '';
+          newSpecGroups[gIdx].items[iIdx].valueEn = parsed.value || '';
+          setFormData({ ...formData, specGroups: newSpecGroups });
+          toast({ title: "单条规格智译成功" });
+        } catch {
+          // 如果 AI 没按 JSON 返回，则回退到普通解析或报错
+          toast({ variant: "destructive", title: "智译解析失败" });
+        }
+      }
     } catch (e: any) {
       toast({ variant: "destructive", title: "智译失败", description: e.message });
     } finally {
-      setIsAiProcessing(false);
+      setProcessingItems(prev => {
+        const next = new Set(prev);
+        next.delete(itemKey);
+        return next;
+      });
     }
   };
 
@@ -698,38 +714,43 @@ function ProductEditorContent() {
                       </div>
                       <Button variant="ghost" size="icon" onClick={() => setFormData({...formData, specGroups: formData.specGroups.filter((_,i)=>i!==gIdx)})} className="ml-4 h-9 w-9 text-destructive/40 hover:text-destructive hover:bg-destructive/5"><Trash2 className="h-4 w-4" /></Button>
                     </div>
-                    {group.items.map((item, iIdx) => (
-                      <div key={item.uid} className="grid grid-cols-[1fr_1fr_80px] gap-6 px-6 py-4 border-b last:border-b-0 hover:bg-muted/5 transition-colors">
-                        <div className="space-y-3">
-                           <Input placeholder="参数名称 (ZH)" value={item.labelZh} onChange={e => { const g=[...formData.specGroups]; g[gIdx].items[iIdx].labelZh=e.target.value; setFormData({...formData, specGroups:g}); }} className="h-10 text-xs" />
-                           <Input placeholder="LABEL (EN)" value={item.labelEn} onChange={e => { const g=[...formData.specGroups]; g[gIdx].items[iIdx].labelEn=e.target.value; setFormData({...formData, specGroups:g}); }} className="h-10 text-xs border-dashed bg-muted/10" />
+                    {group.items.map((item, iIdx) => {
+                      const itemKey = `${gIdx}-${iIdx}`;
+                      const isRowProcessing = processingItems.has(itemKey);
+                      
+                      return (
+                        <div key={item.uid} className="grid grid-cols-[1fr_1fr_80px] gap-6 px-6 py-4 border-b last:border-b-0 hover:bg-muted/5 transition-colors">
+                          <div className="space-y-3">
+                             <Input placeholder="参数名称 (ZH)" value={item.labelZh} onChange={e => { const g=[...formData.specGroups]; g[gIdx].items[iIdx].labelZh=e.target.value; setFormData({...formData, specGroups:g}); }} className="h-10 text-xs" />
+                             <Input placeholder="LABEL (EN)" value={item.labelEn} onChange={e => { const g=[...formData.specGroups]; g[gIdx].items[iIdx].labelEn=e.target.value; setFormData({...formData, specGroups:g}); }} className="h-10 text-xs border-dashed bg-muted/10" />
+                          </div>
+                          <div className="space-y-3">
+                             <Input placeholder="参数值 (ZH)" value={item.valueZh} onChange={e => { const g=[...formData.specGroups]; g[gIdx].items[iIdx].valueZh=e.target.value; setFormData({...formData, specGroups:g}); }} className="h-10 text-xs font-medium" />
+                             <Input placeholder="VALUE (EN)" value={item.valueEn} onChange={e => { const g=[...formData.specGroups]; g[gIdx].items[iIdx].valueEn=e.target.value; setFormData({...formData, specGroups:g}); }} className="h-10 text-xs border-dashed bg-muted/10 font-medium" />
+                          </div>
+                          <div className="flex flex-col gap-2 justify-center">
+                            <Button 
+                              variant="ghost" 
+                              size="icon" 
+                              className={cn("h-8 w-8 ai-btn-glow", isRowProcessing && "bg-accent")} 
+                              onClick={(e) => { e.stopPropagation(); handleAiTranslateSpecItem(gIdx, iIdx); }}
+                              disabled={isRowProcessing}
+                              title="AI 智译此行"
+                            >
+                              {isRowProcessing ? <Loader2 className="h-4 w-4 animate-spin text-accent-foreground" /> : <Sparkles className="h-4 w-4 ai-icon-gradient" />}
+                            </Button>
+                            <Button 
+                              variant="ghost" 
+                              size="icon" 
+                              onClick={() => { const g=[...formData.specGroups]; g[gIdx].items=g[gIdx].items.filter((_,i)=>i!==iIdx); setFormData({...formData, specGroups:g}); }} 
+                              className="h-8 w-8 text-destructive/20 hover:text-destructive hover:bg-destructive/5"
+                            >
+                              <X className="h-4 w-4" />
+                            </Button>
+                          </div>
                         </div>
-                        <div className="space-y-3">
-                           <Input placeholder="参数值 (ZH)" value={item.valueZh} onChange={e => { const g=[...formData.specGroups]; g[gIdx].items[iIdx].valueZh=e.target.value; setFormData({...formData, specGroups:g}); }} className="h-10 text-xs font-medium" />
-                           <Input placeholder="VALUE (EN)" value={item.valueEn} onChange={e => { const g=[...formData.specGroups]; g[gIdx].items[iIdx].valueEn=e.target.value; setFormData({...formData, specGroups:g}); }} className="h-10 text-xs border-dashed bg-muted/10 font-medium" />
-                        </div>
-                        <div className="flex flex-col gap-2 justify-center">
-                          <Button 
-                            variant="ghost" 
-                            size="icon" 
-                            className="h-8 w-8 ai-btn-glow" 
-                            onClick={() => handleAiTranslateSpecItem(gIdx, iIdx)}
-                            disabled={isAiProcessing}
-                            title="AI 智译此行"
-                          >
-                            <Sparkles className="h-4 w-4 ai-icon-gradient" />
-                          </Button>
-                          <Button 
-                            variant="ghost" 
-                            size="icon" 
-                            onClick={() => { const g=[...formData.specGroups]; g[gIdx].items=g[gIdx].items.filter((_,i)=>i!==iIdx); setFormData({...formData, specGroups:g}); }} 
-                            className="h-8 w-8 text-destructive/20 hover:text-destructive hover:bg-destructive/5"
-                          >
-                            <X className="h-4 w-4" />
-                          </Button>
-                        </div>
-                      </div>
-                    ))}
+                      );
+                    })}
                     <button onClick={() => { const g=[...formData.specGroups]; g[gIdx].items.push({uid:`i_${Date.now()}`,labelEn:'',labelZh:'',valueEn:'',valueZh:''}); setFormData({...formData, specGroups:g}); }} className="w-full py-2.5 text-[10px] font-bold uppercase text-primary/40 hover:text-primary hover:bg-muted/10 transition-all border-t">+ 追加规格条目</button>
                   </div>
                 ))}
