@@ -24,9 +24,10 @@
 *   **标签字号 (Label)**: 统一使用 **`text-[10px] font-bold uppercase tracking-wider`**。
 *   **输入字重**: 输入框内容统一使用 `font-medium` 或常规字重，禁止在 Input 内部使用 `font-bold`（除非是特殊数值展示）。
 
-### 1.4 布局防溢出准则 (Anti-Expansion)
-*   主布局容器 (`<main>`) 必须配合 `min-w-0` 和 `overflow-hidden` 确保侧边栏宽度计算异常时不会破坏全局页面的水平稳定性。
-*   所有包含横向滚动内容（如详情图轮播）的 Flex 子容器必须逐级声明 **`min-w-0`** 以触发局部滚动条，防止容器无限撑宽。
+### 1.4 控件边框与状态准则 (Border & States)
+*   **基础样式**: 统一使用 `border-border/60` 配以微量背景色 `bg-muted/5`。
+*   **悬停反馈**: 边框色加深至 `border-border`。
+*   **聚焦反馈**: 边框转为 `border-primary/50`，并开启 `ring-4 ring-primary/5` 的扩散光晕。聚焦时背景必须变回纯白以提高录入对比度。
 
 ---
 
