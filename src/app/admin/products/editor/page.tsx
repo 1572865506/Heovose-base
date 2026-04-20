@@ -66,7 +66,7 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { Badge } from '@/components/ui/badge';
-import { setDocumentNonBlocking, deleteDocumentNonBlocking } from '@/firebase/non-blocking-updates';
+import { setDocumentNonBlocking, deleteDocumentNonBlocking, updateDocumentNonBlocking } from '@/firebase/non-blocking-updates';
 import { Label } from '@/components/ui/label';
 import Image from 'next/image';
 import { useToast } from '@/hooks/use-toast';
@@ -802,7 +802,6 @@ function ProductEditorContent() {
               </div>
               
               <div className="space-y-10">
-                {/* 栏目头部 */}
                 <div className="grid grid-cols-2 gap-10">
                   <div className="flex items-center h-8">
                     <Label className="text-[10px] font-bold uppercase text-primary tracking-widest">源文: 中文 (ZH)</Label>
@@ -821,7 +820,6 @@ function ProductEditorContent() {
                   </div>
                 </div>
 
-                {/* 标题行 */}
                 <div className="grid grid-cols-2 gap-10">
                   <div className="space-y-2">
                     <Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">产品标题</Label>
@@ -833,7 +831,6 @@ function ProductEditorContent() {
                   </div>
                 </div>
 
-                {/* 描述行 */}
                 <div className="grid grid-cols-2 gap-10">
                   <div className="space-y-2">
                     <Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">简短描述</Label>
@@ -938,7 +935,6 @@ function ProductEditorContent() {
                       
                       return (
                         <div key={item.uid} className="grid grid-cols-[1fr_1fr_40px] gap-x-6 gap-y-3 px-6 py-4 border-b last:border-b-0 hover:bg-muted/5 transition-colors">
-                          {/* Row 1: Parameter Names (ZH/EN) */}
                           <div className="relative">
                              <Input 
                                 placeholder="参数名称 (ZH)" 
@@ -958,7 +954,6 @@ function ProductEditorContent() {
                                 )} 
                              />
                           </div>
-                          {/* AI Action Strip - Row 1 */}
                           <div className="flex items-center justify-center">
                             <Button 
                               variant="ghost" 
@@ -972,27 +967,25 @@ function ProductEditorContent() {
                             </Button>
                           </div>
 
-                          {/* Row 2: Parameter Values (ZH/EN) */}
                           <div className="relative">
-                             <Input 
+                             <Textarea 
                                 placeholder="参数值 (ZH)" 
                                 value={item.valueZh} 
                                 onChange={e => { const g=[...formData.specGroups]; g[gIdx].items[iIdx].valueZh=e.target.value; setFormData({...formData, specGroups:g}); }} 
-                                className="h-10 text-xs font-medium bg-muted/20 border-solid" 
+                                className="min-h-10 h-auto py-2.5 text-xs font-medium bg-muted/20 border-solid resize-none overflow-hidden" 
                              />
                           </div>
                           <div className="relative">
-                             <Input 
+                             <Textarea 
                                 placeholder="VALUE (EN)" 
                                 value={item.valueEn} 
                                 onChange={e => { const g=[...formData.specGroups]; g[gIdx].items[iIdx].valueEn=e.target.value; setFormData({...formData, specGroups:g}); }} 
                                 className={cn(
-                                  "h-10 text-xs border-dashed bg-white font-medium",
+                                  "min-h-10 h-auto py-2.5 text-xs border-dashed bg-white font-medium resize-none overflow-hidden",
                                   isValueProcessing && "animate-pulse ring-2 ring-primary/20 bg-accent/5"
                                 )} 
                              />
                           </div>
-                          {/* Delete Action Strip - Row 2 */}
                           <div className="flex items-center justify-center">
                             <Button 
                               variant="ghost" 
