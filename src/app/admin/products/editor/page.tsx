@@ -38,7 +38,8 @@ import {
   ChevronRight,
   ChevronLeft,
   Settings,
-  RotateCcw
+  RotateCcw,
+  BarChart3
 } from 'lucide-react';
 import { 
   Dialog, 
@@ -59,6 +60,12 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { Badge } from '@/components/ui/badge';
 import { setDocumentNonBlocking, deleteDocumentNonBlocking } from '@/firebase/non-blocking-updates';
 import { Label } from '@/components/ui/label';
@@ -220,6 +227,72 @@ function ProductEditorContent() {
   const { data: specTemplates } = useCollection<SpecTemplate>(templatesQuery);
 
   const supportedLangs = useMemo(() => langConfig?.supportedLanguages || [{ code: 'zh', label: '中文' }, { code: 'en', label: 'English' }], [langConfig]);
+
+  /**
+   * 智译覆盖率计算引擎
+   * 评估产品多语言内容的完成程度
+   */
+  const translationCoverage = useMemo(() => {
+    let totalFields = 0;
+    let translatedFields = 0;
+
+    // 1. 评估基础信息 (权重: 2)
+    let basicTotal = 0;
+    let basicTranslated = 0;
+    if (formData.nameZh.trim()) {
+      basicTotal++;
+      if (formData.nameEn.trim()) basicTranslated++;
+    }
+    if (formData.descZh.trim()) {
+      basicTotal++;
+      if (formData.descEn.trim()) basicTranslated++;
+    }
+    totalFields += basicTotal;
+    translatedFields += basicTranslated;
+
+    // 2. 评估技术规格 (权重: 按节点数动态计算)
+    let specTotal = 0;
+    let specTranslated = 0;
+    formData.specGroups.forEach(group => {
+      if (group.titleZh.trim()) {
+        specTotal++;
+        if (group.titleEn.trim()) specTranslated++;
+      }
+      group.items.forEach(item => {
+        if (item.labelZh.trim()) {
+          specTotal++;
+          if (item.labelEn.trim()) specTranslated++;
+        }
+        if (item.valueZh.trim()) {
+          specTotal++;
+          if (item.valueEn.trim()) specTranslated++;
+        }
+      });
+    });
+    totalFields += specTotal;
+    translatedFields += specTranslated;
+
+    // 3. 评估详细介绍 (权重: 1)
+    let detailTotal = 0;
+    let detailTranslated = 0;
+    const zhClean = formData.localizedDetails.zh?.replace(/<[^>]*>/g, '').trim();
+    if (zhClean) {
+      detailTotal++;
+      const enClean = formData.localizedDetails.en?.replace(/<[^>]*>/g, '').trim();
+      if (enClean) detailTranslated++;
+    }
+    totalFields += detailTotal;
+    translatedFields += detailTranslated;
+
+    const globalScore = totalFields > 0 ? Math.round((translatedFields / totalFields) * 100) : 0;
+    
+    return {
+      global: globalScore,
+      basic: basicTotal > 0 ? Math.round((basicTranslated / basicTotal) * 100) : 100,
+      specs: specTotal > 0 ? Math.round((specTranslated / specTotal) * 100) : 100,
+      details: detailTotal > 0 ? Math.round((detailTranslated / detailTotal) * 100) : 100,
+    };
+  }, [formData]);
 
   useEffect(() => {
     if (isEditing && product && translations) {
@@ -437,14 +510,9 @@ function ProductEditorContent() {
     }
   };
 
-  /**
-   * 全矩阵智译全表 (Batch AI Specs)
-   * 优化逻辑：本地预检，仅翻译缺失项，合并为单次请求以防 503。
-   */
   const handleAiTranslateAllSpecs = async () => {
     if (!aiConfig?.isEnabled || formData.specGroups.length === 0) return;
 
-    // 1. 本地预检：收集需要翻译的片段 (ZH 非空且 EN 为空)
     const taskMap: Record<string, { type: 'title' | 'label' | 'value', text: string }> = {};
     const allIds = new Set<string>();
 
@@ -474,7 +542,6 @@ function ProductEditorContent() {
     setProcessingItems(allIds);
 
     try {
-      // 2. 合并单次请求：发送精简任务包
       const payload = JSON.stringify(taskMap);
       const res = await translateContent({
         text: `You are a hardware expert. Translate this structure into professional industrial English. RETURN RAW JSON ONLY matching keys: ${payload}`,
@@ -487,7 +554,6 @@ function ProductEditorContent() {
         const results = JSON.parse(res.en);
         const newSpecGroups = [...formData.specGroups];
 
-        // 3. 批量回填
         Object.keys(results).forEach(key => {
           const val = results[key];
           if (key.startsWith('g_')) {
@@ -608,6 +674,51 @@ function ProductEditorContent() {
                 <Input disabled={isEditing} value={formData.id} onChange={e => setFormData({...formData, id: e.target.value})} className={cn("h-10 rounded-lg font-mono text-xs w-full", idConflict && "border-destructive")} placeholder="产品 ID" />
                 {idConflict && <AlertCircle className="absolute right-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-destructive" />}
              </div>
+
+             {/* 智译覆盖率指示器 */}
+             <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <div className="flex items-center gap-1.5 cursor-help px-3 py-1.5 bg-muted/10 rounded-lg border border-border/40 hover:bg-muted/20 transition-all">
+                      <BarChart3 className="h-3.5 w-3.5 text-primary opacity-60" />
+                      <Badge 
+                        variant="outline" 
+                        className={cn(
+                          "text-[9px] font-bold h-4 px-1 border-none",
+                          translationCoverage.global === 100 ? "text-green-600 bg-green-50" : 
+                          translationCoverage.global > 70 ? "text-orange-600 bg-orange-50" : "text-muted-foreground bg-muted/20"
+                        )}
+                      >
+                        覆盖率 {translationCoverage.global}%
+                      </Badge>
+                    </div>
+                  </TooltipTrigger>
+                  <TooltipContent className="w-56 p-4 rounded-xl shadow-2xl border-border/40 bg-white/95 backdrop-blur-xl">
+                    <div className="space-y-3">
+                      <div className="flex items-center justify-between border-b pb-2">
+                        <span className="text-[10px] font-bold text-primary uppercase tracking-widest">智译健康度诊断</span>
+                        <Badge variant="secondary" className="text-[8px]">{translationCoverage.global}%</Badge>
+                      </div>
+                      <div className="space-y-2">
+                        <div className="flex justify-between items-center text-[10px]">
+                          <span className="opacity-60 font-medium">基础信息配置</span>
+                          <span className={cn("font-bold", translationCoverage.basic === 100 ? "text-green-600" : "text-orange-600")}>{translationCoverage.basic}%</span>
+                        </div>
+                        <div className="flex justify-between items-center text-[10px]">
+                          <span className="opacity-60 font-medium">技术规格矩阵</span>
+                          <span className={cn("font-bold", translationCoverage.specs === 100 ? "text-green-600" : "text-orange-600")}>{translationCoverage.specs}%</span>
+                        </div>
+                        <div className="flex justify-between items-center text-[10px]">
+                          <span className="opacity-60 font-medium">产品详细介绍</span>
+                          <span className={cn("font-bold", translationCoverage.details === 100 ? "text-green-600" : "text-orange-600")}>{translationCoverage.details}%</span>
+                        </div>
+                      </div>
+                      <p className="text-[9px] text-muted-foreground pt-1 italic leading-relaxed border-t border-dashed mt-2">提示：英文字段缺失会影响全球站点的 SEO 权重与展示完整度。</p>
+                    </div>
+                  </TooltipContent>
+                </Tooltip>
+             </TooltipProvider>
+
              <Select value={formData.status} onValueChange={(v:any) => setFormData({...formData, status: v})}>
                <SelectTrigger className={cn("h-10 rounded-lg border-transparent text-xs font-bold uppercase w-[110px] shrink-0", formData.status === 'published' ? "bg-green-50 text-green-700" : "bg-muted/30")}><SelectValue /></SelectTrigger>
                <SelectContent className="rounded-lg"><SelectItem value="published" className="text-xs font-bold text-green-600">已发布</SelectItem><SelectItem value="draft" className="text-xs">草稿</SelectItem></SelectContent>
