@@ -40,7 +40,9 @@ import {
   AlertCircle,
   Film,
   Cpu,
-  Library
+  Library,
+  ChevronRight,
+  ChevronLeft
 } from 'lucide-react';
 import { 
   Dialog, 
@@ -295,7 +297,6 @@ function ProductEditorContent() {
       toast({ variant: "destructive", title: "请输入模板名称" });
       return;
     }
-
     const templateId = `tpl_${Date.now()}`;
     const cleanSpecGroups = formData.specGroups.map(group => ({
       titleEn: group.titleEn,
@@ -307,14 +308,12 @@ function ProductEditorContent() {
         valueZh: item.valueZh
       }))
     }));
-
     setDocumentNonBlocking(doc(firestore, 'specTemplates', templateId), {
       id: templateId,
       name: newTemplateName.trim(),
       specGroups: cleanSpecGroups,
       createdAt: serverTimestamp()
     }, { merge: true });
-
     setIsSaveTemplateDialogOpen(false);
     setNewTemplateName('');
     toast({ title: "规格模板已存入云端库" });
@@ -333,12 +332,16 @@ function ProductEditorContent() {
         valueZh: item.valueZh || ''
       }))
     }));
-
-    setFormData(prev => ({
-      ...prev,
-      specGroups: [...prev.specGroups, ...mappedGroups]
-    }));
+    setFormData(prev => ({ ...prev, specGroups: [...prev.specGroups, ...mappedGroups] }));
     toast({ title: "已从模板导入规格" });
+  };
+
+  const handleMoveGalleryImage = (idx: number, direction: 'left' | 'right') => {
+    const newUrls = [...formData.galleryUrls];
+    const targetIdx = direction === 'left' ? idx - 1 : idx + 1;
+    if (targetIdx < 0 || targetIdx >= newUrls.length) return;
+    [newUrls[idx], newUrls[targetIdx]] = [newUrls[targetIdx], newUrls[idx]];
+    setFormData({ ...formData, galleryUrls: newUrls });
   };
 
   const handleAiTranslateBasicInfo = async () => {
@@ -517,7 +520,32 @@ function ProductEditorContent() {
                 {formData.galleryUrls.map((url, idx) => (
                   <div key={idx} className="group relative shrink-0 w-[220px] h-full bg-white rounded-lg border border-border/10 overflow-hidden shadow-sm hover:shadow-md transition-all">
                     <Image src={url} alt="G" fill className="object-contain p-2" unoptimized />
-                    <Button variant="destructive" size="icon" className="absolute top-2 right-2 h-7 w-7 opacity-0 group-hover:opacity-100 shadow-lg" onClick={() => setFormData({...formData, galleryUrls: formData.galleryUrls.filter((_,i)=>i!==idx)})}><Trash2 className="h-3.5 w-3.5" /></Button>
+                    
+                    {/* 操作控制层 */}
+                    <div className="absolute top-2 right-2 flex gap-1 z-10 opacity-0 group-hover:opacity-100 transition-all">
+                      <Button variant="destructive" size="icon" className="h-7 w-7 shadow-lg" onClick={() => setFormData({...formData, galleryUrls: formData.galleryUrls.filter((_,i)=>i!==idx)})}><Trash2 className="h-3.5 w-3.5" /></Button>
+                    </div>
+
+                    <div className="absolute inset-x-0 bottom-2 flex justify-center gap-2 opacity-0 group-hover:opacity-100 transition-all z-10">
+                      <Button 
+                        variant="secondary" 
+                        size="icon" 
+                        className="h-7 w-7 rounded-full bg-white/80 backdrop-blur-sm shadow-sm disabled:opacity-30" 
+                        disabled={idx === 0}
+                        onClick={() => handleMoveGalleryImage(idx, 'left')}
+                      >
+                        <ChevronLeft className="h-4 w-4" />
+                      </Button>
+                      <Button 
+                        variant="secondary" 
+                        size="icon" 
+                        className="h-7 w-7 rounded-full bg-white/80 backdrop-blur-sm shadow-sm disabled:opacity-30" 
+                        disabled={idx === formData.galleryUrls.length - 1}
+                        onClick={() => handleMoveGalleryImage(idx, 'right')}
+                      >
+                        <ChevronRight className="h-4 w-4" />
+                      </Button>
+                    </div>
                   </div>
                 ))}
                 {formData.galleryUrls.length === 0 && (
@@ -712,7 +740,7 @@ function ProductEditorContent() {
               <Input placeholder="搜索云端资产..." value={pickerSearch} onChange={e => setPickerSearch(e.target.value)} className="pl-10 h-10 border-none bg-white rounded-lg shadow-inner text-xs" />
             </div>
             <div className="h-8 w-px bg-border/60" />
-            <Badge variant="secondary" className="h-10 px-6 rounded-lg text-xs font-bold uppercase tracking-widest bg-white border-border/40 text-primary shadow-sm">已选中 {selectedPickerUrls.size} 项</Badge>
+            <Badge variant="secondary" className="h-10 px-6 rounded-lg text-xs font-bold uppercase tracking-widest bg-white border-border/40 text-primary shadow-sm">已选中 {selectedPickerUrls.size} 项素材</Badge>
           </div>
           <div className="flex-1 overflow-y-auto p-8 grid grid-cols-2 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-7 gap-6 bg-muted/5">
             {galleryAssets?.filter(a=>a.title.toLowerCase().includes(pickerSearch.toLowerCase())).map(a=>(
