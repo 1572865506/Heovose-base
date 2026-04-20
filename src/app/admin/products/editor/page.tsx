@@ -227,15 +227,10 @@ function ProductEditorContent() {
 
   const supportedLangs = useMemo(() => langConfig?.supportedLanguages || [{ code: 'zh', label: '中文' }, { code: 'en', label: 'English' }], [langConfig]);
 
-  /**
-   * 智译覆盖率计算引擎
-   * 评估产品多语言内容的完成程度
-   */
   const translationCoverage = useMemo(() => {
     let totalFields = 0;
     let translatedFields = 0;
 
-    // 1. 评估基础信息 (权重: 2)
     let basicTotal = 0;
     let basicTranslated = 0;
     if (formData.nameZh.trim()) {
@@ -249,7 +244,6 @@ function ProductEditorContent() {
     totalFields += basicTotal;
     translatedFields += basicTranslated;
 
-    // 2. 评估技术规格 (权重: 按节点数动态计算)
     let specTotal = 0;
     let specTranslated = 0;
     formData.specGroups.forEach(group => {
@@ -271,7 +265,6 @@ function ProductEditorContent() {
     totalFields += specTotal;
     translatedFields += specTranslated;
 
-    // 3. 评估详细介绍 (权重: 1)
     let detailTotal = 0;
     let detailTranslated = 0;
     const zhClean = formData.localizedDetails.zh?.replace(/<[^>]*>/g, '').trim();
@@ -674,7 +667,6 @@ function ProductEditorContent() {
                 {idConflict && <AlertCircle className="absolute right-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-destructive" />}
              </div>
 
-             {/* 智译覆盖率指示器 */}
              <TooltipProvider>
                 <Tooltip>
                   <TooltipTrigger asChild>
@@ -927,32 +919,29 @@ function ProductEditorContent() {
                       const isValueProcessing = processingItems.has(valueKey);
                       
                       return (
-                        <div key={item.uid} className="grid grid-cols-[1fr_1fr_80px] gap-6 px-6 py-4 border-b last:border-b-0 hover:bg-muted/5 transition-colors">
-                          <div className="space-y-3">
-                             <Input placeholder="参数名称 (ZH)" value={item.labelZh} onChange={e => { const g=[...formData.specGroups]; g[gIdx].items[iIdx].labelZh=e.target.value; setFormData({...formData, specGroups:g}); }} className="h-10 text-xs" />
+                        <div key={item.uid} className="grid grid-cols-[1fr_1fr_40px] gap-x-6 gap-y-3 px-6 py-4 border-b last:border-b-0 hover:bg-muted/5 transition-colors">
+                          {/* Row 1: Parameter Names (ZH/EN) */}
+                          <div className="relative">
+                             <Input 
+                                placeholder="参数名称 (ZH)" 
+                                value={item.labelZh} 
+                                onChange={e => { const g=[...formData.specGroups]; g[gIdx].items[iIdx].labelZh=e.target.value; setFormData({...formData, specGroups:g}); }} 
+                                className="h-10 text-xs bg-muted/20 border-solid" 
+                             />
+                          </div>
+                          <div className="relative">
                              <Input 
                                 placeholder="LABEL (EN)" 
                                 value={item.labelEn} 
                                 onChange={e => { const g=[...formData.specGroups]; g[gIdx].items[iIdx].labelEn=e.target.value; setFormData({...formData, specGroups:g}); }} 
                                 className={cn(
-                                  "h-10 text-xs border-dashed bg-muted/10",
+                                  "h-10 text-xs border-dashed bg-white",
                                   isLabelProcessing && "animate-pulse ring-2 ring-primary/20 bg-accent/5"
                                 )} 
                              />
                           </div>
-                          <div className="space-y-3">
-                             <Input placeholder="参数值 (ZH)" value={item.valueZh} onChange={e => { const g=[...formData.specGroups]; g[gIdx].items[iIdx].valueZh=e.target.value; setFormData({...formData, specGroups:g}); }} className="h-10 text-xs font-medium" />
-                             <Input 
-                                placeholder="VALUE (EN)" 
-                                value={item.valueEn} 
-                                onChange={e => { const g=[...formData.specGroups]; g[gIdx].items[iIdx].valueEn=e.target.value; setFormData({...formData, specGroups:g}); }} 
-                                className={cn(
-                                  "h-10 text-xs border-dashed bg-muted/10 font-medium",
-                                  isValueProcessing && "animate-pulse ring-2 ring-primary/20 bg-accent/5"
-                                )} 
-                             />
-                          </div>
-                          <div className="flex flex-col gap-2 justify-center">
+                          {/* AI Action Strip - Row 1 */}
+                          <div className="flex items-center justify-center">
                             <Button 
                               variant="ghost" 
                               size="icon" 
@@ -963,11 +952,35 @@ function ProductEditorContent() {
                             >
                               {(isLabelProcessing || isValueProcessing) ? <Loader2 className="h-4 w-4 animate-spin text-accent-foreground" /> : <Sparkles className="h-4 w-4 ai-icon-gradient" />}
                             </Button>
+                          </div>
+
+                          {/* Row 2: Parameter Values (ZH/EN) */}
+                          <div className="relative">
+                             <Input 
+                                placeholder="参数值 (ZH)" 
+                                value={item.valueZh} 
+                                onChange={e => { const g=[...formData.specGroups]; g[gIdx].items[iIdx].valueZh=e.target.value; setFormData({...formData, specGroups:g}); }} 
+                                className="h-10 text-xs font-medium bg-muted/20 border-solid" 
+                             />
+                          </div>
+                          <div className="relative">
+                             <Input 
+                                placeholder="VALUE (EN)" 
+                                value={item.valueEn} 
+                                onChange={e => { const g=[...formData.specGroups]; g[gIdx].items[iIdx].valueEn=e.target.value; setFormData({...formData, specGroups:g}); }} 
+                                className={cn(
+                                  "h-10 text-xs border-dashed bg-white font-medium",
+                                  isValueProcessing && "animate-pulse ring-2 ring-primary/20 bg-accent/5"
+                                )} 
+                             />
+                          </div>
+                          {/* Delete Action Strip - Row 2 */}
+                          <div className="flex items-center justify-center">
                             <Button 
                               variant="ghost" 
                               size="icon" 
                               onClick={() => { const g=[...formData.specGroups]; g[gIdx].items=g[gIdx].items.filter((_,i)=>i!==iIdx); setFormData({...formData, specGroups:g}); }} 
-                              className="h-8 w-8 text-destructive/20 hover:text-destructive hover:bg-destructive/5"
+                              className="h-8 w-8 text-destructive/30 hover:text-destructive hover:bg-destructive/5"
                             >
                               <X className="h-4 w-4" />
                             </Button>
