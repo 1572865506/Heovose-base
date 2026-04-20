@@ -74,6 +74,7 @@ export default function AiSettingsPage() {
 
   const [showKey, setShowKey] = useState(false);
   const [isTesting, setIsTesting] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
   const [testReport, setTestResult] = useState<{
     status: 'idle' | 'running' | 'success' | 'failed' | 'quota',
     message: string,
@@ -93,11 +94,21 @@ export default function AiSettingsPage() {
 
   const handleSave = () => {
     if (!firestore) return;
+    setIsSaving(true);
+    
     setDocumentNonBlocking(doc(firestore, 'settings', 'ai'), {
       ...formData,
       updatedAt: serverTimestamp()
     }, { merge: true });
-    toast({ title: "配置已同步至云端" });
+
+    // 延迟一秒恢复状态，给用户视觉反馈
+    setTimeout(() => {
+      setIsSaving(false);
+      toast({ 
+        title: "配置已同步至云端", 
+        description: "AI 智译引擎已根据新参数重新就绪。" 
+      });
+    }, 800);
   };
 
   const runAutoTest = async () => {
@@ -240,13 +251,17 @@ export default function AiSettingsPage() {
               </div>
             </CardContent>
             <CardFooter className="bg-muted/10 p-6 flex justify-end">
-              <Button onClick={handleSave} className="rounded-xl h-11 px-8 gap-2 font-bold uppercase tracking-widest text-xs shadow-lg">
-                <Save className="h-4 w-4" /> 部署配置并生效
+              <Button 
+                onClick={handleSave} 
+                disabled={isSaving}
+                className="rounded-xl h-11 px-8 gap-2 font-bold uppercase tracking-widest text-xs shadow-lg min-w-[160px]"
+              >
+                {isSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
+                {isSaving ? '正在同步...' : '部署配置并生效'}
               </Button>
             </CardFooter>
           </Card>
 
-          {/* 新增：免费层级配额参考看板 */}
           <Card className="rounded-2xl border border-border/40 shadow-sm bg-white overflow-hidden">
             <CardHeader className="p-6 bg-muted/10 border-b">
               <div className="flex items-center gap-3">
