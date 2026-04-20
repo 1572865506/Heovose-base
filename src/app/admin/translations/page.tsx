@@ -431,7 +431,6 @@ export default function TranslationsPage() {
                        ) : (
                          <div className="flex justify-end items-center gap-0.5">
                            {aiConfig?.isEnabled && (
-                             /* 精简版按钮样式 (Minimal) - 移除 variant 冲突 */
                              <Button 
                               size="icon" 
                               className="h-8 w-8 text-primary ai-btn-glow" 
@@ -457,12 +456,12 @@ export default function TranslationsPage() {
       </Tabs>
 
       <Dialog open={isAdding} onOpenChange={setIsAdding}>
-        <DialogContent className="rounded-xl max-w-md p-0 overflow-hidden shadow-2xl border-none">
+        <DialogContent className="rounded-xl max-md p-0 overflow-hidden shadow-2xl border-none">
           <div className="bg-primary p-6 text-white"><DialogHeader><DialogTitle className="text-lg font-bold uppercase tracking-widest">创建翻译词条</DialogTitle></DialogHeader></div>
           <div className="p-6 space-y-5 bg-white">
             <div className="space-y-1.5">
               <Label className="text-[10px] font-bold uppercase text-primary">唯一 ID</Label>
-              <Input placeholder="建议前缀: ui_ 或 prod_" value={formData.id} onChange={e => setFormData({...formData, id: e.target.value})} className="h-10 rounded-lg bg-muted/10 border-none font-mono text-xs" />
+              <Input placeholder="建议前缀: ui_ 或 prod_" value={formData.id} onChange={e => setFormData({...formData, id: e.target.value})} className="h-10 rounded-lg bg-muted/20 border-none font-mono text-xs" />
             </div>
             {activeLanguages.map(lang => (
               <div key={lang.code} className="space-y-1.5"><Label className="text-[10px] font-bold uppercase text-muted-foreground">{lang.label}</Label><Input value={formData[lang.code] || ''} onChange={e => setFormData({...formData, [lang.code]: e.target.value})} className="rounded-lg h-10 text-xs" /></div>

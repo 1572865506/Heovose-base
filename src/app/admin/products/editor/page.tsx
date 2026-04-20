@@ -560,7 +560,6 @@ function ProductEditorContent() {
                 <div className="space-y-4">
                   <div className="flex items-center justify-between">
                     <Label className="text-[10px] font-bold uppercase text-muted-foreground tracking-widest">目标: 英文 (EN)</Label>
-                    {/* 简短版按钮样式 (Short) - 移除 variant 冲突 */}
                     <Button 
                       size="sm" 
                       className="h-8 px-3 text-[10px] gap-1 font-bold text-primary rounded-full ai-btn-glow" 
@@ -637,7 +636,6 @@ function ProductEditorContent() {
                     <SelectTrigger className="h-10 w-28 text-xs font-bold uppercase"><SelectValue /></SelectTrigger>
                     <SelectContent className="rounded-lg">{supportedLangs.filter(l=>l.code!=='zh').map(l=><SelectItem key={l.code} value={l.code} className="text-xs uppercase">{l.label}</SelectItem>)}</SelectContent>
                   </Select>
-                  {/* 完整版按钮样式 (Full) - 移除 variant 冲突 */}
                   <Button 
                     size="sm" 
                     className="h-10 px-5 text-xs font-bold text-primary rounded-lg ai-btn-glow" 
@@ -711,6 +709,8 @@ function ProductEditorContent() {
 }
 
 export default function ProductEditorPage({ params, searchParams }: { params: Promise<any>, searchParams: Promise<any> }) { 
+  use(params);
+  use(searchParams);
   return (
     <Suspense fallback={<div className="h-screen flex items-center justify-center"><Loader2 className="animate-spin opacity-20" /></div>}>
       <ProductEditorContent />
