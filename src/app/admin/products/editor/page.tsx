@@ -67,19 +67,22 @@ import { cn } from '@/lib/utils';
 import { translateContent } from '@/ai/flows/translate-flow';
 import RichTextEditor from '@/components/RichTextEditor';
 
-// AI 极光渐变定义组件
+// AI 极光渐变定义组件 - 增强色距
 const AiGradientDef = () => (
   <svg width="0" height="0" className="absolute">
     <defs>
       <linearGradient id="ai-aurora-gradient" x1="0%" y1="0%" x2="100%" y2="100%">
-        <stop stopColor="#60A5FA" offset="0%">
-          <animate attributeName="stop-color" values="#60A5FA;#A855F7;#60A5FA" dur="4s" repeatCount="indefinite" />
+        <stop stopColor="#22D3EE" offset="0%">
+          <animate attributeName="stop-color" values="#22D3EE;#6366F1;#22D3EE" dur="4s" repeatCount="indefinite" />
         </stop>
-        <stop stopColor="#A855F7" offset="50%">
-          <animate attributeName="stop-color" values="#A855F7;#EC4899;#A855F7" dur="4s" repeatCount="indefinite" />
+        <stop stopColor="#6366F1" offset="33%">
+          <animate attributeName="stop-color" values="#6366F1;#D946EF;#6366F1" dur="4s" repeatCount="indefinite" />
         </stop>
-        <stop stopColor="#EC4899" offset="100%">
-          <animate attributeName="stop-color" values="#EC4899;#60A5FA;#EC4899" dur="4s" repeatCount="indefinite" />
+        <stop stopColor="#D946EF" offset="66%">
+          <animate attributeName="stop-color" values="#D946EF;#F43F5E;#D946EF" dur="4s" repeatCount="indefinite" />
+        </stop>
+        <stop stopColor="#F43F5E" offset="100%">
+          <animate attributeName="stop-color" values="#F43F5E;#22D3EE;#F43F5E" dur="4s" repeatCount="indefinite" />
         </stop>
       </linearGradient>
     </defs>
@@ -557,11 +560,10 @@ function ProductEditorContent() {
                 <div className="space-y-4">
                   <div className="flex items-center justify-between">
                     <Label className="text-[10px] font-bold uppercase text-muted-foreground tracking-widest">目标: 英文 (EN)</Label>
-                    {/* 简短版按钮样式 (Short) */}
+                    {/* 简短版按钮样式 (Short) - 移除 variant 冲突 */}
                     <Button 
-                      variant="ghost" 
                       size="sm" 
-                      className="h-8 px-3 text-[10px] gap-1 font-bold text-accent rounded-full ai-btn-glow" 
+                      className="h-8 px-3 text-[10px] gap-1 font-bold text-primary rounded-full ai-btn-glow" 
                       onClick={handleAiTranslateBasicInfo} 
                       disabled={isAiProcessing}
                     >
@@ -635,11 +637,10 @@ function ProductEditorContent() {
                     <SelectTrigger className="h-10 w-28 text-xs font-bold uppercase"><SelectValue /></SelectTrigger>
                     <SelectContent className="rounded-lg">{supportedLangs.filter(l=>l.code!=='zh').map(l=><SelectItem key={l.code} value={l.code} className="text-xs uppercase">{l.label}</SelectItem>)}</SelectContent>
                   </Select>
-                  {/* 完整版按钮样式 (Full) */}
+                  {/* 完整版按钮样式 (Full) - 移除 variant 冲突 */}
                   <Button 
-                    variant="ghost" 
                     size="sm" 
-                    className="h-10 px-5 text-xs font-bold text-accent rounded-lg ai-btn-glow" 
+                    className="h-10 px-5 text-xs font-bold text-primary rounded-lg ai-btn-glow" 
                     onClick={handleAiTranslateDetails} 
                     disabled={isAiProcessing}
                   >
@@ -710,8 +711,6 @@ function ProductEditorContent() {
 }
 
 export default function ProductEditorPage({ params, searchParams }: { params: Promise<any>, searchParams: Promise<any> }) { 
-  const p = use(params);
-  const s = use(searchParams);
   return (
     <Suspense fallback={<div className="h-screen flex items-center justify-center"><Loader2 className="animate-spin opacity-20" /></div>}>
       <ProductEditorContent />
