@@ -39,7 +39,9 @@ import {
   Key,
   Eye,
   EyeOff,
-  Clock
+  Clock,
+  Info,
+  BarChart3
 } from 'lucide-react';
 import { setDocumentNonBlocking } from '@/firebase/non-blocking-updates';
 import { useToast } from '@/hooks/use-toast';
@@ -119,7 +121,6 @@ export default function AiSettingsPage() {
         });
         toast({ title: "连接自检通过" });
       } else {
-        // 专门处理 429 状态
         const isQuotaError = result.message.includes('429');
         setTestResult({ 
           status: isQuotaError ? 'quota' : 'failed', 
@@ -142,7 +143,7 @@ export default function AiSettingsPage() {
   };
 
   return (
-    <div className="space-y-6 animate-in fade-in duration-500 max-w-6xl mx-auto">
+    <div className="space-y-6 animate-in fade-in duration-500 max-w-6xl mx-auto pb-20">
       <div className="flex items-center justify-between">
         <div className="space-y-1">
           <h2 className="text-xl font-headline font-bold text-primary flex items-center gap-2">
@@ -216,14 +217,13 @@ export default function AiSettingsPage() {
                       <SelectValue placeholder="选择 AI 模型" />
                     </SelectTrigger>
                     <SelectContent className="rounded-xl">
-                      <SelectItem value="googleai/gemini-1.5-flash" className="text-xs font-bold">Gemini 1.5 Flash (标准版)</SelectItem>
+                      <SelectItem value="googleai/gemini-1.5-flash" className="text-xs font-bold">Gemini 1.5 Flash (标准平衡)</SelectItem>
                       <SelectItem value="googleai/gemini-1.5-flash-latest" className="text-xs font-bold">Gemini 1.5 Flash (最新稳定版)</SelectItem>
-                      <SelectItem value="googleai/gemini-1.5-flash-002" className="text-xs font-bold">Gemini 1.5 Flash (002 稳定版)</SelectItem>
-                      <SelectItem value="googleai/gemini-1.5-pro" className="text-xs font-bold">Gemini 1.5 Pro (排版精准)</SelectItem>
+                      <SelectItem value="googleai/gemini-1.5-flash-002" className="text-xs font-bold">Gemini 1.5 Flash (002 版本)</SelectItem>
+                      <SelectItem value="googleai/gemini-1.5-pro" className="text-xs font-bold">Gemini 1.5 Pro (长文/复杂排版)</SelectItem>
                       <SelectItem value="googleai/gemini-2.0-flash" className="text-xs font-bold">Gemini 2.0 Flash (已证实可用)</SelectItem>
                     </SelectContent>
                   </Select>
-                  <p className="text-[9px] text-muted-foreground italic leading-relaxed">提示：若报 404，请切换模型。若报 429，说明 Key 正确但请求过快，请等待 60 秒后重试。</p>
                 </div>
 
                 <div className="space-y-3">
@@ -245,10 +245,57 @@ export default function AiSettingsPage() {
               </Button>
             </CardFooter>
           </Card>
+
+          {/* 新增：免费层级配额参考看板 */}
+          <Card className="rounded-2xl border border-border/40 shadow-sm bg-white overflow-hidden">
+            <CardHeader className="p-6 bg-muted/10 border-b">
+              <div className="flex items-center gap-3">
+                <BarChart3 className="h-5 w-5 text-primary" />
+                <div>
+                  <CardTitle className="text-sm font-bold uppercase tracking-widest">Google AI 免费层级用量限制参考</CardTitle>
+                  <CardDescription className="text-[10px]">配额不足可能导致智译中断，建议根据任务量切换模型。</CardDescription>
+                </div>
+              </div>
+            </CardHeader>
+            <CardContent className="p-0">
+              <div className="grid grid-cols-1 md:grid-cols-3 divide-y md:divide-y-0 md:divide-x border-b">
+                <div className="p-6 space-y-3">
+                  <div className="flex justify-between items-center"><Badge className="bg-blue-100 text-blue-700 hover:bg-blue-100 border-none text-[9px]">1.5 FLASH</Badge><span className="text-[10px] font-bold text-green-600">最高配额</span></div>
+                  <div className="space-y-1.5">
+                    <div className="flex justify-between text-[11px]"><span className="opacity-50">每分钟请求 (RPM)</span><span className="font-bold">15</span></div>
+                    <div className="flex justify-between text-[11px]"><span className="opacity-50">每日请求 (RPD)</span><span className="font-bold">1,500</span></div>
+                    <div className="flex justify-between text-[11px]"><span className="opacity-50">每分钟 Token</span><span className="font-bold">100万</span></div>
+                  </div>
+                </div>
+                <div className="p-6 space-y-3 bg-muted/5">
+                  <div className="flex justify-between items-center"><Badge className="bg-purple-100 text-purple-700 hover:bg-purple-100 border-none text-[9px]">1.5 PRO</Badge><span className="text-[10px] font-bold text-orange-600">限制较严</span></div>
+                  <div className="space-y-1.5">
+                    <div className="flex justify-between text-[11px]"><span className="opacity-50">每分钟请求 (RPM)</span><span className="font-bold">2</span></div>
+                    <div className="flex justify-between text-[11px]"><span className="opacity-50">每日请求 (RPD)</span><span className="font-bold">50</span></div>
+                    <div className="flex justify-between text-[11px]"><span className="opacity-50">每分钟 Token</span><span className="font-bold">3.2万</span></div>
+                  </div>
+                </div>
+                <div className="p-6 space-y-3">
+                  <div className="flex justify-between items-center"><Badge className="bg-orange-100 text-orange-700 hover:bg-orange-100 border-none text-[9px]">2.0 FLASH</Badge><span className="text-[10px] font-bold text-blue-600">前沿/稳定</span></div>
+                  <div className="space-y-1.5">
+                    <div className="flex justify-between text-[11px]"><span className="opacity-50">每分钟请求 (RPM)</span><span className="font-bold">10</span></div>
+                    <div className="flex justify-between text-[11px]"><span className="opacity-50">每日请求 (RPD)</span><span className="font-bold">1,500</span></div>
+                    <div className="flex justify-between text-[11px]"><span className="opacity-50">每分钟 Token</span><span className="font-bold">400万</span></div>
+                  </div>
+                </div>
+              </div>
+              <div className="p-4 bg-orange-50/50 flex items-start gap-3">
+                <Info className="h-4 w-4 text-orange-600 shrink-0 mt-0.5" />
+                <p className="text-[10px] text-orange-800 leading-relaxed italic">
+                  <b>提示：</b>当您遇到 429 报错时，通常是因为您使用了 Gemini 1.5 Pro 且在 1 分钟内提交了超过 2 次请求。对于常规产品翻译，<b>强烈建议选用 Gemini 1.5 Flash</b>，它拥有更高的并发限额。
+                </p>
+              </div>
+            </CardContent>
+          </Card>
         </div>
 
         <div className="lg:col-span-4 space-y-6">
-          <Card className="rounded-2xl border-none bg-white shadow-xl overflow-hidden h-fit">
+          <Card className="rounded-2xl border-none bg-white shadow-xl overflow-hidden h-fit sticky top-24">
             <CardHeader className="p-6 pb-2 border-b">
               <CardTitle className="text-[10px] font-bold flex items-center gap-2 text-primary uppercase tracking-[0.2em]">
                 <Activity className="h-4 w-4 text-accent" />
@@ -273,7 +320,7 @@ export default function AiSettingsPage() {
                       
                       {testReport.status === 'quota' && (
                         <div className="mt-3 p-2 bg-white/50 rounded border border-orange-200 text-[10px] text-orange-900 italic">
-                          恭喜！这说明您的 Key 和模型 ID 均有效。请点击下方“部署配置”保存，然后在实际翻译时避免短时间内大量并发请求即可。
+                          <b>验证结果：</b>这说明您的 Key 和模型 ID 均有效！只是由于 API 限制无法在 1 分钟内进行多次测试。请点击左侧“部署配置”保存，然后在实际业务中使用即可。
                         </div>
                       )}
 
@@ -295,14 +342,8 @@ export default function AiSettingsPage() {
                 onClick={runAutoTest}
                 className="w-full rounded-xl h-10 font-bold text-[10px] uppercase tracking-widest border-primary/20 text-primary hover:bg-primary/5 shadow-inner"
               >
-                {isTesting ? '正在尝试握手...' : '立即诊断当前配置'}
+                {isTesting ? '正在尝试握手...' : '立即测试当前配置'}
               </Button>
-
-              <div className="space-y-4 pt-2">
-                 <p className="text-[9px] text-muted-foreground leading-relaxed italic">
-                   注意：免费层级 API Key 有 RPM (Requests Per Minute) 限制。若看到 429 错误，请等待 1 分钟后重试。
-                 </p>
-              </div>
             </CardContent>
           </Card>
         </div>
