@@ -23,18 +23,15 @@ const TestOutputSchema = z.object({
 export async function testAiConnection(input: z.infer<typeof TestInputSchema>) {
   const startTime = Date.now();
   try {
-    // 提取模型核心名称，确保前缀为 googleai/
-    let modelId = input.model.includes('/') 
-      ? input.model.split('/').pop() 
-      : input.model;
-    
-    // 移除可能存在的 -latest 后缀，回归标准 ID
-    if (modelId) {
-      modelId = modelId.replace('-latest', '');
+    // 强制确保前缀为 googleai/
+    let finalModel = input.model;
+    if (!finalModel.startsWith('googleai/')) {
+      // 提取核心 ID 并重新拼接
+      const coreId = finalModel.includes('/') ? finalModel.split('/').pop() : finalModel;
+      finalModel = `googleai/${coreId}`;
     }
-
-    const finalModel = `googleai/${modelId}`;
     
+    // 执行生成测试
     const { output } = await ai.generate({
       model: finalModel as any,
       system: input.systemInstruction || "You are a helpful assistant.",
@@ -43,7 +40,7 @@ export async function testAiConnection(input: z.infer<typeof TestInputSchema>) {
         schema: z.object({ result: z.string() })
       },
       config: {
-        temperature: 0.1, // 自检使用低温度确保确定性
+        temperature: 0.1, 
       }
     });
 
@@ -64,7 +61,7 @@ export async function testAiConnection(input: z.infer<typeof TestInputSchema>) {
     return {
       status: 'error',
       latency: Date.now() - startTime,
-      message: error.message || '连接失败，请检查 API 配置。',
+      message: error.message || '连接失败，请检查 API 配置或尝试更换模型版本后缀。',
       modelUsed: input.model
     } as z.infer<typeof TestOutputSchema>;
   }

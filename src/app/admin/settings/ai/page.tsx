@@ -35,7 +35,8 @@ import {
   CheckCircle2,
   AlertCircle,
   Loader2,
-  RefreshCw
+  RefreshCw,
+  Terminal
 } from 'lucide-react';
 import { setDocumentNonBlocking } from '@/firebase/non-blocking-updates';
 import { useToast } from '@/hooks/use-toast';
@@ -68,17 +69,13 @@ export default function AiSettingsPage() {
   const [testReport, setTestResult] = useState<{
     status: 'idle' | 'running' | 'success' | 'failed',
     message: string,
-    latency?: number
+    latency?: number,
+    modelUsed?: string
   }>({ status: 'idle', message: '尚未运行检测' });
 
   useEffect(() => {
     if (aiConfig) {
-      // 迁移逻辑：移除所有不兼容的前缀和 -latest 后缀
-      let normalized = aiConfig.model || 'googleai/gemini-1.5-flash';
-      normalized = normalized.replace('google-genai/', 'googleai/');
-      normalized = normalized.replace('-latest', '');
-      
-      setFormData({ ...aiConfig, model: normalized });
+      setFormData(aiConfig);
     }
   }, [aiConfig]);
 
@@ -105,11 +102,16 @@ export default function AiSettingsPage() {
         setTestResult({ 
           status: 'success', 
           message: `连接成功：模型已识别并响应。`, 
-          latency: result.latency 
+          latency: result.latency,
+          modelUsed: result.modelUsed
         });
         toast({ title: "配置自检通过", description: `响应耗时: ${result.latency}ms` });
       } else {
-        setTestResult({ status: 'failed', message: `检测失败：${result.message}` });
+        setTestResult({ 
+          status: 'failed', 
+          message: `检测失败：${result.message}`,
+          modelUsed: result.modelUsed
+        });
         toast({ variant: "destructive", title: "配置存在问题", description: result.message });
       }
     } catch (e: any) {
@@ -178,12 +180,15 @@ export default function AiSettingsPage() {
                       <SelectValue placeholder="选择 AI 模型" />
                     </SelectTrigger>
                     <SelectContent className="rounded-xl">
-                      <SelectItem value="googleai/gemini-1.5-flash" className="text-xs font-bold">Gemini 1.5 Flash (极速/稳定版)</SelectItem>
-                      <SelectItem value="googleai/gemini-1.5-pro" className="text-xs font-bold">Gemini 1.5 Pro (高精度/稳定版)</SelectItem>
-                      <SelectItem value="googleai/gemini-2.0-flash-exp" className="text-xs font-bold text-accent-foreground bg-accent/10">Gemini 2.0 Flash Exp (试验版)</SelectItem>
+                      <SelectItem value="googleai/gemini-1.5-flash" className="text-xs font-bold">Gemini 1.5 Flash (标准版)</SelectItem>
+                      <SelectItem value="googleai/gemini-1.5-flash-latest" className="text-xs font-bold">Gemini 1.5 Flash (最新版)</SelectItem>
+                      <SelectItem value="googleai/gemini-1.5-flash-002" className="text-xs font-bold">Gemini 1.5 Flash (002 稳定版)</SelectItem>
+                      <SelectItem value="googleai/gemini-1.5-pro" className="text-xs font-bold">Gemini 1.5 Pro (标准版)</SelectItem>
+                      <SelectItem value="googleai/gemini-1.5-pro-latest" className="text-xs font-bold">Gemini 1.5 Pro (最新版)</SelectItem>
+                      <SelectItem value="googleai/gemini-pro" className="text-xs font-bold opacity-60">Gemini 1.0 Pro (Legacy/回退专用)</SelectItem>
                     </SelectContent>
                   </Select>
-                  <p className="text-[9px] text-muted-foreground leading-relaxed italic">注：已标准化为标准 API 模型标识，修复 v1beta 终结点 404 冲突。</p>
+                  <p className="text-[9px] text-muted-foreground leading-relaxed italic">提示：若自检出现 404，请尝试切换到带有 <b>-latest</b> 或 <b>-002</b> 后缀的版本。</p>
                 </div>
 
                 <div className="space-y-3">
@@ -254,7 +259,13 @@ export default function AiSettingsPage() {
                    <div className="space-y-1">
                       <p className="text-[11px] font-bold uppercase tracking-tight">自检状态报告</p>
                       <p className="text-[10px] text-muted-foreground leading-relaxed break-words">{testReport.message}</p>
-                      {testReport.latency && <p className="text-[10px] font-mono font-bold text-primary">Latency: {testReport.latency}ms</p>}
+                      {testReport.modelUsed && (
+                        <div className="flex items-center gap-1.5 mt-2 text-[9px] font-mono bg-black/5 p-1 rounded">
+                          <Terminal className="h-2.5 w-2.5 opacity-40" />
+                          <span className="opacity-60">ID:</span> {testReport.modelUsed}
+                        </div>
+                      )}
+                      {testReport.latency && <p className="text-[10px] font-mono font-bold text-primary mt-1">Latency: {testReport.latency}ms</p>}
                    </div>
                 </div>
               </div>
@@ -270,12 +281,12 @@ export default function AiSettingsPage() {
 
               <div className="pt-4 space-y-4">
                  <div className="space-y-2">
-                    <p className="text-[9px] font-bold text-primary/40 uppercase tracking-widest">API 配置状态</p>
+                    <p className="text-[9px] font-bold text-primary/40 uppercase tracking-widest">API 路由有效性</p>
                     <div className="h-1.5 w-full bg-muted rounded-full overflow-hidden">
                        <div className={cn("h-full transition-all duration-1000", testReport.status === 'success' ? "bg-green-500 w-full" : "bg-primary w-[12%] animate-pulse")} />
                     </div>
                     <div className="flex justify-between text-[8px] text-muted-foreground font-mono">
-                       <span>RPM LIMIT: AUTO</span>
+                       <span>PATH: v1beta/generate</span>
                        <span>{testReport.status === 'success' ? 'CONNECTED' : 'WAITING'}</span>
                     </div>
                  </div>
