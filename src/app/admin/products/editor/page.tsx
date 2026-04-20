@@ -1,4 +1,3 @@
-
 "use client";
 
 import React, { useState, useEffect, useMemo, Suspense, useRef, use } from 'react';
@@ -693,7 +692,7 @@ function ProductEditorContent() {
                       </Badge>
                     </div>
                   </TooltipTrigger>
-                  <TooltipContent className="w-56 p-4 rounded-xl shadow-2xl border-border/40 bg-white/95 backdrop-blur-xl">
+                  <TooltipContent side="bottom" align="end" sideOffset={8} className="w-56 p-4 rounded-xl shadow-2xl border-border/40 bg-white/95 backdrop-blur-xl">
                     <div className="space-y-3">
                       <div className="flex items-center justify-between border-b pb-2">
                         <span className="text-[10px] font-bold text-primary uppercase tracking-widest">智译健康度诊断</span>
