@@ -437,6 +437,31 @@ function ProductEditorContent() {
     }
   };
 
+  const handleAiTranslateSpecItem = async (gIdx: number, iIdx: number) => {
+    if (!aiConfig?.isEnabled) return;
+    const item = formData.specGroups[gIdx].items[iIdx];
+    if (!item.labelZh && !item.valueZh) return;
+    
+    setIsAiProcessing(true);
+    try {
+      const results = await Promise.all([
+        item.labelZh ? translateContent({ text: item.labelZh, targetLangs: ['en'], apiKey: aiConfig.apiKey }) : null,
+        item.valueZh ? translateContent({ text: item.valueZh, targetLangs: ['en'], apiKey: aiConfig.apiKey }) : null
+      ]);
+
+      const newSpecGroups = [...formData.specGroups];
+      if (results[0]?.en) newSpecGroups[gIdx].items[iIdx].labelEn = results[0].en;
+      if (results[1]?.en) newSpecGroups[gIdx].items[iIdx].valueEn = results[1].en;
+      
+      setFormData({ ...formData, specGroups: newSpecGroups });
+      toast({ title: "单条规格智译成功" });
+    } catch (e: any) {
+      toast({ variant: "destructive", title: "智译失败", description: e.message });
+    } finally {
+      setIsAiProcessing(false);
+    }
+  };
+
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -602,8 +627,8 @@ function ProductEditorContent() {
                     </Button>
                   </div>
                   <div className="space-y-4">
-                     <div className="space-y-2"><Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">PRODUCT TITLE</Label><Input placeholder="ENGLISH PRODUCT NAME" value={formData.nameEn} onChange={e => setFormData({...formData, nameEn: e.target.value})} className="h-10 text-xs rounded-lg" /></div>
-                     <div className="space-y-2"><Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">SHORT DESCRIPTION</Label><Textarea placeholder="ENGLISH DESCRIPTION" value={formData.descEn} onChange={e => setFormData({...formData, descEn: e.target.value})} className="w-full min-h-[120px] rounded-lg p-4 text-xs resize-none focus:outline-none focus:ring-1 focus:ring-primary/20" /></div>
+                     <div className="space-y-2"><Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">PRODUCT TITLE</Label><Input placeholder="ENGLISH PRODUCT NAME" value={formData.nameEn} onChange={e => setFormData({...formData, nameEn: e.target.value})} className="h-10 text-xs rounded-lg border-dashed" /></div>
+                     <div className="space-y-2"><Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">SHORT DESCRIPTION</Label><Textarea placeholder="ENGLISH DESCRIPTION" value={formData.descEn} onChange={e => setFormData({...formData, descEn: e.target.value})} className="w-full min-h-[120px] rounded-lg p-4 text-xs resize-none focus:outline-none focus:ring-1 focus:ring-primary/20 border-dashed" /></div>
                   </div>
                 </div>
               </div>
@@ -669,21 +694,40 @@ function ProductEditorContent() {
                     <div className="bg-muted/10 px-6 py-3 flex items-center justify-between border-b">
                       <div className="grid grid-cols-2 gap-4 flex-1">
                         <Input placeholder="分组标题 (ZH)" value={group.titleZh} onChange={e => { const g=[...formData.specGroups]; g[gIdx].titleZh=e.target.value; setFormData({...formData, specGroups:g}); }} className="h-9 text-xs border-none bg-transparent focus:bg-white" />
-                        <Input placeholder="GROUP TITLE (EN)" value={group.titleEn} onChange={e => { const g=[...formData.specGroups]; g[gIdx].titleEn=e.target.value; setFormData({...formData, specGroups:g}); }} className="h-9 text-xs border-none bg-transparent focus:bg-white" />
+                        <Input placeholder="GROUP TITLE (EN)" value={group.titleEn} onChange={e => { const g=[...formData.specGroups]; g[gIdx].titleEn=e.target.value; setFormData({...formData, specGroups:g}); }} className="h-9 text-xs border-none bg-transparent focus:bg-white border-dashed" />
                       </div>
                       <Button variant="ghost" size="icon" onClick={() => setFormData({...formData, specGroups: formData.specGroups.filter((_,i)=>i!==gIdx)})} className="ml-4 h-9 w-9 text-destructive/40 hover:text-destructive hover:bg-destructive/5"><Trash2 className="h-4 w-4" /></Button>
                     </div>
                     {group.items.map((item, iIdx) => (
-                      <div key={item.uid} className="grid grid-cols-[1fr_1fr_40px] gap-6 px-6 py-4 border-b last:border-b-0 hover:bg-muted/5 transition-colors">
+                      <div key={item.uid} className="grid grid-cols-[1fr_1fr_80px] gap-6 px-6 py-4 border-b last:border-b-0 hover:bg-muted/5 transition-colors">
                         <div className="space-y-3">
                            <Input placeholder="参数名称 (ZH)" value={item.labelZh} onChange={e => { const g=[...formData.specGroups]; g[gIdx].items[iIdx].labelZh=e.target.value; setFormData({...formData, specGroups:g}); }} className="h-10 text-xs" />
-                           <Input placeholder="LABEL (EN)" value={item.labelEn} onChange={e => { const g=[...formData.specGroups]; g[gIdx].items[iIdx].labelEn=e.target.value; setFormData({...formData, specGroups:g}); }} className="h-10 text-xs border-dashed" />
+                           <Input placeholder="LABEL (EN)" value={item.labelEn} onChange={e => { const g=[...formData.specGroups]; g[gIdx].items[iIdx].labelEn=e.target.value; setFormData({...formData, specGroups:g}); }} className="h-10 text-xs border-dashed bg-muted/10" />
                         </div>
                         <div className="space-y-3">
                            <Input placeholder="参数值 (ZH)" value={item.valueZh} onChange={e => { const g=[...formData.specGroups]; g[gIdx].items[iIdx].valueZh=e.target.value; setFormData({...formData, specGroups:g}); }} className="h-10 text-xs font-medium" />
-                           <Input placeholder="VALUE (EN)" value={item.valueEn} onChange={e => { const g=[...formData.specGroups]; g[gIdx].items[iIdx].valueEn=e.target.value; setFormData({...formData, specGroups:g}); }} className="h-10 text-xs border-dashed font-medium" />
+                           <Input placeholder="VALUE (EN)" value={item.valueEn} onChange={e => { const g=[...formData.specGroups]; g[gIdx].items[iIdx].valueEn=e.target.value; setFormData({...formData, specGroups:g}); }} className="h-10 text-xs border-dashed bg-muted/10 font-medium" />
                         </div>
-                        <Button variant="ghost" size="icon" onClick={() => { const g=[...formData.specGroups]; g[gIdx].items=g[gIdx].items.filter((_,i)=>i!==iIdx); setFormData({...formData, specGroups:g}); }} className="h-10 w-10 self-center text-destructive/20 hover:text-destructive hover:bg-destructive/5"><X className="h-4 w-4" /></Button>
+                        <div className="flex flex-col gap-2 justify-center">
+                          <Button 
+                            variant="ghost" 
+                            size="icon" 
+                            className="h-8 w-8 ai-btn-glow" 
+                            onClick={() => handleAiTranslateSpecItem(gIdx, iIdx)}
+                            disabled={isAiProcessing}
+                            title="AI 智译此行"
+                          >
+                            <Sparkles className="h-4 w-4 ai-icon-gradient" />
+                          </Button>
+                          <Button 
+                            variant="ghost" 
+                            size="icon" 
+                            onClick={() => { const g=[...formData.specGroups]; g[gIdx].items=g[gIdx].items.filter((_,i)=>i!==iIdx); setFormData({...formData, specGroups:g}); }} 
+                            className="h-8 w-8 text-destructive/20 hover:text-destructive hover:bg-destructive/5"
+                          >
+                            <X className="h-4 w-4" />
+                          </Button>
+                        </div>
                       </div>
                     ))}
                     <button onClick={() => { const g=[...formData.specGroups]; g[gIdx].items.push({uid:`i_${Date.now()}`,labelEn:'',labelZh:'',valueEn:'',valueZh:''}); setFormData({...formData, specGroups:g}); }} className="w-full py-2.5 text-[10px] font-bold uppercase text-primary/40 hover:text-primary hover:bg-muted/10 transition-all border-t">+ 追加规格条目</button>
