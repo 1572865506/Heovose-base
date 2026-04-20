@@ -38,7 +38,8 @@ import {
   Terminal,
   Key,
   Eye,
-  EyeOff
+  EyeOff,
+  Clock
 } from 'lucide-react';
 import { setDocumentNonBlocking } from '@/firebase/non-blocking-updates';
 import { useToast } from '@/hooks/use-toast';
@@ -72,7 +73,7 @@ export default function AiSettingsPage() {
   const [showKey, setShowKey] = useState(false);
   const [isTesting, setIsTesting] = useState(false);
   const [testReport, setTestResult] = useState<{
-    status: 'idle' | 'running' | 'success' | 'failed',
+    status: 'idle' | 'running' | 'success' | 'failed' | 'quota',
     message: string,
     latency?: number,
     modelUsed?: string,
@@ -118,13 +119,20 @@ export default function AiSettingsPage() {
         });
         toast({ title: "连接自检通过" });
       } else {
+        // 专门处理 429 状态
+        const isQuotaError = result.message.includes('429');
         setTestResult({ 
-          status: 'failed', 
+          status: isQuotaError ? 'quota' : 'failed', 
           message: result.message,
           modelUsed: result.modelUsed,
           keySource: result.keySource
         });
-        toast({ variant: "destructive", title: "自检失败", description: "请查看诊断报告" });
+        
+        if (isQuotaError) {
+          toast({ title: "验证通过，但配额超限", description: "模型标识符正确，请稍后重试。" });
+        } else {
+          toast({ variant: "destructive", title: "自检失败", description: "请查看诊断报告" });
+        }
       }
     } catch (e: any) {
       setTestResult({ status: 'failed', message: `内部通讯异常: ${e.message}` });
@@ -144,10 +152,14 @@ export default function AiSettingsPage() {
         </div>
         <Badge variant="outline" className={cn(
           "h-9 px-3 rounded-lg gap-2 font-bold text-[10px] uppercase",
-          testReport.status === 'success' ? "bg-green-50 text-green-700 border-green-200" : "bg-primary/5 text-primary border-primary/20"
+          testReport.status === 'success' ? "bg-green-50 text-green-700 border-green-200" : 
+          testReport.status === 'quota' ? "bg-orange-50 text-orange-700 border-orange-200" :
+          "bg-primary/5 text-primary border-primary/20"
         )}>
-          {testReport.status === 'success' ? <CheckCircle2 className="h-3 w-3" /> : <div className="h-1.5 w-1.5 rounded-full bg-blue-400 animate-pulse" />}
-          状态: {testReport.status === 'success' ? '已就绪' : '待诊断'}
+          {testReport.status === 'success' ? <CheckCircle2 className="h-3 w-3" /> : 
+           testReport.status === 'quota' ? <Clock className="h-3 w-3" /> :
+           <div className="h-1.5 w-1.5 rounded-full bg-blue-400 animate-pulse" />}
+          状态: {testReport.status === 'success' ? '已就绪' : testReport.status === 'quota' ? '配额受限' : '待诊断'}
         </Badge>
       </div>
 
@@ -190,11 +202,12 @@ export default function AiSettingsPage() {
                     {showKey ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                   </button>
                 </div>
+                <p className="text-[10px] text-muted-foreground">提示：您可以前往 <a href="https://aistudio.google.com/" target="_blank" className="text-primary underline">Google AI Studio</a> 免费获取或管理您的密钥。</p>
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-8 pt-4">
                 <div className="space-y-3">
-                  <Label className="text-[10px] font-bold uppercase text-primary tracking-widest flex items-center gap-2"><Cpu className="h-3.5 w-3.5" /> 选用模型 (多变体支持)</Label>
+                  <Label className="text-[10px] font-bold uppercase text-primary tracking-widest flex items-center gap-2"><Cpu className="h-3.5 w-3.5" /> 选用模型 (建议 Flash 版)</Label>
                   <Select 
                     value={formData.model} 
                     onValueChange={(v) => setFormData({...formData, model: v})}
@@ -207,10 +220,10 @@ export default function AiSettingsPage() {
                       <SelectItem value="googleai/gemini-1.5-flash-latest" className="text-xs font-bold">Gemini 1.5 Flash (最新稳定版)</SelectItem>
                       <SelectItem value="googleai/gemini-1.5-flash-002" className="text-xs font-bold">Gemini 1.5 Flash (002 稳定版)</SelectItem>
                       <SelectItem value="googleai/gemini-1.5-pro" className="text-xs font-bold">Gemini 1.5 Pro (排版精准)</SelectItem>
-                      <SelectItem value="googleai/gemini-2.0-flash" className="text-xs font-bold">Gemini 2.0 Flash (最新架构)</SelectItem>
+                      <SelectItem value="googleai/gemini-2.0-flash" className="text-xs font-bold">Gemini 2.0 Flash (已证实可用)</SelectItem>
                     </SelectContent>
                   </Select>
-                  <p className="text-[9px] text-muted-foreground italic">提示：若报 404，请优先尝试选择带有 "latest" 或 "002" 后缀的模型变体。</p>
+                  <p className="text-[9px] text-muted-foreground italic leading-relaxed">提示：若报 404，请切换模型。若报 429，说明 Key 正确但请求过快，请等待 60 秒后重试。</p>
                 </div>
 
                 <div className="space-y-3">
@@ -246,15 +259,24 @@ export default function AiSettingsPage() {
               <div className={cn(
                 "p-4 rounded-xl border transition-all text-xs min-h-[120px]",
                 testReport.status === 'success' ? "bg-green-50 border-green-100 text-green-800" : 
+                testReport.status === 'quota' ? "bg-orange-50 border-orange-100 text-orange-800" :
                 testReport.status === 'failed' ? "bg-destructive/5 border-destructive/10 text-destructive" : "bg-muted/30 border-border/40 text-muted-foreground"
               )}>
                 <div className="flex items-start gap-3">
                    {testReport.status === 'running' ? <Loader2 className="h-4 w-4 animate-spin text-primary" /> : 
-                    testReport.status === 'success' ? <CheckCircle2 className="h-4 w-4" /> :
+                    testReport.status === 'success' ? <CheckCircle2 className="h-4 w-4 text-green-600" /> :
+                    testReport.status === 'quota' ? <Clock className="h-4 w-4 text-orange-600" /> :
                     testReport.status === 'failed' ? <AlertCircle className="h-4 w-4" /> : <Bot className="h-4 w-4" />}
                    <div className="space-y-1 flex-1">
                       <p className="font-bold uppercase tracking-tighter">诊断报告</p>
                       <p className="opacity-80 leading-relaxed text-[11px]">{testReport.message}</p>
+                      
+                      {testReport.status === 'quota' && (
+                        <div className="mt-3 p-2 bg-white/50 rounded border border-orange-200 text-[10px] text-orange-900 italic">
+                          恭喜！这说明您的 Key 和模型 ID 均有效。请点击下方“部署配置”保存，然后在实际翻译时避免短时间内大量并发请求即可。
+                        </div>
+                      )}
+
                       {testReport.modelUsed && (
                         <div className="mt-3 space-y-1.5">
                            <div className="flex items-center gap-1.5 font-mono text-[9px] bg-black/5 p-1 rounded">
@@ -278,7 +300,7 @@ export default function AiSettingsPage() {
 
               <div className="space-y-4 pt-2">
                  <p className="text-[9px] text-muted-foreground leading-relaxed italic">
-                   注意：手动输入的密钥和模型在点击“诊断”时会实时模拟请求。若显示成功，请点击“部署配置”保存到生产环境。
+                   注意：免费层级 API Key 有 RPM (Requests Per Minute) 限制。若看到 429 错误，请等待 1 分钟后重试。
                  </p>
               </div>
             </CardContent>
