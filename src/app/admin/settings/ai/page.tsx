@@ -59,7 +59,7 @@ export default function AiSettingsPage() {
 
   const [formData, setFormData] = useState<AiConfig>({
     isEnabled: true,
-    model: 'googleai/gemini-1.5-flash-latest',
+    model: 'googleai/gemini-1.5-flash',
     temperature: 0.7,
     systemInstruction: ''
   });
@@ -73,14 +73,10 @@ export default function AiSettingsPage() {
 
   useEffect(() => {
     if (aiConfig) {
-      // 核心修正逻辑：将旧的前缀和不带后缀的名称迁移到最新的标准
-      let normalized = aiConfig.model || 'googleai/gemini-1.5-flash-latest';
+      // 迁移逻辑：移除所有不兼容的前缀和 -latest 后缀
+      let normalized = aiConfig.model || 'googleai/gemini-1.5-flash';
       normalized = normalized.replace('google-genai/', 'googleai/');
-      
-      // 确保以 -latest 结尾以避免 v1beta 路由 404
-      if (normalized.includes('gemini-1.5') && !normalized.endsWith('-latest')) {
-        normalized = `${normalized}-latest`;
-      }
+      normalized = normalized.replace('-latest', '');
       
       setFormData({ ...aiConfig, model: normalized });
     }
@@ -182,12 +178,12 @@ export default function AiSettingsPage() {
                       <SelectValue placeholder="选择 AI 模型" />
                     </SelectTrigger>
                     <SelectContent className="rounded-xl">
-                      <SelectItem value="googleai/gemini-1.5-flash-latest" className="text-xs font-bold">Gemini 1.5 Flash (极速/稳定版)</SelectItem>
-                      <SelectItem value="googleai/gemini-1.5-pro-latest" className="text-xs font-bold">Gemini 1.5 Pro (高精度/稳定版)</SelectItem>
+                      <SelectItem value="googleai/gemini-1.5-flash" className="text-xs font-bold">Gemini 1.5 Flash (极速/稳定版)</SelectItem>
+                      <SelectItem value="googleai/gemini-1.5-pro" className="text-xs font-bold">Gemini 1.5 Pro (高精度/稳定版)</SelectItem>
                       <SelectItem value="googleai/gemini-2.0-flash-exp" className="text-xs font-bold text-accent-foreground bg-accent/10">Gemini 2.0 Flash Exp (试验版)</SelectItem>
                     </SelectContent>
                   </Select>
-                  <p className="text-[9px] text-muted-foreground leading-relaxed italic">注：使用 -latest 后缀以解决特定 API 版本的 404 路由问题。</p>
+                  <p className="text-[9px] text-muted-foreground leading-relaxed italic">注：已标准化为标准 API 模型标识，修复 v1beta 终结点 404 冲突。</p>
                 </div>
 
                 <div className="space-y-3">

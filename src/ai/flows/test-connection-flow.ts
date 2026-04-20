@@ -23,14 +23,14 @@ const TestOutputSchema = z.object({
 export async function testAiConnection(input: z.infer<typeof TestInputSchema>) {
   const startTime = Date.now();
   try {
-    // 强制使用 googleai/ 前缀，并确保不包含重复前缀
+    // 提取模型核心名称，确保前缀为 googleai/
     let modelId = input.model.includes('/') 
       ? input.model.split('/').pop() 
       : input.model;
     
-    // 补充 -latest 后缀以确保在 v1beta 终结点下的可用性
-    if (modelId && !modelId.endsWith('-latest') && !modelId.includes('exp')) {
-      modelId = `${modelId}-latest`;
+    // 移除可能存在的 -latest 后缀，回归标准 ID
+    if (modelId) {
+      modelId = modelId.replace('-latest', '');
     }
 
     const finalModel = `googleai/${modelId}`;
