@@ -53,7 +53,13 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     return doc(firestore, 'admins', user.uid);
   }, [firestore, user?.uid]);
 
+  const aiConfigRef = useMemoFirebase(() => {
+    if (!firestore) return null;
+    return doc(firestore, 'settings', 'ai');
+  }, [firestore]);
+
   const { data: adminData, isLoading: isAdminDataLoading } = useDoc(adminDocRef);
+  const { data: aiConfig } = useDoc<any>(aiConfigRef);
 
   useEffect(() => {
     if (!isUserLoading && !user && pathname !== '/admin/login') {
@@ -203,6 +209,35 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
               </h1>
             </div>
             <div className="flex items-center gap-4">
+              {/* AI API Status shortcut */}
+              <Link href="/admin/settings/ai">
+                <Button 
+                  variant="ghost" 
+                  size="sm" 
+                  className={cn(
+                    "rounded-full h-9 px-4 flex items-center gap-2 border transition-all shrink-0",
+                    aiConfig?.lastDiagnosis?.status === 'success' 
+                      ? "bg-green-50 border-green-200 text-green-700 hover:bg-green-100" 
+                      : aiConfig?.lastDiagnosis?.status === 'quota'
+                        ? "bg-orange-50 border-orange-200 text-orange-700 hover:bg-orange-100"
+                        : aiConfig?.lastDiagnosis?.status === 'failed'
+                          ? "bg-destructive/5 border-destructive/10 text-destructive hover:bg-destructive/10"
+                          : "bg-muted/30 border-border/20 text-muted-foreground hover:bg-muted/50"
+                  )}
+                >
+                  <Bot className={cn("h-4 w-4", aiConfig?.lastDiagnosis?.status === 'success' ? "text-green-600" : "text-muted-foreground")} />
+                  <span className="text-[10px] font-bold tracking-widest uppercase">
+                    AI API: {
+                      aiConfig?.lastDiagnosis?.status === 'success' ? 'Ready' : 
+                      aiConfig?.lastDiagnosis?.status === 'quota' ? 'Quota' :
+                      aiConfig?.lastDiagnosis?.status === 'failed' ? 'Error' : 'Setup'
+                    }
+                  </span>
+                </Button>
+              </Link>
+
+              <div className="h-5 w-px bg-border/60 mx-1 hidden md:block" />
+              
               <div className="hidden md:flex flex-col items-end">
                 <span className="text-[11px] font-bold text-primary">{user.email}</span>
                 <span className="text-[9px] text-muted-foreground uppercase tracking-widest font-medium text-right block">
