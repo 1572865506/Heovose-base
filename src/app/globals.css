@@ -52,16 +52,41 @@
 }
 
 @layer components {
-  /* AI 动态渐变图标 */
+  /* AI 极光流动渐变效果 */
   .ai-icon-gradient {
-    @apply transition-all duration-500;
-    stroke: url(#ai-glow-gradient);
-    filter: drop-shadow(0 0 1px rgba(96, 165, 250, 0.3));
+    @apply transition-all duration-700;
+    stroke: url(#ai-aurora-gradient);
+    filter: drop-shadow(0 0 2px rgba(96, 165, 250, 0.4));
+  }
+
+  /* AI 按钮流动边框与光晕 */
+  .ai-btn-glow {
+    @apply relative overflow-hidden transition-all duration-500 border-transparent bg-white shadow-sm;
+  }
+
+  .ai-btn-glow::before {
+    content: '';
+    @apply absolute inset-0 rounded-[inherit] p-[1px] -z-10;
+    background: linear-gradient(135deg, #60A5FA, #A855F7, #EC4899, #60A5FA);
+    background-size: 300% 300%;
+    animation: ai-gradient-shift 4s linear infinite;
+    -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+    mask-composite: exclude;
+  }
+
+  .ai-btn-glow:hover {
+    @apply shadow-[0_0_15px_rgba(168,85,247,0.25)] scale-[1.02];
   }
 
   .ai-btn-glow:hover .ai-icon-gradient {
-    filter: drop-shadow(0 0 4px rgba(168, 85, 247, 0.6));
-    transform: scale(1.1) rotate(10deg);
+    filter: drop-shadow(0 0 5px rgba(168, 85, 247, 0.7));
+    transform: scale(1.15) rotate(15deg);
+  }
+
+  @keyframes ai-gradient-shift {
+    0% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
+    100% { background-position: 0% 50%; }
   }
 }
 

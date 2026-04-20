@@ -67,13 +67,20 @@ import { cn } from '@/lib/utils';
 import { translateContent } from '@/ai/flows/translate-flow';
 import RichTextEditor from '@/components/RichTextEditor';
 
-// AI 渐变定义组件
+// AI 极光渐变定义组件
 const AiGradientDef = () => (
   <svg width="0" height="0" className="absolute">
     <defs>
-      <linearGradient id="ai-glow-gradient" x1="0%" y1="0%" x2="100%" y2="100%">
-        <stop stopColor="#60A5FA" offset="0%" />
-        <stop stopColor="#A855F7" offset="100%" />
+      <linearGradient id="ai-aurora-gradient" x1="0%" y1="0%" x2="100%" y2="100%">
+        <stop stopColor="#60A5FA" offset="0%">
+          <animate attributeName="stop-color" values="#60A5FA;#A855F7;#60A5FA" dur="4s" repeatCount="indefinite" />
+        </stop>
+        <stop stopColor="#A855F7" offset="50%">
+          <animate attributeName="stop-color" values="#A855F7;#EC4899;#A855F7" dur="4s" repeatCount="indefinite" />
+        </stop>
+        <stop stopColor="#EC4899" offset="100%">
+          <animate attributeName="stop-color" values="#EC4899;#60A5FA;#EC4899" dur="4s" repeatCount="indefinite" />
+        </stop>
       </linearGradient>
     </defs>
   </svg>
@@ -554,7 +561,7 @@ function ProductEditorContent() {
                     <Button 
                       variant="ghost" 
                       size="sm" 
-                      className="h-8 px-3 text-[10px] gap-1 font-bold text-accent bg-accent/5 hover:bg-accent/10 rounded-full border border-accent/10 ai-btn-glow" 
+                      className="h-8 px-3 text-[10px] gap-1 font-bold text-accent rounded-full ai-btn-glow" 
                       onClick={handleAiTranslateBasicInfo} 
                       disabled={isAiProcessing}
                     >
@@ -630,9 +637,9 @@ function ProductEditorContent() {
                   </Select>
                   {/* 完整版按钮样式 (Full) */}
                   <Button 
-                    variant="outline" 
+                    variant="ghost" 
                     size="sm" 
-                    className="h-10 px-5 text-xs font-bold text-accent gap-2 rounded-lg border-accent/20 ai-btn-glow shadow-sm" 
+                    className="h-10 px-5 text-xs font-bold text-accent rounded-lg ai-btn-glow" 
                     onClick={handleAiTranslateDetails} 
                     disabled={isAiProcessing}
                   >

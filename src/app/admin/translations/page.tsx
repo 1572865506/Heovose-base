@@ -60,13 +60,20 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { translateContent } from '@/ai/flows/translate-flow';
 
-// AI 渐变定义组件
+// AI 极光渐变定义组件
 const AiGradientDef = () => (
   <svg width="0" height="0" className="absolute">
     <defs>
-      <linearGradient id="ai-glow-gradient" x1="0%" y1="0%" x2="100%" y2="100%">
-        <stop stopColor="#60A5FA" offset="0%" />
-        <stop stopColor="#A855F7" offset="100%" />
+      <linearGradient id="ai-aurora-gradient" x1="0%" y1="0%" x2="100%" y2="100%">
+        <stop stopColor="#60A5FA" offset="0%">
+          <animate attributeName="stop-color" values="#60A5FA;#A855F7;#60A5FA" dur="4s" repeatCount="indefinite" />
+        </stop>
+        <stop stopColor="#A855F7" offset="50%">
+          <animate attributeName="stop-color" values="#A855F7;#EC4899;#A855F7" dur="4s" repeatCount="indefinite" />
+        </stop>
+        <stop stopColor="#EC4899" offset="100%">
+          <animate attributeName="stop-color" values="#EC4899;#60A5FA;#EC4899" dur="4s" repeatCount="indefinite" />
+        </stop>
       </linearGradient>
     </defs>
   </svg>
@@ -379,7 +386,7 @@ export default function TranslationsPage() {
             </TableHeader>
             <TableBody>
               {isLoading ? (
-                <TableRow><TableCell colSpan={10} className="h-40 text-center"><Loader2 className="h-6 w-6 animate-spin mx-auto opacity-20" /></TableCell></TableRow>
+                <TableRow><TableCell colSpan={10} className="h-40 text-center"><Loader2 className="h-40 w-40 animate-spin mx-auto opacity-20" /></TableCell></TableRow>
               ) : filteredTranslations.length === 0 ? (
                 <TableRow><TableCell colSpan={10} className="h-40 text-center text-[10px] text-muted-foreground italic uppercase">暂无数据</TableCell></TableRow>
               ) : filteredTranslations.map((t) => {
@@ -425,11 +432,11 @@ export default function TranslationsPage() {
                              <Button 
                               size="icon" 
                               variant="ghost" 
-                              className="h-7 w-7 text-accent hover:bg-accent/10 ai-btn-glow" 
+                              className="h-8 w-8 text-accent ai-btn-glow" 
                               onClick={() => handleAiTranslate(t)} 
                               disabled={translatingId === t.id}
                              >
-                               {translatingId === t.id ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Sparkles className="h-3.5 w-3.5 ai-icon-gradient" />}
+                               {translatingId === t.id ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Sparkles className="h-4 w-4 ai-icon-gradient" />}
                              </Button>
                            )}
                            <Button size="icon" variant="ghost" onClick={() => { setFormData(t); setEditingId(t.id); }} className="h-7 w-7 opacity-0 group-hover:opacity-100 transition-opacity"><Edit2 className="h-3.5 w-3.5" /></Button>
