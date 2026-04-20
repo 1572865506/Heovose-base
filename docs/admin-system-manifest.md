@@ -18,12 +18,15 @@
 *   **板块头部 (Section Headers)**: 统一采用 `border-b pb-4 mb-6` 的结构。
 *   **板块标题 (Heading)**: 统一锁定为 **`text-sm` (14px) font-bold text-primary uppercase tracking-widest**。图标必须直接置于标题文字左侧，禁用外层装饰框。
 *   **高度对齐**: 标准表单控件 (Input/Select/Button) 统一锁定高度为 **`h-10`**。
-*   **字体与占位符规范**:
-    *   **内容字号**: 管理后台表单内容与占位符（Placeholder）统一使用 **`text-xs` (12px)**。
-    *   **标签字号**: 统一使用 **`text-[10px] font-bold uppercase tracking-wider`**。
-*   **布局防溢出准则 (Anti-Expansion)**:
-    *   主布局容器 (`<main>`) 必须配合 `min-w-0` 和 `overflow-hidden` 确保侧边栏宽度计算异常时不会破坏全局页面的水平稳定性。
-    *   所有包含横向滚动内容（如详情图轮播）的 Flex 子容器必须逐级声明 **`min-w-0`**。
+
+### 1.3 字体与占位符规范 (Typography & Forms)
+*   **内容字号 (Content & Placeholder)**: 管理后台表单内容与占位符（Placeholder）**强制对齐**，统一使用 **`text-xs` (12px)**。禁止在控件上混合使用 14px。
+*   **标签字号 (Label)**: 统一使用 **`text-[10px] font-bold uppercase tracking-wider`**。
+*   **输入字重**: 输入框内容统一使用 `font-medium` 或常规字重，禁止在 Input 内部使用 `font-bold`（除非是特殊数值展示）。
+
+### 1.4 布局防溢出准则 (Anti-Expansion)
+*   主布局容器 (`<main>`) 必须配合 `min-w-0` 和 `overflow-hidden` 确保侧边栏宽度计算异常时不会破坏全局页面的水平稳定性。
+*   所有包含横向滚动内容（如详情图轮播）的 Flex 子容器必须逐级声明 **`min-w-0`** 以触发局部滚动条，防止容器无限撑宽。
 
 ---
 
@@ -43,5 +46,5 @@
 
 ---
 
-**最后更新日期**: 2024-05-30
+**最后更新日期**: 2024-06-05
 **维护者**: App Prototyper (AI Agent)
