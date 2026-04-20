@@ -437,16 +437,93 @@ function ProductEditorContent() {
     }
   };
 
+  /**
+   * 全矩阵智译全表 (Batch AI Specs)
+   * 优化逻辑：本地预检，仅翻译缺失项，合并为单次请求以防 503。
+   */
+  const handleAiTranslateAllSpecs = async () => {
+    if (!aiConfig?.isEnabled || formData.specGroups.length === 0) return;
+
+    // 1. 本地预检：收集需要翻译的片段 (ZH 非空且 EN 为空)
+    const taskMap: Record<string, { type: 'title' | 'label' | 'value', text: string }> = {};
+    const allIds = new Set<string>();
+
+    formData.specGroups.forEach((group, gIdx) => {
+      if (group.titleZh && !group.titleEn) {
+        taskMap[`g_${gIdx}_title`] = { type: 'title', text: group.titleZh };
+        allIds.add(`g_${gIdx}_title`);
+      }
+      group.items.forEach((item, iIdx) => {
+        if (item.labelZh && !item.labelEn) {
+          taskMap[`i_${gIdx}_${iIdx}_label`] = { type: 'label', text: item.labelZh };
+          allIds.add(`i_${gIdx}_${iIdx}_label`);
+        }
+        if (item.valueZh && !item.valueEn) {
+          taskMap[`i_${gIdx}_${iIdx}_value`] = { type: 'value', text: item.valueZh };
+          allIds.add(`i_${gIdx}_${iIdx}_value`);
+        }
+      });
+    });
+
+    if (Object.keys(taskMap).length === 0) {
+      toast({ title: "规格矩阵已是最新状态", description: "没有发现需要增量翻译的内容。" });
+      return;
+    }
+
+    setIsAiProcessing(true);
+    setProcessingItems(allIds);
+
+    try {
+      // 2. 合并单次请求：发送精简任务包
+      const payload = JSON.stringify(taskMap);
+      const res = await translateContent({
+        text: `You are a hardware expert. Translate this structure into professional industrial English. RETURN RAW JSON ONLY matching keys: ${payload}`,
+        targetLangs: ['en'],
+        model: aiConfig.model,
+        apiKey: aiConfig.apiKey
+      });
+
+      if (res?.en) {
+        const results = JSON.parse(res.en);
+        const newSpecGroups = [...formData.specGroups];
+
+        // 3. 批量回填
+        Object.keys(results).forEach(key => {
+          const val = results[key];
+          if (key.startsWith('g_')) {
+            const gIdx = parseInt(key.split('_')[1]);
+            newSpecGroups[gIdx].titleEn = val;
+          } else if (key.startsWith('i_')) {
+            const parts = key.split('_');
+            const gIdx = parseInt(parts[1]);
+            const iIdx = parseInt(parts[2]);
+            const type = parts[3];
+            if (type === 'label') newSpecGroups[gIdx].items[iIdx].labelEn = val;
+            else if (type === 'value') newSpecGroups[gIdx].items[iIdx].valueEn = val;
+          }
+        });
+
+        setFormData(prev => ({ ...prev, specGroups: newSpecGroups }));
+        toast({ title: "全表智译成功", description: `已同步更新 ${Object.keys(results).length} 个技术节点。` });
+      }
+    } catch (e: any) {
+      toast({ variant: "destructive", title: "批量智译中断", description: e.message });
+    } finally {
+      setIsAiProcessing(false);
+      setProcessingItems(new Set());
+    }
+  };
+
   const handleAiTranslateSpecItem = async (gIdx: number, iIdx: number) => {
     if (!aiConfig?.isEnabled) return;
     const item = formData.specGroups[gIdx].items[iIdx];
     if (!item.labelZh && !item.valueZh) return;
     
-    const itemKey = `${gIdx}-${iIdx}`;
-    setProcessingItems(prev => new Set(prev).add(itemKey));
+    const labelKey = `i_${gIdx}_${iIdx}_label`;
+    const valueKey = `i_${gIdx}_${iIdx}_value`;
+    setProcessingItems(prev => { const n = new Set(prev); n.add(labelKey); n.add(valueKey); return n; });
 
     try {
-      // 优化：将 label 和 value 合并到一个请求中以节省配额并防止 503
       const combinedPayload = JSON.stringify({ label: item.labelZh, value: item.valueZh });
       const res = await translateContent({ 
         text: `Translate this hardware spec entry (return JSON only): ${combinedPayload}`, 
@@ -463,7 +540,6 @@ function ProductEditorContent() {
           setFormData({ ...formData, specGroups: newSpecGroups });
           toast({ title: "单条规格智译成功" });
         } catch {
-          // 如果 AI 没按 JSON 返回，则回退到普通解析或报错
           toast({ variant: "destructive", title: "智译解析失败" });
         }
       }
@@ -472,7 +548,8 @@ function ProductEditorContent() {
     } finally {
       setProcessingItems(prev => {
         const next = new Set(prev);
-        next.delete(itemKey);
+        next.delete(labelKey);
+        next.delete(valueKey);
         return next;
       });
     }
@@ -659,6 +736,17 @@ function ProductEditorContent() {
                   <p className="text-[10px] text-muted-foreground font-medium uppercase tracking-tight">技术参数多语言对照管理。</p>
                 </div>
                 <div className="flex gap-2">
+                  <Button 
+                    variant="ghost"
+                    size="sm" 
+                    className="h-10 px-4 text-xs font-bold text-primary rounded-lg ai-btn-glow" 
+                    onClick={handleAiTranslateAllSpecs} 
+                    disabled={isAiProcessing || formData.specGroups.length === 0}
+                  >
+                    {isAiProcessing ? <Loader2 className="h-4 w-4 animate-spin ai-icon-gradient" /> : <Sparkles className="h-4 w-4 ai-icon-gradient" />}
+                    AI 智译全表
+                  </Button>
+
                   <Popover>
                     <PopoverTrigger asChild>
                       <Button 
@@ -710,34 +798,60 @@ function ProductEditorContent() {
                     <div className="bg-muted/10 px-6 py-3 flex items-center justify-between border-b">
                       <div className="grid grid-cols-2 gap-4 flex-1">
                         <Input placeholder="分组标题 (ZH)" value={group.titleZh} onChange={e => { const g=[...formData.specGroups]; g[gIdx].titleZh=e.target.value; setFormData({...formData, specGroups:g}); }} className="h-9 text-xs border-none bg-transparent focus:bg-white" />
-                        <Input placeholder="GROUP TITLE (EN)" value={group.titleEn} onChange={e => { const g=[...formData.specGroups]; g[gIdx].titleEn=e.target.value; setFormData({...formData, specGroups:g}); }} className="h-9 text-xs border-none bg-transparent focus:bg-white border-dashed" />
+                        <Input 
+                          placeholder="GROUP TITLE (EN)" 
+                          value={group.titleEn} 
+                          onChange={e => { const g=[...formData.specGroups]; g[gIdx].titleEn=e.target.value; setFormData({...formData, specGroups:g}); }} 
+                          className={cn(
+                            "h-9 text-xs border-none bg-transparent focus:bg-white border-dashed",
+                            processingItems.has(`g_${gIdx}_title`) && "animate-pulse ring-2 ring-primary/20"
+                          )} 
+                        />
                       </div>
                       <Button variant="ghost" size="icon" onClick={() => setFormData({...formData, specGroups: formData.specGroups.filter((_,i)=>i!==gIdx)})} className="ml-4 h-9 w-9 text-destructive/40 hover:text-destructive hover:bg-destructive/5"><Trash2 className="h-4 w-4" /></Button>
                     </div>
                     {group.items.map((item, iIdx) => {
-                      const itemKey = `${gIdx}-${iIdx}`;
-                      const isRowProcessing = processingItems.has(itemKey);
+                      const labelKey = `i_${gIdx}_${iIdx}_label`;
+                      const valueKey = `i_${gIdx}_${iIdx}_value`;
+                      const isLabelProcessing = processingItems.has(labelKey);
+                      const isValueProcessing = processingItems.has(valueKey);
                       
                       return (
                         <div key={item.uid} className="grid grid-cols-[1fr_1fr_80px] gap-6 px-6 py-4 border-b last:border-b-0 hover:bg-muted/5 transition-colors">
                           <div className="space-y-3">
                              <Input placeholder="参数名称 (ZH)" value={item.labelZh} onChange={e => { const g=[...formData.specGroups]; g[gIdx].items[iIdx].labelZh=e.target.value; setFormData({...formData, specGroups:g}); }} className="h-10 text-xs" />
-                             <Input placeholder="LABEL (EN)" value={item.labelEn} onChange={e => { const g=[...formData.specGroups]; g[gIdx].items[iIdx].labelEn=e.target.value; setFormData({...formData, specGroups:g}); }} className="h-10 text-xs border-dashed bg-muted/10" />
+                             <Input 
+                                placeholder="LABEL (EN)" 
+                                value={item.labelEn} 
+                                onChange={e => { const g=[...formData.specGroups]; g[gIdx].items[iIdx].labelEn=e.target.value; setFormData({...formData, specGroups:g}); }} 
+                                className={cn(
+                                  "h-10 text-xs border-dashed bg-muted/10",
+                                  isLabelProcessing && "animate-pulse ring-2 ring-primary/20 bg-accent/5"
+                                )} 
+                             />
                           </div>
                           <div className="space-y-3">
                              <Input placeholder="参数值 (ZH)" value={item.valueZh} onChange={e => { const g=[...formData.specGroups]; g[gIdx].items[iIdx].valueZh=e.target.value; setFormData({...formData, specGroups:g}); }} className="h-10 text-xs font-medium" />
-                             <Input placeholder="VALUE (EN)" value={item.valueEn} onChange={e => { const g=[...formData.specGroups]; g[gIdx].items[iIdx].valueEn=e.target.value; setFormData({...formData, specGroups:g}); }} className="h-10 text-xs border-dashed bg-muted/10 font-medium" />
+                             <Input 
+                                placeholder="VALUE (EN)" 
+                                value={item.valueEn} 
+                                onChange={e => { const g=[...formData.specGroups]; g[gIdx].items[iIdx].valueEn=e.target.value; setFormData({...formData, specGroups:g}); }} 
+                                className={cn(
+                                  "h-10 text-xs border-dashed bg-muted/10 font-medium",
+                                  isValueProcessing && "animate-pulse ring-2 ring-primary/20 bg-accent/5"
+                                )} 
+                             />
                           </div>
                           <div className="flex flex-col gap-2 justify-center">
                             <Button 
                               variant="ghost" 
                               size="icon" 
-                              className={cn("h-8 w-8 ai-btn-glow", isRowProcessing && "bg-accent")} 
+                              className={cn("h-8 w-8 ai-btn-glow", (isLabelProcessing || isValueProcessing) && "bg-accent")} 
                               onClick={(e) => { e.stopPropagation(); handleAiTranslateSpecItem(gIdx, iIdx); }}
-                              disabled={isRowProcessing}
+                              disabled={isLabelProcessing || isValueProcessing}
                               title="AI 智译此行"
                             >
-                              {isRowProcessing ? <Loader2 className="h-4 w-4 animate-spin text-accent-foreground" /> : <Sparkles className="h-4 w-4 ai-icon-gradient" />}
+                              {(isLabelProcessing || isValueProcessing) ? <Loader2 className="h-4 w-4 animate-spin text-accent-foreground" /> : <Sparkles className="h-4 w-4 ai-icon-gradient" />}
                             </Button>
                             <Button 
                               variant="ghost" 
