@@ -223,10 +223,10 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     <SidebarProvider>
       <div className="flex h-screen w-full bg-muted/20 overflow-hidden">
         <Sidebar className="border-r border-border/40 shadow-xl bg-white shrink-0">
-          <SidebarHeader className="h-16 flex items-center px-5 border-b border-border/40">
+          <SidebarHeader className="h-16 flex items-center justify-center border-b border-border/40">
             <Link href="/admin" className="flex items-center gap-2">
               <Image src="/image/Heovose-color.svg" alt="Heovose Admin" width={120} height={24} className="h-6 w-auto" />
-              <span className="text-[9px] font-bold bg-primary/10 text-primary px-1.5 py-0.5 rounded-full uppercase tracking-tighter">管理中心</span>
+              <span className="text-[9px] font-bold bg-primary/10 text-primary px-2 py-0.5 rounded-full uppercase tracking-tighter flex items-center justify-center">管理中心</span>
             </Link>
           </SidebarHeader>
           <SidebarContent className="py-4">
