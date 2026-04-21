@@ -17,6 +17,7 @@
         "heroProjectButtonZh": { "type": "string" },
         "heroWholesaleCategoryId": { "type": "string", "description": "批发按钮跳转的分类ID" },
         "heroProjectCategoryId": { "type": "string", "description": "项目按钮跳转的分类ID" },
+        "isVideoEnabled": { "type": "boolean", "description": "是否开启视频/品牌故事板块" },
         "videoTitleEn": { "type": "string" },
         "videoTitleZh": { "type": "string" },
         "videoSubtitleEn": { "type": "string" },
@@ -171,6 +172,10 @@
     "/galleryAssets/{assetId}": {
       "schema": { "type": "object" },
       "description": "云端媒体资产库"
+    },
+    "/galleryCategories/{categoryId}": {
+      "schema": { "type": "object" },
+      "description": "图库资产分类"
     },
     "/specTemplates/{templateId}": {
       "schema": { "type": "object" },

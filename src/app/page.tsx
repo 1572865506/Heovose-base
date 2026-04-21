@@ -82,7 +82,10 @@ export default function Home() {
       
       <ProductGallery locale={locale} />
       
-      <VideoSection locale={locale} homeConfig={homeConfig} />
+      {/* 动态开关：视频/品牌故事模块 */}
+      {homeConfig?.isVideoEnabled !== false && (
+        <VideoSection locale={locale} homeConfig={homeConfig} />
+      )}
       
       <ProductionProcess locale={locale} />
       

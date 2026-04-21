@@ -1,8 +1,9 @@
+
 "use client";
 
 import { useState, useEffect } from 'react';
 import { useFirestore, useDoc, useCollection, useMemoFirebase } from '@/firebase';
-import { doc, collection, serverTimestamp, query, orderBy } from 'firebase/firestore';
+import { doc, collection, serverTimestamp } from 'firebase/firestore';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -14,13 +15,15 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Switch } from '@/components/ui/switch';
 import { 
   Home, 
   Save, 
   Sparkles, 
   Loader2, 
   Image as ImageIcon, 
-  Film
+  Film,
+  Video
 } from 'lucide-react';
 import { setDocumentNonBlocking } from '@/firebase/non-blocking-updates';
 import { useToast } from '@/hooks/use-toast';
@@ -73,6 +76,7 @@ export default function AdminHomePage() {
     heroProjectButtonEn: '',
     heroWholesaleCategoryId: '',
     heroProjectCategoryId: '',
+    isVideoEnabled: true,
     videoTitleZh: '',
     videoTitleEn: '',
     videoSubtitleZh: '',
@@ -96,6 +100,7 @@ export default function AdminHomePage() {
         heroProjectButtonEn: homeData.heroProjectButtonEn || '',
         heroWholesaleCategoryId: homeData.heroWholesaleCategoryId || '',
         heroProjectCategoryId: homeData.heroProjectCategoryId || '',
+        isVideoEnabled: homeData.isVideoEnabled ?? true,
         videoTitleZh: homeData.videoTitleZh || '',
         videoTitleEn: homeData.videoTitleEn || '',
         videoSubtitleZh: homeData.videoSubtitleZh || '',
@@ -274,37 +279,63 @@ export default function AdminHomePage() {
 
         <TabsContent value="video" className="space-y-6">
           <div className="bg-white p-8 rounded-3xl border shadow-sm space-y-8">
-            <div className="flex items-center justify-between border-b pb-4">
-              <h3 className="text-sm font-bold text-primary uppercase tracking-widest flex items-center gap-2">
-                <Film className="h-4 w-4" /> 品牌故事滚动文案
-              </h3>
-              <Button 
-                variant="ghost" size="sm" className="ai-btn-glow h-9 px-4 text-[10px] font-bold"
-                onClick={async () => {
-                  const updates = await handleTranslate([
-                    {source: 'videoTitleZh', targetKey: 'videoTitleEn'},
-                    {source: 'videoSubtitleZh', targetKey: 'videoSubtitleEn'}
-                  ]);
-                  if(updates) setFormData({...formData, ...updates});
-                }}
-              >
-                <Sparkles className="h-3.5 w-3.5 ai-icon-gradient" /> AI 智译
-              </Button>
-            </div>
-            <div className="grid grid-cols-2 gap-10">
-              <div className="space-y-4">
-                <Label className="text-[10px] font-bold uppercase opacity-40">滚动第一段 (ZH)</Label>
-                <Input value={formData.videoTitleZh} onChange={e => setFormData({...formData, videoTitleZh: e.target.value})} className="h-11 rounded-xl" />
-                <Label className="text-[10px] font-bold uppercase opacity-40">滚动第二段 (ZH)</Label>
-                <Input value={formData.videoSubtitleZh} onChange={e => setFormData({...formData, videoSubtitleZh: e.target.value})} className="h-11 rounded-xl" />
+            <div className="flex items-center justify-between border-b pb-6">
+              <div className="flex items-center gap-4">
+                <div className={cn("p-2 rounded-xl transition-colors", formData.isVideoEnabled ? "bg-primary text-white" : "bg-muted text-muted-foreground")}>
+                  <Video className="h-5 w-5" />
+                </div>
+                <div className="space-y-0.5">
+                  <h3 className="text-sm font-bold text-primary uppercase tracking-widest">视频/品牌故事模块开关</h3>
+                  <p className="text-[10px] text-muted-foreground font-medium">开启后前台将显示全屏视频品牌板块。</p>
+                </div>
               </div>
-              <div className="space-y-4 border-l pl-10 border-dashed">
-                <Label className="text-[10px] font-bold uppercase opacity-40">FIRST SEGMENT (EN)</Label>
-                <Input value={formData.videoTitleEn} onChange={e => setFormData({...formData, videoTitleEn: e.target.value})} className="h-11 rounded-xl border-dashed" />
-                <Label className="text-[10px] font-bold uppercase opacity-40">SECOND SEGMENT (EN)</Label>
-                <Input value={formData.videoSubtitleEn} onChange={e => setFormData({...formData, videoSubtitleEn: e.target.value})} className="h-11 rounded-xl border-dashed" />
-              </div>
+              <Switch 
+                checked={formData.isVideoEnabled} 
+                onCheckedChange={v => setFormData({...formData, isVideoEnabled: v})} 
+              />
             </div>
+
+            {formData.isVideoEnabled && (
+              <div className="space-y-8 animate-in fade-in slide-in-from-top-4 duration-500">
+                <div className="flex items-center justify-between">
+                  <h3 className="text-xs font-bold text-primary uppercase tracking-widest flex items-center gap-2">
+                    <Film className="h-4 w-4" /> 品牌故事滚动文案配置
+                  </h3>
+                  <Button 
+                    variant="ghost" size="sm" className="ai-btn-glow h-9 px-4 text-[10px] font-bold"
+                    onClick={async () => {
+                      const updates = await handleTranslate([
+                        {source: 'videoTitleZh', targetKey: 'videoTitleEn'},
+                        {source: 'videoSubtitleZh', targetKey: 'videoSubtitleEn'}
+                      ]);
+                      if(updates) setFormData({...formData, ...updates});
+                    }}
+                  >
+                    <Sparkles className="h-3.5 w-3.5 ai-icon-gradient" /> AI 智译
+                  </Button>
+                </div>
+                <div className="grid grid-cols-2 gap-10">
+                  <div className="space-y-4">
+                    <Label className="text-[10px] font-bold uppercase opacity-40">滚动第一段 (ZH)</Label>
+                    <Input value={formData.videoTitleZh} onChange={e => setFormData({...formData, videoTitleZh: e.target.value})} className="h-11 rounded-xl" />
+                    <Label className="text-[10px] font-bold uppercase opacity-40">滚动第二段 (ZH)</Label>
+                    <Input value={formData.videoSubtitleZh} onChange={e => setFormData({...formData, videoSubtitleZh: e.target.value})} className="h-11 rounded-xl" />
+                  </div>
+                  <div className="space-y-4 border-l pl-10 border-dashed">
+                    <Label className="text-[10px] font-bold uppercase opacity-40">FIRST SEGMENT (EN)</Label>
+                    <Input value={formData.videoTitleEn} onChange={e => setFormData({...formData, videoTitleEn: e.target.value})} className="h-11 rounded-xl border-dashed" />
+                    <Label className="text-[10px] font-bold uppercase opacity-40">SECOND SEGMENT (EN)</Label>
+                    <Input value={formData.videoSubtitleEn} onChange={e => setFormData({...formData, videoSubtitleEn: e.target.value})} className="h-11 rounded-xl border-dashed" />
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {!formData.isVideoEnabled && (
+              <div className="py-12 text-center bg-muted/5 border-2 border-dashed rounded-2xl">
+                 <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest opacity-40">视频模块已禁用，保存后前台将不再显示</p>
+              </div>
+            )}
           </div>
         </TabsContent>
       </Tabs>
