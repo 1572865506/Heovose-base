@@ -441,9 +441,6 @@ export default function AdminHomePage() {
               </DialogTitle>
               <DialogDescription className="text-white/60 text-xs">填写网点详细信息，并从图库选择展示图片。</DialogDescription>
             </DialogHeader>
-            <Button variant="ghost" onClick={handleTranslateLocation} className="ai-btn-glow h-10 px-5 gap-2 text-xs">
-              <Sparkles className="h-4 w-4 ai-icon-gradient" /> AI 智译信息
-            </Button>
           </div>
 
           <div className="p-8 bg-white grid grid-cols-1 md:grid-cols-2 gap-10">
@@ -455,14 +452,14 @@ export default function AdminHomePage() {
                     <SelectTrigger className="h-10 rounded-xl"><SelectValue /></SelectTrigger>
                     <SelectContent className="rounded-xl">
                       <SelectItem value="HQ">总部 (HQ)</SelectItem>
-                      <SelectItem value="R&D">研发中心 (R&D)</SelectItem>
+                      <SelectItem value="R&D">研发 center (R&D)</SelectItem>
                       <SelectItem value="Factory">制造工厂 (Factory)</SelectItem>
                       <SelectItem value="Global">全球分支 (Global)</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
                 <div className="space-y-2">
-                  <Label className="text-[10px] font-bold uppercase opacity-40">地图位置预览</Label>
+                  <Label className="text-[10px] font-bold uppercase opacity-40">地图图标</Label>
                   <div className="h-10 flex items-center gap-3 px-4 bg-muted/10 rounded-xl">
                     {locationForm.type === 'HQ' && <Building2 className="h-5 w-5 text-primary" />}
                     {locationForm.type === 'R&D' && <Microscope className="h-5 w-5 text-primary" />}
@@ -486,11 +483,11 @@ export default function AdminHomePage() {
                   <Textarea value={locationForm.descZh} onChange={e => setLocationForm({...locationForm, descZh: e.target.value})} className="min-h-[80px] rounded-xl" />
                 </div>
               </div>
-            </div>
-            <div className="space-y-6">
-              <div className="space-y-4 border-l pl-8 border-dashed">
+
+              {/* 展示图模块 - 移动到左侧底部 */}
+              <div className="space-y-4 pt-4 border-t border-dashed">
                 <div className="space-y-2">
-                  <Label className="text-[10px] font-bold uppercase opacity-40">展示图</Label>
+                  <Label className="text-[10px] font-bold uppercase opacity-40">展示图预览</Label>
                   <div 
                     className="relative aspect-video rounded-xl bg-muted/20 border-2 border-dashed border-border/40 overflow-hidden flex flex-col items-center justify-center group cursor-pointer hover:bg-muted/30 transition-all"
                     onClick={() => setIsPickerOpen(true)}
@@ -505,23 +502,33 @@ export default function AdminHomePage() {
                     ) : (
                       <div className="flex flex-col items-center gap-2 opacity-40">
                         <ImageIcon className="h-8 w-8" />
-                        <span className="text-[10px] font-bold uppercase tracking-widest">从图库选择</span>
+                        <span className="text-[10px] font-bold uppercase tracking-widest">从图库选择素材</span>
                       </div>
                     )}
                   </div>
                 </div>
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
-                    <Label className="text-[10px] font-bold uppercase opacity-40">坐标 Left (%)</Label>
+                    <Label className="text-[10px] font-bold uppercase opacity-40">地图坐标 Left (%)</Label>
                     <Input value={locationForm.posLeft} onChange={e => setLocationForm({...locationForm, posLeft: e.target.value})} placeholder="如: 75%" className="h-10 rounded-xl font-mono" />
                   </div>
                   <div className="space-y-2">
-                    <Label className="text-[10px] font-bold uppercase opacity-40">坐标 Top (%)</Label>
+                    <Label className="text-[10px] font-bold uppercase opacity-40">地图坐标 Top (%)</Label>
                     <Input value={locationForm.posTop} onChange={e => setLocationForm({...locationForm, posTop: e.target.value})} placeholder="如: 40%" className="h-10 rounded-xl font-mono" />
                   </div>
                 </div>
               </div>
-              <div className="space-y-4 pt-4 border-t border-dashed">
+            </div>
+
+            <div className="space-y-6">
+              {/* AI 智译按钮 - 移动到右侧容器顶部 */}
+              <div className="flex justify-end border-l pl-8">
+                <Button variant="ghost" onClick={handleTranslateLocation} className="ai-btn-glow h-10 px-5 gap-2 text-xs">
+                  <Sparkles className="h-4 w-4 ai-icon-gradient" /> AI 智译右侧信息
+                </Button>
+              </div>
+
+              <div className="space-y-4 pt-4 border-l pl-8 border-dashed">
                 <div className="space-y-2">
                   <Label className="text-[10px] font-bold uppercase opacity-40">NAME (EN)</Label>
                   <Input value={locationForm.titleEn} onChange={e => setLocationForm({...locationForm, titleEn: e.target.value})} className="h-10 rounded-xl border-dashed" />
@@ -530,13 +537,17 @@ export default function AdminHomePage() {
                   <Label className="text-[10px] font-bold uppercase opacity-40">ADDRESS (EN)</Label>
                   <Input value={locationForm.addressEn} onChange={e => setLocationForm({...locationForm, addressEn: e.target.value})} className="h-10 rounded-xl border-dashed" />
                 </div>
+                <div className="space-y-2">
+                  <Label className="text-[10px] font-bold uppercase opacity-40">DESCRIPTION (EN)</Label>
+                  <Textarea value={locationForm.descEn} onChange={e => setLocationForm({...locationForm, descEn: e.target.value})} className="min-h-[80px] rounded-xl border-dashed" />
+                </div>
               </div>
             </div>
           </div>
 
           <DialogFooter className="bg-muted/10 p-6 flex gap-3 border-t">
-            <Button variant="outline" onClick={() => setIsLocationDialogOpen(false)} className="rounded-xl h-11 flex-1 font-bold uppercase text-[10px]">取消</Button>
-            <Button onClick={handleLocationSubmit} className="rounded-xl h-11 flex-1 font-bold uppercase text-[10px]">确认网点信息</Button>
+            <Button variant="outline" onClick={() => setIsLocationDialogOpen(false)} className="rounded-xl h-11 flex-1 font-bold uppercase text-[10px]">取消编辑</Button>
+            <Button onClick={handleLocationSubmit} className="rounded-xl h-11 flex-1 font-bold uppercase text-[10px]">保存并同步网点</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
