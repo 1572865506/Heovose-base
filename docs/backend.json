@@ -25,12 +25,14 @@
       "type": "object",
       "description": "系统管理员角色定义",
       "properties": {
-        "uid": { "type": "string" },
-        "email": { "type": "string" },
-        "role": { "type": "string", "enum": ["superadmin", "editor"] },
-        "displayName": { "type": "string" },
-        "status": { "type": "string", "enum": ["active", "disabled"] }
-      }
+        "uid": { "type": "string", "description": "Firebase Authentication 唯一标识符" },
+        "email": { "type": "string", "description": "管理员邮箱" },
+        "role": { "type": "string", "enum": ["superadmin", "editor"], "description": "权限角色" },
+        "displayName": { "type": "string", "description": "显示名称" },
+        "avatarUrl": { "type": "string", "description": "头像链接" },
+        "status": { "type": "string", "enum": ["active", "disabled"], "description": "账号激活状态" }
+      },
+      "required": ["uid", "email", "role", "status"]
     },
     "LocalizedString": {
       "title": "LocalizedString",
@@ -47,27 +49,33 @@
     "providers": ["password"]
   },
   "firestore": {
-    "structure": [
-      {
-        "path": "/products/{productId}",
-        "definition": { "entityName": "Product", "schema": { "$ref": "#/backend/entities/Product" }, "description": "产品列表" }
-      },
-      {
-        "path": "/admins/{userId}",
-        "definition": { "entityName": "AdminUser", "schema": { "$ref": "#/backend/entities/AdminUser" }, "description": "管理员白名单" }
-      },
-      {
-        "path": "/localizedStrings/{textId}",
-        "definition": { "entityName": "LocalizedString", "schema": { "$ref": "#/backend/entities/LocalizedString" }, "description": "翻译资产库" }
-      },
-      {
-        "path": "/settings/ai",
-        "definition": { "schema": { "type": "object" }, "description": "AI 智译配置" }
-      },
-      {
-        "path": "/galleryAssets/{assetId}",
-        "definition": { "schema": { "type": "object" }, "description": "云端媒体资产" }
-      }
-    ]
+    "/products/{productId}": {
+      "schema": { "$ref": "#/backend/entities/Product" },
+      "description": "产品列表"
+    },
+    "/admins/{userId}": {
+      "schema": { "$ref": "#/backend/entities/AdminUser" },
+      "description": "管理员权限白名单"
+    },
+    "/localizedStrings/{textId}": {
+      "schema": { "$ref": "#/backend/entities/LocalizedString" },
+      "description": "多语言翻译资产库"
+    },
+    "/settings/ai": {
+      "schema": { "type": "object" },
+      "description": "AI 智译引擎配置"
+    },
+    "/settings/languages": {
+      "schema": { "type": "object" },
+      "description": "全站支持语种及默认语种配置"
+    },
+    "/galleryAssets/{assetId}": {
+      "schema": { "type": "object" },
+      "description": "云端媒体资产库"
+    },
+    "/specTemplates/{templateId}": {
+      "schema": { "type": "object" },
+      "description": "硬件技术规格复用模板"
+    }
   }
 }
