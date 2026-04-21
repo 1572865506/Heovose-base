@@ -5,7 +5,6 @@ import { useFirestore, useDoc, useCollection, useMemoFirebase } from '@/firebase
 import { doc, collection, serverTimestamp, query, orderBy } from 'firebase/firestore';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { 
@@ -21,34 +20,11 @@ import {
   Sparkles, 
   Loader2, 
   Image as ImageIcon, 
-  Film, 
-  MapPin,
-  Plus,
-  Trash2,
-  Edit2,
-  Globe,
-  Building2,
-  Microscope,
-  Factory,
-  Search,
-  Check,
-  X
+  Film
 } from 'lucide-react';
-import { 
-  Dialog, 
-  DialogContent, 
-  DialogFooter, 
-  DialogHeader, 
-  DialogTitle, 
-  DialogDescription,
-} from '@/components/ui/dialog';
 import { setDocumentNonBlocking } from '@/firebase/non-blocking-updates';
 import { useToast } from '@/hooks/use-toast';
 import { translateContent } from '@/ai/flows/translate-flow';
-import { cn } from '@/lib/utils';
-import { Badge } from '@/components/ui/badge';
-import { Card, CardContent } from '@/components/ui/card';
-import Image from 'next/image';
 
 // AI 极光渐变定义组件
 const AiGradientDef = () => (
@@ -80,13 +56,11 @@ export default function AdminHomePage() {
   const aiRef = useMemoFirebase(() => firestore ? doc(firestore, 'settings', 'ai') : null, [firestore]);
   const catsQuery = useMemoFirebase(() => firestore ? collection(firestore, 'productCategories') : null, [firestore]);
   const transQuery = useMemoFirebase(() => firestore ? collection(firestore, 'localizedStrings') : null, [firestore]);
-  const assetsQuery = useMemoFirebase(() => firestore ? query(collection(firestore, 'galleryAssets'), orderBy('createdAt', 'desc')) : null, [firestore]);
   
   const { data: homeData, isLoading } = useDoc<any>(homeRef);
   const { data: aiConfig } = useDoc<any>(aiRef);
   const { data: categories } = useCollection<any>(catsQuery);
   const { data: translations } = useCollection<any>(transQuery);
-  const { data: galleryAssets } = useCollection<any>(assetsQuery);
 
   const [formData, setFormData] = useState<any>({
     heroHeadlineZh: '',
@@ -102,40 +76,31 @@ export default function AdminHomePage() {
     videoTitleZh: '',
     videoTitleEn: '',
     videoSubtitleZh: '',
-    videoSubtitleEn: '',
-    mapTitleZh: '',
-    mapTitleEn: '',
-    mapSubtitleZh: '',
-    mapSubtitleEn: '',
-    locations: []
+    videoSubtitleEn: ''
   });
 
   const [isSaving, setIsSaving] = useState(false);
   const [isAiProcessing, setIsAiProcessing] = useState(false);
-  const [isLocationDialogOpen, setIsLocationDialogOpen] = useState(false);
-  const [editingLocation, setEditingLocation] = useState<any>(null);
-  
-  // 图库选择器状态
-  const [isPickerOpen, setIsPickerOpen] = useState(false);
-  const [pickerSearch, setPickerSearch] = useState('');
-
-  const [locationForm, setLocationForm] = useState<any>({
-    id: '',
-    type: 'Factory',
-    titleZh: '',
-    titleEn: '',
-    addressZh: '',
-    addressEn: '',
-    descZh: '',
-    descEn: '',
-    imageUrl: '',
-    posTop: '50%',
-    posLeft: '50%'
-  });
 
   useEffect(() => {
     if (homeData) {
-      setFormData({ ...formData, ...homeData });
+      setFormData({ 
+        ...formData, 
+        heroHeadlineZh: homeData.heroHeadlineZh || '',
+        heroHeadlineEn: homeData.heroHeadlineEn || '',
+        heroSubheadlineZh: homeData.heroSubheadlineZh || '',
+        heroSubheadlineEn: homeData.heroSubheadlineEn || '',
+        heroWholesaleButtonZh: homeData.heroWholesaleButtonZh || '',
+        heroWholesaleButtonEn: homeData.heroWholesaleButtonEn || '',
+        heroProjectButtonZh: homeData.heroProjectButtonZh || '',
+        heroProjectButtonEn: homeData.heroProjectButtonEn || '',
+        heroWholesaleCategoryId: homeData.heroWholesaleCategoryId || '',
+        heroProjectCategoryId: homeData.heroProjectCategoryId || '',
+        videoTitleZh: homeData.videoTitleZh || '',
+        videoTitleEn: homeData.videoTitleEn || '',
+        videoSubtitleZh: homeData.videoSubtitleZh || '',
+        videoSubtitleEn: homeData.videoSubtitleEn || ''
+      });
     }
   }, [homeData]);
 
@@ -150,7 +115,7 @@ export default function AdminHomePage() {
 
     setTimeout(() => {
       setIsSaving(false);
-      toast({ title: "首页配置已保存" });
+      toast({ title: "首页基础内容已保存" });
     }, 800);
   };
 
@@ -181,31 +146,6 @@ export default function AdminHomePage() {
     }
   };
 
-  const handleLocationSubmit = () => {
-    const newLocations = [...(formData.locations || [])];
-    if (editingLocation) {
-      const idx = newLocations.findIndex(l => l.id === editingLocation.id);
-      newLocations[idx] = { ...locationForm };
-    } else {
-      newLocations.push({ ...locationForm, id: `loc_${Date.now()}` });
-    }
-    setFormData({ ...formData, locations: newLocations });
-    setIsLocationDialogOpen(false);
-    setEditingLocation(null);
-  };
-
-  const handleTranslateLocation = async () => {
-    const updates = await handleTranslate([
-      { source: 'titleZh', targetKey: 'titleEn' },
-      { source: 'addressZh', targetKey: 'addressEn' },
-      { source: 'descZh', targetKey: 'descEn' }
-    ], locationForm);
-    if (updates) {
-      setLocationForm({ ...locationForm, ...updates });
-      toast({ title: "地区信息智译完成" });
-    }
-  };
-
   const getCategoryName = (id: string) => {
     const cat = categories?.find((c: any) => c.id === id);
     if (!cat) return id;
@@ -229,9 +169,9 @@ export default function AdminHomePage() {
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 sticky top-[-24px] z-50 bg-background/95 backdrop-blur-md py-4 border-b -mx-6 px-6">
         <div>
           <h2 className="text-xl font-headline font-bold text-primary flex items-center gap-2">
-            <Home className="h-5 w-5" /> 首页配置管理
+            <Home className="h-5 w-5" /> 首页视觉配置
           </h2>
-          <p className="text-xs text-muted-foreground">管理全站展示的地区网点、英雄视觉及品牌故事。</p>
+          <p className="text-xs text-muted-foreground">管理英雄屏及品牌故事文案。全球网点请前往“全球地图”模块管理。</p>
         </div>
         
         <Button onClick={handleSave} disabled={isSaving} className="rounded-xl h-12 px-8 gap-2 font-bold uppercase tracking-widest text-xs shadow-xl">
@@ -247,9 +187,6 @@ export default function AdminHomePage() {
           </TabsTrigger>
           <TabsTrigger value="video" className="rounded-xl px-8 text-xs font-bold uppercase tracking-wider gap-2">
             <Film className="h-4 w-4" /> 品牌故事 (Video)
-          </TabsTrigger>
-          <TabsTrigger value="map" className="rounded-xl px-8 text-xs font-bold uppercase tracking-wider gap-2">
-            <MapPin className="h-4 w-4" /> 全球足迹 (Map)
           </TabsTrigger>
         </TabsList>
 
@@ -370,239 +307,7 @@ export default function AdminHomePage() {
             </div>
           </div>
         </TabsContent>
-
-        <TabsContent value="map" className="space-y-6">
-          <div className="bg-white p-8 rounded-3xl border shadow-sm space-y-8">
-            <div className="flex items-center justify-between border-b pb-4">
-              <div className="space-y-1">
-                <h3 className="text-sm font-bold text-primary uppercase tracking-widest flex items-center gap-2">
-                  <MapPin className="h-4 w-4" /> 全球网点配置
-                </h3>
-                <p className="text-[10px] text-muted-foreground uppercase font-medium">配置地图上显示的 HQ、研发中心及全球工厂。</p>
-              </div>
-              <div className="flex gap-4 items-center">
-                 <div className="space-y-1 mr-4">
-                    <Label className="text-[10px] font-bold uppercase opacity-40">板块标题 (ZH)</Label>
-                    <Input value={formData.mapTitleZh} onChange={e => setFormData({...formData, mapTitleZh: e.target.value})} className="h-9 w-48 text-xs" />
-                 </div>
-                 <Button onClick={() => {
-                   setLocationForm({ id: '', type: 'Factory', titleZh: '', titleEn: '', addressZh: '', addressEn: '', descZh: '', descEn: '', imageUrl: '', posTop: '50%', posLeft: '50%' });
-                   setEditingLocation(null);
-                   setIsLocationDialogOpen(true);
-                 }} className="rounded-xl h-10 px-6 gap-2 text-xs font-bold uppercase tracking-widest">
-                   <Plus className="h-4 w-4" /> 新增网点
-                 </Button>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {(formData.locations || []).map((loc: any) => (
-                <Card key={loc.id} className="rounded-2xl border-border/40 overflow-hidden group hover:border-primary/40 transition-all">
-                  <div className="relative h-32 bg-muted/20">
-                    {loc.imageUrl && <img src={loc.imageUrl} alt="" className="w-full h-full object-cover" />}
-                    <div className="absolute top-2 left-2">
-                      <Badge className="bg-primary text-white text-[8px] uppercase">{loc.type}</Badge>
-                    </div>
-                    <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
-                       <Button variant="secondary" size="icon" className="h-8 w-8 rounded-full" onClick={() => { setEditingLocation(loc); setLocationForm(loc); setIsLocationDialogOpen(true); }}><Edit2 className="h-3.5 w-3.5" /></Button>
-                       <Button variant="destructive" size="icon" className="h-8 w-8 rounded-full" onClick={() => {
-                         const newList = formData.locations.filter((l:any) => l.id !== loc.id);
-                         setFormData({...formData, locations: newList});
-                       }}><Trash2 className="h-3.5 w-3.5" /></Button>
-                    </div>
-                  </div>
-                  <CardContent className="p-4 space-y-2">
-                    <h4 className="text-xs font-bold text-primary truncate">{loc.titleZh}</h4>
-                    <p className="text-[10px] text-muted-foreground line-clamp-1">{loc.addressZh}</p>
-                    <div className="flex justify-between items-center pt-2 border-t border-dashed">
-                      <span className="text-[8px] font-mono opacity-40">Map Pos: {loc.posLeft}, {loc.posTop}</span>
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
-              {(!formData.locations || formData.locations.length === 0) && (
-                <div className="col-span-full py-20 text-center border-2 border-dashed rounded-2xl bg-muted/5">
-                  <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest">暂无网点数据，前台将显示默认信息</p>
-                </div>
-              )}
-            </div>
-          </div>
-        </TabsContent>
       </Tabs>
-
-      {/* Location Editor Dialog */}
-      <Dialog open={isLocationDialogOpen} onOpenChange={setIsLocationDialogOpen}>
-        <DialogContent className="max-w-4xl p-0 rounded-3xl overflow-hidden border-none shadow-2xl">
-          <div className="bg-primary p-6 text-white flex items-center justify-between">
-            <DialogHeader>
-              <DialogTitle className="text-lg font-bold flex items-center gap-2">
-                <MapPin className="h-5 w-5" /> {editingLocation ? '编辑网点' : '新增全球网点'}
-              </DialogTitle>
-              <DialogDescription className="text-white/60 text-xs">填写网点详细信息，并从图库选择展示图片。</DialogDescription>
-            </DialogHeader>
-          </div>
-
-          <div className="p-8 bg-white grid grid-cols-1 md:grid-cols-2 gap-10">
-            <div className="space-y-6">
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label className="text-[10px] font-bold uppercase opacity-40">网点类型</Label>
-                  <Select value={locationForm.type} onValueChange={v => setLocationForm({...locationForm, type: v})}>
-                    <SelectTrigger className="h-10 rounded-xl"><SelectValue /></SelectTrigger>
-                    <SelectContent className="rounded-xl">
-                      <SelectItem value="HQ">总部 (HQ)</SelectItem>
-                      <SelectItem value="R&D">研发 center (R&D)</SelectItem>
-                      <SelectItem value="Factory">制造工厂 (Factory)</SelectItem>
-                      <SelectItem value="Global">全球分支 (Global)</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="space-y-2">
-                  <Label className="text-[10px] font-bold uppercase opacity-40">地图图标</Label>
-                  <div className="h-10 flex items-center gap-3 px-4 bg-muted/10 rounded-xl">
-                    {locationForm.type === 'HQ' && <Building2 className="h-5 w-5 text-primary" />}
-                    {locationForm.type === 'R&D' && <Microscope className="h-5 w-5 text-primary" />}
-                    {locationForm.type === 'Factory' && <Factory className="h-5 w-5 text-primary" />}
-                    {locationForm.type === 'Global' && <Globe className="h-5 w-5 text-primary" />}
-                    <span className="text-[10px] font-bold">{locationForm.type}</span>
-                  </div>
-                </div>
-              </div>
-              <div className="space-y-4">
-                <div className="space-y-2">
-                  <Label className="text-[10px] font-bold uppercase opacity-40">网点名称 (ZH)</Label>
-                  <Input value={locationForm.titleZh} onChange={e => setLocationForm({...locationForm, titleZh: e.target.value})} className="h-10 rounded-xl" />
-                </div>
-                <div className="space-y-2">
-                  <Label className="text-[10px] font-bold uppercase opacity-40">详细地址 (ZH)</Label>
-                  <Input value={locationForm.addressZh} onChange={e => setLocationForm({...locationForm, addressZh: e.target.value})} className="h-10 rounded-xl" />
-                </div>
-                <div className="space-y-2">
-                  <Label className="text-[10px] font-bold uppercase opacity-40">详细介绍 (ZH)</Label>
-                  <Textarea value={locationForm.descZh} onChange={e => setLocationForm({...locationForm, descZh: e.target.value})} className="min-h-[80px] rounded-xl" />
-                </div>
-              </div>
-
-              {/* 展示图模块 - 移动到左侧底部 */}
-              <div className="space-y-4 pt-4 border-t border-dashed">
-                <div className="space-y-2">
-                  <Label className="text-[10px] font-bold uppercase opacity-40">展示图预览</Label>
-                  <div 
-                    className="relative aspect-video rounded-xl bg-muted/20 border-2 border-dashed border-border/40 overflow-hidden flex flex-col items-center justify-center group cursor-pointer hover:bg-muted/30 transition-all"
-                    onClick={() => setIsPickerOpen(true)}
-                  >
-                    {locationForm.imageUrl ? (
-                      <>
-                        <img src={locationForm.imageUrl} alt="" className="w-full h-full object-cover" />
-                        <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity">
-                          <Button variant="secondary" size="sm" className="rounded-full h-8 text-[10px] font-bold uppercase tracking-wider">更换图片</Button>
-                        </div>
-                      </>
-                    ) : (
-                      <div className="flex flex-col items-center gap-2 opacity-40">
-                        <ImageIcon className="h-8 w-8" />
-                        <span className="text-[10px] font-bold uppercase tracking-widest">从图库选择素材</span>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <div className="space-y-6">
-              {/* AI 智译按钮 - 移动到右侧容器顶部 */}
-              <div className="flex justify-end border-l pl-8">
-                <Button variant="ghost" onClick={handleTranslateLocation} className="ai-btn-glow h-10 px-5 gap-2 text-xs">
-                  <Sparkles className="h-4 w-4 ai-icon-gradient" /> AI 智译右侧信息
-                </Button>
-              </div>
-
-              <div className="space-y-4 pt-4 border-l pl-8 border-dashed">
-                <div className="space-y-2">
-                  <Label className="text-[10px] font-bold uppercase opacity-40">NAME (EN)</Label>
-                  <Input value={locationForm.titleEn} onChange={e => setLocationForm({...locationForm, titleEn: e.target.value})} className="h-10 rounded-xl border-dashed" />
-                </div>
-                <div className="space-y-2">
-                  <Label className="text-[10px] font-bold uppercase opacity-40">ADDRESS (EN)</Label>
-                  <Input value={locationForm.addressEn} onChange={e => setLocationForm({...locationForm, addressEn: e.target.value})} className="h-10 rounded-xl border-dashed" />
-                </div>
-                <div className="space-y-2">
-                  <Label className="text-[10px] font-bold uppercase opacity-40">DESCRIPTION (EN)</Label>
-                  <Textarea value={locationForm.descEn} onChange={e => setLocationForm({...locationForm, descEn: e.target.value})} className="min-h-[80px] rounded-xl border-dashed" />
-                </div>
-              </div>
-
-              {/* 地图坐标输入框 - 移动到右侧 */}
-              <div className="grid grid-cols-2 gap-4 pt-4 border-l pl-8 border-dashed border-t">
-                <div className="space-y-2">
-                  <Label className="text-[10px] font-bold uppercase opacity-40">地图坐标 Left (%)</Label>
-                  <Input value={locationForm.posLeft} onChange={e => setLocationForm({...locationForm, posLeft: e.target.value})} placeholder="如: 75%" className="h-10 rounded-xl font-mono" />
-                </div>
-                <div className="space-y-2">
-                  <Label className="text-[10px] font-bold uppercase opacity-40">地图坐标 Top (%)</Label>
-                  <Input value={locationForm.posTop} onChange={e => setLocationForm({...locationForm, posTop: e.target.value})} placeholder="如: 40%" className="h-10 rounded-xl font-mono" />
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <DialogFooter className="bg-muted/10 p-6 flex gap-3 border-t">
-            <Button variant="outline" onClick={() => setIsLocationDialogOpen(false)} className="rounded-xl h-11 flex-1 font-bold uppercase text-[10px]">取消编辑</Button>
-            <Button onClick={handleLocationSubmit} className="rounded-xl h-11 flex-1 font-bold uppercase text-[10px]">保存并同步网点</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      {/* 媒体素材选择器 */}
-      <Dialog open={isPickerOpen} onOpenChange={setIsPickerOpen}>
-        <DialogContent className="max-w-5xl p-0 h-[80vh] rounded-2xl overflow-hidden flex flex-col shadow-2xl border-none">
-          <div className="bg-primary p-6 text-white flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <ImageIcon className="h-4 w-4" />
-              <DialogTitle className="text-sm font-bold uppercase tracking-widest">媒体资产库</DialogTitle>
-            </div>
-            <Button variant="ghost" size="icon" onClick={() => setIsPickerOpen(false)} className="text-white hover:bg-white/10 h-8 w-8"><X className="h-4 w-4" /></Button>
-          </div>
-          <div className="px-6 py-3 bg-muted/30 border-b flex gap-6 items-center">
-            <div className="relative flex-1">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 opacity-30" />
-              <Input 
-                placeholder="搜索展示素材..." 
-                value={pickerSearch} 
-                onChange={e => setPickerSearch(e.target.value)} 
-                className="pl-9 h-9 border-none bg-white text-xs" 
-              />
-            </div>
-          </div>
-          <div className="flex-1 overflow-y-auto p-6 grid grid-cols-2 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-7 gap-4 bg-muted/5">
-            {galleryAssets?.filter((a: any) => (a.title || '').toLowerCase().includes(pickerSearch.toLowerCase())).map((a: any) => (
-              <div 
-                key={a.id} 
-                className={cn(
-                  "group relative aspect-square rounded-lg overflow-hidden border-2 transition-all cursor-pointer shadow-sm", 
-                  locationForm.imageUrl === a.url ? "border-primary scale-95" : "border-transparent bg-white hover:border-primary/20"
-                )} 
-                onClick={() => {
-                  setLocationForm({ ...locationForm, imageUrl: a.url });
-                  setIsPickerOpen(false);
-                }}
-              >
-                <Image src={a.url} alt={a.title} fill className="object-cover" unoptimized />
-                {locationForm.imageUrl === a.url && (
-                  <div className="absolute inset-0 bg-primary/20 flex items-center justify-center">
-                    <div className="bg-white text-primary rounded-full p-1 shadow-lg">
-                      <Check className="h-3.5 w-3.5" />
-                    </div>
-                  </div>
-                )}
-              </div>
-            ))}
-          </div>
-          <DialogFooter className="p-4 border-t flex justify-end bg-white">
-            <Button variant="outline" size="sm" onClick={() => setIsPickerOpen(false)} className="px-6 h-10 rounded-lg text-xs font-bold uppercase tracking-widest">取消</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
     </div>
   );
 }
