@@ -79,7 +79,7 @@ import RichTextEditor from '@/components/RichTextEditor';
 const AiGradientDef = () => (
   <svg width="0" height="0" className="absolute">
     <defs>
-      <linearGradient id="ai-aurora-gradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <linearGradient id="ai-aurora-gradient" x1="0%" y1="0%" x2="100%" x2="100%">
         <stop stopColor="#06B6D4" offset="0%">
           <animate attributeName="stop-color" values="#06B6D4;#4F46E5;#06B6D4" dur="4s" repeatCount="indefinite" />
         </stop>
@@ -167,7 +167,7 @@ interface AppConfig {
  * 稳健的 JSON 解析工具，处理 AI 返回的常见格式错误
  */
 function robustJsonParse(rawStr: string) {
-  let jsonStr = rawStr.trim();
+  let jsonStr = (rawStr || '').trim();
   
   // 1. 移除 Markdown 代码块包装
   if (jsonStr.includes('```')) {
@@ -178,7 +178,6 @@ function robustJsonParse(rawStr: string) {
     return JSON.parse(jsonStr);
   } catch (initialError) {
     // 2. 容错：处理非法控制字符（如真实换行符）
-    // 这种错误通常表现为 "Bad control character in string literal"
     const sanitized = jsonStr.replace(/[\u0000-\u001F]+/g, (match) => {
       if (match === '\n') return '\\n';
       if (match === '\r') return '\\r';
@@ -266,13 +265,13 @@ function ProductEditorContent() {
 
     let basicTotal = 0;
     let basicTranslated = 0;
-    if (formData.nameZh.trim()) {
+    if ((formData.nameZh || '').trim()) {
       basicTotal++;
-      if (formData.nameEn.trim()) basicTranslated++;
+      if ((formData.nameEn || '').trim()) basicTranslated++;
     }
-    if (formData.descZh.trim()) {
+    if ((formData.descZh || '').trim()) {
       basicTotal++;
-      if (formData.descEn.trim()) basicTranslated++;
+      if ((formData.descEn || '').trim()) basicTranslated++;
     }
     totalFields += basicTotal;
     translatedFields += basicTranslated;
@@ -280,18 +279,18 @@ function ProductEditorContent() {
     let specTotal = 0;
     let specTranslated = 0;
     formData.specGroups.forEach(group => {
-      if (group.titleZh.trim()) {
+      if ((group.titleZh || '').trim()) {
         specTotal++;
-        if (group.titleEn.trim()) specTranslated++;
+        if ((group.titleEn || '').trim()) specTranslated++;
       }
       group.items.forEach(item => {
-        if (item.labelZh.trim()) {
+        if ((item.labelZh || '').trim()) {
           specTotal++;
-          if (item.labelEn.trim()) specTranslated++;
+          if ((item.labelEn || '').trim()) specTranslated++;
         }
-        if (item.valueZh.trim()) {
+        if ((item.valueZh || '').trim()) {
           specTotal++;
-          if (item.valueEn.trim()) specTranslated++;
+          if ((item.valueEn || '').trim()) specTranslated++;
         }
       });
     });
@@ -300,10 +299,10 @@ function ProductEditorContent() {
 
     let detailTotal = 0;
     let detailTranslated = 0;
-    const zhClean = formData.localizedDetails.zh?.replace(/<[^>]*>/g, '').trim();
+    const zhClean = (formData.localizedDetails.zh || '').replace(/<[^>]*>/g, '').trim();
     if (zhClean) {
       detailTotal++;
-      const enClean = formData.localizedDetails.en?.replace(/<[^>]*>/g, '').trim();
+      const enClean = (formData.localizedDetails.en || '').replace(/<[^>]*>/g, '').trim();
       if (enClean) detailTranslated++;
     }
     totalFields += detailTotal;
@@ -377,7 +376,7 @@ function ProductEditorContent() {
     }
     const saveLang = (en: string, zh: string, defaultId: string) => {
       setDocumentNonBlocking(doc(firestore, 'localizedStrings', defaultId), { 
-        id: defaultId, en: en.trim(), zh: zh.trim(), updatedAt: serverTimestamp() 
+        id: defaultId, en: (en || '').trim(), zh: (zh || '').trim(), updatedAt: serverTimestamp() 
       }, { merge: true });
       return defaultId;
     };
@@ -494,8 +493,8 @@ function ProductEditorContent() {
     setIsAiProcessing(true);
     try {
       const results = await Promise.all([
-        formData.nameZh.trim() ? translateContent({ text: formData.nameZh, targetLangs: ['en'], apiKey: aiConfig.apiKey }) : null,
-        formData.descZh.trim() ? translateContent({ text: formData.descZh, targetLangs: ['en'], apiKey: aiConfig.apiKey }) : null
+        (formData.nameZh || '').trim() ? translateContent({ text: formData.nameZh, targetLangs: ['en'], apiKey: aiConfig.apiKey }) : null,
+        (formData.descZh || '').trim() ? translateContent({ text: formData.descZh, targetLangs: ['en'], apiKey: aiConfig.apiKey }) : null
       ]);
       setFormData(prev => ({
         ...prev,
@@ -1182,7 +1181,7 @@ function ProductEditorContent() {
             <Badge variant="secondary" className="h-9 px-4 text-[10px] font-bold uppercase bg-white text-primary border-none">已选中 {selectedPickerUrls.size} 项</Badge>
           </div>
           <div className="flex-1 overflow-y-auto p-6 grid grid-cols-2 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-7 gap-4 bg-muted/5">
-            {galleryAssets?.filter(a=>a.title.toLowerCase().includes(pickerSearch.toLowerCase())).map(a=>(
+            {galleryAssets?.filter(a=>(a.title || '').toLowerCase().includes(pickerSearch.toLowerCase())).map(a=>(
               <div key={a.id} className={cn("group relative aspect-square rounded-lg overflow-hidden border-2 transition-all cursor-pointer shadow-sm", selectedPickerUrls.has(a.url) ? "border-primary scale-95" : "border-transparent bg-white hover:border-primary/20")} onClick={()=>{
                 const n=new Set(selectedPickerUrls); 
                 if(pickerTarget.includes('main')||pickerTarget.includes('richtext')){ n.clear(); n.add(a.url); } else { n.has(a.url) ? n.delete(a.url) : n.add(a.url); } 
