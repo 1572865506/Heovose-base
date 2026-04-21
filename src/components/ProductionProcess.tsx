@@ -6,10 +6,22 @@ import Image from 'next/image';
 import { Locale, translations } from "@/lib/translations";
 import { SectionHeading } from "./SectionHeading";
 import { cn } from "@/lib/utils";
-import { Play, Pause } from "lucide-react";
+import { Play, Pause, Loader2 } from "lucide-react";
+import { useFirestore, useCollection, useMemoFirebase } from '@/firebase';
+import { collection, query, orderBy } from 'firebase/firestore';
+
+interface StepData {
+  id: string;
+  order: number;
+  titleZh: string;
+  titleEn: string;
+  descZh: string;
+  descEn: string;
+  imageUrls: string[];
+}
 
 export function ProductionProcess({ locale }: { locale: Locale }) {
-  const t = translations[locale].process;
+  const firestore = useFirestore();
   const [activeStep, setActiveStep] = useState(0);
   const [subImageIndex, setSubImageIndex] = useState(0);
   const [isPlaying, setIsPlaying] = useState(true);
@@ -18,33 +30,54 @@ export function ProductionProcess({ locale }: { locale: Locale }) {
   
   const AUTOPLAY_DELAY = 4000;
 
-  // 1. 定义步骤数据
-  const steps = useMemo(() => [
-    { label: t.pmc, tag: '01', images: ['/Pipeline/1-1.png'], desc: t.pmc_desc },
-    { label: t.procurement, tag: '02', images: ['/Pipeline/1-1.png'], desc: t.procurement_desc },
-    { label: t.supplier, tag: '03', images: ['/Pipeline/1-1.png'], desc: t.supplier_desc },
-    { label: t.receiving, tag: '04', images: ['/Pipeline/1-1.png'], desc: t.receiving_desc },
-    { label: t.inspection, tag: '05', images: ['/Pipeline/2-1.jpg'], desc: t.inspection_desc },
-    { label: t.warehousing, tag: '06', images: ['/Pipeline/2-1.jpg'], desc: t.warehousing_desc },
-    { label: t.issuing, tag: '07', images: ['/Pipeline/2-2.png'], desc: t.issuing_desc },
-    { label: t.manufacturing, tag: '08', images: ['/Pipeline/3-1.png'], desc: t.manufacturing_desc },
-    { label: t.system, tag: '09', images: ['/Pipeline/4-1.png', '/Pipeline/4-2.png'], desc: t.system_desc },
-    { label: t.fg_warehousing, tag: '10', images: ['/Pipeline/5-1.jpg', '/Pipeline/5-2.jpg'], desc: t.fg_warehousing_desc },
-    { label: t.shipment, tag: '11', images: ['/Pipeline/6-1.JPG'], desc: t.shipment_desc },
-  ], [t]);
+  // 1. 从 Firestore 获取动态数据
+  const stepsQuery = useMemoFirebase(() => 
+    firestore ? query(collection(firestore, 'productionSteps'), orderBy('order', 'asc')) : null, 
+    [firestore]
+  );
+  const { data: remoteSteps, isLoading } = useCollection<StepData>(stepsQuery);
 
-  // 2. 视觉分段逻辑：防止相邻步骤图片相同时闪烁
-  const imageSegments = useMemo(() => [
-    { start: 0, end: 3, images: ['/Pipeline/1-1.png'] },
-    { start: 4, end: 5, images: ['/Pipeline/2-1.jpg'] },
-    { start: 6, end: 6, images: ['/Pipeline/2-2.png'] },
-    { start: 7, end: 7, images: ['/Pipeline/3-1.png'] },
-    { start: 8, end: 8, images: ['/Pipeline/4-1.png', '/Pipeline/4-2.png'] },
-    { start: 9, end: 9, images: ['/Pipeline/5-1.jpg', '/Pipeline/5-2.jpg'] },
-    { start: 10, end: 10, images: ['/Pipeline/6-1.JPG'] },
-  ], []);
+  // 2. 数据转换逻辑
+  const steps = useMemo(() => {
+    if (remoteSteps && remoteSteps.length > 0) {
+      return remoteSteps.map(s => ({
+        label: locale === 'zh' ? s.titleZh : s.titleEn,
+        tag: s.order < 10 ? `0${s.order}` : `${s.order}`,
+        images: s.imageUrls || [],
+        desc: locale === 'zh' ? s.descZh : s.descEn
+      }));
+    }
+    
+    // 兜底默认数据
+    const t = translations[locale].process;
+    return [
+      { label: t.pmc, tag: '01', images: ['https://picsum.photos/seed/p1/1200/800'], desc: t.pmc_desc },
+      { label: t.procurement, tag: '02', images: ['https://picsum.photos/seed/p1/1200/800'], desc: t.procurement_desc },
+      { label: t.inspection, tag: '05', images: ['https://picsum.photos/seed/p2/1200/800'], desc: t.inspection_desc },
+      { label: t.manufacturing, tag: '08', images: ['https://picsum.photos/seed/p3/1200/800'], desc: t.manufacturing_desc },
+      { label: t.shipment, tag: '11', images: ['https://picsum.photos/seed/p4/1200/800'], desc: t.shipment_desc },
+    ];
+  }, [remoteSteps, locale]);
 
-  // 3. 滚动交叉观察
+  // 3. 动态生成视觉分段逻辑：防止相邻步骤图片完全相同时产生闪烁切换
+  const imageSegments = useMemo(() => {
+    const segments: { start: number, end: number, images: string[] }[] = [];
+    let currentSegment: { start: number, end: number, images: string[] } | null = null;
+
+    steps.forEach((step, index) => {
+      const imagesKey = JSON.stringify(step.images);
+      if (!currentSegment || JSON.stringify(currentSegment.images) !== imagesKey) {
+        currentSegment = { start: index, end: index, images: step.images };
+        segments.push(currentSegment);
+      } else {
+        currentSegment.end = index;
+      }
+    });
+
+    return segments;
+  }, [steps]);
+
+  // 4. 滚动交叉观察
   useEffect(() => {
     const observers: IntersectionObserver[] = [];
     scrollRefs.current.forEach((ref, index) => {
@@ -65,9 +98,9 @@ export function ProductionProcess({ locale }: { locale: Locale }) {
       }
     });
     return () => observers.forEach(o => o.disconnect());
-  }, []);
+  }, [steps]);
 
-  // 4. 自动轮播定时器：修复切换失效问题
+  // 5. 自动轮播定时器
   useEffect(() => {
     if (!isPlaying) return;
     
@@ -83,7 +116,6 @@ export function ProductionProcess({ locale }: { locale: Locale }) {
     const timer = setInterval(() => {
       setProgress((prev) => {
         if (prev >= 100) {
-          // 在进度条跑满时，同步切换图片索引
           setSubImageIndex((prevIdx) => (prevIdx + 1) % activeImages.length);
           return 0;
         }
@@ -94,25 +126,36 @@ export function ProductionProcess({ locale }: { locale: Locale }) {
     return () => clearInterval(timer);
   }, [activeStep, isPlaying, steps]);
 
-  // 5. 步骤改变时重置状态
+  // 6. 步骤改变时重置子状态
   useEffect(() => {
     setSubImageIndex(0);
     setProgress(0);
   }, [activeStep]);
 
+  if (isLoading) {
+    return (
+      <div className="py-40 flex flex-col items-center justify-center gap-4 bg-white">
+        <Loader2 className="h-10 w-10 animate-spin text-primary opacity-20" />
+        <p className="text-[10px] font-bold uppercase tracking-widest opacity-40">同步精密制造流程中...</p>
+      </div>
+    );
+  }
+
   return (
     <section id="process" className="py-32 bg-white relative overflow-x-clip">
       <div className="container mx-auto px-6">
-        <SectionHeading title={t.title} subtitle={t.subtitle} />
+        <SectionHeading 
+          title={translations[locale].process.title} 
+          subtitle={translations[locale].process.subtitle} 
+        />
 
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-16 lg:gap-24 relative mt-20">
           
-          {/* 左侧大图：破位出血 + 吸顶固定 */}
+          {/* 左侧大图固定展示区 */}
           <div className="lg:col-span-7 hidden lg:block relative">
             <div className={cn(
               "sticky top-32 h-[70vh] min-h-[500px] max-h-[800px] overflow-hidden bg-muted/20 border-y border-r border-border/40 shadow-2xl transition-all duration-500",
               "rounded-r-[3rem] rounded-l-none",
-              /* 破位出血逻辑：适配 1920px 限制 */
               "lg:-ml-[calc((min(100vw,1920px)-1280px)/2+1.5rem)] lg:w-[calc(100%+((min(100vw,1920px)-1280px)/2+1.5rem))]"
             )}>
               {imageSegments.map((segment, segIndex) => {
@@ -139,30 +182,27 @@ export function ProductionProcess({ locale }: { locale: Locale }) {
                         >
                           <Image
                             src={imgUrl}
-                            alt={`Process Step Detail`}
+                            alt="Heovose Pipeline Detail"
                             fill
                             className="object-cover"
-                            priority={segIndex === 0}
+                            unoptimized={imgUrl.startsWith('data:')}
                           />
                         </div>
                       );
                     })}
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/10 to-transparent" />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/20 via-transparent to-transparent" />
                   </div>
                 );
               })}
 
-              {/* 轮播交互控制台 */}
+              {/* 多图轮播交互控制台 */}
               {steps[activeStep]?.images.length > 1 && (
                 <div className="absolute bottom-8 right-8 z-50 flex items-center gap-4 animate-in fade-in slide-in-from-bottom-4 duration-500">
                   <div className="flex gap-1.5 items-center">
                     {steps[activeStep].images.map((_, i) => (
                       <button
                         key={i}
-                        onClick={() => {
-                          setSubImageIndex(i);
-                          setProgress(0);
-                        }}
+                        onClick={() => { setSubImageIndex(i); setProgress(0); }}
                         className={cn(
                           "relative h-1 rounded-full transition-all duration-500 overflow-hidden bg-white/30",
                           i === subImageIndex ? "w-8" : "w-2 hover:bg-white/50"
@@ -183,16 +223,16 @@ export function ProductionProcess({ locale }: { locale: Locale }) {
                   
                   <button
                     onClick={() => setIsPlaying(!isPlaying)}
-                    className="w-8 h-8 rounded-full bg-white/10 backdrop-blur-md flex items-center justify-center text-white hover:bg-accent hover:text-accent-foreground transition-all shadow-lg border border-white/10"
+                    className="w-10 h-10 rounded-full bg-white/10 backdrop-blur-md flex items-center justify-center text-white hover:bg-accent hover:text-accent-foreground transition-all shadow-lg border border-white/10"
                   >
-                    {isPlaying ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4 ml-0.5" />}
+                    {isPlaying ? <Pause className="h-5 w-5" /> : <Play className="h-5 w-5 ml-0.5" />}
                   </button>
                 </div>
               )}
             </div>
           </div>
 
-          {/* 右侧步骤文字：超长行程滚动 */}
+          {/* 右侧步骤文字列表 */}
           <div className="lg:col-span-5 space-y-[60vh] py-12">
             {steps.map((step, index) => (
               <div
@@ -222,7 +262,7 @@ export function ProductionProcess({ locale }: { locale: Locale }) {
                   {step.desc}
                 </p>
 
-                {/* 移动端视图 */}
+                {/* 移动端视觉反馈 */}
                 <div className="lg:hidden w-full aspect-video rounded-3xl overflow-hidden relative border border-border/40 mt-8 shadow-lg">
                    {step.images.map((imgUrl, iIndex) => (
                       <div
@@ -237,6 +277,7 @@ export function ProductionProcess({ locale }: { locale: Locale }) {
                           alt={step.label}
                           fill
                           className="object-cover"
+                          unoptimized={imgUrl.startsWith('data:')}
                         />
                       </div>
                    ))}

@@ -1,9 +1,6 @@
+
 /**
- * Heovose 全球智能制造管理系统 - 安全规则 v1.6
- *
- * 优化点：
- * 1. 确保 isAdmin() 检查在处理大负载文档时尽可能高效。
- * 2. 统一驼峰命名路径。
+ * Heovose 全球智能制造管理系统 - 安全规则 v1.7
  */
 
 rules_version = '2';
@@ -16,8 +13,6 @@ service cloud.firestore {
       return request.auth != null;
     }
 
-    // 检查当前用户是否在管理员白名单中
-    // 提示：确保 Firestore 中的文档 ID 是用户的 UID (bFjZ3BVfU8...)
     function isAdmin() {
       return isSignedIn() && exists(/databases/$(database)/documents/admins/$(request.auth.uid));
     }
@@ -39,6 +34,11 @@ service cloud.firestore {
     }
     
     match /productCategories/{docId} { 
+      allow read: if true; 
+      allow write: if isAdmin(); 
+    }
+
+    match /productionSteps/{docId} { 
       allow read: if true; 
       allow write: if isAdmin(); 
     }

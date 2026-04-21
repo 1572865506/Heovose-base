@@ -46,6 +46,25 @@
         }
       }
     },
+    "ProductionStep": {
+      "title": "ProductionStep",
+      "type": "object",
+      "description": "生产流程步骤配置",
+      "properties": {
+        "id": { "type": "string" },
+        "order": { "type": "number", "description": "步骤排序权重" },
+        "titleZh": { "type": "string" },
+        "titleEn": { "type": "string" },
+        "descZh": { "type": "string" },
+        "descEn": { "type": "string" },
+        "imageUrls": { 
+          "type": "array", 
+          "items": { "type": "string" },
+          "description": "步骤关联的图片地址列表"
+        }
+      },
+      "required": ["id", "order", "titleZh"]
+    },
     "Product": {
       "title": "Product",
       "type": "object",
@@ -103,6 +122,10 @@
     "/productCategories/{categoryId}": {
       "schema": { "$ref": "#/backend/entities/ProductCategory" },
       "description": "产品业务分类"
+    },
+    "/productionSteps/{stepId}": {
+      "schema": { "$ref": "#/backend/entities/ProductionStep" },
+      "description": "制造流程步骤"
     },
     "/admins/{userId}": {
       "schema": { "$ref": "#/backend/entities/AdminUser" },
