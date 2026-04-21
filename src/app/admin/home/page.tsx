@@ -2,13 +2,20 @@
 "use client";
 
 import { useState, useEffect } from 'react';
-import { useFirestore, useDoc, useMemoFirebase } from '@/firebase';
-import { doc, serverTimestamp } from 'firebase/firestore';
+import { useFirestore, useDoc, useCollection, useMemoFirebase } from '@/firebase';
+import { doc, collection, serverTimestamp } from 'firebase/firestore';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { 
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { 
   Home, 
   Save, 
@@ -19,7 +26,8 @@ import {
   MapPin,
   ArrowRight,
   Info,
-  ExternalLink
+  ExternalLink,
+  Target
 } from 'lucide-react';
 import { setDocumentNonBlocking } from '@/firebase/non-blocking-updates';
 import { useToast } from '@/hooks/use-toast';
@@ -56,9 +64,13 @@ export default function AdminHomePage() {
   
   const homeRef = useMemoFirebase(() => firestore ? doc(firestore, 'homepageContent', 'main') : null, [firestore]);
   const aiRef = useMemoFirebase(() => firestore ? doc(firestore, 'settings', 'ai') : null, [firestore]);
+  const catsQuery = useMemoFirebase(() => firestore ? collection(firestore, 'productCategories') : null, [firestore]);
+  const transQuery = useMemoFirebase(() => firestore ? collection(firestore, 'localizedStrings') : null, [firestore]);
   
   const { data: homeData, isLoading } = useDoc<any>(homeRef);
   const { data: aiConfig } = useDoc<any>(aiRef);
+  const { data: categories } = useCollection<any>(catsQuery);
+  const { data: translations } = useCollection<any>(transQuery);
 
   const [formData, setFormData] = useState<any>({
     heroHeadlineZh: '',
@@ -69,6 +81,8 @@ export default function AdminHomePage() {
     heroWholesaleButtonEn: '',
     heroProjectButtonZh: '',
     heroProjectButtonEn: '',
+    heroWholesaleCategoryId: '',
+    heroProjectCategoryId: '',
     videoTitleZh: '',
     videoTitleEn: '',
     videoSubtitleZh: '',
@@ -128,6 +142,13 @@ export default function AdminHomePage() {
     } finally {
       setIsAiProcessing(false);
     }
+  };
+
+  const getCategoryName = (id: string) => {
+    const cat = categories?.find((c: any) => c.id === id);
+    if (!cat) return id;
+    const trans = translations?.find((t: any) => t.id === cat.nameTextId);
+    return trans?.zh || id;
   };
 
   if (isLoading) {
@@ -197,10 +218,10 @@ export default function AdminHomePage() {
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
-              {/* Chinese Config */}
+              {/* Left Column - Chinese Config & Targets */}
               <div className="space-y-8">
                 <div className="space-y-4">
-                  <Badge variant="outline" className="text-[8px] font-bold text-primary/60 border-primary/20">标题文案 (ZH)</Badge>
+                  <Badge variant="outline" className="text-[8px] font-bold text-primary/60 border-primary/20">标题及按钮 (ZH)</Badge>
                   <div className="space-y-4 pl-2">
                     <div className="space-y-2">
                       <Label className="text-[10px] font-bold uppercase text-primary/40 tracking-wider">主标题</Label>
@@ -225,35 +246,83 @@ export default function AdminHomePage() {
 
                 <Separator className="bg-border/40 border-dashed" />
 
-                <div className="space-y-4">
-                  <Badge variant="outline" className="text-[8px] font-bold text-primary/60 border-primary/20">入口按钮 (ZH)</Badge>
-                  <div className="space-y-4 pl-2">
-                    <div className="space-y-2">
-                      <Label className="text-[10px] font-bold uppercase text-primary/40 tracking-wider">左侧入口 (批发产品)</Label>
-                      <Input 
-                        value={formData.heroWholesaleButtonZh} 
-                        onChange={e => setFormData({...formData, heroWholesaleButtonZh: e.target.value})}
-                        placeholder="批发产品"
-                        className="h-11 rounded-xl text-xs bg-muted/5"
-                      />
+                <div className="grid grid-cols-1 gap-8">
+                  {/* Wholesale Button Setting */}
+                  <div className="space-y-4 p-5 rounded-2xl bg-muted/5 border border-dashed border-border/60">
+                    <div className="flex items-center gap-2 text-primary">
+                      <Target className="h-4 w-4" />
+                      <span className="text-[10px] font-bold uppercase tracking-widest">批发入口配置 (WHOLESALE)</span>
                     </div>
-                    <div className="space-y-2">
-                      <Label className="text-[10px] font-bold uppercase text-primary/40 tracking-wider">右侧入口 (项目产品)</Label>
-                      <Input 
-                        value={formData.heroProjectButtonZh} 
-                        onChange={e => setFormData({...formData, heroProjectButtonZh: e.target.value})}
-                        placeholder="项目产品"
-                        className="h-11 rounded-xl text-xs bg-muted/5"
-                      />
+                    <div className="space-y-3">
+                      <div className="space-y-1.5">
+                        <Label className="text-[10px] font-bold uppercase text-primary/40 tracking-wider">按钮显示文本 (ZH)</Label>
+                        <Input 
+                          value={formData.heroWholesaleButtonZh} 
+                          onChange={e => setFormData({...formData, heroWholesaleButtonZh: e.target.value})}
+                          placeholder="批发产品"
+                          className="h-10 rounded-xl text-xs bg-white"
+                        />
+                      </div>
+                      <div className="space-y-1.5">
+                        <Label className="text-[10px] font-bold uppercase text-primary/40 tracking-wider">跳转目标分类</Label>
+                        <Select value={formData.heroWholesaleCategoryId} onValueChange={v => setFormData({...formData, heroWholesaleCategoryId: v})}>
+                          <SelectTrigger className="h-11 rounded-xl bg-white border-transparent">
+                            <SelectValue placeholder="选择目标分类..." />
+                          </SelectTrigger>
+                          <SelectContent className="rounded-xl">
+                            <SelectItem value="none">默认 (全部分类)</SelectItem>
+                            {categories?.map((cat: any) => (
+                              <SelectItem key={cat.id} value={cat.id} className="text-xs">
+                                {getCategoryName(cat.id)}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Project Button Setting */}
+                  <div className="space-y-4 p-5 rounded-2xl bg-muted/5 border border-dashed border-border/60">
+                    <div className="flex items-center gap-2 text-primary">
+                      <Target className="h-4 w-4" />
+                      <span className="text-[10px] font-bold uppercase tracking-widest">项目入口配置 (PROJECT)</span>
+                    </div>
+                    <div className="space-y-3">
+                      <div className="space-y-1.5">
+                        <Label className="text-[10px] font-bold uppercase text-primary/40 tracking-wider">按钮显示文本 (ZH)</Label>
+                        <Input 
+                          value={formData.heroProjectButtonZh} 
+                          onChange={e => setFormData({...formData, heroProjectButtonZh: e.target.value})}
+                          placeholder="项目产品"
+                          className="h-10 rounded-xl text-xs bg-white"
+                        />
+                      </div>
+                      <div className="space-y-1.5">
+                        <Label className="text-[10px] font-bold uppercase text-primary/40 tracking-wider">跳转目标分类</Label>
+                        <Select value={formData.heroProjectCategoryId} onValueChange={v => setFormData({...formData, heroProjectCategoryId: v})}>
+                          <SelectTrigger className="h-11 rounded-xl bg-white border-transparent">
+                            <SelectValue placeholder="选择目标分类..." />
+                          </SelectTrigger>
+                          <SelectContent className="rounded-xl">
+                            <SelectItem value="none">默认 (工业类目)</SelectItem>
+                            {categories?.map((cat: any) => (
+                              <SelectItem key={cat.id} value={cat.id} className="text-xs">
+                                {getCategoryName(cat.id)}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
                     </div>
                   </div>
                 </div>
               </div>
 
-              {/* English Config */}
+              {/* Right Column - English Translation Displays */}
               <div className="space-y-8 border-l pl-10 border-dashed">
                 <div className="space-y-4">
-                  <Badge variant="outline" className="text-[8px] font-bold text-primary/60 border-primary/20">HEADLINE CONTENT (EN)</Badge>
+                  <Badge variant="outline" className="text-[8px] font-bold text-primary/60 border-primary/20">CONTENT (EN)</Badge>
                   <div className="space-y-4 pl-2">
                     <div className="space-y-2">
                       <Label className="text-[10px] font-bold uppercase text-primary/40 tracking-wider">MAIN HEADLINE</Label>
@@ -278,27 +347,25 @@ export default function AdminHomePage() {
 
                 <Separator className="bg-border/40 border-dashed" />
 
-                <div className="space-y-4">
-                  <Badge variant="outline" className="text-[8px] font-bold text-primary/60 border-primary/20">ENTRY BUTTONS (EN)</Badge>
-                  <div className="space-y-4 pl-2">
-                    <div className="space-y-2">
-                      <Label className="text-[10px] font-bold uppercase text-primary/40 tracking-wider">LEFT ENTRY</Label>
-                      <Input 
-                        value={formData.heroWholesaleButtonEn} 
-                        onChange={e => setFormData({...formData, heroWholesaleButtonEn: e.target.value})}
-                        placeholder="WHOLESALE PRODUCTS"
-                        className="h-11 rounded-xl text-xs bg-white border-dashed"
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label className="text-[10px] font-bold uppercase text-primary/40 tracking-wider">RIGHT ENTRY</Label>
-                      <Input 
-                        value={formData.heroProjectButtonEn} 
-                        onChange={e => setFormData({...formData, heroProjectButtonEn: e.target.value})}
-                        placeholder="PROJECT PRODUCTS"
-                        className="h-11 rounded-xl text-xs bg-white border-dashed"
-                      />
-                    </div>
+                <div className="space-y-12 pt-4">
+                  <div className="space-y-2">
+                    <Label className="text-[10px] font-bold uppercase text-primary/40 tracking-wider">WHOLESALE BUTTON (EN)</Label>
+                    <Input 
+                      value={formData.heroWholesaleButtonEn} 
+                      onChange={e => setFormData({...formData, heroWholesaleButtonEn: e.target.value})}
+                      placeholder="WHOLESALE PRODUCTS"
+                      className="h-11 rounded-xl text-xs bg-white border-dashed"
+                    />
+                  </div>
+                  
+                  <div className="space-y-2 pt-10">
+                    <Label className="text-[10px] font-bold uppercase text-primary/40 tracking-wider">PROJECT BUTTON (EN)</Label>
+                    <Input 
+                      value={formData.heroProjectButtonEn} 
+                      onChange={e => setFormData({...formData, heroProjectButtonEn: e.target.value})}
+                      placeholder="PROJECT PRODUCTS"
+                      className="h-11 rounded-xl text-xs bg-white border-dashed"
+                    />
                   </div>
                 </div>
               </div>

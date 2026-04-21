@@ -32,6 +32,17 @@ export function Hero({ locale, homeConfig }: HeroProps) {
     ? (homeConfig?.heroProjectButtonZh || t.project)
     : (homeConfig?.heroProjectButtonEn || t.project);
 
+  // 动态解析跳转路径
+  // 批发按钮：如果设置了分类ID则跳转至分类，否则跳转全部分类
+  const wholesaleHref = homeConfig?.heroWholesaleCategoryId && homeConfig.heroWholesaleCategoryId !== 'none'
+    ? `/products?category=${homeConfig.heroWholesaleCategoryId}`
+    : "/products";
+
+  // 项目按钮：如果设置了分类ID则跳转至分类，否则默认跳转 Industrial
+  const projectHref = homeConfig?.heroProjectCategoryId && homeConfig.heroProjectCategoryId !== 'none'
+    ? `/products?category=${homeConfig.heroProjectCategoryId}`
+    : "/products?category=Industrial";
+
   return (
     <section 
       className="relative min-h-screen flex items-center pt-20 overflow-hidden z-20"
@@ -74,7 +85,7 @@ export function Hero({ locale, homeConfig }: HeroProps) {
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 pt-12 max-w-xl">
             {/* Wholesale Card */}
             <Link 
-              href="/products"
+              href={wholesaleHref}
               className="group relative bg-white/10 backdrop-blur-2xl p-6 rounded-[2rem] border border-white/20 hover:border-accent/40 transition-all duration-700 cursor-pointer overflow-hidden shadow-[0_20px_40px_rgba(0,0,0,0.3)]"
             >
               <div className="absolute inset-0 bg-gradient-to-br from-accent/30 via-transparent to-white/10 opacity-0 group-hover:opacity-100 transition-opacity duration-700 pointer-events-none" />
@@ -90,7 +101,7 @@ export function Hero({ locale, homeConfig }: HeroProps) {
 
             {/* Project Card */}
             <Link 
-              href="/products?category=Industrial"
+              href={projectHref}
               className="group relative bg-white/10 backdrop-blur-2xl p-6 rounded-[2rem] border border-white/20 hover:border-accent/40 transition-all duration-700 cursor-pointer overflow-hidden shadow-[0_20px_40px_rgba(0,0,0,0.3)]"
             >
               <div className="absolute inset-0 bg-gradient-to-br from-accent/30 via-transparent to-white/10 opacity-0 group-hover:opacity-100 transition-opacity duration-700 pointer-events-none" />
