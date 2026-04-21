@@ -265,34 +265,40 @@ function ProductEditorContent() {
     // 1. Basic Info
     let basicTotal = 0;
     let basicTranslated = 0;
+    
     const nameZh = String(formData.nameZh || '').trim();
     if (nameZh) {
       basicTotal++;
       if (String(formData.nameEn || '').trim()) basicTranslated++;
     }
+    
     const descZh = String(formData.descZh || '').trim();
     if (descZh) {
       basicTotal++;
       if (String(formData.descEn || '').trim()) basicTranslated++;
     }
+    
     totalFields += basicTotal;
     translatedFields += basicTranslated;
 
     // 2. Technical Specs
     let specTotal = 0;
     let specTranslated = 0;
+    
     formData.specGroups.forEach(group => {
       const gTitleZh = String(group.titleZh || '').trim();
       if (gTitleZh) {
         specTotal++;
         if (String(group.titleEn || '').trim()) specTranslated++;
       }
+      
       group.items.forEach(item => {
         const iLabelZh = String(item.labelZh || '').trim();
         if (iLabelZh) {
           specTotal++;
           if (String(item.labelEn || '').trim()) specTranslated++;
         }
+        
         const iValueZh = String(item.valueZh || '').trim();
         if (iValueZh) {
           specTotal++;
@@ -300,18 +306,21 @@ function ProductEditorContent() {
         }
       });
     });
+    
     totalFields += specTotal;
     translatedFields += specTranslated;
 
     // 3. Details (Long-form)
     let detailTotal = 0;
     let detailTranslated = 0;
+    
     const zhClean = String(formData.localizedDetails.zh || '').replace(/<[^>]*>/g, '').trim();
     if (zhClean) {
       detailTotal++;
       const enClean = String(formData.localizedDetails.en || '').replace(/<[^>]*>/g, '').trim();
       if (enClean) detailTranslated++;
     }
+    
     totalFields += detailTotal;
     translatedFields += detailTranslated;
 
@@ -1011,7 +1020,7 @@ function ProductEditorContent() {
                                 placeholder="参数值 (ZH)" 
                                 value={item.valueZh} 
                                 onChange={e => { const g=[...formData.specGroups]; g[gIdx].items[iIdx].valueZh=e.target.value; setFormData({...formData, specGroups:g}); }} 
-                                className="min-h-10 h-24 py-2.5 text-xs font-medium bg-muted/20 border-solid resize-none overflow-y-auto" 
+                                className="min-h-10 h-24 py-2.5 text-xs font-medium bg-muted/20 border-solid resize-none overflow-y-auto scrollbar-minimal" 
                              />
                           </div>
                           <div className="relative">
@@ -1020,7 +1029,7 @@ function ProductEditorContent() {
                                 value={item.valueEn} 
                                 onChange={e => { const g=[...formData.specGroups]; g[gIdx].items[iIdx].valueEn=e.target.value; setFormData({...formData, specGroups:g}); }} 
                                 className={cn(
-                                  "min-h-10 h-24 py-2.5 text-xs border-dashed bg-white font-medium resize-none overflow-y-auto",
+                                  "min-h-10 h-24 py-2.5 text-xs border-dashed bg-white font-medium resize-none overflow-y-auto scrollbar-minimal",
                                   isValueProcessing && "animate-pulse ring-2 ring-primary/20 bg-accent/5"
                                 )} 
                              />
