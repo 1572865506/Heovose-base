@@ -1,9 +1,8 @@
-
 'use server';
 /**
  * @fileOverview AI 多语言翻译流 (Gemini 2.5 增强版)
  * 
- * 专门针对工业硬件规格和超长富文本排版优化的智译引擎。
+ * 专门针对工业 hardware 规格和超长富文本排版优化的智译引擎。
  * 支持动态加载管理员配置的 API Key 和 Gemini 2.5 系列模型。
  */
 
@@ -57,7 +56,7 @@ export async function translateContent(input: TranslateInput): Promise<Translate
       3. Ensure the output is a valid JSON object where keys are language codes.
       4. If the content contains technical specs, maintain professional terminology.
       5. FORMAT: Return ONLY the structured JSON output. 
-      6. JSON SAFETY: Escape all special characters and newlines (\n) within string values to ensure valid JSON parsing. 
+      6. JSON SAFETY: Escape all special characters and newlines (\\n) within string values to ensure valid JSON parsing. 
       7. NO MARKDOWN: Do not include backticks (\`\`\`) or "json" labels in your output.
       
       Source Content: ${input.text}`
@@ -66,11 +65,15 @@ export async function translateContent(input: TranslateInput): Promise<Translate
     if (!output) throw new Error('AI 智译未返回有效结果。请检查模型配额或内容长度。');
     return output;
   } catch (error: any) {
-    if (error.message.includes('429')) {
+    const msg = error.message || '';
+    if (msg.includes('429')) {
       throw new Error('API 配额已耗尽（免费层级限制），请等候一分钟后再试。');
     }
-    if (error.message.includes('404')) {
+    if (msg.includes('404')) {
       throw new Error(`模型 ${finalModel} 在当前区域或 Key 下不可用，请前往设置切换至 Gemini 2.5 系列。`);
+    }
+    if (msg.includes('503')) {
+      throw new Error('AI 服务当前负载过高（503），建议精简内容或稍后重试。');
     }
     throw error;
   }

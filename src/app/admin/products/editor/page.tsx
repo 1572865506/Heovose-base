@@ -1,4 +1,3 @@
-
 "use client";
 
 import React, { useState, useEffect, useMemo, Suspense, useRef, use } from 'react';
@@ -263,32 +262,39 @@ function ProductEditorContent() {
     let totalFields = 0;
     let translatedFields = 0;
 
+    // 1. Basic Info
     let basicTotal = 0;
     let basicTranslated = 0;
-    if (String(formData.nameZh || '').trim()) {
+    const nameZh = String(formData.nameZh || '').trim();
+    if (nameZh) {
       basicTotal++;
       if (String(formData.nameEn || '').trim()) basicTranslated++;
     }
-    if (String(formData.descZh || '').trim()) {
+    const descZh = String(formData.descZh || '').trim();
+    if (descZh) {
       basicTotal++;
       if (String(formData.descEn || '').trim()) basicTranslated++;
     }
     totalFields += basicTotal;
     translatedFields += basicTranslated;
 
+    // 2. Technical Specs
     let specTotal = 0;
     let specTranslated = 0;
     formData.specGroups.forEach(group => {
-      if (String(group.titleZh || '').trim()) {
+      const gTitleZh = String(group.titleZh || '').trim();
+      if (gTitleZh) {
         specTotal++;
         if (String(group.titleEn || '').trim()) specTranslated++;
       }
       group.items.forEach(item => {
-        if (String(item.labelZh || '').trim()) {
+        const iLabelZh = String(item.labelZh || '').trim();
+        if (iLabelZh) {
           specTotal++;
           if (String(item.labelEn || '').trim()) specTranslated++;
         }
-        if (String(item.valueZh || '').trim()) {
+        const iValueZh = String(item.valueZh || '').trim();
+        if (iValueZh) {
           specTotal++;
           if (String(item.valueEn || '').trim()) specTranslated++;
         }
@@ -297,6 +303,7 @@ function ProductEditorContent() {
     totalFields += specTotal;
     translatedFields += specTranslated;
 
+    // 3. Details (Long-form)
     let detailTotal = 0;
     let detailTranslated = 0;
     const zhClean = String(formData.localizedDetails.zh || '').replace(/<[^>]*>/g, '').trim();
@@ -537,21 +544,21 @@ function ProductEditorContent() {
   const handleAiTranslateAllSpecs = async () => {
     if (!aiConfig?.isEnabled || formData.specGroups.length === 0) return;
 
-    const taskMap: Record<string, { type: 'title' | 'label' | 'value', text: string }> = {};
+    const taskMap: Record<string, string> = {};
     const allIds = new Set<string>();
 
     formData.specGroups.forEach((group, gIdx) => {
       if (String(group.titleZh || '').trim() && !String(group.titleEn || '').trim()) {
-        taskMap[`g_${gIdx}_title`] = { type: 'title', text: group.titleZh };
+        taskMap[`g_${gIdx}`] = group.titleZh;
         allIds.add(`g_${gIdx}_title`);
       }
       group.items.forEach((item, iIdx) => {
         if (String(item.labelZh || '').trim() && !String(item.labelEn || '').trim()) {
-          taskMap[`i_${gIdx}_${iIdx}_label`] = { type: 'label', text: item.labelZh };
+          taskMap[`l_${gIdx}_${iIdx}`] = item.labelZh;
           allIds.add(`i_${gIdx}_${iIdx}_label`);
         }
         if (String(item.valueZh || '').trim() && !String(item.valueEn || '').trim()) {
-          taskMap[`i_${gIdx}_${iIdx}_value`] = { type: 'value', text: item.valueZh };
+          taskMap[`v_${gIdx}_${iIdx}`] = item.valueZh;
           allIds.add(`i_${gIdx}_${iIdx}_value`);
         }
       });
@@ -566,17 +573,10 @@ function ProductEditorContent() {
     setProcessingItems(allIds);
 
     try {
-      const payload = JSON.stringify(taskMap);
       const res = await translateContent({
-        text: `Translate the following hardware specification data into professional industrial English. 
-        Input Data (JSON): ${payload}
-        
-        INSTRUCTIONS:
-        1. Translate all values into professional English.
-        2. Maintain the exact same keys (UIDs) as provided in the input.
-        3. Return ONLY a single valid JSON object. 
-        4. DO NOT include markdown code blocks or any conversational text.
-        5. Ensure proper escaping of special characters.`,
+        text: `Translate these hardware spec items to professional industrial English. 
+        Input: ${JSON.stringify(taskMap)}
+        Return ONLY valid JSON with same keys. NO markdown.`,
         targetLangs: ['en'],
         model: aiConfig.model,
         apiKey: aiConfig.apiKey
@@ -587,22 +587,25 @@ function ProductEditorContent() {
         const newSpecGroups = [...formData.specGroups];
 
         Object.keys(results).forEach(key => {
-          const val = results[key];
+          const val = String(results[key] || '');
           if (key.startsWith('g_')) {
             const gIdx = parseInt(key.split('_')[1]);
-            newSpecGroups[gIdx].titleEn = String(val);
-          } else if (key.startsWith('i_')) {
+            if (newSpecGroups[gIdx]) newSpecGroups[gIdx].titleEn = val;
+          } else if (key.startsWith('l_')) {
             const parts = key.split('_');
             const gIdx = parseInt(parts[1]);
             const iIdx = parseInt(parts[2]);
-            const type = parts[3];
-            if (type === 'label') newSpecGroups[gIdx].items[iIdx].labelEn = String(val);
-            else if (type === 'value') newSpecGroups[gIdx].items[iIdx].valueEn = String(val);
+            if (newSpecGroups[gIdx]?.items[iIdx]) newSpecGroups[gIdx].items[iIdx].labelEn = val;
+          } else if (key.startsWith('v_')) {
+            const parts = key.split('_');
+            const gIdx = parseInt(parts[1]);
+            const iIdx = parseInt(parts[2]);
+            if (newSpecGroups[gIdx]?.items[iIdx]) newSpecGroups[gIdx].items[iIdx].valueEn = val;
           }
         });
 
         setFormData(prev => ({ ...prev, specGroups: newSpecGroups }));
-        toast({ title: "全表智译成功", description: `已同步更新 ${Object.keys(results).length} 个技术节点。` });
+        toast({ title: "全表智译成功" });
       }
     } catch (e: any) {
       toast({ variant: "destructive", title: "批量智译中断", description: e.message });
@@ -622,11 +625,9 @@ function ProductEditorContent() {
     setProcessingItems(prev => { const n = new Set(prev); n.add(labelKey); n.add(valueKey); return n; });
 
     try {
-      const combinedPayload = JSON.stringify({ label: String(item.labelZh || ''), value: String(item.valueZh || '') });
+      const payload = { label: String(item.labelZh || ''), value: String(item.valueZh || '') };
       const res = await translateContent({ 
-        text: `Translate this hardware spec entry (return valid JSON only): ${combinedPayload}. 
-        Return format: {"label": "...", "value": "..."}.
-        NO markdown.`, 
+        text: `Translate hardware spec (JSON ONLY): ${JSON.stringify(payload)}. Format: {"label": "...", "value": "..."}`, 
         targetLangs: ['en'], 
         apiKey: aiConfig.apiKey 
       });
@@ -959,7 +960,7 @@ function ProductEditorContent() {
                           onChange={e => { const g=[...formData.specGroups]; g[gIdx].titleEn=e.target.value; setFormData({...formData, specGroups:g}); }} 
                           className={cn(
                             "h-9 text-xs border-none bg-transparent focus:bg-white border-dashed",
-                            processingItems.has(`g_${gIdx}_title`) && "animate-pulse ring-2 ring-primary/20"
+                            processingItems.has(`g_${gIdx}`) && "animate-pulse ring-2 ring-primary/20"
                           )} 
                         />
                       </div>
