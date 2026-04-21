@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useState } from 'react';
@@ -129,11 +128,13 @@ export default function AdminUsersPage() {
     toast({ title: newStatus === 'active' ? "账号已激活" : "账号已封禁" });
   };
 
-  const filteredAdmins = admins?.filter(a => 
-    a.email.toLowerCase().includes(searchQuery.toLowerCase()) || 
-    (a.displayName || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
-    a.uid.includes(searchQuery)
-  );
+  const filteredAdmins = admins?.filter(a => {
+    const s = searchQuery.toLowerCase();
+    const emailMatch = (a.email || '').toLowerCase().includes(s);
+    const nameMatch = (a.displayName || '').toLowerCase().includes(s);
+    const uidMatch = (a.uid || '').includes(searchQuery);
+    return emailMatch || nameMatch || uidMatch;
+  });
 
   return (
     <div className="space-y-6 animate-in fade-in duration-500">
@@ -184,7 +185,7 @@ export default function AdminUsersPage() {
                   <Avatar className="h-10 w-10 border border-border/40">
                     <AvatarImage src={admin.avatarUrl} className="object-cover" />
                     <AvatarFallback className="bg-primary/5 text-primary text-xs font-bold">
-                      {(admin.displayName || admin.email)[0].toUpperCase()}
+                      {(admin.displayName || admin.email || 'U')[0].toUpperCase()}
                     </AvatarFallback>
                   </Avatar>
                 </TableCell>
