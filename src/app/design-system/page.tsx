@@ -22,8 +22,43 @@ import {
   ClipboardList,
   Star,
   Zap,
-  Globe
+  Globe,
+  Trash2,
+  Edit2,
+  MoreHorizontal,
+  Info,
+  AlertCircle,
+  Clock,
+  ExternalLink,
+  Menu,
+  X,
+  User,
+  ShieldCheck,
+  Package,
+  Layers,
+  FileText
 } from 'lucide-react';
+import { 
+  Table, 
+  TableBody, 
+  TableCell, 
+  TableHead, 
+  TableHeader, 
+  TableRow 
+} from '@/components/ui/table';
+import { 
+  Tabs, 
+  TabsContent, 
+  TabsList, 
+  TabsTrigger 
+} from "@/components/ui/tabs";
+import { Progress } from "@/components/ui/progress";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { cn } from '@/lib/utils';
 import Image from 'next/image';
 
@@ -57,14 +92,14 @@ export default function DesignSystemPage() {
       <AiGradientDef />
       
       {/* 系统切换主导航 */}
-      <header className="bg-white border-b border-border/40 sticky top-0 z-[100] px-8 py-4 flex items-center justify-between shadow-sm">
+      <header className="bg-white border-b border-border/40 sticky top-0 z-[110] px-8 py-4 flex items-center justify-between shadow-sm">
         <div className="flex items-center gap-6">
           <div className="h-10 w-10 bg-primary rounded-xl flex items-center justify-center text-white shadow-lg">
             <Cpu className="h-6 w-6" />
           </div>
           <div>
             <h1 className="text-lg font-bold text-primary uppercase tracking-widest">Heovose Design Labs</h1>
-            <p className="text-[10px] text-muted-foreground font-bold uppercase opacity-60">Visual Sandbox • Dual-System Debugging</p>
+            <p className="text-[10px] text-muted-foreground font-bold uppercase opacity-60">Visual Sandbox • Core v1.4.2</p>
           </div>
         </div>
 
@@ -186,7 +221,7 @@ export default function DesignSystemPage() {
                            <h3 className="text-xl font-headline font-bold text-primary group-hover:text-accent transition-colors leading-tight">Heovose H24 Advanced</h3>
                            <p className="text-xs text-muted-foreground line-clamp-2 leading-relaxed opacity-60">High-performance All-in-One PC integrated with premium barebone kits.</p>
                            <div className="pt-6 border-t border-dashed flex items-center justify-between">
-                              <span className="text-xs font-bold text-primary flex items-center gap-2">View Details <ArrowRight className="h-3.5 w-3.5" /></span>
+                              <span className="text-xs font-bold text-primary flex items-center gap-2 cursor-pointer">View Details <ArrowRight className="h-3.5 w-3.5" /></span>
                               <div className="h-8 w-8 rounded-full bg-primary/5 flex items-center justify-center text-primary group-hover:bg-primary group-hover:text-white transition-all"><ShoppingBag className="h-4 w-4" /></div>
                            </div>
                         </div>
@@ -201,7 +236,7 @@ export default function DesignSystemPage() {
                            <h3 className="text-xl font-headline font-bold text-[#F97316] group-hover:text-primary transition-colors leading-tight">Smart Retail Kiosk V2</h3>
                            <p className="text-xs text-muted-foreground line-clamp-2 leading-relaxed opacity-60">Custom self-service terminal for seamless global checkout deployment.</p>
                            <div className="pt-6 border-t border-dashed flex items-center justify-between">
-                              <span className="text-xs font-bold text-[#F97316] flex items-center gap-2">Inquire Now <ArrowRight className="h-3.5 w-3.5" /></span>
+                              <span className="text-xs font-bold text-[#F97316] flex items-center gap-2 cursor-pointer">Inquire Now <ArrowRight className="h-3.5 w-3.5" /></span>
                               <div className="h-8 w-8 rounded-full bg-[#F97316]/5 flex items-center justify-center text-[#F97316] group-hover:bg-[#F97316] group-hover:text-white transition-all"><Building2 className="h-4 w-4" /></div>
                            </div>
                         </div>
@@ -214,7 +249,7 @@ export default function DesignSystemPage() {
                    {/* Bento单元预览 */}
                    <div className="space-y-4">
                       <span className="text-[11px] font-bold text-muted-foreground uppercase tracking-[0.2em]">Bento Grid Unit</span>
-                      <div className="group relative h-48 rounded-[2rem] overflow-hidden border border-border/40 bg-primary shadow-xl">
+                      <div className="group relative h-48 rounded-[2rem] overflow-hidden border border-border/40 bg-primary shadow-xl cursor-pointer">
                          <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent z-10" />
                          <div className="absolute inset-0 p-6 flex flex-col justify-end z-20">
                             <span className="text-[9px] font-bold text-accent uppercase tracking-[0.2em] mb-1">Industrial</span>
@@ -305,6 +340,48 @@ export default function DesignSystemPage() {
                 </div>
               </div>
             </section>
+
+            {/* 04. 前台全局元素 */}
+            <section className="space-y-12">
+               <div className="flex items-center gap-4 border-b pb-4 border-primary/10">
+                  <div className="h-2 w-10 bg-primary rounded-full opacity-20" />
+                  <h2 className="text-2xl font-headline font-bold uppercase tracking-widest text-primary">04. Global Layout Units</h2>
+               </div>
+               <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
+                  {/* Stats Components */}
+                  <div className="space-y-6">
+                     <span className="text-[11px] font-bold text-muted-foreground uppercase tracking-[0.2em]">Trust Indicators (Stats)</span>
+                     <div className="bg-primary p-12 rounded-[3rem] text-white flex flex-col items-center text-center space-y-4 shadow-xl">
+                        <div className="p-4 bg-white/10 rounded-2xl">
+                          <Factory className="h-8 w-8 text-accent" />
+                        </div>
+                        <div className="space-y-1">
+                          <span className="text-6xl font-headline font-bold block">3</span>
+                          <span className="text-xl font-medium opacity-90 block uppercase">Global Factories</span>
+                        </div>
+                     </div>
+                  </div>
+                  {/* Copyright & Footer Meta */}
+                  <div className="space-y-6">
+                     <span className="text-[11px] font-bold text-muted-foreground uppercase tracking-[0.2em]">Meta & Legal</span>
+                     <div className="bg-white p-12 rounded-[3rem] border shadow-sm space-y-8">
+                        <div className="space-y-4">
+                           <div className="flex gap-4">
+                              <div className="h-10 w-10 rounded-full bg-muted/20 flex items-center justify-center text-primary/40"><ShieldCheck className="h-5 w-5" /></div>
+                              <div className="space-y-1">
+                                 <p className="text-xs font-bold text-primary uppercase tracking-tight">Terms of Reliability</p>
+                                 <p className="text-[10px] text-muted-foreground leading-relaxed">Systematic quality assurance for high-end hardware deployment.</p>
+                              </div>
+                           </div>
+                        </div>
+                        <div className="pt-8 border-t border-dashed flex justify-between items-center opacity-40 text-[9px] uppercase tracking-[0.2em] font-bold">
+                           <p>© 2024 Heovose Technology</p>
+                           <div className="flex gap-6"><span>Privacy</span><span>Terms</span></div>
+                        </div>
+                     </div>
+                  </div>
+               </div>
+            </section>
           </div>
         ) : (
           <div className="space-y-20 animate-in fade-in slide-in-from-bottom-4 duration-700">
@@ -312,7 +389,7 @@ export default function DesignSystemPage() {
             <section className="space-y-8">
               <div className="flex items-center gap-4 border-b pb-4 border-primary/20">
                 <div className="h-2 w-10 bg-primary rounded-full" />
-                <h2 className="text-xl font-bold uppercase tracking-widest text-primary">Admin System Standards</h2>
+                <h2 className="text-xl font-bold uppercase tracking-widest text-primary">01. Admin Identity & Specs</h2>
               </div>
               
               <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
@@ -383,46 +460,109 @@ export default function DesignSystemPage() {
               </div>
             </section>
 
-            {/* 02. 后台专用组件 */}
+            {/* 03. 后台表格与数据流 */}
             <section className="space-y-8">
-              <div className="flex items-center gap-4 border-b pb-4 border-primary/20">
-                <div className="h-2 w-10 bg-primary rounded-full" />
-                <h2 className="text-xl font-bold uppercase tracking-widest text-primary">Admin System Controls</h2>
-              </div>
-              <div className="bg-white p-10 rounded-2xl border border-border/40 shadow-sm">
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
-                   <div className="space-y-8">
-                      <div className="space-y-4">
-                        <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Admin AI Interactions (2.2)</p>
-                        <div className="flex flex-wrap gap-6 items-end">
-                           <div className="space-y-2">
-                             <span className="text-[9px] opacity-40 block">Full Version</span>
-                             <Button className="ai-btn-glow h-10 px-5 rounded-lg gap-2 font-bold uppercase tracking-widest text-[10px]">
-                               <Sparkles className="h-3.5 w-3.5 ai-icon-gradient" /> AI 智译
-                             </Button>
+               <div className="flex items-center gap-4 border-b pb-4 border-primary/20">
+                  <div className="h-2 w-10 bg-primary rounded-full" />
+                  <h2 className="text-xl font-bold uppercase tracking-widest text-primary">03. Tables & Data Streams</h2>
+               </div>
+               <div className="bg-white rounded-2xl border border-border/40 shadow-sm overflow-hidden">
+                  <Table>
+                     <TableHeader className="bg-muted/30">
+                        <TableRow>
+                           <TableHead className="w-14 pl-6">视觉</TableHead>
+                           <TableHead className="font-bold uppercase text-[10px] tracking-widest">资产名称与 ID</TableHead>
+                           <TableHead className="font-bold uppercase text-[10px] tracking-widest">状态标签</TableHead>
+                           <TableHead className="text-right pr-6 font-bold uppercase text-[10px] tracking-widest">操作集</TableHead>
+                        </TableRow>
+                     </TableHeader>
+                     <TableBody>
+                        <TableRow className="group bg-primary/5">
+                           <TableCell className="pl-6"><div className="h-10 w-10 bg-muted/40 rounded-lg flex items-center justify-center"><Package className="h-4 w-4 opacity-40" /></div></TableCell>
+                           <TableCell>
+                              <div className="flex flex-col">
+                                 <span className="font-bold text-sm text-primary">Selected Asset State</span>
+                                 <span className="text-[9px] font-mono opacity-40 uppercase">ID: MAPPED_ENTRY_001</span>
+                              </div>
+                           </TableCell>
+                           <TableCell><Badge className="bg-green-600 text-white text-[8px] uppercase">Active</Badge></TableCell>
+                           <TableCell className="pr-6 text-right">
+                              <div className="flex justify-end gap-1 opacity-100">
+                                 <Button size="icon" variant="ghost" className="h-8 w-8 text-primary"><Edit2 className="h-3.5 w-3.5" /></Button>
+                                 <Button size="icon" variant="ghost" className="h-8 w-8 text-destructive"><Trash2 className="h-3.5 w-3.5" /></Button>
+                              </div>
+                           </TableCell>
+                        </TableRow>
+                        <TableRow className="group hover:bg-muted/5 transition-colors">
+                           <TableCell className="pl-6"><div className="h-10 w-10 bg-muted/40 rounded-lg flex items-center justify-center"><Layers className="h-4 w-4 opacity-40" /></div></TableCell>
+                           <TableCell>
+                              <div className="flex flex-col">
+                                 <span className="font-bold text-sm text-muted-foreground">Standard Row Hover</span>
+                                 <span className="text-[9px] font-mono opacity-40 uppercase">ID: STATIC_ENTRY_002</span>
+                              </div>
+                           </TableCell>
+                           <TableCell><Badge variant="secondary" className="text-[8px] uppercase">Draft</Badge></TableCell>
+                           <TableCell className="pr-6 text-right">
+                              <div className="flex justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                 <Button size="icon" variant="ghost" className="h-8 w-8"><Edit2 className="h-3.5 w-3.5" /></Button>
+                                 <Button size="icon" variant="ghost" className="h-8 w-8"><MoreHorizontal className="h-3.5 w-3.5" /></Button>
+                              </div>
+                           </TableCell>
+                        </TableRow>
+                     </TableBody>
+                  </Table>
+                  <div className="p-12 text-center border-t border-dashed bg-muted/5">
+                     <p className="text-[10px] font-bold text-muted-foreground/40 uppercase tracking-[0.2em] italic">End of List Container / Empty State Design</p>
+                  </div>
+               </div>
+            </section>
+
+            {/* 04. 后台反馈与进度 */}
+            <section className="space-y-8">
+               <div className="flex items-center gap-4 border-b pb-4 border-primary/20">
+                  <div className="h-2 w-10 bg-primary rounded-full" />
+                  <h2 className="text-xl font-bold uppercase tracking-widest text-primary">04. Feedback & Gauges</h2>
+               </div>
+               <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                  {/* Task & Process Feedback */}
+                  <div className="p-8 rounded-2xl bg-white border space-y-6">
+                     <div className="space-y-4">
+                        <div className="flex justify-between items-end">
+                           <div className="space-y-1">
+                              <p className="text-[10px] font-bold text-muted-foreground uppercase">Syncing Asset</p>
+                              <p className="text-sm font-bold text-primary">Heovose-H24-Base64.png</p>
                            </div>
-                           <div className="space-y-2">
-                             <span className="text-[9px] opacity-40 block">Minimal Version</span>
-                             <Button variant="ghost" size="icon" className="ai-btn-glow h-9 w-9 rounded-lg">
-                               <Sparkles className="h-3.5 w-3.5 ai-icon-gradient" />
-                             </Button>
+                           <span className="text-[10px] font-mono font-bold text-primary">78%</span>
+                        </div>
+                        <Progress value={78} className="h-1.5" />
+                     </div>
+                     <div className="p-4 bg-orange-50 rounded-xl border border-orange-100 flex gap-3">
+                        <AlertCircle className="h-4 w-4 text-orange-600 shrink-0" />
+                        <p className="text-[10px] text-orange-800 leading-relaxed font-medium">
+                           <b>Storage Warning:</b> Base64 size approaching 700KB limit. Consider cloud asset migration.
+                        </p>
+                     </div>
+                  </div>
+                  {/* Toast & Error Specs */}
+                  <div className="p-8 rounded-2xl bg-white border space-y-6">
+                     <div className="space-y-4">
+                        <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Toast Standards (Error only)</p>
+                        <div className="bg-destructive text-destructive-foreground p-4 rounded-xl flex items-center gap-4 shadow-xl border-none">
+                           <X className="h-5 w-5" />
+                           <div className="space-y-0.5">
+                              <p className="text-xs font-bold uppercase">Operation Failed</p>
+                              <p className="text-[10px] opacity-80">Firestore Security Rules: Permission Denied.</p>
                            </div>
                         </div>
-                      </div>
-                   </div>
-                   
-                   <div className="space-y-6">
-                      <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Feedback & Toast Specs</p>
-                      <div className="p-4 bg-primary/5 rounded-xl border border-primary/10 flex items-center gap-4">
-                        <div className="h-10 w-10 rounded-full bg-primary flex items-center justify-center text-white"><Check className="h-5 w-5" /></div>
-                        <div className="space-y-0.5">
-                           <p className="text-xs font-bold text-primary uppercase">Security Context Active</p>
-                           <p className="text-[10px] text-muted-foreground">Admin layout uses consistent padding p-6 (24px) globally.</p>
-                        </div>
-                      </div>
-                   </div>
-                </div>
-              </div>
+                     </div>
+                     <div className="pt-4 border-t border-dashed flex items-center gap-4">
+                        <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center text-primary"><Info className="h-4 w-4" /></div>
+                        <p className="text-[9px] text-muted-foreground leading-relaxed italic">
+                           后台规范建议：仅在操作失败或具有重大风险时使用 Toast，常规成功提示应采用内联 Badge。
+                        </p>
+                     </div>
+                  </div>
+               </div>
             </section>
           </div>
         )}
@@ -433,17 +573,22 @@ export default function DesignSystemPage() {
         <div className="flex items-center gap-8">
            <div className="flex items-center gap-2">
              <div className="h-2 w-2 rounded-full bg-green-500 animate-pulse" />
-             <span className="text-[10px] font-bold uppercase tracking-widest text-primary">Lab Core v1.4</span>
+             <span className="text-[10px] font-bold uppercase tracking-widest text-primary">Lab Core v1.4.2</span>
            </div>
            <div className="h-4 w-px bg-border/60" />
            <div className="flex items-center gap-2">
              <AppWindow className="h-3.5 w-3.5 opacity-40" />
              <span className="text-[10px] font-bold uppercase tracking-widest opacity-40">
-               {activeSystem === 'frontend' ? 'Debugging: Front-end Business Units' : 'Debugging: Admin Manifest v1.8'}
+               {activeSystem === 'frontend' ? 'Viewport: Business Components' : 'Viewport: Admin Manifest 1.8 Compliance'}
              </span>
            </div>
         </div>
-        <p className="text-[9px] font-bold uppercase tracking-[0.2em] opacity-40">Development Environment Only</p>
+        <div className="flex items-center gap-6">
+           <div className="flex items-center gap-2 px-3 py-1 bg-muted/40 rounded-full border border-border/20">
+              <span className="text-[9px] font-bold text-muted-foreground uppercase tracking-widest">Debug Grid: ON</span>
+           </div>
+           <p className="text-[9px] font-bold uppercase tracking-[0.2em] opacity-40">Developer Preview Only</p>
+        </div>
       </footer>
     </div>
   );
