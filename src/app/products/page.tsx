@@ -5,8 +5,8 @@ import React, { useState, useMemo, useEffect, Suspense, use } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
-import { useUser, useFirestore, useCollection, useMemoFirebase } from '@/firebase';
-import { collection } from 'firebase/firestore';
+import { useUser, useFirestore, useCollection, useMemoFirebase, useDoc } from '@/firebase';
+import { collection, doc } from 'firebase/firestore';
 import { Locale, translations } from '@/lib/translations';
 import { Navbar } from '@/components/Navbar';
 import { Footer } from '@/components/Footer';
@@ -15,12 +15,6 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
-import {
-  Accordion,
-  AccordionContent,
-  AccordionItem,
-  AccordionTrigger,
-} from "@/components/ui/accordion";
 import { cn } from '@/lib/utils';
 
 interface Product {
@@ -38,7 +32,6 @@ interface Category {
   nameTextId: string;
   slug: string;
   thumbnailImageUrl?: string;
-  parentId?: string;
 }
 
 interface LocalizedString {
@@ -48,26 +41,48 @@ interface LocalizedString {
 }
 
 function ProductListContent() {
+  const searchParams = useSearchParams();
+  const firestore = useFirestore();
+  
   const [locale, setLocale] = useState<Locale>('en');
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategoryId, setSelectedCategoryId] = useState<string | null>(null);
   
-  const firestore = useFirestore();
-  const searchParams = useSearchParams();
   const categoryParam = searchParams.get('category');
   const t = translations[locale].products;
 
   const prodsRef = useMemoFirebase(() => collection(firestore, 'products'), [firestore]);
   const catsRef = useMemoFirebase(() => collection(firestore, 'productCategories'), [firestore]);
   const transRef = useMemoFirebase(() => collection(firestore, 'localizedStrings'), [firestore]);
+  const langConfigRef = useMemoFirebase(() => doc(firestore, 'settings', 'languages'), [firestore]);
 
   const { data: products, isLoading: isProdsLoading } = useCollection<Product>(prodsRef);
   const { data: categories, isLoading: isCatsLoading } = useCollection<Category>(catsRef);
   const { data: allTranslations } = useCollection<LocalizedString>(transRef);
+  const { data: langSettings } = useDoc<any>(langConfigRef);
+
+  // 智能判定语种
+  useEffect(() => {
+    const detectLocale = () => {
+      const langParam = searchParams.get('lang');
+      if (langParam && ['en', 'zh', 'id', 'vi'].includes(langParam)) return langParam as Locale;
+      
+      const saved = localStorage.getItem('heovose-locale') as Locale;
+      if (saved && ['en', 'zh', 'id', 'vi'].includes(saved)) return saved;
+      
+      const browserLang = navigator.language.split('-')[0] as Locale;
+      if (['en', 'zh', 'id', 'vi'].includes(browserLang)) return browserLang;
+      
+      return (langSettings?.defaultLanguage as Locale) || 'en';
+    };
+    setLocale(detectLocale());
+  }, [searchParams, langSettings]);
 
   const getT = (id: string) => {
     const entry = allTranslations?.find(item => item.id === id);
-    return entry ? (locale === 'zh' ? entry.zh : entry.en) : id;
+    if (!entry) return id;
+    // 动态回退逻辑
+    return entry[locale] || entry['en'] || entry['zh'] || id;
   };
 
   useEffect(() => {
@@ -80,9 +95,7 @@ function ProductListContent() {
   const filteredProducts = useMemo(() => {
     if (!products) return [];
     return products.filter(p => {
-      const isPublished = p.status === 'published';
-      if (!isPublished) return false;
-
+      if (p.status !== 'published') return false;
       const matchesCategory = !selectedCategoryId || p.productCategoryId === selectedCategoryId;
       const name = getT(p.nameTextId).toLowerCase();
       const matchesSearch = name.includes(searchQuery.toLowerCase());
@@ -92,7 +105,7 @@ function ProductListContent() {
 
   const activeCategoryName = useMemo(() => {
     if (!selectedCategoryId) return t.allCategories;
-    const cat = categories?.find(c => i.id === selectedCategoryId);
+    const cat = categories?.find(c => c.id === selectedCategoryId);
     return cat ? getT(cat.nameTextId) : t.allCategories;
   }, [selectedCategoryId, categories, allTranslations, locale, t.allCategories]);
 
@@ -117,7 +130,6 @@ function ProductListContent() {
 
       <section className="py-16 container mx-auto px-6">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-12">
-          
           <aside className="lg:col-span-3 space-y-10">
             <div className="space-y-4">
               <h3 className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">搜索</h3>
@@ -223,10 +235,7 @@ function ProductListContent() {
 }
 
 export default function ProductListPage({ searchParams }: { searchParams: Promise<any> }) {
-  // 在 Next.js 15 中，Client Component 页面 props 必须使用 React.use() 解包。
-  // 这防止了 Next.js 内部序列化逻辑（如 JSON.stringify）在 Proxy 上触发枚举错误。
   use(searchParams);
-
   return (
     <Suspense fallback={<div className="min-h-screen flex items-center justify-center">Loading...</div>}>
       <ProductListContent />

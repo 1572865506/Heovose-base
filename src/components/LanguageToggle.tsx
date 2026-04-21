@@ -38,17 +38,22 @@ export function LanguageToggle({ currentLocale, setLocale }: LanguageToggleProps
   );
   const { data: langSettings, isLoading } = useDoc<LanguageSettings>(langConfigRef);
 
-  // 2. 处理动态语种列表，带默认回退方案
+  // 2. 处理动态语种列表
   const availableLanguages = useMemo(() => {
     if (langSettings?.supportedLanguages && langSettings.supportedLanguages.length > 0) {
       return langSettings.supportedLanguages;
     }
-    // 默认回退（在数据加载中或未配置时）
     return [
       { code: 'zh', label: '中文' },
       { code: 'en', label: 'English' },
     ];
   }, [langSettings]);
+
+  const handleLocaleChange = (code: string) => {
+    // 保存到本地缓存，以便下次访问自动判定
+    localStorage.setItem('heovose-locale', code);
+    setLocale(code as Locale);
+  };
 
   return (
     <DropdownMenu modal={false}>
@@ -84,7 +89,7 @@ export function LanguageToggle({ currentLocale, setLocale }: LanguageToggleProps
               flex items-center justify-between px-3 py-2.5 rounded-lg cursor-pointer transition-colors mb-0.5 last:mb-0
               ${currentLocale === lang.code ? 'bg-primary/5 text-primary font-bold' : 'hover:bg-muted text-muted-foreground'}
             `}
-            onClick={() => setLocale(lang.code as Locale)}
+            onClick={() => handleLocaleChange(lang.code)}
           >
             <div className="flex flex-col">
               <span className="text-xs">{lang.label}</span>
