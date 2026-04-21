@@ -37,7 +37,9 @@ import {
   Clock,
   Zap,
   Users,
-  UserCircle
+  UserCircle,
+  User,
+  ShieldCheck
 } from 'lucide-react';
 import Link from 'next/link';
 import Image from 'next/image';
@@ -46,6 +48,14 @@ import { cn } from '@/lib/utils';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { getModelQuota } from '@/lib/ai-models';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   const { user, isUserLoading } = useUser();
@@ -67,7 +77,6 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   const { data: adminData, isLoading: isAdminDataLoading } = useDoc<any>(adminDocRef);
   const { data: aiConfig } = useDoc<any>(aiConfigRef);
 
-  // 增强版加载判定：仅在两者都确定没有时才显示未授权
   const isDeterminingAccess = isUserLoading || (user && isAdminDataLoading);
   const isUnauthorized = user && !adminData && !isAdminDataLoading && pathname !== '/admin/login';
 
@@ -155,7 +164,6 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       items: [
         { title: "多语言翻译", icon: Globe, href: "/admin/translations" },
         { title: "AI 智译中枢", icon: Bot, href: "/admin/settings/ai" },
-        { title: "我的个人资料", icon: UserCircle, href: "/admin/profile" },
         ...(isSuperAdmin ? [{ title: "管理员管理", icon: Users, href: "/admin/users" }] : []),
         { title: "规范白皮书", icon: ScrollText, href: "/admin/manifest" },
         { title: "通用设置", icon: Settings, href: "/admin/settings" },
@@ -163,7 +171,6 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     }
   ];
 
-  // 计算 AI 模型配额信息
   const activeModel = aiConfig?.model ? getModelQuota(aiConfig.model) : null;
   const aiStatus = aiConfig?.lastDiagnosis?.status;
 
@@ -206,14 +213,9 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             ))}
           </SidebarContent>
           <SidebarFooter className="p-4 border-t border-border/40">
-            <Button 
-              variant="ghost" 
-              className="w-full justify-start gap-3 text-muted-foreground hover:text-destructive hover:bg-destructive/5 rounded-lg h-10"
-              onClick={() => auth.signOut()}
-            >
-              <LogOut className="h-4 w-4" />
-              <span className="text-xs font-bold uppercase tracking-widest">退出登录</span>
-            </Button>
+            <div className="px-5 py-2">
+               <p className="text-[8px] font-bold text-muted-foreground/40 uppercase tracking-widest">Heovose Admin v1.2</p>
+            </div>
           </SidebarFooter>
         </Sidebar>
         
@@ -227,7 +229,6 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
               </h1>
             </div>
             <div className="flex items-center gap-4">
-              {/* AI Quota Dashboard Shortcut */}
               <Link href="/admin/settings/ai">
                 <Button 
                   variant="ghost" 
@@ -264,20 +265,63 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
               <div className="h-5 w-px bg-border/60 mx-1 hidden md:block" />
               
-              <Link href="/admin/profile" className="flex items-center gap-3 hover:opacity-80 transition-opacity">
-                <div className="hidden md:flex flex-col items-end">
-                  <span className="text-[11px] font-bold text-primary">{adminData.displayName || user.email}</span>
-                  <span className="text-[9px] text-muted-foreground uppercase tracking-widest font-medium text-right block">
-                    {adminData.role === 'superadmin' ? '超级管理员' : '编辑员'}
-                  </span>
-                </div>
-                <Avatar className="h-9 w-9 rounded-full shadow-inner border border-border/40">
-                  {adminData.avatarUrl ? <AvatarImage src={adminData.avatarUrl} className="object-cover" /> : null}
-                  <AvatarFallback className="bg-primary/10 text-primary text-xs font-bold uppercase">
-                    {(adminData.displayName || user.email)?.[0]}
-                  </AvatarFallback>
-                </Avatar>
-              </Link>
+              <DropdownMenu modal={false}>
+                <DropdownMenuTrigger asChild>
+                  <button className="flex items-center gap-3 hover:opacity-80 transition-opacity outline-none group">
+                    <div className="hidden md:flex flex-col items-end">
+                      <span className="text-[11px] font-bold text-primary">{adminData.displayName || user.email}</span>
+                      <span className="text-[9px] text-muted-foreground uppercase tracking-widest font-medium text-right block">
+                        {adminData.role === 'superadmin' ? '超级管理员' : '编辑员'}
+                      </span>
+                    </div>
+                    <Avatar className="h-9 w-9 rounded-full shadow-inner border border-border/40 group-data-[state=open]:ring-4 group-data-[state=open]:ring-primary/10 transition-all">
+                      {adminData.avatarUrl ? <AvatarImage src={adminData.avatarUrl} className="object-cover" /> : null}
+                      <AvatarFallback className="bg-primary/10 text-primary text-xs font-bold uppercase">
+                        {(adminData.displayName || user.email)?.[0]}
+                      </AvatarFallback>
+                    </Avatar>
+                  </button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" sideOffset={12} className="w-60 p-1.5 rounded-2xl shadow-2xl border-border/40 bg-white/95 backdrop-blur-xl">
+                  <DropdownMenuLabel className="px-3 py-2.5">
+                    <div className="flex flex-col space-y-1">
+                      <p className="text-xs font-bold text-primary line-clamp-1">{adminData.displayName || '管理员'}</p>
+                      <p className="text-[10px] text-muted-foreground font-medium truncate opacity-60">{user.email}</p>
+                    </div>
+                  </DropdownMenuLabel>
+                  <DropdownMenuSeparator className="bg-border/40" />
+                  <DropdownMenuItem asChild className="rounded-xl px-3 py-2.5 cursor-pointer focus:bg-primary/5 focus:text-primary">
+                    <Link href="/admin/profile" className="flex items-center gap-3">
+                      <UserCircle className="h-4 w-4" />
+                      <span className="text-xs font-bold uppercase tracking-wider">个人资料设置</span>
+                    </Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem asChild className="rounded-xl px-3 py-2.5 cursor-pointer focus:bg-primary/5 focus:text-primary">
+                    <Link href="/admin/settings" className="flex items-center gap-3">
+                      <Settings className="h-4 w-4" />
+                      <span className="text-xs font-bold uppercase tracking-wider">系统偏好设置</span>
+                    </Link>
+                  </DropdownMenuItem>
+                  {isSuperAdmin && (
+                    <DropdownMenuItem asChild className="rounded-xl px-3 py-2.5 cursor-pointer focus:bg-primary/5 focus:text-primary">
+                      <Link href="/admin/users" className="flex items-center gap-3">
+                        <ShieldCheck className="h-4 w-4" />
+                        <span className="text-xs font-bold uppercase tracking-wider">成员权限管理</span>
+                      </Link>
+                    </DropdownMenuItem>
+                  )}
+                  <DropdownMenuSeparator className="bg-border/40" />
+                  <DropdownMenuItem 
+                    className="rounded-xl px-3 py-2.5 cursor-pointer text-destructive focus:bg-destructive/5 focus:text-destructive"
+                    onClick={() => auth.signOut()}
+                  >
+                    <div className="flex items-center gap-3">
+                      <LogOut className="h-4 w-4" />
+                      <span className="text-xs font-bold uppercase tracking-wider">退出管理系统</span>
+                    </div>
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
             </div>
           </header>
           
