@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState } from 'react';
@@ -32,7 +33,10 @@ import {
   ShieldAlert,
   Search,
   CheckCircle2,
-  XCircle
+  XCircle,
+  Info,
+  ExternalLink,
+  Key
 } from 'lucide-react';
 import { 
   Select,
@@ -47,6 +51,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { useToast } from '@/hooks/use-toast';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
+import { Card, CardContent } from '@/components/ui/card';
 
 interface AdminUser {
   id: string;
@@ -93,7 +98,7 @@ export default function AdminUsersPage() {
   const handleStartEdit = (user: AdminUser) => {
     setFormData({
       uid: user.uid,
-      email: user.email,
+      email: user.email || '',
       displayName: user.displayName || '',
       role: user.role,
       status: user.status || 'active'
@@ -137,7 +142,7 @@ export default function AdminUsersPage() {
   });
 
   return (
-    <div className="space-y-6 animate-in fade-in duration-500">
+    <div className="space-y-6 animate-in fade-in duration-500 pb-10">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <h2 className="text-xl font-headline font-bold text-primary flex items-center gap-2">
@@ -150,6 +155,53 @@ export default function AdminUsersPage() {
           <UserPlus className="h-4 w-4" /> 授权新管理员
         </Button>
       </div>
+
+      {/* 授权指南看板 */}
+      <Card className="border-primary/20 bg-primary/5 rounded-2xl overflow-hidden shadow-sm">
+        <CardContent className="p-6">
+          <div className="flex flex-col md:flex-row gap-8">
+            <div className="flex-1 space-y-4">
+              <div className="flex items-center gap-2 text-primary">
+                <Info className="h-4 w-4" />
+                <span className="text-[10px] font-bold uppercase tracking-widest">如何新增成员？(双步验证模式)</span>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="bg-white/60 p-4 rounded-xl border border-primary/10 space-y-2">
+                  <div className="flex items-center gap-2">
+                    <Badge className="h-5 w-5 rounded-full p-0 flex items-center justify-center bg-primary text-white text-[10px]">1</Badge>
+                    <span className="text-[11px] font-bold">控制台创建认证</span>
+                  </div>
+                  <p className="text-[10px] text-muted-foreground leading-relaxed">
+                    访问 <a href="https://console.firebase.google.com/" target="_blank" className="text-primary hover:underline font-bold inline-flex items-center gap-0.5">Firebase Console <ExternalLink className="h-2 w-2" /></a>，在 Auth 模块手动添加邮箱账号并获取其 <b>UID</b>。
+                  </p>
+                </div>
+                <div className="bg-white/60 p-4 rounded-xl border border-primary/10 space-y-2">
+                  <div className="flex items-center gap-2">
+                    <Badge className="h-5 w-5 rounded-full p-0 flex items-center justify-center bg-primary text-white text-[10px]">2</Badge>
+                    <span className="text-[11px] font-bold">此处赋予管理权限</span>
+                  </div>
+                  <p className="text-[10px] text-muted-foreground leading-relaxed">
+                    点击右上角“授权新管理员”，填入获取的 <b>UID</b>。系统将自动识别该用户并允许其进入后台。
+                  </p>
+                </div>
+              </div>
+            </div>
+            <div className="w-full md:w-48 shrink-0 flex flex-col justify-center border-t md:border-t-0 md:border-l border-primary/10 pt-4 md:pt-0 md:pl-8">
+               <div className="space-y-3">
+                  <div className="text-[10px] font-bold uppercase opacity-40">当前统计</div>
+                  <div className="flex justify-between items-end">
+                    <span className="text-[10px] font-medium">总管理员</span>
+                    <span className="text-2xl font-headline font-bold text-primary">{admins?.length || 0}</span>
+                  </div>
+                  <div className="flex justify-between items-end">
+                    <span className="text-[10px] font-medium">超级权限</span>
+                    <span className="text-lg font-headline font-bold text-orange-600">{admins?.filter(a => a.role === 'superadmin').length || 0}</span>
+                  </div>
+               </div>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
 
       <div className="flex items-center gap-3 bg-white p-3 rounded-2xl border border-border/40 shadow-sm">
         <div className="relative flex-1">
@@ -193,7 +245,10 @@ export default function AdminUsersPage() {
                   <div className="flex flex-col gap-0.5">
                     <span className="font-bold text-xs text-primary">{admin.displayName || '未命名'}</span>
                     <span className="text-[10px] text-muted-foreground">{admin.email}</span>
-                    <code className="text-[8px] font-mono opacity-30 mt-1 uppercase">UID: {admin.uid}</code>
+                    <div className="flex items-center gap-1 mt-1">
+                      <code className="text-[8px] font-mono opacity-30 uppercase">UID: {admin.uid}</code>
+                      <Button variant="ghost" size="icon" className="h-4 w-4 opacity-0 group-hover:opacity-40" onClick={() => { navigator.clipboard.writeText(admin.uid); toast({ title: "UID 已复制" }); }}><Key className="h-2 w-2" /></Button>
+                    </div>
                   </div>
                 </TableCell>
                 <TableCell>
@@ -247,24 +302,30 @@ export default function AdminUsersPage() {
                  <ShieldCheck className="h-5 w-5" />
                  <DialogTitle className="text-lg font-bold uppercase tracking-widest">{editingUser ? '编辑管理员权限' : '新增管理员授权'}</DialogTitle>
               </div>
-              <DialogDescription className="text-white/60 text-xs">通过 Firebase UID 手动授权后台管理权限。</DialogDescription>
+              <DialogDescription className="text-white/60 text-xs">授权后，该 UID 对应的用户将获得进入后台的权限。</DialogDescription>
             </DialogHeader>
           </div>
 
           <div className="p-6 space-y-6 bg-white">
             <div className="grid grid-cols-1 gap-4">
               <div className="space-y-1.5">
-                <Label className="text-[10px] font-bold uppercase text-primary">唯一 UID (Firebase UID)</Label>
+                <Label className="text-[10px] font-bold uppercase text-primary flex items-center justify-between">
+                  唯一 UID (Firebase UID)
+                  <span className="text-[9px] text-muted-foreground lowercase font-normal italic">*必填</span>
+                </Label>
                 <Input 
                   disabled={!!editingUser} 
-                  placeholder="在此粘贴用户 UID..." 
+                  placeholder="从 Firebase Console 复制的 28 位 UID..." 
                   value={formData.uid}
                   onChange={e => setFormData({...formData, uid: e.target.value})}
                   className="h-11 rounded-xl bg-muted/20 font-mono text-xs"
                 />
               </div>
               <div className="space-y-1.5">
-                <Label className="text-[10px] font-bold uppercase text-primary">电子邮箱</Label>
+                <Label className="text-[10px] font-bold uppercase text-primary flex items-center justify-between">
+                  电子邮箱
+                  <span className="text-[9px] text-muted-foreground lowercase font-normal italic">*必填</span>
+                </Label>
                 <Input 
                   placeholder="admin@heovose.com" 
                   value={formData.email}
