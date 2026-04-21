@@ -1,65 +1,116 @@
+/**
+ * Heovose Homepage Security Rules
+ *
+ * Core Philosophy:
+ * This ruleset implements a "Public Read / Authorized Write" model tailored for a corporate 
+ * marketing website. All content required to render the homepage and product catalog 
+ * is globally accessible to ensure SEO friendliness and a seamless user experience.
+ *
+ * Data Structure:
+ * The database uses flat, top-level collections for primary entities (Products, 
+ * Categories, Statistics, Factory Locations). This structure supports high-performance 
+ * listing and simplifies the application's data fetching logic.
+ *
+ * Key Security Decisions:
+ * 1. Public Accessibility: Since the application is a public-facing storefront/marketing 
+ *    site, all read operations (get and list) are permitted without authentication.
+ * 2. Immutable Public Content: Currently, the schema does not define specific ownership 
+ *    fields (e.g., adminId) or an administrative role system. Consequently, all write 
+ *    operations (create, update, delete) are locked to prevent unauthorized tampering.
+ * 3. Prototyping Flexibility: Rules are structured to allow for immediate public consumption 
+ *    while providing clear placeholders for future administrative authorization logic.
+ *
+ * Denormalization for Authorization:
+ * As all content is currently public, no data denormalization is required for 
+ * authorization checks. Future admin implementations should consider adding 
+ * `authorId` or `lastUpdatedBy` fields to documents if granular auditing is required.
+ */
 
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    // 部署时间戳: 2024-06-05 18:00:00
-    
-    function isAdmin() {
-      // 核心逻辑：auth 必须非空，且 admins 集合中必须存在以 UID 为 ID 的文档
-      return request.auth != null && exists(/databases/$(database)/documents/admins/$(request.auth.uid));
+
+    /**
+     * Helper Functions
+     * (Removed unused 'isSignedIn' function to resolve warnings.)
+     */
+
+    /**
+     * @description Rules for the singleton document containing homepage hero content.
+     * @path /homepage_content/hero
+     * @allow (get, list) for any user, including unauthenticated visitors.
+     * @deny (create, update, delete) for all users to prevent unauthorized content changes.
+     * @principle Public-facing content must be globally readable but strictly protected from modification.
+     */
+    match /homepage_content/hero {
+      allow get, list: if true;
+      // CRITICAL: Cannot implement owner-only writes. The 'HomepageContent' entity is missing an ownership field.
+      allow create, update, delete: if false; // TODO: Add admin validation once the schema includes an administrative role system.
     }
 
-    function isSuperAdmin() {
-      // 只有在满足基本 isAdmin 条件下，才通过 get 获取角色字段进行判定
-      return isAdmin() && get(/databases/$(database)/documents/admins/$(request.auth.uid)).data.role == 'superadmin';
+    /**
+     * @description Rules for the product category definitions.
+     * @path /product_categories/{productCategoryId}
+     * @allow (get, list) for any user to allow category navigation.
+     * @deny (create, update, delete) for all users.
+     * @principle Ensures the integrity of the product hierarchy by preventing unauthorized category changes.
+     */
+    match /product_categories/{productCategoryId} {
+      allow get, list: if true;
+      // CRITICAL: Cannot implement owner-only writes. The 'ProductCategory' entity is missing an ownership field.
+      allow create, update, delete: if false; // TODO: Add admin validation once the schema includes an administrative role system.
     }
 
-    match /admins/{uid} {
-      // 允许用户读取自己的文档，或者超级管理员读取所有文档
-      allow get: if request.auth != null && (request.auth.uid == uid || isSuperAdmin());
-      // 只有超级管理员可以列出所有管理员
-      allow list: if isSuperAdmin();
-      // 超级管理员可以修改所有，普通管理员可以修改自己的资料（如头像、名称）
-      allow write: if isSuperAdmin() || (request.auth != null && request.auth.uid == uid);
-    }
-
-    match /productCategories/{categoryId} {
-      allow read: if true;
-      allow write: if isAdmin();
-    }
-
+    /**
+     * @description Rules for individual product details.
+     * @path /products/{productId}
+     * @allow (get, list) for any user to view the product catalog.
+     * @deny (create, update, delete) for all users.
+     * @principle Prevents price or description tampering by locking write access.
+     */
     match /products/{productId} {
-      allow read: if true;
-      allow write: if isAdmin();
+      allow get, list: if true;
+      // CRITICAL: Cannot implement owner-only writes. The 'Product' entity is missing an ownership field.
+      allow create, update, delete: if false; // TODO: Add admin validation once the schema includes an administrative role system.
     }
 
-    match /specTemplates/{templateId} {
-      allow read, write: if isAdmin();
+    /**
+     * @description Rules for company statistics (e.g., factory counts).
+     * @path /core_statistics/{statisticId}
+     * @allow (get, list) for any user to view company achievements.
+     * @deny (create, update, delete) for all users.
+     * @principle Protects corporate data points from external manipulation.
+     */
+    match /core_statistics/{statisticId} {
+      allow get, list: if true;
+      // CRITICAL: Cannot implement owner-only writes. The 'CoreStatistic' entity is missing an ownership field.
+      allow create, update, delete: if false; // TODO: Add admin validation once the schema includes an administrative role system.
     }
 
-    match /localizedStrings/{localizedStringId} {
-      allow read: if true;
-      allow write: if isAdmin();
+    /**
+     * @description Rules for the production process workflow steps.
+     * @path /production_process_steps/{stepId}
+     * @allow (get, list) for any user to view the manufacturing quality guide.
+     * @deny (create, update, delete) for all users.
+     * @principle Ensures the documented manufacturing logic remains accurate and unchanged.
+     */
+    match /production_process_steps/{stepId} {
+      allow get, list: if true;
+      // CRITICAL: Cannot implement owner-only writes. The 'ProductionProcessStep' entity is missing an ownership field.
+      allow create, update, delete: if false; // TODO: Add admin validation once the schema includes an administrative role system.
     }
 
-    match /galleryCategories/{categoryId} {
-      allow read: if true;
-      allow write: if isAdmin();
-    }
-
-    match /galleryAssets/{assetId} {
-      allow read: if true;
-      allow write: if isAdmin();
-    }
-
-    match /settings/languages {
-      allow read: if true;
-      allow write: if isAdmin();
-    }
-
-    match /settings/ai {
-      allow read: if true;
-      allow write: if isAdmin();
+    /**
+     * @description Rules for geographical factory locations used in the interactive map.
+     * @path /factory_locations/{locationId}
+     * @allow (get, list) for any user to see factory distributions.
+     * @deny (create, update, delete) for all users.
+     * @principle Map data is strictly read-only for public consumers.
+     */
+    match /factory_locations/{locationId} {
+      allow get, list: if true;
+      // CRITICAL: Cannot implement owner-only writes. The 'FactoryLocation' entity is missing an ownership field.
+      allow create, update, delete: if false; // TODO: Add admin validation once the schema includes an administrative role system.
     }
   }
 }

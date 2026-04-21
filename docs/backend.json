@@ -1,252 +1,401 @@
-
 {
   "entities": {
-    "AdminUser": {
+    "HomepageContent": {
       "$schema": "http://json-schema.org/draft-07/schema#",
-      "title": "AdminUser",
+      "title": "HomepageContent",
       "type": "object",
-      "description": "Represents a user with administrative privileges.",
+      "description": "Stores general content elements for the Heovose homepage, primarily focusing on the Hero section.",
       "properties": {
-        "uid": { "type": "string" },
-        "email": { "type": "string" },
-        "displayName": { "type": "string", "description": "Custom name for the admin." },
-        "avatarUrl": { "type": "string", "description": "URL to the admin's profile picture." },
-        "role": { "type": "string", "enum": ["superadmin", "editor"] },
-        "status": { "type": "string", "enum": ["active", "disabled"], "default": "active" },
-        "updatedAt": { "type": "object" }
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the HomepageContent entity."
+        },
+        "heroHeadlineEn": {
+          "type": "string",
+          "description": "The main headline text for the hero section in English."
+        },
+        "heroHeadlineZh": {
+          "type": "string",
+          "description": "The main headline text for the hero section in Chinese."
+        },
+        "heroSubTitleEn": {
+          "type": "string",
+          "description": "The subtitle text for the hero section in English."
+        },
+        "heroSubTitleZh": {
+          "type": "string",
+          "description": "The subtitle text for the hero section in Chinese."
+        },
+        "heroProductImageUrl": {
+          "type": "string",
+          "description": "URL to the 45-degree perspective 3D product image displayed in the hero section.",
+          "format": "uri"
+        },
+        "heroProductImageAltEn": {
+          "type": "string",
+          "description": "Alternative text for the hero product image in English for accessibility."
+        },
+        "heroProductImageAltZh": {
+          "type": "string",
+          "description": "Alternative text for the hero product image in Chinese for accessibility."
+        }
       },
-      "required": ["uid", "email"]
+      "required": [
+        "id",
+        "heroHeadlineEn",
+        "heroHeadlineZh",
+        "heroSubTitleEn",
+        "heroSubTitleZh",
+        "heroProductImageUrl",
+        "heroProductImageAltEn",
+        "heroProductImageAltZh"
+      ]
     },
     "ProductCategory": {
       "$schema": "http://json-schema.org/draft-07/schema#",
       "title": "ProductCategory",
       "type": "object",
-      "description": "Hardware product categories with multi-language support.",
+      "description": "Defines categories for products such as AIO, Mini PC, Monitors, and KIOSK.",
       "properties": {
-        "id": { "type": "string" },
-        "nameTextId": { "type": "string", "description": "Reference to LocalizedString" },
-        "slug": { "type": "string" },
-        "thumbnailImageUrl": { "type": "string" },
-        "updatedAt": { "type": "object" }
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the ProductCategory entity."
+        },
+        "nameEn": {
+          "type": "string",
+          "description": "The name of the product category in English (e.g., 'AIO', 'Mini PC')."
+        },
+        "nameZh": {
+          "type": "string",
+          "description": "The name of the product category in Chinese."
+        },
+        "slug": {
+          "type": "string",
+          "description": "A URL-friendly identifier for the category (e.g., 'aio', 'mini-pc')."
+        },
+        "descriptionEn": {
+          "type": "string",
+          "description": "An optional description of the product category in English."
+        },
+        "descriptionZh": {
+          "type": "string",
+          "description": "An optional description of the product category in Chinese."
+        }
       },
-      "required": ["id", "nameTextId", "slug"]
+      "required": [
+        "id",
+        "nameEn",
+        "nameZh",
+        "slug"
+      ]
     },
     "Product": {
       "$schema": "http://json-schema.org/draft-07/schema#",
       "title": "Product",
       "type": "object",
-      "description": "Hardware product details including complex technical specs and multi-language content.",
+      "description": "Represents a single product offered by Heovose, belonging to a specific category.",
       "properties": {
-        "id": { "type": "string" },
-        "nameTextId": { "type": "string" },
-        "descriptionTextId": { "type": "string" },
-        "localizedDetails": { 
-          "type": "object", 
-          "description": "Decentralized long-form HTML content mapping language codes to values.",
-          "additionalProperties": { "type": "string" }
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the Product entity."
         },
-        "advantageTextIds": { "type": "array", "items": { "type": "string" } },
-        "specGroups": { 
-          "type": "array",
-          "items": {
-            "type": "object",
-            "properties": {
-              "titleId": { "type": "string" },
-              "items": {
-                "type": "array",
-                "items": {
-                  "type": "object",
-                  "properties": {
-                    "labelId": { "type": "string" },
-                    "valueId": { "type": "string" }
-                  }
-                }
-              }
-            }
-          }
+        "nameEn": {
+          "type": "string",
+          "description": "The name of the product in English."
         },
-        "mainImageUrl": { "type": "string" },
-        "productCategoryId": { "type": "string" },
-        "galleryImageUrls": { "type": "array", "items": { "type": "string" } },
-        "status": { "type": "string", "enum": ["published", "draft"] },
-        "updatedAt": { "type": "object" }
-      },
-      "required": ["id", "nameTextId", "productCategoryId", "mainImageUrl"]
-    },
-    "SpecTemplate": {
-      "$schema": "http://json-schema.org/draft-07/schema#",
-      "title": "SpecTemplate",
-      "type": "object",
-      "description": "Reusable technical specification templates.",
-      "properties": {
-        "id": { "type": "string" },
-        "name": { "type": "string", "description": "Template name for management." },
-        "specGroups": { "type": "array", "items": { "type": "object" } },
-        "createdAt": { "type": "object" }
-      },
-      "required": ["id", "name", "specGroups"]
-    },
-    "GalleryCategory": {
-      "$schema": "http://json-schema.org/draft-07/schema#",
-      "title": "GalleryCategory",
-      "type": "object",
-      "description": "Custom categories for organizing gallery assets with hierarchy support.",
-      "properties": {
-        "id": { "type": "string" },
-        "nameTextId": { "type": "string", "description": "Reference to LocalizedString for multi-language names." },
-        "parentId": { "type": "string", "description": "ID of the parent category for nested structure." },
-        "order": { "type": "number" }
-      },
-      "required": ["id", "nameTextId"]
-    },
-    "GalleryAsset": {
-      "$schema": "http://json-schema.org/draft-07/schema#",
-      "title": "GalleryAsset",
-      "type": "object",
-      "description": "Represents a media asset in the global gallery.",
-      "properties": {
-        "id": { "type": "string" },
-        "url": { "type": "string" },
-        "title": { "type": "string" },
-        "categoryId": { "type": "string" },
-        "fileName": { "type": "string" },
-        "fileSize": { "type": "number" },
-        "createdAt": { "type": "object" }
-      },
-      "required": ["id", "url", "title", "categoryId"]
-    },
-    "LocalizedString": {
-      "$schema": "http://json-schema.org/draft-07/schema#",
-      "title": "LocalizedString",
-      "type": "object",
-      "description": "Multilingual text content with dynamic keys.",
-      "properties": {
-        "id": { "type": "string" },
-        "en": { "type": "string" },
-        "zh": { "type": "string" }
-      },
-      "required": ["id", "en", "zh"]
-    },
-    "AppConfig": {
-      "$schema": "http://json-schema.org/draft-07/schema#",
-      "title": "AppConfig",
-      "type": "object",
-      "description": "Global application settings.",
-      "properties": {
-        "supportedLanguages": { 
-          "type": "array", 
-          "items": { 
-            "type": "object",
-            "properties": {
-              "code": { "type": "string" },
-              "label": { "type": "string" }
-            }
-          } 
+        "nameZh": {
+          "type": "string",
+          "description": "The name of the product in Chinese."
         },
-        "defaultLanguage": { "type": "string", "description": "The fallback language code for the site." }
-      }
-    },
-    "AiConfig": {
-      "$schema": "http://json-schema.org/draft-07/schema#",
-      "title": "AiConfig",
-      "type": "object",
-      "description": "Settings for Generative AI features.",
-      "properties": {
-        "isEnabled": { "type": "boolean" },
-        "model": { "type": "string" },
-        "apiKey": { "type": "string", "description": "Manual Google AI Studio API Key." },
-        "temperature": { "type": "number" },
-        "systemInstruction": { "type": "string" },
-        "lastDiagnosis": {
-          "type": "object",
-          "properties": {
-            "status": { "type": "string" },
-            "message": { "type": "string" },
-            "latency": { "type": "number" },
-            "modelUsed": { "type": "string" },
-            "timestamp": { "type": "object" }
-          }
+        "descriptionEn": {
+          "type": "string",
+          "description": "A detailed description of the product in English."
+        },
+        "descriptionZh": {
+          "type": "string",
+          "description": "A detailed description of the product in Chinese."
+        },
+        "imageUrl": {
+          "type": "string",
+          "description": "URL to the main image of the product.",
+          "format": "uri"
+        },
+        "imageAltEn": {
+          "type": "string",
+          "description": "Alternative text for the product image in English for accessibility."
+        },
+        "imageAltZh": {
+          "type": "string",
+          "description": "Alternative text for the product image in Chinese for accessibility."
+        },
+        "productCategoryId": {
+          "type": "string",
+          "description": "Reference to the ProductCategory this product belongs to. (Relationship: ProductCategory 1:N Product)"
         }
-      }
+      },
+      "required": [
+        "id",
+        "nameEn",
+        "nameZh",
+        "descriptionEn",
+        "descriptionZh",
+        "imageUrl",
+        "imageAltEn",
+        "imageAltZh",
+        "productCategoryId"
+      ]
+    },
+    "CoreStatistic": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "CoreStatistic",
+      "type": "object",
+      "description": "Stores key company statistics to be displayed on the homepage.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the CoreStatistic entity."
+        },
+        "labelEn": {
+          "type": "string",
+          "description": "The label describing the statistic in English (e.g., 'Global Factories')."
+        },
+        "labelZh": {
+          "type": "string",
+          "description": "The label describing the statistic in Chinese."
+        },
+        "value": {
+          "type": "string",
+          "description": "The numerical or textual value of the statistic (e.g., '3', '30+'). Using string for flexibility with non-numeric values like '30+'."
+        },
+        "unitContextEn": {
+          "type": "string",
+          "description": "The unit or additional context for the statistic in English (e.g., 'in China/Indonesia', 'AIO Series')."
+        },
+        "unitContextZh": {
+          "type": "string",
+          "description": "The unit or additional context for the statistic in Chinese."
+        },
+        "order": {
+          "type": "number",
+          "description": "The display order of the statistic on the page."
+        }
+      },
+      "required": [
+        "id",
+        "labelEn",
+        "labelZh",
+        "value",
+        "unitContextEn",
+        "unitContextZh",
+        "order"
+      ]
+    },
+    "ProductionProcessStep": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "ProductionProcessStep",
+      "type": "object",
+      "description": "Details each step of the 11-step production logic (e.g., IQC, IPQC, OQA).",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the ProductionProcessStep entity."
+        },
+        "titleEn": {
+          "type": "string",
+          "description": "The title of the production step in English (e.g., 'IQC')."
+        },
+        "titleZh": {
+          "type": "string",
+          "description": "The title of the production step in Chinese."
+        },
+        "descriptionEn": {
+          "type": "string",
+          "description": "A detailed explanation of the production step in English."
+        },
+        "descriptionZh": {
+          "type": "string",
+          "description": "A detailed explanation of the production step in Chinese."
+        },
+        "stepNumber": {
+          "type": "number",
+          "description": "The sequential number of the production step (1 to 11)."
+        },
+        "iconUrl": {
+          "type": "string",
+          "description": "Optional URL to an icon representing this production step.",
+          "format": "uri"
+        },
+        "iconAltEn": {
+          "type": "string",
+          "description": "Optional alternative text for the icon in English."
+        },
+        "iconAltZh": {
+          "type": "string",
+          "description": "Optional alternative text for the icon in Chinese."
+        }
+      },
+      "required": [
+        "id",
+        "titleEn",
+        "titleZh",
+        "descriptionEn",
+        "descriptionZh",
+        "stepNumber"
+      ]
+    },
+    "FactoryLocation": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "FactoryLocation",
+      "type": "object",
+      "description": "Stores geographical information and details about Heovose's global factory locations.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the FactoryLocation entity."
+        },
+        "nameEn": {
+          "type": "string",
+          "description": "The name of the factory location in English (e.g., 'China Factory')."
+        },
+        "nameZh": {
+          "type": "string",
+          "description": "The name of the factory location in Chinese."
+        },
+        "countryEn": {
+          "type": "string",
+          "description": "The country where the factory is located, in English (e.g., 'China')."
+        },
+        "countryZh": {
+          "type": "string",
+          "description": "The country where the factory is located, in Chinese."
+        },
+        "latitude": {
+          "type": "number",
+          "description": "The latitude coordinate of the factory location."
+        },
+        "longitude": {
+          "type": "number",
+          "description": "The longitude coordinate of the factory location."
+        },
+        "descriptionEn": {
+          "type": "string",
+          "description": "An optional detailed description of the factory in English."
+        },
+        "descriptionZh": {
+          "type": "string",
+          "description": "An optional detailed description of the factory in Chinese."
+        }
+      },
+      "required": [
+        "id",
+        "nameEn",
+        "nameZh",
+        "countryEn",
+        "countryZh",
+        "latitude",
+        "longitude"
+      ]
     }
   },
   "auth": {
-    "providers": ["password", "anonymous"]
+    "providers": [
+      "password",
+      "anonymous"
+    ]
   },
   "firestore": {
     "structure": [
       {
-        "path": "/admins/{uid}",
+        "path": "/homepage_content/hero",
         "definition": {
-          "entityName": "AdminUser",
-          "schema": { "$ref": "#/backend/entities/AdminUser" },
-          "description": "Authorized administrators."
+          "entityName": "HomepageContent",
+          "schema": {
+            "$ref": "#/backend/entities/HomepageContent"
+          },
+          "description": "A singleton document storing the primary content for the hero section of the Heovose homepage. Publicly readable."
         }
       },
       {
-        "path": "/productCategories/{categoryId}",
+        "path": "/product_categories/{productCategoryId}",
         "definition": {
           "entityName": "ProductCategory",
-          "schema": { "$ref": "#/backend/entities/ProductCategory" },
-          "description": "Product classification."
+          "schema": {
+            "$ref": "#/backend/entities/ProductCategory"
+          },
+          "description": "Stores definitions for various product categories. Each document represents a single category. Publicly readable, enabling efficient listing of all categories.",
+          "params": [
+            {
+              "name": "productCategoryId",
+              "description": "The unique identifier for a specific product category."
+            }
+          ]
         }
       },
       {
         "path": "/products/{productId}",
         "definition": {
           "entityName": "Product",
-          "schema": { "$ref": "#/backend/entities/Product" },
-          "description": "Hardware product records."
+          "schema": {
+            "$ref": "#/backend/entities/Product"
+          },
+          "description": "Contains details for individual products offered by Heovose. Products are linked to categories via the 'productCategoryId' field. Publicly readable, allowing efficient listing and querying of products.",
+          "params": [
+            {
+              "name": "productId",
+              "description": "The unique identifier for a specific product."
+            }
+          ]
         }
       },
       {
-        "path": "/specTemplates/{templateId}",
+        "path": "/core_statistics/{statisticId}",
         "definition": {
-          "entityName": "SpecTemplate",
-          "schema": { "$ref": "#/backend/entities/SpecTemplate" },
-          "description": "Reusable technical specification templates."
+          "entityName": "CoreStatistic",
+          "schema": {
+            "$ref": "#/backend/entities/CoreStatistic"
+          },
+          "description": "Stores key company statistics to be displayed on the homepage. Publicly readable, allowing all statistics to be listed and displayed.",
+          "params": [
+            {
+              "name": "statisticId",
+              "description": "The unique identifier for a core statistic."
+            }
+          ]
         }
       },
       {
-        "path": "/galleryCategories/{categoryId}",
+        "path": "/production_process_steps/{stepId}",
         "definition": {
-          "entityName": "GalleryCategory",
-          "schema": { "$ref": "#/backend/entities/GalleryCategory" },
-          "description": "Flexible hierarchical categories for gallery."
+          "entityName": "ProductionProcessStep",
+          "schema": {
+            "$ref": "#/backend/entities/ProductionProcessStep"
+          },
+          "description": "Details each step of the production logic, ordered by 'stepNumber'. Publicly readable, enabling all steps to be listed for the animated guide.",
+          "params": [
+            {
+              "name": "stepId",
+              "description": "The unique identifier for a production process step."
+            }
+          ]
         }
       },
       {
-        "path": "/galleryAssets/{assetId}",
+        "path": "/factory_locations/{locationId}",
         "definition": {
-          "entityName": "GalleryAsset",
-          "schema": { "$ref": "#/backend/entities/GalleryAsset" },
-          "description": "Central media gallery assets."
-        }
-      },
-      {
-        "path": "/localizedStrings/{localizedStringId}",
-        "definition": {
-          "entityName": "LocalizedString",
-          "schema": { "$ref": "#/backend/entities/LocalizedString" },
-          "description": "Multilingual text content."
-        }
-      },
-      {
-        "path": "/settings/languages",
-        "definition": {
-          "entityName": "AppConfig",
-          "schema": { "$ref": "#/backend/entities/AppConfig" },
-          "description": "Multilingual support configuration."
-        }
-      },
-      {
-        "path": "/settings/ai",
-        "definition": {
-          "entityName": "AiConfig",
-          "schema": { "$ref": "#/backend/entities/AiConfig" },
-          "description": "AI feature and model configuration."
+          "entityName": "FactoryLocation",
+          "schema": {
+            "$ref": "#/backend/entities/FactoryLocation"
+          },
+          "description": "Stores geographical information and details about Heovose's global factory locations for the interactive map. Publicly readable, allowing all locations to be listed.",
+          "params": [
+            {
+              "name": "locationId",
+              "description": "The unique identifier for a factory location."
+            }
+          ]
         }
       }
-    ]
+    ],
+    "reasoning": "The Firestore structure is designed to support a public, multilingual homepage with an emphasis on simple, robust, and debuggable security rules. All data entities are placed in top-level collections, reflecting their public readability. This approach aligns with the 'Structural Segregation' mandate by ensuring that all documents within a collection share the same security posture – in this case, public read access. There is no mix of public and private data, simplifying security rules immensely to 'allow read: true;' for these collections.\n\nAuthorization Independence is inherently achieved because there are no complex hierarchical authorization dependencies. Since all content is intended for public display, access to any document does not depend on attributes of a parent document or specific user roles. Each document is self-contained for authorization purposes (i.e., public access), thus eliminating the need for `get()` calls in security rules to check parent documents. This structure enables atomic operations if future write access for administrators is introduced, as authorization checks would only need to reference the document being modified or a global admin role document, not a complex parent chain.\n\nThis design also strongly supports Query As Permissions (QAPs). By placing each logical entity in its own top-level collection (e.g., `/product_categories`, `/products`, `/core_statistics`), any client can list documents within these collections without encountering permission errors. Since the data is explicitly public, a simple 'allow read: true;' rule on these collections will enable efficient and secure `list` queries without requiring complex server-side filtering or client-side authorization logic. For instance, fetching all product categories or all production process steps is a single, authorized query. Wildcards like `{productCategoryId}` are descriptive, further enhancing clarity and debuggability. The use of denormalization for authorization context is not required here because the primary authorization context is 'public read' for all data, and no nested documents depend on parent document attributes for access control beyond this public read. Should write access be introduced for administrators, a global `/admins/{uid}` collection would be used for DBAC, avoiding custom claims and complex authorization logic within the data hierarchy."
   }
 }
