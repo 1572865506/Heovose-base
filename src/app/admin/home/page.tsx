@@ -28,6 +28,7 @@ import {
 import { setDocumentNonBlocking } from '@/firebase/non-blocking-updates';
 import { useToast } from '@/hooks/use-toast';
 import { translateContent } from '@/ai/flows/translate-flow';
+import { cn } from '@/lib/utils';
 
 // AI 极光渐变定义组件
 const AiGradientDef = () => (
