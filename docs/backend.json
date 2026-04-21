@@ -101,7 +101,8 @@
         "id": { "type": "string" },
         "nameTextId": { "type": "string" },
         "slug": { "type": "string" },
-        "thumbnailImageUrl": { "type": "string" }
+        "thumbnailImageUrl": { "type": "string" },
+        "parentId": { "type": "string", "description": "父级分类 ID，支持层级管理" }
       }
     },
     "AdminUser": {

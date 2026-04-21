@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { useFirestore, useCollection, useMemoFirebase } from '@/firebase';
 import { collection, doc, serverTimestamp } from 'firebase/firestore';
 import { 
@@ -28,18 +28,33 @@ import {
   Trash2, 
   Loader2, 
   Layers,
-  Languages
+  Languages,
+  ChevronRight,
+  FolderPlus,
+  Zap,
+  Info,
+  LayoutGrid
 } from 'lucide-react';
+import { 
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { setDocumentNonBlocking, deleteDocumentNonBlocking } from '@/firebase/non-blocking-updates';
 import { Label } from '@/components/ui/label';
 import Image from 'next/image';
 import { useToast } from '@/hooks/use-toast';
+import { Badge } from '@/components/ui/badge';
+import { cn } from '@/lib/utils';
 
 interface ProductCategory {
   id: string;
   nameTextId: string;
   slug: string;
   thumbnailImageUrl: string;
+  parentId?: string | null;
 }
 
 interface LocalizedString {
@@ -59,7 +74,8 @@ export default function CategoriesPage() {
     slug: '',
     thumbnailImageUrl: '',
     nameEn: '',
-    nameZh: ''
+    nameZh: '',
+    parentId: 'none'
   });
 
   const categoriesQuery = useMemoFirebase(() => firestore ? collection(firestore, 'productCategories') : null, [firestore]);
@@ -68,8 +84,33 @@ export default function CategoriesPage() {
   const { data: categories, isLoading: isCatsLoading } = useCollection<ProductCategory>(categoriesQuery);
   const { data: translations } = useCollection<LocalizedString>(translationsQuery);
 
+  // 计算树状结构用于展示和选择
+  const categoryTree = useMemo(() => {
+    if (!categories) return [];
+    const tree: (ProductCategory & { depth: number })[] = [];
+    
+    const build = (parentId: string | null = null, depth = 0) => {
+      categories
+        .filter(c => (c.parentId || 'none') === (parentId || 'none'))
+        .forEach(cat => {
+          tree.push({ ...cat, depth });
+          build(cat.id, depth + 1);
+        });
+    };
+
+    build('none', 0);
+    return tree;
+  }, [categories]);
+
+  // 检测预设分类是否存在
+  const systemPresets = useMemo(() => {
+    const hasWholesale = categories?.some(c => c.id === 'WHOLESALE');
+    const hasProject = categories?.some(c => c.id === 'PROJECT');
+    return { hasWholesale, hasProject };
+  }, [categories]);
+
   const resetForm = () => {
-    setFormData({ id: '', slug: '', thumbnailImageUrl: '', nameEn: '', nameZh: '' });
+    setFormData({ id: '', slug: '', thumbnailImageUrl: '', nameEn: '', nameZh: '', parentId: 'none' });
     setEditingCategory(null);
   };
 
@@ -85,19 +126,11 @@ export default function CategoriesPage() {
       slug: cat.slug,
       thumbnailImageUrl: cat.thumbnailImageUrl || '',
       nameEn: t?.en || '',
-      nameZh: t?.zh || ''
+      nameZh: t?.zh || '',
+      parentId: cat.parentId || 'none'
     });
     setEditingCategory(cat);
     setIsDialogOpen(true);
-  };
-
-  const getSmartId = (en: string, zh: string, preferredId: string) => {
-    if (!translations) return preferredId;
-    const existing = translations.find(t => 
-      (en && t.en.trim().toLowerCase() === en.trim().toLowerCase()) || 
-      (zh && t.zh.trim().toLowerCase() === zh.trim().toLowerCase())
-    );
-    return existing ? existing.id : preferredId;
   };
 
   const handleSave = () => {
@@ -106,10 +139,10 @@ export default function CategoriesPage() {
       return;
     }
     
-    const defaultId = editingCategory?.nameTextId || `cat_name_${formData.id}`;
-    const nameTextId = getSmartId(formData.nameEn, formData.nameZh, defaultId);
+    const nameTextId = editingCategory?.nameTextId || `cat_name_${formData.id}`;
+    const pId = formData.parentId === 'none' ? 'none' : formData.parentId;
     
-    // 保存翻译
+    // 1. 保存翻译
     setDocumentNonBlocking(doc(firestore, 'localizedStrings', nameTextId), {
       id: nameTextId,
       en: formData.nameEn.trim(),
@@ -117,12 +150,13 @@ export default function CategoriesPage() {
       updatedAt: serverTimestamp()
     }, { merge: true });
 
-    // 保存分类
+    // 2. 保存分类
     setDocumentNonBlocking(doc(firestore, 'productCategories', formData.id), {
       id: formData.id,
       slug: formData.slug,
       nameTextId: nameTextId,
       thumbnailImageUrl: formData.thumbnailImageUrl,
+      parentId: pId,
       updatedAt: serverTimestamp()
     }, { merge: true });
 
@@ -131,124 +165,209 @@ export default function CategoriesPage() {
     toast({ title: "分类已保存" });
   };
 
+  const handleInitPresets = () => {
+    if (!firestore) return;
+
+    // 初始化批发产品
+    if (!systemPresets.hasWholesale) {
+      const id = 'WHOLESALE';
+      const nameId = `cat_name_${id}`;
+      setDocumentNonBlocking(doc(firestore, 'localizedStrings', nameId), { id: nameId, en: 'Wholesale Products', zh: '批发产品' }, { merge: true });
+      setDocumentNonBlocking(doc(firestore, 'productCategories', id), { id, slug: 'wholesale', nameTextId: nameId, parentId: 'none', thumbnailImageUrl: '' }, { merge: true });
+    }
+
+    // 初始化项目产品
+    if (!systemPresets.hasProject) {
+      const id = 'PROJECT';
+      const nameId = `cat_name_${id}`;
+      setDocumentNonBlocking(doc(firestore, 'localizedStrings', nameId), { id: nameId, en: 'Project Products', zh: '项目产品' }, { merge: true });
+      setDocumentNonBlocking(doc(firestore, 'productCategories', id), { id, slug: 'project', nameTextId: nameId, parentId: 'none', thumbnailImageUrl: '' }, { merge: true });
+    }
+
+    toast({ title: "系统预设顶级分类已初始化" });
+  };
+
   const handleDelete = (id: string) => {
-    if (!firestore || !confirm('确定要删除此分类吗？')) return;
+    if (!firestore || !confirm('确定要删除此分类吗？其子分类将失去关联。')) return;
     deleteDocumentNonBlocking(doc(firestore, 'productCategories', id));
+  };
+
+  const getT = (id: string) => {
+    const t = translations?.find(tr => tr.id === id);
+    return t ? t.zh : id;
   };
 
   return (
     <div className="space-y-6 animate-in fade-in duration-500">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <h2 className="text-xl font-headline font-bold text-primary flex items-center gap-2"><Layers className="h-5 w-5" /> 产品分类管理</h2>
-          <p className="text-xs text-muted-foreground">定义产品层级。系统会自动识别多语言语义冲突并建议复用。</p>
+          <h2 className="text-xl font-headline font-bold text-primary flex items-center gap-2"><Layers className="h-5 w-5" /> 产品分类架构管理</h2>
+          <p className="text-xs text-muted-foreground">支持无限极嵌套。顶级分类建议使用系统预设的“批发”与“项目”入口。</p>
         </div>
         
-        <Button onClick={handleOpenDialog} className="rounded-lg h-10 px-5 font-bold uppercase text-xs gap-1.5 shadow-sm">
-          <Plus className="h-4 w-4" /> 新增分类
-        </Button>
+        <div className="flex gap-2">
+          {(!systemPresets.hasWholesale || !systemPresets.hasProject) && (
+            <Button variant="outline" onClick={handleInitPresets} className="rounded-xl h-10 px-4 font-bold uppercase text-[10px] gap-2 border-orange-200 bg-orange-50 text-orange-700 hover:bg-orange-100 shadow-sm">
+              <Zap className="h-3.5 w-3.5" /> 初始化预设顶级分类
+            </Button>
+          )}
+          <Button onClick={handleOpenDialog} className="rounded-xl h-10 px-5 font-bold uppercase text-xs gap-1.5 shadow-md">
+            <Plus className="h-4 w-4" /> 新增层级分类
+          </Button>
+        </div>
       </div>
 
       <Dialog open={isDialogOpen} onOpenChange={(open) => { setIsDialogOpen(open); if (!open) resetForm(); }}>
-        <DialogContent className="rounded-2xl max-w-md p-0 overflow-hidden shadow-2xl border-none">
+        <DialogContent className="rounded-2xl max-w-lg p-0 overflow-hidden shadow-2xl border-none">
           <div className="bg-primary p-6 text-white">
             <DialogHeader>
               <DialogTitle className="text-lg font-bold flex items-center gap-2">
-                <Layers className="h-5 w-5" /> {editingCategory ? '编辑分类' : '添加分类'}
+                <FolderPlus className="h-5 w-5" /> {editingCategory ? '编辑分类属性' : '创建新分类层级'}
               </DialogTitle>
-              <DialogDescription className="text-white/60 text-xs">填写分类核心标识及双语名称。</DialogDescription>
+              <DialogDescription className="text-white/60 text-xs">填写分类核心标识及双语名称，并指定其在架构中的位置。</DialogDescription>
             </DialogHeader>
           </div>
-          <div className="p-6 space-y-5 bg-white">
-            <div className="grid grid-cols-2 gap-4">
+          <div className="p-8 space-y-6 bg-white">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="space-y-1.5">
-                <Label className="text-[10px] font-bold uppercase text-primary tracking-wider">SLUG (用于 ID 生成)</Label>
-                <Input 
-                  placeholder="如: aio" 
-                  value={formData.slug} 
-                  onChange={e => {
-                    const val = e.target.value;
-                    setFormData(prev => ({
-                      ...prev, 
-                      slug: val,
-                      // 如果是新增，同步生成规范 ID
-                      id: !editingCategory ? `CAT_NAME_${val.toUpperCase().replace(/\s+/g, '_')}` : prev.id
-                    }));
-                  }} 
-                  className="h-10 rounded-lg bg-muted/5 text-xs" 
-                />
+                <Label className="text-[10px] font-bold uppercase text-primary tracking-wider">所属上级 (Parent)</Label>
+                <Select value={formData.parentId} onValueChange={v => setFormData({...formData, parentId: v})}>
+                   <SelectTrigger className="h-10 rounded-xl bg-muted/20 border-transparent text-xs">
+                     <SelectValue placeholder="选择上级分类" />
+                   </SelectTrigger>
+                   <SelectContent className="rounded-xl">
+                      <SelectItem value="none" className="text-xs font-bold">无 (顶级分类)</SelectItem>
+                      {categoryTree.filter(c => c.id !== editingCategory?.id).map(cat => (
+                        <SelectItem key={cat.id} value={cat.id} className="text-xs">
+                           <span style={{ paddingLeft: `${cat.depth * 0.5}rem` }} className={cn(cat.depth > 0 && "opacity-60")}>
+                             {getT(cat.nameTextId)}
+                           </span>
+                        </SelectItem>
+                      ))}
+                   </SelectContent>
+                </Select>
               </div>
               <div className="space-y-1.5">
-                <Label className="text-[10px] font-bold uppercase text-primary tracking-wider">唯一 ID</Label>
+                <Label className="text-[10px] font-bold uppercase text-primary tracking-wider">唯一 ID / SLUG</Label>
                 <Input 
                   disabled={!!editingCategory} 
+                  placeholder="如: aio_pro" 
                   value={formData.id} 
-                  onChange={e => setFormData({...formData, id: e.target.value})} 
-                  className="h-10 rounded-lg bg-muted/5 font-mono text-xs" 
+                  onChange={e => setFormData({...formData, id: e.target.value.toUpperCase().replace(/\s+/g, '_'), slug: e.target.value.toLowerCase()})} 
+                  className="h-10 rounded-xl bg-muted/10 font-mono text-xs" 
                 />
               </div>
             </div>
-            <div className="space-y-3 pt-4 border-t border-border/40">
-              <Label className="text-[10px] font-bold uppercase text-primary flex items-center gap-2"><Languages className="h-3 w-3" /> 双语名称</Label>
-              <Input placeholder="中文名称" value={formData.nameZh} onChange={e => setFormData({...formData, nameZh: e.target.value})} className="rounded-lg h-10 text-xs" />
-              <Input placeholder="English Name" value={formData.nameEn} onChange={e => setFormData({...formData, nameEn: e.target.value})} className="rounded-lg h-10 text-xs" />
+
+            <div className="space-y-4 pt-4 border-t border-dashed">
+              <Label className="text-[10px] font-bold uppercase text-primary flex items-center gap-2"><Languages className="h-3.5 w-3.5" /> 双语名称配置</Label>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-1.5">
+                   <Label className="text-[9px] font-bold opacity-40 uppercase">中文显示</Label>
+                   <Input placeholder="例如: 高性能一体机" value={formData.nameZh} onChange={e => setFormData({...formData, nameZh: e.target.value})} className="rounded-xl h-10 text-xs" />
+                </div>
+                <div className="space-y-1.5">
+                   <Label className="text-[9px] font-bold opacity-40 uppercase">English Display</Label>
+                   <Input placeholder="e.g. High Performance AIO" value={formData.nameEn} onChange={e => setFormData({...formData, nameEn: e.target.value})} className="rounded-xl h-10 text-xs border-dashed" />
+                </div>
+              </div>
             </div>
-            <div className="space-y-1.5 pt-4 border-t border-border/40">
-              <Label className="text-[10px] font-bold uppercase text-primary">缩略图 URL</Label>
-              <Input value={formData.thumbnailImageUrl} onChange={e => setFormData({...formData, thumbnailImageUrl: e.target.value})} className="h-10 rounded-lg text-xs" />
+
+            <div className="space-y-1.5 pt-4 border-t border-dashed">
+              <Label className="text-[10px] font-bold uppercase text-primary">缩略图 URL (用于前台筛选列表)</Label>
+              <Input value={formData.thumbnailImageUrl} onChange={e => setFormData({...formData, thumbnailImageUrl: e.target.value})} className="h-10 rounded-xl text-xs bg-muted/5" placeholder="https://..." />
             </div>
           </div>
-          <DialogFooter className="bg-muted/20 p-4 border-t gap-2">
-            <Button variant="outline" size="sm" onClick={() => setIsDialogOpen(false)} className="h-9 rounded-lg flex-1">取消</Button>
-            <Button size="sm" onClick={handleSave} className="h-9 rounded-lg flex-1">确认保存</Button>
+          <DialogFooter className="bg-muted/10 p-6 border-t gap-3">
+            <Button variant="outline" onClick={() => setIsDialogOpen(false)} className="h-11 rounded-xl flex-1 font-bold uppercase text-[10px]">放弃编辑</Button>
+            <Button onClick={handleSave} className="h-11 rounded-xl flex-1 font-bold uppercase text-[10px] shadow-lg">确认保存架构</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
 
-      <div className="bg-white rounded-xl border border-border/40 shadow-sm overflow-hidden">
+      <div className="bg-white rounded-2xl border border-border/40 shadow-sm overflow-hidden">
         <Table>
           <TableHeader className="bg-muted/30">
             <TableRow>
-              <TableHead className="w-14 pl-5">图标</TableHead>
-              <TableHead className="font-bold uppercase text-[9px] tracking-wider">名称 (中/英)</TableHead>
-              <TableHead className="font-bold uppercase text-[9px] tracking-wider">Slug / 规范 ID</TableHead>
-              <TableHead className="w-24 text-right pr-5 font-bold uppercase text-[9px] tracking-wider">操作</TableHead>
+              <TableHead className="w-14 pl-6">视觉</TableHead>
+              <TableHead className="font-bold uppercase text-[10px] tracking-widest">分类架构与名称</TableHead>
+              <TableHead className="font-bold uppercase text-[10px] tracking-widest">Slug / 系统 ID</TableHead>
+              <TableHead className="w-32 text-right pr-6 font-bold uppercase text-[10px] tracking-widest">操作管理</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {isCatsLoading ? (
-              <TableRow><TableCell colSpan={4} className="h-32 text-center"><Loader2 className="h-5 w-5 animate-spin mx-auto opacity-20" /></TableCell></TableRow>
-            ) : categories?.length === 0 ? (
-              <TableRow><TableCell colSpan={4} className="h-32 text-center text-[10px] text-muted-foreground italic uppercase">暂无数据</TableCell></TableRow>
-            ) : categories?.map((cat) => (
-              <TableRow key={cat.id} className="group hover:bg-muted/5 transition-colors">
-                <TableCell className="pl-5">
-                  <div className="relative h-10 w-10 rounded-md border bg-muted/10 overflow-hidden shadow-inner">
-                    {cat.thumbnailImageUrl && <Image src={cat.thumbnailImageUrl} alt={cat.id} fill className="object-cover" />}
-                  </div>
-                </TableCell>
-                <TableCell>
-                   <div className="flex flex-col">
-                      <span className="font-bold text-xs text-primary">{translations?.find(t => t.id === cat.nameTextId)?.zh || cat.id}</span>
-                      <span className="text-[9px] text-muted-foreground uppercase opacity-70">{translations?.find(t => t.id === cat.nameTextId)?.en || 'No English'}</span>
-                   </div>
-                </TableCell>
-                <TableCell>
-                  <div className="flex flex-col">
-                    <span className="text-[10px] font-mono opacity-50">{cat.slug}</span>
-                    <span className="text-[8px] font-bold text-primary/40 uppercase tracking-tighter">{cat.id}</span>
-                  </div>
-                </TableCell>
-                <TableCell className="pr-5 text-right">
-                  <div className="flex items-center justify-end gap-0.5">
-                    <Button size="icon" variant="ghost" className="h-8 w-8" onClick={() => handleStartEdit(cat)}><Edit2 className="h-3.5 w-3.5" /></Button>
-                    <Button size="icon" variant="ghost" className="h-8 w-8 text-destructive hover:bg-destructive/5" onClick={() => handleDelete(cat.id)}><Trash2 className="h-3.5 w-3.5" /></Button>
-                  </div>
-                </TableCell>
-              </TableRow>
-            ))}
+              <TableRow><TableCell colSpan={4} className="h-40 text-center"><Loader2 className="h-8 w-8 animate-spin mx-auto opacity-20" /></TableCell></TableRow>
+            ) : categoryTree.length === 0 ? (
+              <TableRow><TableCell colSpan={4} className="h-40 text-center text-[10px] text-muted-foreground italic uppercase">尚未建立分类体系</TableCell></TableRow>
+            ) : categoryTree.map((cat) => {
+              const t = translations?.find(tr => tr.id === cat.nameTextId);
+              const isTopLevel = !cat.parentId || cat.parentId === 'none';
+              const isSystemPreset = cat.id === 'WHOLESALE' || cat.id === 'PROJECT';
+
+              return (
+                <TableRow key={cat.id} className="group hover:bg-muted/5 transition-colors">
+                  <TableCell className="pl-6">
+                    <div className="relative h-10 w-10 rounded-lg border bg-muted/10 overflow-hidden shadow-inner flex items-center justify-center">
+                      {cat.thumbnailImageUrl ? (
+                        <Image src={cat.thumbnailImageUrl} alt={cat.id} fill className="object-cover" unoptimized />
+                      ) : (
+                        <LayoutGrid className="h-4 w-4 opacity-20" />
+                      )}
+                    </div>
+                  </TableCell>
+                  <TableCell>
+                     <div className="flex items-center gap-3">
+                        {Array.from({ length: cat.depth }).map((_, i) => (
+                          <div key={i} className="w-6 h-px bg-border/40 shrink-0 ml-1" />
+                        ))}
+                        {cat.depth > 0 && <ChevronRight className="h-3 w-3 text-muted-foreground/40" />}
+                        <div className="flex flex-col">
+                           <div className="flex items-center gap-2">
+                             <span className={cn("font-bold text-sm", isTopLevel ? "text-primary" : "text-muted-foreground")}>
+                               {t?.zh || cat.id}
+                             </span>
+                             {isTopLevel && (
+                               <Badge className={cn(
+                                 "text-[8px] h-4 px-1.5 uppercase font-bold",
+                                 isSystemPreset ? "bg-primary text-white" : "bg-muted text-muted-foreground"
+                               )}>
+                                 Top Tier
+                               </Badge>
+                             )}
+                           </div>
+                           <span className="text-[10px] text-muted-foreground/60 uppercase tracking-tight">{t?.en || 'No English'}</span>
+                        </div>
+                     </div>
+                  </TableCell>
+                  <TableCell>
+                    <div className="flex flex-col">
+                      <span className="text-[10px] font-mono opacity-50">{cat.slug}</span>
+                      <span className="text-[8px] font-bold text-primary/40 uppercase tracking-tighter">ID: {cat.id}</span>
+                    </div>
+                  </TableCell>
+                  <TableCell className="pr-6 text-right">
+                    <div className="flex items-center justify-end gap-1">
+                      <Button size="icon" variant="ghost" className="h-8 w-8 hover:text-primary" onClick={() => handleStartEdit(cat)}><Edit2 className="h-3.5 w-3.5" /></Button>
+                      <Button size="icon" variant="ghost" className="h-8 w-8 text-destructive hover:bg-destructive/5" onClick={() => handleDelete(cat.id)}><Trash2 className="h-3.5 w-3.5" /></Button>
+                    </div>
+                  </TableCell>
+                </TableRow>
+              );
+            })}
           </TableBody>
         </Table>
+      </div>
+
+      <div className="bg-muted/20 p-6 rounded-2xl border border-dashed flex items-start gap-4">
+         <Info className="h-5 w-5 text-primary/40 shrink-0 mt-0.5" />
+         <div className="space-y-1">
+            <p className="text-xs font-bold text-primary">关于顶级分类逻辑：</p>
+            <p className="text-[11px] text-muted-foreground leading-relaxed">
+              系统建议将所有业务分类挂载到 <strong>“批发产品” (WHOLESALE)</strong> 或 <strong>“项目产品” (PROJECT)</strong> 之下。
+              这种架构可以确保首页的英雄屏按钮能够准确引导用户进入对应的业务垂直领域。
+            </p>
+         </div>
       </div>
     </div>
   );
