@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
 import { useUser, useAuth, useFirestore, useMemoFirebase, useDoc } from '@/firebase';
 import { doc } from 'firebase/firestore';
@@ -35,7 +35,9 @@ import {
   Bot,
   ScrollText,
   Clock,
-  Zap
+  Zap,
+  Users,
+  UserCircle
 } from 'lucide-react';
 import Link from 'next/link';
 import Image from 'next/image';
@@ -43,6 +45,7 @@ import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { getModelQuota } from '@/lib/ai-models';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   const { user, isUserLoading } = useUser();
@@ -61,8 +64,12 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     return doc(firestore, 'settings', 'ai');
   }, [firestore]);
 
-  const { data: adminData, isLoading: isAdminDataLoading } = useDoc(adminDocRef);
+  const { data: adminData, isLoading: isAdminDataLoading } = useDoc<any>(adminDocRef);
   const { data: aiConfig } = useDoc<any>(aiConfigRef);
+
+  // 增强版加载判定：仅在两者都确定没有时才显示未授权
+  const isDeterminingAccess = isUserLoading || (user && isAdminDataLoading);
+  const isUnauthorized = user && !adminData && !isAdminDataLoading && pathname !== '/admin/login';
 
   useEffect(() => {
     if (!isUserLoading && !user && pathname !== '/admin/login') {
@@ -70,18 +77,18 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     }
   }, [user, isUserLoading, pathname, router]);
 
-  if (isUserLoading || (user && isAdminDataLoading)) {
+  if (isDeterminingAccess) {
     return (
       <div className="h-screen flex items-center justify-center bg-muted/10">
         <div className="flex flex-col items-center gap-4">
           <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-primary"></div>
-          <p className="text-[10px] font-bold text-primary uppercase tracking-widest animate-pulse">正在验证权限...</p>
+          <p className="text-[10px] font-bold text-primary uppercase tracking-widest animate-pulse">验证安全令牌中...</p>
         </div>
       </div>
     );
   }
 
-  if (user && !adminData && !isAdminDataLoading && pathname !== '/admin/login') {
+  if (isUnauthorized && pathname !== '/admin/login') {
     return (
       <div className="h-screen flex items-center justify-center bg-muted/20 p-6">
         <Alert variant="destructive" className="max-w-md bg-white border-destructive shadow-2xl rounded-2xl p-8">
@@ -89,21 +96,21 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           <AlertTitle className="text-xl font-headline font-bold mb-4">未授权访问</AlertTitle>
           <AlertDescription className="space-y-4">
             <p className="text-muted-foreground text-sm">
-              您的账号 <strong>{user.email}</strong> 已通过身份验证，但尚未获得管理权限。
+              您的账号 <strong>{user?.email}</strong> 已通过身份验证，但尚未获得管理权限。
             </p>
             <div className="p-4 bg-muted/50 rounded-xl text-xs space-y-2">
-              <p className="font-bold uppercase tracking-tight text-primary">如何修复：</p>
+              <p className="font-bold uppercase tracking-tight text-primary">权限激活指南：</p>
               <ol className="list-decimal list-inside space-y-1 opacity-70">
-                <li>进入 Firebase 控制台</li>
-                <li>在 Firestore 中创建名为 <code>admins</code> 的集合</li>
-                <li>创建一个文档，文档 ID 为： <code>{user.uid}</code></li>
+                <li>联系超级管理员为您分配角色</li>
+                <li>在 Firestore <code>admins</code> 集合中创建文档</li>
+                <li>文档 ID 必须为： <code>{user?.uid}</code></li>
               </ol>
             </div>
             <Button 
               className="w-full h-12 rounded-xl font-bold uppercase tracking-widest"
               onClick={() => auth.signOut()}
             >
-              返回登录
+              返回登录界面
             </Button>
           </AlertDescription>
         </Alert>
@@ -116,6 +123,8 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   }
 
   if (!user || !adminData) return null;
+
+  const isSuperAdmin = adminData.role === 'superadmin';
 
   const menuGroups = [
     {
@@ -142,10 +151,12 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       ]
     },
     {
-      label: "系统设置",
+      label: "系统配置",
       items: [
         { title: "多语言翻译", icon: Globe, href: "/admin/translations" },
         { title: "AI 智译中枢", icon: Bot, href: "/admin/settings/ai" },
+        { title: "我的个人资料", icon: UserCircle, href: "/admin/profile" },
+        ...(isSuperAdmin ? [{ title: "管理员管理", icon: Users, href: "/admin/users" }] : []),
         { title: "规范白皮书", icon: ScrollText, href: "/admin/manifest" },
         { title: "通用设置", icon: Settings, href: "/admin/settings" },
       ]
@@ -163,7 +174,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           <SidebarHeader className="h-16 flex items-center px-5 border-b border-border/40">
             <Link href="/admin" className="flex items-center gap-2">
               <Image src="/image/Heovose-color.svg" alt="Heovose Admin" width={120} height={24} className="h-6 w-auto" />
-              <span className="text-[9px] font-bold bg-primary/10 text-primary px-1.5 py-0.5 rounded-full uppercase tracking-tighter">管理后台</span>
+              <span className="text-[9px] font-bold bg-primary/10 text-primary px-1.5 py-0.5 rounded-full uppercase tracking-tighter">管理中心</span>
             </Link>
           </SidebarHeader>
           <SidebarContent className="py-4">
@@ -212,7 +223,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
               <SidebarTrigger />
               <div className="h-5 w-px bg-border/60 mx-1" />
               <h1 className="font-headline font-bold text-sm text-primary uppercase tracking-widest">
-                {menuGroups.flatMap(g => g.items).find(i => i.href === pathname)?.title || '管理中心'}
+                {menuGroups.flatMap(g => g.items).find(i => i.href === pathname)?.title || '管理后台'}
               </h1>
             </div>
             <div className="flex items-center gap-4">
@@ -253,15 +264,20 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
               <div className="h-5 w-px bg-border/60 mx-1 hidden md:block" />
               
-              <div className="hidden md:flex flex-col items-end">
-                <span className="text-[11px] font-bold text-primary">{user.email}</span>
-                <span className="text-[9px] text-muted-foreground uppercase tracking-widest font-medium text-right block">
-                  {adminData?.role === 'superadmin' ? '超级管理员' : '编辑员'}
-                </span>
-              </div>
-              <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center text-primary text-xs font-bold shadow-inner uppercase">
-                {user.email?.[0]}
-              </div>
+              <Link href="/admin/profile" className="flex items-center gap-3 hover:opacity-80 transition-opacity">
+                <div className="hidden md:flex flex-col items-end">
+                  <span className="text-[11px] font-bold text-primary">{adminData.displayName || user.email}</span>
+                  <span className="text-[9px] text-muted-foreground uppercase tracking-widest font-medium text-right block">
+                    {adminData.role === 'superadmin' ? '超级管理员' : '编辑员'}
+                  </span>
+                </div>
+                <Avatar className="h-9 w-9 rounded-full shadow-inner border border-border/40">
+                  {adminData.avatarUrl ? <AvatarImage src={adminData.avatarUrl} className="object-cover" /> : null}
+                  <AvatarFallback className="bg-primary/10 text-primary text-xs font-bold uppercase">
+                    {(adminData.displayName || user.email)?.[0]}
+                  </AvatarFallback>
+                </Avatar>
+              </Link>
             </div>
           </header>
           

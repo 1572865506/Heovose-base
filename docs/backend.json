@@ -9,7 +9,11 @@
       "properties": {
         "uid": { "type": "string" },
         "email": { "type": "string" },
-        "role": { "type": "string", "enum": ["superadmin", "editor"] }
+        "displayName": { "type": "string", "description": "Custom name for the admin." },
+        "avatarUrl": { "type": "string", "description": "URL to the admin's profile picture." },
+        "role": { "type": "string", "enum": ["superadmin", "editor"] },
+        "status": { "type": "string", "enum": ["active", "disabled"], "default": "active" },
+        "updatedAt": { "type": "object" }
       },
       "required": ["uid", "email"]
     },
