@@ -38,8 +38,9 @@ import {
   Zap,
   Users,
   UserCircle,
-  User,
-  ShieldCheck
+  ShieldCheck,
+  RefreshCw,
+  Key
 } from 'lucide-react';
 import Link from 'next/link';
 import Image from 'next/image';
@@ -74,7 +75,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     return doc(firestore, 'settings', 'ai');
   }, [firestore]);
 
-  const { data: adminData, isLoading: isAdminDataLoading } = useDoc<any>(adminDocRef);
+  const { data: adminData, isLoading: isAdminDataLoading, error: adminError } = useDoc<any>(adminDocRef);
   const { data: aiConfig } = useDoc<any>(aiConfigRef);
 
   const isDeterminingAccess = isUserLoading || (user && isAdminDataLoading);
@@ -100,27 +101,68 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   if (isUnauthorized && pathname !== '/admin/login') {
     return (
       <div className="h-screen flex items-center justify-center bg-muted/20 p-6">
-        <Alert variant="destructive" className="max-w-md bg-white border-destructive shadow-2xl rounded-2xl p-8">
-          <AlertCircle className="h-8 w-8 mb-4" />
-          <AlertTitle className="text-xl font-headline font-bold mb-4">未授权访问</AlertTitle>
-          <AlertDescription className="space-y-4">
-            <p className="text-muted-foreground text-sm">
-              您的账号 <strong>{user?.email}</strong> 已通过身份验证，但尚未获得管理权限。
-            </p>
-            <div className="p-4 bg-muted/50 rounded-xl text-xs space-y-2">
-              <p className="font-bold uppercase tracking-tight text-primary">权限激活指南：</p>
-              <ol className="list-decimal list-inside space-y-1 opacity-70">
-                <li>联系超级管理员为您分配角色</li>
-                <li>在 Firestore <code>admins</code> 集合中创建文档</li>
-                <li>文档 ID 必须为： <code>{user?.uid}</code></li>
-              </ol>
+        <Alert variant="destructive" className="max-w-xl bg-white border-destructive/50 shadow-2xl rounded-2xl p-8">
+          <div className="flex items-center gap-3 mb-6">
+            <ShieldCheck className="h-8 w-8 text-destructive" />
+            <AlertTitle className="text-xl font-headline font-bold m-0 uppercase tracking-tight">未授权访问：权限校验失败</AlertTitle>
+          </div>
+          <AlertDescription className="space-y-6">
+            <div className="space-y-2">
+              <p className="text-muted-foreground text-sm leading-relaxed">
+                您的账号 <strong>{user?.email}</strong> 已通过身份验证，但在管理白名单中未找到匹配的文档。
+              </p>
+              {adminError && (
+                <div className="p-3 bg-destructive/5 border border-destructive/10 rounded-lg text-[10px] font-mono text-destructive">
+                  错误详情: {adminError.message}
+                </div>
+              )}
             </div>
-            <Button 
-              className="w-full h-12 rounded-xl font-bold uppercase tracking-widest"
-              onClick={() => auth.signOut()}
-            >
-              返回登录界面
-            </Button>
+
+            <div className="p-6 bg-primary/5 rounded-2xl border border-primary/10 space-y-4">
+              <h4 className="text-[10px] font-bold uppercase tracking-widest text-primary flex items-center gap-2">
+                <RefreshCw className="h-3 w-3" /> 诊断与修正指南
+              </h4>
+              <div className="space-y-3">
+                <div className="flex flex-col gap-1.5">
+                  <span className="text-[10px] text-muted-foreground font-medium">1. 检查 Firestore 路径与 ID</span>
+                  <div className="flex items-center justify-between bg-white border p-2.5 rounded-xl">
+                    <code className="text-[11px] font-mono text-primary font-bold">/admins/{user?.uid}</code>
+                    <Button 
+                      variant="ghost" 
+                      size="icon" 
+                      className="h-7 w-7" 
+                      onClick={() => {
+                        navigator.clipboard.writeText(user?.uid || '');
+                        alert('UID 已复制，请确保 Firestore 中的文档 ID 与之完全一致。');
+                      }}
+                    >
+                      <Key className="h-3 w-3" />
+                    </Button>
+                  </div>
+                  <p className="text-[9px] text-muted-foreground italic">注意：文档 ID 必须是上面的 UID 字符串，而不是邮箱地址。</p>
+                </div>
+                <div className="space-y-1.5">
+                  <span className="text-[10px] text-muted-foreground font-medium">2. 检查关键字段</span>
+                  <p className="text-[9px] leading-relaxed">确保文档包含 <code>email</code> 和 <code>role</code> (值为 <code>superadmin</code> 或 <code>editor</code>) 字段。</p>
+                </div>
+              </div>
+            </div>
+
+            <div className="flex gap-3 pt-2">
+              <Button 
+                variant="outline"
+                className="flex-1 h-12 rounded-xl font-bold uppercase tracking-widest text-[10px]"
+                onClick={() => window.location.reload()}
+              >
+                <RefreshCw className="mr-2 h-4 w-4" /> 重新检测权限
+              </Button>
+              <Button 
+                className="flex-1 h-12 rounded-xl font-bold uppercase tracking-widest text-[10px]"
+                onClick={() => auth.signOut()}
+              >
+                <LogOut className="mr-2 h-4 w-4" /> 返回登录
+              </Button>
+            </div>
           </AlertDescription>
         </Alert>
       </div>

@@ -5,16 +5,21 @@ service cloud.firestore {
     // 部署时间戳: 2024-06-05 18:00:00
     
     function isAdmin() {
+      // 核心逻辑：auth 必须非空，且 admins 集合中必须存在以 UID 为 ID 的文档
       return request.auth != null && exists(/databases/$(database)/documents/admins/$(request.auth.uid));
     }
 
     function isSuperAdmin() {
+      // 只有在满足基本 isAdmin 条件下，才通过 get 获取角色字段进行判定
       return isAdmin() && get(/databases/$(database)/documents/admins/$(request.auth.uid)).data.role == 'superadmin';
     }
 
     match /admins/{uid} {
+      // 允许用户读取自己的文档，或者超级管理员读取所有文档
       allow get: if request.auth != null && (request.auth.uid == uid || isSuperAdmin());
+      // 只有超级管理员可以列出所有管理员
       allow list: if isSuperAdmin();
+      // 超级管理员可以修改所有，普通管理员可以修改自己的资料（如头像、名称）
       allow write: if isSuperAdmin() || (request.auth != null && request.auth.uid == uid);
     }
 
