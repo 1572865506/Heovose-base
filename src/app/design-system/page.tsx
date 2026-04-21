@@ -36,7 +36,8 @@ import {
   ShieldCheck,
   Package,
   Layers,
-  FileText
+  FileText,
+  Factory
 } from 'lucide-react';
 import { 
   Table, 
