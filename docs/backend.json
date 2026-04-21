@@ -24,7 +24,26 @@
         "mapTitleEn": { "type": "string" },
         "mapTitleZh": { "type": "string" },
         "mapSubtitleEn": { "type": "string" },
-        "mapSubtitleZh": { "type": "string" }
+        "mapSubtitleZh": { "type": "string" },
+        "locations": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "id": { "type": "string" },
+              "type": { "type": "string", "enum": ["HQ", "R&D", "Factory", "Global"] },
+              "titleZh": { "type": "string" },
+              "titleEn": { "type": "string" },
+              "addressZh": { "type": "string" },
+              "addressEn": { "type": "string" },
+              "descZh": { "type": "string" },
+              "descEn": { "type": "string" },
+              "imageUrl": { "type": "string" },
+              "posTop": { "type": "string", "description": "地图垂直位置百分比, 如 40%" },
+              "posLeft": { "type": "string", "description": "地图水平位置百分比, 如 75%" }
+            }
+          }
+        }
       }
     },
     "Product": {

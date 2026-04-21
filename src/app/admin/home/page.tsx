@@ -24,17 +24,32 @@ import {
   Image as ImageIcon, 
   Film, 
   MapPin,
-  ArrowRight,
-  Info,
-  ExternalLink,
-  Target
+  Target,
+  Plus,
+  Trash2,
+  Edit2,
+  Globe,
+  Building2,
+  Microscope,
+  Factory,
+  Settings2,
+  Info
 } from 'lucide-react';
+import { 
+  Dialog, 
+  DialogContent, 
+  DialogFooter, 
+  DialogHeader, 
+  DialogTitle, 
+  DialogDescription,
+} from '@/components/ui/dialog';
 import { setDocumentNonBlocking } from '@/firebase/non-blocking-updates';
 import { useToast } from '@/hooks/use-toast';
 import { translateContent } from '@/ai/flows/translate-flow';
 import { cn } from '@/lib/utils';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
+import { Card, CardContent } from '@/components/ui/card';
 
 // AI 极光渐变定义组件
 const AiGradientDef = () => (
@@ -90,11 +105,27 @@ export default function AdminHomePage() {
     mapTitleZh: '',
     mapTitleEn: '',
     mapSubtitleZh: '',
-    mapSubtitleEn: ''
+    mapSubtitleEn: '',
+    locations: []
   });
 
   const [isSaving, setIsSaving] = useState(false);
   const [isAiProcessing, setIsAiProcessing] = useState(false);
+  const [isLocationDialogOpen, setIsLocationDialogOpen] = useState(false);
+  const [editingLocation, setEditingLocation] = useState<any>(null);
+  const [locationForm, setLocationLocationForm] = useState<any>({
+    id: '',
+    type: 'Factory',
+    titleZh: '',
+    titleEn: '',
+    addressZh: '',
+    addressEn: '',
+    descZh: '',
+    descEn: '',
+    imageUrl: '',
+    posTop: '50%',
+    posLeft: '50%'
+  });
 
   useEffect(() => {
     if (homeData) {
@@ -113,13 +144,13 @@ export default function AdminHomePage() {
 
     setTimeout(() => {
       setIsSaving(false);
-      toast({ title: "首页配置已保存", description: "更改将实时同步到官网展示。" });
+      toast({ title: "首页配置已保存" });
     }, 800);
   };
 
-  const handleTranslate = async (fields: { source: string, targetKey: string }[]) => {
+  const handleTranslate = async (fields: { source: string, targetKey: string }[], localFormData = formData) => {
     if (!aiConfig?.isEnabled) {
-      toast({ variant: "destructive", title: "AI 智译未启用", description: "请先在系统设置中配置 AI 引擎。" });
+      toast({ variant: "destructive", title: "AI 智译未启用" });
       return;
     }
 
@@ -127,20 +158,45 @@ export default function AdminHomePage() {
     try {
       const updates: any = {};
       for (const field of fields) {
-        if (!formData[field.source]) continue;
+        if (!localFormData[field.source]) continue;
         const res = await translateContent({
-          text: formData[field.source],
+          text: localFormData[field.source],
           targetLangs: ['en'],
           apiKey: aiConfig.apiKey
         });
         if (res.en) updates[field.targetKey] = res.en;
       }
-      setFormData({ ...formData, ...updates });
-      toast({ title: "智译完成", description: "已根据中文内容自动生成英文译文。" });
+      return updates;
     } catch (error: any) {
       toast({ variant: "destructive", title: "智译失败", description: error.message });
+      return null;
     } finally {
       setIsAiProcessing(false);
+    }
+  };
+
+  const handleLocationSubmit = () => {
+    const newLocations = [...(formData.locations || [])];
+    if (editingLocation) {
+      const idx = newLocations.findIndex(l => l.id === editingLocation.id);
+      newLocations[idx] = { ...locationForm };
+    } else {
+      newLocations.push({ ...locationForm, id: `loc_${Date.now()}` });
+    }
+    setFormData({ ...formData, locations: newLocations });
+    setIsLocationDialogOpen(false);
+    setEditingLocation(null);
+  };
+
+  const handleTranslateLocation = async () => {
+    const updates = await handleTranslate([
+      { source: 'titleZh', targetKey: 'titleEn' },
+      { source: 'addressZh', targetKey: 'addressEn' },
+      { source: 'descZh', targetKey: 'descEn' }
+    ], locationForm);
+    if (updates) {
+      setLocationLocationForm({ ...locationForm, ...updates });
+      toast({ title: "地区信息智译完成" });
     }
   };
 
@@ -155,7 +211,7 @@ export default function AdminHomePage() {
     return (
       <div className="h-[60vh] flex flex-col items-center justify-center gap-4">
         <Loader2 className="h-10 w-10 animate-spin text-primary opacity-20" />
-        <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest animate-pulse">正在载入展示模型...</p>
+        <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">载入配置中...</p>
       </div>
     );
   }
@@ -169,17 +225,17 @@ export default function AdminHomePage() {
           <h2 className="text-xl font-headline font-bold text-primary flex items-center gap-2">
             <Home className="h-5 w-5" /> 首页配置管理
           </h2>
-          <p className="text-xs text-muted-foreground">管理全站首屏视觉、全球化战略及核心品牌数据。</p>
+          <p className="text-xs text-muted-foreground">管理全站首屏视觉、全球化战略及核心展示信息。</p>
         </div>
         
         <Button onClick={handleSave} disabled={isSaving} className="rounded-xl h-12 px-8 gap-2 font-bold uppercase tracking-widest text-xs shadow-xl">
           {isSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
-          签署并发布配置
+          发布配置变更
         </Button>
       </div>
 
       <Tabs defaultValue="hero" className="w-full">
-        <TabsList className="bg-muted/30 p-1 rounded-2xl mb-8 h-14 w-full md:w-auto overflow-x-auto whitespace-nowrap scrollbar-none">
+        <TabsList className="bg-muted/30 p-1 rounded-2xl mb-8 h-14">
           <TabsTrigger value="hero" className="rounded-xl px-8 text-xs font-bold uppercase tracking-wider gap-2">
             <ImageIcon className="h-4 w-4" /> 英雄视觉 (Hero)
           </TabsTrigger>
@@ -194,23 +250,25 @@ export default function AdminHomePage() {
         {/* Hero Section */}
         <TabsContent value="hero" className="space-y-6">
           <div className="bg-white p-8 rounded-3xl border shadow-sm space-y-8">
-            <div className="flex items-center justify-between border-b pb-4 mb-6">
+            <div className="flex items-center justify-between border-b pb-4">
               <div className="space-y-1">
                 <h3 className="text-sm font-bold text-primary uppercase tracking-widest flex items-center gap-2">
                   <ImageIcon className="h-4 w-4" /> 英雄屏核心内容
                 </h3>
-                <p className="text-[10px] text-muted-foreground uppercase font-medium">配置首页顶部的冲击力标题及功能按钮。</p>
               </div>
               <Button 
                 variant="ghost" 
                 size="sm" 
                 className="ai-btn-glow h-9 px-4 text-[10px] gap-2 font-bold"
-                onClick={() => handleTranslate([
-                  {source: 'heroHeadlineZh', targetKey: 'heroHeadlineEn'}, 
-                  {source: 'heroSubheadlineZh', targetKey: 'heroSubheadlineEn'},
-                  {source: 'heroWholesaleButtonZh', targetKey: 'heroWholesaleButtonEn'},
-                  {source: 'heroProjectButtonZh', targetKey: 'heroProjectButtonEn'}
-                ])}
+                onClick={async () => {
+                   const updates = await handleTranslate([
+                     {source: 'heroHeadlineZh', targetKey: 'heroHeadlineEn'}, 
+                     {source: 'heroSubheadlineZh', targetKey: 'heroSubheadlineEn'},
+                     {source: 'heroWholesaleButtonZh', targetKey: 'heroWholesaleButtonEn'},
+                     {source: 'heroProjectButtonZh', targetKey: 'heroProjectButtonEn'}
+                   ]);
+                   if(updates) setFormData({...formData, ...updates});
+                }}
                 disabled={isAiProcessing}
               >
                 <Sparkles className="h-3.5 w-3.5 ai-icon-gradient" /> AI 智译本页
@@ -218,155 +276,66 @@ export default function AdminHomePage() {
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
-              {/* Left Column - Chinese Config & Targets */}
-              <div className="space-y-8">
+              <div className="space-y-6">
                 <div className="space-y-4">
-                  <Badge variant="outline" className="text-[8px] font-bold text-primary/60 border-primary/20">标题及按钮 (ZH)</Badge>
-                  <div className="space-y-4 pl-2">
-                    <div className="space-y-2">
-                      <Label className="text-[10px] font-bold uppercase text-primary/40 tracking-wider">主标题</Label>
-                      <Input 
-                        value={formData.heroHeadlineZh} 
-                        onChange={e => setFormData({...formData, heroHeadlineZh: e.target.value})}
-                        placeholder="如：一体机电脑"
-                        className="h-11 rounded-xl text-xs bg-muted/5"
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label className="text-[10px] font-bold uppercase text-primary/40 tracking-wider">副标题</Label>
-                      <Input 
-                        value={formData.heroSubheadlineZh} 
-                        onChange={e => setFormData({...formData, heroSubheadlineZh: e.target.value})}
-                        placeholder="如：专业制造商"
-                        className="h-11 rounded-xl text-xs bg-muted/5"
-                      />
-                    </div>
+                  <div className="space-y-2">
+                    <Label className="text-[10px] font-bold uppercase text-primary/40 tracking-wider">主标题 (ZH)</Label>
+                    <Input value={formData.heroHeadlineZh} onChange={e => setFormData({...formData, heroHeadlineZh: e.target.value})} className="h-11 rounded-xl text-xs bg-muted/5" />
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="text-[10px] font-bold uppercase text-primary/40 tracking-wider">副标题 (ZH)</Label>
+                    <Input value={formData.heroSubheadlineZh} onChange={e => setFormData({...formData, heroSubheadlineZh: e.target.value})} className="h-11 rounded-xl text-xs bg-muted/5" />
                   </div>
                 </div>
 
-                <Separator className="bg-border/40 border-dashed" />
-
-                <div className="grid grid-cols-1 gap-8">
-                  {/* Wholesale Button Setting */}
-                  <div className="space-y-4 p-5 rounded-2xl bg-muted/5 border border-dashed border-border/60">
+                <div className="grid grid-cols-1 gap-6">
+                  <div className="p-5 rounded-2xl bg-muted/5 border border-dashed border-border/60 space-y-4">
                     <div className="flex items-center gap-2 text-primary">
                       <Target className="h-4 w-4" />
-                      <span className="text-[10px] font-bold uppercase tracking-widest">批发入口配置 (WHOLESALE)</span>
+                      <span className="text-[10px] font-bold uppercase tracking-widest">批发入口配置</span>
                     </div>
-                    <div className="space-y-3">
-                      <div className="space-y-1.5">
-                        <Label className="text-[10px] font-bold uppercase text-primary/40 tracking-wider">按钮显示文本 (ZH)</Label>
-                        <Input 
-                          value={formData.heroWholesaleButtonZh} 
-                          onChange={e => setFormData({...formData, heroWholesaleButtonZh: e.target.value})}
-                          placeholder="批发产品"
-                          className="h-10 rounded-xl text-xs bg-white"
-                        />
-                      </div>
-                      <div className="space-y-1.5">
-                        <Label className="text-[10px] font-bold uppercase text-primary/40 tracking-wider">跳转目标分类</Label>
-                        <Select value={formData.heroWholesaleCategoryId} onValueChange={v => setFormData({...formData, heroWholesaleCategoryId: v})}>
-                          <SelectTrigger className="h-11 rounded-xl bg-white border-transparent">
-                            <SelectValue placeholder="选择目标分类..." />
-                          </SelectTrigger>
-                          <SelectContent className="rounded-xl">
-                            <SelectItem value="none">默认 (全部分类)</SelectItem>
-                            {categories?.map((cat: any) => (
-                              <SelectItem key={cat.id} value={cat.id} className="text-xs">
-                                {getCategoryName(cat.id)}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      </div>
-                    </div>
+                    <Input value={formData.heroWholesaleButtonZh} onChange={e => setFormData({...formData, heroWholesaleButtonZh: e.target.value})} placeholder="按钮文字" className="h-10 rounded-xl bg-white" />
+                    <Select value={formData.heroWholesaleCategoryId} onValueChange={v => setFormData({...formData, heroWholesaleCategoryId: v})}>
+                      <SelectTrigger className="h-10 rounded-xl bg-white"><SelectValue placeholder="选择跳转分类" /></SelectTrigger>
+                      <SelectContent className="rounded-xl">
+                        <SelectItem value="none">全部分类</SelectItem>
+                        {categories?.map((cat: any) => <SelectItem key={cat.id} value={cat.id} className="text-xs">{getCategoryName(cat.id)}</SelectItem>)}
+                      </SelectContent>
+                    </Select>
                   </div>
 
-                  {/* Project Button Setting */}
-                  <div className="space-y-4 p-5 rounded-2xl bg-muted/5 border border-dashed border-border/60">
+                  <div className="p-5 rounded-2xl bg-muted/5 border border-dashed border-border/60 space-y-4">
                     <div className="flex items-center gap-2 text-primary">
                       <Target className="h-4 w-4" />
-                      <span className="text-[10px] font-bold uppercase tracking-widest">项目入口配置 (PROJECT)</span>
+                      <span className="text-[10px] font-bold uppercase tracking-widest">项目入口配置</span>
                     </div>
-                    <div className="space-y-3">
-                      <div className="space-y-1.5">
-                        <Label className="text-[10px] font-bold uppercase text-primary/40 tracking-wider">按钮显示文本 (ZH)</Label>
-                        <Input 
-                          value={formData.heroProjectButtonZh} 
-                          onChange={e => setFormData({...formData, heroProjectButtonZh: e.target.value})}
-                          placeholder="项目产品"
-                          className="h-10 rounded-xl text-xs bg-white"
-                        />
-                      </div>
-                      <div className="space-y-1.5">
-                        <Label className="text-[10px] font-bold uppercase text-primary/40 tracking-wider">跳转目标分类</Label>
-                        <Select value={formData.heroProjectCategoryId} onValueChange={v => setFormData({...formData, heroProjectCategoryId: v})}>
-                          <SelectTrigger className="h-11 rounded-xl bg-white border-transparent">
-                            <SelectValue placeholder="选择目标分类..." />
-                          </SelectTrigger>
-                          <SelectContent className="rounded-xl">
-                            <SelectItem value="none">默认 (工业类目)</SelectItem>
-                            {categories?.map((cat: any) => (
-                              <SelectItem key={cat.id} value={cat.id} className="text-xs">
-                                {getCategoryName(cat.id)}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      </div>
-                    </div>
+                    <Input value={formData.heroProjectButtonZh} onChange={e => setFormData({...formData, heroProjectButtonZh: e.target.value})} placeholder="按钮文字" className="h-10 rounded-xl bg-white" />
+                    <Select value={formData.heroProjectCategoryId} onValueChange={v => setFormData({...formData, heroProjectCategoryId: v})}>
+                      <SelectTrigger className="h-10 rounded-xl bg-white"><SelectValue placeholder="选择跳转分类" /></SelectTrigger>
+                      <SelectContent className="rounded-xl">
+                        {categories?.map((cat: any) => <SelectItem key={cat.id} value={cat.id} className="text-xs">{getCategoryName(cat.id)}</SelectItem>)}
+                      </SelectContent>
+                    </Select>
                   </div>
                 </div>
               </div>
 
-              {/* Right Column - English Translation Displays */}
-              <div className="space-y-8 border-l pl-10 border-dashed">
-                <div className="space-y-4">
-                  <Badge variant="outline" className="text-[8px] font-bold text-primary/60 border-primary/20">CONTENT (EN)</Badge>
-                  <div className="space-y-4 pl-2">
-                    <div className="space-y-2">
-                      <Label className="text-[10px] font-bold uppercase text-primary/40 tracking-wider">MAIN HEADLINE</Label>
-                      <Input 
-                        value={formData.heroHeadlineEn} 
-                        onChange={e => setFormData({...formData, heroHeadlineEn: e.target.value})}
-                        placeholder="ALL IN ONE COMPUTER"
-                        className="h-11 rounded-xl text-xs bg-white border-dashed"
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label className="text-[10px] font-bold uppercase text-primary/40 tracking-wider">SUBHEADLINE</Label>
-                      <Input 
-                        value={formData.heroSubheadlineEn} 
-                        onChange={e => setFormData({...formData, heroSubheadlineEn: e.target.value})}
-                        placeholder="PROFESSIONAL MANUFACTURER"
-                        className="h-11 rounded-xl text-xs bg-white border-dashed"
-                      />
-                    </div>
-                  </div>
+              <div className="space-y-6 border-l pl-10 border-dashed">
+                <div className="space-y-2">
+                  <Label className="text-[10px] font-bold uppercase text-primary/40 tracking-wider">HEADLINE (EN)</Label>
+                  <Input value={formData.heroHeadlineEn} onChange={e => setFormData({...formData, heroHeadlineEn: e.target.value})} className="h-11 rounded-xl text-xs border-dashed" />
                 </div>
-
-                <Separator className="bg-border/40 border-dashed" />
-
-                <div className="space-y-12 pt-4">
-                  <div className="space-y-2">
-                    <Label className="text-[10px] font-bold uppercase text-primary/40 tracking-wider">WHOLESALE BUTTON (EN)</Label>
-                    <Input 
-                      value={formData.heroWholesaleButtonEn} 
-                      onChange={e => setFormData({...formData, heroWholesaleButtonEn: e.target.value})}
-                      placeholder="WHOLESALE PRODUCTS"
-                      className="h-11 rounded-xl text-xs bg-white border-dashed"
-                    />
-                  </div>
-                  
-                  <div className="space-y-2 pt-10">
-                    <Label className="text-[10px] font-bold uppercase text-primary/40 tracking-wider">PROJECT BUTTON (EN)</Label>
-                    <Input 
-                      value={formData.heroProjectButtonEn} 
-                      onChange={e => setFormData({...formData, heroProjectButtonEn: e.target.value})}
-                      placeholder="PROJECT PRODUCTS"
-                      className="h-11 rounded-xl text-xs bg-white border-dashed"
-                    />
-                  </div>
+                <div className="space-y-2">
+                  <Label className="text-[10px] font-bold uppercase text-primary/40 tracking-wider">SUBHEADLINE (EN)</Label>
+                  <Input value={formData.heroSubheadlineEn} onChange={e => setFormData({...formData, heroSubheadlineEn: e.target.value})} className="h-11 rounded-xl text-xs border-dashed" />
+                </div>
+                <div className="space-y-2 pt-14">
+                  <Label className="text-[10px] font-bold uppercase text-primary/40 tracking-wider">WHOLESALE BUTTON (EN)</Label>
+                  <Input value={formData.heroWholesaleButtonEn} onChange={e => setFormData({...formData, heroWholesaleButtonEn: e.target.value})} className="h-10 rounded-xl border-dashed" />
+                </div>
+                <div className="space-y-2 pt-14">
+                  <Label className="text-[10px] font-bold uppercase text-primary/40 tracking-wider">PROJECT BUTTON (EN)</Label>
+                  <Input value={formData.heroProjectButtonEn} onChange={e => setFormData({...formData, heroProjectButtonEn: e.target.value})} className="h-10 rounded-xl border-dashed" />
                 </div>
               </div>
             </div>
@@ -376,64 +345,35 @@ export default function AdminHomePage() {
         {/* Video Section */}
         <TabsContent value="video" className="space-y-6">
           <div className="bg-white p-8 rounded-3xl border shadow-sm space-y-8">
-            <div className="flex items-center justify-between border-b pb-4 mb-6">
-              <div className="space-y-1">
-                <h3 className="text-sm font-bold text-primary uppercase tracking-widest flex items-center gap-2">
-                  <Film className="h-4 w-4" /> 视频交互区配置
-                </h3>
-                <p className="text-[10px] text-muted-foreground uppercase font-medium">配置滚动视频背景上的浮动文案。</p>
-              </div>
+            <div className="flex items-center justify-between border-b pb-4">
+              <h3 className="text-sm font-bold text-primary uppercase tracking-widest flex items-center gap-2">
+                <Film className="h-4 w-4" /> 品牌故事滚动文案
+              </h3>
               <Button 
-                variant="ghost" 
-                size="sm" 
-                className="ai-btn-glow h-9 px-4 text-[10px] gap-2 font-bold"
-                onClick={() => handleTranslate([{source: 'videoTitleZh', targetKey: 'videoTitleEn'}, {source: 'videoSubtitleZh', targetKey: 'videoSubtitleEn'}])}
-                disabled={isAiProcessing}
+                variant="ghost" size="sm" className="ai-btn-glow h-9 px-4 text-[10px] font-bold"
+                onClick={async () => {
+                  const updates = await handleTranslate([
+                    {source: 'videoTitleZh', targetKey: 'videoTitleEn'},
+                    {source: 'videoSubtitleZh', targetKey: 'videoSubtitleEn'}
+                  ]);
+                  if(updates) setFormData({...formData, ...updates});
+                }}
               >
-                <Sparkles className="h-3.5 w-3.5 ai-icon-gradient" /> AI 智译本页
+                <Sparkles className="h-3.5 w-3.5 ai-icon-gradient" /> AI 智译
               </Button>
             </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
-              <div className="space-y-6">
-                <div className="space-y-2">
-                  <Label className="text-[10px] font-bold uppercase text-primary/40 tracking-wider">滚动文案一 (中文)</Label>
-                  <Input 
-                    value={formData.videoTitleZh} 
-                    onChange={e => setFormData({...formData, videoTitleZh: e.target.value})}
-                    placeholder="如：全球智能制造"
-                    className="h-11 rounded-xl text-xs bg-muted/10"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label className="text-[10px] font-bold uppercase text-primary/40 tracking-wider">滚动文案二 (中文)</Label>
-                  <Input 
-                    value={formData.videoSubtitleZh} 
-                    onChange={e => setFormData({...formData, videoSubtitleZh: e.target.value})}
-                    placeholder="如：重塑桌面与显示之美"
-                    className="h-11 rounded-xl text-xs bg-muted/10"
-                  />
-                </div>
+            <div className="grid grid-cols-2 gap-10">
+              <div className="space-y-4">
+                <Label className="text-[10px] font-bold uppercase opacity-40">滚动文字 1 (ZH)</Label>
+                <Input value={formData.videoTitleZh} onChange={e => setFormData({...formData, videoTitleZh: e.target.value})} className="h-11 rounded-xl" />
+                <Label className="text-[10px] font-bold uppercase opacity-40">滚动文字 2 (ZH)</Label>
+                <Input value={formData.videoSubtitleZh} onChange={e => setFormData({...formData, videoSubtitleZh: e.target.value})} className="h-11 rounded-xl" />
               </div>
-              <div className="space-y-6 border-l pl-10 border-dashed">
-                <div className="space-y-2">
-                  <Label className="text-[10px] font-bold uppercase text-primary/40 tracking-wider">SCROLL TEXT 1 (EN)</Label>
-                  <Input 
-                    value={formData.videoTitleEn} 
-                    onChange={e => setFormData({...formData, videoTitleEn: e.target.value})}
-                    placeholder="GLOBAL INTELLIGENT MANUFACTURING"
-                    className="h-11 rounded-xl text-xs border-dashed"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label className="text-[10px] font-bold uppercase text-primary/40 tracking-wider">SCROLL TEXT 2 (EN)</Label>
-                  <Input 
-                    value={formData.videoSubtitleEn} 
-                    onChange={e => setFormData({...formData, videoSubtitleEn: e.target.value})}
-                    placeholder="REDEFINING DESKTOP EXCELLENCE"
-                    className="h-11 rounded-xl text-xs border-dashed"
-                  />
-                </div>
+              <div className="space-y-4 border-l pl-10 border-dashed">
+                <Label className="text-[10px] font-bold uppercase opacity-40">SCROLL TEXT 1 (EN)</Label>
+                <Input value={formData.videoTitleEn} onChange={e => setFormData({...formData, videoTitleEn: e.target.value})} className="h-11 rounded-xl border-dashed" />
+                <Label className="text-[10px] font-bold uppercase opacity-40">SCROLL TEXT 2 (EN)</Label>
+                <Input value={formData.videoSubtitleEn} onChange={e => setFormData({...formData, videoSubtitleEn: e.target.value})} className="h-11 rounded-xl border-dashed" />
               </div>
             </div>
           </div>
@@ -442,69 +382,156 @@ export default function AdminHomePage() {
         {/* Global Map Section */}
         <TabsContent value="map" className="space-y-6">
           <div className="bg-white p-8 rounded-3xl border shadow-sm space-y-8">
-            <div className="flex items-center justify-between border-b pb-4 mb-6">
+            <div className="flex items-center justify-between border-b pb-4">
               <div className="space-y-1">
                 <h3 className="text-sm font-bold text-primary uppercase tracking-widest flex items-center gap-2">
-                  <MapPin className="h-4 w-4" /> 全球布局文案
+                  <MapPin className="h-4 w-4" /> 全球网点配置
                 </h3>
-                <p className="text-[10px] text-muted-foreground uppercase font-medium">配置地图板块的标题和描述。</p>
+                <p className="text-[10px] text-muted-foreground uppercase font-medium">配置地图上显示的 HQ、研发中心及全球工厂。</p>
               </div>
-              <Button 
-                variant="ghost" 
-                size="sm" 
-                className="ai-btn-glow h-9 px-4 text-[10px] gap-2 font-bold"
-                onClick={() => handleTranslate([{source: 'mapTitleZh', targetKey: 'mapTitleEn'}, {source: 'mapSubtitleZh', targetKey: 'mapSubtitleEn'}])}
-                disabled={isAiProcessing}
-              >
-                <Sparkles className="h-3.5 w-3.5 ai-icon-gradient" /> AI 智译本页
+              <Button onClick={() => {
+                setLocationLocationForm({ id: '', type: 'Factory', titleZh: '', titleEn: '', addressZh: '', addressEn: '', descZh: '', descEn: '', imageUrl: '', posTop: '50%', posLeft: '50%' });
+                setEditingLocation(null);
+                setIsLocationDialogOpen(true);
+              }} className="rounded-xl h-10 px-6 gap-2 text-xs font-bold uppercase tracking-widest">
+                <Plus className="h-4 w-4" /> 新增网点
               </Button>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
-              <div className="space-y-6">
-                <div className="space-y-2">
-                  <Label className="text-[10px] font-bold uppercase text-primary/40 tracking-wider">标题 (中文)</Label>
-                  <Input 
-                    value={formData.mapTitleZh} 
-                    onChange={e => setFormData({...formData, mapTitleZh: e.target.value})}
-                    placeholder="如：全球布局"
-                    className="h-11 rounded-xl text-xs bg-muted/10"
-                  />
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {(formData.locations || []).map((loc: any, idx: number) => (
+                <Card key={loc.id} className="rounded-2xl border-border/40 overflow-hidden group hover:border-primary/40 transition-all">
+                  <div className="relative h-32 bg-muted/20">
+                    {loc.imageUrl && <img src={loc.imageUrl} alt="" className="w-full h-full object-cover" />}
+                    <div className="absolute top-2 left-2">
+                      <Badge className="bg-primary text-white text-[8px] uppercase">{loc.type}</Badge>
+                    </div>
+                    <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
+                       <Button variant="secondary" size="icon" className="h-8 w-8 rounded-full" onClick={() => { setEditingLocation(loc); setLocationLocationForm(loc); setIsLocationDialogOpen(true); }}><Edit2 className="h-3.5 w-3.5" /></Button>
+                       <Button variant="destructive" size="icon" className="h-8 w-8 rounded-full" onClick={() => {
+                         const newList = formData.locations.filter((l:any) => l.id !== loc.id);
+                         setFormData({...formData, locations: newList});
+                       }}><Trash2 className="h-3.5 w-3.5" /></Button>
+                    </div>
+                  </div>
+                  <CardContent className="p-4 space-y-2">
+                    <h4 className="text-xs font-bold text-primary truncate">{loc.titleZh}</h4>
+                    <p className="text-[10px] text-muted-foreground line-clamp-1">{loc.addressZh}</p>
+                    <div className="flex justify-between items-center pt-2 border-t border-dashed">
+                      <span className="text-[8px] font-mono opacity-40">Map: {loc.posLeft}, {loc.posTop}</span>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+              {(!formData.locations || formData.locations.length === 0) && (
+                <div className="col-span-full py-20 text-center border-2 border-dashed rounded-2xl bg-muted/5">
+                  <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest">暂无网点数据，将显示默认中心</p>
                 </div>
-                <div className="space-y-2">
-                  <Label className="text-[10px] font-bold uppercase text-primary/40 tracking-wider">副标题 (中文)</Label>
-                  <Textarea 
-                    value={formData.mapSubtitleZh} 
-                    onChange={e => setFormData({...formData, mapSubtitleZh: e.target.value})}
-                    placeholder="如：战略布局，服务全球品牌。"
-                    className="min-h-[100px] rounded-xl text-xs bg-muted/10"
-                  />
-                </div>
-              </div>
-              <div className="space-y-6 border-l pl-10 border-dashed">
-                <div className="space-y-2">
-                  <Label className="text-[10px] font-bold uppercase text-primary/40 tracking-wider">MAP TITLE (EN)</Label>
-                  <Input 
-                    value={formData.mapTitleEn} 
-                    onChange={e => setFormData({...formData, mapTitleEn: e.target.value})}
-                    placeholder="GLOBAL FOOTPRINT"
-                    className="h-11 rounded-xl text-xs border-dashed"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label className="text-[10px] font-bold uppercase text-primary/40 tracking-wider">SUBTITLE (EN)</Label>
-                  <Textarea 
-                    value={formData.mapSubtitleEn} 
-                    onChange={e => setFormData({...formData, mapSubtitleEn: e.target.value})}
-                    placeholder="STRATEGICALLY LOCATED TO SERVE GLOBAL BRANDS."
-                    className="min-h-[100px] rounded-xl text-xs border-dashed"
-                  />
-                </div>
-              </div>
+              )}
             </div>
           </div>
         </TabsContent>
       </Tabs>
+
+      {/* Location Editor Dialog */}
+      <Dialog open={isLocationDialogOpen} onOpenChange={setIsLocationDialogOpen}>
+        <DialogContent className="max-w-4xl p-0 rounded-3xl overflow-hidden border-none shadow-2xl">
+          <div className="bg-primary p-6 text-white flex items-center justify-between">
+            <DialogHeader>
+              <DialogTitle className="text-lg font-bold flex items-center gap-2">
+                <MapPin className="h-5 w-5" /> {editingLocation ? '编辑网点' : '新增全球网点'}
+              </DialogTitle>
+              <DialogDescription className="text-white/60 text-xs">填写网点详细信息，包括双语翻译及地图定位坐标。</DialogDescription>
+            </DialogHeader>
+            <Button variant="ghost" onClick={handleTranslateLocation} className="ai-btn-glow h-10 px-5 gap-2 text-xs">
+              <Sparkles className="h-4 w-4 ai-icon-gradient" /> AI 智译信息
+            </Button>
+          </div>
+
+          <div className="p-8 bg-white grid grid-cols-1 md:grid-cols-2 gap-10">
+            <div className="space-y-6">
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label className="text-[10px] font-bold uppercase opacity-40">网点类型</Label>
+                  <Select value={locationForm.type} onValueChange={v => setLocationLocationForm({...locationForm, type: v})}>
+                    <SelectTrigger className="h-10 rounded-xl"><SelectValue /></SelectTrigger>
+                    <SelectContent className="rounded-xl">
+                      <SelectItem value="HQ">总部 (HQ)</SelectItem>
+                      <SelectItem value="R&D">研发中心 (R&D)</SelectItem>
+                      <SelectItem value="Factory">制造工厂 (Factory)</SelectItem>
+                      <SelectItem value="Global">全球分支 (Global)</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-[10px] font-bold uppercase opacity-40">网点图标预览</Label>
+                  <div className="h-10 flex items-center gap-3 px-4 bg-muted/10 rounded-xl">
+                    {locationForm.type === 'HQ' && <Building2 className="h-5 w-5 text-primary" />}
+                    {locationForm.type === 'R&D' && <Microscope className="h-5 w-5 text-primary" />}
+                    {locationForm.type === 'Factory' && <Factory className="h-5 w-5 text-primary" />}
+                    {locationForm.type === 'Global' && <Globe className="h-5 w-5 text-primary" />}
+                    <span className="text-[10px] font-bold">{locationForm.type} ICON</span>
+                  </div>
+                </div>
+              </div>
+
+              <div className="space-y-4">
+                <div className="space-y-2">
+                  <Label className="text-[10px] font-bold uppercase opacity-40">网点名称 (ZH)</Label>
+                  <Input value={locationForm.titleZh} onChange={e => setLocationLocationForm({...locationForm, titleZh: e.target.value})} className="h-10 rounded-xl" />
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-[10px] font-bold uppercase opacity-40">详细地址 (ZH)</Label>
+                  <Input value={locationForm.addressZh} onChange={e => setLocationLocationForm({...locationForm, addressZh: e.target.value})} className="h-10 rounded-xl" />
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-[10px] font-bold uppercase opacity-40">网点介绍 (ZH)</Label>
+                  <Textarea value={locationForm.descZh} onChange={e => setLocationLocationForm({...locationForm, descZh: e.target.value})} className="min-h-[80px] rounded-xl" />
+                </div>
+              </div>
+            </div>
+
+            <div className="space-y-6">
+              <div className="space-y-4 border-l pl-8 border-dashed">
+                <div className="space-y-2">
+                  <Label className="text-[10px] font-bold uppercase opacity-40">NAME (EN)</Label>
+                  <Input value={locationForm.titleEn} onChange={e => setLocationLocationForm({...locationForm, titleEn: e.target.value})} className="h-10 rounded-xl border-dashed" />
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-[10px] font-bold uppercase opacity-40">ADDRESS (EN)</Label>
+                  <Input value={locationForm.addressEn} onChange={e => setLocationLocationForm({...locationForm, addressEn: e.target.value})} className="h-10 rounded-xl border-dashed" />
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-[10px] font-bold uppercase opacity-40">DESCRIPTION (EN)</Label>
+                  <Textarea value={locationForm.descEn} onChange={e => setLocationLocationForm({...locationForm, descEn: e.target.value})} className="min-h-[80px] rounded-xl border-dashed" />
+                </div>
+              </div>
+
+              <div className="space-y-4 pt-4 border-t">
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label className="text-[10px] font-bold uppercase opacity-40 flex items-center gap-2"><Settings2 className="h-3 w-3" /> 坐标 Left (%)</Label>
+                    <Input value={locationForm.posLeft} onChange={e => setLocationLocationForm({...locationForm, posLeft: e.target.value})} placeholder="如: 75%" className="h-10 rounded-xl font-mono" />
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="text-[10px] font-bold uppercase opacity-40 flex items-center gap-2"><Settings2 className="h-3 w-3" /> 坐标 Top (%)</Label>
+                    <Input value={locationForm.posTop} onChange={e => setLocationLocationForm({...locationForm, posTop: e.target.value})} placeholder="如: 40%" className="h-10 rounded-xl font-mono" />
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-[10px] font-bold uppercase opacity-40">网点实景/形象图 URL</Label>
+                  <Input value={locationForm.imageUrl} onChange={e => setLocationLocationForm({...locationForm, imageUrl: e.target.value})} placeholder="https://..." className="h-10 rounded-xl" />
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <DialogFooter className="bg-muted/10 p-6 flex gap-3 border-t">
+            <Button variant="outline" onClick={() => setIsLocationDialogOpen(false)} className="rounded-xl h-11 flex-1 font-bold uppercase text-[10px]">取消</Button>
+            <Button onClick={handleLocationSubmit} className="rounded-xl h-11 flex-1 font-bold uppercase text-[10px]">确认并保存网点</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
