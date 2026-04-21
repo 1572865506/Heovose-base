@@ -41,7 +41,8 @@ import {
   Factory,
   ChevronDown,
   Plus,
-  ArrowUpRight
+  ArrowUpRight,
+  Image as ImageIcon
 } from 'lucide-react';
 import { 
   Table, 
