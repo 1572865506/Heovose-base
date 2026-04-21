@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/tabs";
 import { 
   Select,
   SelectContent,
@@ -507,16 +507,6 @@ export default function AdminHomePage() {
                     )}
                   </div>
                 </div>
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label className="text-[10px] font-bold uppercase opacity-40">地图坐标 Left (%)</Label>
-                    <Input value={locationForm.posLeft} onChange={e => setLocationForm({...locationForm, posLeft: e.target.value})} placeholder="如: 75%" className="h-10 rounded-xl font-mono" />
-                  </div>
-                  <div className="space-y-2">
-                    <Label className="text-[10px] font-bold uppercase opacity-40">地图坐标 Top (%)</Label>
-                    <Input value={locationForm.posTop} onChange={e => setLocationForm({...locationForm, posTop: e.target.value})} placeholder="如: 40%" className="h-10 rounded-xl font-mono" />
-                  </div>
-                </div>
               </div>
             </div>
 
@@ -540,6 +530,18 @@ export default function AdminHomePage() {
                 <div className="space-y-2">
                   <Label className="text-[10px] font-bold uppercase opacity-40">DESCRIPTION (EN)</Label>
                   <Textarea value={locationForm.descEn} onChange={e => setLocationForm({...locationForm, descEn: e.target.value})} className="min-h-[80px] rounded-xl border-dashed" />
+                </div>
+              </div>
+
+              {/* 地图坐标输入框 - 移动到右侧 */}
+              <div className="grid grid-cols-2 gap-4 pt-4 border-l pl-8 border-dashed border-t">
+                <div className="space-y-2">
+                  <Label className="text-[10px] font-bold uppercase opacity-40">地图坐标 Left (%)</Label>
+                  <Input value={locationForm.posLeft} onChange={e => setLocationForm({...locationForm, posLeft: e.target.value})} placeholder="如: 75%" className="h-10 rounded-xl font-mono" />
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-[10px] font-bold uppercase opacity-40">地图坐标 Top (%)</Label>
+                  <Input value={locationForm.posTop} onChange={e => setLocationForm({...locationForm, posTop: e.target.value})} placeholder="如: 40%" className="h-10 rounded-xl font-mono" />
                 </div>
               </div>
             </div>
@@ -605,3 +607,4 @@ export default function AdminHomePage() {
     </div>
   );
 }
+
