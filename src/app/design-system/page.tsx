@@ -1,7 +1,7 @@
 
 "use client";
 
-import React from 'react';
+import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
@@ -10,27 +10,27 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Slider } from '@/components/ui/slider';
 import { Progress } from '@/components/ui/progress';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { Separator } from '@/components/ui/separator';
 import { 
   Sparkles, 
   Settings, 
-  Package, 
   ShieldCheck, 
   Info, 
   AlertTriangle, 
-  CheckCircle2,
+  LayoutGrid,
+  Monitor,
+  ShoppingBag,
+  Building2,
+  Check,
+  Search,
   ChevronRight,
-  Plus,
-  Trash2,
-  Globe,
-  Monitor
+  AppWindow,
+  Cpu
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
-// AI 极光渐变定义组件 (必须包含在页面中以使 .ai-icon-gradient 生效)
+// AI 极光渐变定义组件
 const AiGradientDef = () => (
   <svg width="0" height="0" className="absolute">
     <defs>
@@ -53,292 +53,255 @@ const AiGradientDef = () => (
 );
 
 export default function DesignSystemPage() {
+  const [activeSystem, setActiveSystem] = useState('frontend');
+
   return (
     <div className="min-h-screen bg-[#F8F9FA] pb-40">
       <AiGradientDef />
       
-      {/* 顶部标题栏 */}
-      <header className="bg-white border-b border-border/40 sticky top-0 z-50 px-8 py-4 flex items-center justify-between shadow-sm">
-        <div className="flex items-center gap-4">
+      {/* 系统切换主导航 */}
+      <header className="bg-white border-b border-border/40 sticky top-0 z-[100] px-8 py-4 flex items-center justify-between shadow-sm">
+        <div className="flex items-center gap-6">
           <div className="h-10 w-10 bg-primary rounded-xl flex items-center justify-center text-white shadow-lg">
-            <Settings className="h-6 w-6" />
+            <Cpu className="h-6 w-6" />
           </div>
           <div>
-            <h1 className="text-lg font-bold text-primary uppercase tracking-widest">Heovose Design System</h1>
-            <p className="text-[10px] text-muted-foreground font-bold uppercase opacity-60">UI/UX Kit v1.2 • Development Preview</p>
+            <h1 className="text-lg font-bold text-primary uppercase tracking-widest">Heovose Design Labs</h1>
+            <p className="text-[10px] text-muted-foreground font-bold uppercase opacity-60">Visual Sandbox • Dual-System Debugging</p>
           </div>
         </div>
-        <div className="flex gap-2">
-           <Badge variant="outline" className="h-8 px-3 rounded-lg border-green-200 bg-green-50 text-green-700 font-bold text-[10px] uppercase">
-             Live Styles Enabled
-           </Badge>
-           <Button variant="ghost" size="sm" onClick={() => window.location.href = '/'} className="text-xs font-bold uppercase tracking-widest">Back to Front-end</Button>
+
+        <div className="flex bg-muted/40 p-1 rounded-full border border-border/20">
+          <button 
+            onClick={() => setActiveSystem('frontend')}
+            className={cn(
+              "px-6 py-2 rounded-full text-[10px] font-bold uppercase tracking-widest transition-all",
+              activeSystem === 'frontend' ? "bg-white text-primary shadow-md" : "text-muted-foreground hover:text-primary"
+            )}
+          >
+            Front-end (User)
+          </button>
+          <button 
+            onClick={() => setActiveSystem('backend')}
+            className={cn(
+              "px-6 py-2 rounded-full text-[10px] font-bold uppercase tracking-widest transition-all",
+              activeSystem === 'backend' ? "bg-white text-primary shadow-md" : "text-muted-foreground hover:text-primary"
+            )}
+          >
+            Back-end (Admin)
+          </button>
         </div>
       </header>
 
-      <div className="max-w-7xl mx-auto px-8 pt-12 space-y-20">
+      <div className="max-w-7xl mx-auto px-8 pt-12">
         
-        {/* 色彩系统 */}
-        <section className="space-y-8">
-          <div className="flex items-center gap-4 border-b pb-4">
-            <div className="h-2 w-10 bg-primary rounded-full" />
-            <h2 className="text-xl font-bold uppercase tracking-widest">01. Color Palette</h2>
-          </div>
-          <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-6">
-            <ColorBlock label="Primary Blue" variable="bg-primary" hex="#005B99" description="Brand identity & Wholesale" />
-            <ColorBlock label="Project Orange" variable="bg-[#F97316]" hex="#F97316" description="Project solutions" />
-            <ColorBlock label="Accent Yellow" variable="bg-accent" hex="#FCDC00" description="Highlights & AI states" />
-            <ColorBlock label="Background" variable="bg-background" hex="#F8F9FA" description="Global page bg" />
-            <ColorBlock label="Neutral 900" variable="bg-[#101820]" hex="#101820" description="Headlines & Text" />
-            <ColorBlock label="Neutral 500" variable="bg-muted-foreground" hex="#3C434A" description="Body & Captions" />
-          </div>
-        </section>
-
-        {/* 字体排版 */}
-        <section className="space-y-8">
-          <div className="flex items-center gap-4 border-b pb-4">
-            <div className="h-2 w-10 bg-primary rounded-full" />
-            <h2 className="text-xl font-bold uppercase tracking-widest">02. Typography</h2>
-          </div>
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
-            <div className="space-y-6 bg-white p-8 rounded-3xl border shadow-sm">
-              <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Headlines / Space Grotesk</span>
-              <div className="space-y-4">
-                <h1 className="text-6xl font-bold">Heading 01</h1>
-                <h2 className="text-4xl font-bold">Heading 02</h2>
-                <h3 className="text-2xl font-bold">Heading 03</h3>
-                <h4 className="text-xl font-bold">Heading 04</h4>
+        {activeSystem === 'frontend' ? (
+          <div className="space-y-20 animate-in fade-in slide-in-from-bottom-4 duration-700">
+            {/* 01. 前台品牌基础 */}
+            <section className="space-y-8">
+              <div className="flex items-center gap-4 border-b pb-4">
+                <div className="h-2 w-10 bg-primary rounded-full" />
+                <h2 className="text-xl font-headline font-bold uppercase tracking-widest">Front-end Identity</h2>
               </div>
-            </div>
-            <div className="space-y-6 bg-white p-8 rounded-3xl border shadow-sm">
-              <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Body Text / Inter</span>
-              <div className="space-y-6">
-                <p className="text-lg leading-relaxed">Large Body: Let excellent application solutions benefit the world! This is a longer paragraph to test readability and line height.</p>
-                <p className="text-sm leading-relaxed text-muted-foreground">Standard Body: Global Intelligence Manufacturing strategies and premium computing hardware solutions.</p>
-                <p className="text-xs font-medium uppercase tracking-widest text-primary">Caption Small: High-end technology manufacturing solutions.</p>
-              </div>
-            </div>
-          </div>
-        </section>
-
-        {/* 按钮矩阵 */}
-        <section className="space-y-8">
-          <div className="flex items-center gap-4 border-b pb-4">
-            <div className="h-2 w-10 bg-primary rounded-full" />
-            <h2 className="text-xl font-bold uppercase tracking-widest">03. Buttons & Actions</h2>
-          </div>
-          <div className="bg-white p-10 rounded-3xl border shadow-sm space-y-12">
-             <div className="space-y-4">
-                <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest mb-6">Standard UI Buttons</p>
-                <div className="flex flex-wrap gap-4">
-                  <Button className="rounded-xl h-11 px-8 uppercase font-bold text-xs tracking-widest">Primary Action</Button>
-                  <Button variant="secondary" className="rounded-xl h-11 px-8 uppercase font-bold text-xs tracking-widest">Secondary</Button>
-                  <Button variant="outline" className="rounded-xl h-11 px-8 uppercase font-bold text-xs tracking-widest">Outline Style</Button>
-                  <Button variant="ghost" className="rounded-xl h-11 px-6 uppercase font-bold text-xs tracking-widest">Ghost Button</Button>
-                  <Button variant="destructive" className="rounded-xl h-11 px-6 uppercase font-bold text-xs tracking-widest">Destructive</Button>
-                </div>
-             </div>
-
-             <div className="space-y-6 pt-10 border-t border-dashed">
-                <div className="flex items-center justify-between">
-                   <p className="text-[10px] font-bold text-primary uppercase tracking-[0.2em] flex items-center gap-2">
-                     <Sparkles className="h-4 w-4 ai-icon-gradient" /> AI Enhanced Components
-                   </p>
-                </div>
-                <div className="flex flex-wrap gap-8 items-center">
-                  <div className="space-y-3">
-                    <span className="text-[9px] text-muted-foreground uppercase block font-bold">AI Glow Button (Default State)</span>
-                    <Button className="ai-btn-glow h-12 px-8 rounded-xl gap-2 font-bold uppercase tracking-widest text-xs">
-                       <Sparkles className="h-4 w-4 ai-icon-gradient" /> AI 智译本页
-                    </Button>
-                  </div>
-                  
-                  <div className="space-y-3">
-                    <span className="text-[9px] text-muted-foreground uppercase block font-bold">Active / Open State</span>
-                    <Button data-state="open" className="ai-btn-glow h-12 px-8 rounded-xl gap-2 font-bold uppercase tracking-widest text-xs">
-                       <Sparkles className="h-4 w-4 text-accent-foreground" /> AI 正在处理
-                    </Button>
-                  </div>
-
-                  <div className="space-y-3">
-                    <span className="text-[9px] text-muted-foreground uppercase block font-bold">Minimal AI Tool</span>
-                    <Button variant="ghost" size="icon" className="ai-btn-glow h-10 w-10 rounded-full">
-                       <Sparkles className="h-4 w-4 ai-icon-gradient" />
-                    </Button>
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
+                {/* 业务线配色对比 */}
+                <div className="space-y-6">
+                  <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Business Line Themes</span>
+                  <div className="grid grid-cols-2 gap-6">
+                    <div className="p-8 rounded-[2.5rem] bg-primary text-white space-y-4 shadow-xl">
+                      <ShoppingBag className="h-8 w-8 text-accent" />
+                      <h4 className="text-xl font-bold">Wholesale Line</h4>
+                      <p className="text-xs opacity-60 leading-relaxed font-medium">Classical Navy Blue (#005B99). Represents reliability and mass production.</p>
+                    </div>
+                    <div className="p-8 rounded-[2.5rem] bg-[#F97316] text-white space-y-4 shadow-xl">
+                      <Building2 className="h-8 w-8" />
+                      <h4 className="text-xl font-bold">Project Solutions</h4>
+                      <p className="text-xs opacity-60 leading-relaxed font-medium">Industrial Orange (#F97316). Represents innovation and integration.</p>
+                    </div>
                   </div>
                 </div>
-             </div>
-          </div>
-        </section>
 
-        {/* 表单控件 */}
-        <section className="space-y-8">
-          <div className="flex items-center gap-4 border-b pb-4">
-            <div className="h-2 w-10 bg-primary rounded-full" />
-            <h2 className="text-xl font-bold uppercase tracking-widest">04. Form Controls</h2>
-          </div>
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-             <Card className="rounded-3xl border-none shadow-xl">
-               <CardHeader><CardTitle className="text-sm font-bold uppercase">Inputs & Selects</CardTitle></CardHeader>
-               <CardContent className="space-y-6">
-                 <div className="space-y-2">
-                   <label className="text-[10px] font-bold uppercase opacity-40 ml-1">Default Input</label>
-                   <Input placeholder="Enter hardware specification..." className="rounded-xl h-11" />
-                 </div>
-                 <div className="space-y-2">
-                   <label className="text-[10px] font-bold uppercase opacity-40 ml-1">Dropdown Selection</label>
-                   <Select>
-                     <SelectTrigger className="h-11 rounded-xl">
-                       <SelectValue placeholder="Select Category" />
-                     </SelectTrigger>
-                     <SelectContent className="rounded-xl">
-                       <SelectItem value="aio">All-in-One PC</SelectItem>
-                       <SelectItem value="mini">Mini PC Series</SelectItem>
-                       <SelectItem value="led">Industrial LED</SelectItem>
-                     </SelectContent>
-                   </Select>
-                 </div>
-               </CardContent>
-             </Card>
-
-             <Card className="rounded-3xl border-none shadow-xl">
-               <CardHeader><CardTitle className="text-sm font-bold uppercase">Switches & Toggles</CardTitle></CardHeader>
-               <CardContent className="space-y-8">
-                 <div className="flex items-center justify-between p-4 bg-muted/20 rounded-2xl">
-                   <div className="space-y-1">
-                      <p className="text-xs font-bold uppercase">Feature Toggle</p>
-                      <p className="text-[9px] opacity-60">Enable real-time synchronization</p>
-                   </div>
-                   <Switch checked />
-                 </div>
-                 <div className="flex items-center gap-3 ml-1">
-                   <Checkbox id="terms" checked />
-                   <label htmlFor="terms" className="text-xs font-medium">Accept global terms and conditions</label>
-                 </div>
-               </CardContent>
-             </Card>
-
-             <Card className="rounded-3xl border-none shadow-xl">
-               <CardHeader><CardTitle className="text-sm font-bold uppercase">Range & Sliders</CardTitle></CardHeader>
-               <CardContent className="space-y-8">
+                {/* 前台圆角规范 */}
+                <div className="space-y-6">
+                  <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Signature Radii</span>
                   <div className="space-y-4">
-                    <div className="flex justify-between">
-                      <span className="text-[10px] font-bold uppercase opacity-40">Brightness</span>
-                      <span className="text-[10px] font-bold">85%</span>
+                    <div className="h-32 rounded-[2.5rem] bg-white border border-border/40 shadow-sm flex items-center justify-center">
+                       <span className="text-xs font-bold text-primary/40 uppercase tracking-widest">Rounded-2.5xl (Standard Card)</span>
                     </div>
-                    <Slider defaultValue={[85]} max={100} step={1} />
-                  </div>
-                  <div className="space-y-2 pt-4">
-                    <div className="flex justify-between">
-                      <span className="text-[10px] font-bold uppercase opacity-40">System Load</span>
-                      <span className="text-[10px] font-bold">42%</span>
+                    <div className="h-32 rounded-[3rem] bg-muted/20 border border-dashed border-border flex items-center justify-center">
+                       <span className="text-xs font-bold text-primary/40 uppercase tracking-widest">Rounded-3xl (Section Wrapper)</span>
                     </div>
-                    <Progress value={42} className="h-2" />
                   </div>
-               </CardContent>
-             </Card>
-          </div>
-        </section>
+                </div>
+              </div>
+            </section>
 
-        {/* 状态与徽章 */}
-        <section className="space-y-8">
-          <div className="flex items-center gap-4 border-b pb-4">
-            <div className="h-2 w-10 bg-primary rounded-full" />
-            <h2 className="text-xl font-bold uppercase tracking-widest">05. Status & Badges</h2>
+            {/* 02. 前台交互组件 */}
+            <section className="space-y-8">
+              <div className="flex items-center gap-4 border-b pb-4">
+                <div className="h-2 w-10 bg-accent rounded-full" />
+                <h2 className="text-xl font-headline font-bold uppercase tracking-widest">Front-end Interaction</h2>
+              </div>
+              <div className="bg-white p-12 rounded-[3rem] border border-border/40 shadow-sm space-y-12">
+                <div className="space-y-6">
+                  <p className="text-[10px] font-bold text-primary uppercase tracking-[0.2em] flex items-center gap-2">
+                    <Sparkles className="h-4 w-4 ai-icon-gradient" /> AI Core Component
+                  </p>
+                  <div className="flex flex-wrap gap-8 items-center">
+                    <Button className="ai-btn-glow h-16 px-10 rounded-2xl gap-3 font-bold uppercase tracking-widest text-sm shadow-2xl">
+                       <Sparkles className="h-5 w-5 ai-icon-gradient" /> AI 智译本页
+                    </Button>
+                    <div className="p-4 bg-muted/20 rounded-2xl border border-dashed text-[10px] text-muted-foreground font-medium max-w-xs leading-relaxed">
+                      前台 AI 按钮采用 <span className="text-primary font-bold">Rounded-2xl</span> 与更大幅度的阴影，强调“智能资产”的独特性。
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </section>
           </div>
-          <div className="bg-white p-10 rounded-3xl border shadow-sm grid grid-cols-1 md:grid-cols-2 gap-12">
-            <div className="space-y-6">
-               <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest mb-6">Badge Varieties</p>
-               <div className="flex flex-wrap gap-3">
-                 <Badge className="bg-primary px-3 py-1 text-[10px] uppercase font-bold tracking-widest">Published</Badge>
-                 <Badge variant="outline" className="px-3 py-1 text-[10px] uppercase font-bold tracking-widest">Draft</Badge>
-                 <Badge className="bg-green-50 text-green-700 border-green-200 px-3 py-1 text-[10px] uppercase font-bold tracking-widest">EN READY</Badge>
-                 <Badge className="bg-orange-50 text-orange-700 border-orange-200 px-3 py-1 text-[10px] uppercase font-bold tracking-widest">Urgent</Badge>
-                 <Badge className="bg-accent text-accent-foreground px-3 py-1 text-[10px] uppercase font-bold tracking-widest">Featured</Badge>
-               </div>
-            </div>
+        ) : (
+          <div className="space-y-20 animate-in fade-in slide-in-from-bottom-4 duration-700">
+            {/* 01. 后台规范 (依 Manifest) */}
+            <section className="space-y-8">
+              <div className="flex items-center gap-4 border-b pb-4 border-primary/20">
+                <div className="h-2 w-10 bg-primary rounded-full" />
+                <h2 className="text-xl font-bold uppercase tracking-widest text-primary">Admin System Standards</h2>
+              </div>
+              
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+                {/* 1.1 圆角标准测试 */}
+                <div className="space-y-4">
+                  <span className="text-[10px] font-bold text-primary/40 uppercase tracking-widest">1.1 Border Radius</span>
+                  <div className="space-y-4">
+                    <div className="p-6 rounded-2xl bg-white border border-border/40 shadow-sm">
+                      <span className="text-[10px] font-bold uppercase tracking-widest opacity-40">Container (16px)</span>
+                      <div className="mt-4 p-4 rounded-xl bg-muted/20 border border-border/40">
+                         <span className="text-[10px] font-bold uppercase tracking-widest opacity-40">Internal (12px)</span>
+                         <Button className="mt-4 w-full rounded-lg h-10 text-[10px] font-bold uppercase tracking-wider">
+                           Component (8px)
+                         </Button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
 
-            <div className="space-y-4">
-              <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest mb-6">Alert Notifications</p>
-              <Alert className="rounded-2xl border-primary/20 bg-primary/5">
-                <ShieldCheck className="h-4 w-4 text-primary" />
-                <AlertTitle className="text-xs font-bold uppercase tracking-tight">Security Check Passed</AlertTitle>
-                <AlertDescription className="text-[10px] opacity-70">Your credentials have been verified by the central command.</AlertDescription>
-              </Alert>
-              <Alert variant="destructive" className="rounded-2xl border-destructive/20 bg-destructive/5">
-                <AlertTriangle className="h-4 w-4" />
-                <AlertTitle className="text-xs font-bold uppercase tracking-tight">Connection Failed</AlertTitle>
-                <AlertDescription className="text-[10px] opacity-70">Model RPM quota has been exceeded. Please wait 60s.</AlertDescription>
-              </Alert>
-            </div>
-          </div>
-        </section>
-
-        {/* 布局组件 */}
-        <section className="space-y-8">
-          <div className="flex items-center gap-4 border-b pb-4">
-            <div className="h-2 w-10 bg-primary rounded-full" />
-            <h2 className="text-xl font-bold uppercase tracking-widest">06. Layout & Navigation</h2>
-          </div>
-          <div className="bg-white rounded-3xl border shadow-sm overflow-hidden">
-             <Tabs defaultValue="overview" className="w-full">
-               <TabsList className="bg-muted/30 p-1 h-14 w-full justify-start rounded-none px-6 border-b">
-                 <TabsTrigger value="overview" className="px-8 text-xs font-bold uppercase tracking-wider gap-2">Overview</TabsTrigger>
-                 <TabsTrigger value="specs" className="px-8 text-xs font-bold uppercase tracking-wider gap-2">Specifications</TabsTrigger>
-                 <TabsTrigger value="gallery" className="px-8 text-xs font-bold uppercase tracking-wider gap-2">Asset Gallery</TabsTrigger>
-               </TabsList>
-               <TabsContent value="overview" className="p-10 animate-in fade-in slide-in-from-left-4 duration-500">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
+                {/* 1.3 字体标准测试 */}
+                <div className="space-y-4">
+                  <span className="text-[10px] font-bold text-primary/40 uppercase tracking-widest">1.3 Typography Logic</span>
+                  <div className="p-6 rounded-2xl bg-white border border-border/40 space-y-6">
+                    <div className="space-y-1.5 border-b pb-4">
+                      <h4 className="text-sm font-bold text-primary uppercase tracking-widest flex items-center gap-2">
+                        <AppWindow className="h-4 w-4" /> Section Heading
+                      </h4>
+                      <p className="text-[10px] text-muted-foreground font-medium uppercase">Admin Manifest 1.2 Hierarchy</p>
+                    </div>
                     <div className="space-y-4">
-                      <h4 className="text-2xl font-bold text-primary">Component Architecture</h4>
-                      <p className="text-sm text-muted-foreground leading-relaxed">
-                        Testing the combination of tabs, typography and spacing in a standard content view. 
-                        The layout should feel airy yet structured for industrial applications.
-                      </p>
-                      <Button className="rounded-xl px-10 gap-2">
-                        Get Started <ChevronRight className="h-4 w-4" />
-                      </Button>
-                    </div>
-                    <div className="relative aspect-video rounded-3xl bg-muted/30 border border-dashed border-border/60 overflow-hidden flex items-center justify-center">
-                       <Monitor className="h-12 w-12 opacity-10" />
-                       <span className="absolute bottom-4 text-[9px] font-bold uppercase opacity-30 tracking-[0.3em]">Placeholder Container</span>
+                       <div className="space-y-1.5">
+                         <Label className="text-[10px] font-bold uppercase tracking-wider">Field Label</Label>
+                         <Input placeholder="Form Content Alignment (12px)" value="Standard text-xs" readOnly className="h-10 text-xs" />
+                       </div>
+                       <div className="p-3 bg-primary/5 rounded-lg border border-primary/10">
+                          <p className="text-[9px] text-primary leading-relaxed italic font-medium">
+                            白皮书准则：后台表单内容与占位符强制对齐，统一使用 12px (text-xs)。
+                          </p>
+                       </div>
                     </div>
                   </div>
-               </TabsContent>
-             </Tabs>
+                </div>
+
+                {/* 1.4 状态反馈测试 */}
+                <div className="space-y-4">
+                  <span className="text-[10px] font-bold text-primary/40 uppercase tracking-widest">1.4 Border & States</span>
+                  <div className="p-6 rounded-2xl bg-white border border-border/40 space-y-6">
+                     <div className="space-y-3">
+                        <Label className="text-[10px] font-bold uppercase opacity-40">Idle Background</Label>
+                        <div className="h-10 bg-muted/20 border border-border/60 rounded-lg" />
+                     </div>
+                     <div className="space-y-3">
+                        <Label className="text-[10px] font-bold uppercase text-primary">Focused State</Label>
+                        <div className="h-10 bg-muted/10 border-primary/50 ring-4 ring-primary/5 rounded-lg flex items-center px-3">
+                           <div className="h-1 w-4 bg-primary rounded-full animate-pulse" />
+                        </div>
+                     </div>
+                     <div className="pt-4 border-t border-dashed">
+                        <div className="flex items-center gap-3">
+                           <div className="h-8 w-8 rounded-full bg-green-50 flex items-center justify-center">
+                              <Check className="h-4 w-4 text-green-600" />
+                           </div>
+                           <span className="text-[10px] font-bold text-muted-foreground uppercase">Compliance Validated</span>
+                        </div>
+                     </div>
+                  </div>
+                </div>
+              </div>
+            </section>
+
+            {/* 02. 后台专用组件 */}
+            <section className="space-y-8">
+              <div className="flex items-center gap-4 border-b pb-4 border-primary/20">
+                <div className="h-2 w-10 bg-primary rounded-full" />
+                <h2 className="text-xl font-bold uppercase tracking-widest text-primary">Admin System Controls</h2>
+              </div>
+              <div className="bg-white p-10 rounded-2xl border border-border/40 shadow-sm">
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
+                   <div className="space-y-8">
+                      <div className="space-y-4">
+                        <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Admin AI Interactions (2.2)</p>
+                        <div className="flex flex-wrap gap-6 items-end">
+                           <div className="space-y-2">
+                             <span className="text-[9px] opacity-40 block">Full Version</span>
+                             <Button className="ai-btn-glow h-10 px-5 rounded-lg gap-2 font-bold uppercase tracking-widest text-[10px]">
+                               <Sparkles className="h-3.5 w-3.5 ai-icon-gradient" /> AI 智译
+                             </Button>
+                           </div>
+                           <div className="space-y-2">
+                             <span className="text-[9px] opacity-40 block">Minimal Version</span>
+                             <Button variant="ghost" size="icon" className="ai-btn-glow h-9 w-9 rounded-lg">
+                               <Sparkles className="h-3.5 w-3.5 ai-icon-gradient" />
+                             </Button>
+                           </div>
+                        </div>
+                      </div>
+                   </div>
+                   
+                   <div className="space-y-6">
+                      <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Feedback & Toast Specs</p>
+                      <Alert className="rounded-xl border-primary/20 bg-primary/5">
+                        <ShieldCheck className="h-4 w-4 text-primary" />
+                        <AlertTitle className="text-[10px] font-bold uppercase tracking-tight">Security Context Active</AlertTitle>
+                        <AlertDescription className="text-[10px] opacity-70">Admin layout uses consistent padding p-6 (24px) globally.</AlertDescription>
+                      </Alert>
+                   </div>
+                </div>
+              </div>
+            </section>
           </div>
-        </section>
+        )}
       </div>
 
-      {/* 浮动底部信息 */}
-      <footer className="fixed bottom-0 left-0 right-0 bg-white/80 backdrop-blur-md border-t border-border/40 px-12 py-3 flex items-center justify-between z-50">
+      {/* 固定底部状态栏 */}
+      <footer className="fixed bottom-0 left-0 right-0 bg-white/90 backdrop-blur-md border-t border-border/40 px-12 py-3 flex items-center justify-between z-[110]">
         <div className="flex items-center gap-8">
            <div className="flex items-center gap-2">
              <div className="h-2 w-2 rounded-full bg-green-500 animate-pulse" />
-             <span className="text-[10px] font-bold uppercase tracking-widest text-primary">System Core v1.2</span>
+             <span className="text-[10px] font-bold uppercase tracking-widest text-primary">Lab Core v1.3</span>
            </div>
-           <Separator orientation="vertical" className="h-4" />
+           <div className="h-4 w-px bg-border/60" />
            <div className="flex items-center gap-2">
-             <Globe className="h-3 w-3 opacity-40" />
-             <span className="text-[10px] font-bold uppercase tracking-widest opacity-40">Ready for Global Deployment</span>
+             <AppWindow className="h-3.5 w-3.5 opacity-40" />
+             <span className="text-[10px] font-bold uppercase tracking-widest opacity-40">
+               {activeSystem === 'frontend' ? 'Debugging: Brand Layer' : 'Debugging: Admin Manifest v1.8'}
+             </span>
            </div>
         </div>
-        <p className="text-[9px] font-bold uppercase tracking-[0.2em] opacity-40">Design Standards Compliance: Whitepaper v1.8</p>
+        <p className="text-[9px] font-bold uppercase tracking-[0.2em] opacity-40">Development Environment Only</p>
       </footer>
     </div>
   );
 }
 
-// 辅助子组件：色彩块
-function ColorBlock({ label, variable, hex, description }: { label: string, variable: string, hex: string, description: string }) {
-  return (
-    <div className="space-y-3 group">
-      <div className={cn("aspect-square rounded-3xl shadow-lg border border-white/20 transition-transform group-hover:scale-105 duration-500", variable)} />
-      <div className="space-y-0.5 px-1">
-        <p className="text-[11px] font-bold text-primary">{label}</p>
-        <p className="text-[9px] font-mono text-muted-foreground uppercase">{hex}</p>
-        <p className="text-[9px] text-muted-foreground/60 leading-tight pt-1">{description}</p>
-      </div>
-    </div>
-  );
+// 辅助组件：Label
+function Label({ children, className }: { children: React.ReactNode, className?: string }) {
+  return <label className={cn("block", className)}>{children}</label>;
 }
