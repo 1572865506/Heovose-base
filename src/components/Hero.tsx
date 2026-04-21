@@ -15,7 +15,7 @@ interface HeroProps {
 export function Hero({ locale, homeConfig }: HeroProps) {
   const t = translations[locale].hero;
 
-  // 动态解析云端标题
+  // 动态解析云端文案
   const displayHeadline = locale === 'zh' 
     ? (homeConfig?.heroHeadlineZh || t.headline)
     : (homeConfig?.heroHeadlineEn || t.headline);
@@ -23,6 +23,14 @@ export function Hero({ locale, homeConfig }: HeroProps) {
   const displaySubheadline = locale === 'zh'
     ? (homeConfig?.heroSubheadlineZh || t.subheadline)
     : (homeConfig?.heroSubheadlineEn || t.subheadline);
+
+  const displayWholesaleButton = locale === 'zh'
+    ? (homeConfig?.heroWholesaleButtonZh || t.wholesale)
+    : (homeConfig?.heroWholesaleButtonEn || t.wholesale);
+
+  const displayProjectButton = locale === 'zh'
+    ? (homeConfig?.heroProjectButtonZh || t.project)
+    : (homeConfig?.heroProjectButtonEn || t.project);
 
   return (
     <section 
@@ -75,7 +83,7 @@ export function Hero({ locale, homeConfig }: HeroProps) {
                   <ShoppingBag className="h-7 w-7 stroke-[1.5]" />
                 </div>
                 <h3 className="text-xl md:text-2xl font-headline font-bold text-white leading-tight tracking-tight">
-                  {t.wholesale}
+                  {displayWholesaleButton}
                 </h3>
               </div>
             </Link>
@@ -91,7 +99,7 @@ export function Hero({ locale, homeConfig }: HeroProps) {
                   <Building2 className="h-7 w-7 stroke-[1.5]" />
                 </div>
                 <h3 className="text-xl md:text-2xl font-headline font-bold text-white leading-tight tracking-tight">
-                  {t.project}
+                  {displayProjectButton}
                 </h3>
               </div>
             </Link>

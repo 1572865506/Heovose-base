@@ -18,13 +18,15 @@ import {
   Film, 
   MapPin,
   ArrowRight,
-  Info
+  Info,
+  ExternalLink
 } from 'lucide-react';
 import { setDocumentNonBlocking } from '@/firebase/non-blocking-updates';
 import { useToast } from '@/hooks/use-toast';
 import { translateContent } from '@/ai/flows/translate-flow';
 import { cn } from '@/lib/utils';
 import { Badge } from '@/components/ui/badge';
+import { Separator } from '@/components/ui/separator';
 
 // AI 极光渐变定义组件
 const AiGradientDef = () => (
@@ -63,6 +65,10 @@ export default function AdminHomePage() {
     heroHeadlineEn: '',
     heroSubheadlineZh: '',
     heroSubheadlineEn: '',
+    heroWholesaleButtonZh: '',
+    heroWholesaleButtonEn: '',
+    heroProjectButtonZh: '',
+    heroProjectButtonEn: '',
     videoTitleZh: '',
     videoTitleEn: '',
     videoSubtitleZh: '',
@@ -170,15 +176,20 @@ export default function AdminHomePage() {
             <div className="flex items-center justify-between border-b pb-4 mb-6">
               <div className="space-y-1">
                 <h3 className="text-sm font-bold text-primary uppercase tracking-widest flex items-center gap-2">
-                  <ImageIcon className="h-4 w-4" /> 英雄屏核心文案
+                  <ImageIcon className="h-4 w-4" /> 英雄屏核心内容
                 </h3>
-                <p className="text-[10px] text-muted-foreground uppercase font-medium">配置首页顶部的冲击力标题。</p>
+                <p className="text-[10px] text-muted-foreground uppercase font-medium">配置首页顶部的冲击力标题及功能按钮。</p>
               </div>
               <Button 
                 variant="ghost" 
                 size="sm" 
                 className="ai-btn-glow h-9 px-4 text-[10px] gap-2 font-bold"
-                onClick={() => handleTranslate([{source: 'heroHeadlineZh', targetKey: 'heroHeadlineEn'}, {source: 'heroSubheadlineZh', targetKey: 'heroSubheadlineEn'}])}
+                onClick={() => handleTranslate([
+                  {source: 'heroHeadlineZh', targetKey: 'heroHeadlineEn'}, 
+                  {source: 'heroSubheadlineZh', targetKey: 'heroSubheadlineEn'},
+                  {source: 'heroWholesaleButtonZh', targetKey: 'heroWholesaleButtonEn'},
+                  {source: 'heroProjectButtonZh', targetKey: 'heroProjectButtonEn'}
+                ])}
                 disabled={isAiProcessing}
               >
                 <Sparkles className="h-3.5 w-3.5 ai-icon-gradient" /> AI 智译本页
@@ -186,45 +197,109 @@ export default function AdminHomePage() {
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
-              <div className="space-y-6">
-                <div className="space-y-2">
-                  <Label className="text-[10px] font-bold uppercase text-primary/40 tracking-wider">主标题 (中文)</Label>
-                  <Input 
-                    value={formData.heroHeadlineZh} 
-                    onChange={e => setFormData({...formData, heroHeadlineZh: e.target.value})}
-                    placeholder="如：一体机电脑"
-                    className="h-11 rounded-xl text-xs bg-muted/10 border-border/60"
-                  />
+              {/* Chinese Config */}
+              <div className="space-y-8">
+                <div className="space-y-4">
+                  <Badge variant="outline" className="text-[8px] font-bold text-primary/60 border-primary/20">标题文案 (ZH)</Badge>
+                  <div className="space-y-4 pl-2">
+                    <div className="space-y-2">
+                      <Label className="text-[10px] font-bold uppercase text-primary/40 tracking-wider">主标题</Label>
+                      <Input 
+                        value={formData.heroHeadlineZh} 
+                        onChange={e => setFormData({...formData, heroHeadlineZh: e.target.value})}
+                        placeholder="如：一体机电脑"
+                        className="h-11 rounded-xl text-xs bg-muted/5"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label className="text-[10px] font-bold uppercase text-primary/40 tracking-wider">副标题</Label>
+                      <Input 
+                        value={formData.heroSubheadlineZh} 
+                        onChange={e => setFormData({...formData, heroSubheadlineZh: e.target.value})}
+                        placeholder="如：专业制造商"
+                        className="h-11 rounded-xl text-xs bg-muted/5"
+                      />
+                    </div>
+                  </div>
                 </div>
-                <div className="space-y-2">
-                  <Label className="text-[10px] font-bold uppercase text-primary/40 tracking-wider">副标题 (中文)</Label>
-                  <Input 
-                    value={formData.heroSubheadlineZh} 
-                    onChange={e => setFormData({...formData, heroSubheadlineZh: e.target.value})}
-                    placeholder="如：专业制造商"
-                    className="h-11 rounded-xl text-xs bg-muted/10 border-border/60"
-                  />
+
+                <Separator className="bg-border/40 border-dashed" />
+
+                <div className="space-y-4">
+                  <Badge variant="outline" className="text-[8px] font-bold text-primary/60 border-primary/20">入口按钮 (ZH)</Badge>
+                  <div className="space-y-4 pl-2">
+                    <div className="space-y-2">
+                      <Label className="text-[10px] font-bold uppercase text-primary/40 tracking-wider">左侧入口 (批发产品)</Label>
+                      <Input 
+                        value={formData.heroWholesaleButtonZh} 
+                        onChange={e => setFormData({...formData, heroWholesaleButtonZh: e.target.value})}
+                        placeholder="批发产品"
+                        className="h-11 rounded-xl text-xs bg-muted/5"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label className="text-[10px] font-bold uppercase text-primary/40 tracking-wider">右侧入口 (项目产品)</Label>
+                      <Input 
+                        value={formData.heroProjectButtonZh} 
+                        onChange={e => setFormData({...formData, heroProjectButtonZh: e.target.value})}
+                        placeholder="项目产品"
+                        className="h-11 rounded-xl text-xs bg-muted/5"
+                      />
+                    </div>
+                  </div>
                 </div>
               </div>
 
-              <div className="space-y-6 border-l pl-10 border-dashed">
-                <div className="space-y-2">
-                  <Label className="text-[10px] font-bold uppercase text-primary/40 tracking-wider">MAIN HEADLINE (EN)</Label>
-                  <Input 
-                    value={formData.heroHeadlineEn} 
-                    onChange={e => setFormData({...formData, heroHeadlineEn: e.target.value})}
-                    placeholder="ALL IN ONE COMPUTER"
-                    className="h-11 rounded-xl text-xs bg-white border-dashed"
-                  />
+              {/* English Config */}
+              <div className="space-y-8 border-l pl-10 border-dashed">
+                <div className="space-y-4">
+                  <Badge variant="outline" className="text-[8px] font-bold text-primary/60 border-primary/20">HEADLINE CONTENT (EN)</Badge>
+                  <div className="space-y-4 pl-2">
+                    <div className="space-y-2">
+                      <Label className="text-[10px] font-bold uppercase text-primary/40 tracking-wider">MAIN HEADLINE</Label>
+                      <Input 
+                        value={formData.heroHeadlineEn} 
+                        onChange={e => setFormData({...formData, heroHeadlineEn: e.target.value})}
+                        placeholder="ALL IN ONE COMPUTER"
+                        className="h-11 rounded-xl text-xs bg-white border-dashed"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label className="text-[10px] font-bold uppercase text-primary/40 tracking-wider">SUBHEADLINE</Label>
+                      <Input 
+                        value={formData.heroSubheadlineEn} 
+                        onChange={e => setFormData({...formData, heroSubheadlineEn: e.target.value})}
+                        placeholder="PROFESSIONAL MANUFACTURER"
+                        className="h-11 rounded-xl text-xs bg-white border-dashed"
+                      />
+                    </div>
+                  </div>
                 </div>
-                <div className="space-y-2">
-                  <Label className="text-[10px] font-bold uppercase text-primary/40 tracking-wider">SUBHEADLINE (EN)</Label>
-                  <Input 
-                    value={formData.heroSubheadlineEn} 
-                    onChange={e => setFormData({...formData, heroSubheadlineEn: e.target.value})}
-                    placeholder="PROFESSIONAL MANUFACTURER"
-                    className="h-11 rounded-xl text-xs bg-white border-dashed"
-                  />
+
+                <Separator className="bg-border/40 border-dashed" />
+
+                <div className="space-y-4">
+                  <Badge variant="outline" className="text-[8px] font-bold text-primary/60 border-primary/20">ENTRY BUTTONS (EN)</Badge>
+                  <div className="space-y-4 pl-2">
+                    <div className="space-y-2">
+                      <Label className="text-[10px] font-bold uppercase text-primary/40 tracking-wider">LEFT ENTRY</Label>
+                      <Input 
+                        value={formData.heroWholesaleButtonEn} 
+                        onChange={e => setFormData({...formData, heroWholesaleButtonEn: e.target.value})}
+                        placeholder="WHOLESALE PRODUCTS"
+                        className="h-11 rounded-xl text-xs bg-white border-dashed"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label className="text-[10px] font-bold uppercase text-primary/40 tracking-wider">RIGHT ENTRY</Label>
+                      <Input 
+                        value={formData.heroProjectButtonEn} 
+                        onChange={e => setFormData({...formData, heroProjectButtonEn: e.target.value})}
+                        placeholder="PROJECT PRODUCTS"
+                        className="h-11 rounded-xl text-xs bg-white border-dashed"
+                      />
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
