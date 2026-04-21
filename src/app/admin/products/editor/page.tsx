@@ -233,6 +233,10 @@ function ProductEditorContent() {
   const [newTemplateName, setNewTemplateName] = useState('');
   const [selectedTemplateId, setSelectedTemplateId] = useState<string>('');
 
+  // 误删保护状态
+  const [isDeleteGroupConfirmOpen, setIsDeleteGroupConfirmOpen] = useState(false);
+  const [groupIndexToDelete, setGroupIndexToDelete] = useState<number | null>(null);
+
   const [isPickerOpen, setIsPickerOpen] = useState(false);
   const [pickerTarget, setPickerTarget] = useState<'main' | 'gallery' | 'richtext-zh' | 'richtext-target'>('main');
   const [pickerSearch, setPickerSearch] = useState('');
@@ -494,6 +498,16 @@ function ProductEditorContent() {
     }));
     setFormData(prev => ({ ...prev, specGroups: [...prev.specGroups, ...mappedGroups] }));
     toast({ title: "已从模板导入规格" });
+  };
+
+  const handleDeleteGroup = () => {
+    if (groupIndexToDelete !== null) {
+      const g = [...formData.specGroups];
+      g.splice(groupIndexToDelete, 1);
+      setFormData({ ...formData, specGroups: g });
+    }
+    setIsDeleteGroupConfirmOpen(false);
+    setGroupIndexToDelete(null);
   };
 
   const handleMoveGalleryImage = (idx: number, direction: 'left' | 'right') => {
@@ -973,7 +987,7 @@ function ProductEditorContent() {
                           )} 
                         />
                       </div>
-                      <Button variant="ghost" size="icon" onClick={() => setFormData({...formData, specGroups: formData.specGroups.filter((_,i)=>i!==gIdx)})} className="ml-4 h-9 w-9 text-destructive/40 hover:text-destructive hover:bg-destructive/5"><Trash2 className="h-4 w-4" /></Button>
+                      <Button variant="ghost" size="icon" onClick={() => { setGroupIndexToDelete(gIdx); setIsDeleteGroupConfirmOpen(true); }} className="ml-4 h-9 w-9 text-destructive/40 hover:text-destructive hover:bg-destructive/5"><Trash2 className="h-4 w-4" /></Button>
                     </div>
                     {group.items.map((item, iIdx) => {
                       const labelKey = `i_${gIdx}_${iIdx}_label`;
@@ -1173,6 +1187,26 @@ function ProductEditorContent() {
             >
               立即保存
             </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={isDeleteGroupConfirmOpen} onOpenChange={setIsDeleteGroupConfirmOpen}>
+        <DialogContent className="max-w-sm rounded-2xl p-0 overflow-hidden border-none shadow-2xl">
+          <div className="bg-destructive p-6 text-white">
+            <DialogHeader>
+              <div className="flex items-center gap-2">
+                 <AlertCircle className="h-4 w-4" />
+                 <DialogTitle className="text-sm font-bold uppercase tracking-widest">确认移除规格分组？</DialogTitle>
+              </div>
+              <DialogDescription className="text-white/60 text-[10px] uppercase tracking-tight mt-1 font-medium">
+                此操作将永久删除该分组下的所有规格条目，且无法撤销。
+              </DialogDescription>
+            </DialogHeader>
+          </div>
+          <DialogFooter className="p-4 bg-muted/10 border-t flex gap-2">
+            <Button variant="outline" onClick={() => setIsDeleteGroupConfirmOpen(false)} className="flex-1 h-10 rounded-lg text-xs font-bold uppercase tracking-widest">取消</Button>
+            <Button variant="destructive" onClick={handleDeleteGroup} className="flex-1 h-10 rounded-lg text-xs font-bold uppercase tracking-widest">确认删除</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
