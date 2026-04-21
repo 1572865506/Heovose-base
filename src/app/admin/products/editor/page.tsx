@@ -1,3 +1,4 @@
+
 "use client";
 
 import React, { useState, useEffect, useMemo, Suspense, useRef, use } from 'react';
@@ -160,6 +161,38 @@ interface AiConfig {
 
 interface AppConfig {
   supportedLanguages: { code: string, label: string }[];
+}
+
+/**
+ * 稳健的 JSON 解析工具，处理 AI 返回的常见格式错误
+ */
+function robustJsonParse(rawStr: string) {
+  let jsonStr = rawStr.trim();
+  
+  // 1. 移除 Markdown 代码块包装
+  if (jsonStr.includes('```')) {
+    jsonStr = jsonStr.replace(/```json\n?|```/g, '').trim();
+  }
+  
+  try {
+    return JSON.parse(jsonStr);
+  } catch (initialError) {
+    // 2. 容错：处理非法控制字符（如真实换行符）
+    // 这种错误通常表现为 "Bad control character in string literal"
+    const sanitized = jsonStr.replace(/[\u0000-\u001F]+/g, (match) => {
+      if (match === '\n') return '\\n';
+      if (match === '\r') return '\\r';
+      if (match === '\t') return '\\t';
+      return '';
+    });
+    
+    try {
+      return JSON.parse(sanitized);
+    } catch (secondError) {
+      console.error('Final JSON Parse Error:', secondError, 'Original String:', jsonStr);
+      throw new Error(`AI 返回的 JSON 格式异常，无法解析。请重试或精简内容。`);
+    }
+  }
 }
 
 function ProductEditorContent() {
@@ -536,14 +569,22 @@ function ProductEditorContent() {
     try {
       const payload = JSON.stringify(taskMap);
       const res = await translateContent({
-        text: `You are a hardware expert. Translate this structure into professional industrial English. RETURN RAW JSON ONLY matching keys: ${payload}`,
+        text: `Translate the following hardware specification data into professional industrial English. 
+        Input Data (JSON): ${payload}
+        
+        INSTRUCTIONS:
+        1. Translate all values into professional English.
+        2. Maintain the exact same keys (UIDs) as provided in the input.
+        3. Return ONLY a single valid JSON object. 
+        4. DO NOT include markdown code blocks or any conversational text.
+        5. Ensure proper escaping of special characters.`,
         targetLangs: ['en'],
         model: aiConfig.model,
         apiKey: aiConfig.apiKey
       });
 
       if (res?.en) {
-        const results = JSON.parse(res.en);
+        const results = robustJsonParse(res.en);
         const newSpecGroups = [...formData.specGroups];
 
         Object.keys(results).forEach(key => {
@@ -584,22 +625,20 @@ function ProductEditorContent() {
     try {
       const combinedPayload = JSON.stringify({ label: item.labelZh, value: item.valueZh });
       const res = await translateContent({ 
-        text: `Translate this hardware spec entry (return JSON only): ${combinedPayload}`, 
+        text: `Translate this hardware spec entry (return valid JSON only): ${combinedPayload}. 
+        Return format: {"label": "...", "value": "..."}.
+        NO markdown.`, 
         targetLangs: ['en'], 
         apiKey: aiConfig.apiKey 
       });
 
       if (res?.en) {
-        try {
-          const parsed = JSON.parse(res.en);
-          const newSpecGroups = [...formData.specGroups];
-          newSpecGroups[gIdx].items[iIdx].labelEn = parsed.label || '';
-          newSpecGroups[gIdx].items[iIdx].valueEn = parsed.value || '';
-          setFormData({ ...formData, specGroups: newSpecGroups });
-          toast({ title: "单条规格智译成功" });
-        } catch {
-          toast({ variant: "destructive", title: "智译解析失败" });
-        }
+        const parsed = robustJsonParse(res.en);
+        const newSpecGroups = [...formData.specGroups];
+        newSpecGroups[gIdx].items[iIdx].labelEn = parsed.label || '';
+        newSpecGroups[gIdx].items[iIdx].valueEn = parsed.value || '';
+        setFormData({ ...formData, specGroups: newSpecGroups });
+        toast({ title: "单条规格智译成功" });
       }
     } catch (e: any) {
       toast({ variant: "destructive", title: "智译失败", description: e.message });

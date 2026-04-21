@@ -56,7 +56,9 @@ export async function translateContent(input: TranslateInput): Promise<Translate
       2. NEVER modify attributes like "src", "class", or "style".
       3. Ensure the output is a valid JSON object where keys are language codes.
       4. If the content contains technical specs, maintain professional terminology.
-      5. Return ONLY raw JSON, NO Markdown formatting.
+      5. FORMAT: Return ONLY the structured JSON output. 
+      6. JSON SAFETY: Escape all special characters and newlines (\n) within string values to ensure valid JSON parsing. 
+      7. NO MARKDOWN: Do not include backticks (\`\`\`) or "json" labels in your output.
       
       Source Content: ${input.text}`
     });
