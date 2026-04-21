@@ -1,13 +1,37 @@
+
 {
   "entities": {
     "HomepageContent": {
       "title": "HomepageContent",
       "type": "object",
-      "description": "首页核心配置数据",
+      "description": "首页核心配置数据（单例文档）",
       "properties": {
         "id": { "type": "string" },
         "heroHeadlineEn": { "type": "string" },
-        "heroHeadlineZh": { "type": "string" }
+        "heroHeadlineZh": { "type": "string" },
+        "heroSubheadlineEn": { "type": "string" },
+        "heroSubheadlineZh": { "type": "string" },
+        "videoTitleEn": { "type": "string" },
+        "videoTitleZh": { "type": "string" },
+        "videoSubtitleEn": { "type": "string" },
+        "videoSubtitleZh": { "type": "string" },
+        "stats": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "value": { "type": "string" },
+              "labelEn": { "type": "string" },
+              "labelZh": { "type": "string" },
+              "subEn": { "type": "string" },
+              "subZh": { "type": "string" }
+            }
+          }
+        },
+        "mapTitleEn": { "type": "string" },
+        "mapTitleZh": { "type": "string" },
+        "mapSubtitleEn": { "type": "string" },
+        "mapSubtitleZh": { "type": "string" }
       }
     },
     "Product": {
@@ -75,6 +99,10 @@
     "/localizedStrings/{textId}": {
       "schema": { "$ref": "#/backend/entities/LocalizedString" },
       "description": "多语言翻译资产库"
+    },
+    "/homepageContent/{contentId}": {
+        "schema": { "$ref": "#/backend/entities/HomepageContent" },
+        "description": "首页内容配置"
     },
     "/settings/ai": {
       "schema": { "type": "object" },
