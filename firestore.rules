@@ -1,12 +1,10 @@
 /**
- * Heovose 全球智能制造管理系统 - 安全规则 v1.4
+ * Heovose 全球智能制造管理系统 - 安全规则 v1.5
  *
  * 核心逻辑：
- * 1. 命名规范：严格遵循前端驼峰命名 (CamelCase)，修复 productCategories 访问受阻问题。
- * 2. 身份验证：基于 /admins 集合中的 UID 文档进行鉴权。
- * 3. 角色管理：
- *    - superadmin: 拥有全站最高权限，包括管理其他管理员。
- *    - editor: 拥有业务内容（产品、图库、翻译、流程）的读写权。
+ * 1. 权限判定：isAdmin() 检查 /admins 集合中是否存在以用户 UID 为 ID 的文档。
+ * 2. 命名一致性：严格使用驼峰命名（如 productCategories, localizedStrings）。
+ * 3. 开放性：业务数据（产品、分类、图库）对公众只读，仅限管理员写入。
  */
 
 rules_version = '2';
@@ -15,12 +13,11 @@ service cloud.firestore {
 
     // --- 核心辅助函数 ---
 
-    // 检查是否已登录
     function isSignedIn() {
       return request.auth != null;
     }
 
-    // 检查当前用户是否在管理员白名单中
+    // 检查当前用户是否在管理员白名单中（以 UID 为文档 ID）
     function isAdmin() {
       return isSignedIn() && exists(/databases/$(database)/documents/admins/$(request.auth.uid));
     }
@@ -37,19 +34,15 @@ service cloud.firestore {
 
     // --- 业务集合规则 ---
 
-    // 产品、分类、图库、统计、生产流程等业务数据
-    // 逻辑：公众只读，管理员可写
+    // 产品、分类、图库资产、首页配置等
     match /products/{docId} { allow read: if true; allow write: if isAdmin(); }
     match /productCategories/{docId} { allow read: if true; allow write: if isAdmin(); }
     match /galleryAssets/{docId} { allow read: if true; allow write: if isAdmin(); }
     match /galleryCategories/{docId} { allow read: if true; allow write: if isAdmin(); }
-    match /coreStatistics/{docId} { allow read: if true; allow write: if isAdmin(); }
-    match /productionSteps/{docId} { allow read: if true; allow write: if isAdmin(); }
-    match /factoryLocations/{docId} { allow read: if true; allow write: if isAdmin(); }
     match /homepageContent/{docId} { allow read: if true; allow write: if isAdmin(); }
     match /specTemplates/{docId} { allow read: if isAdmin(); allow write: if isAdmin(); }
 
-    // 多语言翻译库
+    // 多语言翻译资产库
     match /localizedStrings/{docId} {
       allow read: if true;
       allow write: if isAdmin();
@@ -63,7 +56,9 @@ service cloud.firestore {
 
     // 管理员权限表
     match /admins/{userId} {
+      // 允许任何已登录用户读取自己的权限文档（用于登录后的前端判定）
       allow get: if isSignedIn() && request.auth.uid == userId;
+      // 仅限超级管理员进行成员管理
       allow list, create, update, delete: if isSuperAdmin();
     }
   }
