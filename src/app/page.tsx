@@ -26,12 +26,18 @@ export default function Home() {
   // 默认语种，等待自动判定
   const [locale, setLocale] = useState<Locale>('en');
 
-  // 获取云端默认语种配置
+  // 获取云端语种及首页内容配置
   const langConfigRef = useMemoFirebase(() => 
     firestore ? doc(firestore, 'settings', 'languages') : null, 
     [firestore]
   );
+  const homeContentRef = useMemoFirebase(() =>
+    firestore ? doc(firestore, 'homepageContent', 'main') : null,
+    [firestore]
+  );
+
   const { data: langSettings } = useDoc<any>(langConfigRef);
+  const { data: homeConfig } = useDoc<any>(homeContentRef);
 
   useEffect(() => {
     // 智能语种判定逻辑
@@ -70,19 +76,19 @@ export default function Home() {
     <main className="relative min-h-screen">
       <Navbar locale={locale} setLocale={setLocale} />
       
-      <Hero locale={locale} />
+      <Hero locale={locale} homeConfig={homeConfig} />
       
       <ProductBento locale={locale} />
       
       <ProductGallery locale={locale} />
       
-      <VideoSection locale={locale} />
+      <VideoSection locale={locale} homeConfig={homeConfig} />
       
       <ProductionProcess locale={locale} />
       
       <CaseStudies locale={locale} />
       
-      <GlobalMap locale={locale} />
+      <GlobalMap locale={locale} homeConfig={homeConfig} />
       
       <Footer locale={locale} />
     </main>

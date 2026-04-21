@@ -7,8 +7,22 @@ import { Locale, translations } from "@/lib/translations";
 import { ShoppingBag, Building2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-export function Hero({ locale }: { locale: Locale }) {
+interface HeroProps {
+  locale: Locale;
+  homeConfig?: any;
+}
+
+export function Hero({ locale, homeConfig }: HeroProps) {
   const t = translations[locale].hero;
+
+  // 动态解析云端标题
+  const displayHeadline = locale === 'zh' 
+    ? (homeConfig?.heroHeadlineZh || t.headline)
+    : (homeConfig?.heroHeadlineEn || t.headline);
+
+  const displaySubheadline = locale === 'zh'
+    ? (homeConfig?.heroSubheadlineZh || t.subheadline)
+    : (homeConfig?.heroSubheadlineEn || t.subheadline);
 
   return (
     <section 
@@ -34,37 +48,32 @@ export function Hero({ locale }: { locale: Locale }) {
       </div>
 
       <div className="container mx-auto px-6 relative z-30">
-        <div className="max-w-4xl space-y-12 animate-fade-in-up">
+        <div className="max-w-4xl animate-fade-in-up">
           {/* Headline and Subheadline */}
           <div className="space-y-6">
             <span className="text-accent font-bold tracking-[0.3em] uppercase text-xs bg-accent/20 px-5 py-2 rounded-full inline-block border border-accent/30 backdrop-blur-md">
               Heovose Elevate
             </span>
-            <h1 className="text-6xl md:text-8xl lg:text-9xl font-headline font-bold text-white leading-[0.85] tracking-tighter">
-              {t.headline}
+            <h1 className="text-6xl md:text-8xl lg:text-9xl font-headline font-bold text-white leading-[0.85] tracking-tighter uppercase">
+              {displayHeadline}
             </h1>
             <h2 className="text-2xl md:text-3xl text-white/80 font-light max-w-xl leading-relaxed">
-              {t.subheadline}
+              {displaySubheadline}
             </h2>
           </div>
           
           {/* Entry Cards */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 pt-8 max-w-xl">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 pt-12 max-w-xl">
             {/* Wholesale Card */}
             <Link 
               href="/products"
               className="group relative bg-white/10 backdrop-blur-2xl p-6 rounded-[2rem] border border-white/20 hover:border-accent/40 transition-all duration-700 cursor-pointer overflow-hidden shadow-[0_20px_40px_rgba(0,0,0,0.3)]"
             >
-              {/* Gradient Border Glow Overlay */}
               <div className="absolute inset-0 bg-gradient-to-br from-accent/30 via-transparent to-white/10 opacity-0 group-hover:opacity-100 transition-opacity duration-700 pointer-events-none" />
-              
-              {/* Internal Content */}
               <div className="relative space-y-4">
-                {/* Icon Box */}
                 <div className="w-14 h-14 bg-[#6b7c7c]/40 backdrop-blur-sm rounded-xl flex items-center justify-center text-accent shadow-inner transition-transform duration-500">
                   <ShoppingBag className="h-7 w-7 stroke-[1.5]" />
                 </div>
-                
                 <h3 className="text-xl md:text-2xl font-headline font-bold text-white leading-tight tracking-tight">
                   {t.wholesale}
                 </h3>
@@ -76,15 +85,11 @@ export function Hero({ locale }: { locale: Locale }) {
               href="/products?category=Industrial"
               className="group relative bg-white/10 backdrop-blur-2xl p-6 rounded-[2rem] border border-white/20 hover:border-accent/40 transition-all duration-700 cursor-pointer overflow-hidden shadow-[0_20px_40px_rgba(0,0,0,0.3)]"
             >
-              {/* Gradient Border Glow Overlay */}
               <div className="absolute inset-0 bg-gradient-to-br from-accent/30 via-transparent to-white/10 opacity-0 group-hover:opacity-100 transition-opacity duration-700 pointer-events-none" />
-              
               <div className="relative space-y-4">
-                {/* Icon Box */}
                 <div className="w-14 h-14 bg-[#6b7c7c]/40 backdrop-blur-sm rounded-xl flex items-center justify-center text-white/90 shadow-inner transition-transform duration-500">
                   <Building2 className="h-7 w-7 stroke-[1.5]" />
                 </div>
-                
                 <h3 className="text-xl md:text-2xl font-headline font-bold text-white leading-tight tracking-tight">
                   {t.project}
                 </h3>

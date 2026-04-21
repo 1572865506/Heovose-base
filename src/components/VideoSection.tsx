@@ -7,12 +7,26 @@ import { cn } from "@/lib/utils";
 import { Play, Pause } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
-export function VideoSection({ locale }: { locale: Locale }) {
+interface VideoSectionProps {
+  locale: Locale;
+  homeConfig?: any;
+}
+
+export function VideoSection({ locale, homeConfig }: VideoSectionProps) {
   const t = translations[locale].video;
   const sectionRef = useRef<HTMLDivElement>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
   const [textProgress, setTextProgress] = useState(0); 
   const [isPlaying, setIsPlaying] = useState(true);
+
+  // 动态文案回退逻辑
+  const displayTitle = locale === 'zh'
+    ? (homeConfig?.videoTitleZh || t.title)
+    : (homeConfig?.videoTitleEn || t.title);
+
+  const displaySubtitle = locale === 'zh'
+    ? (homeConfig?.videoSubtitleZh || t.subtitle)
+    : (homeConfig?.videoSubtitleEn || t.subtitle);
 
   useEffect(() => {
     const handleScroll = () => {
@@ -21,8 +35,6 @@ export function VideoSection({ locale }: { locale: Locale }) {
       const rect = sectionRef.current.getBoundingClientRect();
       const windowHeight = window.innerHeight;
       
-      // Video section height is 500vh.
-      // -mt-[100vh] ensures it starts under the previous section.
       const scrolledPastTop = Math.max(-rect.top, 0);
       const contentScrollableHeight = rect.height - windowHeight;
       const progress = Math.min(Math.max(scrolledPastTop / contentScrollableHeight, 0), 1);
@@ -45,9 +57,6 @@ export function VideoSection({ locale }: { locale: Locale }) {
     setIsPlaying(!isPlaying);
   }, [isPlaying]);
 
-  // Sequential text visibility logic per user request:
-  // Segment 1: 50% - 70%
-  // Segment 2: 80% - 95%
   const isFirstTextVisible = textProgress >= 0.5 && textProgress < 0.75;
   const isSecondTextVisible = textProgress >= 0.8 && textProgress < 0.98;
 
@@ -56,13 +65,8 @@ export function VideoSection({ locale }: { locale: Locale }) {
       ref={sectionRef} 
       className="relative h-[500vh] -mt-[100vh] z-10 bg-black"
     >
-      {/* 
-        Sticky Container: Stays fixed at the top of the viewport.
-        Because z-index is 10 and sections above are 20,
-        it naturally reveals as the above section scrolls up.
-      */}
       <div className="sticky top-0 h-screen w-full overflow-hidden">
-        {/* Background Video: Always fully filling and fixed */}
+        {/* Background Video */}
         <div className="absolute inset-0 w-full h-full">
           <video
             ref={videoRef}
@@ -82,30 +86,29 @@ export function VideoSection({ locale }: { locale: Locale }) {
         <div className="absolute inset-0 z-30 flex items-center justify-center text-center px-6 pointer-events-none">
           <div className="relative w-full max-w-7xl flex items-center justify-center">
             
-            {/* First Segment: 50%-70% */}
+            {/* First Segment */}
             <h2 
               className={cn(
-                "absolute text-5xl md:text-8xl lg:text-9xl font-headline font-bold text-white tracking-tighter leading-none transition-all duration-1000 ease-in-out",
+                "absolute text-5xl md:text-8xl lg:text-9xl font-headline font-bold text-white tracking-tighter leading-none transition-all duration-1000 ease-in-out uppercase",
                 isFirstTextVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-20"
               )}
             >
-              {t.title}
+              {displayTitle}
             </h2>
             
-            {/* Second Segment: 80%-95% */}
+            {/* Second Segment */}
             <h2 
               className={cn(
-                "absolute text-5xl md:text-8xl lg:text-9xl font-headline font-bold text-white tracking-tighter leading-none transition-all duration-1000 ease-in-out",
+                "absolute text-5xl md:text-8xl lg:text-9xl font-headline font-bold text-white tracking-tighter leading-none transition-all duration-1000 ease-in-out uppercase",
                 isSecondTextVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-20"
               )}
             >
-              {t.subtitle}
+              {displaySubtitle}
             </h2>
-
           </div>
         </div>
 
-        {/* Video Controls - Bottom Right */}
+        {/* Video Controls */}
         <div className={cn(
           "absolute bottom-12 right-12 z-40 transition-all duration-700",
           textProgress > 0.1 ? "opacity-100 translate-y-0" : "opacity-0 translate-y-10"
@@ -116,11 +119,7 @@ export function VideoSection({ locale }: { locale: Locale }) {
             size="icon"
             className="h-16 w-16 rounded-full glass-morphism border-white/20 hover:bg-white/20 text-white shadow-2xl group"
           >
-            {isPlaying ? (
-              <Pause className="h-8 w-8 group-hover:scale-110 transition-transform" />
-            ) : (
-              <Play className="h-8 w-8 ml-1 group-hover:scale-110 transition-transform" />
-            )}
+            {isPlaying ? <Pause className="h-8 w-8 group-hover:scale-110 transition-transform" /> : <Play className="h-8 w-8 ml-1 group-hover:scale-110 transition-transform" />}
           </Button>
         </div>
 

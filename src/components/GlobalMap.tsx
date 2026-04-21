@@ -7,10 +7,24 @@ import { SectionHeading } from "./SectionHeading";
 import { MapPin, Building2, Factory, Microscope, Globe } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-export function GlobalMap({ locale }: { locale: Locale }) {
+interface GlobalMapProps {
+  locale: Locale;
+  homeConfig?: any;
+}
+
+export function GlobalMap({ locale, homeConfig }: GlobalMapProps) {
   const t = translations[locale].map;
   const locs = t.locations;
   const [activeLocation, setActiveLocation] = useState<string | null>(null);
+
+  // 动态文案解析
+  const displayTitle = locale === 'zh'
+    ? (homeConfig?.mapTitleZh || t.title)
+    : (homeConfig?.mapTitleEn || t.title);
+
+  const displaySubtitle = locale === 'zh'
+    ? (homeConfig?.mapSubtitleZh || t.subtitle)
+    : (homeConfig?.mapSubtitleEn || t.subtitle);
 
   const pins = [
     { 
@@ -50,7 +64,7 @@ export function GlobalMap({ locale }: { locale: Locale }) {
   return (
     <section id="global" className="py-24 bg-white overflow-hidden">
       <div className="container mx-auto px-6">
-        <SectionHeading title={t.title} subtitle={t.subtitle} />
+        <SectionHeading title={displayTitle} subtitle={displaySubtitle} />
         
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-start">
           {/* Left Column: Address Information Cards */}
@@ -67,7 +81,6 @@ export function GlobalMap({ locale }: { locale: Locale }) {
                     : "bg-white border-border/40 hover:border-primary/50"
                 )}
               >
-                {/* Active Accent background decorative element */}
                 <div className={cn(
                   "absolute top-0 right-0 w-24 h-24 bg-accent/10 rounded-full blur-3xl -mr-12 -mt-12 transition-opacity duration-500",
                   activeLocation === pin.key ? "opacity-100" : "opacity-0"
@@ -82,10 +95,7 @@ export function GlobalMap({ locale }: { locale: Locale }) {
                   </div>
                   <div className="space-y-1 flex-1">
                     <div className="flex items-center justify-between">
-                      <span className={cn(
-                        "text-[10px] font-bold uppercase tracking-[0.2em] transition-colors duration-500",
-                        activeLocation === pin.key ? "text-accent" : "text-accent"
-                      )}>
+                      <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-accent">
                         {pin.type}
                       </span>
                       {activeLocation === pin.key && (
@@ -123,7 +133,6 @@ export function GlobalMap({ locale }: { locale: Locale }) {
 
           {/* Right Column: Interactive Map */}
           <div className="lg:col-span-8 relative aspect-[16/9] bg-muted/30 rounded-[3rem] overflow-hidden border border-border/40 shadow-inner">
-            {/* Simple SVG Map Overlay */}
             <div className="absolute inset-0 opacity-20 pointer-events-none">
               <svg viewBox="0 0 1000 500" className="w-full h-full fill-primary/30">
                  <rect width="1000" height="500" fill="none" />
@@ -154,8 +163,6 @@ export function GlobalMap({ locale }: { locale: Locale }) {
                         : pin.type === 'HQ' ? "text-accent fill-accent/20" : "text-primary fill-primary/20"
                     )} />
                   </div>
-                  
-                  {/* Ripple Effect for active pin */}
                   {activeLocation === pin.key && (
                     <>
                       <div className="absolute inset-0 -z-10 bg-accent/60 rounded-full animate-ping scale-150" />
