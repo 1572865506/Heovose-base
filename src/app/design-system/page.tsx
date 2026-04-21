@@ -4,6 +4,7 @@
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { 
@@ -37,7 +38,10 @@ import {
   Package,
   Layers,
   FileText,
-  Factory
+  Factory,
+  ChevronDown,
+  Plus,
+  ArrowUpRight
 } from 'lucide-react';
 import { 
   Table, 
@@ -53,6 +57,21 @@ import {
   TabsList, 
   TabsTrigger 
 } from "@/components/ui/tabs";
+import { 
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { Progress } from "@/components/ui/progress";
 import {
   Tooltip,
@@ -193,11 +212,100 @@ export default function DesignSystemPage() {
               </div>
             </section>
 
-            {/* 02. 前台业务核心组件 */}
+            {/* 02. 前台输入与按钮控件 */}
+            <section className="space-y-12">
+              <div className="flex items-center gap-4 border-b pb-4 border-primary/10">
+                <div className="h-2 w-10 bg-primary rounded-full opacity-20" />
+                <h2 className="text-2xl font-headline font-bold uppercase tracking-widest text-primary">02. Controls & Actions</h2>
+              </div>
+              <div className="bg-white p-12 rounded-[3rem] border border-border/40 shadow-sm space-y-16">
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-20">
+                  {/* Buttons Matrix */}
+                  <div className="space-y-8">
+                    <span className="text-[11px] font-bold text-primary uppercase tracking-[0.2em]">Button Variants</span>
+                    <div className="flex flex-wrap gap-6 items-end">
+                      <div className="space-y-2">
+                        <p className="text-[9px] font-bold opacity-40 uppercase">Hero Action</p>
+                        <Button className="h-16 px-10 rounded-2xl text-base font-bold shadow-xl">Explore Now</Button>
+                      </div>
+                      <div className="space-y-2">
+                        <p className="text-[9px] font-bold opacity-40 uppercase">Secondary</p>
+                        <Button variant="outline" className="h-14 px-8 rounded-2xl text-sm font-bold">Learn More</Button>
+                      </div>
+                      <div className="space-y-2">
+                        <p className="text-[9px] font-bold opacity-40 uppercase">Ghost Interaction</p>
+                        <Button variant="ghost" className="h-10 px-4 text-xs font-bold gap-2">View Case <ArrowRight className="h-3.5 w-3.5" /></Button>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Form Inputs */}
+                  <div className="space-y-8">
+                    <span className="text-[11px] font-bold text-primary uppercase tracking-[0.2em]">Lifestyle Inputs</span>
+                    <div className="space-y-6 max-w-sm">
+                      <div className="relative group">
+                        <Search className="absolute left-5 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground opacity-40 group-focus-within:text-primary transition-all" />
+                        <Input placeholder="Search everything..." className="h-14 pl-14 rounded-2xl bg-muted/20 border-none shadow-inner text-sm font-medium focus-visible:ring-primary/20" />
+                      </div>
+                      <div className="space-y-2">
+                        <label className="text-[10px] font-bold uppercase tracking-widest ml-2 opacity-60">Message for experts</label>
+                        <Textarea placeholder="Type your technical inquiry..." className="min-h-[120px] rounded-2xl p-6 bg-muted/20 border-none shadow-inner resize-none" />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-20">
+                  {/* Select & Dropdown */}
+                  <div className="space-y-8">
+                    <span className="text-[11px] font-bold text-primary uppercase tracking-[0.2em]">Navigation & Menus</span>
+                    <div className="flex gap-6 items-center">
+                      <Select defaultValue="en">
+                        <SelectTrigger className="w-[180px] h-12 rounded-xl bg-white border-border/40 shadow-sm font-bold uppercase text-[10px] tracking-widest">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent className="rounded-xl">
+                          <SelectItem value="en">English (Global)</SelectItem>
+                          <SelectItem value="zh">简体中文 (China)</SelectItem>
+                        </SelectContent>
+                      </Select>
+
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="ghost" className="h-12 rounded-xl bg-muted/30 border border-border/20 font-bold uppercase text-[10px] tracking-widest gap-2">
+                            Quick Menu <ChevronDown className="h-3 w-3" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent className="w-56 rounded-2xl p-2 shadow-2xl border-border/40 bg-white/95 backdrop-blur-xl">
+                          <DropdownMenuItem className="rounded-xl py-3 cursor-pointer">Support Center</DropdownMenuItem>
+                          <DropdownMenuItem className="rounded-xl py-3 cursor-pointer">Global Logistics</DropdownMenuItem>
+                          <DropdownMenuSeparator />
+                          <DropdownMenuItem className="rounded-xl py-3 cursor-pointer text-primary font-bold">Request a Quote</DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </div>
+                  </div>
+
+                  {/* Tabs */}
+                  <div className="space-y-8">
+                    <span className="text-[11px] font-bold text-primary uppercase tracking-[0.2em]">Content Filters</span>
+                    <Tabs defaultValue="overview" className="w-full">
+                      <TabsList className="bg-transparent h-auto p-0 border-b border-border/40 w-full justify-start gap-10 rounded-none mb-6">
+                        <TabsTrigger value="overview" className="rounded-none px-0 pb-4 text-xs font-bold uppercase tracking-widest data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-primary transition-all">Overview</TabsTrigger>
+                        <TabsTrigger value="specs" className="rounded-none px-0 pb-4 text-xs font-bold uppercase tracking-widest data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-primary transition-all">Specifications</TabsTrigger>
+                        <TabsTrigger value="manual" className="rounded-none px-0 pb-4 text-xs font-bold uppercase tracking-widest data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-primary transition-all opacity-40">User Manual</TabsTrigger>
+                      </TabsList>
+                    </Tabs>
+                  </div>
+                </div>
+              </div>
+            </section>
+
+            {/* 03. 前台业务核心组件 */}
             <section className="space-y-12">
               <div className="flex items-center gap-4 border-b pb-4 border-accent/20">
                 <div className="h-2 w-10 bg-accent rounded-full" />
-                <h2 className="text-2xl font-headline font-bold uppercase tracking-widest text-primary">02. Core Business Units</h2>
+                <h2 className="text-2xl font-headline font-bold uppercase tracking-widest text-primary">03. Core Business Units</h2>
               </div>
 
               <div className="grid grid-cols-1 lg:grid-cols-3 gap-12">
@@ -293,11 +401,11 @@ export default function DesignSystemPage() {
               </div>
             </section>
 
-            {/* 03. 前台交互与特效 (UI Patterns) */}
+            {/* 04. 前台交互与特效 (UI Patterns) */}
             <section className="space-y-12">
               <div className="flex items-center gap-4 border-b pb-4 border-primary/10">
                 <div className="h-2 w-10 bg-primary rounded-full opacity-20" />
-                <h2 className="text-2xl font-headline font-bold uppercase tracking-widest text-primary">03. Patterns & Effects</h2>
+                <h2 className="text-2xl font-headline font-bold uppercase tracking-widest text-primary">04. Patterns & Effects</h2>
               </div>
               <div className="bg-white p-12 rounded-[3rem] border border-border/40 shadow-sm space-y-16">
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-20">
@@ -342,11 +450,11 @@ export default function DesignSystemPage() {
               </div>
             </section>
 
-            {/* 04. 前台全局元素 */}
+            {/* 05. 前台全局元素 */}
             <section className="space-y-12">
                <div className="flex items-center gap-4 border-b pb-4 border-primary/10">
                   <div className="h-2 w-10 bg-primary rounded-full opacity-20" />
-                  <h2 className="text-2xl font-headline font-bold uppercase tracking-widest text-primary">04. Global Layout Units</h2>
+                  <h2 className="text-2xl font-headline font-bold uppercase tracking-widest text-primary">05. Global Layout Units</h2>
                </div>
                <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
                   {/* Stats Components */}
@@ -456,6 +564,121 @@ export default function DesignSystemPage() {
                            <span className="text-[10px] font-bold text-muted-foreground uppercase">Compliance Validated</span>
                         </div>
                      </div>
+                  </div>
+                </div>
+              </div>
+            </section>
+
+            {/* 02. 后台基础控件矩阵 (New) */}
+            <section className="space-y-8">
+              <div className="flex items-center gap-4 border-b pb-4 border-primary/20">
+                <div className="h-2 w-10 bg-primary rounded-full" />
+                <h2 className="text-xl font-bold uppercase tracking-widest text-primary">02. Base Control Matrix</h2>
+              </div>
+              <div className="bg-white p-10 rounded-2xl border border-border/40 space-y-12">
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-16">
+                  {/* Buttons */}
+                  <div className="space-y-6">
+                    <span className="text-[11px] font-bold text-muted-foreground uppercase tracking-[0.2em]">Button Sizes & Variants</span>
+                    <div className="flex flex-wrap gap-4 items-center">
+                      <div className="space-y-1">
+                        <p className="text-[8px] font-bold opacity-30 uppercase">Size: LG (h-11)</p>
+                        <Button size="lg" className="rounded-xl px-8 font-bold uppercase tracking-widest text-[10px]">Save Global</Button>
+                      </div>
+                      <div className="space-y-1">
+                        <p className="text-[8px] font-bold opacity-30 uppercase">Size: Default (h-10)</p>
+                        <Button className="rounded-lg px-5 font-bold uppercase text-[10px] gap-2"><Plus className="h-3.5 w-3.5" /> Add New</Button>
+                      </div>
+                      <div className="space-y-1">
+                        <p className="text-[8px] font-bold opacity-30 uppercase">Size: SM (h-9)</p>
+                        <Button size="sm" variant="outline" className="rounded-lg px-4 text-[10px] font-bold">Cancel</Button>
+                      </div>
+                      <div className="space-y-1">
+                        <p className="text-[8px] font-bold opacity-30 uppercase">Icon (h-8)</p>
+                        <Button variant="ghost" size="icon" className="h-8 w-8 hover:text-primary"><Edit2 className="h-3.5 w-3.5" /></Button>
+                      </div>
+                    </div>
+                    <div className="flex flex-wrap gap-4">
+                      <Button variant="destructive" className="h-10 rounded-lg text-[10px] font-bold uppercase tracking-wider px-6">Delete Forever</Button>
+                      <Button variant="secondary" className="h-10 rounded-lg text-[10px] font-bold uppercase tracking-wider px-6">Reset Form</Button>
+                    </div>
+                  </div>
+
+                  {/* Form Inputs */}
+                  <div className="space-y-6">
+                    <span className="text-[11px] font-bold text-muted-foreground uppercase tracking-[0.2em]">Input Fields & Textarea</span>
+                    <div className="space-y-4 max-w-sm">
+                      <div className="space-y-1.5">
+                        <Label className="text-[10px] font-bold uppercase text-primary">Standard Field</Label>
+                        <Input placeholder="Enter unique ID..." className="h-10 bg-muted/20" />
+                      </div>
+                      <div className="space-y-1.5">
+                        <Label className="text-[10px] font-bold uppercase opacity-40">Disabled State</Label>
+                        <Input disabled value="PROTECTED_VALUE_001" className="h-10 font-mono opacity-50" />
+                      </div>
+                      <div className="space-y-1.5">
+                        <Label className="text-[10px] font-bold uppercase text-destructive">Error Feedback</Label>
+                        <Input value="Invalid Space Char" className="h-10 border-destructive bg-destructive/5 text-destructive" />
+                      </div>
+                      <div className="space-y-1.5">
+                        <Label className="text-[10px] font-bold uppercase text-primary">Documentation Body</Label>
+                        <Textarea placeholder="Markdown content supported..." className="min-h-[100px] text-xs bg-muted/10 font-medium" />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 border-t pt-10">
+                  {/* Selections & Menus */}
+                  <div className="space-y-6">
+                    <span className="text-[11px] font-bold text-muted-foreground uppercase tracking-[0.2em]">Selectors & Overlays</span>
+                    <div className="flex gap-4 items-center">
+                      <div className="space-y-1.5 flex-1">
+                        <Label className="text-[10px] font-bold uppercase opacity-40">System Role</Label>
+                        <Select defaultValue="editor">
+                          <SelectTrigger className="h-10 rounded-lg bg-muted/20 border-transparent text-xs font-bold">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent className="rounded-xl">
+                            <SelectItem value="superadmin" className="text-xs font-bold text-orange-600">Superadmin</SelectItem>
+                            <SelectItem value="editor" className="text-xs">Editor (Standard)</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+
+                      <div className="space-y-1.5 flex-1">
+                        <Label className="text-[10px] font-bold uppercase opacity-40">Quick Actions</Label>
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="outline" className="w-full h-10 rounded-lg text-xs font-bold justify-between px-3">
+                              Manage <MoreHorizontal className="h-3.5 w-3.5 opacity-40" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent className="w-56 rounded-xl p-1.5 shadow-xl border-border/40">
+                            <DropdownMenuLabel className="text-[9px] uppercase tracking-widest opacity-40">Admin Tools</DropdownMenuLabel>
+                            <DropdownMenuItem className="rounded-lg text-xs gap-2 py-2"><Edit2 className="h-3 w-3" /> Quick Edit</DropdownMenuItem>
+                            <DropdownMenuItem className="rounded-lg text-xs gap-2 py-2"><ArrowUpRight className="h-3 w-3" /> External Link</DropdownMenuItem>
+                            <DropdownMenuSeparator />
+                            <DropdownMenuItem className="rounded-lg text-xs text-destructive gap-2 py-2"><Trash2 className="h-3 w-3" /> Archive Row</DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Admin Tabs */}
+                  <div className="space-y-6">
+                    <span className="text-[11px] font-bold text-muted-foreground uppercase tracking-[0.2em]">Functional Tabs</span>
+                    <Tabs defaultValue="visual" className="w-full">
+                      <TabsList className="bg-muted/40 p-1 rounded-xl h-12 w-full grid grid-cols-2">
+                        <TabsTrigger value="visual" className="rounded-lg text-[10px] font-bold uppercase tracking-widest gap-2 flex items-center justify-center data-[state=active]:bg-white data-[state=active]:shadow-sm">
+                          <ImageIcon className="h-3.5 w-3.5" /> Visual Meta
+                        </TabsTrigger>
+                        <TabsTrigger value="data" className="rounded-lg text-[10px] font-bold uppercase tracking-widest gap-2 flex items-center justify-center data-[state=active]:bg-white data-[state=active]:shadow-sm">
+                          <BarChart3 className="h-3.5 w-3.5" /> Technical Data
+                        </TabsTrigger>
+                      </TabsList>
+                    </Tabs>
                   </div>
                 </div>
               </div>
@@ -598,4 +821,25 @@ export default function DesignSystemPage() {
 // 辅助组件：Label
 function Label({ children, className }: { children: React.ReactNode, className?: string }) {
   return <label className={cn("block", className)}>{children}</label>;
+}
+function BarChart3(props: any) {
+  return (
+    <svg
+      {...props}
+      xmlns="http://www.w3.org/2000/svg"
+      width="24"
+      height="24"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <path d="M3 3v18h18" />
+      <path d="M18 17V9" />
+      <path d="M13 17V5" />
+      <path d="M8 17v-3" />
+    </svg>
+  )
 }
