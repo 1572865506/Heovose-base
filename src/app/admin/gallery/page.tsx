@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useState, useMemo, useRef, useEffect, useCallback } from 'react';
@@ -26,7 +25,8 @@ import {
   Download,
   Maximize2 as FitIcon,
   ZoomIn,
-  Move
+  Move,
+  AlertTriangle
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -250,7 +250,14 @@ export default function GalleryPage() {
     fileArray.forEach((file, index) => {
       const taskId = newTasks[index].id;
       if (!file.type.startsWith('image/')) { updateTask(taskId, { status: 'error', error: '类型不符' }); return; }
-      if (file.size > 2 * 1024 * 1024) { updateTask(taskId, { status: 'error', error: '超过 2MB' }); return; }
+      
+      // Firestore 单个文档限制为 1MB。Base64 会增加约 33% 的大小，
+      // 因此我们将原始文件大小限制在 700KB 左右以确保安全。
+      const MAX_FILE_SIZE = 700 * 1024; 
+      if (file.size > MAX_FILE_SIZE) { 
+        updateTask(taskId, { status: 'error', error: '超过 700KB' }); 
+        return; 
+      }
 
       const reader = new FileReader();
       reader.onload = (e) => {
@@ -347,7 +354,7 @@ export default function GalleryPage() {
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <h2 className="text-xl font-headline font-bold text-primary flex items-center gap-2"><ImageIcon className="h-5 w-5" /> 全球素材图库</h2>
-          <p className="text-xs text-muted-foreground">支持点击、Shift 加选或鼠标框选。筛选条件改变时会自动重置选区。</p>
+          <p className="text-xs text-muted-foreground">支持点击、Shift 加选或鼠标框选。体积限制：单个素材不可超过 700KB。</p>
         </div>
         <div className="flex gap-2">
           <Dialog open={isCategoryDialogOpen} onOpenChange={(o) => { setIsCategoryDialogOpen(o); if (!o) resetCatForm(); }}>
@@ -379,8 +386,8 @@ export default function GalleryPage() {
                 </DialogHeader>
               </div>
               <div className="p-6 grid grid-cols-1 md:grid-cols-12 gap-8 bg-white">
-                <div className="md:col-span-7"><div onDragOver={e => e.preventDefault()} onDrop={e => { e.preventDefault(); handleFileUpload(e.dataTransfer.files); }} className="h-64 border-2 border-dashed border-muted rounded-2xl flex flex-col items-center justify-center hover:bg-muted/10 transition-all cursor-pointer group" onClick={() => fileInputRef.current?.click()}><Upload className="h-12 w-12 text-muted-foreground/40 mb-3 group-hover:text-primary transition-colors" /><p className="text-sm font-bold opacity-60">点击或拖拽图片至此处</p><p className="text-[10px] opacity-40 mt-1 uppercase tracking-widest">支持 JPG, PNG, WEBP (MAX 2MB)</p><input type="file" ref={fileInputRef} multiple accept="image/*" className="hidden" onChange={e => handleFileUpload(e.target.files)} /></div></div>
-                <div className="md:col-span-5 space-y-6"><div className="space-y-5"><div className="space-y-2"><Label className="text-[10px] font-bold uppercase opacity-60">上传目标分类</Label><Select value={targetUploadCategoryId} onValueChange={setTargetUploadCategoryId}><SelectTrigger className="h-11 rounded-xl bg-muted/20 border-transparent"><SelectValue placeholder="选择目标分类" /></SelectTrigger><SelectContent className="rounded-xl">{categoryTree.map(cat => (<SelectItem key={cat.id} value={cat.id} className="text-xs"><span style={{ paddingLeft: `${cat.depth * 0.6}rem` }}>{cat.name}</span></SelectItem>))}</SelectContent></Select></div><div className="space-y-2"><Label className="text-[10px] font-bold uppercase opacity-60">重名冲突处理策略</Label><Select value={duplicateStrategy} onValueChange={(v: DuplicateStrategy) => setDuplicateStrategy(v)}><SelectTrigger className="h-11 rounded-xl bg-muted/20 border-transparent"><SelectValue /></SelectTrigger><SelectContent className="rounded-xl"><SelectItem value="rename" className="text-xs">自动重命名 (生成副本)</SelectItem><SelectItem value="overwrite" className="text-xs text-orange-600 font-bold">覆盖现有文件 (全站同步更新)</SelectItem></SelectContent></Select><p className="text-[9px] text-muted-foreground leading-relaxed mt-2 italic">提示：选择“覆盖”将直接替换所有引用该文件名的前端展示内容。</p></div></div></div>
+                <div className="md:col-span-7"><div onDragOver={e => e.preventDefault()} onDrop={e => { e.preventDefault(); handleFileUpload(e.dataTransfer.files); }} className="h-64 border-2 border-dashed border-muted rounded-2xl flex flex-col items-center justify-center hover:bg-muted/10 transition-all cursor-pointer group" onClick={() => fileInputRef.current?.click()}><Upload className="h-12 w-12 text-muted-foreground/40 mb-3 group-hover:text-primary transition-colors" /><p className="text-sm font-bold opacity-60">点击或拖拽图片至此处</p><p className="text-[10px] opacity-40 mt-1 uppercase tracking-widest text-destructive flex items-center gap-1"><AlertTriangle className="h-3 w-3" /> 单个文件限制 700KB 以内</p><input type="file" ref={fileInputRef} multiple accept="image/*" className="hidden" onChange={e => handleFileUpload(e.target.files)} /></div></div>
+                <div className="md:col-span-5 space-y-6"><div className="space-y-5"><div className="space-y-2"><Label className="text-[10px] font-bold uppercase opacity-60">上传目标分类</Label><Select value={targetUploadCategoryId} onValueChange={setTargetUploadCategoryId}><SelectTrigger className="h-11 rounded-xl bg-muted/20 border-transparent"><SelectValue placeholder="选择目标分类" /></SelectTrigger><SelectContent className="rounded-xl">{categoryTree.map(cat => (<SelectItem key={cat.id} value={cat.id} className="text-xs"><span style={{ paddingLeft: `${cat.depth * 0.6}rem` }}>{cat.name}</span></SelectItem>))}</SelectContent></Select></div><div className="space-y-2"><Label className="text-[10px] font-bold uppercase opacity-60">重名冲突处理策略</Label><Select value={duplicateStrategy} onValueChange={(v: DuplicateStrategy) => setDuplicateStrategy(v)}><SelectTrigger className="h-11 rounded-xl bg-muted/20 border-transparent"><SelectValue /></SelectTrigger><SelectContent className="rounded-xl"><SelectItem value="rename" className="text-xs">自动重命名 (生成副本)</SelectItem><SelectItem value="overwrite" className="text-xs text-orange-600 font-bold">覆盖现有文件 (全站同步更新)</SelectItem></SelectContent></Select><p className="text-[9px] text-muted-foreground leading-relaxed mt-2 italic">提示：为了满足 Firestore 限制，系统严格限制图片体积以防保存失败。</p></div></div></div>
               </div>
               <DialogFooter className="bg-muted/10 p-4"><Button variant="outline" onClick={() => setIsUploadDialogOpen(false)} className="rounded-xl h-10 px-8 text-xs font-bold uppercase tracking-widest">关闭上传器</Button></DialogFooter>
             </DialogContent>

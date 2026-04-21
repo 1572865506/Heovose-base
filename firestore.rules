@@ -1,10 +1,9 @@
 /**
- * Heovose 全球智能制造管理系统 - 安全规则 v1.5
+ * Heovose 全球智能制造管理系统 - 安全规则 v1.6
  *
- * 核心逻辑：
- * 1. 权限判定：isAdmin() 检查 /admins 集合中是否存在以用户 UID 为 ID 的文档。
- * 2. 命名一致性：严格使用驼峰命名（如 productCategories, localizedStrings）。
- * 3. 开放性：业务数据（产品、分类、图库）对公众只读，仅限管理员写入。
+ * 优化点：
+ * 1. 确保 isAdmin() 检查在处理大负载文档时尽可能高效。
+ * 2. 统一驼峰命名路径。
  */
 
 rules_version = '2';
@@ -17,48 +16,65 @@ service cloud.firestore {
       return request.auth != null;
     }
 
-    // 检查当前用户是否在管理员白名单中（以 UID 为文档 ID）
+    // 检查当前用户是否在管理员白名单中
+    // 提示：确保 Firestore 中的文档 ID 是用户的 UID (bFjZ3BVfU8...)
     function isAdmin() {
       return isSignedIn() && exists(/databases/$(database)/documents/admins/$(request.auth.uid));
     }
 
-    // 获取当前用户的角色
     function getRole() {
       return get(/databases/$(database)/documents/admins/$(request.auth.uid)).data.role;
     }
 
-    // 检查是否为超级管理员
     function isSuperAdmin() {
-      return isAdmin() && getRole() == 'superadmin';
+      let adminDoc = get(/databases/$(database)/documents/admins/$(request.auth.uid));
+      return isSignedIn() && adminDoc != null && adminDoc.data.role == 'superadmin';
     }
 
     // --- 业务集合规则 ---
 
-    // 产品、分类、图库资产、首页配置等
-    match /products/{docId} { allow read: if true; allow write: if isAdmin(); }
-    match /productCategories/{docId} { allow read: if true; allow write: if isAdmin(); }
-    match /galleryAssets/{docId} { allow read: if true; allow write: if isAdmin(); }
-    match /galleryCategories/{docId} { allow read: if true; allow write: if isAdmin(); }
-    match /homepageContent/{docId} { allow read: if true; allow write: if isAdmin(); }
-    match /specTemplates/{docId} { allow read: if isAdmin(); allow write: if isAdmin(); }
+    match /products/{docId} { 
+      allow read: if true; 
+      allow write: if isAdmin(); 
+    }
+    
+    match /productCategories/{docId} { 
+      allow read: if true; 
+      allow write: if isAdmin(); 
+    }
 
-    // 多语言翻译资产库
+    match /galleryAssets/{docId} { 
+      allow read: if true; 
+      allow write: if isAdmin(); 
+    }
+
+    match /galleryCategories/{docId} { 
+      allow read: if true; 
+      allow write: if isAdmin(); 
+    }
+
+    match /homepageContent/{docId} { 
+      allow read: if true; 
+      allow write: if isAdmin(); 
+    }
+
+    match /specTemplates/{docId} { 
+      allow read: if isAdmin(); 
+      allow write: if isAdmin(); 
+    }
+
     match /localizedStrings/{docId} {
       allow read: if true;
       allow write: if isAdmin();
     }
 
-    // 系统设置（AI、语种等）
     match /settings/{settingId} {
       allow read: if settingId == 'languages' || isAdmin();
       allow write: if isAdmin();
     }
 
-    // 管理员权限表
     match /admins/{userId} {
-      // 允许任何已登录用户读取自己的权限文档（用于登录后的前端判定）
       allow get: if isSignedIn() && request.auth.uid == userId;
-      // 仅限超级管理员进行成员管理
       allow list, create, update, delete: if isSuperAdmin();
     }
   }

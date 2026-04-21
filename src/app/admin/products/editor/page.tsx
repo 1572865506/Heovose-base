@@ -395,6 +395,20 @@ function ProductEditorContent() {
       toast({ variant: "destructive", title: "ID 已被占用" });
       return;
     }
+
+    // Firestore 限制单个文档的大小为 1MB。
+    // Base64 编码的图片会让字符串非常庞大。
+    // 我们在这里做一个简单的预检查。
+    const totalDataSize = JSON.stringify(formData).length;
+    if (totalDataSize > 900000) {
+      toast({ 
+        variant: "destructive", 
+        title: "文档体积过大 (接近 1MB)", 
+        description: "产品详情中包含的 Base64 图片过多或过大。请先在素材库上传并压缩图片，然后再引用，或减少图片数量。" 
+      });
+      return;
+    }
+
     const saveLang = (en: any, zh: any, defaultId: string) => {
       setDocumentNonBlocking(doc(firestore, 'localizedStrings', defaultId), { 
         id: defaultId, en: String(en || '').trim(), zh: String(zh || '').trim(), updatedAt: serverTimestamp() 
