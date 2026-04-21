@@ -3,7 +3,7 @@
 
 import { useState, useEffect } from 'react';
 import { useFirestore, useDoc, useCollection, useMemoFirebase } from '@/firebase';
-import { doc, collection, serverTimestamp } from 'firebase/firestore';
+import { doc, collection, serverTimestamp, query, orderBy } from 'firebase/firestore';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -24,7 +24,6 @@ import {
   Image as ImageIcon, 
   Film, 
   MapPin,
-  Target,
   Plus,
   Trash2,
   Edit2,
@@ -32,8 +31,9 @@ import {
   Building2,
   Microscope,
   Factory,
-  Settings2,
-  Info
+  Search,
+  Check,
+  X
 } from 'lucide-react';
 import { 
   Dialog, 
@@ -49,6 +49,7 @@ import { translateContent } from '@/ai/flows/translate-flow';
 import { cn } from '@/lib/utils';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
+import Image from 'next/image';
 
 // AI 极光渐变定义组件
 const AiGradientDef = () => (
@@ -80,11 +81,13 @@ export default function AdminHomePage() {
   const aiRef = useMemoFirebase(() => firestore ? doc(firestore, 'settings', 'ai') : null, [firestore]);
   const catsQuery = useMemoFirebase(() => firestore ? collection(firestore, 'productCategories') : null, [firestore]);
   const transQuery = useMemoFirebase(() => firestore ? collection(firestore, 'localizedStrings') : null, [firestore]);
+  const assetsQuery = useMemoFirebase(() => firestore ? query(collection(firestore, 'galleryAssets'), orderBy('createdAt', 'desc')) : null, [firestore]);
   
   const { data: homeData, isLoading } = useDoc<any>(homeRef);
   const { data: aiConfig } = useDoc<any>(aiRef);
   const { data: categories } = useCollection<any>(catsQuery);
   const { data: translations } = useCollection<any>(transQuery);
+  const { data: galleryAssets } = useCollection<any>(assetsQuery);
 
   const [formData, setFormData] = useState<any>({
     heroHeadlineZh: '',
@@ -112,6 +115,11 @@ export default function AdminHomePage() {
   const [isAiProcessing, setIsAiProcessing] = useState(false);
   const [isLocationDialogOpen, setIsLocationDialogOpen] = useState(false);
   const [editingLocation, setEditingLocation] = useState<any>(null);
+  
+  // 图库选择器状态
+  const [isPickerOpen, setIsPickerOpen] = useState(false);
+  const [pickerSearch, setPickerSearch] = useState('');
+
   const [locationForm, setLocationForm] = useState<any>({
     id: '',
     type: 'Factory',
@@ -431,7 +439,7 @@ export default function AdminHomePage() {
               <DialogTitle className="text-lg font-bold flex items-center gap-2">
                 <MapPin className="h-5 w-5" /> {editingLocation ? '编辑网点' : '新增全球网点'}
               </DialogTitle>
-              <DialogDescription className="text-white/60 text-xs">填写网点详细信息，并使用 AI 快速完成双语同步。</DialogDescription>
+              <DialogDescription className="text-white/60 text-xs">填写网点详细信息，并从图库选择展示图片。</DialogDescription>
             </DialogHeader>
             <Button variant="ghost" onClick={handleTranslateLocation} className="ai-btn-glow h-10 px-5 gap-2 text-xs">
               <Sparkles className="h-4 w-4 ai-icon-gradient" /> AI 智译信息
@@ -454,7 +462,7 @@ export default function AdminHomePage() {
                   </Select>
                 </div>
                 <div className="space-y-2">
-                  <Label className="text-[10px] font-bold uppercase opacity-40">预览图标</Label>
+                  <Label className="text-[10px] font-bold uppercase opacity-40">地图位置预览</Label>
                   <div className="h-10 flex items-center gap-3 px-4 bg-muted/10 rounded-xl">
                     {locationForm.type === 'HQ' && <Building2 className="h-5 w-5 text-primary" />}
                     {locationForm.type === 'R&D' && <Microscope className="h-5 w-5 text-primary" />}
@@ -482,32 +490,45 @@ export default function AdminHomePage() {
             <div className="space-y-6">
               <div className="space-y-4 border-l pl-8 border-dashed">
                 <div className="space-y-2">
+                  <Label className="text-[10px] font-bold uppercase opacity-40">展示图</Label>
+                  <div 
+                    className="relative aspect-video rounded-xl bg-muted/20 border-2 border-dashed border-border/40 overflow-hidden flex flex-col items-center justify-center group cursor-pointer hover:bg-muted/30 transition-all"
+                    onClick={() => setIsPickerOpen(true)}
+                  >
+                    {locationForm.imageUrl ? (
+                      <>
+                        <img src={locationForm.imageUrl} alt="" className="w-full h-full object-cover" />
+                        <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity">
+                          <Button variant="secondary" size="sm" className="rounded-full h-8 text-[10px] font-bold uppercase tracking-wider">更换图片</Button>
+                        </div>
+                      </>
+                    ) : (
+                      <div className="flex flex-col items-center gap-2 opacity-40">
+                        <ImageIcon className="h-8 w-8" />
+                        <span className="text-[10px] font-bold uppercase tracking-widest">从图库选择</span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label className="text-[10px] font-bold uppercase opacity-40">坐标 Left (%)</Label>
+                    <Input value={locationForm.posLeft} onChange={e => setLocationForm({...locationForm, posLeft: e.target.value})} placeholder="如: 75%" className="h-10 rounded-xl font-mono" />
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="text-[10px] font-bold uppercase opacity-40">坐标 Top (%)</Label>
+                    <Input value={locationForm.posTop} onChange={e => setLocationForm({...locationForm, posTop: e.target.value})} placeholder="如: 40%" className="h-10 rounded-xl font-mono" />
+                  </div>
+                </div>
+              </div>
+              <div className="space-y-4 pt-4 border-t border-dashed">
+                <div className="space-y-2">
                   <Label className="text-[10px] font-bold uppercase opacity-40">NAME (EN)</Label>
                   <Input value={locationForm.titleEn} onChange={e => setLocationForm({...locationForm, titleEn: e.target.value})} className="h-10 rounded-xl border-dashed" />
                 </div>
                 <div className="space-y-2">
                   <Label className="text-[10px] font-bold uppercase opacity-40">ADDRESS (EN)</Label>
                   <Input value={locationForm.addressEn} onChange={e => setLocationForm({...locationForm, addressEn: e.target.value})} className="h-10 rounded-xl border-dashed" />
-                </div>
-                <div className="space-y-2">
-                  <Label className="text-[10px] font-bold uppercase opacity-40">DESCRIPTION (EN)</Label>
-                  <Textarea value={locationForm.descEn} onChange={e => setLocationForm({...locationForm, descEn: e.target.value})} className="min-h-[80px] rounded-xl border-dashed" />
-                </div>
-              </div>
-              <div className="space-y-4 pt-4 border-t">
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label className="text-[10px] font-bold uppercase opacity-40 flex items-center gap-2">坐标 Left (%)</Label>
-                    <Input value={locationForm.posLeft} onChange={e => setLocationForm({...locationForm, posLeft: e.target.value})} placeholder="如: 75%" className="h-10 rounded-xl font-mono" />
-                  </div>
-                  <div className="space-y-2">
-                    <Label className="text-[10px] font-bold uppercase opacity-40 flex items-center gap-2">坐标 Top (%)</Label>
-                    <Input value={locationForm.posTop} onChange={e => setLocationForm({...locationForm, posTop: e.target.value})} placeholder="如: 40%" className="h-10 rounded-xl font-mono" />
-                  </div>
-                </div>
-                <div className="space-y-2">
-                  <Label className="text-[10px] font-bold uppercase opacity-40">展示图 URL</Label>
-                  <Input value={locationForm.imageUrl} onChange={e => setLocationForm({...locationForm, imageUrl: e.target.value})} placeholder="https://..." className="h-10 rounded-xl" />
                 </div>
               </div>
             </div>
@@ -519,7 +540,57 @@ export default function AdminHomePage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* 媒体素材选择器 */}
+      <Dialog open={isPickerOpen} onOpenChange={setIsPickerOpen}>
+        <DialogContent className="max-w-5xl p-0 h-[80vh] rounded-2xl overflow-hidden flex flex-col shadow-2xl border-none">
+          <div className="bg-primary p-6 text-white flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <ImageIcon className="h-4 w-4" />
+              <DialogTitle className="text-sm font-bold uppercase tracking-widest">媒体资产库</DialogTitle>
+            </div>
+            <Button variant="ghost" size="icon" onClick={() => setIsPickerOpen(false)} className="text-white hover:bg-white/10 h-8 w-8"><X className="h-4 w-4" /></Button>
+          </div>
+          <div className="px-6 py-3 bg-muted/30 border-b flex gap-6 items-center">
+            <div className="relative flex-1">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 opacity-30" />
+              <Input 
+                placeholder="搜索展示素材..." 
+                value={pickerSearch} 
+                onChange={e => setPickerSearch(e.target.value)} 
+                className="pl-9 h-9 border-none bg-white text-xs" 
+              />
+            </div>
+          </div>
+          <div className="flex-1 overflow-y-auto p-6 grid grid-cols-2 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-7 gap-4 bg-muted/5">
+            {galleryAssets?.filter((a: any) => (a.title || '').toLowerCase().includes(pickerSearch.toLowerCase())).map((a: any) => (
+              <div 
+                key={a.id} 
+                className={cn(
+                  "group relative aspect-square rounded-lg overflow-hidden border-2 transition-all cursor-pointer shadow-sm", 
+                  locationForm.imageUrl === a.url ? "border-primary scale-95" : "border-transparent bg-white hover:border-primary/20"
+                )} 
+                onClick={() => {
+                  setLocationForm({ ...locationForm, imageUrl: a.url });
+                  setIsPickerOpen(false);
+                }}
+              >
+                <Image src={a.url} alt={a.title} fill className="object-cover" unoptimized />
+                {locationForm.imageUrl === a.url && (
+                  <div className="absolute inset-0 bg-primary/20 flex items-center justify-center">
+                    <div className="bg-white text-primary rounded-full p-1 shadow-lg">
+                      <Check className="h-3.5 w-3.5" />
+                    </div>
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+          <DialogFooter className="p-4 border-t flex justify-end bg-white">
+            <Button variant="outline" size="sm" onClick={() => setIsPickerOpen(false)} className="px-6 h-10 rounded-lg text-xs font-bold uppercase tracking-widest">取消</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
-
