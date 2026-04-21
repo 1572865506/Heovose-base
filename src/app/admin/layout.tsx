@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useEffect, useState } from 'react';
@@ -78,10 +77,14 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   const { data: adminData, isLoading: isAdminDataLoading, error: adminError } = useDoc<any>(adminDocRef);
   const { data: aiConfig } = useDoc<any>(aiConfigRef);
 
+  // 严谨的加载判定：只有当用户信息和权限文档都明确加载完成后才停止 Loading
   const isDeterminingAccess = isUserLoading || (user && isAdminDataLoading);
-  const isUnauthorized = user && !adminData && !isAdminDataLoading && pathname !== '/admin/login';
+  
+  // 判定未授权：已登录，但文档加载完成且数据为空，且不在登录页
+  const isUnauthorized = !isDeterminingAccess && user && !adminData && pathname !== '/admin/login';
 
   useEffect(() => {
+    // 只有在确定没有登录态且不在登录页时才跳转
     if (!isUserLoading && !user && pathname !== '/admin/login') {
       router.push('/admin/login');
     }
@@ -98,7 +101,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     );
   }
 
-  if (isUnauthorized && pathname !== '/admin/login') {
+  if (isUnauthorized) {
     return (
       <div className="h-screen flex items-center justify-center bg-muted/20 p-6">
         <Alert variant="destructive" className="max-w-xl bg-white border-destructive/50 shadow-2xl rounded-2xl p-8">
