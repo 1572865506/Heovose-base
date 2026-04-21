@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useState, useEffect } from 'react';
@@ -20,11 +19,12 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Button } from '@/components/ui/button';
-import { Settings2, Save, Globe, ShieldCheck, Loader2 } from 'lucide-react';
+import { Settings2, Save, Globe, ShieldCheck, Loader2, Cloud, Database, Cpu } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
 import { setDocumentNonBlocking } from '@/firebase/non-blocking-updates';
 import { useToast } from '@/hooks/use-toast';
+import { firebaseConfig } from '@/firebase/config';
 
 interface LanguageOption {
   code: string;
@@ -93,7 +93,7 @@ export default function AdminSettingsPage() {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-        <div className="lg:col-span-8">
+        <div className="lg:col-span-8 space-y-6">
           <Card className="rounded-2xl border-border/40 shadow-sm overflow-hidden bg-white">
             <div className="bg-primary p-6 text-white">
               <CardHeader className="p-0">
@@ -144,16 +144,63 @@ export default function AdminSettingsPage() {
                    </div>
                 </div>
               </div>
+            </CardContent>
+          </Card>
 
-              <div className="pt-8 border-t border-border/40 space-y-4">
-                <div className="flex items-center gap-2 text-primary">
-                  <ShieldCheck className="h-4 w-4" />
-                  <Label className="text-[10px] font-bold uppercase tracking-widest">安全与权限策略架构</Label>
+          <Card className="rounded-2xl border-border/40 shadow-sm overflow-hidden bg-white">
+            <CardHeader className="p-6 border-b bg-muted/5">
+              <div className="flex items-center gap-3">
+                <div className="h-10 w-10 rounded-xl bg-primary/10 text-primary flex items-center justify-center">
+                  <Cloud className="h-5 w-5" />
                 </div>
-                <div className="p-4 bg-primary/5 rounded-xl border border-primary/10">
-                  <p className="text-xs text-muted-foreground leading-relaxed">
-                    系统当前采用 Firebase Auth 严格的规则验证。所有写操作均通过管理员角色白名单机制进行隔离，确保全球站点的数据资产安全。
-                  </p>
+                <div>
+                  <CardTitle className="text-sm font-bold uppercase tracking-widest">服务器与环境配置 (Infrastructure)</CardTitle>
+                  <CardDescription className="text-[10px] uppercase">当前云端实例及核心技术栈概览</CardDescription>
+                </div>
+              </div>
+            </CardHeader>
+            <CardContent className="p-8 space-y-8">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-8">
+                <div className="space-y-4">
+                  <div className="flex items-center gap-2 text-primary">
+                    <Database className="h-4 w-4 opacity-60" />
+                    <span className="text-[10px] font-bold uppercase tracking-wider">Firebase 后端服务</span>
+                  </div>
+                  <div className="space-y-3">
+                    <div className="flex justify-between items-center text-xs pb-2 border-b border-dashed">
+                      <span className="text-muted-foreground">Project ID</span>
+                      <code className="bg-muted px-2 py-0.5 rounded font-mono text-primary font-bold">{firebaseConfig.projectId}</code>
+                    </div>
+                    <div className="flex justify-between items-center text-xs pb-2 border-b border-dashed">
+                      <span className="text-muted-foreground">App ID (Web)</span>
+                      <span className="font-mono text-[10px] opacity-60">{firebaseConfig.appId.split(':').pop()}</span>
+                    </div>
+                    <div className="flex justify-between items-center text-xs">
+                      <span className="text-muted-foreground">Region</span>
+                      <Badge variant="outline" className="text-[9px] uppercase font-bold">Auto (App Hosting)</Badge>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="space-y-4">
+                  <div className="flex items-center gap-2 text-primary">
+                    <Cpu className="h-4 w-4 opacity-60" />
+                    <span className="text-[10px] font-bold uppercase tracking-wider">软件技术栈 (Software Stack)</span>
+                  </div>
+                  <div className="space-y-3">
+                    <div className="flex justify-between items-center text-xs pb-2 border-b border-dashed">
+                      <span className="text-muted-foreground">Framework</span>
+                      <span className="font-bold">Next.js 15.x (App Router)</span>
+                    </div>
+                    <div className="flex justify-between items-center text-xs pb-2 border-b border-dashed">
+                      <span className="text-muted-foreground">AI Engine</span>
+                      <span className="font-bold">Genkit 1.28 + Gemini</span>
+                    </div>
+                    <div className="flex justify-between items-center text-xs">
+                      <span className="text-muted-foreground">UI Library</span>
+                      <span className="font-bold">Tailwind CSS + ShadCN UI</span>
+                    </div>
+                  </div>
                 </div>
               </div>
             </CardContent>

@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useState } from 'react';
@@ -156,7 +155,6 @@ export default function AdminUsersPage() {
         </Button>
       </div>
 
-      {/* 授权指南看板 */}
       <Card className="border-primary/20 bg-primary/5 rounded-2xl overflow-hidden shadow-sm">
         <CardContent className="p-6">
           <div className="flex flex-col md:flex-row gap-8">
