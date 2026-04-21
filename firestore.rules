@@ -1,116 +1,75 @@
 /**
- * Heovose Homepage Security Rules
+ * Heovose 全球智能制造管理系统 - 安全规则 v1.3
  *
- * Core Philosophy:
- * This ruleset implements a "Public Read / Authorized Write" model tailored for a corporate 
- * marketing website. All content required to render the homepage and product catalog 
- * is globally accessible to ensure SEO friendliness and a seamless user experience.
- *
- * Data Structure:
- * The database uses flat, top-level collections for primary entities (Products, 
- * Categories, Statistics, Factory Locations). This structure supports high-performance 
- * listing and simplifies the application's data fetching logic.
- *
- * Key Security Decisions:
- * 1. Public Accessibility: Since the application is a public-facing storefront/marketing 
- *    site, all read operations (get and list) are permitted without authentication.
- * 2. Immutable Public Content: Currently, the schema does not define specific ownership 
- *    fields (e.g., adminId) or an administrative role system. Consequently, all write 
- *    operations (create, update, delete) are locked to prevent unauthorized tampering.
- * 3. Prototyping Flexibility: Rules are structured to allow for immediate public consumption 
- *    while providing clear placeholders for future administrative authorization logic.
- *
- * Denormalization for Authorization:
- * As all content is currently public, no data denormalization is required for 
- * authorization checks. Future admin implementations should consider adding 
- * `authorId` or `lastUpdatedBy` fields to documents if granular auditing is required.
+ * 核心逻辑：
+ * 1. 公共访问：全站产品、分类、统计、流程等内容对游客开放只读。
+ * 2. 身份验证：只有在 /admins 集合中存在对应 UID 文档的用户才被视为管理员。
+ * 3. 角色管理：
+ *    - superadmin: 拥有全站最高权限，包括管理其他管理员。
+ *    - editor: 拥有业务内容（产品、图库、翻译、流程）的读写权。
+ * 4. 自愈诊断：允许用户读取自己的 admin 文档以进行权限自检。
  */
 
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    /**
-     * Helper Functions
-     * (Removed unused 'isSignedIn' function to resolve warnings.)
-     */
+    // --- 核心辅助函数 ---
 
-    /**
-     * @description Rules for the singleton document containing homepage hero content.
-     * @path /homepage_content/hero
-     * @allow (get, list) for any user, including unauthenticated visitors.
-     * @deny (create, update, delete) for all users to prevent unauthorized content changes.
-     * @principle Public-facing content must be globally readable but strictly protected from modification.
-     */
-    match /homepage_content/hero {
-      allow get, list: if true;
-      // CRITICAL: Cannot implement owner-only writes. The 'HomepageContent' entity is missing an ownership field.
-      allow create, update, delete: if false; // TODO: Add admin validation once the schema includes an administrative role system.
+    // 检查是否已登录
+    function isSignedIn() {
+      return request.auth != null;
     }
 
-    /**
-     * @description Rules for the product category definitions.
-     * @path /product_categories/{productCategoryId}
-     * @allow (get, list) for any user to allow category navigation.
-     * @deny (create, update, delete) for all users.
-     * @principle Ensures the integrity of the product hierarchy by preventing unauthorized category changes.
-     */
-    match /product_categories/{productCategoryId} {
-      allow get, list: if true;
-      // CRITICAL: Cannot implement owner-only writes. The 'ProductCategory' entity is missing an ownership field.
-      allow create, update, delete: if false; // TODO: Add admin validation once the schema includes an administrative role system.
+    // 检查当前用户是否在管理员白名单中
+    function isAdmin() {
+      return isSignedIn() && exists(/databases/$(database)/documents/admins/$(request.auth.uid));
     }
 
-    /**
-     * @description Rules for individual product details.
-     * @path /products/{productId}
-     * @allow (get, list) for any user to view the product catalog.
-     * @deny (create, update, delete) for all users.
-     * @principle Prevents price or description tampering by locking write access.
-     */
-    match /products/{productId} {
-      allow get, list: if true;
-      // CRITICAL: Cannot implement owner-only writes. The 'Product' entity is missing an ownership field.
-      allow create, update, delete: if false; // TODO: Add admin validation once the schema includes an administrative role system.
+    // 获取当前用户的角色
+    function getRole() {
+      return get(/databases/$(database)/documents/admins/$(request.auth.uid)).data.role;
     }
 
-    /**
-     * @description Rules for company statistics (e.g., factory counts).
-     * @path /core_statistics/{statisticId}
-     * @allow (get, list) for any user to view company achievements.
-     * @deny (create, update, delete) for all users.
-     * @principle Protects corporate data points from external manipulation.
-     */
-    match /core_statistics/{statisticId} {
-      allow get, list: if true;
-      // CRITICAL: Cannot implement owner-only writes. The 'CoreStatistic' entity is missing an ownership field.
-      allow create, update, delete: if false; // TODO: Add admin validation once the schema includes an administrative role system.
+    // 检查是否为超级管理员
+    function isSuperAdmin() {
+      return isAdmin() && getRole() == 'superadmin';
     }
 
-    /**
-     * @description Rules for the production process workflow steps.
-     * @path /production_process_steps/{stepId}
-     * @allow (get, list) for any user to view the manufacturing quality guide.
-     * @deny (create, update, delete) for all users.
-     * @principle Ensures the documented manufacturing logic remains accurate and unchanged.
-     */
-    match /production_process_steps/{stepId} {
-      allow get, list: if true;
-      // CRITICAL: Cannot implement owner-only writes. The 'ProductionProcessStep' entity is missing an ownership field.
-      allow create, update, delete: if false; // TODO: Add admin validation once the schema includes an administrative role system.
+    // --- 业务集合规则 ---
+
+    // 产品、分类、图库、统计、生产流程等业务数据
+    // 逻辑：公众只读，管理员可写
+    match /products/{docId} { allow read: if true; allow write: if isAdmin(); }
+    match /product_categories/{docId} { allow read: if true; allow write: if isAdmin(); }
+    match /galleryAssets/{docId} { allow read: if true; allow write: if isAdmin(); }
+    match /galleryCategories/{docId} { allow read: if true; allow write: if isAdmin(); }
+    match /core_statistics/{docId} { allow read: if true; allow write: if isAdmin(); }
+    match /production_process_steps/{docId} { allow read: if true; allow write: if isAdmin(); }
+    match /factory_locations/{docId} { allow read: if true; allow write: if isAdmin(); }
+    match /homepage_content/{docId} { allow read: if true; allow write: if isAdmin(); }
+    match /specTemplates/{docId} { allow read: if isAdmin(); allow write: if isAdmin(); }
+
+    // 多语言翻译库
+    // 逻辑：官网需要读取翻译，管理员需要管理
+    match /localizedStrings/{docId} {
+      allow read: if true;
+      allow write: if isAdmin();
     }
 
-    /**
-     * @description Rules for geographical factory locations used in the interactive map.
-     * @path /factory_locations/{locationId}
-     * @allow (get, list) for any user to see factory distributions.
-     * @deny (create, update, delete) for all users.
-     * @principle Map data is strictly read-only for public consumers.
-     */
-    match /factory_locations/{locationId} {
-      allow get, list: if true;
-      // CRITICAL: Cannot implement owner-only writes. The 'FactoryLocation' entity is missing an ownership field.
-      allow create, update, delete: if false; // TODO: Add admin validation once the schema includes an administrative role system.
+    // 系统设置（AI、语种等）
+    match /settings/{settingId} {
+      // 语种配置对公众开放（用于前台切换），AI配置仅限管理员
+      allow read: if settingId == 'languages' || isAdmin();
+      allow write: if isAdmin();
+    }
+
+    // 管理员权限表
+    match /admins/{userId} {
+      // 关键：允许用户读取自己的文档用于“权限自检”和“个人中心”展示
+      allow get: if isSignedIn() && request.auth.uid == userId;
+      // 只有超级管理员可以列出所有成员或新增/修改授权
+      allow list, create, update, delete: if isSuperAdmin();
     }
   }
 }
