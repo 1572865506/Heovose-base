@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useImperativeHandle, forwardRef } from 'react';
+import React, { useState, useEffect, useImperativeHandle, forwardRef } from 'react';
 import { useEditor, EditorContent, Extension } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
 import Underline from '@tiptap/extension-underline';
@@ -24,7 +24,9 @@ import {
   AlignLeft,
   AlignCenter,
   AlignRight,
-  AlignJustify
+  AlignJustify,
+  Maximize2,
+  Minimize2
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { 
@@ -85,7 +87,17 @@ interface RichTextEditorProps {
   className?: string;
 }
 
-const MenuBar = ({ editor, onImageClick }: { editor: any, onImageClick?: () => void }) => {
+const MenuBar = ({ 
+  editor, 
+  onImageClick, 
+  isFullscreen, 
+  onToggleFullscreen 
+}: { 
+  editor: any, 
+  onImageClick?: () => void,
+  isFullscreen: boolean,
+  onToggleFullscreen: () => void
+}) => {
   if (!editor) return null;
 
   return (
@@ -234,8 +246,8 @@ const MenuBar = ({ editor, onImageClick }: { editor: any, onImageClick?: () => v
         </Button>
       </div>
 
-      {/* History & Cleanup */}
-      <div className="flex items-center gap-1 pl-2">
+      {/* History */}
+      <div className="flex items-center gap-1 pl-2 pr-2 border-r border-border/40">
         <Button
           variant="ghost"
           size="icon"
@@ -254,11 +266,28 @@ const MenuBar = ({ editor, onImageClick }: { editor: any, onImageClick?: () => v
         >
           <Redo className="h-4 w-4" />
         </Button>
+      </div>
+
+      {/* Fullscreen Toggle */}
+      <div className="ml-auto flex items-center gap-1">
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={onToggleFullscreen}
+          className={cn(
+            "h-8 w-8 transition-colors",
+            isFullscreen ? "text-primary bg-primary/10" : "text-muted-foreground hover:text-primary"
+          )}
+          title={isFullscreen ? "退出全屏" : "全屏编辑"}
+        >
+          {isFullscreen ? <Minimize2 className="h-4 w-4" /> : <Maximize2 className="h-4 w-4" />}
+        </Button>
         <Button
           variant="ghost"
           size="icon"
           onClick={() => editor.chain().focus().unsetAllMarks().clearNodes().run()}
           className="h-8 w-8 opacity-40 hover:opacity-100"
+          title="清除所有样式"
         >
           <Eraser className="h-4 w-4" />
         </Button>
@@ -268,6 +297,8 @@ const MenuBar = ({ editor, onImageClick }: { editor: any, onImageClick?: () => v
 };
 
 const RichTextEditor = forwardRef<any, RichTextEditorProps>(({ content, onChange, onImageClick, placeholder, className }, ref) => {
+  const [isFullscreen, setIsFullscreen] = useState(false);
+
   const editor = useEditor({
     extensions: [
       StarterKit.configure({
@@ -317,16 +348,64 @@ const RichTextEditor = forwardRef<any, RichTextEditorProps>(({ content, onChange
     }
   }, [content, editor]);
 
+  // Fullscreen Esc key support
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && isFullscreen) {
+        setIsFullscreen(false);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isFullscreen]);
+
+  // Prevent body scroll when in fullscreen
+  useEffect(() => {
+    if (isFullscreen) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = '';
+    }
+    return () => {
+      document.body.style.overflow = '';
+    };
+  }, [isFullscreen]);
+
   return (
-    <div className={cn("border border-border/40 rounded-xl overflow-hidden bg-white flex flex-col group relative shadow-sm", className)}>
-      <MenuBar editor={editor} onImageClick={onImageClick} />
-      <div className="flex-1 overflow-y-auto bg-muted/5 min-h-[500px]">
-        <EditorContent editor={editor} />
+    <div className={cn(
+      "border border-border/40 rounded-xl overflow-hidden bg-white flex flex-col group relative shadow-sm transition-all duration-300", 
+      isFullscreen ? "fixed inset-0 z-[200] rounded-none border-none h-screen w-screen" : className
+    )}>
+      <MenuBar 
+        editor={editor} 
+        onImageClick={onImageClick} 
+        isFullscreen={isFullscreen} 
+        onToggleFullscreen={() => setIsFullscreen(!isFullscreen)} 
+      />
+      
+      <div className={cn(
+        "flex-1 overflow-y-auto scrollbar-minimal", 
+        isFullscreen ? "bg-muted/10 p-12" : "bg-muted/5 min-h-[500px]"
+      )}>
+        <div className={cn(
+          "transition-all duration-500",
+          isFullscreen ? "max-w-4xl mx-auto bg-white shadow-2xl rounded-sm min-h-full" : "h-full"
+        )}>
+          <EditorContent editor={editor} className="h-full" />
+        </div>
       </div>
+
       <div className="px-3 py-1 border-t border-border/10 bg-muted/20 flex justify-between items-center shrink-0 h-6">
-        <span className="text-[9px] font-mono text-muted-foreground opacity-40 uppercase tracking-tighter">
-          Tiptap Editor v2.x • HTML Enabled
-        </span>
+        <div className="flex items-center gap-4">
+          <span className="text-[9px] font-mono text-muted-foreground opacity-40 uppercase tracking-tighter">
+            Tiptap Editor v2.x • HTML Enabled
+          </span>
+          {isFullscreen && (
+            <span className="text-[9px] font-bold text-primary/40 uppercase tracking-widest animate-pulse">
+              按 ESC 键可快速退出全屏
+            </span>
+          )}
+        </div>
         <span className="text-[9px] font-bold text-primary/30 uppercase">
           {content.length} chars
         </span>
