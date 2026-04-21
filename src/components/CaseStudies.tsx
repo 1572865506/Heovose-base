@@ -1,12 +1,12 @@
 
 "use client";
 
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import Image from 'next/image';
 import { Locale, translations } from "@/lib/translations";
 import { PlaceHolderImages } from "@/lib/placeholder-images";
 import { SectionHeading } from "./SectionHeading";
-import { ArrowRight, Play, Pause } from "lucide-react";
+import { ArrowRight, Play, Pause, Loader2 } from "lucide-react";
 import {
   Carousel,
   CarouselContent,
@@ -16,9 +16,23 @@ import {
 import Autoplay from "embla-carousel-autoplay";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { useFirestore, useCollection, useMemoFirebase } from '@/firebase';
+import { collection, query, orderBy } from 'firebase/firestore';
+
+interface RemoteCase {
+  id: string;
+  tagZh: string;
+  tagEn: string;
+  titleZh: string;
+  titleEn: string;
+  descZh: string;
+  descEn: string;
+  imageUrl: string;
+}
 
 export function CaseStudies({ locale }: { locale: Locale }) {
   const t = translations[locale].cases;
+  const firestore = useFirestore();
   const [api, setApi] = useState<CarouselApi>();
   const [current, setCurrent] = useState(0);
   const [count, setCount] = useState(0);
@@ -31,14 +45,33 @@ export function CaseStudies({ locale }: { locale: Locale }) {
     Autoplay({ delay: AUTOPLAY_DELAY, stopOnInteraction: false })
   );
 
-  const cases = [
-    { id: 'case-retail', tag: t.tags.retail, title: t.retail.title, desc: t.retail.desc },
-    { id: 'case-factory', tag: t.tags.industry, title: t.industry.title, desc: t.industry.desc },
-    { id: 'case-office', tag: t.tags.office, title: t.office.title, desc: t.office.desc },
-    { id: 'case-transport', tag: t.tags.transport, title: t.transport.title, desc: t.transport.desc },
-    { id: 'hero-aio', tag: t.tags.office, title: locale === 'en' ? 'Digital Hub' : '数字中心', desc: locale === 'en' ? 'Integrated workspace solutions.' : '集成工作空间方案。' },
-    { id: 'product-kiosk', tag: t.tags.retail, title: locale === 'en' ? 'Global Retail' : '全球零售', desc: locale === 'en' ? 'Scalable checkout systems.' : '可扩展结账系统。' },
-  ];
+  // 1. 从 Firestore 获取云端案例
+  const casesQuery = useMemoFirebase(() => 
+    firestore ? query(collection(firestore, 'caseStudies'), orderBy('order', 'asc')) : null, 
+    [firestore]
+  );
+  const { data: remoteCases, isLoading } = useCollection<RemoteCase>(casesQuery);
+
+  // 2. 数据处理与回退逻辑
+  const cases = useMemo(() => {
+    if (remoteCases && remoteCases.length > 0) {
+      return remoteCases.map(c => ({
+        id: c.id,
+        tag: locale === 'zh' ? c.tagZh : c.tagEn,
+        title: locale === 'zh' ? c.titleZh : c.titleEn,
+        desc: locale === 'zh' ? c.descZh : c.descEn,
+        imageUrl: c.imageUrl
+      }));
+    }
+
+    // 默认回退数据
+    return [
+      { id: 'case-retail', tag: t.tags.retail, title: t.retail.title, desc: t.retail.desc, imageUrl: PlaceHolderImages.find(i=>i.id==='case-retail')?.imageUrl },
+      { id: 'case-factory', tag: t.tags.industry, title: t.industry.title, desc: t.industry.desc, imageUrl: PlaceHolderImages.find(i=>i.id==='case-factory')?.imageUrl },
+      { id: 'case-office', tag: t.tags.office, title: t.office.title, desc: t.office.desc, imageUrl: PlaceHolderImages.find(i=>i.id==='case-office')?.imageUrl },
+      { id: 'case-transport', tag: t.tags.transport, title: t.transport.title, desc: t.transport.desc, imageUrl: PlaceHolderImages.find(i=>i.id==='case-transport')?.imageUrl },
+    ];
+  }, [remoteCases, locale, t]);
 
   const onSelect = useCallback((api: CarouselApi) => {
     if (!api) return;
@@ -55,7 +88,7 @@ export function CaseStudies({ locale }: { locale: Locale }) {
   }, [api, onSelect]);
 
   useEffect(() => {
-    if (!isPlaying) return;
+    if (!isPlaying || cases.length === 0) return;
     
     const intervalTime = 50;
     const step = (intervalTime / AUTOPLAY_DELAY) * 100;
@@ -68,7 +101,7 @@ export function CaseStudies({ locale }: { locale: Locale }) {
     }, intervalTime);
 
     return () => clearInterval(timer);
-  }, [isPlaying, current]);
+  }, [isPlaying, current, cases.length]);
 
   const toggleAutoplay = useCallback(() => {
     const autoplay = plugin.current;
@@ -81,88 +114,69 @@ export function CaseStudies({ locale }: { locale: Locale }) {
     }
   }, []);
 
-  // Calculate distance in a circular list to ensure smooth scaling during loops
   const getCardStyle = (index: number) => {
     if (!api) return "opacity-100";
-    
     const total = cases.length;
     let diff = Math.abs(index - current);
-    
-    // Handle circular distance
-    if (diff > total / 2) {
-      diff = total - diff;
-    }
+    if (diff > total / 2) diff = total - diff;
 
-    if (diff === 0) {
-      return "scale-[1.12] z-30 opacity-100 shadow-[0_30px_60px_rgba(0,0,0,0.3)]";
-    }
-    if (diff === 1) {
-      return "scale-[0.92] z-20 opacity-70 translate-y-1";
-    }
+    if (diff === 0) return "scale-[1.12] z-30 opacity-100 shadow-[0_30px_60px_rgba(0,0,0,0.3)]";
+    if (diff === 1) return "scale-[0.92] z-20 opacity-70 translate-y-1";
     return "scale-[0.8] z-10 opacity-30 translate-y-2";
   };
 
+  if (isLoading) {
+    return (
+      <div className="py-40 flex flex-col items-center justify-center gap-4 bg-background">
+        <Loader2 className="h-10 w-10 animate-spin text-primary opacity-20" />
+        <p className="text-[10px] font-bold uppercase tracking-widest opacity-40">同步全球成功案例...</p>
+      </div>
+    );
+  }
+
   return (
     <section id="cases" className="relative py-32 bg-background overflow-hidden">
-      {/* Dynamic Background Layer with Gaussian Blur */}
+      {/* 动态背景联动 */}
       <div className="absolute inset-0 z-0">
-        {cases.map((item, index) => {
-          const imgData = PlaceHolderImages.find(img => img.id === item.id);
-          return (
-            <div
-              key={`bg-${item.id}-${index}`}
-              className={cn(
-                "absolute inset-0 transition-opacity duration-1000 ease-in-out",
-                current === index ? "opacity-30" : "opacity-0"
-              )}
-            >
-              {imgData?.imageUrl && (
-                <Image
-                  src={imgData.imageUrl}
-                  alt="Background Dynamic Blur"
-                  fill
-                  className="object-cover blur-[120px] scale-110"
-                  priority={index === current}
-                />
-              )}
-              <div className="absolute inset-0 bg-background/40" />
-            </div>
-          );
-        })}
+        {cases.map((item, index) => (
+          <div
+            key={`bg-${item.id}`}
+            className={cn(
+              "absolute inset-0 transition-opacity duration-1000 ease-in-out",
+              current === index ? "opacity-30" : "opacity-0"
+            )}
+          >
+            {item.imageUrl && (
+              <Image
+                src={item.imageUrl}
+                alt="Background Blur"
+                fill
+                className="object-cover blur-[120px] scale-110"
+                unoptimized={item.imageUrl.startsWith('data:')}
+                priority={index === current}
+              />
+            )}
+            <div className="absolute inset-0 bg-background/40" />
+          </div>
+        ))}
       </div>
 
       <div className="container mx-auto px-6 mb-16 relative z-10">
-        <SectionHeading 
-          title={t.title} 
-          subtitle={t.subtitle} 
-          className="max-w-xl"
-        />
+        <SectionHeading title={t.title} subtitle={t.subtitle} className="max-w-xl" />
       </div>
 
       <div className="relative w-full z-10">
         <Carousel
           setApi={setApi}
           plugins={[plugin.current]}
-          opts={{
-            align: "center",
-            loop: true,
-            skipSnaps: false,
-          }}
+          opts={{ align: "center", loop: true, skipSnaps: false }}
           className="w-full"
         >
-          <CarouselContent 
-            className="-ml-4 md:-ml-6" 
-            viewportClassName="py-24 overflow-visible"
-          >
+          <CarouselContent className="-ml-4 md:-ml-6" viewportClassName="py-24 overflow-visible">
             {cases.map((item, index) => {
-              const imgData = PlaceHolderImages.find(img => img.id === item.id);
               const isActive = current === index;
-              
               return (
-                <CarouselItem 
-                  key={`${item.id}-${index}`} 
-                  className="pl-4 md:pl-6 basis-[75%] sm:basis-[45%] md:basis-[30%] lg:basis-[22%]"
-                >
+                <CarouselItem key={item.id} className="pl-4 md:pl-6 basis-[75%] sm:basis-[45%] md:basis-[30%] lg:basis-[22%]">
                   <div 
                     onClick={() => api?.scrollTo(index)}
                     className={cn(
@@ -171,43 +185,28 @@ export function CaseStudies({ locale }: { locale: Locale }) {
                     )}
                   >
                     <div className="relative aspect-[4/5] overflow-hidden">
-                      {imgData?.imageUrl && (
+                      {item.imageUrl && (
                         <Image
-                          src={imgData.imageUrl}
+                          src={item.imageUrl}
                           alt={item.title}
                           fill
                           className="object-cover transition-transform duration-1000 group-hover:scale-110"
-                          data-ai-hint={imgData.imageHint}
+                          unoptimized={item.imageUrl.startsWith('data:')}
                         />
                       )}
                       
-                      <div className={cn(
-                        "absolute inset-0 bg-gradient-to-t from-black/95 via-black/20 to-transparent transition-opacity duration-500",
-                        isActive ? "opacity-100" : "opacity-40"
-                      )} />
+                      <div className={cn("absolute inset-0 bg-gradient-to-t from-black/95 via-black/20 to-transparent transition-opacity duration-500", isActive ? "opacity-100" : "opacity-40")} />
                       
-                      <div className={cn(
-                        "absolute bottom-0 left-0 p-6 w-full transition-all duration-700",
-                        isActive ? "translate-y-0 opacity-100" : "translate-y-10 opacity-0"
-                      )}>
+                      <div className={cn("absolute bottom-0 left-0 p-6 w-full transition-all duration-700", isActive ? "translate-y-0 opacity-100" : "translate-y-10 opacity-0")}>
                         <div className="flex justify-between items-end gap-3">
                           <div className="space-y-3 flex-1">
                             <span className="inline-block px-2 py-1 bg-accent text-accent-foreground text-[9px] font-bold rounded-sm tracking-widest uppercase">
                               {item.tag}
                             </span>
-                            <h3 className="text-lg font-headline font-bold text-white leading-tight">
-                              {item.title}
-                            </h3>
-                            <p className="text-white/60 text-[10px] line-clamp-2 leading-relaxed">
-                              {item.desc}
-                            </p>
+                            <h3 className="text-lg font-headline font-bold text-white leading-tight">{item.title}</h3>
+                            <p className="text-white/60 text-[10px] line-clamp-2 leading-relaxed">{item.desc}</p>
                           </div>
-                          
-                          <div className="shrink-0">
-                            <div className="h-10 w-10 rounded-full bg-accent flex items-center justify-center text-accent-foreground shadow-lg transition-transform hover:scale-110">
-                              <ArrowRight className="h-4 w-4" />
-                            </div>
-                          </div>
+                          <div className="shrink-0"><div className="h-10 w-10 rounded-full bg-accent flex items-center justify-center text-accent-foreground shadow-lg transition-transform hover:scale-110"><ArrowRight className="h-4 w-4" /></div></div>
                         </div>
                       </div>
                     </div>
@@ -234,23 +233,14 @@ export function CaseStudies({ locale }: { locale: Locale }) {
                 {i === current && (
                   <div 
                     className="absolute inset-0 bg-primary origin-left"
-                    style={{ 
-                      width: `${progress}%`,
-                      transition: progress === 0 ? 'none' : 'width 50ms linear'
-                    }}
+                    style={{ width: `${progress}%`, transition: progress === 0 ? 'none' : 'width 50ms linear' }}
                   />
                 )}
               </button>
             ))}
           </div>
-
           <div className="flex items-center ml-2">
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={toggleAutoplay}
-              className="rounded-full hover:bg-primary/5 text-primary h-9 w-9 shrink-0 border border-transparent"
-            >
+            <Button variant="ghost" size="icon" onClick={toggleAutoplay} className="rounded-full hover:bg-primary/5 text-primary h-9 w-9 shrink-0 border border-transparent">
               {isPlaying ? <Pause className="h-5 w-5" /> : <Play className="h-5 w-5" />}
             </Button>
           </div>

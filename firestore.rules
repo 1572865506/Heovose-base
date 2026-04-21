@@ -1,6 +1,6 @@
 
 /**
- * Heovose 全球智能制造管理系统 - 安全规则 v1.7
+ * Heovose 全球智能制造管理系统 - 安全规则 v1.8
  */
 
 rules_version = '2';
@@ -29,6 +29,11 @@ service cloud.firestore {
     // --- 业务集合规则 ---
 
     match /products/{docId} { 
+      allow read: if true; 
+      allow write: if isAdmin(); 
+    }
+
+    match /caseStudies/{docId} { 
       allow read: if true; 
       allow write: if isAdmin(); 
     }

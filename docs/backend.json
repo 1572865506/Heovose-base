@@ -46,6 +46,23 @@
         }
       }
     },
+    "CaseStudy": {
+      "title": "CaseStudy",
+      "type": "object",
+      "description": "全球成功案例展示",
+      "properties": {
+        "id": { "type": "string" },
+        "order": { "type": "number" },
+        "tagZh": { "type": "string", "description": "行业标签，如：智慧零售" },
+        "tagEn": { "type": "string", "description": "Tag, e.g. RETAIL" },
+        "titleZh": { "type": "string" },
+        "titleEn": { "type": "string" },
+        "descZh": { "type": "string" },
+        "descEn": { "type": "string" },
+        "imageUrl": { "type": "string" }
+      },
+      "required": ["id", "titleZh", "imageUrl"]
+    },
     "ProductionStep": {
       "title": "ProductionStep",
       "type": "object",
@@ -118,6 +135,10 @@
     "/products/{productId}": {
       "schema": { "$ref": "#/backend/entities/Product" },
       "description": "产品列表"
+    },
+    "/caseStudies/{caseId}": {
+      "schema": { "$ref": "#/backend/entities/CaseStudy" },
+      "description": "全球客户成功案例"
     },
     "/productCategories/{categoryId}": {
       "schema": { "$ref": "#/backend/entities/ProductCategory" },
