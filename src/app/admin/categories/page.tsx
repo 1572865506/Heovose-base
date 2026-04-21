@@ -2,8 +2,8 @@
 "use client";
 
 import { useState, useMemo } from 'react';
-import { useFirestore, useCollection, useMemoFirebase } from '@/firebase';
-import { collection, doc, serverTimestamp } from 'firebase/firestore';
+import { useFirestore, useCollection, useMemoFirebase, useDoc } from '@/firebase';
+import { collection, doc, serverTimestamp, query, orderBy } from 'firebase/firestore';
 import { 
   Table, 
   TableBody, 
@@ -33,7 +33,11 @@ import {
   FolderPlus,
   Zap,
   Info,
-  LayoutGrid
+  LayoutGrid,
+  Image as ImageIcon,
+  Search,
+  Check,
+  X
 } from 'lucide-react';
 import { 
   Select,
@@ -69,6 +73,10 @@ export default function CategoriesPage() {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingCategory, setEditingCategory] = useState<ProductCategory | null>(null);
   
+  // 图库选择器状态
+  const [isPickerOpen, setIsPickerOpen] = useState(false);
+  const [pickerSearch, setPickerSearch] = useState('');
+
   const [formData, setFormData] = useState({
     id: '',
     slug: '',
@@ -80,9 +88,11 @@ export default function CategoriesPage() {
 
   const categoriesQuery = useMemoFirebase(() => firestore ? collection(firestore, 'productCategories') : null, [firestore]);
   const translationsQuery = useMemoFirebase(() => firestore ? collection(firestore, 'localizedStrings') : null, [firestore]);
+  const assetsQuery = useMemoFirebase(() => firestore ? query(collection(firestore, 'galleryAssets'), orderBy('createdAt', 'desc')) : null, [firestore]);
 
   const { data: categories, isLoading: isCatsLoading } = useCollection<ProductCategory>(categoriesQuery);
   const { data: translations } = useCollection<LocalizedString>(translationsQuery);
+  const { data: galleryAssets } = useCollection<any>(assetsQuery);
 
   // 计算树状结构用于展示和选择
   const categoryTree = useMemo(() => {
@@ -274,13 +284,88 @@ export default function CategoriesPage() {
             </div>
 
             <div className="space-y-1.5 pt-4 border-t border-dashed">
-              <Label className="text-[10px] font-bold uppercase text-primary">缩略图 URL (用于前台筛选列表)</Label>
-              <Input value={formData.thumbnailImageUrl} onChange={e => setFormData({...formData, thumbnailImageUrl: e.target.value})} className="h-10 rounded-xl text-xs bg-muted/5" placeholder="https://..." />
+              <Label className="text-[10px] font-bold uppercase text-primary">分类缩略图 (用于前台筛选列表)</Label>
+              <div 
+                className="relative aspect-video rounded-xl bg-muted/20 border-2 border-dashed border-border/40 overflow-hidden flex flex-col items-center justify-center group cursor-pointer hover:bg-muted/30 transition-all"
+                onClick={() => setIsPickerOpen(true)}
+              >
+                {formData.thumbnailImageUrl ? (
+                  <>
+                    <Image src={formData.thumbnailImageUrl} alt="Thumbnail" fill className="object-contain p-2" unoptimized />
+                    <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity gap-2">
+                      <Button variant="secondary" size="sm" className="rounded-full h-8 text-[10px] font-bold uppercase tracking-wider">更换图片</Button>
+                      <Button 
+                        variant="destructive" 
+                        size="icon" 
+                        className="h-8 w-8 rounded-full" 
+                        onClick={(e) => { e.stopPropagation(); setFormData({...formData, thumbnailImageUrl: ''}); }}
+                      >
+                        <X className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </>
+                ) : (
+                  <div className="flex flex-col items-center gap-2 opacity-40">
+                    <ImageIcon className="h-8 w-8" />
+                    <span className="text-[10px] font-bold uppercase tracking-widest">从素材库选择</span>
+                  </div>
+                )}
+              </div>
+              <p className="text-[9px] text-muted-foreground italic mt-2">提示：缩略图主要用于产品列表页顶部的分类快速导航。</p>
             </div>
           </div>
           <DialogFooter className="bg-muted/10 p-6 border-t gap-3">
             <Button variant="outline" onClick={() => setIsDialogOpen(false)} className="h-11 rounded-xl flex-1 font-bold uppercase text-[10px]">放弃编辑</Button>
             <Button onClick={handleSave} className="h-11 rounded-xl flex-1 font-bold uppercase text-[10px] shadow-lg">确认保存架构</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* 媒体资产库选择器 */}
+      <Dialog open={isPickerOpen} onOpenChange={setIsPickerOpen}>
+        <DialogContent className="max-w-5xl p-0 h-[80vh] rounded-3xl overflow-hidden flex flex-col shadow-2xl border-none">
+          <div className="bg-primary p-6 text-white flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <ImageIcon className="h-4 w-4" />
+              <DialogTitle className="text-sm font-bold uppercase tracking-widest">选择分类缩略图</DialogTitle>
+            </div>
+            <Button variant="ghost" size="icon" onClick={() => setIsPickerOpen(false)} className="text-white hover:bg-white/10 h-8 w-8"><X className="h-4 w-4" /></Button>
+          </div>
+          <div className="px-6 py-3 bg-muted/30 border-b flex gap-6 items-center">
+            <div className="relative flex-1">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 opacity-30" />
+              <Input 
+                placeholder="搜索素材标题..." 
+                value={pickerSearch} 
+                onChange={e => setPickerSearch(e.target.value)} 
+                className="pl-9 h-9 border-none bg-white text-xs" 
+              />
+            </div>
+          </div>
+          <div className="flex-1 overflow-y-auto p-6 grid grid-cols-2 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-7 gap-4 bg-muted/5">
+            {galleryAssets?.filter((a: any) => (a.title || '').toLowerCase().includes(pickerSearch.toLowerCase())).map((a: any) => (
+              <div 
+                key={a.id} 
+                className={cn(
+                  "group relative aspect-square rounded-xl overflow-hidden border-2 transition-all cursor-pointer shadow-sm bg-white", 
+                  formData.thumbnailImageUrl === a.url ? "border-primary scale-95 shadow-inner" : "border-transparent hover:border-primary/20"
+                )} 
+                onClick={() => {
+                  setFormData({ ...formData, thumbnailImageUrl: a.url });
+                  setIsPickerOpen(false);
+                }}
+              >
+                <Image src={a.url} alt={a.title} fill className="object-cover" unoptimized />
+                {formData.thumbnailImageUrl === a.url && (
+                  <div className="absolute inset-0 bg-primary/20 flex items-center justify-center">
+                    <div className="bg-white text-primary rounded-full p-1 shadow-lg"><Check className="h-3.5 w-3.5" /></div>
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+          <DialogFooter className="p-4 border-t flex justify-end bg-white">
+            <Button variant="ghost" size="sm" onClick={() => setIsPickerOpen(false)} className="px-8 h-10 rounded-xl text-xs font-bold uppercase tracking-widest">返回编辑器</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -310,7 +395,7 @@ export default function CategoriesPage() {
                   <TableCell className="pl-6">
                     <div className="relative h-10 w-10 rounded-lg border bg-muted/10 overflow-hidden shadow-inner flex items-center justify-center">
                       {cat.thumbnailImageUrl ? (
-                        <Image src={cat.thumbnailImageUrl} alt={cat.id} fill className="object-cover" unoptimized />
+                        <Image src={cat.thumbnailImageUrl} alt={cat.id} fill className="object-contain p-1" unoptimized />
                       ) : (
                         <LayoutGrid className="h-4 w-4 opacity-20" />
                       )}
