@@ -1011,7 +1011,7 @@ function ProductEditorContent() {
                                 placeholder="参数值 (ZH)" 
                                 value={item.valueZh} 
                                 onChange={e => { const g=[...formData.specGroups]; g[gIdx].items[iIdx].valueZh=e.target.value; setFormData({...formData, specGroups:g}); }} 
-                                className="min-h-10 h-auto py-2.5 text-xs font-medium bg-muted/20 border-solid resize-none overflow-hidden" 
+                                className="min-h-10 h-24 py-2.5 text-xs font-medium bg-muted/20 border-solid resize-none overflow-y-auto" 
                              />
                           </div>
                           <div className="relative">
@@ -1020,7 +1020,7 @@ function ProductEditorContent() {
                                 value={item.valueEn} 
                                 onChange={e => { const g=[...formData.specGroups]; g[gIdx].items[iIdx].valueEn=e.target.value; setFormData({...formData, specGroups:g}); }} 
                                 className={cn(
-                                  "min-h-10 h-auto py-2.5 text-xs border-dashed bg-white font-medium resize-none overflow-hidden",
+                                  "min-h-10 h-24 py-2.5 text-xs border-dashed bg-white font-medium resize-none overflow-y-auto",
                                   isValueProcessing && "animate-pulse ring-2 ring-primary/20 bg-accent/5"
                                 )} 
                              />
