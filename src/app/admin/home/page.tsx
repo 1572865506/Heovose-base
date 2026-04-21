@@ -16,7 +16,6 @@ import {
   Loader2, 
   Image as ImageIcon, 
   Film, 
-  BarChart3, 
   MapPin,
   ArrowRight,
   Info
@@ -68,12 +67,6 @@ export default function AdminHomePage() {
     videoTitleEn: '',
     videoSubtitleZh: '',
     videoSubtitleEn: '',
-    stats: [
-      { value: '3', labelZh: '全球工厂', labelEn: 'Global Factories', subZh: '中国 / 印尼', subEn: 'CN / ID' },
-      { value: '30+', labelZh: 'AIO 系列', labelEn: 'AIO Series', subZh: '机型', subEn: 'Models' },
-      { value: '500+', labelZh: '合作伙伴', labelEn: 'Happy Clients', subZh: '全球客户', subEn: 'Global' },
-      { value: '15+', labelZh: '行业经验', labelEn: 'Years Excellence', subZh: '年行业积淀', subEn: 'Years' }
-    ],
     mapTitleZh: '',
     mapTitleEn: '',
     mapSubtitleZh: '',
@@ -165,9 +158,6 @@ export default function AdminHomePage() {
           </TabsTrigger>
           <TabsTrigger value="video" className="rounded-xl px-8 text-xs font-bold uppercase tracking-wider gap-2">
             <Film className="h-4 w-4" /> 品牌故事 (Video)
-          </TabsTrigger>
-          <TabsTrigger value="stats" className="rounded-xl px-8 text-xs font-bold uppercase tracking-wider gap-2">
-            <BarChart3 className="h-4 w-4" /> 数据看板 (Stats)
           </TabsTrigger>
           <TabsTrigger value="map" className="rounded-xl px-8 text-xs font-bold uppercase tracking-wider gap-2">
             <MapPin className="h-4 w-4" /> 全球足迹 (Map)
@@ -303,59 +293,6 @@ export default function AdminHomePage() {
                   />
                 </div>
               </div>
-            </div>
-          </div>
-        </TabsContent>
-
-        {/* Stats Section */}
-        <TabsContent value="stats" className="space-y-6">
-          <div className="bg-white p-8 rounded-3xl border shadow-sm space-y-8">
-            <div className="flex items-center justify-between border-b pb-4 mb-6">
-              <div className="space-y-1">
-                <h3 className="text-sm font-bold text-primary uppercase tracking-widest flex items-center gap-2">
-                  <BarChart3 className="h-4 w-4" /> 核心统计看板
-                </h3>
-                <p className="text-[10px] text-muted-foreground uppercase font-medium">配置官网展示的 4 项关键经营数据。</p>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-              {formData.stats.map((stat: any, idx: number) => (
-                <div key={idx} className="p-6 rounded-2xl border bg-muted/5 space-y-4 group hover:border-primary/40 transition-all">
-                  <div className="flex items-center justify-between">
-                    <Badge variant="outline" className="text-[9px] font-bold uppercase tracking-tighter border-primary/20 text-primary">指标 {idx + 1}</Badge>
-                    <div className="h-8 w-8 rounded-full bg-white flex items-center justify-center text-primary/20 group-hover:text-primary transition-colors">
-                      <BarChart3 className="h-4 w-4" />
-                    </div>
-                  </div>
-                  <div className="grid grid-cols-1 md:grid-cols-12 gap-4">
-                    <div className="md:col-span-3 space-y-1.5">
-                      <Label className="text-[9px] font-bold uppercase opacity-40 tracking-tighter">数值</Label>
-                      <Input value={stat.value} onChange={e => {
-                        const newStats = [...formData.stats];
-                        newStats[idx].value = e.target.value;
-                        setFormData({...formData, stats: newStats});
-                      }} className="h-10 rounded-lg text-xs font-bold text-primary" />
-                    </div>
-                    <div className="md:col-span-4 space-y-1.5">
-                      <Label className="text-[9px] font-bold uppercase opacity-40 tracking-tighter">中文标签</Label>
-                      <Input value={stat.labelZh} onChange={e => {
-                        const newStats = [...formData.stats];
-                        newStats[idx].labelZh = e.target.value;
-                        setFormData({...formData, stats: newStats});
-                      }} className="h-10 rounded-lg text-xs" />
-                    </div>
-                    <div className="md:col-span-5 space-y-1.5">
-                      <Label className="text-[9px] font-bold uppercase opacity-40 tracking-tighter">LABEL (EN)</Label>
-                      <Input value={stat.labelEn} onChange={e => {
-                        const newStats = [...formData.stats];
-                        newStats[idx].labelEn = e.target.value;
-                        setFormData({...formData, stats: newStats});
-                      }} className="h-10 rounded-lg text-xs border-dashed" />
-                    </div>
-                  </div>
-                </div>
-              ))}
             </div>
           </div>
         </TabsContent>

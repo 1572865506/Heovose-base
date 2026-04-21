@@ -15,19 +15,6 @@
         "videoTitleZh": { "type": "string" },
         "videoSubtitleEn": { "type": "string" },
         "videoSubtitleZh": { "type": "string" },
-        "stats": {
-          "type": "array",
-          "items": {
-            "type": "object",
-            "properties": {
-              "value": { "type": "string" },
-              "labelEn": { "type": "string" },
-              "labelZh": { "type": "string" },
-              "subEn": { "type": "string" },
-              "subZh": { "type": "string" }
-            }
-          }
-        },
         "mapTitleEn": { "type": "string" },
         "mapTitleZh": { "type": "string" },
         "mapSubtitleEn": { "type": "string" },
