@@ -19,7 +19,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Button } from '@/components/ui/button';
-import { Settings2, Save, Globe, ShieldCheck, Loader2, Cloud, Database, Cpu } from 'lucide-react';
+import { Settings2, Save, Globe, ShieldCheck, Loader2, Cloud, Database, Cpu, Info } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
 import { setDocumentNonBlocking } from '@/firebase/non-blocking-updates';
@@ -127,7 +127,7 @@ export default function AdminSettingsPage() {
                           </SelectItem>
                         ))
                       ) : (
-                        <SelectItem value="zh" disabled className="text-xs italic">请先在“语种设置”中添加语言</SelectItem>
+                        <SelectItem value="zh" disabled className="text-xs italic">请先在“翻译管理”中添加语言</SelectItem>
                       )}
                     </SelectContent>
                   </Select>

@@ -20,6 +20,17 @@
         "status": { "type": "string", "enum": ["published", "draft"] }
       }
     },
+    "ProductCategory": {
+      "title": "ProductCategory",
+      "type": "object",
+      "description": "产品分类定义",
+      "properties": {
+        "id": { "type": "string" },
+        "nameTextId": { "type": "string" },
+        "slug": { "type": "string" },
+        "thumbnailImageUrl": { "type": "string" }
+      }
+    },
     "AdminUser": {
       "title": "AdminUser",
       "type": "object",
@@ -29,7 +40,7 @@
         "email": { "type": "string", "description": "管理员邮箱" },
         "role": { "type": "string", "enum": ["superadmin", "editor"], "description": "权限角色" },
         "displayName": { "type": "string", "description": "显示名称" },
-        "avatarUrl": { "type": "string", "description": "头像链接" },
+        "avatarUrl": { "type": "string", "description": "头像链接（Base64 或 URL）" },
         "status": { "type": "string", "enum": ["active", "disabled"], "description": "账号激活状态" }
       },
       "required": ["uid", "email", "role", "status"]
@@ -52,6 +63,10 @@
     "/products/{productId}": {
       "schema": { "$ref": "#/backend/entities/Product" },
       "description": "产品列表"
+    },
+    "/productCategories/{categoryId}": {
+      "schema": { "$ref": "#/backend/entities/ProductCategory" },
+      "description": "产品业务分类"
     },
     "/admins/{userId}": {
       "schema": { "$ref": "#/backend/entities/AdminUser" },
