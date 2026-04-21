@@ -17,7 +17,8 @@ import {
   Mail, 
   Key,
   Info,
-  ExternalLink
+  ExternalLink,
+  Copy
 } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { setDocumentNonBlocking } from '@/firebase/non-blocking-updates';
@@ -126,13 +127,32 @@ export default function ProfilePage() {
                       onChange={handleAvatarChange} 
                     />
                  </div>
-                 <div className="space-y-1.5">
+                 <div className="space-y-2">
                     <h3 className="text-lg font-bold text-primary">{formData.displayName || '未命名管理员'}</h3>
-                    <div className="flex items-center gap-2">
-                       <Badge className="bg-primary text-white border-none text-[9px] uppercase tracking-widest px-2">
-                         {profile?.role === 'superadmin' ? 'Superadmin' : 'Editor'}
-                       </Badge>
-                       <span className="text-[10px] text-muted-foreground font-medium uppercase">{user?.email}</span>
+                    <div className="space-y-2">
+                       <div className="flex items-center gap-2">
+                          <Badge className="bg-primary text-white border-none text-[9px] uppercase tracking-widest px-2">
+                            {profile?.role === 'superadmin' ? 'Superadmin' : 'Editor'}
+                          </Badge>
+                          <span className="text-[10px] text-muted-foreground font-medium uppercase">{user?.email}</span>
+                       </div>
+                       <div className="flex items-center gap-1.5">
+                          <div className="flex items-center gap-1.5 px-2 py-0.5 bg-muted/30 rounded-md border border-border/40">
+                             <Key className="h-2.5 w-2.5 text-muted-foreground/60" />
+                             <code className="text-[8px] font-mono text-muted-foreground/80 uppercase tracking-tighter">UID: {user?.uid}</code>
+                          </div>
+                          <Button 
+                            variant="ghost" 
+                            size="icon" 
+                            className="h-5 w-5 opacity-40 hover:opacity-100 transition-opacity"
+                            onClick={() => {
+                              navigator.clipboard.writeText(user?.uid || '');
+                              toast({ title: "UID 已复制" });
+                            }}
+                          >
+                            <Copy className="h-3 w-3" />
+                          </Button>
+                       </div>
                     </div>
                  </div>
                </div>
