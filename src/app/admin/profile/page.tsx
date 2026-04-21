@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useUser, useFirestore, useDoc, useMemoFirebase } from '@/firebase';
 import { doc, serverTimestamp } from 'firebase/firestore';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
@@ -28,6 +28,7 @@ export default function ProfilePage() {
   const { user } = useUser();
   const firestore = useFirestore();
   const { toast } = useToast();
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const [isSaving, setIsSaving] = useState(false);
 
   const adminRef = useMemoFirebase(() => 
@@ -50,6 +51,29 @@ export default function ProfilePage() {
     }
   }, [profile]);
 
+  const handleAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // 限制大小在 200KB 以内
+    if (file.size > 200 * 1024) {
+      toast({
+        variant: "destructive",
+        title: "图片过大",
+        description: "为了系统性能，头像图片请控制在 200KB 以内。"
+      });
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      const base64 = ev.target?.result as string;
+      setFormData(prev => ({ ...prev, avatarUrl: base64 }));
+      toast({ title: "头像已预览", description: "点击下方保存按钮以永久生效。" });
+    };
+    reader.readAsDataURL(file);
+  };
+
   const handleSave = () => {
     if (!firestore || !user?.uid) return;
     setIsSaving(true);
@@ -71,7 +95,7 @@ export default function ProfilePage() {
         <h2 className="text-xl font-headline font-bold text-primary flex items-center gap-2">
           <UserCircle className="h-5 w-5" /> 我的个人资料
         </h2>
-        <p className="text-xs text-muted-foreground">自定义您的显示身份，以便在团队协作中脱颖而出。</p>
+        <p className="text-xs text-muted-foreground">自定义您的显示身份。头像将存储在加密的管理员配置中。</p>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
@@ -79,16 +103,28 @@ export default function ProfilePage() {
           <Card className="rounded-2xl border-border/40 shadow-sm overflow-hidden bg-white">
             <div className="bg-primary/5 p-6 border-b border-border/20">
                <div className="flex items-center gap-6">
-                 <div className="relative group">
-                    <Avatar className="h-20 w-20 rounded-2xl border-2 border-white shadow-xl">
+                 <div 
+                   className="relative group cursor-pointer"
+                   onClick={() => fileInputRef.current?.click()}
+                   title="点击上传本地图片"
+                 >
+                    <Avatar className="h-20 w-20 rounded-2xl border-2 border-white shadow-xl transition-transform group-hover:scale-95">
                       {formData.avatarUrl ? <AvatarImage src={formData.avatarUrl} className="object-cover" /> : null}
                       <AvatarFallback className="bg-primary/10 text-primary text-xl font-bold uppercase">
                         {(formData.displayName || user?.email)?.[0]}
                       </AvatarFallback>
                     </Avatar>
-                    <div className="absolute inset-0 bg-black/40 rounded-2xl flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer">
+                    <div className="absolute inset-0 bg-black/40 rounded-2xl flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
                       <Camera className="h-6 w-6 text-white" />
                     </div>
+                    {/* 隐藏的上传控件 */}
+                    <input 
+                      type="file" 
+                      ref={fileInputRef} 
+                      className="hidden" 
+                      accept="image/*" 
+                      onChange={handleAvatarChange} 
+                    />
                  </div>
                  <div className="space-y-1.5">
                     <h3 className="text-lg font-bold text-primary">{formData.displayName || '未命名管理员'}</h3>
@@ -102,22 +138,13 @@ export default function ProfilePage() {
                </div>
             </div>
             <CardContent className="p-8 space-y-6">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="grid grid-cols-1 gap-6">
                 <div className="space-y-2">
                   <Label className="text-[10px] font-bold uppercase tracking-widest text-primary">显示名称</Label>
                   <Input 
                     placeholder="例如: 张工 / Alex" 
                     value={formData.displayName}
                     onChange={e => setFormData({...formData, displayName: e.target.value})}
-                    className="h-11 rounded-xl bg-muted/20"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label className="text-[10px] font-bold uppercase tracking-widest text-primary">头像 URL</Label>
-                  <Input 
-                    placeholder="https://..." 
-                    value={formData.avatarUrl}
-                    onChange={e => setFormData({...formData, avatarUrl: e.target.value})}
                     className="h-11 rounded-xl bg-muted/20"
                   />
                 </div>
@@ -147,26 +174,26 @@ export default function ProfilePage() {
           <Card className="rounded-2xl border-border/40 shadow-sm bg-white">
             <CardHeader className="pb-2">
               <CardTitle className="text-xs font-bold text-primary uppercase tracking-widest flex items-center gap-2">
-                <Info className="h-4 w-4" /> 账号安全建议
+                <Info className="h-4 w-4" /> 头像上传规则
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4 pt-2">
                <div className="flex gap-3">
                   <div className="h-8 w-8 rounded-full bg-orange-50 flex items-center justify-center shrink-0">
-                    <Mail className="h-4 w-4 text-orange-600" />
+                    <Camera className="h-4 w-4 text-orange-600" />
                   </div>
                   <div className="space-y-1">
-                     <p className="text-[10px] font-bold">验证邮箱</p>
-                     <p className="text-[9px] text-muted-foreground leading-relaxed">确保您的邮箱已通过验证，以便在丢失密码时找回。</p>
+                     <p className="text-[10px] font-bold">本地直传</p>
+                     <p className="text-[9px] text-muted-foreground leading-relaxed">点击头像框即可从本地选择图片，无需再输入复杂的 URL。</p>
                   </div>
                </div>
                <div className="flex gap-3">
                   <div className="h-8 w-8 rounded-full bg-blue-50 flex items-center justify-center shrink-0">
-                    <Key className="h-4 w-4 text-blue-600" />
+                    <ShieldCheck className="h-4 w-4 text-blue-600" />
                   </div>
                   <div className="space-y-1">
-                     <p className="text-[10px] font-bold">定期更换密码</p>
-                     <p className="text-[9px] text-muted-foreground leading-relaxed">建议每 3 个月通过授权中心重置一次访问密码。</p>
+                     <p className="text-[10px] font-bold">大小限制: 200KB</p>
+                     <p className="text-[9px] text-muted-foreground leading-relaxed">为了保证后台加载速度，头像会自动压缩，请确保文件小于 200KB。</p>
                   </div>
                </div>
             </CardContent>
