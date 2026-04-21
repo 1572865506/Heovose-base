@@ -79,7 +79,7 @@ import RichTextEditor from '@/components/RichTextEditor';
 const AiGradientDef = () => (
   <svg width="0" height="0" className="absolute">
     <defs>
-      <linearGradient id="ai-aurora-gradient" x1="0%" y1="0%" x2="100%" x2="100%">
+      <linearGradient id="ai-aurora-gradient" x1="0%" y1="0%" x2="100%" y2="100%">
         <stop stopColor="#06B6D4" offset="0%">
           <animate attributeName="stop-color" values="#06B6D4;#4F46E5;#06B6D4" dur="4s" repeatCount="indefinite" />
         </stop>
@@ -167,7 +167,7 @@ interface AppConfig {
  * 稳健的 JSON 解析工具，处理 AI 返回的常见格式错误
  */
 function robustJsonParse(rawStr: string) {
-  let jsonStr = (rawStr || '').trim();
+  let jsonStr = (String(rawStr) || '').trim();
   
   // 1. 移除 Markdown 代码块包装
   if (jsonStr.includes('```')) {
@@ -265,13 +265,13 @@ function ProductEditorContent() {
 
     let basicTotal = 0;
     let basicTranslated = 0;
-    if ((formData.nameZh || '').trim()) {
+    if (String(formData.nameZh || '').trim()) {
       basicTotal++;
-      if ((formData.nameEn || '').trim()) basicTranslated++;
+      if (String(formData.nameEn || '').trim()) basicTranslated++;
     }
-    if ((formData.descZh || '').trim()) {
+    if (String(formData.descZh || '').trim()) {
       basicTotal++;
-      if ((formData.descEn || '').trim()) basicTranslated++;
+      if (String(formData.descEn || '').trim()) basicTranslated++;
     }
     totalFields += basicTotal;
     translatedFields += basicTranslated;
@@ -279,18 +279,18 @@ function ProductEditorContent() {
     let specTotal = 0;
     let specTranslated = 0;
     formData.specGroups.forEach(group => {
-      if ((group.titleZh || '').trim()) {
+      if (String(group.titleZh || '').trim()) {
         specTotal++;
-        if ((group.titleEn || '').trim()) specTranslated++;
+        if (String(group.titleEn || '').trim()) specTranslated++;
       }
       group.items.forEach(item => {
-        if ((item.labelZh || '').trim()) {
+        if (String(item.labelZh || '').trim()) {
           specTotal++;
-          if ((item.labelEn || '').trim()) specTranslated++;
+          if (String(item.labelEn || '').trim()) specTranslated++;
         }
-        if ((item.valueZh || '').trim()) {
+        if (String(item.valueZh || '').trim()) {
           specTotal++;
-          if ((item.valueEn || '').trim()) specTranslated++;
+          if (String(item.valueEn || '').trim()) specTranslated++;
         }
       });
     });
@@ -299,10 +299,10 @@ function ProductEditorContent() {
 
     let detailTotal = 0;
     let detailTranslated = 0;
-    const zhClean = (formData.localizedDetails.zh || '').replace(/<[^>]*>/g, '').trim();
+    const zhClean = String(formData.localizedDetails.zh || '').replace(/<[^>]*>/g, '').trim();
     if (zhClean) {
       detailTotal++;
-      const enClean = (formData.localizedDetails.en || '').replace(/<[^>]*>/g, '').trim();
+      const enClean = String(formData.localizedDetails.en || '').replace(/<[^>]*>/g, '').trim();
       if (enClean) detailTranslated++;
     }
     totalFields += detailTotal;
@@ -320,23 +320,23 @@ function ProductEditorContent() {
 
   useEffect(() => {
     if (isEditing && product && translations) {
-      const getT = (id?: string) => translations.find(t => t.id === id) || { en: '', zh: '' };
+      const getT = (id?: string) => translations?.find(t => t.id === id) || { en: '', zh: '' };
       
       const advantages = (product.advantageTextIds || []).map((id, idx) => {
         const t = getT(id);
-        return { uid: `adv_${idx}_${Date.now()}`, zh: t.zh || '', en: t.en || '' };
+        return { uid: `adv_${idx}_${Date.now()}`, zh: String(t.zh || ''), en: String(t.en || '') };
       });
 
       const specGroups = (product.specGroups || []).map((g, gIdx) => {
         const titleT = getT(g.titleId);
         const items = g.items.map((item, iIdx) => ({
           uid: `spec_item_${gIdx}_${iIdx}_${Date.now()}`,
-          labelEn: getT(item.labelId).en || '',
-          labelZh: getT(item.labelId).zh || '',
-          valueEn: getT(item.valueId).en || '',
-          valueZh: getT(item.valueId).zh || ''
+          labelEn: String(getT(item.labelId).en || ''),
+          labelZh: String(getT(item.labelId).zh || ''),
+          valueEn: String(getT(item.valueId).en || ''),
+          valueZh: String(getT(item.valueId).zh || '')
         }));
-        return { uid: `spec_group_${gIdx}_${Date.now()}`, titleEn: titleT.en || '', titleZh: titleT.zh || '', items };
+        return { uid: `spec_group_${gIdx}_${Date.now()}`, titleEn: String(titleT.en || ''), titleZh: String(titleT.zh || ''), items };
       });
 
       setFormData({
@@ -344,10 +344,10 @@ function ProductEditorContent() {
         categoryId: product.productCategoryId,
         mainImageUrl: product.mainImageUrl,
         galleryUrls: product.galleryImageUrls || [],
-        nameEn: getT(product.nameTextId).en || '',
-        nameZh: getT(product.nameTextId).zh || '',
-        descEn: getT(product.descriptionTextId).en || '',
-        descZh: getT(product.descriptionTextId).zh || '',
+        nameEn: String(getT(product.nameTextId).en || ''),
+        nameZh: String(getT(product.nameTextId).zh || ''),
+        descEn: String(getT(product.descriptionTextId).en || ''),
+        descZh: String(getT(product.descriptionTextId).zh || ''),
         localizedDetails: product.localizedDetails || { zh: '', en: '' },
         advantages: advantages.length > 0 ? advantages : [{ uid: 'initial', zh: '', en: '' }],
         specGroups: specGroups.length > 0 ? specGroups : [],
@@ -374,9 +374,9 @@ function ProductEditorContent() {
       toast({ variant: "destructive", title: "ID 已被占用" });
       return;
     }
-    const saveLang = (en: string, zh: string, defaultId: string) => {
+    const saveLang = (en: any, zh: any, defaultId: string) => {
       setDocumentNonBlocking(doc(firestore, 'localizedStrings', defaultId), { 
-        id: defaultId, en: (en || '').trim(), zh: (zh || '').trim(), updatedAt: serverTimestamp() 
+        id: defaultId, en: String(en || '').trim(), zh: String(zh || '').trim(), updatedAt: serverTimestamp() 
       }, { merge: true });
       return defaultId;
     };
@@ -466,14 +466,14 @@ function ProductEditorContent() {
   const handleApplyTemplate = (template: SpecTemplate) => {
     const mappedGroups = template.specGroups.map((group: any, gIdx: number) => ({
       uid: `tpl_g_${gIdx}_${Date.now()}`,
-      titleEn: group.titleEn || '',
-      titleZh: group.titleZh || '',
+      titleEn: String(group.titleEn || ''),
+      titleZh: String(group.titleZh || ''),
       items: (group.items || []).map((item: any, iIdx: number) => ({
         uid: `tpl_i_${gIdx}_${iIdx}_${Date.now()}`,
-        labelEn: item.labelEn || '',
-        labelZh: item.labelZh || '',
-        valueEn: item.valueEn || '',
-        valueZh: item.valueZh || ''
+        labelEn: String(item.labelEn || ''),
+        labelZh: String(item.labelZh || ''),
+        valueEn: String(item.valueEn || ''),
+        valueZh: String(item.valueZh || '')
       }))
     }));
     setFormData(prev => ({ ...prev, specGroups: [...prev.specGroups, ...mappedGroups] }));
@@ -493,8 +493,8 @@ function ProductEditorContent() {
     setIsAiProcessing(true);
     try {
       const results = await Promise.all([
-        (formData.nameZh || '').trim() ? translateContent({ text: formData.nameZh, targetLangs: ['en'], apiKey: aiConfig.apiKey }) : null,
-        (formData.descZh || '').trim() ? translateContent({ text: formData.descZh, targetLangs: ['en'], apiKey: aiConfig.apiKey }) : null
+        String(formData.nameZh || '').trim() ? translateContent({ text: formData.nameZh, targetLangs: ['en'], apiKey: aiConfig.apiKey }) : null,
+        String(formData.descZh || '').trim() ? translateContent({ text: formData.descZh, targetLangs: ['en'], apiKey: aiConfig.apiKey }) : null
       ]);
       setFormData(prev => ({
         ...prev,
@@ -541,16 +541,16 @@ function ProductEditorContent() {
     const allIds = new Set<string>();
 
     formData.specGroups.forEach((group, gIdx) => {
-      if (group.titleZh && !group.titleEn) {
+      if (String(group.titleZh || '').trim() && !String(group.titleEn || '').trim()) {
         taskMap[`g_${gIdx}_title`] = { type: 'title', text: group.titleZh };
         allIds.add(`g_${gIdx}_title`);
       }
       group.items.forEach((item, iIdx) => {
-        if (item.labelZh && !item.labelEn) {
+        if (String(item.labelZh || '').trim() && !String(item.labelEn || '').trim()) {
           taskMap[`i_${gIdx}_${iIdx}_label`] = { type: 'label', text: item.labelZh };
           allIds.add(`i_${gIdx}_${iIdx}_label`);
         }
-        if (item.valueZh && !item.valueEn) {
+        if (String(item.valueZh || '').trim() && !String(item.valueEn || '').trim()) {
           taskMap[`i_${gIdx}_${iIdx}_value`] = { type: 'value', text: item.valueZh };
           allIds.add(`i_${gIdx}_${iIdx}_value`);
         }
@@ -590,14 +590,14 @@ function ProductEditorContent() {
           const val = results[key];
           if (key.startsWith('g_')) {
             const gIdx = parseInt(key.split('_')[1]);
-            newSpecGroups[gIdx].titleEn = val;
+            newSpecGroups[gIdx].titleEn = String(val);
           } else if (key.startsWith('i_')) {
             const parts = key.split('_');
             const gIdx = parseInt(parts[1]);
             const iIdx = parseInt(parts[2]);
             const type = parts[3];
-            if (type === 'label') newSpecGroups[gIdx].items[iIdx].labelEn = val;
-            else if (type === 'value') newSpecGroups[gIdx].items[iIdx].valueEn = val;
+            if (type === 'label') newSpecGroups[gIdx].items[iIdx].labelEn = String(val);
+            else if (type === 'value') newSpecGroups[gIdx].items[iIdx].valueEn = String(val);
           }
         });
 
@@ -615,14 +615,14 @@ function ProductEditorContent() {
   const handleAiTranslateSpecItem = async (gIdx: number, iIdx: number) => {
     if (!aiConfig?.isEnabled) return;
     const item = formData.specGroups[gIdx].items[iIdx];
-    if (!item.labelZh && !item.valueZh) return;
+    if (!String(item.labelZh || '').trim() && !String(item.valueZh || '').trim()) return;
     
     const labelKey = `i_${gIdx}_${iIdx}_label`;
     const valueKey = `i_${gIdx}_${iIdx}_value`;
     setProcessingItems(prev => { const n = new Set(prev); n.add(labelKey); n.add(valueKey); return n; });
 
     try {
-      const combinedPayload = JSON.stringify({ label: item.labelZh, value: item.valueZh });
+      const combinedPayload = JSON.stringify({ label: String(item.labelZh || ''), value: String(item.valueZh || '') });
       const res = await translateContent({ 
         text: `Translate this hardware spec entry (return valid JSON only): ${combinedPayload}. 
         Return format: {"label": "...", "value": "..."}.
@@ -634,8 +634,8 @@ function ProductEditorContent() {
       if (res?.en) {
         const parsed = robustJsonParse(res.en);
         const newSpecGroups = [...formData.specGroups];
-        newSpecGroups[gIdx].items[iIdx].labelEn = parsed.label || '';
-        newSpecGroups[gIdx].items[iIdx].valueEn = parsed.value || '';
+        newSpecGroups[gIdx].items[iIdx].labelEn = String(parsed.label || '');
+        newSpecGroups[gIdx].items[iIdx].valueEn = String(parsed.value || '');
         setFormData({ ...formData, specGroups: newSpecGroups });
         toast({ title: "单条规格智译成功" });
       }
