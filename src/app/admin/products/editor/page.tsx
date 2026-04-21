@@ -38,7 +38,8 @@ import {
   ChevronLeft,
   Settings,
   RotateCcw,
-  BarChart3
+  BarChart3,
+  HelpCircle
 } from 'lucide-react';
 import { 
   Dialog, 
@@ -701,7 +702,7 @@ function ProductEditorContent() {
   return (
     <div className="max-w-full w-full mx-auto space-y-6 pb-20 animate-in fade-in duration-500">
       <AiGradientDef />
-      <div className="flex items-center justify-between sticky top-[-24px] z-40 bg-background/95 backdrop-blur-md py-3 border-b shadow-sm -mx-6 px-6">
+      <div className="flex items-center justify-between sticky top-[-24px] z-50 bg-background/95 backdrop-blur-md py-3 border-b shadow-sm -mx-6 px-6">
         <div className="flex items-center gap-6 flex-1 min-w-0">
           <div className="flex items-center gap-2 shrink-0">
             <Button variant="ghost" size="icon" onClick={() => router.back()} className="rounded-full h-8 w-8"><ArrowLeft className="h-4 w-4" /></Button>
@@ -1080,15 +1081,28 @@ function ProductEditorContent() {
                     <SelectTrigger className="h-10 w-28 text-xs font-bold uppercase"><SelectValue /></SelectTrigger>
                     <SelectContent className="rounded-lg">{supportedLangs.filter(l=>l.code!=='zh').map(l=><SelectItem key={l.code} value={l.code} className="text-xs uppercase">{l.label}</SelectItem>)}</SelectContent>
                   </Select>
-                  <Button 
-                    variant="ghost"
-                    size="sm" 
-                    className="h-10 px-5 text-xs font-bold text-primary rounded-lg ai-btn-glow" 
-                    onClick={handleAiTranslateDetails} 
-                    disabled={isAiProcessing}
-                  >
-                    <Sparkles className="h-4 w-4 ai-icon-gradient" /> AI 智译 ({targetDetailsLang.toUpperCase()})
-                  </Button>
+                  
+                  <div className="flex items-center gap-1.5">
+                    <TooltipProvider>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Button 
+                            variant="ghost"
+                            size="sm" 
+                            className="h-10 px-5 text-xs font-bold text-primary rounded-lg ai-btn-glow" 
+                            onClick={handleAiTranslateDetails} 
+                            disabled={isAiProcessing}
+                          >
+                            <Sparkles className="h-4 w-4 ai-icon-gradient" /> AI 智译 ({targetDetailsLang.toUpperCase()})
+                          </Button>
+                        </TooltipTrigger>
+                        <TooltipContent side="bottom" className="max-w-[200px] p-3 text-[10px] leading-relaxed">
+                          <p className="font-bold flex items-center gap-1 mb-1"><HelpCircle className="h-3 w-3" /> 智译须知</p>
+                          AI 仅处理文本，图片标签可能在智译过程中丢失，建议翻译后手动核对或重新通过右侧编辑器插入图片。
+                        </TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
+                  </div>
                 </div>
               </div>
               <div className="grid grid-cols-2 gap-8 flex-1">
@@ -1096,7 +1110,7 @@ function ProductEditorContent() {
                 <div className="relative flex flex-col min-w-0">
                   <RichTextEditor ref={targetEditorRef} content={formData.localizedDetails[targetDetailsLang] || ''} onChange={v => setFormData({...formData, localizedDetails: {...formData.localizedDetails, [targetDetailsLang]: v}})} onImageClick={() => openPicker('richtext-target')} className="min-h-[500px]" />
                   {isAiProcessing && (
-                    <div className="absolute inset-0 bg-white/70 backdrop-blur-sm z-50 flex flex-col items-center justify-center gap-3">
+                    <div className="absolute inset-0 bg-white/70 backdrop-blur-sm z-10 flex flex-col items-center justify-center gap-3">
                       <Cpu className="h-10 w-10 text-primary animate-pulse" />
                       <p className="text-[10px] font-bold uppercase tracking-widest text-primary">AI 语义排版映射中...</p>
                     </div>

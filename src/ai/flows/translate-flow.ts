@@ -51,13 +51,14 @@ export async function translateContent(input: TranslateInput): Promise<Translate
       Translate the provided text from ${input.sourceLang} to these languages: ${input.targetLangs.join(', ')}.
       
       CRITICAL INSTRUCTIONS:
-      1. For HTML content: Preserve ALL tags (especially <img>, <table>, <div>).
-      2. NEVER modify attributes like "src", "class", or "style".
-      3. Ensure the output is a valid JSON object where keys are language codes.
-      4. If the content contains technical specs, maintain professional terminology.
-      5. FORMAT: Return ONLY the structured JSON output. 
-      6. JSON SAFETY: Escape all special characters and newlines (\\n) within string values to ensure valid JSON parsing. 
-      7. NO MARKDOWN: Do not include backticks (\`\`\`) or "json" labels in your output.
+      1. For HTML content: YOU MUST PRESERVE ALL HTML TAGS (especially <img>, <table>, <div>, <span>, <br>). 
+      2. DO NOT strip or replace any image tags. If an <img> tag exists in the source, it MUST exist in the translated output with identical attributes.
+      3. NEVER modify attributes like "src", "class", or "style".
+      4. Ensure the output is a valid JSON object where keys are language codes.
+      5. If the content contains technical specs, maintain professional terminology.
+      6. FORMAT: Return ONLY the structured JSON output. 
+      7. JSON SAFETY: Escape all special characters and newlines (\\n) within string values to ensure valid JSON parsing. 
+      8. NO MARKDOWN: Do not include backticks (\`\`\`) or "json" labels in your output.
       
       Source Content: ${input.text}`
     });
