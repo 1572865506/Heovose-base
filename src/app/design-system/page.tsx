@@ -109,7 +109,7 @@ export default function DesignSystemPage() {
           </div>
           <div>
             <h1 className="text-lg font-bold text-primary uppercase tracking-widest leading-none">Heovose Design Lab</h1>
-            <p className="text-[9px] text-muted-foreground font-bold uppercase opacity-60 mt-1">视觉实验室 • 核心版本 v1.9.5</p>
+            <p className="text-[9px] text-muted-foreground font-bold uppercase opacity-60 mt-1">视觉实验室 • 核心版本 v1.9.8</p>
           </div>
         </div>
 
@@ -244,7 +244,7 @@ export default function DesignSystemPage() {
                 <div className="space-y-10">
                    <div className="flex items-center justify-between">
                      <h3 className="text-xs font-bold text-primary/40 uppercase tracking-[0.2em] border-l-2 border-primary pl-4">排版层级与规格矩阵规范</h3>
-                     <Badge variant="outline" className="h-6 text-[8px] font-bold uppercase">Typography specs v2.5</Badge>
+                     <Badge variant="outline" className="h-6 text-[8px] font-bold uppercase">Typography specs v2.8</Badge>
                    </div>
                    <div className="overflow-hidden border border-border/40 rounded-2xl">
                     <Table>
@@ -349,32 +349,32 @@ export default function DesignSystemPage() {
                          </div>
                        </div>
                        <div className="p-4 bg-primary/5 rounded-xl border border-primary/10">
-                         <p className="text-[9px] text-primary leading-relaxed"><strong>应用指南：</strong>实线用于建立物理物理边界与深度；虚线专用在上传引导、占位区域或非功能性装饰线。</p>
+                         <p className="text-[9px] text-primary leading-relaxed"><strong>应用指南：</strong>实线用于建立物理边界与深度；虚线专用在上传引导、占位区域或非功能性装饰线。</p>
                        </div>
                      </div>
                    </div>
 
                    <div className="space-y-8">
                      <span className="text-[11px] font-bold text-primary uppercase tracking-[0.2em] flex items-center gap-2"><Maximize className="h-4 w-4" /> 圆角阶梯标准 (Radius Standard)</span>
-                     <div className="grid grid-cols-2 lg:grid-cols-3 gap-8">
+                     <div className="grid grid-cols-2 lg:grid-cols-3 gap-10">
                         <div className="space-y-2">
-                          <div className="aspect-video rounded-none bg-primary/10 border-2 border-primary/20 flex items-center justify-center font-mono text-xs font-bold text-primary/60">0px</div>
+                          <div className="h-32 w-full rounded-none bg-primary/10 border-2 border-primary/20 flex items-center justify-center font-mono text-xs font-bold text-primary/60">0px</div>
                           <p className="text-[9px] font-bold uppercase">无圆角 (Sharp)</p>
                         </div>
                         <div className="space-y-2">
-                          <div className="aspect-video rounded-lg bg-primary/10 border-2 border-primary/20 flex items-center justify-center font-mono text-xs font-bold text-primary/60">8px</div>
+                          <div className="h-32 w-full rounded-lg bg-primary/10 border-2 border-primary/20 flex items-center justify-center font-mono text-xs font-bold text-primary/60">8px</div>
                           <p className="text-[9px] font-bold uppercase">小圆角 (lg)</p>
                         </div>
                         <div className="space-y-2">
-                          <div className="aspect-video rounded-2xl bg-primary/10 border-2 border-primary/20 flex items-center justify-center font-mono text-xs font-bold text-primary/60">16px</div>
+                          <div className="h-32 w-full rounded-2xl bg-primary/10 border-2 border-primary/20 flex items-center justify-center font-mono text-xs font-bold text-primary/60">16px</div>
                           <p className="text-[9px] font-bold uppercase">大圆角 (2xl)</p>
                         </div>
                         <div className="space-y-2">
-                          <div className="aspect-video rounded-[2.5rem] bg-primary/10 border-2 border-primary/20 flex items-center justify-center font-mono text-xs font-bold text-primary/60">40px</div>
-                          <p className="text-[9px] font-bold uppercase">超级圆角 (Brand)</p>
+                          <div className="h-32 w-full rounded-[2.5rem] bg-primary/10 border-2 border-primary/20 flex items-center justify-center font-mono text-xs font-bold text-primary/60">40px</div>
+                          <p className="text-[9px] font-bold uppercase text-primary">超级圆角 (Brand)</p>
                         </div>
                         <div className="space-y-2">
-                          <div className="aspect-video rounded-full bg-primary/10 border-2 border-primary/20 flex items-center justify-center font-mono text-xs font-bold text-primary/60">Pill</div>
+                          <div className="h-32 w-full rounded-full bg-primary/10 border-2 border-primary/20 flex items-center justify-center font-mono text-xs font-bold text-primary/60">Pill</div>
                           <p className="text-[9px] font-bold uppercase">圆形圆角 (Full)</p>
                         </div>
                      </div>
@@ -547,7 +547,7 @@ export default function DesignSystemPage() {
             </section>
           </div>
         ) : (
-          /* 后台系统预览 - 保持简洁 */
+          /* 后台系统预览 */
           <div className="space-y-16 animate-in fade-in slide-in-from-bottom-4 duration-700">
             <section className="space-y-8">
               <div className="flex items-center gap-4 border-b pb-4 border-primary/20">
@@ -568,6 +568,7 @@ export default function DesignSystemPage() {
         )}
       </div>
 
+      {/* 固定底栏 - 白皮书入口 */}
       <footer className="fixed bottom-0 left-0 right-0 bg-white/90 backdrop-blur-md border-t border-border/40 px-12 py-3 flex items-center justify-between z-[110]">
         <div className="flex items-center gap-8">
           <Dialog modal={false}>
