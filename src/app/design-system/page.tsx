@@ -817,7 +817,7 @@ export default function DesignSystemPage() {
               </div>
 
               <div className="grid grid-cols-1 gap-12">
-                {/* 1. 基础与状态展示 */}
+                {/* 9.1 基础与状态展示 */}
                 <div className="bg-white p-10 rounded-[2.5rem] border border-border/40 shadow-sm space-y-12">
                   <div className="flex items-center justify-between border-b pb-4">
                     <span className="text-[11px] font-bold text-primary uppercase tracking-[0.2em] flex items-center gap-2"><TableProperties className="h-4 w-4" /> 9.1 基础形态与业务状态 (Styles & Status)</span>
@@ -899,7 +899,7 @@ export default function DesignSystemPage() {
                   </div>
                 </div>
 
-                {/* 2. 高级滚动交互 - 补充固定表头和固定列 */}
+                {/* 9.2 固定表头与固定列 */}
                 <div className="bg-white p-10 rounded-[2.5rem] border border-border/40 shadow-sm space-y-12">
                   <div className="flex items-center justify-between border-b pb-4">
                     <span className="text-[11px] font-bold text-primary uppercase tracking-[0.2em] flex items-center gap-2"><Maximize className="h-4 w-4" /> 9.2 固定表头与固定列 (Sticky & Fixed)</span>
@@ -953,7 +953,7 @@ export default function DesignSystemPage() {
                               <TableRow className="hover:bg-primary/5 group transition-colors">
                                 <TableCell className="sticky left-0 z-20 bg-white font-bold text-xs pl-6 border-r group-hover:bg-muted/5 py-4">Heovose H24 Pro</TableCell>
                                 <TableCell className="text-[11px] text-center opacity-60">Intel Alder Lake</TableCell>
-                                <TableCell className="text-[11px] text-center opacity-60">23.8" IPS 100% sRGB</TableCell>
+                                <TableCell className="text-[11px] text-center opacity-60">23.8" IPS 1080P</TableCell>
                                 <TableCell className="text-[11px] text-center opacity-60">DDR4 Dual Channel</TableCell>
                                 <TableCell className="text-[11px] text-center opacity-60">2x M.2 NVMe</TableCell>
                                 <TableCell className="text-[10px] font-mono font-bold pr-6 text-right uppercase">2024 Q3</TableCell>
@@ -974,7 +974,7 @@ export default function DesignSystemPage() {
                   </div>
                 </div>
 
-                {/* 3. 深度交互展示 */}
+                {/* 9.3 深度交互与逻辑展开 */}
                 <div className="bg-white p-10 rounded-[2.5rem] border border-border/40 shadow-sm space-y-12">
                   <div className="flex items-center justify-between border-b pb-4">
                     <span className="text-[11px] font-bold text-primary uppercase tracking-[0.2em] flex items-center gap-2"><Workflow className="h-4 w-4" /> 9.3 深度交互与逻辑展开 (Advanced Interaction)</span>
@@ -1005,12 +1005,20 @@ export default function DesignSystemPage() {
                              </TableRow>
                            </TableHeader>
                            <TableBody>
-                             <TableRow className="hover:bg-primary/5 transition-colors">
-                               <TableCell className="pl-6 font-bold text-xs border-r">All-in-One Series</TableCell>
-                               <TableCell className="text-center border-r font-mono text-xs font-bold text-primary">1,240</TableCell>
-                               <TableCell className="text-center border-r font-mono text-xs opacity-60">300</TableCell>
-                               <TableCell className="text-[10px] opacity-40 pr-6 uppercase text-right">2 mins ago</TableCell>
-                             </TableRow>
+                             {[
+                               { name: 'All-in-One Series', stock: '1,240', transit: '300', time: '2 mins ago' },
+                               { name: 'Mini PC Series', stock: '850', transit: '120', time: '14 mins ago' },
+                               { name: 'Industrial Displays', stock: '430', transit: '45', time: '1 hour ago' },
+                               { name: 'Touch Panel Kits', stock: '2,100', transit: '600', time: '5 mins ago' },
+                               { name: 'Server Barebones', stock: '120', transit: '12', time: '4 hours ago' }
+                             ].map((row, i) => (
+                               <TableRow key={i} className="hover:bg-primary/5 transition-colors">
+                                 <TableCell className="pl-6 font-bold text-xs border-r">{row.name}</TableCell>
+                                 <TableCell className="text-center border-r font-mono text-xs font-bold text-primary">{row.stock}</TableCell>
+                                 <TableCell className="text-center border-r font-mono text-xs opacity-60">{row.transit}</TableCell>
+                                 <TableCell className="text-[10px] opacity-40 pr-6 uppercase text-right">{row.time}</TableCell>
+                               </TableRow>
+                             ))}
                            </TableBody>
                          </Table>
                        </div>
@@ -1030,39 +1038,47 @@ export default function DesignSystemPage() {
                             </TableRow>
                           </TableHeader>
                           <TableBody>
-                            <React.Fragment>
-                              <TableRow 
-                                className={cn("cursor-pointer transition-all duration-300", expandedRows.has('ord-1') ? "bg-primary/5" : "hover:bg-muted/10")} 
-                                onClick={() => toggleRow('ord-1')}
-                              >
-                                <TableCell className="pl-4">
-                                  <ChevronRight className={cn("h-4 w-4 transition-transform duration-500", expandedRows.has('ord-1') && "rotate-90 text-primary")} />
-                                </TableCell>
-                                <TableCell className="text-xs font-mono font-bold text-primary">#ORD-2024-0051</TableCell>
-                                <TableCell className="text-xs font-medium">Amazon EU Distribution</TableCell>
-                                <TableCell className="text-xs font-mono font-bold pr-6 text-right text-primary">$42,500.00</TableCell>
-                              </TableRow>
-                              {expandedRows.has('ord-1') && (
-                                <TableRow className="bg-muted/5 border-b-2 border-primary/10 animate-in fade-in slide-in-from-top-4 duration-700">
-                                  <TableCell colSpan={4} className="p-8">
-                                    <div className="grid grid-cols-3 gap-12">
-                                      <div className="space-y-2">
-                                        <p className="text-[8px] font-bold text-primary/40 uppercase tracking-widest">配送地址 / SHIPPING</p>
-                                        <p className="text-xs font-medium leading-relaxed">Rue de Rivoli 75, 1st Arrondissement, Paris, France</p>
-                                      </div>
-                                      <div className="space-y-2">
-                                        <p className="text-[8px] font-bold text-primary/40 uppercase tracking-widest">结算方式 / PAYMENT</p>
-                                        <p className="text-xs font-medium leading-relaxed">Corporate Wire Transfer (Swift: ****889-EU)</p>
-                                      </div>
-                                      <div className="space-y-2">
-                                        <p className="text-[8px] font-bold text-primary/40 uppercase tracking-widest">物料清单 / ITEMS</p>
-                                        <p className="text-[11px] font-medium leading-relaxed italic text-muted-foreground">H24 Pro Series x50, Mini PC M10 x120, Cable Kits x200</p>
-                                      </div>
-                                    </div>
+                            {[
+                              { id: 'ord-1', code: '#ORD-2024-0051', client: 'Amazon EU Distribution', value: '$42,500.00', addr: 'Rue de Rivoli 75, Paris, France', items: 'H24 Pro x50, Mini M10 x120' },
+                              { id: 'ord-2', code: '#ORD-2024-0052', client: 'Tesla R&D Center', value: '$18,200.00', addr: '3500 Deer Creek Rd, Palo Alto, USA', items: 'Custom Touch Panels x12, GPU Kits x5' },
+                              { id: 'ord-3', code: '#ORD-2024-0053', client: 'Samsung Global Logistics', value: '$156,000.00', addr: 'Gyeonggi-do, South Korea', items: 'AIO Barebones x400, SSD Bulk x800' },
+                              { id: 'ord-4', code: '#ORD-2024-0054', client: 'Siemens Industrial Automation', value: '$9,400.00', addr: 'Werner-von-Siemens-Straße, Munich, DE', items: 'IP65 Monitors x20' },
+                              { id: 'ord-5', code: '#ORD-2024-0055', client: 'Google Mountain View HQ', value: '$21,000.00', addr: '1600 Amphitheatre Pkwy, CA, USA', items: 'Micro PC Prototypes x30' }
+                            ].map((row) => (
+                              <React.Fragment key={row.id}>
+                                <TableRow 
+                                  className={cn("cursor-pointer transition-all duration-300", expandedRows.has(row.id) ? "bg-primary/5" : "hover:bg-muted/10")} 
+                                  onClick={() => toggleRow(row.id)}
+                                >
+                                  <TableCell className="pl-4">
+                                    <ChevronRight className={cn("h-4 w-4 transition-transform duration-500", expandedRows.has(row.id) && "rotate-90 text-primary")} />
                                   </TableCell>
+                                  <TableCell className="text-xs font-mono font-bold text-primary">{row.code}</TableCell>
+                                  <TableCell className="text-xs font-medium">{row.client}</TableCell>
+                                  <TableCell className="text-xs font-mono font-bold pr-6 text-right text-primary">{row.value}</TableCell>
                                 </TableRow>
-                              )}
-                            </React.Fragment>
+                                {expandedRows.has(row.id) && (
+                                  <TableRow className="bg-muted/5 border-b-2 border-primary/10 animate-in fade-in slide-in-from-top-4 duration-700">
+                                    <TableCell colSpan={4} className="p-8">
+                                      <div className="grid grid-cols-3 gap-12">
+                                        <div className="space-y-2">
+                                          <p className="text-[8px] font-bold text-primary/40 uppercase tracking-widest">配送地址 / SHIPPING</p>
+                                          <p className="text-xs font-medium leading-relaxed">{row.addr}</p>
+                                        </div>
+                                        <div className="space-y-2">
+                                          <p className="text-[8px] font-bold text-primary/40 uppercase tracking-widest">物料清单 / ITEMS</p>
+                                          <p className="text-[11px] font-medium leading-relaxed italic text-muted-foreground">{row.items}</p>
+                                        </div>
+                                        <div className="space-y-2">
+                                          <p className="text-[8px] font-bold text-primary/40 uppercase tracking-widest">结算状态 / STATUS</p>
+                                          <Badge className="h-5 text-[8px] font-bold bg-green-500 text-white border-none uppercase">Verified & Paid</Badge>
+                                        </div>
+                                      </div>
+                                    </TableCell>
+                                  </TableRow>
+                                )}
+                              </React.Fragment>
+                            ))}
                           </TableBody>
                         </Table>
                       </div>
