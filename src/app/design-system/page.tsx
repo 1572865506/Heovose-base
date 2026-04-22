@@ -80,8 +80,10 @@ import {
   Download,
   Mail,
   ChevronRight,
+  ChevronRight as ChevronRightIcon,
   MoreHorizontal,
   ChevronDown,
+  ChevronDown as ChevronDownIcon,
   User,
   Lock,
   MessageSquare,
@@ -96,8 +98,7 @@ import {
   Tag,
   XCircle,
   Folder,
-  File,
-  ChevronDown as ChevronDownIcon
+  File
 } from 'lucide-react';
 import { 
   Table, 
