@@ -36,16 +36,12 @@
     *   Tracking: -2% (Tight) 
     *   Leading: 1.1
     *   应用: 板块标题、核心产品名。
-*   **Sub-headline (引导标题)**: 
-    *   Size: 24px 
-    *   Tracking: 0% 
-    *   Leading: 1.5
-    *   应用: 卡片标题、功能组标题。
 *   **Technical Specs (规格参数)**:
-    *   Size: 14px (Value) / 12px (Label)
-    *   Font: JetBrains Mono
+    *   Size: 14px (Value) / 10px (Label)
+    *   Font: JetBrains Mono (Value) / Inter (Label)
     *   Leading: 1.2
-    *   应用: 产品详情页规格表、参数对比矩阵。
+    *   **布局模式**: 垂直容器模式（Label 在上，Value 在下，独立卡片承载）。
+    *   应用: 产品详情页规格矩阵。
 *   **Body Text (标准正文)**: 
     *   Size: 16px 
     *   Tracking: 0% 
