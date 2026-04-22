@@ -255,16 +255,25 @@ export default function DesignSystemPage() {
                       </TableHeader>
                       <TableBody>
                         <TableRow className="group hover:bg-muted/5">
-                          <TableCell className="font-bold text-xs">Hero Display / 主标题</TableCell>
+                          <TableCell className="font-bold text-xs">Hero Main / 主标题</TableCell>
                           <TableCell className="font-mono text-[10px]">Space Grotesk</TableCell>
                           <TableCell className="font-mono text-[10px]">96px</TableCell>
                           <TableCell className="font-mono text-[10px]">0.85 / -5%</TableCell>
                           <TableCell className="pl-10 py-10">
-                             <h1 className="text-6xl font-headline font-bold text-primary leading-[0.85] tracking-tighter uppercase">HEOVOSE</h1>
+                             <h1 className="text-6xl md:text-8xl lg:text-9xl font-headline font-bold text-primary leading-[0.85] tracking-tighter uppercase">HEOVOSE</h1>
                           </TableCell>
                         </TableRow>
                         <TableRow className="group hover:bg-muted/5">
-                          <TableCell className="font-bold text-xs">Specs Matrix / 规格参数</TableCell>
+                          <TableCell className="font-bold text-xs">Section Heading / 章节</TableCell>
+                          <TableCell className="font-mono text-[10px]">Space Grotesk</TableCell>
+                          <TableCell className="font-mono text-[10px]">48px</TableCell>
+                          <TableCell className="font-mono text-[10px]">1.1 / -2%</TableCell>
+                          <TableCell className="pl-10 py-6">
+                             <h2 className="text-3xl md:text-5xl font-headline font-bold text-primary leading-[1.1] tracking-tight uppercase">Precision Hardware</h2>
+                          </TableCell>
+                        </TableRow>
+                        <TableRow className="group hover:bg-muted/5">
+                          <TableCell className="font-bold text-xs">Technical Specs / 规格参数</TableCell>
                           <TableCell className="font-mono text-[10px]">JetBrains (V) / Inter (L)</TableCell>
                           <TableCell className="font-mono text-[10px]">14px / 10px</TableCell>
                           <TableCell className="font-mono text-[10px]">1.2 / 0%</TableCell>
@@ -291,7 +300,7 @@ export default function DesignSystemPage() {
                           </TableCell>
                         </TableRow>
                         <TableRow className="group hover:bg-muted/5">
-                          <TableCell className="font-bold text-xs">Technical Label / 辅助文字</TableCell>
+                          <TableCell className="font-bold text-xs">Supplementary / 技术辅助</TableCell>
                           <TableCell className="font-mono text-[10px]">JetBrains Mono</TableCell>
                           <TableCell className="font-mono text-[10px]">10px</TableCell>
                           <TableCell className="font-mono text-[10px]">1.0 / 10%</TableCell>
