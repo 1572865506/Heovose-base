@@ -52,7 +52,10 @@ import {
   ListChecks,
   Maximize2,
   Minimize2,
-  Type
+  Type,
+  Square,
+  Circle,
+  Minus
 } from 'lucide-react';
 import { 
   Table, 
@@ -130,7 +133,7 @@ export default function DesignSystemPage() {
           </div>
           <div>
             <h1 className="text-lg font-bold text-primary uppercase tracking-widest">Heovose 设计实验室</h1>
-            <p className="text-[10px] text-muted-foreground font-bold uppercase opacity-60">视觉沙盒 • 核心版本 v1.4.2</p>
+            <p className="text-[10px] text-muted-foreground font-bold uppercase opacity-60">视觉沙盒 • 核心版本 v1.5.0</p>
           </div>
         </div>
 
@@ -333,12 +336,142 @@ export default function DesignSystemPage() {
                 </div>
               </div>
             </section>
+
+            {/* 02. 边框与圆角规范定义 */}
+            <section className="space-y-12">
+              <div className="flex items-center gap-4 border-b pb-4 border-primary/10">
+                <div className="h-2 w-10 bg-primary rounded-full" />
+                <h2 className="text-2xl font-headline font-bold uppercase tracking-widest text-primary">02. 边框与圆角规范定义 (Border & Radius)</h2>
+              </div>
+
+              <div className="bg-white p-12 rounded-[2.5rem] border border-border/40 shadow-sm space-y-20">
+                {/* 边框粗细与样式 */}
+                <div className="space-y-10">
+                   <div className="flex items-center gap-3">
+                     <Minus className="h-4 w-4 text-primary" />
+                     <span className="text-[11px] font-bold text-primary uppercase tracking-[0.2em]">边框粗细与线型规格</span>
+                   </div>
+                   <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
+                      {/* 实线规格 */}
+                      <div className="space-y-6">
+                        <p className="text-[9px] font-bold opacity-40 uppercase flex items-center gap-2">
+                           <Square className="h-3 w-3" /> 实线风格 (Solid) - 用于定义物理边界
+                        </p>
+                        <div className="space-y-4">
+                           <div className="flex items-center gap-6">
+                              <div className="h-14 w-32 bg-muted/10 border border-primary rounded-xl flex items-center justify-center">
+                                 <span className="text-[9px] font-mono font-bold">1px (border)</span>
+                              </div>
+                              <p className="text-[10px] text-muted-foreground">基础分割、装饰线、常规卡片边界。</p>
+                           </div>
+                           <div className="flex items-center gap-6">
+                              <div className="h-14 w-32 bg-muted/10 border-2 border-primary rounded-xl flex items-center justify-center">
+                                 <span className="text-[9px] font-mono font-bold">2px (border-2)</span>
+                              </div>
+                              <p className="text-[10px] text-muted-foreground">交互激活态、重点提示区域。</p>
+                           </div>
+                           <div className="flex items-center gap-6">
+                              <div className="h-14 w-32 bg-muted/10 border-4 border-primary rounded-xl flex items-center justify-center">
+                                 <span className="text-[9px] font-mono font-bold">4px (border-4)</span>
+                              </div>
+                              <p className="text-[10px] text-muted-foreground">工业级加重、视觉焦点标识。</p>
+                           </div>
+                        </div>
+                      </div>
+                      
+                      {/* 虚线规格 */}
+                      <div className="space-y-6">
+                        <p className="text-[9px] font-bold opacity-40 uppercase flex items-center gap-2">
+                           <Minus className="h-3 w-3 rotate-45" /> 虚线风格 (Dashed) - 用于引导与占位
+                        </p>
+                        <div className="space-y-4">
+                           <div className="flex items-center gap-6">
+                              <div className="h-14 w-32 bg-muted/5 border border-dashed border-primary/40 rounded-xl flex items-center justify-center">
+                                 <span className="text-[9px] font-mono font-bold">Dashed 1px</span>
+                              </div>
+                              <p className="text-[10px] text-muted-foreground">次级关联、暂无内容的占位逻辑。</p>
+                           </div>
+                           <div className="flex items-center gap-6">
+                              <div className="h-14 w-32 bg-muted/5 border-2 border-dashed border-primary/40 rounded-xl flex items-center justify-center">
+                                 <span className="text-[9px] font-mono font-bold">Dashed 2px</span>
+                              </div>
+                              <p className="text-[10px] text-muted-foreground">文件上传、资产导入区的交互引导。</p>
+                           </div>
+                        </div>
+                      </div>
+                   </div>
+                </div>
+
+                {/* 圆角阶梯定义 */}
+                <div className="space-y-10 border-t pt-16">
+                   <div className="flex items-center gap-3">
+                     <Circle className="h-4 w-4 text-primary" />
+                     <span className="text-[11px] font-bold text-primary uppercase tracking-[0.2em]">圆角阶梯规范 (Radius Scale)</span>
+                   </div>
+                   <div className="grid grid-cols-2 md:grid-cols-5 gap-8">
+                      {/* None */}
+                      <div className="space-y-4 text-center">
+                         <div className="aspect-square bg-primary/10 rounded-none border border-primary/20 flex items-center justify-center">
+                            <span className="text-xs font-bold font-mono">0px</span>
+                         </div>
+                         <div className="space-y-1">
+                            <p className="text-[10px] font-bold uppercase">无圆角</p>
+                            <p className="text-[8px] text-muted-foreground">rounded-none</p>
+                         </div>
+                      </div>
+                      {/* Component (8px) */}
+                      <div className="space-y-4 text-center">
+                         <div className="aspect-square bg-primary/10 rounded-lg border border-primary/20 flex items-center justify-center">
+                            <span className="text-xs font-bold font-mono">8px</span>
+                         </div>
+                         <div className="space-y-1">
+                            <p className="text-[10px] font-bold uppercase">组件级</p>
+                            <p className="text-[8px] text-muted-foreground">rounded-lg</p>
+                         </div>
+                      </div>
+                      {/* Container (16px) */}
+                      <div className="space-y-4 text-center">
+                         <div className="aspect-square bg-primary/10 rounded-2xl border border-primary/20 flex items-center justify-center">
+                            <span className="text-xs font-bold font-mono">16px</span>
+                         </div>
+                         <div className="space-y-1">
+                            <p className="text-[10px] font-bold uppercase">中容器</p>
+                            <p className="text-[8px] text-muted-foreground">rounded-2xl</p>
+                         </div>
+                      </div>
+                      {/* Brand (40px) */}
+                      <div className="space-y-4 text-center">
+                         <div className="aspect-square bg-primary/10 rounded-[2.5rem] border border-primary/20 flex items-center justify-center">
+                            <span className="text-xs font-bold font-mono">40px</span>
+                         </div>
+                         <div className="space-y-1">
+                            <p className="text-[10px] font-bold uppercase">品牌级</p>
+                            <p className="text-[8px] text-muted-foreground">rounded-[2.5rem]</p>
+                         </div>
+                      </div>
+                      {/* Full */}
+                      <div className="space-y-4 text-center">
+                         <div className="aspect-square bg-primary/10 rounded-full border border-primary/20 flex items-center justify-center">
+                            <span className="text-xs font-bold font-mono">FULL</span>
+                         </div>
+                         <div className="space-y-1">
+                            <p className="text-[10px] font-bold uppercase">圆形</p>
+                            <p className="text-[8px] text-muted-foreground">rounded-full</p>
+                         </div>
+                      </div>
+                   </div>
+                   <p className="text-[9px] text-muted-foreground italic bg-muted/20 p-4 rounded-xl text-center">
+                      规范说明：前台核心容器（如产品大图、Banner）必须使用 40px 圆角。交互按钮、输入框统一锁定 8px 圆角。
+                   </p>
+                </div>
+              </div>
+            </section>
             
-            {/* 02. 品牌双色视觉体系 */}
+            {/* 03. 品牌双色视觉应用 */}
             <section className="space-y-12">
               <div className="flex items-center gap-4 border-b pb-4 border-primary/10">
                 <div className="h-2 w-10 bg-primary rounded-full opacity-20" />
-                <h2 className="text-2xl font-headline font-bold uppercase tracking-widest text-primary">02. 品牌双色视觉应用 (Dual-Theme Identity)</h2>
+                <h2 className="text-2xl font-headline font-bold uppercase tracking-widest text-primary">03. 品牌双色视觉应用 (Dual-Theme Identity)</h2>
               </div>
               
               <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
@@ -390,11 +523,11 @@ export default function DesignSystemPage() {
               </div>
             </section>
 
-            {/* 03. 双色控件与交互行为 */}
+            {/* 04. 双色控件与交互行为 */}
             <section className="space-y-12">
               <div className="flex items-center gap-4 border-b pb-4 border-primary/10">
                 <div className="h-2 w-10 bg-primary rounded-full opacity-20" />
-                <h2 className="text-2xl font-headline font-bold uppercase tracking-widest text-primary">03. 双色控件与交互行为 (Themes & Controls)</h2>
+                <h2 className="text-2xl font-headline font-bold uppercase tracking-widest text-primary">04. 双色控件与交互行为 (Themes & Controls)</h2>
               </div>
               <div className="bg-white p-12 rounded-[3rem] border border-border/40 shadow-sm space-y-20">
                 {/* 按钮尺寸矩阵 */}
@@ -470,11 +603,11 @@ export default function DesignSystemPage() {
               </div>
             </section>
 
-            {/* 04. 前台业务核心组件 */}
+            {/* 05. 业务核心组件单元 */}
             <section className="space-y-12">
               <div className="flex items-center gap-4 border-b pb-4 border-accent/20">
                 <div className="h-2 w-10 bg-accent rounded-full" />
-                <h2 className="text-2xl font-headline font-bold uppercase tracking-widest text-primary">04. 业务核心组件单元 (Business Units)</h2>
+                <h2 className="text-2xl font-headline font-bold uppercase tracking-widest text-primary">05. 业务核心组件单元 (Business Units)</h2>
               </div>
 
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
@@ -546,11 +679,11 @@ export default function DesignSystemPage() {
               </div>
             </section>
 
-            {/* 05. 交互模式与视觉特效 */}
+            {/* 06. 交互模式与视觉特效 */}
             <section className="space-y-12">
               <div className="flex items-center gap-4 border-b pb-4 border-primary/10">
                 <div className="h-2 w-10 bg-primary rounded-full opacity-20" />
-                <h2 className="text-2xl font-headline font-bold uppercase tracking-widest text-primary">05. 交互模式与视觉特效 (Visual FX)</h2>
+                <h2 className="text-2xl font-headline font-bold uppercase tracking-widest text-primary">06. 交互模式与视觉特效 (Visual FX)</h2>
               </div>
               <div className="bg-white p-12 rounded-[3rem] border border-border/40 shadow-sm space-y-16">
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-20">
@@ -793,7 +926,7 @@ export default function DesignSystemPage() {
         <div className="flex items-center gap-8">
            <div className="flex items-center gap-2">
              <div className="h-2 w-2 rounded-full bg-green-500 animate-pulse" />
-             <span className="text-[10px] font-bold uppercase tracking-widest text-primary">设计系统核心 v1.4.2</span>
+             <span className="text-[10px] font-bold uppercase tracking-widest text-primary">设计系统核心 v1.5.0</span>
            </div>
            <div className="h-4 w-px bg-border/60" />
            <div className="flex items-center gap-2">
