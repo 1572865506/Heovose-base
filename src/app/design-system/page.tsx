@@ -42,7 +42,8 @@ import {
   ChevronDown,
   Plus,
   ArrowUpRight,
-  Image as ImageIcon
+  Image as ImageIcon,
+  BarChart3
 } from 'lucide-react';
 import { 
   Table, 
@@ -246,11 +247,11 @@ export default function DesignSystemPage() {
                     <div className="space-y-6 max-w-sm">
                       <div className="relative group">
                         <Search className="absolute left-5 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground opacity-40 group-focus-within:text-primary transition-all" />
-                        <Input placeholder="Search everything..." className="h-14 pl-14 rounded-2xl bg-muted/20 border-none shadow-inner text-sm font-medium focus-visible:ring-primary/20" />
+                        <Input placeholder="Search everything..." className="h-14 pl-14 rounded-2xl bg-muted/20 border-none shadow-inner text-sm font-medium focus-visible:ring-primary/20" readOnly />
                       </div>
                       <div className="space-y-2">
                         <label className="text-[10px] font-bold uppercase tracking-widest ml-2 opacity-60">Message for experts</label>
-                        <Textarea placeholder="Type your technical inquiry..." className="min-h-[120px] rounded-2xl p-6 bg-muted/20 border-none shadow-inner resize-none" />
+                        <Textarea placeholder="Type your technical inquiry..." className="min-h-[120px] rounded-2xl p-6 bg-muted/20 border-none shadow-inner resize-none" readOnly />
                       </div>
                     </div>
                   </div>
@@ -611,19 +612,19 @@ export default function DesignSystemPage() {
                     <div className="space-y-4 max-w-sm">
                       <div className="space-y-1.5">
                         <Label className="text-[10px] font-bold uppercase text-primary">Standard Field</Label>
-                        <Input placeholder="Enter unique ID..." className="h-10 bg-muted/20" />
+                        <Input placeholder="Enter unique ID..." className="h-10 bg-muted/20" readOnly />
                       </div>
                       <div className="space-y-1.5">
                         <Label className="text-[10px] font-bold uppercase opacity-40">Disabled State</Label>
-                        <Input disabled value="PROTECTED_VALUE_001" className="h-10 font-mono opacity-50" />
+                        <Input disabled value="PROTECTED_VALUE_001" className="h-10 font-mono opacity-50" readOnly />
                       </div>
                       <div className="space-y-1.5">
                         <Label className="text-[10px] font-bold uppercase text-destructive">Error Feedback</Label>
-                        <Input value="Invalid Space Char" className="h-10 border-destructive bg-destructive/5 text-destructive" />
+                        <Input value="Invalid Space Char" className="h-10 border-destructive bg-destructive/5 text-destructive" readOnly />
                       </div>
                       <div className="space-y-1.5">
                         <Label className="text-[10px] font-bold uppercase text-primary">Documentation Body</Label>
-                        <Textarea placeholder="Markdown content supported..." className="min-h-[100px] text-xs bg-muted/10 font-medium" />
+                        <Textarea placeholder="Markdown content supported..." className="min-h-[100px] text-xs bg-muted/10 font-medium" readOnly />
                       </div>
                     </div>
                   </div>
@@ -822,25 +823,4 @@ export default function DesignSystemPage() {
 // 辅助组件：Label
 function Label({ children, className }: { children: React.ReactNode, className?: string }) {
   return <label className={cn("block", className)}>{children}</label>;
-}
-function BarChart3(props: any) {
-  return (
-    <svg
-      {...props}
-      xmlns="http://www.w3.org/2000/svg"
-      width="24"
-      height="24"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    >
-      <path d="M3 3v18h18" />
-      <path d="M18 17V9" />
-      <path d="M13 17V5" />
-      <path d="M8 17v-3" />
-    </svg>
-  )
 }
