@@ -3,7 +3,6 @@
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { 
   Sparkles, 
@@ -15,22 +14,15 @@ import {
   Monitor,
   LayoutGrid,
   Globe,
-  Edit2,
   Zap,
   Layers,
   ShieldCheck,
   FileText,
-  Plus,
-  Maximize2,
   Type,
-  Move,
-  History,
-  ExternalLink,
   Loader2,
   X,
   Hash,
   AlignLeft,
-  ChevronDown,
   TableProperties
 } from 'lucide-react';
 import { 
@@ -274,18 +266,18 @@ export default function DesignSystemPage() {
                         <TableRow className="group hover:bg-muted/5">
                           <TableCell className="font-bold text-xs">Technical Specs / 规格参数</TableCell>
                           <TableCell className="font-mono text-[10px]">JetBrains Mono</TableCell>
-                          <TableCell className="font-mono text-[10px]">14px</TableCell>
+                          <TableCell className="font-mono text-[10px]">14px (V) / 12px (L)</TableCell>
                           <TableCell className="font-mono text-[10px]">1.2</TableCell>
                           <TableCell className="font-mono text-[10px]">0%</TableCell>
                           <TableCell className="pl-10 py-4">
                              <div className="bg-muted/20 p-4 rounded-xl border border-dashed max-w-sm space-y-2">
                                <div className="flex justify-between border-b border-border/40 pb-1">
                                  <span className="text-[10px] font-bold text-primary uppercase">Display</span>
-                                 <span className="font-mono text-[12px] font-medium">23.8" IPS 1920x1080</span>
+                                 <span className="font-mono text-[12px] font-medium text-primary">23.8" IPS 1920x1080</span>
                                </div>
                                <div className="flex justify-between">
                                  <span className="text-[10px] font-bold text-primary uppercase">CPU</span>
-                                 <span className="font-mono text-[12px] font-medium">Intel Core i7-12700</span>
+                                 <span className="font-mono text-[12px] font-medium text-primary">Intel Core i7-12700</span>
                                </div>
                              </div>
                           </TableCell>
@@ -441,14 +433,14 @@ export default function DesignSystemPage() {
                     <div className="space-y-8">
                        <p className="text-[10px] font-bold text-primary uppercase tracking-[0.2em] border-l-2 border-primary pl-3">批发风格按钮组</p>
                        <div className="flex flex-wrap gap-4">
-                          <Button className="h-14 px-10 rounded-2xl font-bold bg-primary shadow-xl hover:scale-105 transition-all text-white">Wholesale Main</Button>
+                          <Button className="h-14 px-10 rounded-2xl font-bold bg-primary shadow-xl hover:scale-105 transition-all text-white border-none">Wholesale Main</Button>
                           <Button variant="outline" className="h-14 px-10 rounded-2xl font-bold border-primary text-primary hover:bg-primary/5">Outline Action</Button>
                        </div>
                     </div>
                     <div className="space-y-8">
                        <p className="text-[10px] font-bold text-[#F97316] uppercase tracking-[0.2em] border-l-2 border-[#F97316] pl-3">项目风格按钮组</p>
                        <div className="flex flex-wrap gap-4">
-                          <Button className="h-14 px-10 rounded-2xl font-bold bg-[#F97316] shadow-xl hover:shadow-orange-500/20 hover:scale-105 transition-all text-white">Project Solution</Button>
+                          <Button className="h-14 px-10 rounded-2xl font-bold bg-[#F97316] shadow-xl hover:shadow-orange-500/20 hover:scale-105 transition-all text-white border-none">Project Solution</Button>
                           <Button variant="outline" className="h-14 px-10 rounded-2xl font-bold border-[#F97316] text-[#F97316] hover:bg-orange-500/5">Outline Action</Button>
                        </div>
                     </div>
@@ -548,7 +540,7 @@ export default function DesignSystemPage() {
                   <span className="text-[10px] font-bold text-primary/40 uppercase tracking-widest block border-b pb-2">排版字号逻辑</span>
                   <div className="space-y-4">
                     <div className="space-y-1.5">
-                      <Label className="text-[10px] font-bold uppercase text-primary">标签 (text-[10px])</Label>
+                      <span className="text-[10px] font-bold uppercase text-primary">标签 (text-[10px])</span>
                       <Input readOnly value="内容字号 (text-xs / 12px)" className="h-10 text-xs bg-muted/20 border-border/60" />
                     </div>
                   </div>
@@ -606,12 +598,7 @@ export default function DesignSystemPage() {
             <span className="text-[10px] font-bold uppercase tracking-widest text-primary">Lab Environment Ready</span>
           </div>
         </div>
-      </header>
+      </footer>
     </div>
   );
-}
-
-// 辅助组件：Label
-function Label({ children, className }: { children: React.ReactNode, className?: string }) {
-  return <label className={cn("block", className)}>{children}</label>;
 }
