@@ -107,7 +107,7 @@
 ## 8. 输入系统规范 (Input System)
 
 ### 8.1 物理标准 (Physicals)
-*   **圆角**: 统一锁定为 `rounded-lg` (8px)。多行文本框 (Textarea) 采用 `rounded-2xl` (16px)。
+*   **圆角**: 统一锁定为 `rounded-lg` (8px)。适用于 Input 与 Textarea。
 *   **高度阶梯**: XS(28px), SM(36px), Base(44px), LG(56px)。
 *   **背景**: 统一采用 `bg-muted/10` 以增强在白色背景上的物理存在感。
 

@@ -805,7 +805,7 @@ export default function DesignSystemPage() {
 
                          <div className="space-y-2">
                             <Label className="text-[9px] font-bold uppercase opacity-40">Multi-line Textarea / 多行文本</Label>
-                            <Textarea className="min-h-[120px] rounded-2xl p-6 text-xs leading-relaxed" placeholder="在此输入详细的硬件项目需求说明..." />
+                            <Textarea className="min-h-[120px] rounded-lg px-3 py-2 text-xs leading-relaxed" placeholder="在此输入详细的硬件项目需求说明..." />
                          </div>
                        </div>
                     </div>
