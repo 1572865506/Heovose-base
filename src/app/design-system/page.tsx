@@ -30,7 +30,8 @@ import {
   X,
   Hash,
   AlignLeft,
-  ChevronDown
+  ChevronDown,
+  TableProperties
 } from 'lucide-react';
 import { 
   Table, 
@@ -100,7 +101,7 @@ export default function DesignSystemPage() {
           </div>
           <div>
             <h1 className="text-lg font-bold text-primary uppercase tracking-widest leading-none">Heovose Design Lab</h1>
-            <p className="text-[9px] text-muted-foreground font-bold uppercase opacity-60 mt-1">视觉实验室 • 核心版本 v1.8.2</p>
+            <p className="text-[9px] text-muted-foreground font-bold uppercase opacity-60 mt-1">视觉实验室 • 核心版本 v1.8.5</p>
           </div>
         </div>
 
@@ -200,7 +201,7 @@ export default function DesignSystemPage() {
               </div>
             </section>
 
-            {/* 01. 字体系统规范定义 - 完善版 */}
+            {/* 01. 字体系统规范定义 */}
             <section className="space-y-10">
               <div className="flex items-center gap-4 border-b pb-4 border-primary/10">
                 <div className="h-2 w-10 bg-primary rounded-full" />
@@ -227,13 +228,16 @@ export default function DesignSystemPage() {
                     <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest flex items-center gap-2"><Hash className="h-3 w-3" /> 技术等宽家族</span>
                     <div className="p-6 rounded-2xl bg-muted/20 border border-dashed border-primary/20">
                       <p className="text-3xl font-mono font-bold text-primary">JetBrains Mono</p>
-                      <p className="text-[9px] mt-2 text-muted-foreground">用于 SKU、技术参数矩阵。确保所有数值物理对齐。</p>
+                      <p className="text-[9px] mt-2 text-muted-foreground">用于规格参数矩阵。确保数值、SKU 严丝合缝。</p>
                     </div>
                   </div>
                 </div>
 
-                <div className="space-y-6">
-                   <h3 className="text-xs font-bold text-primary/40 uppercase tracking-[0.2em] border-l-2 border-primary pl-4">排版层级技术参数 (Hierarchy Specs)</h3>
+                <div className="space-y-10">
+                   <div className="flex items-center justify-between">
+                     <h3 className="text-xs font-bold text-primary/40 uppercase tracking-[0.2em] border-l-2 border-primary pl-4">排版层级与技术参数表</h3>
+                     <Badge variant="outline" className="h-6 text-[8px] font-bold uppercase">Hierarchy specs v1.2</Badge>
+                   </div>
                    <div className="overflow-hidden border border-border/40 rounded-2xl">
                     <Table>
                       <TableHeader className="bg-muted/30">
@@ -251,8 +255,8 @@ export default function DesignSystemPage() {
                           <TableCell className="font-bold text-xs">Hero Display / 超大标题</TableCell>
                           <TableCell className="font-mono text-[10px]">Space Grotesk</TableCell>
                           <TableCell className="font-mono text-[10px]">96px</TableCell>
-                          <TableCell className="font-mono text-[10px]">0.85 (Tighter)</TableCell>
-                          <TableCell className="font-mono text-[10px]">-5% (Tighter)</TableCell>
+                          <TableCell className="font-mono text-[10px]">0.85</TableCell>
+                          <TableCell className="font-mono text-[10px]">-5%</TableCell>
                           <TableCell className="pl-10 py-10">
                              <h1 className="text-6xl font-headline font-bold text-primary leading-[0.85] tracking-tighter uppercase">HEOVOSE</h1>
                           </TableCell>
@@ -261,38 +265,47 @@ export default function DesignSystemPage() {
                           <TableCell className="font-bold text-xs">Section Heading / 章节标题</TableCell>
                           <TableCell className="font-mono text-[10px]">Space Grotesk</TableCell>
                           <TableCell className="font-mono text-[10px]">48px</TableCell>
-                          <TableCell className="font-mono text-[10px]">1.1 (Tight)</TableCell>
-                          <TableCell className="font-mono text-[10px]">-2% (Tight)</TableCell>
+                          <TableCell className="font-mono text-[10px]">1.1</TableCell>
+                          <TableCell className="font-mono text-[10px]">-2%</TableCell>
                           <TableCell className="pl-10 py-6">
                              <h2 className="text-3xl font-headline font-bold text-primary leading-tight tracking-tight uppercase">Precise Manufacturing</h2>
                           </TableCell>
                         </TableRow>
                         <TableRow className="group hover:bg-muted/5">
-                          <TableCell className="font-bold text-xs">Sub-headline / 引导小标题</TableCell>
-                          <TableCell className="font-mono text-[10px]">Inter</TableCell>
-                          <TableCell className="font-mono text-[10px]">24px</TableCell>
-                          <TableCell className="font-mono text-[10px]">1.5 (Relaxed)</TableCell>
-                          <TableCell className="font-mono text-[10px]">0% (Normal)</TableCell>
+                          <TableCell className="font-bold text-xs">Technical Specs / 规格参数</TableCell>
+                          <TableCell className="font-mono text-[10px]">JetBrains Mono</TableCell>
+                          <TableCell className="font-mono text-[10px]">14px</TableCell>
+                          <TableCell className="font-mono text-[10px]">1.2</TableCell>
+                          <TableCell className="font-mono text-[10px]">0%</TableCell>
                           <TableCell className="pl-10 py-4">
-                             <h3 className="text-xl font-bold text-primary leading-relaxed">Integrated Desktop Solutions</h3>
+                             <div className="bg-muted/20 p-4 rounded-xl border border-dashed max-w-sm space-y-2">
+                               <div className="flex justify-between border-b border-border/40 pb-1">
+                                 <span className="text-[10px] font-bold text-primary uppercase">Display</span>
+                                 <span className="font-mono text-[12px] font-medium">23.8" IPS 1920x1080</span>
+                               </div>
+                               <div className="flex justify-between">
+                                 <span className="text-[10px] font-bold text-primary uppercase">CPU</span>
+                                 <span className="font-mono text-[12px] font-medium">Intel Core i7-12700</span>
+                               </div>
+                             </div>
                           </TableCell>
                         </TableRow>
                         <TableRow className="group hover:bg-muted/5">
                           <TableCell className="font-bold text-xs">Body System / 正文系统</TableCell>
                           <TableCell className="font-mono text-[10px]">Inter</TableCell>
                           <TableCell className="font-mono text-[10px]">16px</TableCell>
-                          <TableCell className="font-mono text-[10px]">1.6 (Relaxed)</TableCell>
-                          <TableCell className="font-mono text-[10px]">0% (Normal)</TableCell>
+                          <TableCell className="font-mono text-[10px]">1.6</TableCell>
+                          <TableCell className="font-mono text-[10px]">0%</TableCell>
                           <TableCell className="pl-10 py-4">
-                             <p className="text-sm text-muted-foreground leading-relaxed max-w-sm">Heovose technology defines the future of all-in-one computing with precision engineering and global manufacturing excellence.</p>
+                             <p className="text-sm text-muted-foreground leading-relaxed max-w-sm">Heovose technology defines the future of all-in-one computing with precision engineering.</p>
                           </TableCell>
                         </TableRow>
                         <TableRow className="group hover:bg-muted/5">
                           <TableCell className="font-bold text-xs">Supplementary / 技术辅助</TableCell>
                           <TableCell className="font-mono text-[10px]">JetBrains Mono</TableCell>
                           <TableCell className="font-mono text-[10px]">10px</TableCell>
-                          <TableCell className="font-mono text-[10px]">1.0 (None)</TableCell>
-                          <TableCell className="font-mono text-[10px]">10% (Widest)</TableCell>
+                          <TableCell className="font-mono text-[10px]">1.0</TableCell>
+                          <TableCell className="font-mono text-[10px]">10%</TableCell>
                           <TableCell className="pl-10 py-4">
                              <span className="font-mono text-[10px] font-bold uppercase tracking-widest text-primary/60">SKU: H24_PRO_SERIES_2024</span>
                           </TableCell>
@@ -318,15 +331,15 @@ export default function DesignSystemPage() {
                      <div className="space-y-6">
                        <div className="flex items-center gap-8">
                          <div className="h-12 w-32 border border-primary rounded-xl bg-muted/10 flex items-center justify-center font-mono text-[10px] font-bold">1px (border)</div>
-                         <p className="text-[10px] text-muted-foreground">基础装饰、原子组件、次级分割。</p>
+                         <p className="text-[10px] text-muted-foreground">基础装饰、次级分割。</p>
                        </div>
                        <div className="flex items-center gap-8">
                          <div className="h-12 w-32 border-2 border-primary rounded-xl bg-muted/10 flex items-center justify-center font-mono text-[10px] font-bold">2px (border-2)</div>
-                         <p className="text-[10px] text-muted-foreground">容器主边界、交互激活态提示。</p>
+                         <p className="text-[10px] text-muted-foreground">容器主边界、交互激活态。</p>
                        </div>
                        <div className="flex items-center gap-8">
                          <div className="h-12 w-32 border border-dashed border-primary rounded-xl bg-muted/10 flex items-center justify-center font-mono text-[10px] font-bold">DASHED 1px</div>
-                         <p className="text-[10px] text-muted-foreground">空位占位、引导性导入区。</p>
+                         <p className="text-[10px] text-muted-foreground">引导性导入区、空状态占位。</p>
                        </div>
                      </div>
                    </div>
@@ -344,13 +357,12 @@ export default function DesignSystemPage() {
                         </div>
                         <div className="space-y-2 text-center">
                           <div className="aspect-square rounded-[2.5rem] bg-primary/10 border border-primary/20 flex items-center justify-center font-mono text-xs font-bold">40px</div>
-                          <p className="text-[9px] font-bold uppercase">Brand (3rem)</p>
+                          <p className="text-[9px] font-bold uppercase">Brand (40px)</p>
                         </div>
                      </div>
                    </div>
                 </div>
 
-                {/* 阴影体系 */}
                 <div className="pt-16 border-t border-dashed border-border/60">
                    <div className="flex items-center gap-3 mb-10">
                      <Layers className="h-4 w-4 text-primary" />
@@ -404,10 +416,6 @@ export default function DesignSystemPage() {
                     <ShoppingBag className="h-10 w-10 text-accent" />
                     <h4 className="text-3xl font-bold font-headline uppercase leading-none">标准化批发生产</h4>
                     <p className="text-sm opacity-70 leading-relaxed font-medium">代表稳定性、可规模化与专业硬件素养。</p>
-                    <div className="pt-6 border-t border-white/10 flex justify-between items-center">
-                       <span className="text-[10px] font-bold uppercase tracking-widest text-accent">Active Theme</span>
-                       <div className="h-2 w-2 rounded-full bg-accent animate-ping" />
-                    </div>
                   </div>
                 </div>
                 <div className="group space-y-6">
@@ -417,10 +425,6 @@ export default function DesignSystemPage() {
                     <Building2 className="h-10 w-10 text-white" />
                     <h4 className="text-3xl font-bold font-headline uppercase leading-none">定制化项目集成</h4>
                     <p className="text-sm opacity-70 leading-relaxed font-medium">代表创新力、定制服务与全场景应用张力。</p>
-                    <div className="pt-6 border-t border-white/10 flex justify-between items-center">
-                       <span className="text-[10px] font-bold uppercase tracking-widest text-white">Project Specific</span>
-                       <div className="h-2 w-2 rounded-full bg-white animate-pulse" />
-                    </div>
                   </div>
                 </div>
               </div>
@@ -440,20 +444,12 @@ export default function DesignSystemPage() {
                           <Button className="h-14 px-10 rounded-2xl font-bold bg-primary shadow-xl hover:scale-105 transition-all text-white">Wholesale Main</Button>
                           <Button variant="outline" className="h-14 px-10 rounded-2xl font-bold border-primary text-primary hover:bg-primary/5">Outline Action</Button>
                        </div>
-                       <div className="space-y-4">
-                         <Label className="text-[10px] font-bold uppercase opacity-40 tracking-widest">主题聚焦态演示</Label>
-                         <Input readOnly value="聚焦后触发品牌蓝光晕..." className="h-12 rounded-xl focus-visible:ring-primary/20" />
-                       </div>
                     </div>
                     <div className="space-y-8">
                        <p className="text-[10px] font-bold text-[#F97316] uppercase tracking-[0.2em] border-l-2 border-[#F97316] pl-3">项目风格按钮组</p>
                        <div className="flex flex-wrap gap-4">
                           <Button className="h-14 px-10 rounded-2xl font-bold bg-[#F97316] shadow-xl hover:shadow-orange-500/20 hover:scale-105 transition-all text-white">Project Solution</Button>
                           <Button variant="outline" className="h-14 px-10 rounded-2xl font-bold border-[#F97316] text-[#F97316] hover:bg-orange-500/5">Outline Action</Button>
-                       </div>
-                       <div className="space-y-4">
-                         <Label className="text-[10px] font-bold uppercase opacity-40 tracking-widest">项目聚焦态演示</Label>
-                         <Input readOnly value="聚焦后触发工业橙光晕..." className="h-12 rounded-xl focus-visible:ring-orange-500/20 border-orange-500/20" />
                        </div>
                     </div>
                  </div>
@@ -473,7 +469,6 @@ export default function DesignSystemPage() {
                      <span className="text-[9px] font-bold uppercase text-primary tracking-[0.3em]">Category: AIO Pro</span>
                      <h3 className="text-3xl font-headline font-bold text-primary leading-tight uppercase">Heovose H24 高性能一体机</h3>
                    </div>
-                   <p className="text-sm text-muted-foreground leading-relaxed font-medium">模块化集成设计，专为现代办公空间与规模化部署打造。12代高性能处理器加持。</p>
                    <div className="pt-8 border-t border-dashed border-border/60 flex items-center justify-between">
                      <span className="text-xs font-bold text-primary flex items-center gap-2 group-hover:translate-x-2 transition-transform cursor-pointer">查看详细规格 <ArrowRight className="h-4 w-4" /></span>
                      <Badge variant="outline" className="bg-primary/5 text-[9px] uppercase font-bold text-primary border-primary/10">Stock: Ready</Badge>
@@ -485,7 +480,6 @@ export default function DesignSystemPage() {
                      <span className="text-[9px] font-bold uppercase text-orange-600 tracking-[0.3em]">Solution: Smart Retail</span>
                      <h3 className="text-3xl font-headline font-bold text-[#F97316] leading-tight uppercase">智慧零售数字化终端</h3>
                    </div>
-                   <p className="text-sm text-muted-foreground leading-relaxed font-medium">赋能全球零售商，提供涵盖自助结账、互动导购的全链路方案。支持深度接口定制。</p>
                    <div className="pt-8 border-t border-dashed border-border/60 flex items-center justify-between">
                      <span className="text-xs font-bold text-[#F97316] flex items-center gap-2 group-hover:translate-x-2 transition-transform cursor-pointer">获取集成方案 <ArrowRight className="h-4 w-4" /></span>
                      <Badge variant="outline" className="bg-orange-500/5 text-[9px] uppercase font-bold text-[#F97316] border-orange-500/10">Project: Bespoke</Badge>
@@ -511,9 +505,6 @@ export default function DesignSystemPage() {
                         <Button className="ai-btn-glow h-16 px-10 rounded-2xl gap-3 font-bold uppercase tracking-widest text-sm shadow-2xl">
                           <Sparkles className="h-5 w-5 ai-icon-gradient" /> AI 智译全局内容
                         </Button>
-                        <p className="text-[10px] text-muted-foreground italic leading-relaxed">
-                          AI 专用组件采用独特的 4 色动态流光作为核心识别，传达“智慧辅助”感。
-                        </p>
                      </div>
                    </div>
 
@@ -560,15 +551,7 @@ export default function DesignSystemPage() {
                       <Label className="text-[10px] font-bold uppercase text-primary">标签 (text-[10px])</Label>
                       <Input readOnly value="内容字号 (text-xs / 12px)" className="h-10 text-xs bg-muted/20 border-border/60" />
                     </div>
-                    <Textarea readOnly value="多行文本同样锁定为 12px。确保管理后台界面在紧密排列下依然清晰有序。" className="text-xs bg-muted/20 min-h-[100px]" />
                   </div>
-                </div>
-                <div className="p-8 rounded-2xl bg-primary text-white shadow-xl space-y-4">
-                   <div className="flex items-center gap-3">
-                     <ShieldCheck className="h-6 w-6" />
-                     <h4 className="font-bold text-sm uppercase tracking-widest">管理员治理准则</h4>
-                   </div>
-                   <p className="text-[11px] opacity-70 leading-relaxed font-medium">管理后台遵循《管理员设计白皮书》，强调操作流的高效与控件的高度对齐。</p>
                 </div>
               </div>
             </section>
@@ -623,10 +606,7 @@ export default function DesignSystemPage() {
             <span className="text-[10px] font-bold uppercase tracking-widest text-primary">Lab Environment Ready</span>
           </div>
         </div>
-        <div className="flex items-center gap-6">
-          <p className="text-[9px] font-bold uppercase tracking-[0.2em] opacity-40">仅限开发者预览模式 • 不可用于生产环境外发</p>
-        </div>
-      </footer>
+      </header>
     </div>
   );
 }

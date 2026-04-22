@@ -23,7 +23,7 @@
 ### 2.1 字体家族分工
 *   **标题字体 (Display)**: `Space Grotesk` (Sans-serif) - 现代、科技感，适用于 H1-H3。
 *   **正文字体 (Body)**: `Inter` (Sans-serif) - 高可读性，适用于说明、介绍及列表。
-*   **技术/等宽字体 (Monospace)**: `JetBrains Mono` - 用于 SKU、技术参数矩阵，确保数值严丝合缝。
+*   **技术/规格字体 (Monospace)**: `JetBrains Mono` - 用于 SKU、技术参数矩阵、硬件规格表，确保数值严丝合缝。
 
 ### 2.2 排版层级阶梯 (Hierarchy Specs)
 *   **Hero Main (主标题)**: 
@@ -41,6 +41,11 @@
     *   Tracking: 0% 
     *   Leading: 1.5
     *   应用: 卡片标题、功能组标题。
+*   **Technical Specs (规格参数)**:
+    *   Size: 14px (Value) / 12px (Label)
+    *   Font: JetBrains Mono
+    *   Leading: 1.2
+    *   应用: 产品详情页规格表、参数对比矩阵。
 *   **Body Text (标准正文)**: 
     *   Size: 16px 
     *   Tracking: 0% 
