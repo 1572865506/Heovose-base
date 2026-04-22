@@ -535,8 +535,8 @@ export default function DesignSystemPage() {
                       <span className="text-[11px] font-bold text-primary uppercase tracking-[0.2em]">4.4 模组化按钮组 (Button Groups)</span>
                     </div>
                     <div className="flex">
-                       <div className="inline-flex rounded-2xl border border-border/60 bg-white shadow-sm overflow-hidden p-1 gap-1">
-                         <Button variant="ghost" className="h-10 px-4 rounded-xl bg-primary text-white hover:bg-primary/90 hover:text-white text-[10px] font-bold uppercase">Grid View</Button>
+                       <div className="inline-flex rounded-2xl border border-border/60 bg-muted/20 p-1 gap-1 overflow-hidden">
+                         <Button variant="ghost" className="h-10 px-4 rounded-xl bg-primary text-white hover:bg-primary hover:text-white text-[10px] font-bold uppercase shadow-sm">Grid View</Button>
                          <Button variant="ghost" className="h-10 px-4 rounded-xl text-muted-foreground hover:bg-primary/10 hover:text-primary transition-all text-[10px] font-bold uppercase">List View</Button>
                          <Button variant="ghost" className="h-10 px-4 rounded-xl text-muted-foreground hover:bg-primary/10 hover:text-primary transition-all text-[10px] font-bold uppercase">Table</Button>
                        </div>
@@ -626,7 +626,6 @@ export default function DesignSystemPage() {
             </section>
           </div>
         ) : (
-          /* 后台系统预览 */
           <div className="space-y-16 animate-in fade-in slide-in-from-bottom-4 duration-700">
             <section className="space-y-8">
               <div className="flex items-center gap-4 border-b pb-4 border-primary/20">
@@ -647,7 +646,7 @@ export default function DesignSystemPage() {
         )}
       </div>
 
-      {/* 固定底栏 - 白皮书入口 */}
+      {/* 固定底栏 */}
       <footer className="fixed bottom-0 left-0 right-0 bg-white/90 backdrop-blur-md border-t border-border/40 px-12 py-3 flex items-center justify-between z-[110]">
         <div className="flex items-center gap-8">
           <Dialog modal={false}>
