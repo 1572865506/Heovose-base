@@ -1,4 +1,3 @@
-
 "use client";
 
 import React, { useState } from 'react';
@@ -407,7 +406,7 @@ export default function DesignSystemPage() {
                        </div>
                        <div className="space-y-4">
                          <Label className="text-[10px] font-bold uppercase opacity-40 tracking-widest">主题聚焦态演示</Label>
-                         <Input placeholder="聚焦后触发品牌蓝光晕..." className="h-12 rounded-xl focus-visible:ring-primary/20" />
+                         <Input readOnly value="聚焦后触发品牌蓝光晕..." className="h-12 rounded-xl focus-visible:ring-primary/20" />
                        </div>
                     </div>
                     <div className="space-y-8">
@@ -418,7 +417,7 @@ export default function DesignSystemPage() {
                        </div>
                        <div className="space-y-4">
                          <Label className="text-[10px] font-bold uppercase opacity-40 tracking-widest">项目聚焦态演示</Label>
-                         <Input placeholder="聚焦后触发工业橙光晕..." className="h-12 rounded-xl focus-visible:ring-orange-500/20 border-orange-500/20" />
+                         <Input readOnly value="聚焦后触发工业橙光晕..." className="h-12 rounded-xl focus-visible:ring-orange-500/20 border-orange-500/20" />
                        </div>
                     </div>
                  </div>
