@@ -254,7 +254,7 @@ export default function DesignSystemPage() {
                 <div className="space-y-10">
                    <div className="flex items-center justify-between">
                      <h3 className="text-xs font-bold text-primary/40 uppercase tracking-[0.2em] border-l-2 border-primary pl-4">排版层级与规格矩阵规范</h3>
-                     <Badge variant="outline" className="h-6 text-[8px] font-bold uppercase">Typography specs v2.8</Badge>
+                     <Badge variant="outline" className="h-6 text-[8px] font-bold uppercase">Typography specs v2.9</Badge>
                    </div>
                    <div className="overflow-hidden border border-border/40 rounded-2xl">
                     <Table>
@@ -293,12 +293,12 @@ export default function DesignSystemPage() {
                           <TableCell className="font-mono text-[10px]">1.2 / 0%</TableCell>
                           <TableCell className="pl-10 py-6">
                              <div className="flex gap-4 max-w-sm">
-                               <div className="bg-muted/10 p-4 rounded-2xl border border-border/40 shadow-sm flex-1 flex flex-col justify-between h-20">
-                                 <span className="text-[10px] font-bold text-primary/40 uppercase tracking-widest block">Display</span>
+                               <div className="bg-white p-5 rounded-2xl border border-border/40 shadow-sm flex-1 flex flex-col justify-between h-24">
+                                 <span className="text-[10px] font-bold text-primary/40 uppercase tracking-widest block mb-2">Display Panel</span>
                                  <span className="font-mono text-[14px] font-medium text-primary block leading-tight">23.8" IPS 1080P</span>
                                </div>
-                               <div className="bg-muted/10 p-4 rounded-2xl border border-border/40 shadow-sm flex-1 flex flex-col justify-between h-20">
-                                 <span className="text-[10px] font-bold text-primary/40 uppercase tracking-widest block">CPU</span>
+                               <div className="bg-white p-5 rounded-2xl border border-border/40 shadow-sm flex-1 flex flex-col justify-between h-24">
+                                 <span className="text-[10px] font-bold text-primary/40 uppercase tracking-widest block mb-2">Main Processor</span>
                                  <span className="font-mono text-[14px] font-medium text-primary block leading-tight">Intel i7-12700</span>
                                </div>
                              </div>
@@ -536,17 +536,19 @@ export default function DesignSystemPage() {
                       <span className="text-[11px] font-bold text-primary uppercase tracking-[0.2em]">4.4 模组化按钮组 (Button Groups)</span>
                     </div>
                     <div className="flex">
+                       {/* 优化后的文本按钮组：增强 Hover 时文字与背景的对比度 */}
                        <div className="inline-flex rounded-2xl border border-border/60 bg-white shadow-sm overflow-hidden p-1 gap-1">
                          <Button variant="ghost" className="h-10 px-4 rounded-xl bg-primary text-white hover:bg-primary/90 text-[10px] font-bold uppercase">Grid View</Button>
-                         <Button variant="ghost" className="h-10 px-4 rounded-xl text-muted-foreground hover:bg-muted text-[10px] font-bold uppercase">List View</Button>
-                         <Button variant="ghost" className="h-10 px-4 rounded-xl text-muted-foreground hover:bg-muted text-[10px] font-bold uppercase">Table</Button>
+                         <Button variant="ghost" className="h-10 px-4 rounded-xl text-muted-foreground hover:bg-primary/10 hover:text-primary transition-all text-[10px] font-bold uppercase">List View</Button>
+                         <Button variant="ghost" className="h-10 px-4 rounded-xl text-muted-foreground hover:bg-primary/10 hover:text-primary transition-all text-[10px] font-bold uppercase">Table</Button>
                        </div>
                     </div>
                     <div className="flex">
+                       {/* 优化后的图标按钮组 */}
                        <div className="inline-flex rounded-xl border border-border/60 bg-muted/20 overflow-hidden">
-                         <Button variant="ghost" size="icon" className="h-10 w-10 border-r rounded-none hover:bg-white transition-colors"><AlignLeft className="h-4 w-4" /></Button>
-                         <Button variant="ghost" size="icon" className="h-10 w-10 border-r rounded-none hover:bg-white transition-colors"><AlignCenter className="h-4 w-4" /></Button>
-                         <Button variant="ghost" size="icon" className="h-10 w-10 rounded-none hover:bg-white transition-colors"><AlignRight className="h-4 w-4" /></Button>
+                         <Button variant="ghost" size="icon" className="h-10 w-10 border-r rounded-none hover:bg-white hover:text-primary transition-colors"><AlignLeft className="h-4 w-4" /></Button>
+                         <Button variant="ghost" size="icon" className="h-10 w-10 border-r rounded-none hover:bg-white hover:text-primary transition-colors"><AlignCenter className="h-4 w-4" /></Button>
+                         <Button variant="ghost" size="icon" className="h-10 w-10 rounded-none hover:bg-white hover:text-primary transition-colors"><AlignRight className="h-4 w-4" /></Button>
                        </div>
                     </div>
                   </div>
