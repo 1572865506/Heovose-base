@@ -25,11 +25,32 @@
 *   **正文字体 (Body)**: `Inter` (Sans-serif) - 高可读性，适用于说明、介绍及列表。
 *   **技术/等宽字体 (Monospace)**: `JetBrains Mono` - 用于 SKU、技术参数矩阵，确保数值严丝合缝。
 
-### 2.2 层级阶梯
-*   **Hero Main**: 96px | Tracking -5% | Leading 0.85 (超大、紧凑)。
-*   **Section Heading**: 36px - 48px | Bold | 科技几何感。
-*   **Technical Spec**: 13px | Monospace | 用于规格表数值展示。
-*   **Supplementary**: 10px | Tracking Widest | All Caps (标签标准)。
+### 2.2 排版层级阶梯 (Hierarchy Specs)
+*   **Hero Main (主标题)**: 
+    *   Size: 96px 
+    *   Tracking: -5% (Tighter) 
+    *   Leading: 0.85 (Compact)
+    *   应用: 首页英雄屏、品牌大视觉。
+*   **Section Heading (章节标题)**: 
+    *   Size: 48px 
+    *   Tracking: -2% (Tight) 
+    *   Leading: 1.1
+    *   应用: 板块标题、核心产品名。
+*   **Sub-headline (引导标题)**: 
+    *   Size: 24px 
+    *   Tracking: 0% 
+    *   Leading: 1.5
+    *   应用: 卡片标题、功能组标题。
+*   **Body Text (标准正文)**: 
+    *   Size: 16px 
+    *   Tracking: 0% 
+    *   Leading: 1.6 (Relaxed)
+    *   应用: 描述段落、详细规格说明。
+*   **Supplementary (技术辅助)**: 
+    *   Size: 10px 
+    *   Tracking: Widest (10%) 
+    *   Leading: 1.0
+    *   应用: SKU 标签、技术参数名、全大写页码。
 
 ---
 
@@ -46,10 +67,10 @@
 *   **Dashed (虚线)**: 用于占位、引导性导入或非核心装饰。
 
 ### 3.3 阴影体系 (Shadow Hierarchy)
-*   **shadow-sm**: 组件级。用于微型原子组件。
-*   **shadow-md**: 容器级。建立卡片物理厚度。
-*   **shadow-xl**: 激活态。用于卡片悬停反馈。
-*   **shadow-2xl**: 全局级。用于导航、Hero 屏悬浮视觉。
+*   **shadow-sm**: 组件级。用于微型原子组件（标签、徽章）。
+*   **shadow-md**: 容器级。建立卡片物理厚度，用于二级展示块。
+*   **shadow-xl**: 激活态。用于卡片悬停反馈、浮动详情区。
+*   **shadow-2xl**: 全局级。用于导航、Hero 屏悬浮卡片。
 
 ---
 

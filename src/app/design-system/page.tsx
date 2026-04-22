@@ -27,7 +27,10 @@ import {
   History,
   ExternalLink,
   Loader2,
-  X
+  X,
+  Hash,
+  AlignLeft,
+  ChevronDown
 } from 'lucide-react';
 import { 
   Table, 
@@ -97,7 +100,7 @@ export default function DesignSystemPage() {
           </div>
           <div>
             <h1 className="text-lg font-bold text-primary uppercase tracking-widest leading-none">Heovose Design Lab</h1>
-            <p className="text-[9px] text-muted-foreground font-bold uppercase opacity-60 mt-1">视觉实验室 • 核心版本 v1.7.0</p>
+            <p className="text-[9px] text-muted-foreground font-bold uppercase opacity-60 mt-1">视觉实验室 • 核心版本 v1.8.2</p>
           </div>
         </div>
 
@@ -197,7 +200,7 @@ export default function DesignSystemPage() {
               </div>
             </section>
 
-            {/* 01. 字体系统规范定义 */}
+            {/* 01. 字体系统规范定义 - 完善版 */}
             <section className="space-y-10">
               <div className="flex items-center gap-4 border-b pb-4 border-primary/10">
                 <div className="h-2 w-10 bg-primary rounded-full" />
@@ -207,47 +210,95 @@ export default function DesignSystemPage() {
               <div className="bg-white p-10 rounded-[2.5rem] border border-border/40 shadow-sm space-y-16">
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-10">
                   <div className="space-y-4">
-                    <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">标题字体 (Display)</span>
+                    <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest flex items-center gap-2"><Type className="h-3 w-3" /> 标题字体家族</span>
                     <div className="p-6 rounded-2xl bg-muted/20 border border-dashed border-primary/20">
                       <p className="text-4xl font-headline font-bold text-primary">Space Grotesk</p>
-                      <p className="text-[9px] mt-2 text-muted-foreground">用于 H1-H3 等级。具备工业几何美感。</p>
+                      <p className="text-[9px] mt-2 text-muted-foreground">用于 H1-H3 等级。具备工业几何美感与科技穿透力。</p>
                     </div>
                   </div>
                   <div className="space-y-4">
-                    <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">正文字体 (Sans-serif)</span>
+                    <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest flex items-center gap-2"><AlignLeft className="h-3 w-3" /> 正文字体家族</span>
                     <div className="p-6 rounded-2xl bg-muted/20 border border-dashed border-primary/20">
                       <p className="text-4xl font-body font-bold text-primary">Inter</p>
-                      <p className="text-[9px] mt-2 text-muted-foreground">用于全站文本、说明。高可读性核心。</p>
+                      <p className="text-[9px] mt-2 text-muted-foreground">用于全站文本、说明。提供极高阅读清晰度的无衬线体。</p>
                     </div>
                   </div>
                   <div className="space-y-4">
-                    <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">技术辅助字体 (Monospace)</span>
+                    <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest flex items-center gap-2"><Hash className="h-3 w-3" /> 技术等宽家族</span>
                     <div className="p-6 rounded-2xl bg-muted/20 border border-dashed border-primary/20">
                       <p className="text-3xl font-mono font-bold text-primary">JetBrains Mono</p>
-                      <p className="text-[9px] mt-2 text-muted-foreground">用于 SKU、技术参数。确保数值严丝合缝。</p>
+                      <p className="text-[9px] mt-2 text-muted-foreground">用于 SKU、技术参数矩阵。确保所有数值物理对齐。</p>
                     </div>
                   </div>
                 </div>
 
-                <div className="space-y-4">
-                   <div className="grid grid-cols-12 border-b border-border/40 pb-4 text-[10px] font-bold uppercase text-primary/40">
-                      <div className="col-span-3">层级名称</div>
-                      <div className="col-span-2 text-center">Size / Line-height</div>
-                      <div className="col-span-7 pl-6">视觉预览</div>
-                   </div>
-                   <div className="grid grid-cols-12 items-center py-6 border-b border-dashed border-border/40 group hover:bg-muted/5 transition-all px-4 rounded-xl">
-                      <div className="col-span-3 font-bold text-xs uppercase">Hero Main / 主标题</div>
-                      <div className="col-span-2 text-center font-mono text-[10px]">96px / 0.85</div>
-                      <div className="col-span-7 pl-6">
-                        <h1 className="text-5xl md:text-7xl font-headline font-bold text-primary leading-[0.85] tracking-tighter uppercase">HEOVOSE TECHNOLOGY</h1>
-                      </div>
-                   </div>
-                   <div className="grid grid-cols-12 items-center py-6 border-b border-dashed border-border/40 group hover:bg-muted/5 transition-all px-4 rounded-xl">
-                      <div className="col-span-3 font-bold text-xs uppercase">Technical Spec / 技术规格</div>
-                      <div className="col-span-2 text-center font-mono text-[10px]">13px / 1.5</div>
-                      <div className="col-span-7 pl-6">
-                        <p className="font-mono text-sm tracking-tight text-primary/80">CORE_I7_12700H | RTX_3060_6GB | NVME_2TB</p>
-                      </div>
+                <div className="space-y-6">
+                   <h3 className="text-xs font-bold text-primary/40 uppercase tracking-[0.2em] border-l-2 border-primary pl-4">排版层级技术参数 (Hierarchy Specs)</h3>
+                   <div className="overflow-hidden border border-border/40 rounded-2xl">
+                    <Table>
+                      <TableHeader className="bg-muted/30">
+                        <TableRow>
+                          <TableHead className="font-bold text-[10px] uppercase">Level / 用途</TableHead>
+                          <TableHead className="font-bold text-[10px] uppercase">Font Family</TableHead>
+                          <TableHead className="font-bold text-[10px] uppercase">Size (px)</TableHead>
+                          <TableHead className="font-bold text-[10px] uppercase">Leading (行高)</TableHead>
+                          <TableHead className="font-bold text-[10px] uppercase">Tracking (字距)</TableHead>
+                          <TableHead className="font-bold text-[10px] uppercase pl-10">Visual Sample</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        <TableRow className="group hover:bg-muted/5">
+                          <TableCell className="font-bold text-xs">Hero Display / 超大标题</TableCell>
+                          <TableCell className="font-mono text-[10px]">Space Grotesk</TableCell>
+                          <TableCell className="font-mono text-[10px]">96px</TableCell>
+                          <TableCell className="font-mono text-[10px]">0.85 (Tighter)</TableCell>
+                          <TableCell className="font-mono text-[10px]">-5% (Tighter)</TableCell>
+                          <TableCell className="pl-10 py-10">
+                             <h1 className="text-6xl font-headline font-bold text-primary leading-[0.85] tracking-tighter uppercase">HEOVOSE</h1>
+                          </TableCell>
+                        </TableRow>
+                        <TableRow className="group hover:bg-muted/5">
+                          <TableCell className="font-bold text-xs">Section Heading / 章节标题</TableCell>
+                          <TableCell className="font-mono text-[10px]">Space Grotesk</TableCell>
+                          <TableCell className="font-mono text-[10px]">48px</TableCell>
+                          <TableCell className="font-mono text-[10px]">1.1 (Tight)</TableCell>
+                          <TableCell className="font-mono text-[10px]">-2% (Tight)</TableCell>
+                          <TableCell className="pl-10 py-6">
+                             <h2 className="text-3xl font-headline font-bold text-primary leading-tight tracking-tight uppercase">Precise Manufacturing</h2>
+                          </TableCell>
+                        </TableRow>
+                        <TableRow className="group hover:bg-muted/5">
+                          <TableCell className="font-bold text-xs">Sub-headline / 引导小标题</TableCell>
+                          <TableCell className="font-mono text-[10px]">Inter</TableCell>
+                          <TableCell className="font-mono text-[10px]">24px</TableCell>
+                          <TableCell className="font-mono text-[10px]">1.5 (Relaxed)</TableCell>
+                          <TableCell className="font-mono text-[10px]">0% (Normal)</TableCell>
+                          <TableCell className="pl-10 py-4">
+                             <h3 className="text-xl font-bold text-primary leading-relaxed">Integrated Desktop Solutions</h3>
+                          </TableCell>
+                        </TableRow>
+                        <TableRow className="group hover:bg-muted/5">
+                          <TableCell className="font-bold text-xs">Body System / 正文系统</TableCell>
+                          <TableCell className="font-mono text-[10px]">Inter</TableCell>
+                          <TableCell className="font-mono text-[10px]">16px</TableCell>
+                          <TableCell className="font-mono text-[10px]">1.6 (Relaxed)</TableCell>
+                          <TableCell className="font-mono text-[10px]">0% (Normal)</TableCell>
+                          <TableCell className="pl-10 py-4">
+                             <p className="text-sm text-muted-foreground leading-relaxed max-w-sm">Heovose technology defines the future of all-in-one computing with precision engineering and global manufacturing excellence.</p>
+                          </TableCell>
+                        </TableRow>
+                        <TableRow className="group hover:bg-muted/5">
+                          <TableCell className="font-bold text-xs">Supplementary / 技术辅助</TableCell>
+                          <TableCell className="font-mono text-[10px]">JetBrains Mono</TableCell>
+                          <TableCell className="font-mono text-[10px]">10px</TableCell>
+                          <TableCell className="font-mono text-[10px]">1.0 (None)</TableCell>
+                          <TableCell className="font-mono text-[10px]">10% (Widest)</TableCell>
+                          <TableCell className="pl-10 py-4">
+                             <span className="font-mono text-[10px] font-bold uppercase tracking-widest text-primary/60">SKU: H24_PRO_SERIES_2024</span>
+                          </TableCell>
+                        </TableRow>
+                      </TableBody>
+                    </Table>
                    </div>
                 </div>
               </div>
