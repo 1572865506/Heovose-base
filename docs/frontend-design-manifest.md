@@ -92,7 +92,7 @@
 
 ### 5.1 选择控件 (Checkbox & Radio)
 *   **样式**: 采用 2px 物理边框。选中态使用 `bg-primary` 填充。
-*   **反馈**: 禁用态锁定为 `opacity-50` 且背景变为 `bg-muted`。
+*   **反馈**: 禁用态锁定为 `opacity-50`且背景变为 `bg-muted`。
 
 ### 5.2 开关按钮 (Toggle Switch)
 *   **物理尺寸**: 标准高度 24px。
@@ -115,6 +115,19 @@
 *   **Focus**: 边框转为 `border-primary`，并开启 `ring-4 ring-primary/5` 光晕。
 *   **Error**: 边框与文字转为 `destructive` 色值，并显示 Alert 图标。
 *   **Disabled**: 透明度降至 `50%`，光标锁定。
+
+---
+
+## 9. 表格系统规范 (Table System)
+
+### 9.1 结构准则 (Structural)
+*   **外容器**: 统一采用 `rounded-2xl` (16px) 并配合 `border` 封闭。
+*   **表头 (Header)**: 固定背景色为 `bg-muted/30`，字体锁定为 `text-[10px] font-bold uppercase tracking-widest`。
+*   **行高 (Rows)**: 标准行高 56px，多行文本单元格根据内容自动撑开。
+
+### 9.2 交互准则 (Interaction)
+*   **行悬停 (Row Hover)**: 触发 `bg-primary/5` 浅蓝背景反馈。
+*   **固定布局 (Sticky)**: 在大数据量场景下，表头必须 `sticky top-0`；核心识别列（如ID/名称）建议 `sticky left-0` 并在背景应用非透明纯白以防止穿透。
 
 ---
 **最后更新**: 2024-06-05

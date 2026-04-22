@@ -1,4 +1,3 @@
-
 "use client";
 
 import React, { useState, useEffect } from 'react';
@@ -12,7 +11,7 @@ import {
 import {
   RadioGroup,
   RadioGroupItem,
-} from "@/components/ui/radio-group";
+} from "@/radio-group";
 import {
   Switch
 } from "@/components/ui/switch";
@@ -84,7 +83,10 @@ import {
   ChevronDown,
   User,
   Lock,
-  MessageSquare
+  MessageSquare,
+  ArrowUp,
+  ArrowDown,
+  Filter
 } from 'lucide-react';
 import { 
   Table, 
@@ -134,6 +136,13 @@ export default function DesignSystemPage() {
   const [manifestContent, setManifestContent] = useState('');
   const [isLoadingManifest, setIsLoadingManifest] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set());
+
+  const toggleRow = (id: string) => {
+    const next = new Set(expandedRows);
+    next.has(id) ? next.delete(id) : next.add(id);
+    setExpandedRows(next);
+  };
 
   const loadManifest = async () => {
     setIsLoadingManifest(true);
@@ -366,11 +375,11 @@ export default function DesignSystemPage() {
               </div>
             </section>
 
-            {/* 02. 边框与圆角规范定义 */}
+            {/* 02. 几何与投影规范定义 */}
             <section className="space-y-10">
               <div className="flex items-center gap-4 border-b pb-4 border-primary/10">
                 <div className="h-2 w-10 bg-primary rounded-full" />
-                <h2 className="text-2xl font-headline font-bold uppercase tracking-widest text-primary">02. 边框与圆角规范定义</h2>
+                <h2 className="text-2xl font-headline font-bold uppercase tracking-widest text-primary">02. 几何与投影规范定义</h2>
               </div>
 
               <div className="bg-white p-10 rounded-[2.5rem] border border-border/40 shadow-sm space-y-20">
@@ -472,7 +481,6 @@ export default function DesignSystemPage() {
               </div>
 
               <div className="bg-white p-12 rounded-[3rem] border border-border/40 shadow-sm space-y-20">
-                {/* 尺寸阶梯 */}
                 <div className="space-y-8">
                   <div className="flex items-center gap-3">
                     <Maximize className="h-4 w-4 text-primary" />
@@ -498,14 +506,12 @@ export default function DesignSystemPage() {
                   </div>
                 </div>
 
-                {/* 状态按钮看板 */}
                 <div className="space-y-8">
                   <div className="flex items-center gap-3">
                     <ShieldCheck className="h-4 w-4 text-primary" />
                     <span className="text-[11px] font-bold text-primary uppercase tracking-[0.2em]">4.2 状态语义按钮 (Status Matrix)</span>
                   </div>
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-8">
-                    {/* Safety */}
                     <div className="space-y-4">
                       <p className="text-[10px] font-bold text-green-600 uppercase tracking-widest border-l-2 border-green-600 pl-2">Safety / 安全</p>
                       <div className="space-y-2">
@@ -513,7 +519,6 @@ export default function DesignSystemPage() {
                         <Button variant="outline" className="w-full h-11 border-green-600 text-green-600 hover:bg-green-50 rounded-xl font-bold text-[10px] uppercase">线性样式</Button>
                       </div>
                     </div>
-                    {/* Info */}
                     <div className="space-y-4">
                       <p className="text-[10px] font-bold text-blue-600 uppercase tracking-widest border-l-2 border-blue-600 pl-2">Info / 信息</p>
                       <div className="space-y-2">
@@ -521,7 +526,6 @@ export default function DesignSystemPage() {
                         <Button variant="outline" className="w-full h-11 border-blue-600 text-blue-600 hover:bg-blue-50 rounded-xl font-bold text-[10px] uppercase">辅助引导</Button>
                       </div>
                     </div>
-                    {/* Warning */}
                     <div className="space-y-4">
                       <p className="text-[10px] font-bold text-orange-600 uppercase tracking-widest border-l-2 border-orange-600 pl-2">Warning / 警告</p>
                       <div className="space-y-2">
@@ -529,7 +533,6 @@ export default function DesignSystemPage() {
                         <Button variant="outline" className="w-full h-11 border-orange-500 text-orange-600 hover:bg-orange-50 rounded-xl font-bold text-[10px] uppercase">风险提示</Button>
                       </div>
                     </div>
-                    {/* Danger */}
                     <div className="space-y-4">
                       <p className="text-[10px] font-bold text-destructive uppercase tracking-widest border-l-2 border-destructive pl-2">Danger / 危险</p>
                       <div className="space-y-2">
@@ -537,7 +540,6 @@ export default function DesignSystemPage() {
                         <Button variant="outline" className="w-full h-11 border-destructive text-destructive hover:bg-destructive/5 rounded-xl font-bold text-[10px] uppercase">撤销更改</Button>
                       </div>
                     </div>
-                    {/* Disabled */}
                     <div className="space-y-4">
                       <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest border-l-2 border-muted pl-2">Disabled / 禁用</p>
                       <div className="space-y-2">
@@ -548,7 +550,6 @@ export default function DesignSystemPage() {
                   </div>
                 </div>
 
-                {/* 图标按钮与混合交互 */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-20">
                   <div className="space-y-8">
                     <div className="flex items-center gap-3">
@@ -590,7 +591,7 @@ export default function DesignSystemPage() {
               </div>
             </section>
 
-            {/* 07. 交互组件单元规范 - 动态交互版 */}
+            {/* 07. 交互组件单元规范 */}
             <section className="space-y-10">
               <div className="flex items-center gap-4 border-b pb-4 border-primary/10">
                 <div className="h-2 w-10 bg-primary rounded-full" />
@@ -599,8 +600,6 @@ export default function DesignSystemPage() {
 
               <div className="bg-white p-12 rounded-[3rem] border border-border/40 shadow-sm space-y-20">
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-20">
-                  
-                  {/* 选择控件 (Checkbox & Radio) */}
                   <div className="space-y-12">
                     <div className="space-y-8">
                        <p className="text-[11px] font-bold text-primary uppercase tracking-[0.2em] flex items-center gap-2"><CheckCircle2 className="h-4 w-4" /> 多选框规范 (Checkbox Matrix)</p>
@@ -639,7 +638,6 @@ export default function DesignSystemPage() {
                     </div>
                   </div>
 
-                  {/* 开关与下拉 (Switch & Select) */}
                   <div className="space-y-12">
                     <div className="space-y-8">
                        <p className="text-[11px] font-bold text-primary uppercase tracking-[0.2em] flex items-center gap-2"><Zap className="h-4 w-4" /> 开关按钮规范 (Toggle Switch)</p>
@@ -703,7 +701,7 @@ export default function DesignSystemPage() {
               </div>
             </section>
 
-            {/* 08. 输入系统规范 (Input System Specs) */}
+            {/* 08. 输入系统规范 */}
             <section className="space-y-10">
               <div className="flex items-center gap-4 border-b pb-4 border-primary/10">
                 <div className="h-2 w-10 bg-primary rounded-full" />
@@ -711,8 +709,6 @@ export default function DesignSystemPage() {
               </div>
 
               <div className="bg-white p-12 rounded-[3rem] border border-border/40 shadow-sm space-y-20">
-                
-                {/* 尺寸阶梯展示 */}
                 <div className="space-y-8">
                   <div className="flex items-center gap-3">
                     <Maximize className="h-4 w-4 text-primary" />
@@ -738,13 +734,11 @@ export default function DesignSystemPage() {
                   </div>
                 </div>
 
-                {/* 多态与复合输入框 */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-20">
                   <div className="space-y-10">
                     <div className="space-y-8">
                        <span className="text-[11px] font-bold text-primary uppercase tracking-[0.2em] flex items-center gap-2"><Hash className="h-4 w-4" /> 复合型输入框 (Composite Inputs)</span>
                        <div className="space-y-6">
-                         {/* 带图标 */}
                          <div className="space-y-2">
                            <Label className="text-[9px] font-bold uppercase opacity-40">Icon Prefix / 搜索模式</Label>
                            <div className="relative">
@@ -752,7 +746,6 @@ export default function DesignSystemPage() {
                              <Input className="h-12 pl-12 rounded-2xl bg-muted/10 border-none shadow-inner" placeholder="输入搜索关键词..." />
                            </div>
                          </div>
-                         {/* 密码切换 */}
                          <div className="space-y-2">
                            <Label className="text-[9px] font-bold uppercase opacity-40">Password with Toggle / 密码态</Label>
                            <div className="relative">
@@ -771,7 +764,6 @@ export default function DesignSystemPage() {
                              </button>
                            </div>
                          </div>
-                         {/* 带操作按钮 */}
                          <div className="space-y-2">
                             <Label className="text-[9px] font-bold uppercase opacity-40">Action Suffix / 组合模式</Label>
                             <div className="flex gap-2">
@@ -783,12 +775,10 @@ export default function DesignSystemPage() {
                     </div>
                   </div>
 
-                  {/* 状态看板与多行文本 */}
                   <div className="space-y-10">
                     <div className="space-y-8">
                        <span className="text-[11px] font-bold text-primary uppercase tracking-[0.2em] flex items-center gap-2"><ShieldAlert className="h-4 w-4" /> 状态逻辑展示 (State Matrix)</span>
                        <div className="grid grid-cols-1 gap-6">
-                         {/* Focus 状态已通过 CSS 实现，此处展示 Error 和 Disabled */}
                          <div className="space-y-2">
                             <Label className="text-[9px] font-bold uppercase text-destructive">Error State / 校验失败</Label>
                             <div className="relative">
@@ -814,74 +804,222 @@ export default function DesignSystemPage() {
               </div>
             </section>
 
-            {/* 05. 业务核心组件单元 */}
-            <section className="space-y-10">
+            {/* 09. 表格系统规范 */}
+            <section className="space-y-10 pb-40">
               <div className="flex items-center gap-4 border-b pb-4 border-primary/10">
-                <div className="h-2 w-10 bg-primary rounded-full opacity-20" />
-                <h2 className="text-2xl font-headline font-bold uppercase tracking-widest text-primary">05. 业务核心组件单元</h2>
+                <div className="h-2 w-10 bg-primary rounded-full" />
+                <h2 className="text-2xl font-headline font-bold uppercase tracking-widest text-primary">09. 表格系统规范</h2>
               </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
-                <div className="group bg-white rounded-[3rem] border border-border/40 overflow-hidden hover:shadow-2xl transition-all duration-700 p-10 space-y-6 shadow-sm">
-                   <div className="h-16 w-16 rounded-2xl bg-primary/5 flex items-center justify-center text-primary mb-2 shadow-inner"><Monitor className="h-8 w-8" /></div>
-                   <div className="space-y-2">
-                     <span className="text-[9px] font-bold uppercase text-primary tracking-[0.3em]">Category: AIO Pro</span>
-                     <h3 className="text-3xl font-headline font-bold text-primary leading-tight uppercase">Heovose H24 高性能一体机</h3>
-                   </div>
-                   <div className="pt-8 border-t border-dashed border-border/60 flex items-center justify-between">
-                     <span className="text-xs font-bold text-primary flex items-center gap-2 group-hover:translate-x-2 transition-transform cursor-pointer">查看详细规格 <ArrowRight className="h-4 w-4" /></span>
-                     <Badge variant="outline" className="bg-primary/5 text-[9px] uppercase font-bold text-primary border-primary/10">Stock: Ready</Badge>
-                   </div>
-                </div>
-                <div className="group bg-white rounded-[3rem] border border-border/40 overflow-hidden hover:shadow-2xl transition-all duration-700 p-10 space-y-6 shadow-sm">
-                   <div className="h-16 w-16 rounded-2xl bg-orange-500/5 flex items-center justify-center text-[#F97316] mb-2 shadow-inner"><Zap className="h-8 w-8" /></div>
-                   <div className="space-y-2">
-                     <span className="text-[9px] font-bold uppercase text-orange-600 tracking-[0.3em]">Solution: Smart Retail</span>
-                     <h3 className="text-3xl font-headline font-bold text-[#F97316] leading-tight uppercase">智慧零售数字化终端</h3>
-                   </div>
-                   <div className="pt-8 border-t border-dashed border-border/60 flex items-center justify-between">
-                     <span className="text-xs font-bold text-[#F97316] flex items-center gap-2 group-hover:translate-x-2 transition-transform cursor-pointer">获取集成方案 <ArrowRight className="h-4 w-4" /></span>
-                     <Badge variant="outline" className="bg-orange-500/5 text-[9px] uppercase font-bold text-[#F97316] border-orange-500/10">Project: Bespoke</Badge>
-                   </div>
-                </div>
-              </div>
-            </section>
 
-            {/* 06. 交互模式与视觉特效 */}
-            <section className="space-y-10 pb-20">
-              <div className="flex items-center gap-4 border-b pb-4 border-primary/10">
-                <div className="h-2 w-10 bg-primary rounded-full opacity-20" />
-                <h2 className="text-2xl font-headline font-bold uppercase tracking-widest text-primary">06. 交互模式与视觉特效</h2>
-              </div>
-              <div className="bg-white p-12 rounded-[3rem] border border-border/40 shadow-sm space-y-20">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-20">
-                   <div className="space-y-8">
-                     <p className="text-[11px] font-bold text-primary uppercase tracking-[0.2em]">
-                       <Sparkles className="h-4 w-4 ai-icon-gradient" /> 
-                       AI 智感流光控件 (AI Aurora)
-                     </p>
-                     <div className="flex flex-col gap-6">
-                        <Button className="ai-btn-glow h-16 px-10 rounded-2xl gap-3 font-bold uppercase tracking-widest text-sm shadow-2xl">
-                          <Sparkles className="h-5 w-5 ai-icon-gradient" /> AI 智译全局内容
-                        </Button>
-                     </div>
-                   </div>
+              <div className="grid grid-cols-1 gap-12">
+                {/* 1. 基础形态展示 */}
+                <div className="bg-white p-10 rounded-[2.5rem] border border-border/40 shadow-sm space-y-10">
+                  <div className="flex items-center justify-between border-b pb-4">
+                    <span className="text-[11px] font-bold text-primary uppercase tracking-[0.2em] flex items-center gap-2"><TableProperties className="h-4 w-4" /> 9.1 基础与外观形态 (Base Styles)</span>
+                  </div>
+                  
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-10">
+                    <div className="space-y-4">
+                      <p className="text-[10px] font-bold text-muted-foreground uppercase">标准型与斑马纹 (Standard & Zebra)</p>
+                      <div className="rounded-2xl border overflow-hidden shadow-sm">
+                        <Table>
+                          <TableHeader className="bg-muted/30">
+                            <TableRow>
+                              <TableHead className="text-[9px] font-bold uppercase tracking-widest pl-6">ID</TableHead>
+                              <TableHead className="text-[9px] font-bold uppercase tracking-widest">Model</TableHead>
+                              <TableHead className="text-[9px] font-bold uppercase tracking-widest pr-6">Status</TableHead>
+                            </TableRow>
+                          </TableHeader>
+                          <TableBody>
+                            <TableRow className="even:bg-muted/20">
+                              <TableCell className="text-xs font-mono pl-6">H24-P01</TableCell>
+                              <TableCell className="text-xs font-bold">Pro AIO 24"</TableCell>
+                              <TableCell className="pr-6"><Badge className="bg-green-50 text-green-700 border-green-100 text-[8px]">LIVE</Badge></TableCell>
+                            </TableRow>
+                            <TableRow className="even:bg-muted/20">
+                              <TableCell className="text-xs font-mono pl-6">M10-K22</TableCell>
+                              <TableCell className="text-xs font-bold">Mini PC Gen 2</TableCell>
+                              <TableCell className="pr-6"><Badge variant="secondary" className="text-[8px]">DRAFT</Badge></TableCell>
+                            </TableRow>
+                          </TableBody>
+                        </Table>
+                      </div>
+                    </div>
 
-                   <div className="space-y-8">
-                      <p className="text-[11px] font-bold text-primary uppercase tracking-[0.2em] flex items-center gap-2">
-                        <Globe className="h-4 w-4" /> 
-                        玻璃拟态对比 (Glass-morphism)
-                      </p>
-                      <div className="grid grid-cols-2 gap-4">
-                        <div className="h-40 rounded-[2rem] bg-primary/10 backdrop-blur-md border border-white/40 flex flex-col items-center justify-center gap-2 shadow-xl">
-                          <span className="text-[10px] font-bold uppercase text-primary tracking-widest">M1: 标准蒙砂</span>
-                          <Badge variant="outline" className="text-[8px] border-primary/20">Blur: 16px</Badge>
-                        </div>
-                        <div className="h-40 rounded-[2rem] bg-white/40 backdrop-blur-3xl border border-white/20 flex flex-col items-center justify-center gap-2 shadow-2xl">
-                          <span className="text-[10px] font-bold uppercase text-primary tracking-widest">M2: 重质玻璃</span>
-                          <Badge variant="outline" className="text-[8px] border-primary/20">Blur: 40px</Badge>
+                    <div className="space-y-4">
+                      <p className="text-[10px] font-bold text-muted-foreground uppercase">无边框型 (Borderless)</p>
+                      <Table>
+                        <TableHeader className="border-b-2 border-primary/10">
+                          <TableRow className="hover:bg-transparent">
+                            <TableHead className="text-[9px] font-bold uppercase text-primary">Parameter</TableHead>
+                            <TableHead className="text-[9px] font-bold uppercase text-primary">Requirement</TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          <TableRow className="border-b-0 hover:bg-primary/5 transition-colors">
+                            <TableCell className="text-xs font-medium">Input Voltage</TableCell>
+                            <TableCell className="text-xs text-muted-foreground">110-240V AC</TableCell>
+                          </TableRow>
+                          <TableRow className="border-b-0 hover:bg-primary/5 transition-colors">
+                            <TableCell className="text-xs font-medium">Brightness</TableCell>
+                            <TableCell className="text-xs text-muted-foreground">350 nits (Min)</TableCell>
+                          </TableRow>
+                        </TableBody>
+                      </Table>
+                    </div>
+                  </div>
+                </div>
+
+                {/* 2. 高级滚动交互 */}
+                <div className="bg-white p-10 rounded-[2.5rem] border border-border/40 shadow-sm space-y-10">
+                  <div className="flex items-center justify-between border-b pb-4">
+                    <span className="text-[11px] font-bold text-primary uppercase tracking-[0.2em] flex items-center gap-2"><Maximize className="h-4 w-4" /> 9.2 高级滚动与固定交互 (Sticky & Scroll)</span>
+                  </div>
+
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-10">
+                    <div className="space-y-4">
+                      <p className="text-[10px] font-bold text-muted-foreground uppercase">固定表头 (Sticky Header)</p>
+                      <div className="rounded-2xl border overflow-hidden max-h-[220px] overflow-y-auto scrollbar-minimal shadow-inner">
+                        <Table>
+                          <TableHeader className="sticky top-0 z-20 bg-muted/95 backdrop-blur-md shadow-sm">
+                            <TableRow className="hover:bg-transparent border-none">
+                              <TableHead className="text-[9px] font-bold uppercase pl-6">Batch ID</TableHead>
+                              <TableHead className="text-[9px] font-bold uppercase">Time</TableHead>
+                              <TableHead className="text-[9px] font-bold uppercase pr-6">Result</TableHead>
+                            </TableRow>
+                          </TableHeader>
+                          <TableBody>
+                            {Array.from({ length: 10 }).map((_, i) => (
+                              <TableRow key={i} className="hover:bg-primary/5">
+                                <TableCell className="text-xs font-mono pl-6">QC-{100 + i}</TableCell>
+                                <TableCell className="text-[10px] opacity-60">12:00:0{i}</TableCell>
+                                <TableCell className="pr-6"><div className="h-1.5 w-10 bg-green-500 rounded-full" /></TableCell>
+                              </TableRow>
+                            ))}
+                          </TableBody>
+                        </Table>
+                      </div>
+                    </div>
+
+                    <div className="space-y-4">
+                      <p className="text-[10px] font-bold text-muted-foreground uppercase">双向固定 (Sticky Header & First Column)</p>
+                      <div className="rounded-2xl border overflow-hidden max-w-full overflow-x-auto scrollbar-minimal shadow-inner">
+                        <div className="min-w-[600px]">
+                          <Table>
+                            <TableHeader className="bg-muted/90 backdrop-blur-sm sticky top-0 z-30">
+                              <TableRow className="hover:bg-transparent">
+                                <TableHead className="sticky left-0 z-40 bg-muted font-bold text-[9px] uppercase pl-6 border-r shadow-[2px_0_5px_rgba(0,0,0,0.05)]">Model</TableHead>
+                                <TableHead className="text-[9px] font-bold uppercase">CPU</TableHead>
+                                <TableHead className="text-[9px] font-bold uppercase">RAM</TableHead>
+                                <TableHead className="text-[9px] font-bold uppercase">Storage</TableHead>
+                                <TableHead className="text-[9px] font-bold uppercase pr-6 text-right">MSRP</TableHead>
+                              </TableRow>
+                            </TableHeader>
+                            <TableBody>
+                              <TableRow className="hover:bg-primary/5 group">
+                                <TableCell className="sticky left-0 z-20 bg-white font-bold text-xs pl-6 border-r group-hover:bg-muted/5">HEO-H24</TableCell>
+                                <TableCell className="text-xs">i7-12700</TableCell>
+                                <TableCell className="text-xs">16GB</TableCell>
+                                <TableCell className="text-xs">512GB SSD</TableCell>
+                                <TableCell className="text-xs font-mono font-bold pr-6 text-right">$899.00</TableCell>
+                              </TableRow>
+                              <TableRow className="hover:bg-primary/5 group">
+                                <TableCell className="sticky left-0 z-20 bg-white font-bold text-xs pl-6 border-r group-hover:bg-muted/5">HEO-M12</TableCell>
+                                <TableCell className="text-xs">i5-12500</TableCell>
+                                <TableCell className="text-xs">8GB</TableCell>
+                                <TableCell className="text-xs">256GB SSD</TableCell>
+                                <TableCell className="text-xs font-mono font-bold pr-6 text-right">$450.00</TableCell>
+                              </TableRow>
+                            </TableBody>
+                          </Table>
                         </div>
                       </div>
-                   </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* 3. 复杂逻辑展示 */}
+                <div className="bg-white p-10 rounded-[2.5rem] border border-border/40 shadow-sm space-y-10">
+                  <div className="flex items-center justify-between border-b pb-4">
+                    <span className="text-[11px] font-bold text-primary uppercase tracking-[0.2em] flex items-center gap-2"><Zap className="h-4 w-4" /> 9.3 深度交互与展开逻辑 (Advanced Logic)</span>
+                  </div>
+
+                  <div className="grid grid-cols-1 gap-12">
+                    <div className="space-y-4">
+                       <div className="flex items-center justify-between">
+                         <p className="text-[10px] font-bold text-muted-foreground uppercase">多级复合表头与排序 (Multi-level & Sort)</p>
+                         <div className="flex gap-2">
+                           <Badge variant="outline" className="text-[8px] h-5"><Filter className="h-2 w-2 mr-1" /> ACTIVE FILTER</Badge>
+                         </div>
+                       </div>
+                       <div className="rounded-2xl border overflow-hidden shadow-sm">
+                         <Table>
+                           <TableHeader className="bg-muted/30">
+                             <TableRow className="hover:bg-transparent">
+                               <TableHead rowSpan={2} className="pl-6 border-r font-bold text-[9px] uppercase tracking-tighter">Product Line</TableHead>
+                               <TableHead colSpan={2} className="text-center border-b border-r font-bold text-[9px] uppercase tracking-widest py-2 bg-primary/5">Stock Levels</TableHead>
+                               <TableHead rowSpan={2} className="font-bold text-[9px] uppercase pr-6">
+                                  <div className="flex items-center gap-1 cursor-pointer hover:text-primary transition-colors">
+                                    Last Audit <ArrowDown className="h-2.5 w-2.5" />
+                                  </div>
+                               </TableHead>
+                             </TableRow>
+                             <TableRow className="hover:bg-transparent">
+                               <TableHead className="text-[8px] font-bold uppercase text-center border-r">In Warehouse</TableHead>
+                               <TableHead className="text-[8px] font-bold uppercase text-center border-r">In Transit</TableHead>
+                             </TableRow>
+                           </TableHeader>
+                           <TableBody>
+                             <TableRow className="hover:bg-primary/5 transition-colors">
+                               <TableCell className="pl-6 font-bold text-xs border-r">All-in-One Series</TableCell>
+                               <TableCell className="text-center border-r font-mono text-xs">1,240</TableCell>
+                               <TableCell className="text-center border-r font-mono text-xs">300</TableCell>
+                               <TableCell className="text-[10px] opacity-40 pr-6 uppercase">2 mins ago</TableCell>
+                             </TableRow>
+                           </TableBody>
+                         </Table>
+                       </div>
+                    </div>
+
+                    <div className="space-y-4">
+                      <p className="text-[10px] font-bold text-muted-foreground uppercase">展开行型 (Expandable Rows)</p>
+                      <div className="rounded-2xl border overflow-hidden shadow-md">
+                        <Table>
+                          <TableHeader className="bg-muted/30">
+                            <TableRow>
+                              <TableHead className="w-12"></TableHead>
+                              <TableHead className="text-[9px] font-bold uppercase tracking-widest">Order ID</TableHead>
+                              <TableHead className="text-[9px] font-bold uppercase tracking-widest">Client</TableHead>
+                              <TableHead className="text-[9px] font-bold uppercase tracking-widest pr-6 text-right">Value</TableHead>
+                            </TableRow>
+                          </TableHeader>
+                          <TableBody>
+                            <React.Fragment>
+                              <TableRow className={cn("cursor-pointer transition-colors", expandedRows.has('ord-1') ? "bg-primary/5" : "hover:bg-muted/10")} onClick={() => toggleRow('ord-1')}>
+                                <TableCell className="pl-4">
+                                  <ChevronRight className={cn("h-4 w-4 transition-transform duration-300", expandedRows.has('ord-1') && "rotate-90 text-primary")} />
+                                </TableCell>
+                                <TableCell className="text-xs font-mono font-bold">#ORD-2024-0051</TableCell>
+                                <TableCell className="text-xs">Amazon EU Central</TableCell>
+                                <TableCell className="text-xs font-mono font-bold pr-6 text-right text-primary">$42,500.00</TableCell>
+                              </TableRow>
+                              {expandedRows.has('ord-1') && (
+                                <TableRow className="bg-muted/5 border-b-2 border-primary/10 animate-in fade-in slide-in-from-top-2 duration-500">
+                                  <TableCell colSpan={4} className="p-8">
+                                    <div className="grid grid-cols-3 gap-8">
+                                      <div className="space-y-1.5"><p className="text-[8px] font-bold text-primary/40 uppercase">Shipping Address</p><p className="text-[10px] font-medium leading-relaxed">Rue de Rivoli 75, Paris, France</p></div>
+                                      <div className="space-y-1.5"><p className="text-[8px] font-bold text-primary/40 uppercase">Payment Method</p><p className="text-[10px] font-medium leading-relaxed">Wire Transfer (Swift: ****889)</p></div>
+                                      <div className="space-y-1.5"><p className="text-[8px] font-bold text-primary/40 uppercase">Items List</p><p className="text-[10px] font-medium leading-relaxed italic">H24 Pro x50, M10 Lite x120</p></div>
+                                    </div>
+                                  </TableCell>
+                                </TableRow>
+                              )}
+                            </React.Fragment>
+                          </TableBody>
+                        </Table>
+                      </div>
+                    </div>
+                  </div>
                 </div>
               </div>
             </section>
