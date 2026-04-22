@@ -11,7 +11,7 @@ import {
 import {
   RadioGroup,
   RadioGroupItem,
-} from "@/radio-group";
+} from "@/components/ui/radio-group";
 import {
   Switch
 } from "@/components/ui/switch";
@@ -562,7 +562,7 @@ export default function DesignSystemPage() {
                       <Button size="icon" variant="ghost" className="h-10 w-10 rounded-lg text-muted-foreground hover:text-primary hover:bg-primary/5"><MoreHorizontal className="h-5 w-5" /></Button>
                       <div className="h-10 w-px bg-border mx-4" />
                       <Button className="h-12 px-6 rounded-2xl bg-muted/30 text-primary border-none font-bold text-[10px] uppercase gap-3 hover:bg-primary hover:text-white transition-all group/spec">
-                        <Download className="h-4 w-4 opacity-40 group-hover/spec:opacity-100 transition-opacity" /> 规格书下载
+                        <Download className="h-4 w-4 opacity-40 group-hover/spec:opacity-100 transition-opacity group-hover/spec:text-white" /> <span className="group-hover/spec:text-white">规格书下载</span>
                       </Button>
                     </div>
                   </div>
@@ -921,14 +921,14 @@ export default function DesignSystemPage() {
                                 <TableCell className="text-xs">i7-12700</TableCell>
                                 <TableCell className="text-xs">16GB</TableCell>
                                 <TableCell className="text-xs">512GB SSD</TableCell>
-                                <TableCell className="text-xs font-mono font-bold pr-6 text-right">$899.00</TableCell>
+                                <TableCell className="text-xs font-mono font-bold pr-6 text-right text-primary">$899.00</TableCell>
                               </TableRow>
                               <TableRow className="hover:bg-primary/5 group">
                                 <TableCell className="sticky left-0 z-20 bg-white font-bold text-xs pl-6 border-r group-hover:bg-muted/5">HEO-M12</TableCell>
                                 <TableCell className="text-xs">i5-12500</TableCell>
                                 <TableCell className="text-xs">8GB</TableCell>
                                 <TableCell className="text-xs">256GB SSD</TableCell>
-                                <TableCell className="text-xs font-mono font-bold pr-6 text-right">$450.00</TableCell>
+                                <TableCell className="text-xs font-mono font-bold pr-6 text-right text-primary">$450.00</TableCell>
                               </TableRow>
                             </TableBody>
                           </Table>
@@ -1082,7 +1082,7 @@ export default function DesignSystemPage() {
                </div>
                <div className="bg-muted/10 p-4 border-t flex justify-end shrink-0">
                  <DialogClose asChild>
-                   <Button variant="ghost" className="rounded-xl px-8 font-bold uppercase text-[10px]">返回设计系统</Button>
+                   <Button variant="ghost" className="rounded-xl px-8 font-bold uppercase text-[10px]">返回设计 system</Button>
                  </DialogClose>
                </div>
             </DialogContent>
