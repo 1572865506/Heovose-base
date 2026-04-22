@@ -94,9 +94,26 @@
 
 ---
 
-## 5. 交互模式与 AI 特效 (Interactions & FX)
+## 5. 交互组件规范 (Interactive Controls)
 
-### 5.1 AI 智感极光 (AI Aurora Language)
+### 5.1 选择控件 (Checkbox & Radio)
+*   **样式**: 采用 2px 物理边框。选中态使用 `bg-primary` 填充。
+*   **反馈**: 禁用态锁定为 `opacity-50` 且背景变为 `bg-muted`。
+
+### 5.2 开关按钮 (Toggle Switch)
+*   **物理尺寸**: 标准高度 24px。
+*   **视觉反馈**: 开启态背景为品牌主色 `bg-primary`，关闭态为中性灰 `bg-muted`。
+
+### 5.3 菜单与下拉 (Menus & Select)
+*   **圆角标准**: 采用内嵌级圆角 `rounded-xl` (12px)。
+*   **深度感知**: 弹出层强制应用 `shadow-xl` 或 `shadow-2xl`。
+*   **多级导航**: 次级菜单通过 `ChevronRight` 指示，并应用 `slide-in-from-left-2` 微动效。
+
+---
+
+## 6. 交互模式与 AI 特效 (Interactions & FX)
+
+### 6.1 AI 智感极亮 (AI Aurora Language)
 *   **视觉特征**: 脱离业务蓝/橙色系，独立采用 4 色极光动态流动渐变。
 *   **核心类名**: `.ai-btn-glow` (带有动态 `::before` 渐变层)。
 *   **寓意**: 传达“智慧、全方位、灵动”的辅助工具质感。
