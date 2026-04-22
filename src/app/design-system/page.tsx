@@ -86,7 +86,11 @@ import {
   MessageSquare,
   ArrowUp,
   ArrowDown,
-  Filter
+  Filter,
+  Play,
+  RotateCcw,
+  Activity,
+  Workflow
 } from 'lucide-react';
 import { 
   Table, 
@@ -108,6 +112,7 @@ import {
 import { Label } from '@/components/ui/label';
 import { cn } from '@/lib/utils';
 import { getFrontendManifest } from './actions';
+import { Progress } from '@/components/ui/progress';
 
 // AI 极光渐变定义组件
 const AiGradientDef = () => (
@@ -812,34 +817,54 @@ export default function DesignSystemPage() {
               </div>
 
               <div className="grid grid-cols-1 gap-12">
-                {/* 1. 基础形态展示 */}
-                <div className="bg-white p-10 rounded-[2.5rem] border border-border/40 shadow-sm space-y-10">
+                {/* 1. 基础与状态展示 */}
+                <div className="bg-white p-10 rounded-[2.5rem] border border-border/40 shadow-sm space-y-12">
                   <div className="flex items-center justify-between border-b pb-4">
-                    <span className="text-[11px] font-bold text-primary uppercase tracking-[0.2em] flex items-center gap-2"><TableProperties className="h-4 w-4" /> 9.1 基础与外观形态 (Base Styles)</span>
+                    <span className="text-[11px] font-bold text-primary uppercase tracking-[0.2em] flex items-center gap-2"><TableProperties className="h-4 w-4" /> 9.1 基础形态与业务状态 (Styles & Status)</span>
                   </div>
                   
                   <div className="grid grid-cols-1 lg:grid-cols-2 gap-10">
                     <div className="space-y-4">
-                      <p className="text-[10px] font-bold text-muted-foreground uppercase">标准型与斑马纹 (Standard & Zebra)</p>
+                      <p className="text-[10px] font-bold text-muted-foreground uppercase">斑马纹带状态表格 (Zebra with Status)</p>
                       <div className="rounded-2xl border overflow-hidden shadow-sm">
                         <Table>
                           <TableHeader className="bg-muted/30">
                             <TableRow>
                               <TableHead className="text-[9px] font-bold uppercase tracking-widest pl-6">ID</TableHead>
-                              <TableHead className="text-[9px] font-bold uppercase tracking-widest">Model</TableHead>
-                              <TableHead className="text-[9px] font-bold uppercase tracking-widest pr-6">Status</TableHead>
+                              <TableHead className="text-[9px] font-bold uppercase tracking-widest">任务名称</TableHead>
+                              <TableHead className="text-[9px] font-bold uppercase tracking-widest pr-6">当前进度</TableHead>
                             </TableRow>
                           </TableHeader>
                           <TableBody>
-                            <TableRow className="even:bg-muted/20">
-                              <TableCell className="text-xs font-mono pl-6">H24-P01</TableCell>
-                              <TableCell className="text-xs font-bold">Pro AIO 24"</TableCell>
-                              <TableCell className="pr-6"><Badge className="bg-green-50 text-green-700 border-green-100 text-[8px]">LIVE</Badge></TableCell>
+                            <TableRow className="even:bg-muted/20 hover:bg-primary/5 transition-colors">
+                              <TableCell className="text-xs font-mono pl-6 opacity-40">#001</TableCell>
+                              <TableCell>
+                                 <div className="flex flex-col">
+                                   <span className="text-xs font-bold">核心主板 SMT 贴片</span>
+                                   <Badge className="w-fit mt-1 h-4 text-[7px] bg-green-50 text-green-700 border-green-200">运行中 / LIVE</Badge>
+                                 </div>
+                              </TableCell>
+                              <TableCell className="pr-6 w-32">
+                                 <div className="space-y-1.5">
+                                    <div className="flex justify-between text-[8px] font-bold uppercase"><span className="opacity-40">Progress</span><span>85%</span></div>
+                                    <Progress value={85} className="h-1" />
+                                 </div>
+                              </TableCell>
                             </TableRow>
-                            <TableRow className="even:bg-muted/20">
-                              <TableCell className="text-xs font-mono pl-6">M10-K22</TableCell>
-                              <TableCell className="text-xs font-bold">Mini PC Gen 2</TableCell>
-                              <TableCell className="pr-6"><Badge variant="secondary" className="text-[8px]">DRAFT</Badge></TableCell>
+                            <TableRow className="even:bg-muted/20 hover:bg-primary/5 transition-colors">
+                              <TableCell className="text-xs font-mono pl-6 opacity-40">#002</TableCell>
+                              <TableCell>
+                                 <div className="flex flex-col">
+                                   <span className="text-xs font-bold">24寸屏体老化测试</span>
+                                   <Badge variant="outline" className="w-fit mt-1 h-4 text-[7px] bg-orange-50 text-orange-700 border-orange-200">待检 / WAITING</Badge>
+                                 </div>
+                              </TableCell>
+                              <TableCell className="pr-6 w-32">
+                                 <div className="space-y-1.5">
+                                    <div className="flex justify-between text-[8px] font-bold uppercase"><span className="opacity-40">Progress</span><span>12%</span></div>
+                                    <Progress value={12} className="h-1 [&>div]:bg-orange-400" />
+                                 </div>
+                              </TableCell>
                             </TableRow>
                           </TableBody>
                         </Table>
@@ -847,22 +872,26 @@ export default function DesignSystemPage() {
                     </div>
 
                     <div className="space-y-4">
-                      <p className="text-[10px] font-bold text-muted-foreground uppercase">无边框型 (Borderless)</p>
+                      <p className="text-[10px] font-bold text-muted-foreground uppercase">无边框与极简状态 (Borderless & Minimal)</p>
                       <Table>
                         <TableHeader className="border-b-2 border-primary/10">
                           <TableRow className="hover:bg-transparent">
-                            <TableHead className="text-[9px] font-bold uppercase text-primary">Parameter</TableHead>
-                            <TableHead className="text-[9px] font-bold uppercase text-primary">Requirement</TableHead>
+                            <TableHead className="text-[9px] font-bold uppercase text-primary">工程参数</TableHead>
+                            <TableHead className="text-[9px] font-bold uppercase text-primary text-right">监控指标</TableHead>
                           </TableRow>
                         </TableHeader>
                         <TableBody>
                           <TableRow className="border-b-0 hover:bg-primary/5 transition-colors">
-                            <TableCell className="text-xs font-medium">Input Voltage</TableCell>
-                            <TableCell className="text-xs text-muted-foreground">110-240V AC</TableCell>
+                            <TableCell className="text-xs font-medium flex items-center gap-2">
+                               <div className="h-1.5 w-1.5 rounded-full bg-green-500 animate-pulse" /> 电压稳定性 (V_IN)
+                            </TableCell>
+                            <TableCell className="text-xs text-right font-mono font-bold text-primary">220.4 V</TableCell>
                           </TableRow>
                           <TableRow className="border-b-0 hover:bg-primary/5 transition-colors">
-                            <TableCell className="text-xs font-medium">Brightness</TableCell>
-                            <TableCell className="text-xs text-muted-foreground">350 nits (Min)</TableCell>
+                            <TableCell className="text-xs font-medium flex items-center gap-2">
+                               <div className="h-1.5 w-1.5 rounded-full bg-destructive" /> 环境湿度控制
+                            </TableCell>
+                            <TableCell className="text-xs text-right font-mono font-bold text-destructive">68.2% RH</TableCell>
                           </TableRow>
                         </TableBody>
                       </Table>
@@ -870,30 +899,33 @@ export default function DesignSystemPage() {
                   </div>
                 </div>
 
-                {/* 2. 高级滚动交互 */}
-                <div className="bg-white p-10 rounded-[2.5rem] border border-border/40 shadow-sm space-y-10">
+                {/* 2. 高级滚动交互 - 补充固定表头和固定列 */}
+                <div className="bg-white p-10 rounded-[2.5rem] border border-border/40 shadow-sm space-y-12">
                   <div className="flex items-center justify-between border-b pb-4">
-                    <span className="text-[11px] font-bold text-primary uppercase tracking-[0.2em] flex items-center gap-2"><Maximize className="h-4 w-4" /> 9.2 高级滚动与固定交互 (Sticky & Scroll)</span>
+                    <span className="text-[11px] font-bold text-primary uppercase tracking-[0.2em] flex items-center gap-2"><Maximize className="h-4 w-4" /> 9.2 固定表头与固定列 (Sticky & Fixed)</span>
                   </div>
 
                   <div className="grid grid-cols-1 lg:grid-cols-2 gap-10">
+                    {/* 固定表头型 */}
                     <div className="space-y-4">
-                      <p className="text-[10px] font-bold text-muted-foreground uppercase">固定表头 (Sticky Header)</p>
-                      <div className="rounded-2xl border overflow-hidden max-h-[220px] overflow-y-auto scrollbar-minimal shadow-inner">
+                      <p className="text-[10px] font-bold text-muted-foreground uppercase">固定表头型 (Sticky Header / Y-Axis)</p>
+                      <div className="rounded-2xl border overflow-hidden max-h-[300px] overflow-y-auto scrollbar-minimal shadow-inner bg-muted/5">
                         <Table>
                           <TableHeader className="sticky top-0 z-20 bg-muted/95 backdrop-blur-md shadow-sm">
                             <TableRow className="hover:bg-transparent border-none">
-                              <TableHead className="text-[9px] font-bold uppercase pl-6">Batch ID</TableHead>
-                              <TableHead className="text-[9px] font-bold uppercase">Time</TableHead>
-                              <TableHead className="text-[9px] font-bold uppercase pr-6">Result</TableHead>
+                              <TableHead className="text-[9px] font-bold uppercase pl-6 py-4">检测项</TableHead>
+                              <TableHead className="text-[9px] font-bold uppercase py-4">检测时间</TableHead>
+                              <TableHead className="text-[9px] font-bold uppercase pr-6 py-4 text-right">结果</TableHead>
                             </TableRow>
                           </TableHeader>
                           <TableBody>
-                            {Array.from({ length: 10 }).map((_, i) => (
-                              <TableRow key={i} className="hover:bg-primary/5">
-                                <TableCell className="text-xs font-mono pl-6">QC-{100 + i}</TableCell>
-                                <TableCell className="text-[10px] opacity-60">12:00:0{i}</TableCell>
-                                <TableCell className="pr-6"><div className="h-1.5 w-10 bg-green-500 rounded-full" /></TableCell>
+                            {Array.from({ length: 15 }).map((_, i) => (
+                              <TableRow key={i} className="hover:bg-white transition-colors">
+                                <TableCell className="text-xs font-bold pl-6 py-3 flex items-center gap-2">
+                                   <div className="w-1.5 h-1.5 rounded-full bg-primary/20" /> QA_STEP_{100 + i}
+                                </TableCell>
+                                <TableCell className="text-[10px] opacity-40 font-mono">2024.06.05 14:00:{i < 10 ? `0${i}` : i}</TableCell>
+                                <TableCell className="pr-6 text-right font-bold text-green-600 text-[10px] uppercase">Pass</TableCell>
                               </TableRow>
                             ))}
                           </TableBody>
@@ -901,34 +933,38 @@ export default function DesignSystemPage() {
                       </div>
                     </div>
 
+                    {/* 固定列型 */}
                     <div className="space-y-4">
-                      <p className="text-[10px] font-bold text-muted-foreground uppercase">双向固定 (Sticky Header & First Column)</p>
+                      <p className="text-[10px] font-bold text-muted-foreground uppercase">固定首列型 (Fixed Column / X-Axis)</p>
                       <div className="rounded-2xl border overflow-hidden max-w-full overflow-x-auto scrollbar-minimal shadow-inner">
-                        <div className="min-w-[600px]">
+                        <div className="min-w-[800px]">
                           <Table>
-                            <TableHeader className="bg-muted/90 backdrop-blur-sm sticky top-0 z-30">
+                            <TableHeader className="bg-muted/30">
                               <TableRow className="hover:bg-transparent">
-                                <TableHead className="sticky left-0 z-40 bg-muted font-bold text-[9px] uppercase pl-6 border-r shadow-[2px_0_5px_rgba(0,0,0,0.05)]">Model</TableHead>
-                                <TableHead className="text-[9px] font-bold uppercase">CPU</TableHead>
-                                <TableHead className="text-[9px] font-bold uppercase">RAM</TableHead>
-                                <TableHead className="text-[9px] font-bold uppercase">Storage</TableHead>
-                                <TableHead className="text-[9px] font-bold uppercase pr-6 text-right">MSRP</TableHead>
+                                <TableHead className="sticky left-0 z-30 bg-muted font-bold text-[9px] uppercase pl-6 border-r shadow-[2px_0_5px_rgba(0,0,0,0.05)] py-4">核心产品型号 (Fixed)</TableHead>
+                                <TableHead className="text-[9px] font-bold uppercase text-center py-4">主板架构</TableHead>
+                                <TableHead className="text-[9px] font-bold uppercase text-center py-4">显示规格</TableHead>
+                                <TableHead className="text-[9px] font-bold uppercase text-center py-4">内存通道</TableHead>
+                                <TableHead className="text-[9px] font-bold uppercase text-center py-4">存储插槽</TableHead>
+                                <TableHead className="text-[9px] font-bold uppercase pr-6 text-right py-4">发布时间</TableHead>
                               </TableRow>
                             </TableHeader>
                             <TableBody>
-                              <TableRow className="hover:bg-primary/5 group">
-                                <TableCell className="sticky left-0 z-20 bg-white font-bold text-xs pl-6 border-r group-hover:bg-muted/5">HEO-H24</TableCell>
-                                <TableCell className="text-xs">i7-12700</TableCell>
-                                <TableCell className="text-xs">16GB</TableCell>
-                                <TableCell className="text-xs">512GB SSD</TableCell>
-                                <TableCell className="text-xs font-mono font-bold pr-6 text-right text-primary">$899.00</TableCell>
+                              <TableRow className="hover:bg-primary/5 group transition-colors">
+                                <TableCell className="sticky left-0 z-20 bg-white font-bold text-xs pl-6 border-r group-hover:bg-muted/5 py-4">Heovose H24 Pro</TableCell>
+                                <TableCell className="text-[11px] text-center opacity-60">Intel Alder Lake</TableCell>
+                                <TableCell className="text-[11px] text-center opacity-60">23.8" IPS 100% sRGB</TableCell>
+                                <TableCell className="text-[11px] text-center opacity-60">DDR4 Dual Channel</TableCell>
+                                <TableCell className="text-[11px] text-center opacity-60">2x M.2 NVMe</TableCell>
+                                <TableCell className="text-[10px] font-mono font-bold pr-6 text-right uppercase">2024 Q3</TableCell>
                               </TableRow>
-                              <TableRow className="hover:bg-primary/5 group">
-                                <TableCell className="sticky left-0 z-20 bg-white font-bold text-xs pl-6 border-r group-hover:bg-muted/5">HEO-M12</TableCell>
-                                <TableCell className="text-xs">i5-12500</TableCell>
-                                <TableCell className="text-xs">8GB</TableCell>
-                                <TableCell className="text-xs">256GB SSD</TableCell>
-                                <TableCell className="text-xs font-mono font-bold pr-6 text-right text-primary">$450.00</TableCell>
+                              <TableRow className="hover:bg-primary/5 group transition-colors">
+                                <TableCell className="sticky left-0 z-20 bg-white font-bold text-xs pl-6 border-r group-hover:bg-muted/5 py-4">Mini M10 Lite</TableCell>
+                                <TableCell className="text-[11px] text-center opacity-60">AMD Ryzen 5000</TableCell>
+                                <TableCell className="text-[11px] text-center opacity-60">N/A (Mini PC)</TableCell>
+                                <TableCell className="text-[11px] text-center opacity-60">SO-DIMM DDR4</TableCell>
+                                <TableCell className="text-[11px] text-center opacity-60">1x M.2 + 1x SATA</TableCell>
+                                <TableCell className="text-[10px] font-mono font-bold pr-6 text-right uppercase">2024 Q2</TableCell>
                               </TableRow>
                             </TableBody>
                           </Table>
@@ -938,78 +974,90 @@ export default function DesignSystemPage() {
                   </div>
                 </div>
 
-                {/* 3. 复杂逻辑展示 */}
-                <div className="bg-white p-10 rounded-[2.5rem] border border-border/40 shadow-sm space-y-10">
+                {/* 3. 深度交互展示 */}
+                <div className="bg-white p-10 rounded-[2.5rem] border border-border/40 shadow-sm space-y-12">
                   <div className="flex items-center justify-between border-b pb-4">
-                    <span className="text-[11px] font-bold text-primary uppercase tracking-[0.2em] flex items-center gap-2"><Zap className="h-4 w-4" /> 9.3 深度交互与展开逻辑 (Advanced Logic)</span>
+                    <span className="text-[11px] font-bold text-primary uppercase tracking-[0.2em] flex items-center gap-2"><Workflow className="h-4 w-4" /> 9.3 深度交互与逻辑展开 (Advanced Interaction)</span>
                   </div>
 
                   <div className="grid grid-cols-1 gap-12">
+                    {/* 多级复合表头与排序 */}
                     <div className="space-y-4">
                        <div className="flex items-center justify-between">
-                         <p className="text-[10px] font-bold text-muted-foreground uppercase">多级复合表头与排序 (Multi-level & Sort)</p>
-                         <div className="flex gap-2">
-                           <Badge variant="outline" className="text-[8px] h-5"><Filter className="h-2 w-2 mr-1" /> ACTIVE FILTER</Badge>
-                         </div>
+                         <p className="text-[10px] font-bold text-muted-foreground uppercase">多级表头与动态排序 (Multi-level & Sort)</p>
+                         <Badge variant="outline" className="text-[8px] h-5"><Filter className="h-2.5 w-2.5 mr-1" /> ACTIVE ANALYTICS</Badge>
                        </div>
                        <div className="rounded-2xl border overflow-hidden shadow-sm">
                          <Table>
                            <TableHeader className="bg-muted/30">
-                             <TableRow className="hover:bg-transparent">
-                               <TableHead rowSpan={2} className="pl-6 border-r font-bold text-[9px] uppercase tracking-tighter">Product Line</TableHead>
-                               <TableHead colSpan={2} className="text-center border-b border-r font-bold text-[9px] uppercase tracking-widest py-2 bg-primary/5">Stock Levels</TableHead>
-                               <TableHead rowSpan={2} className="font-bold text-[9px] uppercase pr-6">
-                                  <div className="flex items-center gap-1 cursor-pointer hover:text-primary transition-colors">
-                                    Last Audit <ArrowDown className="h-2.5 w-2.5" />
+                             <TableRow className="hover:bg-transparent border-none">
+                               <TableHead rowSpan={2} className="pl-6 border-r font-bold text-[9px] uppercase tracking-tighter w-48">制造业务线 (Lines)</TableHead>
+                               <TableHead colSpan={2} className="text-center border-b border-r font-bold text-[9px] uppercase tracking-widest py-3 bg-primary/5">库存与物流状态</TableHead>
+                               <TableHead rowSpan={2} className="font-bold text-[9px] uppercase pr-6 text-right">
+                                  <div className="flex items-center justify-end gap-1 cursor-pointer hover:text-primary transition-colors">
+                                    最后审计时间 <ArrowDown className="h-3 w-3" />
                                   </div>
                                </TableHead>
                              </TableRow>
                              <TableRow className="hover:bg-transparent">
-                               <TableHead className="text-[8px] font-bold uppercase text-center border-r">In Warehouse</TableHead>
-                               <TableHead className="text-[8px] font-bold uppercase text-center border-r">In Transit</TableHead>
+                               <TableHead className="text-[8px] font-bold uppercase text-center border-r py-2">仓储实存</TableHead>
+                               <TableHead className="text-[8px] font-bold uppercase text-center border-r py-2">在途订单</TableHead>
                              </TableRow>
                            </TableHeader>
                            <TableBody>
                              <TableRow className="hover:bg-primary/5 transition-colors">
                                <TableCell className="pl-6 font-bold text-xs border-r">All-in-One Series</TableCell>
-                               <TableCell className="text-center border-r font-mono text-xs">1,240</TableCell>
-                               <TableCell className="text-center border-r font-mono text-xs">300</TableCell>
-                               <TableCell className="text-[10px] opacity-40 pr-6 uppercase">2 mins ago</TableCell>
+                               <TableCell className="text-center border-r font-mono text-xs font-bold text-primary">1,240</TableCell>
+                               <TableCell className="text-center border-r font-mono text-xs opacity-60">300</TableCell>
+                               <TableCell className="text-[10px] opacity-40 pr-6 uppercase text-right">2 mins ago</TableCell>
                              </TableRow>
                            </TableBody>
                          </Table>
                        </div>
                     </div>
 
+                    {/* 展开行型交互 */}
                     <div className="space-y-4">
-                      <p className="text-[10px] font-bold text-muted-foreground uppercase">展开行型 (Expandable Rows)</p>
+                      <p className="text-[10px] font-bold text-muted-foreground uppercase">可展开详情行 (Expandable Row Interaction)</p>
                       <div className="rounded-2xl border overflow-hidden shadow-md">
                         <Table>
                           <TableHeader className="bg-muted/30">
-                            <TableRow>
+                            <TableRow className="border-none">
                               <TableHead className="w-12"></TableHead>
-                              <TableHead className="text-[9px] font-bold uppercase tracking-widest">Order ID</TableHead>
-                              <TableHead className="text-[9px] font-bold uppercase tracking-widest">Client</TableHead>
-                              <TableHead className="text-[9px] font-bold uppercase tracking-widest pr-6 text-right">Value</TableHead>
+                              <TableHead className="text-[9px] font-bold uppercase tracking-widest">订单 ID</TableHead>
+                              <TableHead className="text-[9px] font-bold uppercase tracking-widest">终端客户</TableHead>
+                              <TableHead className="text-[9px] font-bold uppercase tracking-widest pr-6 text-right">订单估值 (USD)</TableHead>
                             </TableRow>
                           </TableHeader>
                           <TableBody>
                             <React.Fragment>
-                              <TableRow className={cn("cursor-pointer transition-colors", expandedRows.has('ord-1') ? "bg-primary/5" : "hover:bg-muted/10")} onClick={() => toggleRow('ord-1')}>
+                              <TableRow 
+                                className={cn("cursor-pointer transition-all duration-300", expandedRows.has('ord-1') ? "bg-primary/5" : "hover:bg-muted/10")} 
+                                onClick={() => toggleRow('ord-1')}
+                              >
                                 <TableCell className="pl-4">
-                                  <ChevronRight className={cn("h-4 w-4 transition-transform duration-300", expandedRows.has('ord-1') && "rotate-90 text-primary")} />
+                                  <ChevronRight className={cn("h-4 w-4 transition-transform duration-500", expandedRows.has('ord-1') && "rotate-90 text-primary")} />
                                 </TableCell>
-                                <TableCell className="text-xs font-mono font-bold">#ORD-2024-0051</TableCell>
-                                <TableCell className="text-xs">Amazon EU Central</TableCell>
+                                <TableCell className="text-xs font-mono font-bold text-primary">#ORD-2024-0051</TableCell>
+                                <TableCell className="text-xs font-medium">Amazon EU Distribution</TableCell>
                                 <TableCell className="text-xs font-mono font-bold pr-6 text-right text-primary">$42,500.00</TableCell>
                               </TableRow>
                               {expandedRows.has('ord-1') && (
-                                <TableRow className="bg-muted/5 border-b-2 border-primary/10 animate-in fade-in slide-in-from-top-2 duration-500">
+                                <TableRow className="bg-muted/5 border-b-2 border-primary/10 animate-in fade-in slide-in-from-top-4 duration-700">
                                   <TableCell colSpan={4} className="p-8">
-                                    <div className="grid grid-cols-3 gap-8">
-                                      <div className="space-y-1.5"><p className="text-[8px] font-bold text-primary/40 uppercase">Shipping Address</p><p className="text-[10px] font-medium leading-relaxed">Rue de Rivoli 75, Paris, France</p></div>
-                                      <div className="space-y-1.5"><p className="text-[8px] font-bold text-primary/40 uppercase">Payment Method</p><p className="text-[10px] font-medium leading-relaxed">Wire Transfer (Swift: ****889)</p></div>
-                                      <div className="space-y-1.5"><p className="text-[8px] font-bold text-primary/40 uppercase">Items List</p><p className="text-[10px] font-medium leading-relaxed italic">H24 Pro x50, M10 Lite x120</p></div>
+                                    <div className="grid grid-cols-3 gap-12">
+                                      <div className="space-y-2">
+                                        <p className="text-[8px] font-bold text-primary/40 uppercase tracking-widest">配送地址 / SHIPPING</p>
+                                        <p className="text-xs font-medium leading-relaxed">Rue de Rivoli 75, 1st Arrondissement, Paris, France</p>
+                                      </div>
+                                      <div className="space-y-2">
+                                        <p className="text-[8px] font-bold text-primary/40 uppercase tracking-widest">结算方式 / PAYMENT</p>
+                                        <p className="text-xs font-medium leading-relaxed">Corporate Wire Transfer (Swift: ****889-EU)</p>
+                                      </div>
+                                      <div className="space-y-2">
+                                        <p className="text-[8px] font-bold text-primary/40 uppercase tracking-widest">物料清单 / ITEMS</p>
+                                        <p className="text-[11px] font-medium leading-relaxed italic text-muted-foreground">H24 Pro Series x50, Mini PC M10 x120, Cable Kits x200</p>
+                                      </div>
                                     </div>
                                   </TableCell>
                                 </TableRow>
