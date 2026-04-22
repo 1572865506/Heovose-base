@@ -98,7 +98,8 @@ import {
   Tag,
   XCircle,
   Folder,
-  File
+  File,
+  Settings
 } from 'lucide-react';
 import { 
   Table, 
@@ -465,7 +466,7 @@ export default function DesignSystemPage() {
                       <div className="space-y-4">
                         <div className="h-32 bg-white rounded-2xl shadow-sm border border-border/20 flex items-center justify-center font-mono text-[10px] font-bold uppercase text-primary/40">shadow-sm</div>
                         <div className="space-y-1">
-                          <p className="text-[10px] font-bold uppercase">极简隔离</p>
+                          <p className="text-10px] font-bold uppercase">极简隔离</p>
                           <p className="text-[9px] text-muted-foreground">用于徽章、标签及微型原子组件。</p>
                         </div>
                       </div>
