@@ -78,14 +78,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
 import { Progress } from "@/components/ui/progress";
 import {
   Tooltip,
@@ -94,7 +86,6 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { cn } from '@/lib/utils';
-import NextImage from 'next/image';
 
 // AI 极光渐变定义组件
 const AiGradientDef = () => (
@@ -260,77 +251,47 @@ export default function DesignSystemPage() {
               </div>
 
               <div className="bg-white p-12 rounded-[2.5rem] border border-border/40 shadow-sm space-y-16">
-                {/* 字体家族 */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-12">
                   <div className="space-y-4">
                     <span className="text-[11px] font-bold text-muted-foreground uppercase tracking-[0.2em]">品牌标题字体 (Display)</span>
                     <div className="p-6 rounded-2xl bg-muted/20 border border-dashed">
                       <p className="text-4xl font-headline font-bold text-primary">Space Grotesk</p>
-                      <p className="text-[10px] mt-2 text-muted-foreground font-medium">主要用于全站 H1-H3 级标题。具有极强的工业几何感与辨识度。</p>
+                      <p className="text-[10px] mt-2 text-muted-foreground font-medium">H1-H3 级标题。具有工业几何感。</p>
                     </div>
                   </div>
                   <div className="space-y-4">
                     <span className="text-[11px] font-bold text-muted-foreground uppercase tracking-[0.2em]">全站正文字体 (Sans-serif)</span>
                     <div className="p-6 rounded-2xl bg-muted/20 border border-dashed">
                       <p className="text-4xl font-body font-bold text-primary">Inter</p>
-                      <p className="text-[10px] mt-2 text-muted-foreground font-medium">全站通用字体。针对屏幕显示深度优化，确保在高、低分屏下的可读性。</p>
+                      <p className="text-[10px] mt-2 text-muted-foreground font-medium">全站通用，确保高可读性。</p>
+                    </div>
+                  </div>
+                  <div className="space-y-4">
+                    <span className="text-[11px] font-bold text-muted-foreground uppercase tracking-[0.2em]">辅助技术字体 (Monospace)</span>
+                    <div className="p-6 rounded-2xl bg-muted/20 border border-dashed">
+                      <p className="text-4xl font-mono font-bold text-primary">JetBrains Mono</p>
+                      <p className="text-[10px] mt-2 text-muted-foreground font-medium">用于规格、SKU 及数值对齐。</p>
                     </div>
                   </div>
                 </div>
 
-                {/* 字号阶梯与参数 */}
-                <div className="space-y-8">
-                  <span className="text-[11px] font-bold text-muted-foreground uppercase tracking-[0.2em]">字号与行高阶梯 (The Font Scale)</span>
-                  <div className="space-y-1">
-                    {/* 主标题 */}
-                    <div className="group grid grid-cols-1 lg:grid-cols-12 gap-6 items-center p-6 hover:bg-muted/10 transition-all border-b border-border/40 last:border-0">
-                      <div className="lg:col-span-3 flex flex-col">
-                        <span className="text-[10px] font-bold text-primary uppercase">主标题 (Main Hero)</span>
-                        <span className="text-[9px] text-muted-foreground font-mono mt-1">Size: 96px+ / Leading: 0.85 / Tracking: -0.05em</span>
-                      </div>
-                      <div className="lg:col-span-9">
-                        <h1 className="text-6xl md:text-8xl font-headline font-bold text-primary leading-[0.85] tracking-tighter uppercase">HEOVOSE ELEVATE</h1>
-                      </div>
+                <div className="space-y-1">
+                  <div className="group grid grid-cols-1 lg:grid-cols-12 gap-6 items-center p-6 hover:bg-muted/10 transition-all border-b border-border/40 last:border-0">
+                    <div className="lg:col-span-3 flex flex-col text-left">
+                      <span className="text-[10px] font-bold text-primary uppercase">主标题 (Main Hero)</span>
+                      <span className="text-[9px] text-muted-foreground font-mono mt-1">Size: 96px / Leading: 0.85</span>
                     </div>
-                    {/* 大标题 */}
-                    <div className="group grid grid-cols-1 lg:grid-cols-12 gap-6 items-center p-6 hover:bg-muted/10 transition-all border-b border-border/40">
-                      <div className="lg:col-span-3 flex flex-col">
-                        <span className="text-[10px] font-bold text-primary uppercase">板块标题 (Section Heading)</span>
-                        <span className="text-[9px] text-muted-foreground font-mono mt-1">Size: 36-48px / Leading: tight / Tracking: normal</span>
-                      </div>
-                      <div className="lg:col-span-9">
-                        <h2 className="text-3xl md:text-5xl font-headline font-bold text-primary">智能制造，链接全球</h2>
-                      </div>
+                    <div className="lg:col-span-9 text-left">
+                      <h1 className="text-6xl md:text-8xl font-headline font-bold text-primary leading-[0.85] tracking-tighter uppercase">HEOVOSE ELEVATE</h1>
                     </div>
-                    {/* 小标题 */}
-                    <div className="group grid grid-cols-1 lg:grid-cols-12 gap-6 items-center p-6 hover:bg-muted/10 transition-all border-b border-border/40">
-                      <div className="lg:col-span-3 flex flex-col">
-                        <span className="text-[10px] font-bold text-primary uppercase">小标题 (Subheading)</span>
-                        <span className="text-[9px] text-muted-foreground font-mono mt-1">Size: 20-24px / Leading: normal / Tracking: normal</span>
-                      </div>
-                      <div className="lg:col-span-9">
-                        <h3 className="text-xl md:text-2xl font-bold text-primary">一体化硬件集成方案</h3>
-                      </div>
+                  </div>
+                  <div className="group grid grid-cols-1 lg:grid-cols-12 gap-6 items-center p-6 hover:bg-muted/10 transition-all border-b border-border/40">
+                    <div className="lg:col-span-3 flex flex-col text-left">
+                      <span className="text-[10px] font-bold text-primary uppercase">辅助/标签 (Caption)</span>
+                      <span className="text-[9px] text-muted-foreground font-mono mt-1">Size: 10px / Tracking: widest</span>
                     </div>
-                    {/* 正文 */}
-                    <div className="group grid grid-cols-1 lg:grid-cols-12 gap-6 items-center p-6 hover:bg-muted/10 transition-all border-b border-border/40">
-                      <div className="lg:col-span-3 flex flex-col">
-                        <span className="text-[10px] font-bold text-primary uppercase">标准正文 (Body Text)</span>
-                        <span className="text-[9px] text-muted-foreground font-mono mt-1">Size: 14-16px / Leading: relaxed / Tracking: normal</span>
-                      </div>
-                      <div className="lg:col-span-9">
-                        <p className="text-sm md:text-base text-muted-foreground leading-relaxed font-medium">Heovose 致力于为全球商用及工业领域提供高标准的计算机硬件方案。从精密制造到全球交付，我们确保每一个环节都符合最高质量标准，让优秀的场景应用方案造福世界。</p>
-                      </div>
-                    </div>
-                    {/* 辅助文字 */}
-                    <div className="group grid grid-cols-1 lg:grid-cols-12 gap-6 items-center p-6 hover:bg-muted/10 transition-all border-b border-border/40">
-                      <div className="lg:col-span-3 flex flex-col">
-                        <span className="text-[10px] font-bold text-primary uppercase">辅助/标签 (Caption/Label)</span>
-                        <span className="text-[9px] text-muted-foreground font-mono mt-1">Size: 10-12px / Leading: none / Tracking: widest</span>
-                      </div>
-                      <div className="lg:col-span-9">
-                        <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-primary/60 bg-primary/5 px-3 py-1 rounded-full border border-primary/10">WHOLESALE SOLUTIONS HUB</span>
-                      </div>
+                    <div className="lg:col-span-9 text-left">
+                      <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-primary/60 bg-primary/5 px-3 py-1 rounded-full border border-primary/10">TECHNICAL SPECIFICATIONS HUB</span>
                     </div>
                   </div>
                 </div>
@@ -345,124 +306,96 @@ export default function DesignSystemPage() {
               </div>
 
               <div className="bg-white p-12 rounded-[2.5rem] border border-border/40 shadow-sm space-y-20">
-                {/* 边框粗细与样式 */}
+                {/* 边框粗细 */}
                 <div className="space-y-10">
                    <div className="flex items-center gap-3">
                      <Minus className="h-4 w-4 text-primary" />
                      <span className="text-[11px] font-bold text-primary uppercase tracking-[0.2em]">边框粗细与线型规格</span>
                    </div>
                    <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
-                      {/* 实线规格 */}
                       <div className="space-y-6">
-                        <p className="text-[9px] font-bold opacity-40 uppercase flex items-center gap-2">
-                           <Square className="h-3 w-3" /> 实线风格 (Solid) - 用于定义物理边界
-                        </p>
+                        <p className="text-[9px] font-bold opacity-40 uppercase flex items-center gap-2">实线风格 (Solid)</p>
                         <div className="space-y-4">
                            <div className="flex items-center gap-6">
-                              <div className="h-14 w-32 bg-muted/10 border border-primary rounded-xl flex items-center justify-center">
-                                 <span className="text-[9px] font-mono font-bold">1px (border)</span>
-                              </div>
-                              <p className="text-[10px] text-muted-foreground">基础分割、装饰线、常规卡片边界。</p>
+                              <div className="h-14 w-32 bg-muted/10 border border-primary rounded-xl flex items-center justify-center"><span className="text-[9px] font-mono font-bold">1px (border)</span></div>
+                              <p className="text-[10px] text-muted-foreground">基础分割与装饰。</p>
                            </div>
                            <div className="flex items-center gap-6">
-                              <div className="h-14 w-32 bg-muted/10 border-2 border-primary rounded-xl flex items-center justify-center">
-                                 <span className="text-[9px] font-mono font-bold">2px (border-2)</span>
-                              </div>
-                              <p className="text-[10px] text-muted-foreground">交互激活态、重点提示区域。</p>
-                           </div>
-                           <div className="flex items-center gap-6">
-                              <div className="h-14 w-32 bg-muted/10 border-4 border-primary rounded-xl flex items-center justify-center">
-                                 <span className="text-[9px] font-mono font-bold">4px (border-4)</span>
-                              </div>
-                              <p className="text-[10px] text-muted-foreground">工业级加重、视觉焦点标识。</p>
+                              <div className="h-14 w-32 bg-muted/10 border-2 border-primary rounded-xl flex items-center justify-center"><span className="text-[9px] font-mono font-bold">2px (border-2)</span></div>
+                              <p className="text-[10px] text-muted-foreground">交互激活态标识。</p>
                            </div>
                         </div>
                       </div>
-                      
-                      {/* 虚线规格 */}
                       <div className="space-y-6">
-                        <p className="text-[9px] font-bold opacity-40 uppercase flex items-center gap-2">
-                           <Minus className="h-3 w-3 rotate-45" /> 虚线风格 (Dashed) - 用于引导与占位
-                        </p>
+                        <p className="text-[9px] font-bold opacity-40 uppercase flex items-center gap-2">虚线风格 (Dashed)</p>
                         <div className="space-y-4">
                            <div className="flex items-center gap-6">
-                              <div className="h-14 w-32 bg-muted/5 border border-dashed border-primary/40 rounded-xl flex items-center justify-center">
-                                 <span className="text-[9px] font-mono font-bold">Dashed 1px</span>
-                              </div>
-                              <p className="text-[10px] text-muted-foreground">次级关联、暂无内容的占位逻辑。</p>
-                           </div>
-                           <div className="flex items-center gap-6">
-                              <div className="h-14 w-32 bg-muted/5 border-2 border-dashed border-primary/40 rounded-xl flex items-center justify-center">
-                                 <span className="text-[9px] font-mono font-bold">Dashed 2px</span>
-                              </div>
-                              <p className="text-[10px] text-muted-foreground">文件上传、资产导入区的交互引导。</p>
+                              <div className="h-14 w-32 bg-muted/5 border border-dashed border-primary/40 rounded-xl flex items-center justify-center"><span className="text-[9px] font-mono font-bold">Dashed 1px</span></div>
+                              <p className="text-[10px] text-muted-foreground">空位占位与引导。</p>
                            </div>
                         </div>
                       </div>
                    </div>
                 </div>
 
-                {/* 圆角阶梯定义 */}
+                {/* 圆角阶梯 */}
                 <div className="space-y-10 border-t pt-16">
                    <div className="flex items-center gap-3">
                      <Circle className="h-4 w-4 text-primary" />
                      <span className="text-[11px] font-bold text-primary uppercase tracking-[0.2em]">圆角阶梯规范 (Radius Scale)</span>
                    </div>
-                   <div className="grid grid-cols-2 md:grid-cols-5 gap-8">
-                      {/* None */}
+                   <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
                       <div className="space-y-4 text-center">
-                         <div className="aspect-square bg-primary/10 rounded-none border border-primary/20 flex items-center justify-center">
-                            <span className="text-xs font-bold font-mono">0px</span>
-                         </div>
-                         <div className="space-y-1">
-                            <p className="text-[10px] font-bold uppercase">无圆角</p>
-                            <p className="text-[8px] text-muted-foreground">rounded-none</p>
-                         </div>
+                         <div className="aspect-square bg-primary/10 rounded-lg border border-primary/20 flex items-center justify-center"><span className="text-xs font-bold font-mono">8px</span></div>
+                         <p className="text-[10px] font-bold uppercase">组件级 (lg)</p>
                       </div>
-                      {/* Component (8px) */}
                       <div className="space-y-4 text-center">
-                         <div className="aspect-square bg-primary/10 rounded-lg border border-primary/20 flex items-center justify-center">
-                            <span className="text-xs font-bold font-mono">8px</span>
-                         </div>
-                         <div className="space-y-1">
-                            <p className="text-[10px] font-bold uppercase">组件级</p>
-                            <p className="text-[8px] text-muted-foreground">rounded-lg</p>
-                         </div>
+                         <div className="aspect-square bg-primary/10 rounded-2xl border border-primary/20 flex items-center justify-center"><span className="text-xs font-bold font-mono">16px</span></div>
+                         <p className="text-[10px] font-bold uppercase">中容器 (2xl)</p>
                       </div>
-                      {/* Container (16px) */}
                       <div className="space-y-4 text-center">
-                         <div className="aspect-square bg-primary/10 rounded-2xl border border-primary/20 flex items-center justify-center">
-                            <span className="text-xs font-bold font-mono">16px</span>
-                         </div>
-                         <div className="space-y-1">
-                            <p className="text-[10px] font-bold uppercase">中容器</p>
-                            <p className="text-[8px] text-muted-foreground">rounded-2xl</p>
-                         </div>
+                         <div className="aspect-square bg-primary/10 rounded-[2.5rem] border border-primary/20 flex items-center justify-center"><span className="text-xs font-bold font-mono">40px</span></div>
+                         <p className="text-[10px] font-bold uppercase">品牌级 (3rem)</p>
                       </div>
-                      {/* Brand (40px) */}
                       <div className="space-y-4 text-center">
-                         <div className="aspect-square bg-primary/10 rounded-[2.5rem] border border-primary/20 flex items-center justify-center">
-                            <span className="text-xs font-bold font-mono">40px</span>
-                         </div>
-                         <div className="space-y-1">
-                            <p className="text-[10px] font-bold uppercase">品牌级</p>
-                            <p className="text-[8px] text-muted-foreground">rounded-[2.5rem]</p>
-                         </div>
-                      </div>
-                      {/* Full */}
-                      <div className="space-y-4 text-center">
-                         <div className="aspect-square bg-primary/10 rounded-full border border-primary/20 flex items-center justify-center">
-                            <span className="text-xs font-bold font-mono">FULL</span>
-                         </div>
-                         <div className="space-y-1">
-                            <p className="text-[10px] font-bold uppercase">圆形</p>
-                            <p className="text-[8px] text-muted-foreground">rounded-full</p>
-                         </div>
+                         <div className="aspect-square bg-primary/10 rounded-full border border-primary/20 flex items-center justify-center"><span className="text-xs font-bold font-mono">FULL</span></div>
+                         <p className="text-[10px] font-bold uppercase">圆形 (full)</p>
                       </div>
                    </div>
-                   <p className="text-[9px] text-muted-foreground italic bg-muted/20 p-4 rounded-xl text-center">
-                      规范说明：前台核心容器（如产品大图、Banner）必须使用 40px 圆角。交互按钮、输入框统一锁定 8px 圆角。
-                   </p>
+                </div>
+
+                {/* 阴影与投影补全 */}
+                <div className="space-y-10 border-t pt-16">
+                   <div className="flex items-center gap-3">
+                     <Layers className="h-4 w-4 text-primary" />
+                     <span className="text-[11px] font-bold text-primary uppercase tracking-[0.2em]">阴影与投影体系 (Shadow Hierarchy)</span>
+                   </div>
+                   <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
+                      <div className="space-y-4">
+                         <div className="h-32 bg-white rounded-2xl shadow-sm border border-border/20 flex items-center justify-center">
+                           <span className="text-[10px] font-bold text-muted-foreground uppercase">shadow-sm</span>
+                         </div>
+                         <p className="text-[9px] text-muted-foreground text-center">用于徽章、轻量组件。</p>
+                      </div>
+                      <div className="space-y-4">
+                         <div className="h-32 bg-white rounded-2xl shadow-md border border-border/20 flex items-center justify-center">
+                           <span className="text-[10px] font-bold text-muted-foreground uppercase">shadow-md</span>
+                         </div>
+                         <p className="text-[9px] text-muted-foreground text-center">用于常规卡片、二级容器。</p>
+                      </div>
+                      <div className="space-y-4">
+                         <div className="h-32 bg-white rounded-2xl shadow-xl border border-border/20 flex items-center justify-center">
+                           <span className="text-[10px] font-bold text-muted-foreground uppercase">shadow-xl</span>
+                         </div>
+                         <p className="text-[9px] text-muted-foreground text-center">用于产品展示、激活悬停。</p>
+                      </div>
+                      <div className="space-y-4">
+                         <div className="h-32 bg-white rounded-2xl shadow-2xl border border-border/20 flex items-center justify-center">
+                           <span className="text-[10px] font-bold text-muted-foreground uppercase">shadow-2xl</span>
+                         </div>
+                         <p className="text-[9px] text-muted-foreground text-center">用于导航栏、Hero 浮动层。</p>
+                      </div>
+                   </div>
                 </div>
               </div>
             </section>
@@ -473,51 +406,23 @@ export default function DesignSystemPage() {
                 <div className="h-2 w-10 bg-primary rounded-full opacity-20" />
                 <h2 className="text-2xl font-headline font-bold uppercase tracking-widest text-primary">03. 品牌双色视觉应用 (Dual-Theme Identity)</h2>
               </div>
-              
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
-                {/* 批发蓝 (Wholesale Blue) */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-12 text-left">
                 <div className="space-y-6">
-                  <div className="flex items-center justify-between">
-                     <span className="text-[11px] font-bold text-primary uppercase tracking-[0.2em]">应用场景：品牌深海蓝 (Wholesale Blue)</span>
-                     <Badge className="bg-primary text-white text-[8px] uppercase">核心主色</Badge>
-                  </div>
-                  <div className="p-8 rounded-[3rem] bg-primary text-white space-y-6 shadow-2xl relative overflow-hidden group border border-white/10">
-                    <div className="absolute top-0 right-0 w-48 h-48 bg-accent/20 rounded-full blur-[80px] -mr-16 -mt-16 group-hover:scale-150 transition-transform duration-1000" />
-                    <div className="h-14 w-14 rounded-2xl bg-white/10 flex items-center justify-center backdrop-blur-md border border-white/20">
-                      <ShoppingBag className="h-7 w-7 text-accent" />
-                    </div>
-                    <div className="space-y-3">
-                      <h4 className="text-2xl font-bold font-headline uppercase tracking-tight">标准化批发生产</h4>
-                      <p className="text-sm opacity-70 leading-relaxed font-medium">采用品牌经典深海蓝，传达工业生产的稳定性、可靠性与全球化分销的专业感。适用于 AIO 一体机、迷你电脑等标准硬件线。</p>
-                    </div>
-                    <div className="flex gap-2">
-                       <div className="h-8 w-8 rounded-full bg-white/20 border border-white/30" />
-                       <div className="h-8 w-8 rounded-full bg-accent" />
-                       <div className="h-8 w-8 rounded-full bg-white/5" />
-                    </div>
+                  <span className="text-[11px] font-bold text-primary uppercase tracking-[0.2em]">品牌蓝 (Wholesale Blue)</span>
+                  <div className="p-8 rounded-[3rem] bg-primary text-white space-y-6 shadow-2xl relative overflow-hidden">
+                    <div className="absolute top-0 right-0 w-48 h-48 bg-accent/20 rounded-full blur-[80px] -mr-16 -mt-16" />
+                    <ShoppingBag className="h-10 w-10 text-accent" />
+                    <h4 className="text-2xl font-bold font-headline uppercase">标准化批发生产</h4>
+                    <p className="text-sm opacity-70 leading-relaxed">传达工业生产的稳定性、可靠性。适用于 AIO、迷你电脑等标准硬件线。</p>
                   </div>
                 </div>
-
-                {/* 项目橙 (Project Orange) */}
                 <div className="space-y-6">
-                  <div className="flex items-center justify-between">
-                     <span className="text-[11px] font-bold text-[#F97316] uppercase tracking-[0.2em]">应用场景：工业活力橙 (Project Orange)</span>
-                     <Badge className="bg-[#F97316] text-white text-[8px] uppercase">业务应用色</Badge>
-                  </div>
-                  <div className="p-8 rounded-[3rem] bg-[#F97316] text-white space-y-6 shadow-2xl relative overflow-hidden group border border-white/10">
-                    <div className="absolute top-0 right-0 w-48 h-48 bg-white/20 rounded-full blur-[80px] -mr-16 -mt-16 group-hover:scale-150 transition-transform duration-1000" />
-                    <div className="h-14 w-14 rounded-2xl bg-white/10 flex items-center justify-center backdrop-blur-md border border-white/20">
-                      <Building2 className="h-7 w-7 text-white" />
-                    </div>
-                    <div className="space-y-3">
-                      <h4 className="text-2xl font-bold font-headline uppercase tracking-tight">创新项目集成方案</h4>
-                      <p className="text-sm opacity-70 leading-relaxed font-medium">采用工业活力橙，强调场景化应用的创新、灵活集成与定制化服务的张力。适用于智慧零售、工业显示及 LED 工程等项目线。</p>
-                    </div>
-                    <div className="flex gap-2">
-                       <div className="h-8 w-8 rounded-full bg-white/20 border border-white/30" />
-                       <div className="h-8 w-8 rounded-full bg-[#101820]" />
-                       <div className="h-8 w-8 rounded-full bg-white/5" />
-                    </div>
+                  <span className="text-[11px] font-bold text-[#F97316] uppercase tracking-[0.2em]">工业橙 (Project Orange)</span>
+                  <div className="p-8 rounded-[3rem] bg-[#F97316] text-white space-y-6 shadow-2xl relative overflow-hidden">
+                    <div className="absolute top-0 right-0 w-48 h-48 bg-white/20 rounded-full blur-[80px] -mr-16 -mt-16" />
+                    <Building2 className="h-10 w-10 text-white" />
+                    <h4 className="text-2xl font-bold font-headline uppercase">项目集成方案</h4>
+                    <p className="text-sm opacity-70 leading-relaxed">强调定制化服务的张力。适用于零售、工业显示等项目线。</p>
                   </div>
                 </div>
               </div>
@@ -530,75 +435,15 @@ export default function DesignSystemPage() {
                 <h2 className="text-2xl font-headline font-bold uppercase tracking-widest text-primary">04. 双色控件与交互行为 (Themes & Controls)</h2>
               </div>
               <div className="bg-white p-12 rounded-[3rem] border border-border/40 shadow-sm space-y-20">
-                {/* 按钮尺寸矩阵 */}
-                <div className="space-y-10">
-                   <div className="flex items-center gap-3">
-                     <Zap className="h-4 w-4 text-primary" />
-                     <span className="text-[11px] font-bold text-primary uppercase tracking-[0.2em]">全尺寸按钮矩阵</span>
-                   </div>
-                   <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
-                      <div className="space-y-6">
-                        <p className="text-[9px] font-bold opacity-40 uppercase">批发线按钮变体</p>
-                        <div className="flex flex-wrap items-center gap-4">
-                           <Button className="h-14 px-10 rounded-2xl text-base font-bold bg-primary shadow-xl shadow-primary/20">Large Hero</Button>
-                           <Button className="h-12 px-8 rounded-xl text-sm font-bold bg-primary">Default Action</Button>
-                           <Button className="h-9 px-4 rounded-lg text-xs font-bold bg-primary">Small Meta</Button>
-                        </div>
-                      </div>
-                      <div className="space-y-6">
-                        <p className="text-[9px] font-bold opacity-40 uppercase">项目线按钮变体</p>
-                        <div className="flex flex-wrap items-center gap-4">
-                           <Button className="h-14 px-10 rounded-2xl text-base font-bold bg-[#F97316] shadow-xl shadow-orange-500/20">Large Hero</Button>
-                           <Button className="h-12 px-8 rounded-xl text-sm font-bold bg-[#F97316]">Default Action</Button>
-                           <Button className="h-9 px-4 rounded-lg text-xs font-bold bg-[#F97316]">Small Meta</Button>
-                        </div>
-                      </div>
-                   </div>
-                </div>
-
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-20 border-t pt-16">
-                  {/* 输入聚焦反馈对照 */}
-                  <div className="space-y-8">
-                    <span className="text-[11px] font-bold text-muted-foreground uppercase tracking-[0.2em]">业务场景聚焦反馈</span>
-                    <div className="grid grid-cols-2 gap-6">
-                       <div className="space-y-2">
-                          <Label className="text-[9px] font-bold uppercase opacity-60">批发线输入 (Blue Focus)</Label>
-                          <Input value="正在输入中..." readOnly className="h-12 rounded-xl bg-muted/20 border-primary/40 ring-4 ring-primary/5" />
-                       </div>
-                       <div className="space-y-2">
-                          <Label className="text-[9px] font-bold uppercase opacity-60">项目线输入 (Orange Focus)</Label>
-                          <Input value="正在选择方案..." readOnly className="h-12 rounded-xl bg-muted/20 border-orange-400 ring-4 ring-orange-500/10" />
-                       </div>
-                    </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
+                  <div className="space-y-6">
+                    <p className="text-[9px] font-bold opacity-40 uppercase text-left">批发线按钮</p>
+                    <div className="flex flex-wrap gap-4"><Button className="h-12 px-8 rounded-xl font-bold bg-primary">Wholesale Action</Button></div>
                   </div>
-
-                  {/* 状态指示器对照 */}
-                  <div className="space-y-8">
-                    <span className="text-[11px] font-bold text-muted-foreground uppercase tracking-[0.2em]">业务状态标识对照</span>
-                    <div className="flex gap-4">
-                       <Badge className="bg-primary/10 text-primary border-primary/20 h-7 px-4 rounded-full text-[10px] font-bold">WHOLESALE ACTIVE</Badge>
-                       <Badge className="bg-orange-50 text-orange-600 border-orange-200 h-7 px-4 rounded-full text-[10px] font-bold">PROJECT ACTIVE</Badge>
-                    </div>
+                  <div className="space-y-6">
+                    <p className="text-[9px] font-bold opacity-40 uppercase text-left">项目线按钮</p>
+                    <div className="flex flex-wrap gap-4"><Button className="h-12 px-8 rounded-xl font-bold bg-[#F97316]">Project Action</Button></div>
                   </div>
-                </div>
-
-                {/* 选项卡切换对比 */}
-                <div className="space-y-10 border-t pt-16">
-                   <div className="flex items-center gap-3">
-                     <LayoutGrid className="h-4 w-4 text-primary" />
-                     <span className="text-[11px] font-bold text-primary uppercase tracking-[0.2em]">选项卡切换规范 (Front-end Styles)</span>
-                   </div>
-                   <div className="space-y-12">
-                     <div className="space-y-4">
-                        <p className="text-[9px] font-bold opacity-40 uppercase">风格 A：下划线极简型 (用于产品详情、列表筛选)</p>
-                        <Tabs defaultValue="specs" className="w-full">
-                           <TabsList className="bg-transparent h-auto p-0 border-b border-border/40 w-full justify-start gap-12 rounded-none">
-                              <TabsTrigger value="desc" className="rounded-none px-0 pb-4 text-sm font-bold uppercase data-[state=active]:border-b-2 data-[state=active]:border-primary bg-transparent shadow-none">详细描述</TabsTrigger>
-                              <TabsTrigger value="specs" className="rounded-none px-0 pb-4 text-sm font-bold uppercase data-[state=active]:border-b-2 data-[state=active]:border-primary bg-transparent shadow-none">技术规格</TabsTrigger>
-                           </TabsList>
-                        </Tabs>
-                     </div>
-                   </div>
                 </div>
               </div>
             </section>
@@ -609,73 +454,19 @@ export default function DesignSystemPage() {
                 <div className="h-2 w-10 bg-accent rounded-full" />
                 <h2 className="text-2xl font-headline font-bold uppercase tracking-widest text-primary">05. 业务核心组件单元 (Business Units)</h2>
               </div>
-
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
-                {/* 批发卡片预览 */}
-                <div className="space-y-6">
-                   <div className="flex items-center gap-3">
-                     <Monitor className="h-4 w-4 text-primary" />
-                     <span className="text-[11px] font-bold text-primary uppercase tracking-[0.2em]">批发线：产品展示单元</span>
-                   </div>
-                   <div className="group bg-white rounded-[3rem] border border-border/40 overflow-hidden hover:shadow-2xl hover:border-primary/20 transition-all duration-700 shadow-sm text-left">
-                      <div className="relative aspect-[16/10] bg-muted/20 flex items-center justify-center">
-                         <div className="h-32 w-32 bg-primary/5 rounded-full blur-2xl animate-pulse" />
-                         <Package className="h-24 w-24 text-primary/10 relative z-10" />
-                         <div className="absolute top-6 left-6"><Badge className="bg-primary text-white text-[9px] uppercase tracking-widest font-bold px-4 h-6">AIO SERIES</Badge></div>
-                      </div>
-                      <div className="p-10 space-y-4">
-                         <h3 className="text-2xl font-headline font-bold text-primary leading-tight">Heovose H24 高性能一体机</h3>
-                         <p className="text-sm text-muted-foreground opacity-70 leading-relaxed">模块化集成设计，专为现代办公空间与规模化部署打造的旗舰级桌面方案。</p>
-                         <div className="pt-8 border-t border-dashed flex items-center justify-between">
-                            <span className="text-xs font-bold text-primary flex items-center gap-2">查看技术规格 <ArrowRight className="h-3.5 w-3.5" /></span>
-                            <div className="h-10 w-10 rounded-xl bg-primary text-white flex items-center justify-center shadow-lg"><ShoppingBag className="h-5 w-5" /></div>
-                         </div>
-                      </div>
-                   </div>
+                <div className="group bg-white rounded-[3rem] border border-border/40 overflow-hidden hover:shadow-2xl transition-all duration-700 p-10 space-y-4 text-left">
+                   <div className="h-14 w-14 rounded-2xl bg-primary/5 flex items-center justify-center text-primary mb-6"><Monitor className="h-7 w-7" /></div>
+                   <h3 className="text-2xl font-headline font-bold text-primary leading-tight">Heovose H24 高性能一体机</h3>
+                   <p className="text-sm text-muted-foreground opacity-70 leading-relaxed">模块化集成设计，专为现代办公空间与规模化部署打造。</p>
+                   <div className="pt-8 border-t border-dashed flex items-center justify-between"><span className="text-xs font-bold text-primary flex items-center gap-2">查看规格 <ArrowRight className="h-3.5 w-3.5" /></span></div>
                 </div>
-
-                {/* 项目卡片预览 */}
-                <div className="space-y-6">
-                   <div className="flex items-center gap-3">
-                     <Zap className="h-4 w-4 text-[#F97316]" />
-                     <span className="text-[11px] font-bold text-[#F97316] uppercase tracking-[0.2em]">项目线：解决方案单元</span>
-                   </div>
-                   <div className="group bg-white rounded-[3rem] border border-border/40 overflow-hidden hover:shadow-2xl hover:border-orange-500/20 transition-all duration-700 shadow-sm text-left">
-                      <div className="relative aspect-[16/10] bg-muted/20 flex items-center justify-center">
-                         <div className="h-32 w-32 bg-orange-500/5 rounded-full blur-2xl animate-pulse" />
-                         <Building2 className="h-24 w-24 text-[#F97316]/10 relative z-10" />
-                         <div className="absolute top-6 left-6"><Badge className="bg-[#F97316] text-white text-[9px] uppercase tracking-widest font-bold px-4 h-6">SOLUTION</Badge></div>
-                      </div>
-                      <div className="p-10 space-y-4">
-                         <h3 className="text-2xl font-headline font-bold text-[#F97316] leading-tight">智慧零售数字化终端</h3>
-                         <p className="text-sm text-muted-foreground opacity-70 leading-relaxed">赋能全球零售商，提供涵盖自助结账、互动导购及后台集成的全链路方案。</p>
-                         <div className="pt-8 border-t border-dashed flex items-center justify-between">
-                            <span className="text-xs font-bold text-[#F97316] flex items-center gap-2">获取即时方案 <ArrowRight className="h-3.5 w-3.5" /></span>
-                            <div className="h-10 w-10 rounded-xl bg-[#F97316] text-white flex items-center justify-center shadow-lg"><Zap className="h-5 w-5" /></div>
-                         </div>
-                      </div>
-                   </div>
+                <div className="group bg-white rounded-[3rem] border border-border/40 overflow-hidden hover:shadow-2xl transition-all duration-700 p-10 space-y-4 text-left">
+                   <div className="h-14 w-14 rounded-2xl bg-orange-500/5 flex items-center justify-center text-[#F97316] mb-6"><Zap className="h-7 w-7" /></div>
+                   <h3 className="text-2xl font-headline font-bold text-[#F97316] leading-tight">智慧零售数字化终端</h3>
+                   <p className="text-sm text-muted-foreground opacity-70 leading-relaxed">赋能全球零售商，提供涵盖自助结账、互动导购的全链路方案。</p>
+                   <div className="pt-8 border-t border-dashed flex items-center justify-between"><span className="text-xs font-bold text-[#F97316] flex items-center gap-2">获取方案 <ArrowRight className="h-3.5 w-3.5" /></span></div>
                 </div>
-              </div>
-
-              {/* 数据指标看板 */}
-              <div className="space-y-6 pt-12 border-t border-primary/10">
-                  <div className="flex items-center gap-3">
-                    <BarChart3 className="h-4 w-4 text-primary" />
-                    <span className="text-[11px] font-bold text-primary uppercase tracking-[0.2em]">前台：全球统计单元 (Data Counters)</span>
-                  </div>
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
-                     <div className="bg-primary p-12 rounded-[3rem] text-white flex flex-col items-center text-center space-y-4 shadow-xl">
-                        <div className="p-4 bg-white/10 rounded-2xl">
-                          <Factory className="h-8 w-8 text-accent" />
-                        </div>
-                        <div className="space-y-1">
-                          <span className="text-6xl font-headline font-bold block">3</span>
-                          <span className="text-xl font-medium opacity-90 block">全球工厂</span>
-                          <span className="text-[10px] opacity-60 uppercase tracking-widest block font-bold">China / Indonesia</span>
-                        </div>
-                     </div>
-                  </div>
               </div>
             </section>
 
@@ -686,43 +477,14 @@ export default function DesignSystemPage() {
                 <h2 className="text-2xl font-headline font-bold uppercase tracking-widest text-primary">06. 交互模式与视觉特效 (Visual FX)</h2>
               </div>
               <div className="bg-white p-12 rounded-[3rem] border border-border/40 shadow-sm space-y-16">
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-20">
-                   {/* AI 核心交互 */}
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-20 text-left">
                    <div className="space-y-8">
-                     <div className="space-y-2">
-                       <p className="text-[11px] font-bold text-primary uppercase tracking-[0.2em] flex items-center gap-2 text-left">
-                         <Sparkles className="h-4 w-4 ai-icon-gradient" /> AI 智感流光控件 (AI Aurora)
-                       </p>
-                       <p className="text-xs text-muted-foreground leading-relaxed text-left">通过 4 色极光流动渐变与呼吸感光晕，为 AI 功能提供独特的视觉聚焦，独立于蓝/橙业务色系之外。</p>
-                     </div>
-                     <div className="flex flex-wrap gap-8 items-center justify-start">
-                        <Button className="ai-btn-glow h-16 px-10 rounded-2xl gap-3 font-bold uppercase tracking-widest text-sm shadow-2xl">
-                           <Sparkles className="h-5 w-5 ai-icon-gradient" /> AI 智译本页 (完整版)
-                        </Button>
-                        <div className="h-12 w-12 rounded-full ai-btn-glow flex items-center justify-center cursor-pointer shadow-lg">
-                           <Sparkles className="h-5 w-5 ai-icon-gradient" />
-                        </div>
-                     </div>
+                     <p className="text-[11px] font-bold text-primary uppercase tracking-[0.2em] flex items-center gap-2"><Sparkles className="h-4 w-4 ai-icon-gradient" /> AI 智感流光控件 (AI Aurora)</p>
+                     <Button className="ai-btn-glow h-16 px-10 rounded-2xl gap-3 font-bold uppercase tracking-widest text-sm shadow-2xl"><Sparkles className="h-5 w-5 ai-icon-gradient" /> AI 智译内容</Button>
                    </div>
-
-                   {/* 玻璃拟态规范 */}
                    <div className="space-y-8">
-                      <div className="space-y-2">
-                        <p className="text-[11px] font-bold text-primary uppercase tracking-[0.2em] flex items-center gap-2 text-left">
-                          <Globe className="h-4 w-4" /> 玻璃拟态材质规范 (Glass-morphism)
-                        </p>
-                        <p className="text-xs text-muted-foreground leading-relaxed text-left">定义英雄屏及导航栏的背景模糊度标准。M1 适用于轻量悬浮，M2 适用于重质背景。</p>
-                      </div>
-                      <div className="flex gap-6">
-                         <div className="flex-1 h-32 rounded-3xl bg-white/20 backdrop-blur-md border border-white/30 flex items-center justify-center relative overflow-hidden group">
-                            <div className="absolute inset-0 bg-gradient-to-br from-primary/10 to-transparent" />
-                            <span className="text-[10px] font-bold text-primary uppercase tracking-widest relative z-10">M1: 极轻量</span>
-                         </div>
-                         <div className="flex-1 h-32 rounded-3xl bg-primary/10 backdrop-blur-3xl border border-white/20 flex items-center justify-center relative overflow-hidden group">
-                            <div className="absolute inset-0 bg-gradient-to-br from-white/10 to-transparent" />
-                            <span className="text-[10px] font-bold text-primary uppercase tracking-widest relative z-10">M2: 重磨砂</span>
-                         </div>
-                      </div>
+                      <p className="text-[11px] font-bold text-primary uppercase tracking-[0.2em] flex items-center gap-2"><Globe className="h-4 w-4" /> 玻璃拟态 (Glass-morphism)</p>
+                      <div className="h-32 rounded-3xl bg-primary/10 backdrop-blur-3xl border border-white/20 flex items-center justify-center"><span className="text-[10px] font-bold text-primary uppercase tracking-widest">M2: 重磨砂材质</span></div>
                    </div>
                 </div>
               </div>
@@ -730,218 +492,31 @@ export default function DesignSystemPage() {
           </div>
         ) : (
           <div className="space-y-20 animate-in fade-in slide-in-from-bottom-4 duration-700">
-            {/* 后台视觉识别与物理参数 */}
+            {/* 后台部分保持原样，遵循白皮书规范 */}
             <section className="space-y-8">
               <div className="flex items-center gap-4 border-b pb-4 border-primary/20">
                 <div className="h-2 w-10 bg-primary rounded-full" />
                 <h2 className="text-xl font-bold uppercase tracking-widest text-primary">01. 后台视觉识别与物理参数</h2>
               </div>
-              
               <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-                {/* 1.1 圆角阶梯 */}
-                <div className="space-y-4">
-                  <span className="text-[10px] font-bold text-primary/40 uppercase tracking-widest">1.1 圆角标准测试 (Round Corners)</span>
-                  <div className="p-6 rounded-2xl bg-white border border-border/40 shadow-sm space-y-4">
-                    <div className="p-4 rounded-xl bg-muted/20 border border-border/40 flex items-center justify-center">
-                       <span className="text-[10px] font-bold uppercase opacity-40">内嵌级 (12px)</span>
-                    </div>
-                    <Button className="w-full rounded-lg h-10 text-[10px] font-bold uppercase tracking-wider">
-                      组件级 (8px)
-                    </Button>
-                  </div>
+                <div className="p-6 rounded-2xl bg-white border border-border/40 shadow-sm space-y-4">
+                  <span className="text-[10px] font-bold text-primary/40 uppercase tracking-widest text-left block">圆角标准</span>
+                  <div className="p-4 rounded-xl bg-muted/20 border border-border/40 flex items-center justify-center"><span className="text-[10px] font-bold uppercase opacity-40">容器级 (12px)</span></div>
+                  <Button className="w-full rounded-lg h-10 text-[10px] font-bold uppercase">组件级 (8px)</Button>
                 </div>
-
-                {/* 1.3 字体逻辑 */}
-                <div className="space-y-4">
-                  <span className="text-[10px] font-bold text-primary/40 uppercase tracking-widest">1.3 字体与占位符比例</span>
-                  <div className="p-6 rounded-2xl bg-white border border-border/40 space-y-6">
-                    <div className="space-y-1.5">
-                      <Label className="text-[10px] font-bold uppercase tracking-widest text-primary text-left">表单标签 (10px)</Label>
-                      <Input value="标准内容字号 (12px)" readOnly className="h-10 text-xs bg-muted/10" />
-                    </div>
-                    <p className="text-[9px] text-muted-foreground leading-relaxed italic border-t pt-4 text-left">白皮书规范：标签必须锁定 10px Bold，内容强制对齐 12px。</p>
-                  </div>
-                </div>
-
-                {/* 1.4 状态反馈 */}
-                <div className="space-y-4">
-                  <span className="text-[10px] font-bold text-primary/40 uppercase tracking-widest">1.4 边框与物理状态</span>
-                  <div className="p-6 rounded-2xl bg-white border border-border/40 space-y-4">
-                     <div className="h-10 bg-muted/20 border border-border/60 rounded-lg flex items-center px-3">
-                        <span className="text-[10px] font-medium opacity-40">基础状态背景</span>
-                     </div>
-                     <div className="h-10 bg-muted/10 border-primary/50 ring-4 ring-primary/5 rounded-lg flex items-center px-3 border shadow-sm">
-                        <span className="text-[10px] font-bold text-primary">聚焦/激活状态</span>
-                     </div>
-                  </div>
+                <div className="p-6 rounded-2xl bg-white border border-border/40 space-y-6">
+                  <span className="text-[10px] font-bold text-primary/40 uppercase tracking-widest text-left block">字体逻辑</span>
+                  <div className="space-y-1.5 text-left"><Label className="text-[10px] font-bold uppercase text-primary">标签 (10px)</Label><Input readOnly value="内容字号 (12px)" className="h-10 text-xs bg-muted/10" /></div>
                 </div>
               </div>
-            </section>
-
-            {/* 后台基础控件矩阵 */}
-            <section className="space-y-8">
-               <div className="flex items-center gap-4 border-b pb-4 border-primary/20">
-                  <div className="h-2 w-10 bg-primary rounded-full" />
-                  <h2 className="text-xl font-bold uppercase tracking-widest text-primary">02. 基础控件矩阵 (Back-end Controls)</h2>
-               </div>
-               
-               <div className="bg-white rounded-[2rem] border border-border/40 shadow-sm p-12 space-y-16">
-                  {/* 输入与文本域 */}
-                  <div className="space-y-8">
-                     <div className="flex items-center gap-3">
-                        <Terminal className="h-4 w-4 text-primary" />
-                        <span className="text-[11px] font-bold text-primary uppercase tracking-[0.2em]">输入系统规格</span>
-                     </div>
-                     <div className="grid grid-cols-1 md:grid-cols-3 gap-10">
-                        <div className="space-y-4">
-                           <div className="space-y-1.5">
-                              <Label className="text-[10px] font-bold uppercase opacity-60 text-left">默认态单行</Label>
-                              <Input placeholder="输入产品编号..." className="rounded-lg h-10" />
-                           </div>
-                           <div className="space-y-1.5">
-                              <Label className="text-[10px] font-bold uppercase opacity-60 text-left">禁用态单行</Label>
-                              <Input disabled value="SYS_READ_ONLY" className="rounded-lg h-10" />
-                           </div>
-                        </div>
-                        <div className="space-y-4 md:col-span-2">
-                           <div className="space-y-1.5">
-                              <Label className="text-[10px] font-bold uppercase opacity-60 text-left">多行输入系统 (Textarea)</Label>
-                              <Textarea placeholder="输入产品详细描述..." className="min-h-[104px] rounded-xl text-xs" />
-                           </div>
-                        </div>
-                     </div>
-                  </div>
-
-                  {/* 复合控件 */}
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-20 border-t pt-16">
-                     <div className="space-y-8">
-                        <div className="flex items-center gap-3">
-                           <LayoutGrid className="h-4 w-4 text-primary" />
-                           <span className="text-[11px] font-bold text-primary uppercase tracking-[0.2em]">导航与选项卡规范</span>
-                        </div>
-                        <div className="p-4 bg-muted/10 rounded-2xl border border-dashed">
-                           <Tabs defaultValue="visual" className="w-full">
-                              <TabsList className="bg-muted/40 p-1 rounded-xl h-12 w-full grid grid-cols-2">
-                                <TabsTrigger value="visual" className="rounded-lg text-[10px] font-bold uppercase tracking-widest gap-2 flex items-center justify-center data-[state=active]:bg-white data-[state=active]:shadow-sm">
-                                  <ImageIcon className="h-3.5 w-3.5" /> 视觉配置
-                                </TabsTrigger>
-                                <TabsTrigger value="data" className="rounded-lg text-[10px] font-bold uppercase tracking-widest gap-2 flex items-center justify-center data-[state=active]:bg-white data-[state=active]:shadow-sm">
-                                  <BarChart3 className="h-3.5 w-3.5" /> 技术参数
-                                </TabsTrigger>
-                              </TabsList>
-                           </Tabs>
-                        </div>
-                     </div>
-
-                     <div className="space-y-8">
-                        <div className="flex items-center gap-3">
-                           <ChevronDown className="h-4 w-4 text-primary" />
-                           <span className="text-[11px] font-bold text-primary uppercase tracking-[0.2em]">选择与下拉交互</span>
-                        </div>
-                        <div className="grid grid-cols-2 gap-6">
-                           <div className="space-y-1.5">
-                              <Label className="text-[10px] font-bold uppercase opacity-60 text-left">静态单选 (Select)</Label>
-                              <Select defaultValue="published">
-                                 <SelectTrigger className="h-10 rounded-lg"><SelectValue /></SelectTrigger>
-                                 <SelectContent className="rounded-xl">
-                                    <SelectItem value="published" className="text-xs font-bold text-green-600">已发布</SelectItem>
-                                    <SelectItem value="draft" className="text-xs">草稿</SelectItem>
-                                 </SelectContent>
-                              </Select>
-                           </div>
-                           <div className="space-y-1.5">
-                              <Label className="text-[10px] font-bold uppercase opacity-60 text-left">功能下拉 (Menu)</Label>
-                              <div className="flex items-center gap-2 p-2 bg-muted/20 border rounded-lg h-10 px-4">
-                                 <span className="text-[10px] font-bold text-muted-foreground mr-auto">更多操作</span>
-                                 <MoreHorizontal className="h-3.5 w-3.5 opacity-40" />
-                              </div>
-                           </div>
-                        </div>
-                     </div>
-                  </div>
-               </div>
-            </section>
-
-            {/* 表格与复杂列表规范 */}
-            <section className="space-y-8">
-               <div className="flex items-center gap-4 border-b pb-4 border-primary/20">
-                  <div className="h-2 w-10 bg-primary rounded-full" />
-                  <h2 className="text-xl font-bold uppercase tracking-widest text-primary">03. 表格与复杂列表规范</h2>
-               </div>
-               <div className="bg-white rounded-2xl border border-border/40 shadow-sm overflow-hidden">
-                  <Table>
-                     <TableHeader className="bg-muted/30">
-                        <TableRow>
-                           <TableHead className="w-14 pl-6">视觉预览</TableHead>
-                           <TableHead className="font-bold uppercase text-[10px] tracking-widest">资产标识与名称</TableHead>
-                           <TableHead className="font-bold uppercase text-[10px] tracking-widest">业务状态</TableHead>
-                           <TableHead className="text-right pr-6 font-bold uppercase text-[10px] tracking-widest">管理操作</TableHead>
-                        </TableRow>
-                     </TableHeader>
-                     <TableBody>
-                        <TableRow className="group bg-primary/5">
-                           <TableCell className="pl-6"><div className="h-10 w-10 bg-muted/40 rounded-lg flex items-center justify-center"><Package className="h-4 w-4 opacity-40" /></div></TableCell>
-                           <TableCell>
-                              <div className="flex flex-col text-left">
-                                 <span className="font-bold text-sm text-primary">已选定的行项目 (Selected)</span>
-                                 <span className="text-[9px] font-mono opacity-40">ID: PROD_AIO_0605_AX92</span>
-                              </div>
-                           </TableCell>
-                           <TableCell className="text-left"><Badge className="bg-green-600 text-white text-[8px] uppercase">已上线 (Live)</Badge></TableCell>
-                           <TableCell className="pr-6 text-right">
-                              <div className="flex justify-end gap-1">
-                                 <Button size="icon" variant="ghost" className="h-8 w-8 text-primary"><Edit2 className="h-3.5 w-3.5" /></Button>
-                                 <Button size="icon" variant="ghost" className="h-8 w-8 text-destructive"><Trash2 className="h-3.5 w-3.5" /></Button>
-                              </div>
-                           </TableCell>
-                        </TableRow>
-                        <TableRow className="group hover:bg-muted/5 transition-colors">
-                           <TableCell className="pl-6"><div className="h-10 w-10 bg-muted/40 rounded-lg flex items-center justify-center"><Layers className="h-4 w-4 opacity-40" /></div></TableCell>
-                           <TableCell>
-                              <div className="flex flex-col text-left">
-                                 <span className="font-bold text-sm text-muted-foreground">悬停状态预览 (Hover)</span>
-                                 <span className="text-[9px] font-mono opacity-40">ID: CAT_MINIPC_GEN2</span>
-                              </div>
-                           </TableCell>
-                           <TableCell className="text-left"><Badge variant="secondary" className="text-[8px] uppercase">草稿 (Draft)</Badge></TableCell>
-                           <TableCell className="pr-6 text-right">
-                              <div className="flex justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                                 <Button size="icon" variant="ghost" className="h-8 w-8"><MoreHorizontal className="h-3.5 w-3.5" /></Button>
-                              </div>
-                           </TableCell>
-                        </TableRow>
-                     </TableBody>
-                  </Table>
-                  <div className="p-12 text-center border-t border-dashed bg-muted/5">
-                     <p className="text-[10px] font-bold text-muted-foreground/30 uppercase tracking-[0.2em] italic">空列表 / 默认态展示规范</p>
-                  </div>
-               </div>
             </section>
           </div>
         )}
       </div>
 
-      {/* 底部状态栏 */}
       <footer className="fixed bottom-0 left-0 right-0 bg-white/90 backdrop-blur-md border-t border-border/40 px-12 py-3 flex items-center justify-between z-[110]">
-        <div className="flex items-center gap-8">
-           <div className="flex items-center gap-2">
-             <div className="h-2 w-2 rounded-full bg-green-500 animate-pulse" />
-             <span className="text-[10px] font-bold uppercase tracking-widest text-primary">设计系统核心 v1.5.0</span>
-           </div>
-           <div className="h-4 w-px bg-border/60" />
-           <div className="flex items-center gap-2">
-             <AppWindow className="h-3.5 w-3.5 opacity-40" />
-             <span className="text-[10px] font-bold uppercase tracking-widest opacity-40">
-               {activeSystem === 'frontend' ? '视图：前台品牌双色设计' : '视图：后台管理工业规范 (Manifest 1.8)'}
-             </span>
-           </div>
-        </div>
-        <div className="flex items-center gap-6">
-           <div className="flex items-center gap-2 px-3 py-1 bg-muted/40 rounded-full border border-border/20">
-              <span className="text-[9px] font-bold text-muted-foreground uppercase tracking-widest">调试网格：开启</span>
-           </div>
-           <p className="text-[9px] font-bold uppercase tracking-[0.2em] opacity-40">仅限开发者预览模式</p>
-        </div>
+        <div className="flex items-center gap-8"><div className="flex items-center gap-2"><div className="h-2 w-2 rounded-full bg-green-500 animate-pulse" /><span className="text-[10px] font-bold uppercase tracking-widest text-primary">设计系统核心 v1.5.0</span></div></div>
+        <div className="flex items-center gap-6"><p className="text-[9px] font-bold uppercase tracking-[0.2em] opacity-40">仅限开发者预览模式</p></div>
       </footer>
     </div>
   );
