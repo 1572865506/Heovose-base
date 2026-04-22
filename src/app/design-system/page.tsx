@@ -39,7 +39,16 @@ import {
   Box,
   CircleDashed,
   Square,
-  Maximize
+  Maximize,
+  CheckCircle2,
+  AlertCircle,
+  Trash2,
+  Info,
+  Plus,
+  Download,
+  Mail,
+  ChevronRight,
+  MoreHorizontal
 } from 'lucide-react';
 import { 
   Table, 
@@ -283,11 +292,11 @@ export default function DesignSystemPage() {
                           <TableCell className="font-mono text-[10px]">1.2 / 0%</TableCell>
                           <TableCell className="pl-10 py-6">
                              <div className="flex gap-4 max-w-sm">
-                               <div className="bg-muted/10 p-4 rounded-2xl border border-border/40 shadow-sm space-y-1 flex-1">
+                               <div className="bg-muted/10 p-4 rounded-2xl border border-border/40 shadow-sm flex-1 flex flex-col justify-between h-20">
                                  <span className="text-[10px] font-bold text-primary/40 uppercase tracking-widest block">Display</span>
                                  <span className="font-mono text-[14px] font-medium text-primary block leading-tight">23.8" IPS 1080P</span>
                                </div>
-                               <div className="bg-muted/10 p-4 rounded-2xl border border-border/40 shadow-sm space-y-1 flex-1">
+                               <div className="bg-muted/10 p-4 rounded-2xl border border-border/40 shadow-sm flex-1 flex flex-col justify-between h-20">
                                  <span className="text-[10px] font-bold text-primary/40 uppercase tracking-widest block">CPU</span>
                                  <span className="font-mono text-[14px] font-medium text-primary block leading-tight">Intel i7-12700</span>
                                </div>
@@ -348,9 +357,6 @@ export default function DesignSystemPage() {
                            </div>
                          </div>
                        </div>
-                       <div className="p-4 bg-primary/5 rounded-xl border border-primary/10">
-                         <p className="text-[9px] text-primary leading-relaxed"><strong>应用指南：</strong>实线用于建立物理边界与深度；虚线专用在上传引导、占位区域或非功能性装饰线。</p>
-                       </div>
                      </div>
                    </div>
 
@@ -384,7 +390,7 @@ export default function DesignSystemPage() {
                 <div className="pt-16 border-t border-dashed border-border/60">
                    <div className="flex items-center gap-3 mb-10">
                      <Layers className="h-4 w-4 text-primary" />
-                     <span className="text-[11px] font-bold text-primary uppercase tracking-[0.2em]">3.3 阴影投影阶梯 (Shadow Hierarchy)</span>
+                     <span className="text-[11px] font-bold text-primary uppercase tracking-[0.2em]">阴影投影阶梯 (Shadow Hierarchy)</span>
                    </div>
                    <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
                       <div className="space-y-4">
@@ -420,57 +426,129 @@ export default function DesignSystemPage() {
               </div>
             </section>
 
-            {/* 03. 品牌双轨视觉应用 */}
+            {/* 04. 按钮系统规范定义 */}
             <section className="space-y-10">
               <div className="flex items-center gap-4 border-b pb-4 border-primary/10">
-                <div className="h-2 w-10 bg-primary rounded-full opacity-20" />
-                <h2 className="text-2xl font-headline font-bold uppercase tracking-widest text-primary">03. 品牌双轨视觉应用</h2>
+                <div className="h-2 w-10 bg-primary rounded-full" />
+                <h2 className="text-2xl font-headline font-bold uppercase tracking-widest text-primary">04. 按钮系统规范定义</h2>
               </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
-                <div className="group space-y-6">
-                  <span className="text-[10px] font-bold text-primary uppercase tracking-[0.3em]">Wholesale Blue / 品牌蓝</span>
-                  <div className="p-10 rounded-[3rem] bg-primary text-white space-y-6 shadow-2xl relative overflow-hidden">
-                    <div className="absolute top-0 right-0 w-48 h-48 bg-accent/20 rounded-full blur-[80px] -mr-16 -mt-16" />
-                    <ShoppingBag className="h-10 w-10 text-accent" />
-                    <h4 className="text-3xl font-bold font-headline uppercase leading-none">标准化批发生产</h4>
-                    <p className="text-sm opacity-70 leading-relaxed font-medium">代表稳定性、可规模化与专业硬件素养。</p>
-                  </div>
-                </div>
-                <div className="group space-y-6">
-                  <span className="text-[10px] font-bold text-[#F97316] uppercase tracking-[0.3em]">Project Orange / 工业橙</span>
-                  <div className="p-10 rounded-[3rem] bg-[#F97316] text-white space-y-6 shadow-2xl relative overflow-hidden">
-                    <div className="absolute top-0 right-0 w-48 h-48 bg-white/20 rounded-full blur-[80px] -mr-16 -mt-16" />
-                    <Building2 className="h-10 w-10 text-white" />
-                    <h4 className="text-3xl font-bold font-headline uppercase leading-none">定制化项目集成</h4>
-                    <p className="text-sm opacity-70 leading-relaxed font-medium">代表创新力、定制服务与全场景应用张力。</p>
-                  </div>
-                </div>
-              </div>
-            </section>
 
-            {/* 04. 双色控件与交互行为 */}
-            <section className="space-y-10">
-              <div className="flex items-center gap-4 border-b pb-4 border-primary/10">
-                <div className="h-2 w-10 bg-primary rounded-full opacity-20" />
-                <h2 className="text-2xl font-headline font-bold uppercase tracking-widest text-primary">04. 双色控件与交互行为</h2>
-              </div>
-              <div className="bg-white p-12 rounded-[3rem] border border-border/40 shadow-sm space-y-16">
-                 <div className="grid grid-cols-1 md:grid-cols-2 gap-20">
-                    <div className="space-y-8">
-                       <p className="text-[10px] font-bold text-primary uppercase tracking-[0.2em] border-l-2 border-primary pl-3">批发风格按钮组</p>
-                       <div className="flex flex-wrap gap-4">
-                          <Button className="h-14 px-10 rounded-2xl font-bold bg-primary shadow-xl hover:scale-105 transition-all text-white border-none">Wholesale Main</Button>
-                          <Button variant="outline" className="h-14 px-10 rounded-2xl font-bold border-primary text-primary hover:bg-primary/5">Outline Action</Button>
+              <div className="bg-white p-12 rounded-[3rem] border border-border/40 shadow-sm space-y-20">
+                {/* 尺寸阶梯 */}
+                <div className="space-y-8">
+                  <div className="flex items-center gap-3">
+                    <Maximize className="h-4 w-4 text-primary" />
+                    <span className="text-[11px] font-bold text-primary uppercase tracking-[0.2em]">4.1 物理尺寸阶梯 (Size Scale)</span>
+                  </div>
+                  <div className="flex items-end gap-6 flex-wrap">
+                    <div className="space-y-3">
+                      <Button className="h-7 px-2 text-[9px] font-bold uppercase rounded-md">Extra Small</Button>
+                      <p className="text-[9px] text-center font-mono opacity-40">XS / 28px</p>
+                    </div>
+                    <div className="space-y-3">
+                      <Button className="h-9 px-4 text-[10px] font-bold uppercase rounded-lg">Small Action</Button>
+                      <p className="text-[9px] text-center font-mono opacity-40">SM / 36px</p>
+                    </div>
+                    <div className="space-y-3">
+                      <Button className="h-11 px-8 text-xs font-bold uppercase rounded-xl shadow-md">Default Button</Button>
+                      <p className="text-[9px] text-center font-mono opacity-40">BASE / 44px</p>
+                    </div>
+                    <div className="space-y-3">
+                      <Button className="h-14 px-12 text-sm font-bold uppercase rounded-2xl shadow-xl">Large Display</Button>
+                      <p className="text-[9px] text-center font-mono opacity-40">LG / 56px</p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* 状态按钮看板 */}
+                <div className="space-y-8">
+                  <div className="flex items-center gap-3">
+                    <ShieldCheck className="h-4 w-4 text-primary" />
+                    <span className="text-[11px] font-bold text-primary uppercase tracking-[0.2em]">4.2 状态语义按钮 (Status Matrix)</span>
+                  </div>
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-8">
+                    {/* Safety */}
+                    <div className="space-y-4">
+                      <p className="text-[10px] font-bold text-green-600 uppercase tracking-widest border-l-2 border-green-600 pl-2">Safety / 安全</p>
+                      <div className="space-y-2">
+                        <Button className="w-full h-11 bg-green-600 hover:bg-green-700 text-white border-none rounded-xl font-bold text-[10px] uppercase gap-2"><CheckCircle2 className="h-3.5 w-3.5" /> 确认提交</Button>
+                        <Button variant="outline" className="w-full h-11 border-green-600 text-green-600 hover:bg-green-50 rounded-xl font-bold text-[10px] uppercase">线性样式</Button>
+                      </div>
+                    </div>
+                    {/* Info */}
+                    <div className="space-y-4">
+                      <p className="text-[10px] font-bold text-blue-600 uppercase tracking-widest border-l-2 border-blue-600 pl-2">Info / 信息</p>
+                      <div className="space-y-2">
+                        <Button className="w-full h-11 bg-blue-600 hover:bg-blue-700 text-white border-none rounded-xl font-bold text-[10px] uppercase gap-2"><Info className="h-3.5 w-3.5" /> 查看详情</Button>
+                        <Button variant="outline" className="w-full h-11 border-blue-600 text-blue-600 hover:bg-blue-50 rounded-xl font-bold text-[10px] uppercase">辅助引导</Button>
+                      </div>
+                    </div>
+                    {/* Warning */}
+                    <div className="space-y-4">
+                      <p className="text-[10px] font-bold text-orange-600 uppercase tracking-widest border-l-2 border-orange-600 pl-2">Warning / 警告</p>
+                      <div className="space-y-2">
+                        <Button className="w-full h-11 bg-orange-500 hover:bg-orange-600 text-white border-none rounded-xl font-bold text-[10px] uppercase gap-2"><AlertCircle className="h-3.5 w-3.5" /> 谨慎操作</Button>
+                        <Button variant="outline" className="w-full h-11 border-orange-500 text-orange-600 hover:bg-orange-50 rounded-xl font-bold text-[10px] uppercase">风险提示</Button>
+                      </div>
+                    </div>
+                    {/* Danger */}
+                    <div className="space-y-4">
+                      <p className="text-[10px] font-bold text-destructive uppercase tracking-widest border-l-2 border-destructive pl-2">Danger / 危险</p>
+                      <div className="space-y-2">
+                        <Button className="w-full h-11 bg-destructive hover:bg-destructive/90 text-white border-none rounded-xl font-bold text-[10px] uppercase gap-2"><Trash2 className="h-3.5 w-3.5" /> 永久删除</Button>
+                        <Button variant="outline" className="w-full h-11 border-destructive text-destructive hover:bg-destructive/5 rounded-xl font-bold text-[10px] uppercase">撤销更改</Button>
+                      </div>
+                    </div>
+                    {/* Disabled */}
+                    <div className="space-y-4">
+                      <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest border-l-2 border-muted pl-2">Disabled / 禁用</p>
+                      <div className="space-y-2">
+                        <Button disabled className="w-full h-11 rounded-xl font-bold text-[10px] uppercase">锁定状态</Button>
+                        <Button disabled variant="outline" className="w-full h-11 rounded-xl font-bold text-[10px] uppercase">无法点击</Button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* 图标按钮与按钮组 */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-20">
+                  <div className="space-y-8">
+                    <div className="flex items-center gap-3">
+                      <Monitor className="h-4 w-4 text-primary" />
+                      <span className="text-[11px] font-bold text-primary uppercase tracking-[0.2em]">4.3 纯图标与混合交互</span>
+                    </div>
+                    <div className="flex items-center gap-4">
+                      <Button size="icon" className="h-12 w-12 rounded-full bg-primary text-white shadow-lg"><Plus className="h-6 w-6" /></Button>
+                      <Button size="icon" variant="outline" className="h-12 w-12 rounded-2xl border-primary text-primary"><Search className="h-5 w-5" /></Button>
+                      <Button size="icon" variant="ghost" className="h-10 w-10 rounded-lg text-muted-foreground hover:text-primary hover:bg-primary/5"><MoreHorizontal className="h-5 w-5" /></Button>
+                      <div className="h-10 w-px bg-border mx-4" />
+                      <Button className="h-12 px-6 rounded-2xl bg-muted/30 text-primary border-none font-bold text-[10px] uppercase gap-3">
+                        <Download className="h-4 w-4 opacity-40" /> 规格书下载
+                      </Button>
+                    </div>
+                  </div>
+
+                  <div className="space-y-8">
+                    <div className="flex items-center gap-3">
+                      <Layers className="h-4 w-4 text-primary" />
+                      <span className="text-[11px] font-bold text-primary uppercase tracking-[0.2em]">4.4 模组化按钮组 (Button Groups)</span>
+                    </div>
+                    <div className="flex">
+                       <div className="inline-flex rounded-2xl border border-border/60 bg-white shadow-sm overflow-hidden p-1 gap-1">
+                         <Button variant="ghost" className="h-10 px-4 rounded-xl bg-primary text-white hover:bg-primary/90 text-[10px] font-bold uppercase">Grid View</Button>
+                         <Button variant="ghost" className="h-10 px-4 rounded-xl text-muted-foreground hover:bg-muted text-[10px] font-bold uppercase">List View</Button>
+                         <Button variant="ghost" className="h-10 px-4 rounded-xl text-muted-foreground hover:bg-muted text-[10px] font-bold uppercase">Table</Button>
                        </div>
                     </div>
-                    <div className="space-y-8">
-                       <p className="text-[10px] font-bold text-[#F97316] uppercase tracking-[0.2em] border-l-2 border-[#F97316] pl-3">项目风格按钮组</p>
-                       <div className="flex flex-wrap gap-4">
-                          <Button className="h-14 px-10 rounded-2xl font-bold bg-[#F97316] shadow-xl hover:shadow-orange-500/20 hover:scale-105 transition-all text-white border-none">Project Solution</Button>
-                          <Button variant="outline" className="h-14 px-10 rounded-2xl font-bold border-[#F97316] text-[#F97316] hover:bg-orange-500/5">Outline Action</Button>
+                    <div className="flex">
+                       <div className="inline-flex rounded-xl border border-border/60 bg-muted/20 overflow-hidden">
+                         <Button variant="ghost" size="icon" className="h-10 w-10 border-r rounded-none hover:bg-white transition-colors"><AlignLeft className="h-4 w-4" /></Button>
+                         <Button variant="ghost" size="icon" className="h-10 w-10 border-r rounded-none hover:bg-white transition-colors"><AlignCenter className="h-4 w-4" /></Button>
+                         <Button variant="ghost" size="icon" className="h-10 w-10 rounded-none hover:bg-white transition-colors"><AlignRight className="h-4 w-4" /></Button>
                        </div>
                     </div>
-                 </div>
+                  </div>
+                </div>
               </div>
             </section>
 
@@ -481,7 +559,7 @@ export default function DesignSystemPage() {
                 <h2 className="text-2xl font-headline font-bold uppercase tracking-widest text-primary">05. 业务核心组件单元</h2>
               </div>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
-                <div className="group bg-white rounded-[3rem] border border-border/40 overflow-hidden hover:shadow-2xl transition-all duration-700 p-10 space-y-6">
+                <div className="group bg-white rounded-[3rem] border border-border/40 overflow-hidden hover:shadow-2xl transition-all duration-700 p-10 space-y-6 shadow-sm">
                    <div className="h-16 w-16 rounded-2xl bg-primary/5 flex items-center justify-center text-primary mb-2 shadow-inner"><Monitor className="h-8 w-8" /></div>
                    <div className="space-y-2">
                      <span className="text-[9px] font-bold uppercase text-primary tracking-[0.3em]">Category: AIO Pro</span>
@@ -492,7 +570,7 @@ export default function DesignSystemPage() {
                      <Badge variant="outline" className="bg-primary/5 text-[9px] uppercase font-bold text-primary border-primary/10">Stock: Ready</Badge>
                    </div>
                 </div>
-                <div className="group bg-white rounded-[3rem] border border-border/40 overflow-hidden hover:shadow-2xl transition-all duration-700 p-10 space-y-6">
+                <div className="group bg-white rounded-[3rem] border border-border/40 overflow-hidden hover:shadow-2xl transition-all duration-700 p-10 space-y-6 shadow-sm">
                    <div className="h-16 w-16 rounded-2xl bg-orange-500/5 flex items-center justify-center text-[#F97316] mb-2 shadow-inner"><Zap className="h-8 w-8" /></div>
                    <div className="space-y-2">
                      <span className="text-[9px] font-bold uppercase text-orange-600 tracking-[0.3em]">Solution: Smart Retail</span>
@@ -507,7 +585,7 @@ export default function DesignSystemPage() {
             </section>
 
             {/* 06. 交互模式与视觉特效 */}
-            <section className="space-y-10">
+            <section className="space-y-10 pb-20">
               <div className="flex items-center gap-4 border-b pb-4 border-primary/10">
                 <div className="h-2 w-10 bg-primary rounded-full opacity-20" />
                 <h2 className="text-2xl font-headline font-bold uppercase tracking-widest text-primary">06. 交互模式与视觉特效</h2>

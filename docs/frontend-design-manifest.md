@@ -30,28 +30,23 @@
     *   Size: 96px 
     *   Tracking: -5% (Tighter) 
     *   Leading: 0.85 (Compact)
-    *   应用: 首页英雄屏、品牌大视觉。
 *   **Section Heading (章节标题)**: 
     *   Size: 48px 
     *   Tracking: -2% (Tight) 
     *   Leading: 1.1
-    *   应用: 板块标题、核心产品名。
 *   **Technical Specs (规格参数)**:
     *   Size: 14px (Value) / 10px (Label)
     *   Font: JetBrains Mono (Value) / Inter (Label)
     *   Leading: 1.2
     *   **布局模式**: 垂直容器模式（Label 在上，Value 在下，独立卡片承载）。
-    *   应用: 产品详情页规格矩阵。
 *   **Body Text (标准正文)**: 
     *   Size: 16px 
     *   Tracking: 0% 
     *   Leading: 1.6 (Relaxed)
-    *   应用: 描述段落、详细规格说明。
 *   **Supplementary (技术辅助)**: 
     *   Size: 10px 
     *   Tracking: Widest (10%) 
     *   Leading: 1.0
-    *   应用: SKU 标签、技术参数名、全大写页码。
 
 ---
 
@@ -75,25 +70,29 @@
 
 ---
 
-## 4. 交互模式与 AI 特效 (Interactions & FX)
+## 4. 按钮系统规范 (Button System)
 
-### 4.1 AI 智感极光 (AI Aurora Language)
-*   **视觉特征**: 脱离业务蓝/橙色系，独立采用 4 色极光动态流动渐变。
-*   **核心类名**: `.ai-btn-glow` (带有动态 `::before` 渐变层)。
-*   **寓意**: 传达“智慧、全方位、灵动”的辅助工具质感。
+### 4.1 尺寸标准 (Sizes)
+*   **Extra Small (XS)**: 高度 28px, 字体 9px (加粗)。
+*   **Small (SM)**: 高度 36px, 字体 10px (加粗)。
+*   **Default (Base)**: 高度 44px, 字体 12px (加粗)。
+*   **Large (LG)**: 高度 56px, 字体 14px (加粗)。
 
-### 4.2 玻璃拟态标准 (Glass-morphism)
-*   **M1 (标准)**: Blur 16px | Opacity 70% | 适用于顶部导航。
-*   **M2 (深邃)**: Blur 40px | Opacity 40% | 适用于背景复杂的卡片浮层。
+### 4.2 状态色值 (States)
+*   **Safety (安全)**: 绿色系，代表认证通过或完成。
+*   **Info (信息)**: 蓝色系，代表常规操作或引导。
+*   **Warning (警告)**: 橙色/黄色，代表风险提示。
+*   **Danger (危险)**: 红色，代表删除或不可逆操作。
+*   **Disabled (禁用)**: 灰色，低透明度。
 
 ---
 
-## 5. 业务组件准则 (Business Guidelines)
+## 5. 交互模式与 AI 特效 (Interactions & FX)
 
-### 5.1 产品展示卡片
-*   **宽高比**: 锁定 4:3 比例展示硬件设备。
-*   **背景**: 统一使用 `bg-muted/20` 营造科技内陷感。
-*   **交互**: 悬停时必须包含 `scale-110` 的图片缩放与 `shadow-2xl` 的投影升起反馈。
+### 5.1 AI 智感极光 (AI Aurora Language)
+*   **视觉特征**: 脱离业务蓝/橙色系，独立采用 4 色极光动态流动渐变。
+*   **核心类名**: `.ai-btn-glow` (带有动态 `::before` 渐变层)。
+*   **寓意**: 传达“智慧、全方位、灵动”的辅助工具质感。
 
 ---
 **最后更新**: 2024-06-05
