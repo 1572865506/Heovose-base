@@ -160,18 +160,106 @@ export default function DesignSystemPage() {
         {activeSystem === 'frontend' ? (
           <div className="space-y-24 animate-in fade-in slide-in-from-bottom-4 duration-700">
             
-            {/* 01. 品牌双色视觉体系 */}
+            {/* 00. 核心色彩模组定义 */}
             <section className="space-y-12">
               <div className="flex items-center gap-4 border-b pb-4">
                 <div className="h-2 w-10 bg-primary rounded-full" />
-                <h2 className="text-2xl font-headline font-bold uppercase tracking-widest text-primary">01. 品牌双色视觉体系 (Dual-Theme Identity)</h2>
+                <h2 className="text-2xl font-headline font-bold uppercase tracking-widest text-primary">00. 核心色彩模组定义 (Color Palette)</h2>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
+                {/* 批发业务色彩栈 */}
+                <div className="space-y-6">
+                  <div className="flex items-center gap-3">
+                    <ShoppingBag className="h-4 w-4 text-primary" />
+                    <span className="text-[11px] font-bold text-primary uppercase tracking-[0.2em]">批发业务：品牌蓝主题栈</span>
+                  </div>
+                  <div className="bg-white p-8 rounded-[2.5rem] border border-border/40 shadow-sm space-y-8">
+                    <div className="grid grid-cols-3 gap-4">
+                      {/* 主色 */}
+                      <div className="space-y-3">
+                        <div className="h-24 w-full rounded-2xl bg-primary shadow-lg border border-primary/20" />
+                        <div className="space-y-1">
+                          <p className="text-[10px] font-bold uppercase text-primary">主色 (Primary)</p>
+                          <p className="text-[9px] font-mono text-muted-foreground">#005B99</p>
+                          <p className="text-[8px] text-muted-foreground opacity-60">品牌身份 / 交互重心</p>
+                        </div>
+                      </div>
+                      {/* 辅助色 */}
+                      <div className="space-y-3">
+                        <div className="h-24 w-full rounded-2xl bg-accent shadow-lg border border-accent/20" />
+                        <div className="space-y-1">
+                          <p className="text-[10px] font-bold uppercase text-primary">辅助色 (Accent)</p>
+                          <p className="text-[9px] font-mono text-muted-foreground">#FCDC00</p>
+                          <p className="text-[8px] text-muted-foreground opacity-60">强调反馈 / 视觉点睛</p>
+                        </div>
+                      </div>
+                      {/* 中性色 */}
+                      <div className="space-y-3">
+                        <div className="h-24 w-full rounded-2xl bg-secondary shadow-lg border border-secondary/20" />
+                        <div className="space-y-1">
+                          <p className="text-[10px] font-bold uppercase text-primary">中性色 (Neutral)</p>
+                          <p className="text-[9px] font-mono text-muted-foreground">#3C434A</p>
+                          <p className="text-[8px] text-muted-foreground opacity-60">次级文本 / 容器边框</p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* 项目业务色彩栈 */}
+                <div className="space-y-6">
+                  <div className="flex items-center gap-3">
+                    <Building2 className="h-4 w-4 text-[#F97316]" />
+                    <span className="text-[11px] font-bold text-[#F97316] uppercase tracking-[0.2em]">项目业务：工业橙主题栈</span>
+                  </div>
+                  <div className="bg-white p-8 rounded-[2.5rem] border border-border/40 shadow-sm space-y-8">
+                    <div className="grid grid-cols-3 gap-4">
+                      {/* 主色 */}
+                      <div className="space-y-3">
+                        <div className="h-24 w-full rounded-2xl bg-[#F97316] shadow-lg border-orange-500/20" />
+                        <div className="space-y-1">
+                          <p className="text-[10px] font-bold uppercase text-[#F97316]">主色 (Primary)</p>
+                          <p className="text-[9px] font-mono text-muted-foreground">#F97316</p>
+                          <p className="text-[8px] text-muted-foreground opacity-60">业务核心 / 工业活力</p>
+                        </div>
+                      </div>
+                      {/* 辅助色 */}
+                      <div className="space-y-3">
+                        <div className="h-24 w-full rounded-2xl bg-[#101820] shadow-lg border-black/20" />
+                        <div className="space-y-1">
+                          <p className="text-[10px] font-bold uppercase text-[#101820]">辅助色 (Accent)</p>
+                          <p className="text-[9px] font-mono text-muted-foreground">#101820</p>
+                          <p className="text-[8px] text-muted-foreground opacity-60">品质压重 / 技术质感</p>
+                        </div>
+                      </div>
+                      {/* 中性色 */}
+                      <div className="space-y-3">
+                        <div className="h-24 w-full rounded-2xl bg-muted shadow-lg border-border/40" />
+                        <div className="space-y-1">
+                          <p className="text-[10px] font-bold uppercase text-muted-foreground">中性色 (Neutral)</p>
+                          <p className="text-[9px] font-mono text-muted-foreground">#E5E7EB</p>
+                          <p className="text-[8px] text-muted-foreground opacity-60">背景基底 / 弱关联区</p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </section>
+            
+            {/* 01. 品牌双色视觉体系 */}
+            <section className="space-y-12">
+              <div className="flex items-center gap-4 border-b pb-4">
+                <div className="h-2 w-10 bg-primary rounded-full opacity-20" />
+                <h2 className="text-2xl font-headline font-bold uppercase tracking-widest text-primary">01. 品牌双色视觉应用 (Dual-Theme Identity)</h2>
               </div>
               
               <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
                 {/* 批发蓝 (Wholesale Blue) */}
                 <div className="space-y-6">
                   <div className="flex items-center justify-between">
-                     <span className="text-[11px] font-bold text-primary uppercase tracking-[0.2em]">批发业务：品牌深海蓝 (Wholesale Blue)</span>
+                     <span className="text-[11px] font-bold text-primary uppercase tracking-[0.2em]">应用场景：品牌深海蓝 (Wholesale Blue)</span>
                      <Badge className="bg-primary text-white text-[8px] uppercase">核心主色</Badge>
                   </div>
                   <div className="p-8 rounded-[3rem] bg-primary text-white space-y-6 shadow-2xl relative overflow-hidden group border border-white/10">
@@ -194,7 +282,7 @@ export default function DesignSystemPage() {
                 {/* 项目橙 (Project Orange) */}
                 <div className="space-y-6">
                   <div className="flex items-center justify-between">
-                     <span className="text-[11px] font-bold text-[#F97316] uppercase tracking-[0.2em]">项目业务：工业活力橙 (Project Orange)</span>
+                     <span className="text-[11px] font-bold text-[#F97316] uppercase tracking-[0.2em]">应用场景：工业活力橙 (Project Orange)</span>
                      <Badge className="bg-[#F97316] text-white text-[8px] uppercase">业务应用色</Badge>
                   </div>
                   <div className="p-8 rounded-[3rem] bg-[#F97316] text-white space-y-6 shadow-2xl relative overflow-hidden group border border-white/10">
@@ -396,7 +484,7 @@ export default function DesignSystemPage() {
           </div>
         ) : (
           <div className="space-y-20 animate-in fade-in slide-in-from-bottom-4 duration-700">
-            {/* 后台系统预览 (遵循白皮书) */}
+            {/* 后台视觉识别与物理参数 */}
             <section className="space-y-8">
               <div className="flex items-center gap-4 border-b pb-4 border-primary/20">
                 <div className="h-2 w-10 bg-primary rounded-full" />
@@ -444,7 +532,7 @@ export default function DesignSystemPage() {
               </div>
             </section>
 
-            {/* 后台数据表格 */}
+            {/* 表格与复杂列表规范 */}
             <section className="space-y-8">
                <div className="flex items-center gap-4 border-b pb-4 border-primary/20">
                   <div className="h-2 w-10 bg-primary rounded-full" />
