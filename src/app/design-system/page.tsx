@@ -78,8 +78,7 @@ import {
   Mail,
   ChevronRight,
   MoreHorizontal,
-  ChevronDown,
-  ChevronRight as ChevronRightIcon
+  ChevronDown
 } from 'lucide-react';
 import { 
   Table, 
@@ -567,7 +566,7 @@ export default function DesignSystemPage() {
                     </div>
                     <div className="flex">
                        <div className="inline-flex rounded-2xl border border-border/60 bg-muted/20 p-1 gap-1 overflow-hidden">
-                         <Button variant="ghost" className="h-10 px-4 rounded-xl bg-primary text-white hover:bg-primary hover:text-white text-[10px] font-bold uppercase shadow-sm">Grid View</Button>
+                         <Button variant="ghost" className="h-10 px-4 rounded-xl bg-primary text-white hover:bg-primary hover:text-white hover:text-white text-[10px] font-bold uppercase shadow-sm">Grid View</Button>
                          <Button variant="ghost" className="h-10 px-4 rounded-xl text-muted-foreground hover:bg-primary/10 hover:text-primary transition-all text-[10px] font-bold uppercase">List View</Button>
                          <Button variant="ghost" className="h-10 px-4 rounded-xl text-muted-foreground hover:bg-primary/10 hover:text-primary transition-all text-[10px] font-bold uppercase">Table</Button>
                        </div>
@@ -667,7 +666,7 @@ export default function DesignSystemPage() {
 
                           <div className="space-y-2 w-48">
                             <Label className="text-[9px] font-bold uppercase opacity-40">多级下拉 (Cascader)</Label>
-                            <DropdownMenu>
+                            <DropdownMenu modal={false}>
                               <DropdownMenuTrigger asChild>
                                 <Button variant="outline" className="w-full h-11 rounded-xl justify-between px-4 text-[11px] font-bold border-border/60">
                                   项目分类 <ChevronDown className="h-3.5 w-3.5 opacity-40" />
