@@ -401,8 +401,7 @@ export default function DesignSystemPage() {
                           <p className="text-[9px] text-muted-foreground">用于徽章、标签及微型原子组件。</p>
                         </div>
                       </div>
-                      <div className="space-y-4">
-                        <div className="h-32 bg-white rounded-2xl shadow-md border border-border/20 flex items-center justify-center font-mono text-[10px] font-bold uppercase text-primary/40">shadow-md</div>
+                      <div className="h-32 bg-white rounded-2xl shadow-md border border-border/20 flex items-center justify-center font-mono text-[10px] font-bold uppercase text-primary/40">shadow-md</div>
                         <div className="space-y-1">
                           <p className="text-[10px] font-bold uppercase">标准浮动</p>
                           <p className="text-[9px] text-muted-foreground">用于常规卡片、二级容器。</p>
@@ -424,7 +423,6 @@ export default function DesignSystemPage() {
                       </div>
                    </div>
                 </div>
-              </div>
             </section>
 
             {/* 04. 按钮系统规范定义 */}
@@ -536,7 +534,7 @@ export default function DesignSystemPage() {
                     </div>
                     <div className="flex">
                        <div className="inline-flex rounded-2xl border border-border/60 bg-white shadow-sm overflow-hidden p-1 gap-1">
-                         <Button variant="ghost" className="h-10 px-4 rounded-xl bg-primary text-white hover:bg-primary/90 hover:text-white text-[10px] font-bold uppercase">Grid View</Button>
+                         <Button variant="ghost" className="h-10 px-4 rounded-xl bg-primary text-white hover:bg-primary/90 hover:text-white hover:text-white text-[10px] font-bold uppercase">Grid View</Button>
                          <Button variant="ghost" className="h-10 px-4 rounded-xl text-muted-foreground hover:bg-primary/10 hover:text-primary transition-all text-[10px] font-bold uppercase">List View</Button>
                          <Button variant="ghost" className="h-10 px-4 rounded-xl text-muted-foreground hover:bg-primary/10 hover:text-primary transition-all text-[10px] font-bold uppercase">Table</Button>
                        </div>
