@@ -1,3 +1,4 @@
+
 "use client";
 
 import React, { useState, useEffect } from 'react';
@@ -90,7 +91,8 @@ import {
   Play,
   RotateCcw,
   Activity,
-  Workflow
+  Workflow,
+  Move
 } from 'lucide-react';
 import { 
   Table, 
@@ -909,18 +911,18 @@ export default function DesignSystemPage() {
                     {/* 固定表头型 */}
                     <div className="space-y-4">
                       <p className="text-[10px] font-bold text-muted-foreground uppercase">固定表头型 (Sticky Header / Y-Axis)</p>
-                      <div className="rounded-2xl border overflow-hidden max-h-[300px] overflow-y-auto scrollbar-minimal shadow-inner bg-muted/5">
+                      <div className="rounded-2xl border overflow-hidden max-h-[300px] overflow-y-auto scrollbar-minimal shadow-inner bg-muted/5 relative">
                         <Table>
-                          <TableHeader className="sticky top-0 z-20 bg-muted/95 backdrop-blur-md shadow-sm">
+                          <TableHeader className="sticky top-0 z-30 shadow-sm">
                             <TableRow className="hover:bg-transparent border-none">
-                              <TableHead className="text-[9px] font-bold uppercase pl-6 py-4">检测项</TableHead>
-                              <TableHead className="text-[9px] font-bold uppercase py-4">检测时间</TableHead>
-                              <TableHead className="text-[9px] font-bold uppercase pr-6 py-4 text-right">结果</TableHead>
+                              <TableHead className="sticky top-0 z-30 bg-muted/95 backdrop-blur-md font-bold text-[9px] uppercase pl-6 py-4 border-b">检测项</TableHead>
+                              <TableHead className="sticky top-0 z-30 bg-muted/95 backdrop-blur-md font-bold text-[9px] uppercase py-4 border-b">检测时间</TableHead>
+                              <TableHead className="sticky top-0 z-30 bg-muted/95 backdrop-blur-md font-bold text-[9px] uppercase pr-6 py-4 text-right border-b">结果</TableHead>
                             </TableRow>
                           </TableHeader>
                           <TableBody>
                             {Array.from({ length: 15 }).map((_, i) => (
-                              <TableRow key={i} className="hover:bg-white transition-colors">
+                              <TableRow key={i} className="hover:bg-white transition-colors bg-white">
                                 <TableCell className="text-xs font-bold pl-6 py-3 flex items-center gap-2">
                                    <div className="w-1.5 h-1.5 rounded-full bg-primary/20" /> QA_STEP_{100 + i}
                                 </TableCell>
@@ -940,32 +942,30 @@ export default function DesignSystemPage() {
                         <div className="min-w-[800px]">
                           <Table>
                             <TableHeader className="bg-muted/30">
-                              <TableRow className="hover:bg-transparent">
-                                <TableHead className="sticky left-0 z-30 bg-muted font-bold text-[9px] uppercase pl-6 border-r shadow-[2px_0_5px_rgba(0,0,0,0.05)] py-4">核心产品型号 (Fixed)</TableHead>
-                                <TableHead className="text-[9px] font-bold uppercase text-center py-4">主板架构</TableHead>
-                                <TableHead className="text-[9px] font-bold uppercase text-center py-4">显示规格</TableHead>
-                                <TableHead className="text-[9px] font-bold uppercase text-center py-4">内存通道</TableHead>
-                                <TableHead className="text-[9px] font-bold uppercase text-center py-4">存储插槽</TableHead>
-                                <TableHead className="text-[9px] font-bold uppercase pr-6 text-right py-4">发布时间</TableHead>
+                              <TableRow className="hover:bg-transparent border-b">
+                                <TableHead className="sticky left-0 z-40 bg-muted font-bold text-[9px] uppercase pl-6 border-r shadow-[2px_0_5px_rgba(0,0,0,0.05)] py-4">核心产品型号 (Fixed)</TableHead>
+                                <TableHead className="text-[9px] font-bold uppercase text-center py-4 bg-muted/30">主板架构</TableHead>
+                                <TableHead className="text-[9px] font-bold uppercase text-center py-4 bg-muted/30">显示规格</TableHead>
+                                <TableHead className="text-[9px] font-bold uppercase text-center py-4 bg-muted/30">内存通道</TableHead>
+                                <TableHead className="text-[9px] font-bold uppercase text-center py-4 bg-muted/30">存储插槽</TableHead>
+                                <TableHead className="text-[9px] font-bold uppercase pr-6 text-right py-4 bg-muted/30">发布时间</TableHead>
                               </TableRow>
                             </TableHeader>
                             <TableBody>
-                              <TableRow className="hover:bg-primary/5 group transition-colors">
-                                <TableCell className="sticky left-0 z-20 bg-white font-bold text-xs pl-6 border-r group-hover:bg-muted/5 py-4">Heovose H24 Pro</TableCell>
-                                <TableCell className="text-[11px] text-center opacity-60">Intel Alder Lake</TableCell>
-                                <TableCell className="text-[11px] text-center opacity-60">23.8" IPS 1080P</TableCell>
-                                <TableCell className="text-[11px] text-center opacity-60">DDR4 Dual Channel</TableCell>
-                                <TableCell className="text-[11px] text-center opacity-60">2x M.2 NVMe</TableCell>
-                                <TableCell className="text-[10px] font-mono font-bold pr-6 text-right uppercase">2024 Q3</TableCell>
-                              </TableRow>
-                              <TableRow className="hover:bg-primary/5 group transition-colors">
-                                <TableCell className="sticky left-0 z-20 bg-white font-bold text-xs pl-6 border-r group-hover:bg-muted/5 py-4">Mini M10 Lite</TableCell>
-                                <TableCell className="text-[11px] text-center opacity-60">AMD Ryzen 5000</TableCell>
-                                <TableCell className="text-[11px] text-center opacity-60">N/A (Mini PC)</TableCell>
-                                <TableCell className="text-[11px] text-center opacity-60">SO-DIMM DDR4</TableCell>
-                                <TableCell className="text-[11px] text-center opacity-60">1x M.2 + 1x SATA</TableCell>
-                                <TableCell className="text-[10px] font-mono font-bold pr-6 text-right uppercase">2024 Q2</TableCell>
-                              </TableRow>
+                              {[
+                                { model: 'Heovose H24 Pro', arch: 'Intel Alder Lake', disp: '23.8" IPS 1080P', mem: 'DDR4 Dual', storage: '2x M.2 NVMe', date: '2024 Q3' },
+                                { model: 'Mini M10 Lite', arch: 'AMD Ryzen 5000', disp: 'N/A (Mini PC)', mem: 'SO-DIMM DDR4', storage: '1x M.2 + 1x SATA', date: '2024 Q2' },
+                                { model: 'X-Station Ultra', arch: 'Intel Core i9', disp: '32" 4K HDR', mem: 'DDR5 6400', storage: '4x M.2 Gen5', date: '2024 Q4' },
+                              ].map((row, i) => (
+                                <TableRow key={i} className="hover:bg-primary/5 group transition-colors border-b">
+                                  <TableCell className="sticky left-0 z-20 bg-white font-bold text-xs pl-6 border-r group-hover:bg-muted/5 py-4 shadow-[2px_0_5px_rgba(0,0,0,0.05)]">{row.model}</TableCell>
+                                  <TableCell className="text-[11px] text-center opacity-60 py-4 bg-white group-hover:bg-transparent">{row.arch}</TableCell>
+                                  <TableCell className="text-[11px] text-center opacity-60 py-4 bg-white group-hover:bg-transparent">{row.disp}</TableCell>
+                                  <TableCell className="text-[11px] text-center opacity-60 py-4 bg-white group-hover:bg-transparent">{row.mem}</TableCell>
+                                  <TableCell className="text-[11px] text-center opacity-60 py-4 bg-white group-hover:bg-transparent">{row.storage}</TableCell>
+                                  <TableCell className="text-[10px] font-mono font-bold pr-6 text-right uppercase py-4 bg-white group-hover:bg-transparent">{row.date}</TableCell>
+                                </TableRow>
+                              ))}
                             </TableBody>
                           </Table>
                         </div>
