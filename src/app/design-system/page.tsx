@@ -523,8 +523,9 @@ export default function DesignSystemPage() {
                       <Button size="icon" variant="outline" className="h-12 w-12 rounded-2xl border-primary text-primary"><Search className="h-5 w-5" /></Button>
                       <Button size="icon" variant="ghost" className="h-10 w-10 rounded-lg text-muted-foreground hover:text-primary hover:bg-primary/5"><MoreHorizontal className="h-5 w-5" /></Button>
                       <div className="h-10 w-px bg-border mx-4" />
-                      <Button className="h-12 px-6 rounded-2xl bg-muted/30 text-primary border-none font-bold text-[10px] uppercase gap-3">
-                        <Download className="h-4 w-4 opacity-40" /> 规格书下载
+                      {/* 修复后的混合按钮：增强 Hover 状态识别度 */}
+                      <Button className="h-12 px-6 rounded-2xl bg-muted/30 text-primary border-none font-bold text-[10px] uppercase gap-3 hover:bg-primary hover:text-white transition-all group/spec">
+                        <Download className="h-4 w-4 opacity-40 group-hover/spec:opacity-100 transition-opacity" /> 规格书下载
                       </Button>
                     </div>
                   </div>
