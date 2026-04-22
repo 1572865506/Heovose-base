@@ -566,9 +566,9 @@ export default function DesignSystemPage() {
                     </div>
                     <div className="flex">
                        <div className="inline-flex rounded-2xl border border-border/60 bg-muted/20 p-1 gap-1 overflow-hidden">
-                         <Button variant="ghost" className="h-10 px-4 rounded-xl bg-primary text-white hover:bg-primary hover:text-white hover:text-white text-[10px] font-bold uppercase shadow-sm">Grid View</Button>
-                         <Button variant="ghost" className="h-10 px-4 rounded-xl text-muted-foreground hover:bg-primary/10 hover:text-primary transition-all text-[10px] font-bold uppercase">List View</Button>
-                         <Button variant="ghost" className="h-10 px-4 rounded-xl text-muted-foreground hover:bg-primary/10 hover:text-primary transition-all text-[10px] font-bold uppercase">Table</Button>
+                         <button className="h-10 px-4 rounded-xl bg-primary text-white hover:text-white text-[10px] font-bold uppercase shadow-sm">Grid View</button>
+                         <button className="h-10 px-4 rounded-xl text-muted-foreground hover:bg-primary/10 hover:text-primary transition-all text-[10px] font-bold uppercase">List View</button>
+                         <button className="h-10 px-4 rounded-xl text-muted-foreground hover:bg-primary/10 hover:text-primary transition-all text-[10px] font-bold uppercase">Table</button>
                        </div>
                     </div>
                     <div className="flex">
@@ -737,7 +737,7 @@ export default function DesignSystemPage() {
               <div className="bg-white p-12 rounded-[3rem] border border-border/40 shadow-sm space-y-20">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-20">
                    <div className="space-y-8">
-                     <p className="text-[11px] font-bold text-primary uppercase tracking-[0.2em] flex items-center gap-2">
+                     <p className="text-[11px] font-bold text-primary uppercase tracking-[0.2em]">
                        <Sparkles className="h-4 w-4 ai-icon-gradient" /> 
                        AI 智感流光控件 (AI Aurora)
                      </p>
@@ -794,9 +794,9 @@ export default function DesignSystemPage() {
         <div className="flex items-center gap-8">
           <Dialog modal={false}>
             <DialogTrigger asChild>
-               <Button onClick={loadManifest} size="sm" className="rounded-full h-10 px-6 gap-2 font-bold uppercase tracking-widest text-[10px] shadow-lg">
+               <button onClick={loadManifest} className="inline-flex items-center justify-center rounded-full h-10 px-6 gap-2 font-bold uppercase tracking-widest text-[10px] shadow-lg bg-primary text-white hover:bg-primary/90 transition-colors">
                  <FileText className="h-4 w-4" /> 查阅前台视觉白皮书
-               </Button>
+               </button>
             </DialogTrigger>
             <DialogContent className="max-w-5xl h-[85vh] p-0 rounded-3xl overflow-hidden flex flex-col shadow-2xl border-none">
                <div className="bg-primary p-6 text-white shrink-0">
