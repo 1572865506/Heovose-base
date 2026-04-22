@@ -23,6 +23,9 @@ import {
   X,
   Hash,
   AlignLeft,
+  AlignCenter,
+  AlignRight,
+  AlignJustify,
   TableProperties,
   ArrowUpRight,
   History,
@@ -37,8 +40,6 @@ import {
   ListChecks,
   Gauge,
   Box,
-  CircleDashed,
-  Square,
   Maximize,
   CheckCircle2,
   AlertCircle,
@@ -510,7 +511,7 @@ export default function DesignSystemPage() {
                   </div>
                 </div>
 
-                {/* 图标按钮与按钮组 */}
+                {/* 图标按钮与混合交互 */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-20">
                   <div className="space-y-8">
                     <div className="flex items-center gap-3">
