@@ -523,7 +523,6 @@ export default function DesignSystemPage() {
                       <Button size="icon" variant="outline" className="h-12 w-12 rounded-2xl border-primary text-primary"><Search className="h-5 w-5" /></Button>
                       <Button size="icon" variant="ghost" className="h-10 w-10 rounded-lg text-muted-foreground hover:text-primary hover:bg-primary/5"><MoreHorizontal className="h-5 w-5" /></Button>
                       <div className="h-10 w-px bg-border mx-4" />
-                      {/* 修复后的混合按钮：增强 Hover 状态识别度 */}
                       <Button className="h-12 px-6 rounded-2xl bg-muted/30 text-primary border-none font-bold text-[10px] uppercase gap-3 hover:bg-primary hover:text-white transition-all group/spec">
                         <Download className="h-4 w-4 opacity-40 group-hover/spec:opacity-100 transition-opacity" /> 规格书下载
                       </Button>
@@ -536,15 +535,13 @@ export default function DesignSystemPage() {
                       <span className="text-[11px] font-bold text-primary uppercase tracking-[0.2em]">4.4 模组化按钮组 (Button Groups)</span>
                     </div>
                     <div className="flex">
-                       {/* 优化后的文本按钮组：增强 Hover 时文字与背景的对比度 */}
                        <div className="inline-flex rounded-2xl border border-border/60 bg-white shadow-sm overflow-hidden p-1 gap-1">
-                         <Button variant="ghost" className="h-10 px-4 rounded-xl bg-primary text-white hover:bg-primary/90 text-[10px] font-bold uppercase">Grid View</Button>
+                         <Button variant="ghost" className="h-10 px-4 rounded-xl bg-primary text-white hover:bg-primary/90 hover:text-white text-[10px] font-bold uppercase">Grid View</Button>
                          <Button variant="ghost" className="h-10 px-4 rounded-xl text-muted-foreground hover:bg-primary/10 hover:text-primary transition-all text-[10px] font-bold uppercase">List View</Button>
                          <Button variant="ghost" className="h-10 px-4 rounded-xl text-muted-foreground hover:bg-primary/10 hover:text-primary transition-all text-[10px] font-bold uppercase">Table</Button>
                        </div>
                     </div>
                     <div className="flex">
-                       {/* 优化后的图标按钮组 */}
                        <div className="inline-flex rounded-xl border border-border/60 bg-muted/20 overflow-hidden">
                          <Button variant="ghost" size="icon" className="h-10 w-10 border-r rounded-none hover:bg-white hover:text-primary transition-colors"><AlignLeft className="h-4 w-4" /></Button>
                          <Button variant="ghost" size="icon" className="h-10 w-10 border-r rounded-none hover:bg-white hover:text-primary transition-colors"><AlignCenter className="h-4 w-4" /></Button>
