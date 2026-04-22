@@ -1,59 +1,33 @@
 "use client";
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { 
   Sparkles, 
   Cpu, 
   ShoppingBag, 
   Building2, 
-  Check, 
   Search, 
-  ChevronRight, 
   ArrowRight,
   Monitor,
   LayoutGrid,
-  MapPin,
-  ClipboardList,
-  Star,
-  Zap,
   Globe,
-  Trash2,
   Edit2,
-  Info,
-  AlertCircle,
-  Clock,
-  ExternalLink,
-  Menu,
-  X,
-  User,
-  ShieldCheck,
-  Package,
+  Zap,
   Layers,
+  ShieldCheck,
   FileText,
-  Factory,
-  ChevronDown,
   Plus,
-  ArrowUpRight,
-  Image as ImageIcon,
-  BarChart3,
-  Gauge,
-  Activity,
-  Terminal,
-  Wand2,
-  Hammer,
-  ListChecks,
   Maximize2,
-  Minimize2,
   Type,
-  Square,
-  Circle,
-  Minus,
-  Move
+  Move,
+  History,
+  ExternalLink,
+  Loader2,
+  X
 } from 'lucide-react';
 import { 
   Table, 
@@ -64,12 +38,16 @@ import {
   TableRow 
 } from '@/components/ui/table';
 import { 
-  Tabs, 
-  TabsContent, 
-  TabsList, 
-  TabsTrigger 
-} from "@/components/ui/tabs";
+  Dialog, 
+  DialogContent, 
+  DialogHeader, 
+  DialogTitle, 
+  DialogDescription,
+  DialogTrigger,
+  DialogClose
+} from '@/components/ui/dialog';
 import { cn } from '@/lib/utils';
+import { getFrontendManifest } from './actions';
 
 // AI 极光渐变定义组件
 const AiGradientDef = () => (
@@ -95,6 +73,17 @@ const AiGradientDef = () => (
 
 export default function DesignSystemPage() {
   const [activeSystem, setActiveSystem] = useState('frontend');
+  const [manifestContent, setManifestContent] = useState('');
+  const [isLoadingManifest, setIsLoadingManifest] = useState(false);
+
+  const loadManifest = async () => {
+    setIsLoadingManifest(true);
+    const res = await getFrontendManifest();
+    if (res.success) {
+      setManifestContent(res.content);
+    }
+    setIsLoadingManifest(false);
+  };
 
   return (
     <div className="min-h-screen bg-[#F8F9FA] pb-40">
@@ -108,7 +97,7 @@ export default function DesignSystemPage() {
           </div>
           <div>
             <h1 className="text-lg font-bold text-primary uppercase tracking-widest leading-none">Heovose Design Lab</h1>
-            <p className="text-[9px] text-muted-foreground font-bold uppercase opacity-60 mt-1">视觉实验室 • 核心版本 v1.6.2</p>
+            <p className="text-[9px] text-muted-foreground font-bold uppercase opacity-60 mt-1">视觉实验室 • 核心版本 v1.7.0</p>
           </div>
         </div>
 
@@ -146,7 +135,6 @@ export default function DesignSystemPage() {
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
-                {/* 批发蓝主题 */}
                 <div className="space-y-6">
                   <div className="flex items-center gap-3">
                     <ShoppingBag className="h-4 w-4 text-primary" />
@@ -177,7 +165,6 @@ export default function DesignSystemPage() {
                   </div>
                 </div>
 
-                {/* 项目橙主题 */}
                 <div className="space-y-6">
                   <div className="flex items-center gap-3">
                     <Building2 className="h-4 w-4 text-[#F97316]" />
@@ -234,7 +221,7 @@ export default function DesignSystemPage() {
                     </div>
                   </div>
                   <div className="space-y-4">
-                    <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">技术/等宽字体 (Monospace)</span>
+                    <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">技术辅助字体 (Monospace)</span>
                     <div className="p-6 rounded-2xl bg-muted/20 border border-dashed border-primary/20">
                       <p className="text-3xl font-mono font-bold text-primary">JetBrains Mono</p>
                       <p className="text-[9px] mt-2 text-muted-foreground">用于 SKU、技术参数。确保数值严丝合缝。</p>
@@ -275,7 +262,6 @@ export default function DesignSystemPage() {
 
               <div className="bg-white p-10 rounded-[2.5rem] border border-border/40 shadow-sm space-y-20">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-20">
-                   {/* 线宽与风格 */}
                    <div className="space-y-8">
                      <span className="text-[11px] font-bold text-primary uppercase tracking-[0.2em] flex items-center gap-2">线宽阶梯与风格 (Stroke Scale)</span>
                      <div className="space-y-6">
@@ -289,12 +275,11 @@ export default function DesignSystemPage() {
                        </div>
                        <div className="flex items-center gap-8">
                          <div className="h-12 w-32 border border-dashed border-primary rounded-xl bg-muted/10 flex items-center justify-center font-mono text-[10px] font-bold">DASHED 1px</div>
-                         <p className="text-[10px] text-muted-foreground">空位占位、引导性导入区、内部参考。</p>
+                         <p className="text-[10px] text-muted-foreground">空位占位、引导性导入区。</p>
                        </div>
                      </div>
                    </div>
 
-                   {/* 圆角阶梯 */}
                    <div className="space-y-8">
                      <span className="text-[11px] font-bold text-primary uppercase tracking-[0.2em] flex items-center gap-2">圆角阶梯标准 (Radius Standard)</span>
                      <div className="grid grid-cols-3 gap-6">
@@ -314,7 +299,7 @@ export default function DesignSystemPage() {
                    </div>
                 </div>
 
-                {/* 阴影投影规范板块 */}
+                {/* 阴影体系 */}
                 <div className="pt-16 border-t border-dashed border-border/60">
                    <div className="flex items-center gap-3 mb-10">
                      <Layers className="h-4 w-4 text-primary" />
@@ -332,21 +317,21 @@ export default function DesignSystemPage() {
                         <div className="h-32 bg-white rounded-2xl shadow-md border border-border/20 flex items-center justify-center font-mono text-[10px] font-bold uppercase text-primary/40">shadow-md</div>
                         <div className="space-y-1">
                           <p className="text-[10px] font-bold uppercase">标准浮动</p>
-                          <p className="text-[9px] text-muted-foreground">用于常规卡片、二级容器及下拉菜单。</p>
+                          <p className="text-[9px] text-muted-foreground">用于常规卡片、二级容器。</p>
                         </div>
                       </div>
                       <div className="space-y-4">
                         <div className="h-32 bg-white rounded-2xl shadow-xl border border-border/20 flex items-center justify-center font-mono text-[10px] font-bold uppercase text-primary/40">shadow-xl</div>
                         <div className="space-y-1">
                           <p className="text-[10px] font-bold uppercase">视觉强调</p>
-                          <p className="text-[9px] text-muted-foreground">用于激活态卡片、产品详情展示区。</p>
+                          <p className="text-[9px] text-muted-foreground">用于激活态卡片、产品详情区。</p>
                         </div>
                       </div>
                       <div className="space-y-4">
                         <div className="h-32 bg-white rounded-2xl shadow-2xl border border-border/20 flex items-center justify-center font-mono text-[10px] font-bold uppercase text-primary/40">shadow-2xl</div>
                         <div className="space-y-1">
                           <p className="text-[10px] font-bold uppercase">全局深度</p>
-                          <p className="text-[9px] text-muted-foreground">用于首屏导航、Hero 浮动层及全屏弹窗。</p>
+                          <p className="text-[9px] text-muted-foreground">用于全局导航、Hero 浮动层。</p>
                         </div>
                       </div>
                    </div>
@@ -401,7 +386,7 @@ export default function DesignSystemPage() {
                     <div className="space-y-8">
                        <p className="text-[10px] font-bold text-primary uppercase tracking-[0.2em] border-l-2 border-primary pl-3">批发风格按钮组</p>
                        <div className="flex flex-wrap gap-4">
-                          <Button className="h-14 px-10 rounded-2xl font-bold bg-primary shadow-xl hover:scale-105 transition-all">Wholesale Main</Button>
+                          <Button className="h-14 px-10 rounded-2xl font-bold bg-primary shadow-xl hover:scale-105 transition-all text-white">Wholesale Main</Button>
                           <Button variant="outline" className="h-14 px-10 rounded-2xl font-bold border-primary text-primary hover:bg-primary/5">Outline Action</Button>
                        </div>
                        <div className="space-y-4">
@@ -412,7 +397,7 @@ export default function DesignSystemPage() {
                     <div className="space-y-8">
                        <p className="text-[10px] font-bold text-[#F97316] uppercase tracking-[0.2em] border-l-2 border-[#F97316] pl-3">项目风格按钮组</p>
                        <div className="flex flex-wrap gap-4">
-                          <Button className="h-14 px-10 rounded-2xl font-bold bg-[#F97316] shadow-xl hover:shadow-orange-500/20 hover:scale-105 transition-all">Project Solution</Button>
+                          <Button className="h-14 px-10 rounded-2xl font-bold bg-[#F97316] shadow-xl hover:shadow-orange-500/20 hover:scale-105 transition-all text-white">Project Solution</Button>
                           <Button variant="outline" className="h-14 px-10 rounded-2xl font-bold border-[#F97316] text-[#F97316] hover:bg-orange-500/5">Outline Action</Button>
                        </div>
                        <div className="space-y-4">
@@ -476,7 +461,7 @@ export default function DesignSystemPage() {
                           <Sparkles className="h-5 w-5 ai-icon-gradient" /> AI 智译全局内容
                         </Button>
                         <p className="text-[10px] text-muted-foreground italic leading-relaxed">
-                          AI 专用组件脱离业务蓝/橙色系，采用独特的 4 色动态流光作为核心识别，传达“智慧辅助”感。
+                          AI 专用组件采用独特的 4 色动态流光作为核心识别，传达“智慧辅助”感。
                         </p>
                      </div>
                    </div>
@@ -502,7 +487,7 @@ export default function DesignSystemPage() {
             </section>
           </div>
         ) : (
-          /* 后台系统预览 - 遵循 12px/10px 规范与 AdminManifest */
+          /* 后台系统预览 */
           <div className="space-y-16 animate-in fade-in slide-in-from-bottom-4 duration-700">
             <section className="space-y-8">
               <div className="flex items-center gap-4 border-b pb-4 border-primary/20">
@@ -532,42 +517,8 @@ export default function DesignSystemPage() {
                      <ShieldCheck className="h-6 w-6" />
                      <h4 className="font-bold text-sm uppercase tracking-widest">管理员治理准则</h4>
                    </div>
-                   <p className="text-[11px] opacity-70 leading-relaxed font-medium">管理后台遵循《管理员设计白皮书》，强调操作流的高效与控件的高度对齐。严禁在前台逻辑中使用本套视觉语言。</p>
-                   <Button variant="outline" size="sm" className="w-full bg-white/10 border-white/20 text-white text-[10px] uppercase font-bold tracking-widest h-10">查阅后台宪法</Button>
+                   <p className="text-[11px] opacity-70 leading-relaxed font-medium">管理后台遵循《管理员设计白皮书》，强调操作流的高效与控件的高度对齐。</p>
                 </div>
-              </div>
-            </section>
-
-            <section className="space-y-8">
-              <div className="flex items-center gap-4 border-b pb-4 border-primary/20">
-                <div className="h-2 w-10 bg-primary rounded-full opacity-20" />
-                <h2 className="text-xl font-bold uppercase tracking-widest text-primary leading-none">02. 状态反馈与列表</h2>
-              </div>
-              <div className="bg-white rounded-2xl border border-border/40 shadow-sm overflow-hidden">
-                <Table>
-                  <TableHeader className="bg-muted/30">
-                    <TableRow>
-                      <TableHead className="text-[10px] font-bold uppercase py-4 pl-6">属性名称</TableHead>
-                      <TableHead className="text-[10px] font-bold uppercase py-4">状态标识</TableHead>
-                      <TableHead className="text-[10px] font-bold uppercase py-4">配置权重</TableHead>
-                      <TableHead className="text-right text-[10px] font-bold uppercase py-4 pr-6">操作</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    <TableRow className="group">
-                      <TableCell className="pl-6"><span className="text-xs font-bold text-primary">HEOVOSE_PRO_UNIT</span></TableCell>
-                      <TableCell><Badge className="bg-green-50 text-green-700 border-green-100 text-[8px] uppercase font-bold h-5 px-2">Published</Badge></TableCell>
-                      <TableCell><div className="w-24 h-1.5 bg-muted rounded-full overflow-hidden"><div className="h-full w-2/3 bg-primary" /></div></TableCell>
-                      <TableCell className="text-right pr-6"><Button variant="ghost" size="icon" className="h-8 w-8 text-primary/40 group-hover:text-primary transition-colors"><Edit2 className="h-3.5 w-3.5" /></Button></TableCell>
-                    </TableRow>
-                    <TableRow className="group">
-                      <TableCell className="pl-6"><span className="text-xs font-bold text-primary">GLOBAL_LOGISTICS</span></TableCell>
-                      <TableCell><Badge className="bg-orange-50 text-orange-700 border-orange-100 text-[8px] uppercase font-bold h-5 px-2">Processing</Badge></TableCell>
-                      <TableCell><div className="w-24 h-1.5 bg-muted rounded-full overflow-hidden"><div className="h-full w-1/3 bg-[#F97316]" /></div></TableCell>
-                      <TableCell className="text-right pr-6"><Button variant="ghost" size="icon" className="h-8 w-8 text-primary/40 group-hover:text-primary transition-colors"><Edit2 className="h-3.5 w-3.5" /></Button></TableCell>
-                    </TableRow>
-                  </TableBody>
-                </Table>
               </div>
             </section>
           </div>
@@ -576,12 +527,49 @@ export default function DesignSystemPage() {
 
       <footer className="fixed bottom-0 left-0 right-0 bg-white/90 backdrop-blur-md border-t border-border/40 px-12 py-3 flex items-center justify-between z-[110]">
         <div className="flex items-center gap-8">
+          <Dialog modal={false}>
+            <DialogTrigger asChild>
+               <Button onClick={loadManifest} size="sm" className="rounded-full h-10 px-6 gap-2 font-bold uppercase tracking-widest text-[10px] shadow-lg">
+                 <FileText className="h-4 w-4" /> 查阅前台视觉白皮书
+               </Button>
+            </DialogTrigger>
+            <DialogContent className="max-w-5xl h-[85vh] p-0 rounded-3xl overflow-hidden flex flex-col shadow-2xl border-none">
+               <div className="bg-primary p-6 text-white shrink-0">
+                  <DialogHeader>
+                    <div className="flex items-center gap-3">
+                       <ShieldCheck className="h-6 w-6 text-accent" />
+                       <div>
+                         <DialogTitle className="text-xl font-bold uppercase tracking-widest">Heovose Elevate 前台规范白皮书</DialogTitle>
+                         <DialogDescription className="text-white/60 text-xs uppercase mt-1">本项目前台视觉与交互治理的最高准则。</DialogDescription>
+                       </div>
+                    </div>
+                  </DialogHeader>
+               </div>
+               <div className="flex-1 overflow-y-auto p-12 bg-white scrollbar-minimal">
+                  {isLoadingManifest ? (
+                    <div className="h-full flex flex-col items-center justify-center gap-4 opacity-20">
+                      <Loader2 className="h-10 w-10 animate-spin" />
+                      <p className="text-[10px] font-bold uppercase tracking-widest">正在调取云端规范...</p>
+                    </div>
+                  ) : (
+                    <div className="prose prose-slate prose-sm max-w-none prose-headings:font-headline prose-headings:text-primary">
+                       <pre className="whitespace-pre-wrap font-body text-sm leading-relaxed text-slate-700 bg-muted/5 p-4 rounded-xl border border-border/40">
+                         {manifestContent}
+                       </pre>
+                    </div>
+                  )}
+               </div>
+               <div className="bg-muted/10 p-4 border-t flex justify-end shrink-0">
+                 <DialogClose asChild>
+                   <Button variant="ghost" className="rounded-xl px-8 font-bold uppercase text-[10px]">返回设计系统</Button>
+                 </DialogClose>
+               </div>
+            </DialogContent>
+          </Dialog>
+
           <div className="flex items-center gap-2">
             <div className="h-2 w-2 rounded-full bg-green-500 animate-pulse" />
             <span className="text-[10px] font-bold uppercase tracking-widest text-primary">Lab Environment Ready</span>
-          </div>
-          <div className="flex items-center gap-4 border-l border-border/40 pl-8">
-            <span className="text-[9px] font-bold uppercase text-muted-foreground opacity-60">System Language: TypeScript + Tailwind</span>
           </div>
         </div>
         <div className="flex items-center gap-6">
