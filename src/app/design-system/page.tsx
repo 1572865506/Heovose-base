@@ -270,22 +270,22 @@ export default function DesignSystemPage() {
                     <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest flex items-center gap-2"><AlignLeft className="h-3 w-3" /> 正文字体家族</span>
                     <div className="p-6 rounded-2xl bg-muted/20 border border-dashed border-primary/20">
                       <p className="text-4xl font-body font-bold text-primary">Inter</p>
-                      <p className="text-[9px] mt-2 text-muted-foreground">用于全站文本、说明。提供极高阅读清晰度的无衬线体。</p>
+                      <p className="text-[9px] mt-2 text-muted-foreground">提供极高阅读清晰度的无衬线体。</p>
                     </div>
                   </div>
                   <div className="space-y-4">
                     <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest flex items-center gap-2"><Hash className="h-3 w-3" /> 技术等宽家族</span>
                     <div className="p-6 rounded-2xl bg-muted/20 border border-dashed border-primary/20">
                       <p className="text-3xl font-mono font-bold text-primary">JetBrains Mono</p>
-                      <p className="text-[9px] mt-2 text-muted-foreground">用于规格参数矩阵。确保数值、SKU 严丝合缝。</p>
+                      <p className="text-[9px] mt-2 text-muted-foreground">确保物理参数、SKU 和数值在纵向排版时严丝合缝。</p>
                     </div>
                   </div>
                 </div>
 
                 <div className="space-y-10">
                    <div className="flex items-center justify-between">
-                     <h3 className="text-xs font-bold text-primary/40 uppercase tracking-[0.2em] border-l-2 border-primary pl-4">排版层级与规格矩阵规范</h3>
-                     <Badge variant="outline" className="h-6 text-[8px] font-bold uppercase">Typography specs v2.9</Badge>
+                     <h3 className="text-xs font-bold text-primary/40 uppercase tracking-[0.2em] border-l-2 border-primary pl-4">排版层级阶梯与技术规格模型</h3>
+                     <Badge variant="outline" className="h-6 text-[8px] font-bold uppercase">Typography hierarchy v3.0</Badge>
                    </div>
                    <div className="overflow-hidden border border-border/40 rounded-2xl">
                     <Table>
@@ -319,7 +319,7 @@ export default function DesignSystemPage() {
                         </TableRow>
                         <TableRow className="group hover:bg-muted/5">
                           <TableCell className="font-bold text-xs">Technical Specs / 规格参数</TableCell>
-                          <TableCell className="font-mono text-[10px]">JetBrains (V) / Inter (L)</TableCell>
+                          <TableCell className="font-mono text-[10px]">JetBrains Mono (V)</TableCell>
                           <TableCell className="font-mono text-[10px]">14px (V) / 10px (L)</TableCell>
                           <TableCell className="font-mono text-[10px]">1.2 / 0%</TableCell>
                           <TableCell className="pl-10 py-6">
@@ -567,7 +567,7 @@ export default function DesignSystemPage() {
                     </div>
                     <div className="flex">
                        <div className="inline-flex rounded-2xl border border-border/60 bg-muted/20 p-1 gap-1 overflow-hidden">
-                         <Button variant="ghost" className="h-10 px-4 rounded-xl bg-primary text-white hover:bg-primary hover:text-white hover:text-white text-[10px] font-bold uppercase shadow-sm">Grid View</Button>
+                         <Button variant="ghost" className="h-10 px-4 rounded-xl bg-primary text-white hover:bg-primary hover:text-white text-[10px] font-bold uppercase shadow-sm">Grid View</Button>
                          <Button variant="ghost" className="h-10 px-4 rounded-xl text-muted-foreground hover:bg-primary/10 hover:text-primary transition-all text-[10px] font-bold uppercase">List View</Button>
                          <Button variant="ghost" className="h-10 px-4 rounded-xl text-muted-foreground hover:bg-primary/10 hover:text-primary transition-all text-[10px] font-bold uppercase">Table</Button>
                        </div>
@@ -584,7 +584,7 @@ export default function DesignSystemPage() {
               </div>
             </section>
 
-            {/* 07. 交互组件单元规范 */}
+            {/* 07. 交互组件单元规范 - 动态交互版 */}
             <section className="space-y-10">
               <div className="flex items-center gap-4 border-b pb-4 border-primary/10">
                 <div className="h-2 w-10 bg-primary rounded-full" />
@@ -595,60 +595,56 @@ export default function DesignSystemPage() {
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-20">
                   
                   {/* 选择控件 (Checkbox & Radio) */}
-                  <div className="space-y-10">
+                  <div className="space-y-12">
                     <div className="space-y-8">
                        <p className="text-[11px] font-bold text-primary uppercase tracking-[0.2em] flex items-center gap-2"><CheckCircle2 className="h-4 w-4" /> 多选框规范 (Checkbox Matrix)</p>
                        <div className="flex flex-wrap gap-12">
                           <div className="flex items-center space-x-3">
-                            <Checkbox id="c1" className="h-5 w-5 rounded-md" />
-                            <Label htmlFor="c1" className="text-xs font-bold uppercase opacity-60">未选中 (Default)</Label>
+                            <Checkbox id="c-interactive" className="h-5 w-5 rounded-md" defaultChecked />
+                            <Label htmlFor="c-interactive" className="text-xs font-bold uppercase text-primary cursor-pointer">可交互展示 (Interactive)</Label>
                           </div>
                           <div className="flex items-center space-x-3">
-                            <Checkbox id="c2" checked className="h-5 w-5 rounded-md" />
-                            <Label htmlFor="c2" className="text-xs font-bold uppercase text-primary">已选中 (Active)</Label>
-                          </div>
-                          <div className="flex items-center space-x-3">
-                            <Checkbox id="c3" disabled className="h-5 w-5 rounded-md" />
-                            <Label htmlFor="c3" className="text-xs font-bold uppercase opacity-20">禁用态 (Disabled)</Label>
+                            <Checkbox id="c-disabled" disabled className="h-5 w-5 rounded-md" />
+                            <Label htmlFor="c-disabled" className="text-xs font-bold uppercase opacity-20">禁用态 (Disabled)</Label>
                           </div>
                        </div>
                     </div>
 
                     <div className="space-y-8">
                        <p className="text-[11px] font-bold text-primary uppercase tracking-[0.2em] flex items-center gap-2"><LayoutGrid className="h-4 w-4" /> 单选框规范 (Radio Group)</p>
-                       <RadioGroup defaultValue="r2" className="flex flex-wrap gap-12">
-                          <div className="flex items-center space-x-3">
-                            <RadioGroupItem value="r1" id="r1" className="h-5 w-5" />
-                            <Label htmlFor="r1" className="text-xs font-bold uppercase opacity-60">未选 (Normal)</Label>
+                       <div className="flex flex-wrap gap-12">
+                         <RadioGroup defaultValue="r-demo-1" className="flex items-center gap-12">
+                            <div className="flex items-center space-x-3">
+                              <RadioGroupItem value="r-demo-1" id="r1" className="h-5 w-5" />
+                              <Label htmlFor="r1" className="text-xs font-bold uppercase text-primary cursor-pointer">选项 A (Active)</Label>
+                            </div>
+                            <div className="flex items-center space-x-3">
+                              <RadioGroupItem value="r-demo-2" id="r2" className="h-5 w-5" />
+                              <Label htmlFor="r2" className="text-xs font-bold uppercase text-primary cursor-pointer">选项 B (Normal)</Label>
+                            </div>
+                         </RadioGroup>
+                         <div className="flex items-center space-x-3 opacity-20">
+                            <div className="h-5 w-5 rounded-full border border-primary flex items-center justify-center">
+                              <div className="h-2.5 w-2.5 rounded-full bg-primary/40" />
+                            </div>
+                            <Label className="text-xs font-bold uppercase">锁定 (Disabled)</Label>
                           </div>
-                          <div className="flex items-center space-x-3">
-                            <RadioGroupItem value="r2" id="r2" className="h-5 w-5" />
-                            <Label htmlFor="r2" className="text-xs font-bold uppercase text-primary">激活 (Selected)</Label>
-                          </div>
-                          <div className="flex items-center space-x-3">
-                            <RadioGroupItem value="r3" id="r3" disabled className="h-5 w-5" />
-                            <Label htmlFor="r3" className="text-xs font-bold uppercase opacity-20">锁定 (Disabled)</Label>
-                          </div>
-                       </RadioGroup>
+                       </div>
                     </div>
                   </div>
 
                   {/* 开关与下拉 (Switch & Select) */}
-                  <div className="space-y-10">
+                  <div className="space-y-12">
                     <div className="space-y-8">
                        <p className="text-[11px] font-bold text-primary uppercase tracking-[0.2em] flex items-center gap-2"><Zap className="h-4 w-4" /> 开关按钮规范 (Toggle Switch)</p>
                        <div className="flex flex-wrap gap-12">
                           <div className="flex items-center space-x-4">
-                            <Switch checked={false} className="scale-110" />
-                            <Label className="text-xs font-bold uppercase opacity-60">关闭 (Off)</Label>
+                            <Switch defaultChecked className="scale-110" id="s-interactive" />
+                            <Label htmlFor="s-interactive" className="text-xs font-bold uppercase text-primary cursor-pointer">可交互开关 (Toggle)</Label>
                           </div>
-                          <div className="flex items-center space-x-4">
-                            <Switch checked={true} className="scale-110" />
-                            <Label className="text-xs font-bold uppercase text-primary">开启 (On)</Label>
-                          </div>
-                          <div className="flex items-center space-x-4">
-                            <Switch disabled checked={true} className="scale-110" />
-                            <Label className="text-xs font-bold uppercase opacity-20">锁定 (Disabled)</Label>
+                          <div className="flex items-center space-x-4 opacity-40">
+                            <Switch disabled className="scale-110" />
+                            <Label className="text-xs font-bold uppercase">锁定 (Disabled)</Label>
                           </div>
                        </div>
                     </div>
@@ -656,7 +652,6 @@ export default function DesignSystemPage() {
                     <div className="space-y-8">
                        <p className="text-[11px] font-bold text-primary uppercase tracking-[0.2em] flex items-center gap-2"><ChevronDown className="h-4 w-4" /> 菜单选择规范 (Dropdowns)</p>
                        <div className="flex flex-wrap gap-6">
-                          {/* Standard Select */}
                           <div className="space-y-2 w-48">
                             <Label className="text-[9px] font-bold uppercase opacity-40">标准选择器 (Select)</Label>
                             <Select defaultValue="en">
@@ -670,7 +665,6 @@ export default function DesignSystemPage() {
                             </Select>
                           </div>
 
-                          {/* Multi-level Dropdown */}
                           <div className="space-y-2 w-48">
                             <Label className="text-[9px] font-bold uppercase opacity-40">多级下拉 (Cascader)</Label>
                             <DropdownMenu>
