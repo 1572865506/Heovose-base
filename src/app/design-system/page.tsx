@@ -1,3 +1,4 @@
+
 "use client";
 
 import React, { useState, useEffect } from 'react';
@@ -678,7 +679,7 @@ export default function DesignSystemPage() {
                                   项目分类 <ChevronDown className="h-3.5 w-3.5 opacity-40" />
                                 </Button>
                               </DropdownMenuTrigger>
-                              <DropdownMenuContent className="w-56 p-1.5 rounded-2xl shadow-2xl border-none bg-white/95 backdrop-blur-xl">
+                              <DropdownMenuContent className="z-[200] w-56 p-1.5 rounded-2xl shadow-2xl border-none bg-white/95 backdrop-blur-xl">
                                 <DropdownMenuLabel className="text-[10px] uppercase font-bold opacity-40 px-3">业务垂直领域</DropdownMenuLabel>
                                 <DropdownMenuSeparator className="bg-border/10" />
                                 <DropdownMenuItem className="rounded-xl px-3 py-2 text-xs font-bold hover:bg-primary/5 focus:bg-primary/5">零售终端</DropdownMenuItem>
@@ -686,7 +687,7 @@ export default function DesignSystemPage() {
                                   <DropdownMenuSubTrigger className="rounded-xl px-3 py-2 text-xs font-bold hover:bg-primary/5 focus:bg-primary/5">
                                     工业制造
                                   </DropdownMenuSubTrigger>
-                                  <DropdownMenuSubContent className="p-1.5 rounded-2xl shadow-2xl border-none bg-white/95 backdrop-blur-xl">
+                                  <DropdownMenuSubContent className="z-[200] p-1.5 rounded-2xl shadow-2xl border-none bg-white/95 backdrop-blur-xl">
                                     <DropdownMenuItem className="rounded-xl px-3 py-2 text-xs font-bold">工业一体机</DropdownMenuItem>
                                     <DropdownMenuItem className="rounded-xl px-3 py-2 text-xs font-bold">嵌入式盒子</DropdownMenuItem>
                                   </DropdownMenuSubContent>
@@ -804,7 +805,7 @@ export default function DesignSystemPage() {
 
                          <div className="space-y-2">
                             <Label className="text-[9px] font-bold uppercase opacity-40">Multi-line Textarea / 多行文本</Label>
-                            <Textarea className="min-h-[120px] rounded-[2rem] p-6 text-xs leading-relaxed" placeholder="在此输入详细的硬件项目需求说明..." />
+                            <Textarea className="min-h-[120px] rounded-2xl p-6 text-xs leading-relaxed" placeholder="在此输入详细的硬件项目需求说明..." />
                          </div>
                        </div>
                     </div>
