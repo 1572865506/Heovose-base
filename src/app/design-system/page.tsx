@@ -35,7 +35,11 @@ import {
   Wand2,
   Hammer,
   ListChecks,
-  Gauge
+  Gauge,
+  Box,
+  CircleDashed,
+  Square,
+  Maximize
 } from 'lucide-react';
 import { 
   Table, 
@@ -105,7 +109,7 @@ export default function DesignSystemPage() {
           </div>
           <div>
             <h1 className="text-lg font-bold text-primary uppercase tracking-widest leading-none">Heovose Design Lab</h1>
-            <p className="text-[9px] text-muted-foreground font-bold uppercase opacity-60 mt-1">视觉实验室 • 核心版本 v1.9.0</p>
+            <p className="text-[9px] text-muted-foreground font-bold uppercase opacity-60 mt-1">视觉实验室 • 核心版本 v1.9.5</p>
           </div>
         </div>
 
@@ -240,7 +244,7 @@ export default function DesignSystemPage() {
                 <div className="space-y-10">
                    <div className="flex items-center justify-between">
                      <h3 className="text-xs font-bold text-primary/40 uppercase tracking-[0.2em] border-l-2 border-primary pl-4">排版层级与规格矩阵规范</h3>
-                     <Badge variant="outline" className="h-6 text-[8px] font-bold uppercase">Typography specs v2.0</Badge>
+                     <Badge variant="outline" className="h-6 text-[8px] font-bold uppercase">Typography specs v2.5</Badge>
                    </div>
                    <div className="overflow-hidden border border-border/40 rounded-2xl">
                     <Table>
@@ -275,17 +279,17 @@ export default function DesignSystemPage() {
                         <TableRow className="group hover:bg-muted/5">
                           <TableCell className="font-bold text-xs">Technical Specs / 规格参数</TableCell>
                           <TableCell className="font-mono text-[10px]">JetBrains (V) / Inter (L)</TableCell>
-                          <TableCell className="font-mono text-[10px]">14px / 10px</TableCell>
+                          <TableCell className="font-mono text-[10px]">14px (V) / 10px (L)</TableCell>
                           <TableCell className="font-mono text-[10px]">1.2 / 0%</TableCell>
-                          <TableCell className="pl-10 py-4">
-                             <div className="grid grid-cols-2 gap-3 max-w-sm">
-                               <div className="bg-muted/10 p-4 rounded-2xl border border-border/40 shadow-sm space-y-1">
+                          <TableCell className="pl-10 py-6">
+                             <div className="flex gap-4 max-w-sm">
+                               <div className="bg-muted/10 p-4 rounded-2xl border border-border/40 shadow-sm space-y-1 flex-1">
                                  <span className="text-[10px] font-bold text-primary/40 uppercase tracking-widest block">Display</span>
-                                 <span className="font-mono text-[14px] font-medium text-primary block leading-tight">23.8" IPS 1920x1080</span>
+                                 <span className="font-mono text-[14px] font-medium text-primary block leading-tight">23.8" IPS 1080P</span>
                                </div>
-                               <div className="bg-muted/10 p-4 rounded-2xl border border-border/40 shadow-sm space-y-1">
+                               <div className="bg-muted/10 p-4 rounded-2xl border border-border/40 shadow-sm space-y-1 flex-1">
                                  <span className="text-[10px] font-bold text-primary/40 uppercase tracking-widest block">CPU</span>
-                                 <span className="font-mono text-[14px] font-medium text-primary block leading-tight">Intel Core i7-12700</span>
+                                 <span className="font-mono text-[14px] font-medium text-primary block leading-tight">Intel i7-12700</span>
                                </div>
                              </div>
                           </TableCell>
@@ -325,37 +329,53 @@ export default function DesignSystemPage() {
               <div className="bg-white p-10 rounded-[2.5rem] border border-border/40 shadow-sm space-y-20">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-20">
                    <div className="space-y-8">
-                     <span className="text-[11px] font-bold text-primary uppercase tracking-[0.2em] flex items-center gap-2">线宽阶梯与风格 (Stroke Scale)</span>
+                     <span className="text-[11px] font-bold text-primary uppercase tracking-[0.2em] flex items-center gap-2"><Box className="h-4 w-4" /> 边框阶梯与样式 (Stroke & Style)</span>
                      <div className="space-y-6">
-                       <div className="flex items-center gap-8">
-                         <div className="h-12 w-32 border border-primary rounded-xl bg-muted/10 flex items-center justify-center font-mono text-[10px] font-bold">1px (border)</div>
-                         <p className="text-[10px] text-muted-foreground">基础装饰、次级分割。</p>
+                       <div className="grid grid-cols-1 gap-6">
+                         <div className="space-y-3">
+                           <p className="text-[10px] font-bold text-muted-foreground uppercase">实线系列 (Solid Borders)</p>
+                           <div className="flex items-center gap-6">
+                             <div className="h-14 w-32 border border-primary rounded-xl bg-muted/5 flex items-center justify-center font-mono text-[10px] font-bold">1px</div>
+                             <div className="h-14 w-32 border-2 border-primary rounded-xl bg-muted/5 flex items-center justify-center font-mono text-[10px] font-bold">2px</div>
+                             <div className="h-14 w-32 border-4 border-primary rounded-xl bg-muted/5 flex items-center justify-center font-mono text-[10px] font-bold">4px</div>
+                           </div>
+                         </div>
+                         <div className="space-y-3">
+                           <p className="text-[10px] font-bold text-muted-foreground uppercase">虚线系列 (Dashed Borders)</p>
+                           <div className="flex items-center gap-6">
+                             <div className="h-14 w-32 border border-dashed border-primary rounded-xl bg-muted/5 flex items-center justify-center font-mono text-[10px] font-bold">1px Dashed</div>
+                             <div className="h-14 w-32 border-2 border-dashed border-primary rounded-xl bg-muted/5 flex items-center justify-center font-mono text-[10px] font-bold">2px Dashed</div>
+                           </div>
+                         </div>
                        </div>
-                       <div className="flex items-center gap-8">
-                         <div className="h-12 w-32 border-2 border-primary rounded-xl bg-muted/10 flex items-center justify-center font-mono text-[10px] font-bold">2px (border-2)</div>
-                         <p className="text-[10px] text-muted-foreground">容器主边界、交互激活态。</p>
-                       </div>
-                       <div className="flex items-center gap-8">
-                         <div className="h-12 w-32 border border-dashed border-primary rounded-xl bg-muted/10 flex items-center justify-center font-mono text-[10px] font-bold">DASHED 1px</div>
-                         <p className="text-[10px] text-muted-foreground">引导性导入区、空状态占位。</p>
+                       <div className="p-4 bg-primary/5 rounded-xl border border-primary/10">
+                         <p className="text-[9px] text-primary leading-relaxed"><strong>应用指南：</strong>实线用于建立物理物理边界与深度；虚线专用在上传引导、占位区域或非功能性装饰线。</p>
                        </div>
                      </div>
                    </div>
 
                    <div className="space-y-8">
-                     <span className="text-[11px] font-bold text-primary uppercase tracking-[0.2em] flex items-center gap-2">圆角阶梯标准 (Radius Standard)</span>
-                     <div className="grid grid-cols-3 gap-6">
-                        <div className="space-y-2 text-center">
-                          <div className="aspect-square rounded-lg bg-primary/10 border border-primary/20 flex items-center justify-center font-mono text-xs font-bold">8px</div>
-                          <p className="text-[9px] font-bold uppercase">Small (lg)</p>
+                     <span className="text-[11px] font-bold text-primary uppercase tracking-[0.2em] flex items-center gap-2"><Maximize className="h-4 w-4" /> 圆角阶梯标准 (Radius Standard)</span>
+                     <div className="grid grid-cols-2 lg:grid-cols-3 gap-8">
+                        <div className="space-y-2">
+                          <div className="aspect-video rounded-none bg-primary/10 border-2 border-primary/20 flex items-center justify-center font-mono text-xs font-bold text-primary/60">0px</div>
+                          <p className="text-[9px] font-bold uppercase">无圆角 (Sharp)</p>
                         </div>
-                        <div className="space-y-2 text-center">
-                          <div className="aspect-square rounded-2xl bg-primary/10 border border-primary/20 flex items-center justify-center font-mono text-xs font-bold">16px</div>
-                          <p className="text-[9px] font-bold uppercase">Large (2xl)</p>
+                        <div className="space-y-2">
+                          <div className="aspect-video rounded-lg bg-primary/10 border-2 border-primary/20 flex items-center justify-center font-mono text-xs font-bold text-primary/60">8px</div>
+                          <p className="text-[9px] font-bold uppercase">小圆角 (lg)</p>
                         </div>
-                        <div className="space-y-2 text-center">
-                          <div className="aspect-square rounded-[2.5rem] bg-primary/10 border border-primary/20 flex items-center justify-center font-mono text-xs font-bold">40px</div>
-                          <p className="text-[9px] font-bold uppercase">Brand (40px)</p>
+                        <div className="space-y-2">
+                          <div className="aspect-video rounded-2xl bg-primary/10 border-2 border-primary/20 flex items-center justify-center font-mono text-xs font-bold text-primary/60">16px</div>
+                          <p className="text-[9px] font-bold uppercase">大圆角 (2xl)</p>
+                        </div>
+                        <div className="space-y-2">
+                          <div className="aspect-video rounded-[2.5rem] bg-primary/10 border-2 border-primary/20 flex items-center justify-center font-mono text-xs font-bold text-primary/60">40px</div>
+                          <p className="text-[9px] font-bold uppercase">超级圆角 (Brand)</p>
+                        </div>
+                        <div className="space-y-2">
+                          <div className="aspect-video rounded-full bg-primary/10 border-2 border-primary/20 flex items-center justify-center font-mono text-xs font-bold text-primary/60">Pill</div>
+                          <p className="text-[9px] font-bold uppercase">圆形圆角 (Full)</p>
                         </div>
                      </div>
                    </div>
@@ -527,7 +547,7 @@ export default function DesignSystemPage() {
             </section>
           </div>
         ) : (
-          /* 后台系统预览 */
+          /* 后台系统预览 - 保持简洁 */
           <div className="space-y-16 animate-in fade-in slide-in-from-bottom-4 duration-700">
             <section className="space-y-8">
               <div className="flex items-center gap-4 border-b pb-4 border-primary/20">
@@ -540,15 +560,6 @@ export default function DesignSystemPage() {
                   <div className="space-y-4">
                     <div className="p-4 rounded-xl bg-muted/20 border border-border/40 flex items-center justify-center"><span className="text-[10px] font-bold uppercase opacity-40">容器级 (rounded-xl)</span></div>
                     <Button className="w-full rounded-lg h-10 text-[10px] font-bold uppercase bg-primary/10 text-primary border border-primary/20 shadow-none hover:bg-primary/20">组件级 (rounded-lg)</Button>
-                  </div>
-                </div>
-                <div className="p-8 rounded-2xl bg-white border border-border/40 shadow-sm space-y-6">
-                  <span className="text-[10px] font-bold text-primary/40 uppercase tracking-widest block border-b pb-2">排版字号逻辑</span>
-                  <div className="space-y-4">
-                    <div className="space-y-1.5">
-                      <span className="text-[10px] font-bold uppercase text-primary">标签 (text-[10px])</span>
-                      <Input readOnly value="内容字号 (text-xs / 12px)" className="h-10 text-xs bg-muted/20 border-border/60" />
-                    </div>
                   </div>
                 </div>
               </div>
