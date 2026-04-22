@@ -19,7 +19,9 @@ const ProductionProcess = dynamic(() => import('@/components/ProductionProcess')
 const CaseStudies = dynamic(() => import('@/components/CaseStudies').then(mod => mod.CaseStudies), { ssr: false });
 const GlobalMap = dynamic(() => import('@/components/GlobalMap').then(mod => mod.GlobalMap), { ssr: false });
 
-export default function Home() {
+import { Suspense } from 'react';
+
+function HomeContent() {
   const searchParams = useSearchParams();
   const firestore = useFirestore();
   
@@ -95,5 +97,13 @@ export default function Home() {
       
       <Footer locale={locale} />
     </main>
+  );
+}
+
+export default function Home() {
+  return (
+    <Suspense fallback={<main className="relative min-h-screen" />}>
+      <HomeContent />
+    </Suspense>
   );
 }

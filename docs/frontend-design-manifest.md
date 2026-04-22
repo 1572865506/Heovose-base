@@ -166,5 +166,41 @@
 *   **展开逻辑**: 点击 Chevron 图标旋转 90 度，并以缓入缓出动效展开子节点。
 
 ---
-**最后更新**: 2024-06-05
+
+## 12. 分页系统规范 (Pagination System)
+
+### 12.1 形态与尺寸 (Forms & Sizes)
+*   **标准分页 (Standard)**: 基础物理尺寸为 40px (h-10, w-10)，圆角采用 `rounded-xl`，适用于大面积列表或独立翻页区。
+*   **小型分页 (Small)**: 基础物理尺寸为 28px (h-7, w-7)，圆角采用 `rounded-lg`，文字使用更小的 `text-[10px]`，适用于卡片内部、侧边栏或空间受限的表格底栏。
+
+### 12.2 状态逻辑 (Status Logic)
+*   **激活状态 (Active)**: 抛弃重度色块填充，采用轻量化线框组合。背景应用 `bg-primary/10`，边框使用 20% 透明度的主色 `border-primary/20`，配合主色加粗字体 `text-primary font-bold`，底层带轻微投影 `shadow-sm`。
+*   **非激活态 (Inactive)**: 默认采用柔和的 `text-muted-foreground`，边框使用 `border-border/60`，在视觉层级上主动退让。
+*   **悬停反馈 (Hover)**: 所有可点击的数字与箭头均增加统一的主题色微交互（`hover:bg-primary/5` 或 `hover:bg-primary/20`），确保组件交互反馈的绝对一致性，避免色块跳转突兀。
+
+### 12.3 复合功能与扩展 (Advanced Features)
+*   **截断展示 (Ellipsis)**: 当页码过多时，折叠中间页码并使用 `MoreHorizontal` 图标占位，透明度降低至 40% 以避免喧宾夺主。
+*   **快捷跳转 (Jump to Page)**: 采用复合组件形式，右侧外挂带垂直分割线的 "Go to [输入框] GO" 快捷跳转区，支持用户直接输入页码。
+
+---
+
+## 13. 选项卡系统规范 (Tabs System)
+
+### 13.1 基础与胶囊样式 (Basic & Pill)
+*   **下划线式 (Underline)**: 采用 2px 品牌色底边 (`border-b-2`) 作为激活指示，背景可辅以 `bg-primary/5` 增强识别。适用于页面级主导航。
+*   **胶囊式 (Segmented Pill)**: 容器采用 `bg-muted/20`，激活项使用白色背景、`shadow-sm` 及 `rounded-lg`，营造实体滑块感。适用于局部数据过滤。
+
+### 13.2 卡片容器式 (Card Container / Folder)
+*   **物理结构**: 标签页与内容面板通过 `-mt-[1px]` 物理重叠，激活项去除底边框并置于最高层级 (`z-10`)。
+*   **几何对齐逻辑 (Seamless Connection)**: 
+    *   **计算公式**: 标签组内缩位移 ($S$) = 内容面板圆角半径 ($R$) + 反向圆角宽度 ($W$)。
+    *   **当前标准**: $R = 16px$ (rounded-2xl), $W = 16px$ (w-4), $S = 32px$ (px-8)。
+    *   **反向圆角 (Inverted Corners)**: 激活项底部两侧必须应用反向圆角技术（利用 `box-shadow` 遮罩），确保标签页与面板边框实现液态平滑连接，避免 90 度死角。
+
+### 13.3 垂直排版 (Vertical Alignment)
+*   **侧边模式**: 标签宽度固定（如 128px），激活项通过侧边 3px 品牌线 (`border-l-3` 或 `border-r-3`) 识别。
+*   **位置分布**: 支持左侧（Profile/Settings 模式）与右侧（System/Utility 模式）排版，通过 `flex-row` 或 `flex-row-reverse` 实现。
+
+---
+**最后更新**: 2026-04-22
 **维护者**: App Prototyper (AI Agent)

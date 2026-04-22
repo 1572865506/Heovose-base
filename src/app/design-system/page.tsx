@@ -152,6 +152,12 @@ export default function DesignSystemPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set());
 
+  // Tabs state
+  const [activeBasicTab, setActiveBasicTab] = useState('Overview');
+  const [activePillTab, setActivePillTab] = useState('Details');
+  const [activeCardTab, setActiveCardTab] = useState('Hardware');
+  const [activeLeftTab, setActiveLeftTab] = useState('Profile');
+  const [activeRightTab, setActiveRightTab] = useState('System');
   // 树形菜单状态模拟
   const [treeExpanded, setTreeExpanded] = useState<Set<string>>(new Set(['root', 'products']));
 
@@ -1329,6 +1335,323 @@ export default function DesignSystemPage() {
                          </div>
                       </div>
                    </div>
+                </div>
+              </div>
+            </section>
+
+            {/* 12. 分页系统规范 */}
+            <section className="space-y-10 pb-40">
+              <div className="flex items-center gap-4 border-b pb-4 border-primary/10">
+                <div className="h-2 w-10 bg-primary rounded-full" />
+                <h2 className="text-2xl font-headline font-bold uppercase tracking-widest text-primary">12. 分页系统规范 (Pagination)</h2>
+              </div>
+
+              <div className="bg-white p-12 rounded-[3rem] border border-border/40 shadow-sm space-y-20">
+                <div className="grid grid-cols-1 gap-20">
+                  <div className="space-y-10">
+                    <div className="flex items-center gap-3">
+                      <LayoutGrid className="h-4 w-4 text-primary" />
+                      <span className="text-[11px] font-bold text-primary uppercase tracking-[0.2em]">12.1 标准形态与页数 (Standard & Count)</span>
+                    </div>
+
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-10">
+                      {/* 较少页数 */}
+                      <div className="space-y-4">
+                        <p className="text-[10px] font-bold text-muted-foreground uppercase">较少页数 (Few Pages)</p>
+                        <div className="flex items-center gap-2 bg-muted/10 p-4 rounded-2xl border border-dashed border-primary/10">
+                          <Button variant="outline" size="icon" className="h-10 w-10 rounded-xl text-muted-foreground border-border/60 hover:bg-primary/5 hover:text-primary"><ChevronRightIcon className="h-4 w-4 rotate-180" /></Button>
+                          <div className="flex items-center gap-1">
+                            <Button variant="outline" className="h-10 w-10 p-0 rounded-xl border-primary/20 bg-primary/10 text-primary font-bold shadow-sm hover:bg-primary/20 hover:text-primary">1</Button>
+                            <Button variant="ghost" className="h-10 w-10 p-0 rounded-xl text-muted-foreground hover:bg-primary/5 hover:text-primary font-medium transition-all">2</Button>
+                            <Button variant="ghost" className="h-10 w-10 p-0 rounded-xl text-muted-foreground hover:bg-primary/5 hover:text-primary font-medium transition-all">3</Button>
+                            <Button variant="ghost" className="h-10 w-10 p-0 rounded-xl text-muted-foreground hover:bg-primary/5 hover:text-primary font-medium transition-all">4</Button>
+                            <Button variant="ghost" className="h-10 w-10 p-0 rounded-xl text-muted-foreground hover:bg-primary/5 hover:text-primary font-medium transition-all">5</Button>
+                          </div>
+                          <Button variant="outline" size="icon" className="h-10 w-10 rounded-xl text-primary border-border/60 hover:bg-primary/5 hover:text-primary"><ChevronRightIcon className="h-4 w-4" /></Button>
+                        </div>
+                      </div>
+
+                      {/* 较多页数 */}
+                      <div className="space-y-4">
+                        <p className="text-[10px] font-bold text-muted-foreground uppercase">较多页数 (Many Pages & Ellipsis)</p>
+                        <div className="flex items-center gap-2 bg-muted/10 p-4 rounded-2xl border border-dashed border-primary/10">
+                          <Button variant="outline" size="icon" className="h-10 w-10 rounded-xl text-primary border-border/60 hover:bg-primary/5 hover:text-primary"><ChevronRightIcon className="h-4 w-4 rotate-180" /></Button>
+                          <div className="flex items-center gap-1">
+                            <Button variant="ghost" className="h-10 w-10 p-0 rounded-xl text-muted-foreground hover:bg-primary/5 hover:text-primary font-medium transition-all">1</Button>
+                            <Button variant="ghost" className="h-10 w-10 p-0 rounded-xl text-muted-foreground hover:bg-primary/5 hover:text-primary font-medium transition-all">2</Button>
+                            <div className="h-10 w-8 flex items-center justify-center opacity-40">
+                               <MoreHorizontal className="h-4 w-4" />
+                            </div>
+                            <Button variant="outline" className="h-10 w-10 p-0 rounded-xl border-primary/20 bg-primary/10 text-primary font-bold shadow-sm hover:bg-primary/20 hover:text-primary">6</Button>
+                            <div className="h-10 w-8 flex items-center justify-center opacity-40">
+                               <MoreHorizontal className="h-4 w-4" />
+                            </div>
+                            <Button variant="ghost" className="h-10 w-10 p-0 rounded-xl text-muted-foreground hover:bg-primary/5 hover:text-primary font-medium transition-all">10</Button>
+                          </div>
+                          <Button variant="outline" size="icon" className="h-10 w-10 rounded-xl text-primary border-border/60 hover:bg-primary/5 hover:text-primary"><ChevronRightIcon className="h-4 w-4" /></Button>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="space-y-10">
+                    <div className="flex items-center gap-3">
+                      <Zap className="h-4 w-4 text-primary" />
+                      <span className="text-[11px] font-bold text-primary uppercase tracking-[0.2em]">12.2 变体与复合功能 (Variants & Features)</span>
+                    </div>
+
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-10">
+                      {/* 小型分页按钮 */}
+                      <div className="space-y-4">
+                        <p className="text-[10px] font-bold text-muted-foreground uppercase">小型分页按钮 (Small Size)</p>
+                        <div className="flex items-center gap-1.5 bg-muted/10 p-4 rounded-2xl border border-dashed border-primary/10">
+                          <Button variant="outline" size="icon" className="h-7 w-7 rounded-lg text-muted-foreground border-border/60 hover:bg-primary/5 hover:text-primary"><ChevronRightIcon className="h-3 w-3 rotate-180" /></Button>
+                          <Button variant="outline" className="h-7 w-7 p-0 rounded-lg border-primary/20 bg-primary/10 text-primary font-bold shadow-sm text-[10px] hover:bg-primary/20 hover:text-primary">1</Button>
+                          <Button variant="ghost" className="h-7 w-7 p-0 rounded-lg text-muted-foreground hover:bg-primary/5 text-[10px] font-medium">2</Button>
+                          <Button variant="ghost" className="h-7 w-7 p-0 rounded-lg text-muted-foreground hover:bg-primary/5 text-[10px] font-medium">3</Button>
+                          <Button variant="outline" size="icon" className="h-7 w-7 rounded-lg text-primary border-border/60 hover:bg-primary/5 hover:text-primary"><ChevronRightIcon className="h-3 w-3" /></Button>
+                        </div>
+                        <p className="text-[9px] text-muted-foreground italic mt-2">适用于卡片内部、侧边栏或空间局促的表格底栏。</p>
+                      </div>
+
+                      {/* 带有跳转功能的分页按钮 */}
+                      <div className="space-y-4">
+                        <p className="text-[10px] font-bold text-muted-foreground uppercase">复合跳转功能 (Pagination with Jump)</p>
+                        <div className="flex flex-col sm:flex-row items-center gap-6 bg-muted/10 p-4 rounded-2xl border border-dashed border-primary/10">
+                          <div className="flex items-center gap-1">
+                            <Button variant="outline" size="icon" className="h-9 w-9 rounded-xl text-primary border-border/60 hover:bg-primary/5 hover:text-primary"><ChevronRightIcon className="h-4 w-4 rotate-180" /></Button>
+                            <Button variant="ghost" className="h-9 w-9 p-0 rounded-xl text-muted-foreground hover:bg-primary/5 hover:text-primary font-medium transition-all text-xs">1</Button>
+                            <div className="h-9 w-6 flex items-center justify-center opacity-40">
+                               <MoreHorizontal className="h-3 w-3" />
+                            </div>
+                            <Button variant="outline" className="h-9 w-9 p-0 rounded-xl border-primary/20 bg-primary/10 text-primary font-bold shadow-sm text-xs hover:bg-primary/20 hover:text-primary">4</Button>
+                            <div className="h-9 w-6 flex items-center justify-center opacity-40">
+                               <MoreHorizontal className="h-3 w-3" />
+                            </div>
+                            <Button variant="ghost" className="h-9 w-9 p-0 rounded-xl text-muted-foreground hover:bg-primary/5 hover:text-primary font-medium transition-all text-xs">24</Button>
+                            <Button variant="outline" size="icon" className="h-9 w-9 rounded-xl text-primary border-border/60 hover:bg-primary/5 hover:text-primary"><ChevronRightIcon className="h-4 w-4" /></Button>
+                          </div>
+                          <div className="flex items-center gap-2 border-l border-border/60 pl-6">
+                            <span className="text-[10px] font-bold uppercase text-muted-foreground tracking-widest whitespace-nowrap">Go to</span>
+                            <Input className="h-9 w-12 rounded-lg text-center font-mono text-[11px] p-0 border-border/60" defaultValue="5" />
+                            <Button variant="outline" className="h-9 px-3 rounded-lg text-[10px] font-bold uppercase border-border/60 hover:text-primary hover:bg-primary/5 whitespace-nowrap">GO</Button>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </section>
+
+            {/* 13. 标签页系统规范 */}
+            <section className="space-y-10 pb-40">
+              <div className="flex items-center gap-4 border-b pb-4 border-primary/10">
+                <div className="h-2 w-10 bg-primary rounded-full" />
+                <h2 className="text-2xl font-headline font-bold uppercase tracking-widest text-primary">13. 选项卡系统规范 (Tabs)</h2>
+              </div>
+
+              <div className="bg-white p-12 rounded-[3rem] border border-border/40 shadow-sm space-y-20">
+                <div className="grid grid-cols-1 gap-20">
+                  
+                  {/* 横向基础样式 */}
+                  <div className="space-y-10">
+                    <div className="flex items-center gap-3">
+                      <LayoutGrid className="h-4 w-4 text-primary" />
+                      <span className="text-[11px] font-bold text-primary uppercase tracking-[0.2em]">13.1 横向基础样式 (Horizontal Styles)</span>
+                    </div>
+
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-10">
+                      {/* 基础下划线 */}
+                      <div className="space-y-4">
+                        <p className="text-[10px] font-bold text-muted-foreground uppercase">基础样式 (Underline Tab)</p>
+                        <div className="bg-muted/5 p-8 rounded-2xl border border-border/40 shadow-inner flex justify-center">
+                          <div className="w-full max-w-sm">
+                            <div className="flex border-b border-border/40">
+                              {['Overview', 'Specs', 'Reviews'].map(tab => (
+                                <button 
+                                  key={tab}
+                                  onClick={() => setActiveBasicTab(tab)}
+                                  className={cn(
+                                    "h-10 px-6 uppercase tracking-widest transition-colors border-b-2",
+                                    activeBasicTab === tab 
+                                      ? "font-bold text-[10px] text-primary border-primary bg-primary/5" 
+                                      : "font-medium text-[10px] text-muted-foreground hover:text-primary hover:bg-primary/5 border-transparent"
+                                  )}
+                                >
+                                  {tab}
+                                </button>
+                              ))}
+                            </div>
+                            <div className="p-4 pt-6 text-[11px] text-muted-foreground leading-relaxed h-20">
+                               {activeBasicTab === 'Overview' && '使用底部粗线条作为当前状态指示器，常用于页面级别的顶部导航或大版块切换。'}
+                               {activeBasicTab === 'Specs' && '这是技术参数面板的交互占位内容，用于展示物理规格。'}
+                               {activeBasicTab === 'Reviews' && '这是用户评价面板的占位内容，展现动态反馈。'}
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* 胶囊选项卡 */}
+                      <div className="space-y-4">
+                        <p className="text-[10px] font-bold text-muted-foreground uppercase">选项卡样式 (Segmented Pill)</p>
+                        <div className="bg-muted/5 p-8 rounded-2xl border border-border/40 shadow-inner flex justify-center">
+                          <div className="w-full max-w-sm flex flex-col items-center">
+                            <div className="inline-flex bg-muted/20 p-1.5 rounded-xl border border-border/40">
+                              {['Details', 'Logs', 'Settings'].map(tab => (
+                                <button 
+                                  key={tab}
+                                  onClick={() => setActivePillTab(tab)}
+                                  className={cn(
+                                    "h-9 px-6 uppercase tracking-widest rounded-lg transition-colors",
+                                    activePillTab === tab 
+                                      ? "font-bold text-[10px] bg-white text-primary shadow-sm" 
+                                      : "font-medium text-[10px] text-muted-foreground hover:text-primary"
+                                  )}
+                                >
+                                  {tab}
+                                </button>
+                              ))}
+                            </div>
+                            <div className="p-4 pt-6 text-[11px] text-muted-foreground leading-relaxed w-full h-20 text-center">
+                               {activePillTab === 'Details' && '被包含在明显的槽位容器中，选项采用白底与投影框出实体感。'}
+                               {activePillTab === 'Logs' && '展示详细的系统操作日志流。'}
+                               {activePillTab === 'Settings' && '面板的高级配置选项。'}
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* 卡片式结构 */}
+                  <div className="space-y-10">
+                    <div className="flex items-center gap-3">
+                      <Layers className="h-4 w-4 text-primary" />
+                      <span className="text-[11px] font-bold text-primary uppercase tracking-[0.2em]">13.2 卡片容器式 (Card Container)</span>
+                    </div>
+
+                    <div className="space-y-4">
+                       <p className="text-[10px] font-bold text-muted-foreground uppercase">卡片式 (Folder Card Tab)</p>
+                       <div className="bg-muted/5 p-8 rounded-2xl border border-border/40 shadow-inner">
+                          <div className="max-w-2xl mx-auto">
+                            <div className="flex gap-2 px-8">
+                              {['Hardware', 'Software', 'Network'].map(tab => (
+                                <button 
+                                  key={tab}
+                                  onClick={() => setActiveCardTab(tab)}
+                                  className={cn(
+                                    "h-12 px-8 uppercase tracking-widest transition-all relative group",
+                                    activeCardTab === tab 
+                                      ? "font-bold text-[10px] bg-white text-primary border border-b-0 border-border/40 rounded-t-2xl z-10" 
+                                      : "font-medium text-[10px] text-muted-foreground bg-transparent border-transparent hover:text-primary z-0"
+                                  )}
+                                >
+                                  {tab}
+                                  
+                                  {/* 激活状态下的平滑反向圆角 (Inverted Corners) - 重新计算以匹配 16px (2xl) 的内容区圆角 */}
+                                  {activeCardTab === tab && (
+                                    <>
+                                      {/* 左侧反向圆角桥接 */}
+                                      <div className="absolute -left-4 bottom-0 w-4 h-4 overflow-hidden pointer-events-none">
+                                        <div className="w-full h-full rounded-br-2xl border-r border-b border-border/40 shadow-[0_0_0_20px_#ffffff]" />
+                                      </div>
+                                      
+                                      {/* 右侧反向圆角桥接 */}
+                                      <div className="absolute -right-4 bottom-0 w-4 h-4 overflow-hidden pointer-events-none">
+                                        <div className="w-full h-full rounded-bl-2xl border-l border-b border-border/40 shadow-[0_0_0_20px_#ffffff]" />
+                                      </div>
+
+                                      {/* 底部遮罩，确保边框无缝融合 */}
+                                      <div className="absolute -left-[1px] -bottom-[1px] w-[calc(100%+2px)] h-[2.5px] bg-white z-20" />
+                                    </>
+                                  )}
+
+                                  {/* 非激活状态下的简单悬停效果 */}
+                                  {activeCardTab !== tab && (
+                                    <div className="absolute inset-0 bg-primary/5 rounded-t-xl opacity-0 group-hover:opacity-100 transition-opacity -z-10" />
+                                  )}
+                                </button>
+                              ))}
+                            </div>
+                            <div className="bg-white border border-border/40 rounded-2xl p-8 shadow-sm relative z-0 -mt-[1px]">
+                               <div className="h-24 flex items-center justify-center border-2 border-dashed border-primary/10 rounded-xl transition-all">
+                                  <span className="text-[10px] font-bold text-primary/40 uppercase tracking-widest">{activeCardTab} Configuration Panel</span>
+                               </div>
+                            </div>
+                          </div>
+                       </div>
+                    </div>
+                  </div>
+
+                  {/* 垂直位置选项卡 */}
+                  <div className="space-y-10">
+                    <div className="flex items-center gap-3">
+                      <AlignLeft className="h-4 w-4 text-primary" />
+                      <span className="text-[11px] font-bold text-primary uppercase tracking-[0.2em]">13.3 垂直排版样式 (Vertical Positions)</span>
+                    </div>
+
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-10">
+                      {/* 左侧垂直 */}
+                      <div className="space-y-4">
+                        <p className="text-[10px] font-bold text-muted-foreground uppercase">左侧标签页 (Left Position)</p>
+                        <div className="bg-white rounded-2xl border border-border/40 shadow-sm overflow-hidden flex min-h-[240px]">
+                          <div className="w-32 flex flex-col border-r border-border/40 bg-muted/5 pt-4">
+                            {['Profile', 'Security', 'Billing'].map(tab => (
+                              <button 
+                                key={tab}
+                                onClick={() => setActiveLeftTab(tab)}
+                                className={cn(
+                                  "h-12 px-4 text-left uppercase tracking-widest border-l-[3px] transition-colors",
+                                  activeLeftTab === tab 
+                                    ? "font-bold text-[10px] text-primary border-primary bg-primary/5" 
+                                    : "font-medium text-[10px] text-muted-foreground border-transparent hover:bg-muted/10 hover:text-primary"
+                                )}
+                              >
+                                {tab}
+                              </button>
+                            ))}
+                          </div>
+                          <div className="flex-1 p-6 flex flex-col">
+                             <h4 className="text-sm font-bold uppercase mb-4 text-primary">{activeLeftTab} Settings</h4>
+                             <div className="flex-1 border-2 border-dashed border-primary/10 rounded-xl flex items-center justify-center transition-all">
+                                <span className="text-[9px] font-bold text-primary/40 uppercase tracking-widest">{activeLeftTab} Content Area</span>
+                             </div>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* 右侧垂直 */}
+                      <div className="space-y-4">
+                        <p className="text-[10px] font-bold text-muted-foreground uppercase">右侧标签页 (Right Position)</p>
+                        <div className="bg-white rounded-2xl border border-border/40 shadow-sm overflow-hidden flex min-h-[240px]">
+                          <div className="flex-1 p-6 flex flex-col">
+                             <h4 className="text-sm font-bold uppercase mb-4 text-primary text-right">{activeRightTab} Config</h4>
+                             <div className="flex-1 border-2 border-dashed border-primary/10 rounded-xl flex items-center justify-center transition-all">
+                                <span className="text-[9px] font-bold text-primary/40 uppercase tracking-widest">{activeRightTab} Content Area</span>
+                             </div>
+                          </div>
+                          <div className="w-32 flex flex-col border-l border-border/40 bg-muted/5 pt-4">
+                            {['System', 'Users', 'Logs'].map(tab => (
+                              <button 
+                                key={tab}
+                                onClick={() => setActiveRightTab(tab)}
+                                className={cn(
+                                  "h-12 px-4 text-right uppercase tracking-widest border-r-[3px] transition-colors",
+                                  activeRightTab === tab 
+                                    ? "font-bold text-[10px] text-primary border-primary bg-primary/5" 
+                                    : "font-medium text-[10px] text-muted-foreground border-transparent hover:bg-muted/10 hover:text-primary"
+                                )}
+                              >
+                                {tab}
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
                 </div>
               </div>
             </section>

@@ -71,12 +71,13 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     return doc(firestore, 'admins', user.uid);
   }, [firestore, user?.uid]);
 
-  const aiConfigRef = useMemoFirebase(() => {
-    if (!firestore) return null;
-    return doc(firestore, 'settings', 'ai');
-  }, [firestore]);
-
   const { data: adminData, isLoading: isAdminDataLoading, error: adminError } = useDoc<any>(adminDocRef);
+
+  const aiConfigRef = useMemoFirebase(() => {
+    if (!firestore || !adminData) return null;
+    return doc(firestore, 'settings', 'ai');
+  }, [firestore, adminData]);
+
   const { data: aiConfig } = useDoc<any>(aiConfigRef);
 
   const isDeterminingAccess = isUserLoading || (user && isAdminDataLoading);
