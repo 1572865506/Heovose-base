@@ -132,5 +132,24 @@
 *   **背景补齐准则**: 凡应用 `sticky` 定位的单元格必须显式声明 **非透明背景色**（如 `bg-white`），以防止滚动时产生文字穿透。
 
 ---
+
+## 10. 标签与徽章系统 (Badges & Tags)
+
+### 10.1 语义状态 (Semantic States)
+*   **Default**: 品牌主色 `bg-primary`。
+*   **Info**: 蓝色系 `bg-blue-500`。
+*   **Warning**: 橙色系 `bg-orange-500`。
+*   **Safety**: 绿色系 `bg-green-600`。
+*   **Neutral**: 灰色系 `bg-muted-foreground`。
+
+### 10.2 尺寸标准 (Badge Sizes)
+*   **Small (SM)**: 高度 20px, 字体 8px。
+*   **Base**: 高度 24px, 字体 10px。
+*   **Large (LG)**: 高度 32px, 字体 12px。
+
+### 10.3 交互特性 (Interactive)
+*   **Removable**: 带有 X 图标的标签，悬停图标时触发 `text-destructive` 反馈。
+
+---
 **最后更新**: 2024-06-05
 **维护者**: App Prototyper (AI Agent)
