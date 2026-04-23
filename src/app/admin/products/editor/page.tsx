@@ -139,6 +139,9 @@ interface LocalizedString {
   id: string;
   en: string;
   zh: string;
+  id_?: string;
+  vi?: string;
+  [key: string]: any;
 }
 
 interface ProductCategory {
@@ -538,8 +541,8 @@ function ProductEditorContent() {
     setIsAiProcessing(true);
     try {
       const results = await Promise.all([
-        String(formData.nameZh || '').trim() ? translateContent({ text: formData.nameZh, targetLangs: ['en'], apiKey: aiConfig.apiKey }) : null,
-        String(formData.descZh || '').trim() ? translateContent({ text: formData.descZh, targetLangs: ['en'], apiKey: aiConfig.apiKey }) : null
+        String(formData.nameZh || '').trim() ? translateContent({ text: formData.nameZh || '', targetLangs: ['en'], apiKey: aiConfig.apiKey }) : null,
+        String(formData.descZh || '').trim() ? translateContent({ text: formData.descZh || '', targetLangs: ['en'], apiKey: aiConfig.apiKey }) : null
       ]);
       setFormData(prev => ({
         ...prev,
@@ -559,7 +562,7 @@ function ProductEditorContent() {
     setIsAiProcessing(true);
     try {
       const res = await translateContent({
-        text: formData.localizedDetails.zh,
+        text: formData.localizedDetails.zh || '',
         sourceLang: 'zh',
         targetLangs: [targetDetailsLang],
         model: aiConfig.model,

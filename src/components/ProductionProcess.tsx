@@ -237,7 +237,7 @@ export function ProductionProcess({ locale }: { locale: Locale }) {
             {steps.map((step, index) => (
               <div
                 key={index}
-                ref={(el) => (scrollRefs.current[index] = el)}
+                ref={(el) => { scrollRefs.current[index] = el; }}
                 className={cn(
                   "transition-all duration-700 space-y-8 pl-4 lg:pl-0",
                   activeStep === index ? "opacity-100 translate-x-4" : "opacity-15 translate-x-0"

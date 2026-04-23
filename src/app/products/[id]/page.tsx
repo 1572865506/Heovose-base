@@ -44,6 +44,9 @@ interface LocalizedString {
   id: string;
   en: string;
   zh: string;
+  id_?: string;
+  vi?: string;
+  [key: string]: any;
 }
 
 export default function ProductDetailPage({ params }: { params: Promise<{ id: string }> }) {

@@ -106,7 +106,14 @@ import {
   GalleryHorizontal,
   Layout,
   Bell,
-  MousePointer2
+  MousePointer2,
+  Ghost,
+  Smartphone,
+  LineChart,
+  Moon,
+  Sun,
+  PanelLeftClose,
+  PanelLeftOpen,
 } from 'lucide-react';
 import {
   Carousel,
@@ -899,6 +906,26 @@ const ExhibitionSpecification = React.memo(() => {
 
 // 后台系统规范组件 (Admin Design System)
 const AdminSystemSpecification = React.memo(() => {
+  const [emailError, setEmailError] = useState("");
+  const [showUndoToast, setShowUndoToast] = useState(false);
+  const [undoTarget, setUndoTarget] = useState("");
+  const [showConfirmDialog, setShowConfirmDialog] = useState(false);
+  const [isInspectionOpen, setIsInspectionOpen] = useState(false);
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
+  const [activeToast, setActiveToast] = useState<string | null>(null);
+  const [generatedId, setGeneratedId] = useState("PROD_OLED_0423_X98K");
+
+  const generateId = () => {
+    const categories = ["OLED", "AIO", "MINI", "PRO", "HW"];
+    const cat = categories[Math.floor(Math.random() * categories.length)];
+    const date = new Date();
+    const mmdd = `${String(date.getMonth() + 1).padStart(2, '0')}${String(date.getDate()).padStart(2, '0')}`;
+    const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+    let random = '';
+    for (let i = 0; i < 4; i++) random += chars.charAt(Math.floor(Math.random() * chars.length));
+    setGeneratedId(`PROD_${cat}_${mmdd}_${random}`);
+  };
+
   return (
     <div className="space-y-24 animate-in fade-in slide-in-from-bottom-4 duration-700">
       {/* 01. 视觉语言与布局 */}
@@ -1098,10 +1125,17 @@ const AdminSystemSpecification = React.memo(() => {
               </div>
               <div className="p-8 bg-muted/5 rounded-[2rem] border border-border/40 flex items-center justify-between">
                  <div className="space-y-1">
-                   <p className="text-[10px] font-bold text-primary uppercase">PROD_OLED_0423_X98K</p>
+                   <p className="text-[10px] font-bold text-primary uppercase">{generatedId}</p>
                    <p className="text-[9px] text-muted-foreground uppercase">格式：PROD_分类_月日_随机码</p>
                  </div>
-                 <Button variant="outline" size="sm" className="rounded-full text-[9px] uppercase font-bold tracking-widest">Generate New ID</Button>
+                 <Button 
+                    variant="outline" 
+                    size="sm" 
+                    onClick={generateId}
+                    className="rounded-full text-[9px] uppercase font-bold tracking-widest hover:bg-primary hover:text-white transition-all"
+                  >
+                    Generate New ID
+                  </Button>
               </div>
            </div>
 
@@ -1413,6 +1447,468 @@ const AdminSystemSpecification = React.memo(() => {
            </div>
         </div>
       </section>
+
+      {/* 10. 异常流与撤销机制 */}
+      <section id="admin-10" className="space-y-10 pb-40">
+        <div className="flex items-center gap-4 border-b pb-4 border-primary/10">
+          <div className="h-2 w-10 bg-primary rounded-full" />
+          <h2 className="text-2xl font-headline font-bold uppercase tracking-widest text-primary">10. 异常流与撤销机制 (Exceptions & Undo)</h2>
+        </div>
+
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-10">
+           {/* 即时校验演示 */}
+           <div className="bg-white p-10 rounded-[3rem] border border-border/40 shadow-sm space-y-10">
+              <div className="flex items-center gap-3">
+                 <AlertTriangle className="h-4 w-4 text-primary" />
+                 <span className="text-[11px] font-bold text-primary uppercase tracking-widest">即时校验与反馈 (Instant Validation)</span>
+              </div>
+              
+              <div className="space-y-6">
+                 <div className="space-y-2">
+                    <Label className="text-[10px] font-bold uppercase text-primary">邮箱地址 (验证 OnBlur 逻辑)</Label>
+                    <div className="relative">
+                       <Input 
+                         onBlur={(e) => {
+                           if (!e.target.value.includes('@')) {
+                             setEmailError("请输入有效的电子邮件地址（必须包含 @）");
+                           } else {
+                             setEmailError("");
+                           }
+                         }}
+                         className={cn(
+                           "h-12 rounded-2xl transition-all",
+                           emailError ? "border-destructive bg-destructive/5 text-destructive focus:ring-destructive/10" : "bg-muted/10 border-transparent focus:bg-white"
+                         )}
+                         placeholder="admin@example.com"
+                       />
+                       {emailError && <AlertCircle className="absolute right-4 top-1/2 -translate-y-1/2 h-4 w-4 text-destructive animate-in zoom-in" />}
+                    </div>
+                    {emailError && (
+                      <p className="text-[10px] font-bold text-destructive uppercase tracking-tight animate-in slide-in-from-top-1">
+                        {emailError}
+                      </p>
+                    )}
+                 </div>
+                 
+                 <div className="p-4 bg-primary/5 rounded-xl border border-primary/10">
+                    <p className="text-[9px] text-muted-foreground leading-relaxed uppercase">
+                      交互标准：采用“失焦校验”而非实时校验，避免用户正在输入时频繁报错。
+                    </p>
+                 </div>
+              </div>
+           </div>
+
+           {/* 撤销机制演示 */}
+           <div className="bg-white p-10 rounded-[3rem] border border-border/40 shadow-sm space-y-10 relative overflow-hidden">
+              <div className="flex items-center gap-3">
+                 <RotateCcw className="h-4 w-4 text-primary" />
+                 <span className="text-[11px] font-bold text-primary uppercase tracking-widest">操作撤销机制 (Undo Mechanism)</span>
+              </div>
+              
+              <div className="space-y-8">
+                 <div className="flex items-center justify-between p-6 bg-muted/5 rounded-2xl border border-dashed border-border/60">
+                    <div>
+                       <p className="text-[10px] font-bold text-primary uppercase">项目：工业一体机 H24-P</p>
+                       <p className="text-[9px] text-muted-foreground uppercase">最后修改：2024.06.05</p>
+                    </div>
+                    <Button 
+                      variant="ghost" 
+                      className="text-destructive hover:bg-destructive/10 hover:text-destructive h-10 px-4 rounded-xl text-[10px] font-bold uppercase"
+                      onClick={() => {
+                        setUndoTarget("工业一体机 H24-P");
+                        setShowUndoToast(true);
+                        setTimeout(() => setShowUndoToast(false), 5000);
+                      }}
+                    >
+                      <Trash2 className="h-4 w-4 mr-2" /> 模拟删除
+                    </Button>
+                 </div>
+
+                 {/* 模拟 Undo Toast */}
+                 {showUndoToast && (
+                   <div className="absolute bottom-10 left-1/2 -translate-x-1/2 w-[calc(100%-80px)] bg-primary text-white p-4 rounded-2xl shadow-2xl flex items-center justify-between animate-in slide-in-from-bottom-10 duration-500 z-50">
+                      <div className="flex items-center gap-3">
+                         <div className="h-2 w-2 rounded-full bg-accent animate-pulse" />
+                         <span className="text-[10px] font-bold uppercase tracking-widest">已成功移除项目：{undoTarget}</span>
+                      </div>
+                      <button 
+                        onClick={() => setShowUndoToast(false)}
+                        className="bg-white/20 hover:bg-white/40 px-4 py-1.5 rounded-lg text-[9px] font-bold uppercase tracking-[0.2em] transition-all"
+                      >
+                        撤销操作 (UNDO)
+                      </button>
+                   </div>
+                 )}
+
+                 <div className="p-4 bg-muted/20 rounded-xl">
+                    <p className="text-[9px] text-muted-foreground leading-relaxed uppercase">
+                      交互标准：删除操作后不应立即弹窗确认，而是通过提供 5-10 秒的“撤销”时间窗来平衡效率与安全。
+                    </p>
+                 </div>
+              </div>
+           </div>
+        </div>
+      </section>
+
+      {/* 11. 缺省页与加载态规范 */}
+      <section id="admin-11" className="space-y-10 pb-20">
+        <div className="flex items-center gap-4 border-b pb-4 border-primary/10">
+          <div className="h-2 w-10 bg-primary rounded-full" />
+          <h2 className="text-2xl font-headline font-bold uppercase tracking-widest text-primary">11. 缺省页与加载态 (Empty States & Loading)</h2>
+        </div>
+
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-10">
+           {/* Empty State */}
+           <div className="bg-white p-12 rounded-[3rem] border border-border/40 shadow-sm flex flex-col items-center justify-center text-center space-y-6">
+              <div className="w-24 h-24 rounded-full bg-muted/20 flex items-center justify-center relative">
+                 <Ghost className="h-10 w-10 text-primary/20" />
+                 <div className="absolute inset-0 border-2 border-dashed border-primary/10 rounded-full animate-[spin_10s_linear_infinite]" />
+              </div>
+              <div className="space-y-2">
+                 <h3 className="text-sm font-bold text-primary uppercase tracking-widest">未检索到相关指令</h3>
+                 <p className="text-[10px] text-muted-foreground uppercase leading-relaxed max-w-[240px]">
+                   请尝试调整搜索条件，或确认您是否具备该模块的访问权限。
+                 </p>
+              </div>
+              <Button variant="outline" className="h-10 rounded-xl px-6 font-bold uppercase text-[10px] tracking-widest border-primary/20 text-primary hover:bg-primary/5">
+                 重置搜索条件
+              </Button>
+           </div>
+
+           {/* Skeleton Loading */}
+           <div className="bg-white p-10 rounded-[3rem] border border-border/40 shadow-sm space-y-8">
+              <div className="flex items-center gap-3 mb-4">
+                 <Loader2 className="h-4 w-4 text-primary animate-spin" />
+                 <span className="text-[11px] font-bold text-primary uppercase tracking-widest">骨架屏标准 (Skeleton Layout)</span>
+              </div>
+              <div className="space-y-6">
+                 <div className="flex items-center gap-4">
+                    <div className="h-12 w-12 rounded-xl bg-muted/20 animate-pulse" />
+                    <div className="space-y-2 flex-1">
+                       <div className="h-3 w-1/3 bg-muted/20 rounded animate-pulse" />
+                       <div className="h-2 w-1/2 bg-muted/10 rounded animate-pulse" />
+                    </div>
+                 </div>
+                 <div className="h-32 bg-muted/10 rounded-2xl animate-pulse" />
+                 <div className="grid grid-cols-3 gap-4">
+                    <div className="h-10 bg-muted/20 rounded-xl animate-pulse" />
+                    <div className="h-10 bg-muted/20 rounded-xl animate-pulse" />
+                    <div className="h-10 bg-muted/20 rounded-xl animate-pulse" />
+                 </div>
+              </div>
+           </div>
+         </div>
+      </section>
+
+      {/* 12. 全局通知与反馈系统 */}
+      <section id="admin-12" className="space-y-10 pb-20">
+        <div className="flex items-center gap-4 border-b pb-4 border-primary/10">
+          <div className="h-2 w-10 bg-primary rounded-full" />
+          <h2 className="text-2xl font-headline font-bold uppercase tracking-widest text-primary">12. 通知与反馈系统 (Feedback & Notifications)</h2>
+        </div>
+
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-10">
+           {/* Toast 演示 */}
+           <div className="lg:col-span-2 bg-white p-10 rounded-[3rem] border border-border/40 shadow-sm space-y-10">
+              <div className="flex items-center gap-3">
+                 <Bell className="h-4 w-4 text-primary" />
+                 <span className="text-[11px] font-bold text-primary uppercase tracking-widest">Toast 通知变体 (Notification Variants)</span>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                 {[
+                   { type: 'Success', msg: '设置已同步至云端', color: 'bg-green-500', icon: CheckCircle2 },
+                   { type: 'Error', msg: '数据库连接超时 (504)', color: 'bg-rose-500', icon: ShieldAlert },
+                   { type: 'Warning', msg: '系统内存占用已达 85%', color: 'bg-orange-500', icon: AlertTriangle },
+                   { type: 'Info', msg: '新的固件版本已就绪', color: 'bg-blue-500', icon: Info }
+                 ].map(t => (
+                   <button 
+                     key={t.type}
+                     onClick={() => {
+                        setActiveToast(t.type);
+                        setTimeout(() => setActiveToast(null), 3000);
+                     }}
+                     className="flex items-center justify-between p-4 rounded-2xl bg-muted/5 border border-border/40 hover:border-primary/40 transition-all group"
+                   >
+                      <div className="flex items-center gap-3">
+                         <div className={cn("h-8 w-8 rounded-lg flex items-center justify-center text-white", t.color)}>
+                            <t.icon className="h-4 w-4" />
+                         </div>
+                         <div className="text-left">
+                            <p className="text-[10px] font-bold text-primary uppercase">{t.type}</p>
+                            <p className="text-[9px] text-muted-foreground uppercase">{t.msg}</p>
+                         </div>
+                      </div>
+                      <Plus className="h-3 w-3 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
+                   </button>
+                 ))}
+              </div>
+
+              {/* 模拟 Toast 弹出效果 (右上角) - 强化层级与模糊感 */}
+              {activeToast && (
+                <div className="fixed top-12 right-12 w-80 z-[500] animate-in slide-in-from-right-10 fade-in duration-500">
+                   <div className="bg-white/80 backdrop-blur-3xl border border-primary/20 shadow-[0_20px_50px_rgba(0,0,0,0.2)] rounded-3xl p-5 flex items-center gap-4 relative overflow-hidden">
+                      <div className="absolute top-0 left-0 w-1.5 h-full bg-primary" />
+                      <div className="h-11 w-11 rounded-2xl bg-primary/10 flex items-center justify-center shrink-0">
+                         <Bell className="h-5 w-5 text-primary animate-ring" />
+                      </div>
+                      <div className="flex-1">
+                         <p className="text-[11px] font-bold text-primary uppercase tracking-widest">系统通知</p>
+                         <p className="text-[10px] text-muted-foreground uppercase mt-1 leading-tight">
+                            状态反馈：{activeToast}
+                         </p>
+                      </div>
+                      <button onClick={() => setActiveToast(null)} className="p-2 hover:bg-muted/20 rounded-xl transition-colors">
+                        <X className="h-4 w-4" />
+                      </button>
+                   </div>
+                </div>
+              )}
+           </div>
+
+           {/* 确认对话框 */}
+           <div className="bg-muted/10 p-10 rounded-[3rem] border border-dashed border-border/60 flex flex-col justify-between space-y-10">
+              <div className="space-y-4">
+                 <h3 className="text-sm font-bold text-primary uppercase tracking-widest">双重确认机制 (Confirmation)</h3>
+                 <p className="text-[9px] text-muted-foreground leading-relaxed uppercase italic">
+                   针对无法撤回的高危操作（如清空数据库），必须使用强制遮罩对话框。
+                 </p>
+              </div>
+              <Button 
+                variant="destructive" 
+                className="h-12 rounded-2xl font-bold uppercase tracking-[0.2em] text-[10px] shadow-xl shadow-rose-500/10"
+                onClick={() => setShowConfirmDialog(true)}
+              >
+                高危操作演示
+              </Button>
+
+              {showConfirmDialog && (
+                <div className="fixed inset-0 bg-primary/40 backdrop-blur-md z-[250] flex items-center justify-center p-6 animate-in fade-in duration-300">
+                   <div className="bg-white w-full max-w-md rounded-[2.5rem] p-10 shadow-2xl space-y-8 animate-in zoom-in-95 duration-300">
+                      <div className="h-16 w-16 rounded-2xl bg-rose-500/10 flex items-center justify-center text-rose-500">
+                         <ShieldAlert className="h-8 w-8" />
+                      </div>
+                      <div className="space-y-3">
+                         <h4 className="text-xl font-bold text-primary uppercase tracking-widest">确认彻底清空？</h4>
+                         <p className="text-xs text-muted-foreground leading-relaxed">
+                           此操作将永久删除当前环境下的所有 AI 训练日志。该行为不可撤销，请谨慎操作。
+                         </p>
+                      </div>
+                      <div className="flex gap-4">
+                         <Button variant="outline" className="flex-1 h-12 rounded-2xl font-bold uppercase text-[10px]" onClick={() => setShowConfirmDialog(false)}>
+                           返回 (CANCEL)
+                         </Button>
+                         <Button variant="destructive" className="flex-1 h-12 rounded-2xl font-bold uppercase text-[10px]">
+                           确定删除 (DELETE)
+                         </Button>
+                      </div>
+                   </div>
+                </div>
+              )}
+           </div>
+        </div>
+      </section>
+
+      {/* 13. 路径与导航规范 */}
+      <section id="admin-13" className="space-y-10 pb-20">
+        <div className="flex items-center gap-4 border-b pb-4 border-primary/10">
+          <div className="h-2 w-10 bg-primary rounded-full" />
+          <h2 className="text-2xl font-headline font-bold uppercase tracking-widest text-primary">13. 路径与导航 (Breadcrumbs & Path)</h2>
+        </div>
+
+        <div className="bg-white p-12 rounded-[3rem] border border-border/40 shadow-sm space-y-12">
+           <div className="space-y-6">
+              <p className="text-[11px] font-bold text-primary uppercase tracking-widest flex items-center gap-2">
+                <ChevronRight className="h-4 w-4" /> Breadcrumbs Layout Standard
+              </p>
+              
+              <div className="flex items-center gap-3 text-[10px] font-bold uppercase tracking-widest">
+                 <span className="text-muted-foreground hover:text-primary transition-colors cursor-pointer">ADMIN CENTER</span>
+                 <ChevronRight className="h-3 w-3 text-muted-foreground/40" />
+                 <span className="text-muted-foreground hover:text-primary transition-colors cursor-pointer">PRODUCTS</span>
+                 <ChevronRight className="h-3 w-3 text-muted-foreground/40" />
+                 <span className="text-primary font-black">X-SERIES PRO 24"</span>
+              </div>
+
+              <div className="h-px bg-dashed-border bg-[linear-gradient(to_right,transparent_50%,#e5e7eb_50%)] bg-[length:8px_1px] repeat-x" />
+              
+              <div className="p-6 bg-muted/10 rounded-2xl border border-border/40">
+                 <p className="text-[9px] text-muted-foreground leading-relaxed uppercase">
+                    设计准则：面包屑作为辅助导航，最后一级必须加粗以示当前位置。点击非活跃路径应支持快速回跳。
+                 </p>
+              </div>
+           </div>
+        </div>
+      </section>
+
+      {/* 14. 响应式降级方案 */}
+      <section id="admin-14" className="space-y-10 pb-20">
+        <div className="flex items-center gap-4 border-b pb-4 border-primary/10">
+          <div className="h-2 w-10 bg-primary rounded-full" />
+          <h2 className="text-2xl font-headline font-bold uppercase tracking-widest text-primary">14. 响应式降级 (Responsive Strategy)</h2>
+        </div>
+
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-10">
+           {/* Sidebar Collapse Demo */}
+           <div className="bg-white p-10 rounded-[3rem] border border-border/40 shadow-sm space-y-8">
+              <div className="flex items-center justify-between">
+                 <div className="flex items-center gap-3">
+                    <Smartphone className="h-4 w-4 text-primary" />
+                    <span className="text-[11px] font-bold text-primary uppercase tracking-widest">侧边栏响应式 (Sidebar Logic)</span>
+                 </div>
+                 <button 
+                   onClick={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
+                   className="h-8 w-8 rounded-lg bg-muted/20 flex items-center justify-center text-primary"
+                 >
+                    {isSidebarCollapsed ? <PanelLeftOpen className="h-4 w-4" /> : <PanelLeftClose className="h-4 w-4" />}
+                 </button>
+              </div>
+              
+              <div className="flex gap-4 h-48">
+                 <div className={cn(
+                   "bg-muted/10 border border-dashed border-border/60 rounded-2xl flex flex-col items-center py-6 gap-6 transition-all duration-500 overflow-hidden",
+                   isSidebarCollapsed ? "w-16" : "w-44 px-4"
+                 )}>
+                    {[Monitor, LayoutGrid, Settings, History].map((Icon, i) => (
+                      <div key={i} className="flex items-center w-full gap-4 text-primary/40 group cursor-pointer px-1">
+                         <div className="w-6 h-6 flex items-center justify-center shrink-0">
+                            <Icon className="h-5 w-5 transition-transform group-hover:scale-110" />
+                         </div>
+                         {!isSidebarCollapsed && (
+                           <div className="h-2 w-20 bg-primary/10 rounded animate-in fade-in slide-in-from-left-2 duration-300" />
+                         )}
+                      </div>
+                    ))}
+                 </div>
+                 <div className="flex-1 bg-muted/5 border border-border/20 rounded-2xl flex items-center justify-center">
+                    <p className="text-[10px] font-bold text-muted-foreground uppercase">Main Viewport</p>
+                 </div>
+              </div>
+           </div>
+
+           {/* Drawer vs Modal Logic */}
+           <div className="bg-primary p-12 rounded-[3rem] text-white space-y-8 shadow-2xl shadow-primary/20">
+              <div className="h-12 w-12 rounded-2xl bg-white/20 backdrop-blur-md flex items-center justify-center">
+                 <Maximize className="h-6 w-6 text-accent" />
+              </div>
+              <h3 className="text-xl font-bold uppercase tracking-widest">抽屉降级逻辑 (Drawer to Modal)</h3>
+              <div className="space-y-4 text-[11px] leading-relaxed opacity-80 uppercase font-bold tracking-wider">
+                 <p>• Desktop ({'>'}1280px): 400px 右侧滑入抽屉</p>
+                 <p>• Tablet (768px - 1280px): 居中弹出宽度为 80% 的模态框</p>
+                 <p>• Mobile ({'<'}768px): 全屏覆盖模式 (Full Screen Sheet)</p>
+              </div>
+              <div className="h-px bg-white/10" />
+              <p className="text-[10px] italic opacity-60">
+                准则：在移动端或窄屏下，详情面板必须通过全屏覆盖来获取最大的垂直操作空间。
+              </p>
+           </div>
+        </div>
+      </section>
+
+      {/* 15. 深度检查模式 */}
+      <section id="admin-15" className="space-y-10 pb-20">
+        <div className="flex items-center gap-4 border-b pb-4 border-primary/10">
+          <div className="h-2 w-10 bg-primary rounded-full" />
+          <h2 className="text-2xl font-headline font-bold uppercase tracking-widest text-primary">15. 深度检查层 (Deep Inspection Mode)</h2>
+        </div>
+
+        <div className="bg-white p-12 rounded-[3.5rem] border border-border/40 shadow-sm space-y-12 overflow-hidden relative">
+           <div className="flex items-center gap-3">
+              <LineChart className="h-4 w-4 text-primary" />
+              <span className="text-[11px] font-bold text-primary uppercase tracking-widest">交互式波形分析 (Technical Overlay)</span>
+           </div>
+
+           <div className="flex flex-wrap gap-8">
+              {[
+                { label: 'CPU TEMP', value: '42°C', color: 'text-orange-500' },
+                { label: 'LOAD AVG', value: '0.85', color: 'text-primary' },
+                { label: 'DISK I/O', value: '124MB/s', color: 'text-green-500', isRight: true }
+              ].map((sensor, idx) => (
+                <div 
+                  key={sensor.label}
+                  className="group relative cursor-pointer"
+                  onClick={() => setIsInspectionOpen(!isInspectionOpen)}
+                >
+                   <p className="text-[9px] font-bold text-muted-foreground uppercase mb-1">{sensor.label}</p>
+                   <p className={cn("text-2xl font-black transition-all group-hover:scale-110", sensor.color)}>
+                     {sensor.value}
+                   </p>
+                   
+                   {/* 悬浮深度检查层 (模拟) - 增加自适应对齐逻辑 */}
+                   {isInspectionOpen && (
+                     <div className={cn(
+                        "absolute top-full mt-4 w-80 bg-white/90 backdrop-blur-2xl border border-primary/20 rounded-2xl p-6 shadow-[0_20px_50px_rgba(0,0,0,0.2)] z-[150] animate-in slide-in-from-top-2 duration-500",
+                        sensor.isRight ? "right-0" : "left-0"
+                     )}>
+                        <div className="flex items-center justify-between mb-4">
+                           <span className="text-[9px] font-bold text-primary uppercase">24H History: {sensor.label}</span>
+                           <Activity className="h-3 w-3 text-primary animate-pulse" />
+                        </div>
+                        <div className="h-24 flex items-end gap-1">
+                           {Array.from({ length: 20 }).map((_, i) => (
+                             <div 
+                               key={i} 
+                               className="flex-1 bg-primary/20 rounded-t hover:bg-primary/50 transition-all" 
+                               style={{ height: `${20 + Math.random() * 70}%` }}
+                             />
+                           ))}
+                        </div>
+                        <div className="mt-4 pt-4 border-t border-primary/10 flex justify-between text-[8px] font-bold text-muted-foreground">
+                           <span>MIN: 12%</span>
+                           <span>MAX: 94%</span>
+                        </div>
+                     </div>
+                   )}
+                </div>
+              ))}
+           </div>
+           
+           <p className="text-[10px] text-muted-foreground italic uppercase">
+             准则：技术详情层采用“触发式悬浮”逻辑。点击具体参数后弹出轻量化 Overlay，禁止跳转页面或开启全局 Modal。
+           </p>
+        </div>
+      </section>
+
+      {/* 16. 暗色模式预研 */}
+      <section id="admin-16" className="space-y-10 pb-40">
+        <div className="flex items-center gap-4 border-b pb-4 border-primary/10">
+          <div className="h-2 w-10 bg-primary rounded-full" />
+          <h2 className="text-2xl font-headline font-bold uppercase tracking-widest text-primary">16. 暗色模式预研 (Dark Mode Readiness)</h2>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
+           {/* Light Side */}
+           <div className="bg-white p-12 rounded-[3rem] border border-border/40 shadow-sm space-y-8 flex flex-col items-center justify-center">
+              <Sun className="h-10 w-10 text-primary mb-4" />
+              <div className="text-center space-y-2">
+                 <p className="text-[11px] font-bold text-primary uppercase">Default Light Mode</p>
+                 <div className="flex gap-2">
+                    <div className="w-12 h-12 rounded-xl bg-muted/20 border border-border/40" />
+                    <div className="w-12 h-12 rounded-xl bg-white border border-border/40" />
+                    <div className="w-12 h-12 rounded-xl bg-primary" />
+                 </div>
+              </div>
+           </div>
+
+           {/* Dark Side (Simulation) */}
+           <div className="bg-[#0f172a] p-12 rounded-[3rem] border border-white/5 shadow-2xl space-y-8 flex flex-col items-center justify-center text-white">
+              <Moon className="h-10 w-10 text-accent mb-4" />
+              <div className="text-center space-y-2">
+                 <p className="text-[11px] font-bold uppercase tracking-widest text-white/80">Dark Mode (Experimental)</p>
+                 <div className="flex gap-2">
+                    <div className="w-12 h-12 rounded-xl bg-white/5 border border-white/10" />
+                    <div className="w-12 h-12 rounded-xl bg-[#1e293b] border border-white/5" />
+                    <div className="w-12 h-12 rounded-xl bg-accent" />
+                 </div>
+              </div>
+           </div>
+        </div>
+        
+        <div className="p-10 rounded-[2.5rem] bg-muted/10 border border-dashed border-border/60 text-center">
+           <p className="text-[10px] text-muted-foreground uppercase leading-relaxed max-w-2xl mx-auto">
+             暗色模式开发准则：背景色强制采用 Slate-900 系列，禁止使用纯黑。边框线透明度应提升至 10%-15%，文字主色由 Primary 切换为高对比度的 Accent (Cyan-400/Indigo-300)。
+           </p>
+        </div>
+      </section>
     </div>
 
   );
@@ -1451,7 +1947,13 @@ const TimelineNav = ({ activeSystem }: { activeSystem: string }) => {
     { id: 'admin-07', title: '07. 高级过滤', icon: Filter },
     { id: 'admin-08', title: '08. 详情面板', icon: Layout },
     { id: 'admin-09', title: '09. 权限审计', icon: Settings },
-
+    { id: 'admin-10', title: '10. 异常与撤销', icon: AlertCircle },
+    { id: 'admin-11', title: '11. 缺省与加载', icon: Ghost },
+    { id: 'admin-12', title: '12. 通知与对话', icon: Bell },
+    { id: 'admin-13', title: '13. 路径与导航', icon: ChevronRight },
+    { id: 'admin-14', title: '14. 响应式降级', icon: Smartphone },
+    { id: 'admin-15', title: '15. 深度检查层', icon: LineChart },
+    { id: 'admin-16', title: '16. 暗色模式预研', icon: Moon },
   ];
 
   const sections = activeSystem === 'frontend' ? frontendSections : adminSections;

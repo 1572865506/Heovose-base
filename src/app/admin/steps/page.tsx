@@ -137,8 +137,8 @@ export default function ProductionStepsAdminPage() {
     setIsAiProcessing(true);
     try {
       const results = await Promise.all([
-        form.titleZh ? translateContent({ text: form.titleZh, targetLangs: ['en'], apiKey: aiConfig.apiKey }) : null,
-        form.descZh ? translateContent({ text: form.descZh, targetLangs: ['en'], apiKey: aiConfig.apiKey }) : null
+        form.titleZh ? translateContent({ text: form.titleZh || '', targetLangs: ['en'], apiKey: aiConfig.apiKey }) : null,
+        form.descZh ? translateContent({ text: form.descZh || '', targetLangs: ['en'], apiKey: aiConfig.apiKey }) : null
       ]);
       setForm(prev => ({
         ...prev,

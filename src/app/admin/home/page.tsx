@@ -137,7 +137,7 @@ export default function AdminHomePage() {
       for (const field of fields) {
         if (!localFormData[field.source]) continue;
         const res = await translateContent({
-          text: localFormData[field.source],
+          text: localFormData[field.source] || '',
           targetLangs: ['en'],
           apiKey: aiConfig.apiKey
         });

@@ -58,6 +58,9 @@ interface LocalizedString {
   id: string;
   en: string;
   zh: string;
+  id_?: string;
+  vi?: string;
+  [key: string]: any;
 }
 
 interface ProductCategory {
@@ -250,7 +253,6 @@ export default function AdminProductsPage() {
                         <div key={lang.code} className="flex flex-col items-center gap-1">
                           <span className="text-[8px] font-bold opacity-40 uppercase">{lang.code}</span>
                           <Switch 
-                            size="sm"
                             className="scale-75"
                             checked={enabledLangs.includes(lang.code)}
                             onCheckedChange={() => handleToggleLanguage(p, lang.code, enabledLangs)}

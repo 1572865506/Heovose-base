@@ -151,7 +151,7 @@ export default function GlobalMapAdminPage() {
       for (const field of fields) {
         if (!localData[field.source]) continue;
         const res = await translateContent({
-          text: localData[field.source],
+          text: localData[field.source] || '',
           targetLangs: ['en'],
           apiKey: aiConfig.apiKey
         });

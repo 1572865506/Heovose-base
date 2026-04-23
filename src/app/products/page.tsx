@@ -38,6 +38,9 @@ interface LocalizedString {
   id: string;
   en: string;
   zh: string;
+  id_?: string; // Note: 'id' is already used for the doc ID, so we use 'id_' or similar if needed, but the Locale type uses 'id'.
+  vi?: string;
+  [key: string]: any;
 }
 
 type BusinessLine = 'wholesale' | 'project';

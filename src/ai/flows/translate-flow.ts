@@ -11,7 +11,7 @@ import { googleAI } from '@genkit-ai/google-genai';
 
 const TranslateInputSchema = z.object({
   text: z.string().describe('待翻译的源文本或 HTML。'),
-  sourceLang: z.string().default('zh'),
+  sourceLang: z.string().optional(),
   targetLangs: z.array(z.string()),
   model: z.string().optional().describe('覆盖默认模型设置。'),
   apiKey: z.string().optional().describe('手动指定的 API 密钥。'),
@@ -48,7 +48,7 @@ export async function translateContent(input: TranslateInput): Promise<Translate
         schema: TranslateOutputSchema
       },
       prompt: `You are a professional industrial hardware manufacturing translator. 
-      Translate the provided text from ${input.sourceLang} to these languages: ${input.targetLangs.join(', ')}.
+      Translate the provided text from ${input.sourceLang || 'zh'} to these languages: ${input.targetLangs.join(', ')}.
       
       CRITICAL INSTRUCTIONS:
       1. For HTML content: YOU MUST PRESERVE ALL HTML TAGS (especially <img>, <table>, <div>, <span>, <br>). 
