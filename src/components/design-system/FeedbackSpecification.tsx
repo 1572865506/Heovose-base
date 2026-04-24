@@ -16,19 +16,19 @@ export const FeedbackSpecification = React.memo(() => {
   };
 
   return (
-    <section id="section-14" className="space-y-10 pb-40">
+    <section id="section-15" className="space-y-10 pb-40">
       <div className="flex items-center gap-4 border-b pb-4 border-primary/10">
         <div className="h-2 w-10 bg-primary rounded-full" />
-        <h2 className="text-2xl font-headline font-bold uppercase tracking-widest text-primary">14. 反馈与加载规范 (Feedback & Loading)</h2>
+        <h2 className="text-2xl font-headline font-bold uppercase tracking-widest text-primary">15. 反馈与加载规范 (Feedback & Loading)</h2>
       </div>
 
       <div className="bg-white p-12 rounded-[3rem] border border-border/40 shadow-sm space-y-20">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-20">
-          {/* 14.1 骨架屏规范 */}
+          {/* 15.1 骨架屏规范 */}
           <div className="space-y-8">
             <div className="flex items-center gap-3">
               <Box className="h-4 w-4 text-primary" />
-              <span className="text-[11px] font-bold text-primary uppercase tracking-[0.2em]">14.1 骨架屏占位规范 (Skeleton Design)</span>
+              <span className="text-[11px] font-bold text-primary uppercase tracking-[0.2em]">15.1 骨架屏占位规范 (Skeleton Design)</span>
             </div>
 
             <div className="p-8 bg-muted/5 rounded-[2.5rem] border border-border/40 space-y-8 relative overflow-hidden">
@@ -74,11 +74,11 @@ export const FeedbackSpecification = React.memo(() => {
             </div>
           </div>
 
-          {/* 14.2 全域通知系统 */}
+          {/* 15.2 全域通知系统 */}
           <div className="space-y-8">
             <div className="flex items-center gap-3">
               <Bell className="h-4 w-4 text-primary" />
-              <span className="text-[11px] font-bold text-primary uppercase tracking-[0.2em]">14.2 全域通知系统 (Notifications)</span>
+              <span className="text-[11px] font-bold text-primary uppercase tracking-[0.2em]">15.2 全域通知系统 (Notifications)</span>
             </div>
 
             <div className="grid grid-cols-1 gap-4">

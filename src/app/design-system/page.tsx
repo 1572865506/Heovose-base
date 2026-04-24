@@ -37,6 +37,7 @@ import { TabSpecification } from '@/components/design-system/TabSpecification';
 import { CarouselSpecification } from '@/components/design-system/CarouselSpecification';
 import { GlassSpecification } from '@/components/design-system/GlassSpecification';
 import { MotionSpecification } from '@/components/design-system/MotionSpecification';
+import { AiInteractionSpecification } from '@/components/design-system/AiInteractionSpecification';
 import { FeedbackSpecification } from '@/components/design-system/FeedbackSpecification';
 import { ExhibitionSpecification } from '@/components/design-system/ExhibitionSpecification';
 import { AdminSystemSpecification } from '@/components/design-system/AdminSystemSpecification';
@@ -113,6 +114,7 @@ export default function DesignSystemPage() {
             <CarouselSpecification />
             <GlassSpecification />
             <MotionSpecification />
+            <AiInteractionSpecification />
             <FeedbackSpecification />
             <ExhibitionSpecification />
           </div>

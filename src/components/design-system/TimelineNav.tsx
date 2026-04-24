@@ -30,7 +30,8 @@ import {
   ChevronRight, 
   Smartphone, 
   LineChart, 
-  Moon 
+  Moon,
+  Wand2
 } from 'lucide-react';
 
 export const TimelineNav = ({ activeSystem }: { activeSystem: string }) => {
@@ -51,8 +52,9 @@ export const TimelineNav = ({ activeSystem }: { activeSystem: string }) => {
     { id: 'section-11', title: '11. 轮播组件', icon: GalleryHorizontal },
     { id: 'section-12', title: '12. 毛玻璃效果', icon: Sparkles },
     { id: 'section-13', title: '13. 动力学系统', icon: Activity },
-    { id: 'section-14', title: '14. 反馈与加载', icon: Loader2 },
-    { id: 'section-15', title: '15. 导航与展示', icon: Monitor },
+    { id: 'frontend-14', title: '14. AI 智算交互', icon: Wand2 },
+    { id: 'section-15', title: '15. 反馈与加载', icon: Loader2 },
+    { id: 'section-16', title: '16. 导航与展示', icon: Monitor },
   ];
 
   const adminSections = [

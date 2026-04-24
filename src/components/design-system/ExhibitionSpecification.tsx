@@ -5,18 +5,18 @@ import { Monitor, Globe, ChevronRight, LayoutGrid, ChevronDown, ArrowUpRight, Ga
 
 export const ExhibitionSpecification = React.memo(() => {
   return (
-    <section id="section-15" className="space-y-10 pb-40">
+    <section id="section-16" className="space-y-10 pb-40">
       <div className="flex items-center gap-4 border-b pb-4 border-primary/10">
         <div className="h-2 w-10 bg-primary rounded-full" />
-        <h2 className="text-2xl font-headline font-bold uppercase tracking-widest text-primary">15. 导航深度与展示 (Exhibition)</h2>
+        <h2 className="text-2xl font-headline font-bold uppercase tracking-widest text-primary">16. 导航深度与展示 (Exhibition & Navigation)</h2>
       </div>
 
       <div className="bg-white p-12 rounded-[3rem] border border-border/40 shadow-sm space-y-20">
-        {/* 15.1 面包屑与结构 */}
+        {/* 16.1 面包屑与结构 */}
         <div className="space-y-8">
           <div className="flex items-center gap-3">
             <Monitor className="h-4 w-4 text-primary" />
-            <span className="text-[11px] font-bold text-primary uppercase tracking-[0.2em]">15.1 探索路径规范 (Breadcrumbs)</span>
+            <span className="text-[11px] font-bold text-primary uppercase tracking-[0.2em]">16.1 探索路径规范 (Breadcrumbs)</span>
           </div>
 
           <div className="p-8 bg-muted/5 rounded-[2rem] border border-border/40">
@@ -37,17 +37,17 @@ export const ExhibitionSpecification = React.memo(() => {
           </div>
         </div>
 
-        {/* 15.2 巨型菜单展示 */}
+        {/* 16.2 巨型菜单展示 */}
         <div className="space-y-8">
            <div className="flex items-center gap-3">
              <LayoutGrid className="h-4 w-4 text-primary" />
-             <span className="text-[11px] font-bold text-primary uppercase tracking-[0.2em]">15.2 巨型菜单排版 (Mega Menu)</span>
+             <span className="text-[11px] font-bold text-primary uppercase tracking-[0.2em]">16.2 巨型菜单排版 (Mega Menu)</span>
            </div>
 
            <div className="relative group w-full">
              <div className="w-full h-14 bg-primary rounded-2xl flex items-center px-8 text-white relative z-20">
                 <span className="text-[10px] font-bold uppercase tracking-widest flex items-center gap-2 cursor-pointer hover:opacity-80 transition-opacity">
-                  Product Categories <ChevronDown className="h-3 w-3" />
+                   Product Categories <ChevronDown className="h-3 w-3" />
                 </span>
              </div>
              
@@ -80,11 +80,11 @@ export const ExhibitionSpecification = React.memo(() => {
            </div>
         </div>
 
-        {/* 15.3 多媒体展示框架 */}
+        {/* 16.3 多媒体展示框架 */}
         <div className="space-y-8">
            <div className="flex items-center gap-3">
              <GalleryHorizontal className="h-4 w-4 text-primary" />
-             <span className="text-[11px] font-bold text-primary uppercase tracking-[0.2em]">15.3 多媒体展示规范 (Multimedia Frame)</span>
+             <span className="text-[11px] font-bold text-primary uppercase tracking-[0.2em]">16.3 多媒体展示规范 (Multimedia Frame)</span>
            </div>
 
            <div className="relative aspect-video rounded-[2.5rem] overflow-hidden border border-border/40 group shadow-2xl">
