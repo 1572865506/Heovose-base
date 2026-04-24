@@ -256,31 +256,53 @@
 
 ---
 
-## 14. 反馈与加载规范 (Feedback & Loading)
+## 14. AI 智算与交互全链路规范 (AI Interaction Standards)
 
-### 14.1 骨架屏占位 (Skeleton Screens)
+### 14.1 AI-Aura 加载态 (AI-Aura Loading)
+针对正在与 API 交互或生成内容的组件，必须提供具备品牌辨识度的动态反馈：
+*   **流光边框 (Shimmer Border)**: 输入框或容器外围应用 `2px` 的旋转 `conic-gradient`（使用品牌彩虹色：Cyan, Indigo, Rose）。
+*   **生成式骨架屏 (Generative Skeleton)**: 占位内容不使用纯灰色，而是采用低饱和度的彩虹渐变微光 (`animate-shimmer`)。
+
+### 14.2 AI 按钮几何形态 (Button Geometry)
+为了平衡“高科技感”与“系统一致性”，AI 按钮支持双形态配置：
+*   **胶囊型 (Capsule)**: 默认形态，使用 `rounded-[360px]`，适用于旗舰级独立功能。
+*   **圆角型 (Rounded)**: 遵循系统标准 `rounded-lg` (8px)，适用于嵌入式表单或次级 AI 操作，确保几何语言不产生割裂。
+
+### 14.3 AI 视觉资产标准 (Visual Assets)
+*   **极光背景 (Aurora Glow)**: AI 核心展区必须应用多层 `Mesh Gradient`（网格渐变），模糊度设定为 `100px`，配合 `animate-aurora` 实现流体律动。
+*   **物理旋转 (Physical Rotation)**: AI 相关图标（如 Sparkles）禁止使用匀速旋转。必须采用 **非线性物理旋转**：每隔 `3s` 触发一次 `360deg` 旋转，且旋转过程伴随物理加速度感知。
+*   **虹彩渐变 (Iridescent Gradient)**: 图标描边必须应用 `linearGradient` 虹彩定义，且渐变位移须与旋转周期同步重置，确保视觉连续性。
+
+### 14.4 交互逻辑约束
+*   **智译/生成态**: 激活 AI 任务时，相关 Input 强制开启 `AI-Aura` 流光效果，并锁定为 Read-only，直到数据回传完成。
+
+---
+
+## 15. 反馈与加载规范 (Feedback & Loading)
+
+### 15.1 骨架屏占位 (Skeleton Screens)
 *   **样式**: 采用 `bg-primary/5` 底色，配合呼吸感脉冲动画。
 *   **逻辑**: 在异步数据加载完成前，必须保持布局高度一致，防止布局抖动。
 
-### 14.2 全域通知系统 (Notifications)
+### 15.2 全域通知系统 (Notifications)
 *   **视觉**: 玻璃质感底色，圆角 `24px`，带重影投影。
 *   **位置**: 桌面端右上角，移动端顶部居中。
 
 ---
 
-## 15. 导航深度与展示 (Exhibition & Navigation)
+## 16. 导航深度与展示 (Exhibition & Navigation)
 
-### 15.1 探索路径 (Breadcrumbs)
+### 16.1 探索路径 (Breadcrumbs)
 *   **规范**: 字体 `10px font-bold uppercase`，配合 `ChevronRight` 作为分割。
 
-### 15.2 巨型菜单 (Mega Menu)
+### 16.2 巨型菜单 (Mega Menu)
 *   **结构**: 采用 `2.5rem` 圆角的玻璃面板，内部分为 3-4 列展示产品线。
 *   **交互**: 悬停时触发 `Gentle` 曲线的平滑位移。
 
-### 15.3 多媒体展示 (Multimedia Frame)
+### 16.3 多媒体展示 (Multimedia Frame)
 *   **控件**: 悬停显现毛玻璃控制器，播放按钮具备 `Scale-up` 反馈。
 
 ---
 
-**最后更新**: 2026-04-23
+**最后更新**: 2026-04-24
 **维护者**: App Prototyper (AI Agent)
