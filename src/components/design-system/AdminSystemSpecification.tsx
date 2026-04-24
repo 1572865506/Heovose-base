@@ -14,51 +14,58 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { cn } from '@/lib/utils';
-import {
-  Layers,
-  LayoutGrid,
-  MousePointer2,
-  Sparkles,
-  Cpu,
-  Wand2,
-  Terminal,
-  GalleryHorizontal,
-  Monitor,
-  ChevronLeft,
-  ChevronRight,
-  ShoppingBag,
-  User,
-  Activity,
-  Clock,
-  Gauge,
-  Search,
-  Filter,
-  Plus,
-  CheckCircle2,
-  X,
-  Layout,
-  ShieldCheck,
-  History,
-  Settings,
-  Trash2,
-  AlertTriangle,
-  AlertCircle,
-  RotateCcw,
-  Ghost,
-  Loader2,
-  Bell,
-  ShieldAlert,
-  Info,
-  ChevronDown,
-  Smartphone,
-  PanelLeftOpen,
-  PanelLeftClose,
-  Maximize,
-  LineChart,
-  Sun,
-  Moon
+import { 
+  Layers, 
+  LayoutGrid, 
+  MousePointer2, 
+  Sparkles, 
+  Cpu, 
+  Wand2, 
+  Terminal, 
+  GalleryHorizontal, 
+  Monitor, 
+  ChevronLeft, 
+  ChevronRight, 
+  ShoppingBag, 
+  User, 
+  Activity, 
+  Clock, 
+  Gauge, 
+  Search, 
+  Filter, 
+  Plus, 
+  CheckCircle2, 
+  X, 
+  Layout, 
+  ShieldCheck, 
+  History, 
+  Settings, 
+  Trash2, 
+  AlertTriangle, 
+  AlertCircle, 
+  RotateCcw, 
+  Ghost, 
+  Loader2, 
+  Bell, 
+  ShieldAlert, 
+  Info, 
+  ChevronDown, 
+  Smartphone, 
+  PanelLeftOpen, 
+  PanelLeftClose, 
+  Maximize, 
+  LineChart, 
+  PieChart,
+  TrendingUp,
+  ArrowUpRight,
+  Sun, 
+  Moon 
 } from 'lucide-react';
 import { ShinyButton } from '@/components/ui/shiny-button';
+import { TypographySpecification } from './TypographySpecification';
+import { GeometrySpecification } from './GeometrySpecification';
+import { ButtonSpecification } from './ButtonSpecification';
+import { ControlSpecification } from './ControlSpecification';
 
 export const AdminSystemSpecification = React.memo(() => {
   const [emailError, setEmailError] = useState("");
@@ -66,6 +73,8 @@ export const AdminSystemSpecification = React.memo(() => {
   const [undoTarget, setUndoTarget] = useState("");
   const [generatedId, setGeneratedId] = useState("PROD_OLED_0423_X98K");
   const [activeToast, setActiveToast] = useState<string | null>(null);
+  const [hoveredLinePoint, setHoveredLinePoint] = useState<number | null>(null);
+  const [hoveredSlice, setHoveredSlice] = useState<number | null>(null);
 
   const generateId = () => {
     const categories = ["OLED", "AIO", "MINI", "PRO", "HW"];
@@ -80,6 +89,58 @@ export const AdminSystemSpecification = React.memo(() => {
 
   return (
     <div className="space-y-24 animate-in fade-in slide-in-from-bottom-4 duration-700">
+
+      {/* ─── 沿用前台规范说明横幅 ─── */}
+      <div className="relative overflow-hidden rounded-3xl border border-primary/10 bg-gradient-to-r from-primary/5 via-transparent to-primary/5 px-10 py-7 flex items-center gap-6">
+        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_left,_var(--tw-gradient-stops))] from-primary/5 to-transparent" />
+        <div className="h-10 w-10 rounded-2xl bg-primary/10 flex items-center justify-center shrink-0">
+          <Layers className="h-5 w-5 text-primary" />
+        </div>
+        <div className="relative">
+          <p className="text-[11px] font-bold text-primary uppercase tracking-widest mb-1">设计规范继承说明 (Shared Specification)</p>
+          <p className="text-[10px] text-muted-foreground leading-relaxed">
+            以下 <span className="font-bold text-primary">01–04</span> 章节为后台管理系统与前台系统共用的基础规范，直接沿用前台设计准则，确保产品视觉语言全链路一致性。
+          </p>
+        </div>
+      </div>
+
+      {/* ─── 01. 字体系统规范 (沿用前台) ─── */}
+      <div id="admin-shared-01" className="relative pb-16">
+        <div className="absolute top-0 right-0 flex items-center gap-1.5 bg-primary/5 border border-primary/10 text-primary text-[9px] font-bold uppercase tracking-widest px-3 py-1.5 rounded-full">
+          <span>↔</span>
+          <span>沿用前台规范</span>
+        </div>
+        <TypographySpecification variant="backend" />
+      </div>
+
+      {/* ─── 02. 几何与投影规范 (沿用前台) ─── */}
+      <div id="admin-shared-02" className="relative pb-16">
+        <div className="absolute top-0 right-0 flex items-center gap-1.5 bg-primary/5 border border-primary/10 text-primary text-[9px] font-bold uppercase tracking-widest px-3 py-1.5 rounded-full">
+          <span>↔</span>
+          <span>沿用前台规范</span>
+        </div>
+        <GeometrySpecification variant="backend" />
+      </div>
+
+      {/* ─── 03. 按钮系统规范 (沿用前台) ─── */}
+      <div id="admin-shared-03" className="relative pb-16">
+        <div className="absolute top-0 right-0 flex items-center gap-1.5 bg-primary/5 border border-primary/10 text-primary text-[9px] font-bold uppercase tracking-widest px-3 py-1.5 rounded-full">
+          <span>↔</span>
+          <span>沿用前台规范</span>
+        </div>
+        <ButtonSpecification variant="backend" />
+      </div>
+
+      {/* ─── 04. 交互组件单元规范 (沿用前台) ─── */}
+      <div id="admin-shared-04" className="relative pb-16">
+        <div className="absolute top-0 right-0 flex items-center gap-1.5 bg-primary/5 border border-primary/10 text-primary text-[9px] font-bold uppercase tracking-widest px-3 py-1.5 rounded-full">
+          <span>↔</span>
+          <span>沿用前台规范</span>
+        </div>
+        <ControlSpecification variant="backend" />
+      </div>
+
+      {/* 01. 字体与表单系统 */}
       {/* 01. 视觉语言与布局 */}
       <section id="admin-01" className="space-y-10 pb-20">
         <div className="flex items-center gap-4 border-b pb-4 border-primary/10">
@@ -164,11 +225,11 @@ export const AdminSystemSpecification = React.memo(() => {
         </div>
       </section>
 
-      {/* 03. 控件状态准则 */}
-      <section id="admin-03" className="space-y-10 pb-20">
+      {/* 02. 控件状态准则 */}
+      <section id="admin-02" className="space-y-10 pb-20">
         <div className="flex items-center gap-4 border-b pb-4 border-primary/10">
           <div className="h-2 w-10 bg-primary rounded-full" />
-          <h2 className="text-2xl font-headline font-bold uppercase tracking-widest text-primary">03. 控件状态准则 (Control States)</h2>
+          <h2 className="text-2xl font-headline font-bold uppercase tracking-widest text-primary">02. 控件状态准则 (Control States)</h2>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
@@ -202,11 +263,11 @@ export const AdminSystemSpecification = React.memo(() => {
         </div>
       </section>
 
-      {/* 04. AI 交互规范 */}
-      <section id="admin-04" className="space-y-10 pb-20">
+      {/* 03. AI 交互规范 */}
+      <section id="admin-03" className="space-y-10 pb-20">
         <div className="flex items-center gap-4 border-b pb-4 border-primary/10">
           <div className="h-2 w-10 bg-primary rounded-full" />
-          <h2 className="text-2xl font-headline font-bold uppercase tracking-widest text-primary">04. AI 交互规范 (AI Interaction)</h2>
+          <h2 className="text-2xl font-headline font-bold uppercase tracking-widest text-primary">03. AI 交互规范 (AI Interaction)</h2>
         </div>
 
         <div className="bg-white p-12 rounded-[3rem] border border-border/40 shadow-sm space-y-16 overflow-hidden relative">
@@ -341,9 +402,9 @@ export const AdminSystemSpecification = React.memo(() => {
                   <Input
                     readOnly
                     defaultValue="正在智能生成内容..."
-                    className="h-10 text-xs bg-white/80 border-primary/20 rounded-lg relative z-10 pl-10"
+                    className="h-12 bg-white/80 border-primary/20 rounded-lg relative z-10 text-xs font-medium pl-10"
                   />
-                  <div className="absolute left-3 top-1/2 -translate-y-1/2 z-20">
+                  <div className="absolute left-3 inset-y-0 flex items-center z-20">
                     <Loader2 className="h-4 w-4 text-primary animate-spin" />
                   </div>
                 </div>
@@ -354,9 +415,9 @@ export const AdminSystemSpecification = React.memo(() => {
                 <p className="text-[10px] font-bold uppercase text-primary">生成式骨架屏 (Generative Skeleton)</p>
                 <div className="p-6 bg-muted/5 rounded-2xl border border-border/40 space-y-4 overflow-hidden relative">
                   <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent -translate-x-full animate-[shimmer_2s_infinite]" />
-                  <div className="h-4 w-3/4 bg-gradient-to-r from-cyan-500/10 via-indigo-500/10 to-rose-400/10 rounded-full" />
-                  <div className="h-4 w-full bg-gradient-to-r from-cyan-500/10 via-indigo-500/10 to-rose-400/10 rounded-full" />
-                  <div className="h-4 w-1/2 bg-gradient-to-r from-cyan-500/10 via-indigo-500/10 to-rose-400/10 rounded-full" />
+                  <div className="h-4 w-3/4 bg-gradient-to-r from-cyan-500/10 via-indigo-500/10 to-rose-500/10 rounded-full" />
+                  <div className="h-4 w-full bg-gradient-to-r from-cyan-500/10 via-indigo-500/10 to-rose-500/10 rounded-full" />
+                  <div className="h-4 w-1/2 bg-gradient-to-r from-cyan-500/10 via-indigo-500/10 to-rose-500/10 rounded-full" />
                 </div>
                 <p className="text-[9px] text-muted-foreground italic">规范：不使用纯灰色，采用低饱和色彩梯度模拟生成感。</p>
               </div>
@@ -365,11 +426,11 @@ export const AdminSystemSpecification = React.memo(() => {
         </div>
       </section>
 
-      {/* 05. 核心业务逻辑组件 */}
-      <section id="admin-05" className="space-y-10 pb-40">
+      {/* 04. 核心业务逻辑组件 */}
+      <section id="admin-04" className="space-y-10 pb-40">
         <div className="flex items-center gap-4 border-b pb-4 border-primary/10">
           <div className="h-2 w-10 bg-primary rounded-full" />
-          <h2 className="text-2xl font-headline font-bold uppercase tracking-widest text-primary">05. 核心业务逻辑 (Business Logic)</h2>
+          <h2 className="text-2xl font-headline font-bold uppercase tracking-widest text-primary">04. 核心业务逻辑 (Business Logic)</h2>
         </div>
 
         <div className="bg-white p-12 rounded-[3rem] border border-border/40 shadow-sm space-y-20">
@@ -425,11 +486,11 @@ export const AdminSystemSpecification = React.memo(() => {
         </div>
       </section>
 
-      {/* 06. 数据看板与度量 */}
-      <section id="admin-06" className="space-y-10 pb-20">
+      {/* 05. 数据看板与度量 */}
+      <section id="admin-05" className="space-y-10 pb-20">
         <div className="flex items-center gap-4 border-b pb-4 border-primary/10">
           <div className="h-2 w-10 bg-primary rounded-full" />
-          <h2 className="text-2xl font-headline font-bold uppercase tracking-widest text-primary">06. 数据看板与度量 (Dashboard & Metrics)</h2>
+          <h2 className="text-2xl font-headline font-bold uppercase tracking-widest text-primary">05. 数据看板与度量 (Dashboard & Metrics)</h2>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
@@ -444,7 +505,7 @@ export const AdminSystemSpecification = React.memo(() => {
                 <div className="h-10 w-10 rounded-xl bg-muted/20 flex items-center justify-center text-primary group-hover:bg-primary group-hover:text-white transition-all">
                   <stat.icon className="h-5 w-5" />
                 </div>
-                <Badge variant="outline" className={stat.color + " border-none text-[8px] font-bold"}>{stat.trend}</Badge>
+                <Badge variant="outline" className={stat.color + " border-none text-[11px] font-bold"}>{stat.trend}</Badge>
               </div>
               <div className="space-y-1">
                 <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">{stat.label}</p>
@@ -457,46 +518,238 @@ export const AdminSystemSpecification = React.memo(() => {
           ))}
         </div>
 
-        <div className="bg-white p-10 rounded-[2.5rem] border border-border/40 shadow-sm">
-          <div className="flex items-center justify-between mb-10">
-            <div className="flex items-center gap-3">
-              <Gauge className="h-4 w-4 text-primary" />
-              <span className="text-[11px] font-bold text-primary uppercase tracking-widest">实时数据流模拟 (Live Data Metrics)</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <div className="h-2 w-2 rounded-full bg-green-500 animate-pulse" />
-              <span className="text-[9px] font-bold uppercase text-muted-foreground">Monitoring Live</span>
-            </div>
-          </div>
-
-          <div className="h-48 flex items-end gap-2 px-4">
-            {Array.from({ length: 24 }).map((_, i) => (
-              <div
-                key={i}
-                className="flex-1 bg-primary/10 rounded-t-lg group relative hover:bg-primary/40 transition-all cursor-crosshair"
-                style={{ height: `${20 + Math.random() * 80}%` }}
-              >
-                <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                  <div className="bg-primary text-white text-[8px] font-bold px-2 py-1 rounded shadow-lg whitespace-nowrap">
-                    {Math.floor(Math.random() * 1000)} QPS
-                  </div>
-                </div>
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+           {/* 实时数据流 - 柱状图 */}
+           <div className="lg:col-span-2 bg-white p-10 rounded-[2.5rem] border border-border/40 shadow-sm flex flex-col">
+              <div className="flex items-center justify-between mb-10">
+                 <div className="flex items-center gap-3">
+                   <Gauge className="h-4 w-4 text-primary" />
+                   <span className="text-[11px] font-bold text-primary uppercase tracking-widest">实时负载监控 (Live Load Monitor)</span>
+                 </div>
+                 <div className="flex items-center gap-2">
+                    <div className="h-2 w-2 rounded-full bg-green-500 animate-pulse" />
+                    <span className="text-[9px] font-bold uppercase text-muted-foreground">Monitoring Live</span>
+                 </div>
               </div>
-            ))}
-          </div>
-          <div className="mt-4 pt-4 border-t flex justify-between">
-            <span className="text-[8px] font-bold text-muted-foreground uppercase">00:00</span>
-            <span className="text-[8px] font-bold text-muted-foreground uppercase">12:00</span>
-            <span className="text-[8px] font-bold text-muted-foreground uppercase">23:59</span>
-          </div>
+              
+              <div className="flex-1 flex items-end gap-2 px-4 h-48">
+                 {Array.from({ length: 24 }).map((_, i) => (
+                   <div 
+                     key={i} 
+                     className="flex-1 bg-primary/10 rounded-t-lg group relative hover:bg-primary/40 transition-all cursor-crosshair"
+                     style={{ height: `${20 + Math.random() * 80}%` }}
+                   >
+                     <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <div className="bg-primary text-white text-[8px] font-bold px-2 py-1 rounded shadow-lg whitespace-nowrap">
+                           {Math.floor(Math.random() * 1000)} QPS
+                        </div>
+                     </div>
+                   </div>
+                 ))}
+              </div>
+              <div className="mt-4 pt-4 border-t flex justify-between">
+                 <span className="text-[8px] font-bold text-muted-foreground uppercase">00:00</span>
+                 <span className="text-[8px] font-bold text-muted-foreground uppercase">12:00</span>
+                 <span className="text-[8px] font-bold text-muted-foreground uppercase">23:59</span>
+              </div>
+           </div>
+
+           <div className="flex flex-col gap-6">
+              {/* 周度趋势 - 折线图 */}
+              <div className="flex-1 bg-white p-8 rounded-[2.5rem] border border-border/40 shadow-sm flex flex-col">
+                 <div className="flex items-center justify-between mb-4">
+                    <div className="flex items-center gap-2">
+                       <TrendingUp className="h-3.5 w-3.5 text-primary" />
+                       <span className="text-[10px] font-bold text-primary uppercase tracking-widest">周度增长趋势</span>
+                    </div>
+                    <ArrowUpRight className="h-3 w-3 text-green-500" />
+                 </div>
+
+                 {/* SVG Line Chart */}
+                 {(() => {
+                   const linePoints = [
+                     { x: 0,   y: 80, val: '$28k' },
+                     { x: 40,  y: 30, val: '$52k' },
+                     { x: 80,  y: 60, val: '$38k' },
+                     { x: 120, y: 15, val: '$74k' },
+                     { x: 160, y: 40, val: '$61k' },
+                     { x: 200, y: 10, val: '$85k' },
+                   ];
+                   const smoothD = linePoints.reduce((acc, p, i, arr) => {
+                     if (i === 0) return `M${p.x},${p.y}`;
+                     const prev = arr[i - 1];
+                     const cpx = (prev.x + p.x) / 2;
+                     return acc + ` C${cpx},${prev.y} ${cpx},${p.y} ${p.x},${p.y}`;
+                   }, '');
+
+                   return (
+                     <div className="relative" style={{ height: '160px' }}>
+                       <svg
+                         width="100%" height="100%"
+                         viewBox="0 0 200 100"
+                         preserveAspectRatio="xMidYMid meet"
+                         className="overflow-visible cursor-crosshair"
+                       >
+                         <defs>
+                           <linearGradient id="line-grad" x1="0" y1="0" x2="1" y2="0">
+                             <stop offset="0%" stopColor="#005B99" />
+                             <stop offset="100%" stopColor="#F97316" />
+                           </linearGradient>
+                           <clipPath id="line-clip">
+                             <rect x="0" y="0" width="200" height="100" />
+                           </clipPath>
+                         </defs>
+
+                         {/* Area fill */}
+                         <path
+                           d={smoothD + ` L200,100 L0,100 Z`}
+                           fill="url(#line-grad)"
+                           fillOpacity="0.06"
+                           clipPath="url(#line-clip)"
+                         />
+
+                         {/* Line shadow */}
+                         <path d={smoothD} fill="none" stroke="#005B99" strokeWidth="6" strokeOpacity="0.08" strokeLinecap="round" clipPath="url(#line-clip)" />
+
+                         {/* Main line */}
+                         <path d={smoothD} fill="none" stroke="url(#line-grad)" strokeWidth="3" strokeLinecap="round" clipPath="url(#line-clip)" />
+
+                         {/* Data points */}
+                         {linePoints.map((point, i) => (
+                           <g key={i}
+                             onMouseEnter={() => setHoveredLinePoint(i)}
+                             onMouseLeave={() => setHoveredLinePoint(null)}
+                             style={{ cursor: 'pointer' }}
+                           >
+                             {/* Hit area */}
+                             <circle cx={point.x} cy={point.y} r="12" fill="transparent" />
+                             {/* Point dot */}
+                             <circle
+                               cx={point.x} cy={point.y} r={hoveredLinePoint === i ? 5 : 3}
+                               fill="white"
+                               stroke={hoveredLinePoint === i ? '#005B99' : '#005B99'}
+                               strokeWidth={hoveredLinePoint === i ? 2.5 : 1.5}
+                               style={{ transition: 'r 0.2s ease' }}
+                             />
+                           </g>
+                         ))}
+
+                         {/* Tooltip — rendered last so it's on top */}
+                         {hoveredLinePoint !== null && (() => {
+                           const pt = linePoints[hoveredLinePoint];
+                           const tipX = Math.min(Math.max(pt.x - 20, 0), 160);
+                           const tipY = pt.y > 30 ? pt.y - 38 : pt.y + 12;
+                           return (
+                             <g>
+                               <rect x={tipX} y={tipY} width="40" height="20" rx="6"
+                                 fill="#005B99" />
+                               <text x={tipX + 20} y={tipY + 13.5} textAnchor="middle"
+                                 fill="white" fontSize="9" fontWeight="700">
+                                 {pt.val}
+                               </text>
+                             </g>
+                           );
+                         })()}
+                       </svg>
+                     </div>
+                   );
+                 })()}
+
+                 <div className="mt-3 flex items-baseline gap-2">
+                    <span className="text-xl font-bold text-primary">+24.8%</span>
+                    <span className="text-[8px] font-bold text-muted-foreground uppercase">Vs Last Week</span>
+                 </div>
+              </div>
+
+              {/* 市场分布 - 环形图 */}
+              <div className="flex-1 bg-white p-8 rounded-[2.5rem] border border-border/40 shadow-sm flex flex-col">
+                 <div className="flex items-center gap-2 mb-6">
+                    <PieChart className="h-3.5 w-3.5 text-primary" />
+                    <span className="text-[10px] font-bold text-primary uppercase tracking-widest">终端分布 (Terminals)</span>
+                 </div>
+                 <div className="flex items-center gap-6">
+                    {/* Donut chart */}
+                    {(() => {
+                      const slices = [
+                        { label: 'OLED Series', pct: 70, color: '#005B99' },
+                        { label: 'Industrial P', pct: 20, color: '#F97316' },
+                        { label: 'Others', pct: 10, color: '#94a3b8' },
+                      ];
+                      const r = 15.9;
+                      const circ = 2 * Math.PI * r; // ~99.9
+                      let offset = 0;
+                      return (
+                        <div className="relative w-24 h-24 shrink-0">
+                          <svg className="w-full h-full -rotate-90" viewBox="0 0 36 36">
+                            {/* Track */}
+                            <circle cx="18" cy="18" r={r} fill="none" stroke="#f1f5f9" strokeWidth="4" />
+                            {slices.map((slice, i) => {
+                              const dash = (slice.pct / 100) * circ;
+                              const gap = circ - dash;
+                              const el = (
+                                <circle
+                                  key={i}
+                                  cx="18" cy="18" r={r}
+                                  fill="none"
+                                  stroke={slice.color}
+                                  strokeWidth={hoveredSlice === i ? 5 : 4}
+                                  strokeDasharray={`${dash} ${gap}`}
+                                  strokeDashoffset={-offset}
+                                  strokeLinecap="round"
+                                  style={{ transition: 'stroke-width 0.2s ease, opacity 0.2s ease', cursor: 'pointer', opacity: hoveredSlice !== null && hoveredSlice !== i ? 0.35 : 1 }}
+                                  onMouseEnter={() => setHoveredSlice(i)}
+                                  onMouseLeave={() => setHoveredSlice(null)}
+                                />
+                              );
+                              offset += dash;
+                              return el;
+                            })}
+                          </svg>
+                          <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                            <div className="text-center">
+                              {hoveredSlice !== null ? (
+                                <>
+                                  <span className="text-[11px] font-bold block" style={{ color: slices[hoveredSlice].color }}>{slices[hoveredSlice].pct}%</span>
+                                  <span className="text-[7px] font-bold text-muted-foreground uppercase leading-tight block">{slices[hoveredSlice].label.split(' ')[0]}</span>
+                                </>
+                              ) : (
+                                <span className="text-[12px] font-bold text-primary">70%</span>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })()}
+
+                    {/* Legend */}
+                    <div className="space-y-2">
+                       {[
+                         { label: 'OLED Series', color: 'bg-primary', hoverColor: 'group-hover/legend:text-primary', idx: 0 },
+                         { label: 'Industrial P', color: 'bg-orange-500', hoverColor: 'group-hover/legend:text-orange-500', idx: 1 },
+                         { label: 'Others', color: 'bg-slate-400', hoverColor: 'group-hover/legend:text-slate-500', idx: 2 },
+                       ].map((item) => (
+                         <div
+                           key={item.idx}
+                           className="flex items-center gap-2 group/legend cursor-pointer"
+                           onMouseEnter={() => setHoveredSlice(item.idx)}
+                           onMouseLeave={() => setHoveredSlice(null)}
+                         >
+                           <div className={`h-2 w-2 rounded-full ${item.color} transition-transform ${hoveredSlice === item.idx ? 'scale-150' : ''}`} />
+                           <span className={`text-[8px] font-bold uppercase transition-colors ${hoveredSlice === item.idx ? item.hoverColor.replace('group-hover/legend:', '') : 'text-muted-foreground'}`}>{item.label}</span>
+                         </div>
+                       ))}
+                    </div>
+                 </div>
+              </div>
+           </div>
         </div>
       </section>
 
-      {/* 07. 高级列表与过滤 */}
-      <section id="admin-07" className="space-y-10 pb-20">
+      {/* 06. 高级列表与过滤 */}
+      <section id="admin-06" className="space-y-10 pb-20">
         <div className="flex items-center gap-4 border-b pb-4 border-primary/10">
           <div className="h-2 w-10 bg-primary rounded-full" />
-          <h2 className="text-2xl font-headline font-bold uppercase tracking-widest text-primary">07. 高级列表与过滤 (Advanced Filtering)</h2>
+          <h2 className="text-2xl font-headline font-bold uppercase tracking-widest text-primary">06. 高级列表与过滤 (Advanced Filtering)</h2>
         </div>
 
         <div className="bg-white p-8 rounded-[2.5rem] border border-border/40 shadow-sm space-y-8">
@@ -549,11 +802,11 @@ export const AdminSystemSpecification = React.memo(() => {
         </div>
       </section>
 
-      {/* 08. 详情面板与抽屉 */}
-      <section id="admin-08" className="space-y-10 pb-20">
+      {/* 07. 详情面板与抽屉 */}
+      <section id="admin-07" className="space-y-10 pb-20">
         <div className="flex items-center gap-4 border-b pb-4 border-primary/10">
           <div className="h-2 w-10 bg-primary rounded-full" />
-          <h2 className="text-2xl font-headline font-bold uppercase tracking-widest text-primary">08. 详情面板与抽屉 (Detail Panels)</h2>
+          <h2 className="text-2xl font-headline font-bold uppercase tracking-widest text-primary">07. 详情面板与抽屉 (Detail Panels)</h2>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-10">
@@ -628,11 +881,11 @@ export const AdminSystemSpecification = React.memo(() => {
         </div>
       </section>
 
-      {/* 09. 权限与审计日志 */}
-      <section id="admin-09" className="space-y-10 pb-40">
+      {/* 08. 权限与审计 (Permissions & Logs) */}
+      <section id="admin-08" className="space-y-10 pb-40">
         <div className="flex items-center gap-4 border-b pb-4 border-primary/10">
           <div className="h-2 w-10 bg-primary rounded-full" />
-          <h2 className="text-2xl font-headline font-bold uppercase tracking-widest text-primary">09. 权限与审计 (Permissions & Logs)</h2>
+          <h2 className="text-2xl font-headline font-bold uppercase tracking-widest text-primary">08. 权限与审计 (Permissions & Logs)</h2>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-10">
@@ -703,11 +956,11 @@ export const AdminSystemSpecification = React.memo(() => {
         </div>
       </section>
 
-      {/* 10. 异常流与撤销机制 */}
-      <section id="admin-10" className="space-y-10 pb-40">
+      {/* 09. 异常流与撤销机制 (Exceptions & Undo) */}
+      <section id="admin-09" className="space-y-10 pb-40">
         <div className="flex items-center gap-4 border-b pb-4 border-primary/10">
           <div className="h-2 w-10 bg-primary rounded-full" />
-          <h2 className="text-2xl font-headline font-bold uppercase tracking-widest text-primary">10. 异常流与撤销机制 (Exceptions & Undo)</h2>
+          <h2 className="text-2xl font-headline font-bold uppercase tracking-widest text-primary">09. 异常流与撤销机制 (Exceptions & Undo)</h2>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-10">
@@ -756,16 +1009,6 @@ export const AdminSystemSpecification = React.memo(() => {
           {/* 撤销机制演示 */}
           <div className="bg-white p-10 rounded-[3rem] border border-border/40 shadow-sm space-y-10 relative overflow-hidden">
             <div className="flex items-center gap-3">
-              <RotateCcw className="h-4 w-4 text-primary" />
-              <span className="text-[11px] font-bold text-primary uppercase tracking-widest">操作撤销机制 (Undo Mechanism)</span>
-            </div>
-
-            <div className="space-y-8">
-              <div className="flex items-center justify-between p-6 bg-muted/5 rounded-2xl border border-dashed border-border/60">
-                <div>
-                  <p className="text-[10px] font-bold text-primary uppercase">项目：工业一体机 H24-P</p>
-                  <p className="text-[9px] text-muted-foreground uppercase">最后修改：2024.06.05</p>
-                </div>
                 <Button
                   variant="ghost"
                   className="text-destructive hover:bg-destructive/10 hover:text-destructive h-10 px-4 rounded-xl text-[10px] font-bold uppercase"
@@ -805,156 +1048,11 @@ export const AdminSystemSpecification = React.memo(() => {
         </div>
       </section>
 
-      {/* 13. 路径与导航准则 */}
-      <section id="admin-13" className="space-y-10 pb-20">
+      {/* 10 & 11. 缺省页、加载态与通知反馈 (Empty States, Loading & Notifications) */}
+      <section id="admin-10-11" className="space-y-10 pb-20">
         <div className="flex items-center gap-4 border-b pb-4 border-primary/10">
           <div className="h-2 w-10 bg-primary rounded-full" />
-          <h2 className="text-2xl font-headline font-bold uppercase tracking-widest text-primary">13. 路径与导航 (Navigation Hierarchy)</h2>
-        </div>
-
-        <div className="bg-white p-12 rounded-[3rem] border border-border/40 shadow-sm space-y-12">
-          {/* Breadcrumbs */}
-          <div className="space-y-6">
-            <div className="flex items-center gap-3">
-              <ChevronRight className="h-4 w-4 text-primary" />
-              <span className="text-[11px] font-bold text-primary uppercase tracking-widest">面包屑层级规范 (Breadcrumbs)</span>
-            </div>
-            <div className="p-6 bg-muted/5 rounded-2xl border border-border/40 flex items-center gap-3">
-              <span className="text-[10px] font-bold text-muted-foreground uppercase hover:text-primary cursor-pointer transition-colors">Project Admin</span>
-              <ChevronRight className="h-3 w-3 text-muted-foreground/40" />
-              <span className="text-[10px] font-bold text-muted-foreground uppercase hover:text-primary cursor-pointer transition-colors">Materials</span>
-              <ChevronRight className="h-3 w-3 text-muted-foreground/40" />
-              <span className="text-[10px] font-bold text-primary uppercase tracking-wider">Inventory Editor</span>
-            </div>
-          </div>
-
-          {/* Sidebar States */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
-            <div className="space-y-4">
-              <p className="text-[9px] font-bold text-muted-foreground uppercase tracking-widest">Expanded Sidebar</p>
-              <div className="w-64 h-48 bg-muted/10 rounded-2xl border border-border/40 p-4 space-y-2">
-                <div className="h-10 bg-primary text-white rounded-xl flex items-center px-4 gap-3">
-                  <LayoutGrid className="h-4 w-4" />
-                  <span className="text-[10px] font-bold uppercase">Dashboard</span>
-                </div>
-                <div className="h-10 text-muted-foreground rounded-xl flex items-center px-4 gap-3 hover:bg-muted/20">
-                  <ShoppingBag className="h-4 w-4" />
-                  <span className="text-[10px] font-bold uppercase">Products</span>
-                </div>
-              </div>
-            </div>
-            <div className="space-y-4">
-              <p className="text-[9px] font-bold text-muted-foreground uppercase tracking-widest">Collapsed Sidebar (Icon Only)</p>
-              <div className="w-20 h-48 bg-muted/10 rounded-2xl border border-border/40 p-4 space-y-2 flex flex-col items-center">
-                <div className="h-10 w-10 bg-primary text-white rounded-xl flex items-center justify-center">
-                  <LayoutGrid className="h-4 w-4" />
-                </div>
-                <div className="h-10 w-10 text-muted-foreground rounded-xl flex items-center justify-center hover:bg-muted/20">
-                  <ShoppingBag className="h-4 w-4" />
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* 14. 响应式降级方案 */}
-      <section id="admin-14" className="space-y-10 pb-20">
-        <div className="flex items-center gap-4 border-b pb-4 border-primary/10">
-          <div className="h-2 w-10 bg-primary rounded-full" />
-          <h2 className="text-2xl font-headline font-bold uppercase tracking-widest text-primary">14. 响应式降级 (Responsive Strategy)</h2>
-        </div>
-
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          <div className="bg-white p-8 rounded-[2.5rem] border border-border/40 shadow-sm space-y-6">
-            <div className="flex items-center justify-between">
-              <Monitor className="h-4 w-4 text-primary" />
-              <span className="text-[9px] font-bold text-primary uppercase">Desktop (1440px+)</span>
-            </div>
-            <div className="aspect-video bg-muted/5 rounded-xl border border-dashed border-border/60 p-4 relative overflow-hidden">
-              <div className="absolute right-0 inset-y-0 w-1/3 bg-white/60 backdrop-blur-md border-l border-white/20" />
-              <p className="text-[8px] text-muted-foreground uppercase leading-tight">400px Drawer<br />Side Panel</p>
-            </div>
-          </div>
-
-          <div className="bg-white p-8 rounded-[2.5rem] border border-border/40 shadow-sm space-y-6">
-            <div className="flex items-center justify-between">
-              <Smartphone className="h-4 w-4 text-primary" />
-              <span className="text-[9px] font-bold text-primary uppercase">Tablet (768px - 1024px)</span>
-            </div>
-            <div className="aspect-video bg-muted/5 rounded-xl border border-dashed border-border/60 p-4 flex items-center justify-center">
-              <div className="w-2/3 h-2/3 bg-white/80 backdrop-blur-md border border-white/20 rounded-xl shadow-lg" />
-              <p className="absolute text-[8px] text-muted-foreground uppercase">80% Width Dialog</p>
-            </div>
-          </div>
-
-          <div className="bg-white p-8 rounded-[2.5rem] border border-border/40 shadow-sm space-y-6">
-            <div className="flex items-center justify-between">
-              <Smartphone className="h-4 w-4 text-primary" />
-              <span className="text-[9px] font-bold text-primary uppercase">Mobile ( &lt; 640px)</span>
-            </div>
-            <div className="aspect-video bg-muted/5 rounded-xl border border-dashed border-border/60 p-4 relative">
-              <div className="absolute inset-0 bg-white/90 backdrop-blur-md" />
-              <div className="absolute top-2 right-2 h-4 w-4 bg-muted/20 rounded-full" />
-              <p className="absolute inset-0 flex items-center justify-center text-[8px] text-muted-foreground uppercase">100% Fullscreen</p>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* 15. 深度检查层 */}
-      <section id="admin-15" className="space-y-10 pb-20">
-        <div className="flex items-center gap-4 border-b pb-4 border-primary/10">
-          <div className="h-2 w-10 bg-primary rounded-full" />
-          <h2 className="text-2xl font-headline font-bold uppercase tracking-widest text-primary">15. 深度检查层 (Deep Inspection)</h2>
-        </div>
-
-        <div className="bg-white p-12 rounded-[3rem] border border-border/40 shadow-sm space-y-10 relative overflow-hidden">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-12 items-center">
-            <div className="space-y-6">
-              <div className="flex items-center gap-3">
-                <LineChart className="h-4 w-4 text-primary" />
-                <span className="text-[11px] font-bold text-primary uppercase tracking-widest">技术细节层交互 (Technical Overlay)</span>
-              </div>
-              <div className="space-y-4">
-                <p className="text-xs text-slate-600 leading-relaxed uppercase tracking-wider">
-                  通过点击或悬停关键指标标签触发。展示实时数据的历史上下文与详细趋势分析。
-                </p>
-                <div className="flex flex-wrap gap-3">
-                  <button className="px-4 py-2 bg-primary/5 border border-primary/20 rounded-full text-[9px] font-bold text-primary uppercase hover:bg-primary hover:text-white transition-all group">
-                    CPU Temp: 42°C
-                    <div className="hidden group-hover:block absolute top-full left-0 mt-4 z-50">
-                      <div className="w-64 bg-white/90 backdrop-blur-2xl border border-white/40 shadow-2xl rounded-2xl p-6 animate-in zoom-in-95 duration-200">
-                        <div className="h-24 flex items-end gap-1">
-                          {Array.from({ length: 20 }).map((_, i) => (
-                            <div key={i} className="flex-1 bg-primary/20 rounded-t-sm" style={{ height: `${30 + Math.random() * 60}%` }} />
-                          ))}
-                        </div>
-                        <p className="mt-3 text-[8px] font-bold text-primary uppercase">24H Trend Analysis</p>
-                      </div>
-                    </div>
-                  </button>
-                  <button className="px-4 py-2 bg-muted/5 border border-border/40 rounded-full text-[9px] font-bold text-muted-foreground uppercase">Disk I/O: 12.8 MB/s</button>
-                  <button className="px-4 py-2 bg-muted/5 border border-border/40 rounded-full text-[9px] font-bold text-muted-foreground uppercase">Network Latency: 14ms</button>
-                </div>
-              </div>
-            </div>
-
-            <div className="p-8 bg-muted/5 rounded-[2.5rem] border border-dashed border-border/60 text-center space-y-4">
-              <Maximize className="h-8 w-8 text-primary/20 mx-auto" />
-              <p className="text-[10px] text-muted-foreground uppercase leading-relaxed max-w-xs mx-auto">
-                深度检查模式应避免全屏切换，而是采用 `Technical Overlay` 悬浮层提供即时上下文。
-              </p>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* 16. 暗色模式预研 */}
-      <section id="admin-16" className="space-y-10 pb-40">
-        <div className="flex items-center gap-4 border-b pb-4 border-primary/10">
-          <div className="h-2 w-10 bg-primary rounded-full" />
-          <h2 className="text-2xl font-headline font-bold uppercase tracking-widest text-primary">16. 暗色模式预研 (Dark Mode Readiness)</h2>
+          <h2 className="text-2xl font-headline font-bold uppercase tracking-widest text-primary">10 & 11. 缺省页、加载态与通知反馈</h2>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-10">
@@ -987,11 +1085,94 @@ export const AdminSystemSpecification = React.memo(() => {
                 <div className="h-10 flex-1 bg-cyan-600 rounded-lg shadow-lg shadow-cyan-900/20" />
                 <div className="h-10 flex-1 bg-slate-800 rounded-lg" />
               </div>
-            </div>
-            <p className="text-[9px] text-slate-500 italic uppercase">
-              暗色模式规范：强制使用 Slate-900/950 背景。高亮色建议使用高饱和 Accent（如 Cyan-400），边框透明度提升至 15%。
-            </p>
-          </div>
+              <div className="space-y-6">
+                 <div className="flex items-center gap-4">
+                    <div className="h-12 w-12 rounded-xl bg-muted/20 animate-pulse" />
+                    <div className="space-y-2 flex-1">
+                       <div className="h-3 w-1/3 bg-muted/20 rounded animate-pulse" />
+                       <div className="h-2 w-1/2 bg-muted/10 rounded animate-pulse" />
+                    </div>
+                 </div>
+                 <div className="h-32 bg-muted/10 rounded-2xl animate-pulse" />
+                 <div className="grid grid-cols-3 gap-4">
+                    <div className="h-10 bg-muted/20 rounded-xl animate-pulse" />
+                    <div className="h-10 bg-muted/20 rounded-xl animate-pulse" />
+                    <div className="h-10 bg-muted/20 rounded-xl animate-pulse" />
+                 </div>
+              </div>
+           </div>
+         </div>
+      </section>
+
+      {/* 11. 通知与反馈系统 (Feedback & Notifications) */}
+      <section id="admin-11" className="space-y-10 pb-20">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-10">
+           {/* Toast 演示 */}
+           <div className="lg:col-span-2 bg-white p-10 rounded-[3rem] border border-border/40 shadow-sm space-y-10">
+              <div className="flex items-center gap-3">
+                 <Bell className="h-4 w-4 text-primary" />
+                 <span className="text-[11px] font-bold text-primary uppercase tracking-widest">Toast 通知变体 (Notification Variants)</span>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                 {[
+                   { type: 'Success', msg: '设置已同步至云端', color: 'bg-green-500', icon: CheckCircle2 },
+                   { type: 'Error', msg: '数据库连接超时 (504)', color: 'bg-rose-500', icon: ShieldAlert },
+                   { type: 'Warning', msg: '系统内存占用已达 85%', color: 'bg-orange-500', icon: AlertTriangle },
+                   { type: 'Info', msg: '新的固件版本已就绪', color: 'bg-blue-500', icon: Info }
+                 ].map(t => (
+                   <button 
+                     key={t.type}
+                     onClick={() => {
+                        setActiveToast(t.type);
+                        setTimeout(() => setActiveToast(null), 3000);
+                     }}
+                     className="flex items-center justify-between p-4 rounded-2xl bg-muted/5 border border-border/40 hover:border-primary/40 transition-all group"
+                   >
+                      <div className="flex items-center gap-3">
+                         <div className={cn("h-8 w-8 rounded-lg flex items-center justify-center text-white", t.color)}>
+                            <t.icon className="h-4 w-4" />
+                         </div>
+                         <div className="text-left">
+                            <p className="text-[10px] font-bold text-primary uppercase">{t.type}</p>
+                            <p className="text-[9px] text-muted-foreground uppercase">{t.msg}</p>
+                         </div>
+                      </div>
+                      <Plus className="h-3 w-3 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
+                   </button>
+                 ))}
+              </div>
+              
+              {/* Active Toast Visualization */}
+              {activeToast && (
+                <div className="absolute top-10 right-10 z-[120] animate-in slide-in-from-right-10 duration-500">
+                  <div className="bg-white/80 backdrop-blur-xl border border-white/40 shadow-2xl rounded-2xl p-6 flex items-center gap-6 min-w-[320px]">
+                     <div className={cn(
+                       "h-12 w-12 rounded-2xl flex items-center justify-center text-white shadow-lg",
+                       activeToast === 'Success' ? 'bg-green-500' : 
+                       activeToast === 'Error' ? 'bg-rose-500' : 
+                       activeToast === 'Warning' ? 'bg-orange-500' : 'bg-blue-500'
+                     )}>
+                        <Activity className="h-6 w-6" />
+                     </div>
+                     <div>
+                        <h5 className="text-xs font-bold text-primary uppercase tracking-widest">{activeToast} Notification</h5>
+                        <p className="text-[10px] text-muted-foreground uppercase mt-1">System feedback protocol active.</p>
+                     </div>
+                  </div>
+                </div>
+              )}
+           </div>
+
+           <div className="bg-muted/10 p-10 rounded-[3rem] border border-dashed border-border/60 flex flex-col justify-center space-y-6">
+              <div className="flex items-center gap-2">
+                 <ShieldAlert className="h-4 w-4 text-primary" />
+                 <span className="text-[10px] font-bold uppercase">交互层级规范</span>
+              </div>
+              <p className="text-[10px] text-muted-foreground uppercase leading-relaxed">
+                全域通知必须采用 Glassmorphism 准则。<br/>
+                Admin 系统的 Toast 建议悬浮于右上角，层级设为 z-[120] 以上。
+              </p>
+           </div>
         </div>
       </section>
     </div>

@@ -90,6 +90,7 @@ export const AiInteractionSpecification = React.memo(() => {
             </div>
           </div>
         </div>
+
       </div>
     </section>
   );

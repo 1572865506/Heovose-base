@@ -37,7 +37,7 @@ import {
 } from 'lucide-react';
 
 export const TimelineNav = ({ activeSystem }: { activeSystem: string }) => {
-  const [activeSection, setActiveSection] = useState(activeSystem === 'frontend' ? 'section-00' : 'admin-01');
+  const [activeSection, setActiveSection] = useState(activeSystem === 'frontend' ? 'section-00' : 'admin-shared-01');
 
   const frontendSections = [
     { id: 'section-00', title: '00. 核心色彩', icon: ShoppingBag },
@@ -61,28 +61,27 @@ export const TimelineNav = ({ activeSystem }: { activeSystem: string }) => {
   ];
 
   const adminSections = [
-    { id: 'admin-01', title: '01. 视觉语言', icon: Building2 },
-    { id: 'admin-02', title: '02. 字体表单', icon: Type },
-    { id: 'admin-03', title: '03. 控件状态', icon: MousePointer2 },
-    { id: 'admin-04', title: '04. AI 交互', icon: Sparkles },
-    { id: 'admin-05', title: '05. 业务逻辑', icon: Cpu },
-    { id: 'admin-06', title: '06. 看板度量', icon: Gauge },
-    { id: 'admin-07', title: '07. 高级过滤', icon: Filter },
-    { id: 'admin-08', title: '08. 详情面板', icon: Layout },
-    { id: 'admin-09', title: '09. 权限审计', icon: Settings },
-    { id: 'admin-10', title: '10. 异常与撤销', icon: AlertCircle },
-    { id: 'admin-11', title: '11. 缺省与加载', icon: Ghost },
-    { id: 'admin-12', title: '12. 通知与对话', icon: Bell },
-    { id: 'admin-13', title: '13. 路径与导航', icon: ChevronRight },
-    { id: 'admin-14', title: '14. 响应式降级', icon: Smartphone },
-    { id: 'admin-15', title: '15. 深度检查层', icon: LineChart },
-    { id: 'admin-16', title: '16. 暗色模式预研', icon: Moon },
+    { id: 'admin-shared-01', title: '01. 字体系统', icon: Type },
+    { id: 'admin-shared-02', title: '02. 几何投影', icon: Layers },
+    { id: 'admin-shared-03', title: '03. 按钮系统', icon: Zap },
+    { id: 'admin-shared-04', title: '04. 交互组件', icon: MousePointer2 },
+    { id: 'admin-01', title: '05. 字体表单', icon: Type },
+    { id: 'admin-02', title: '06. 控件状态', icon: MousePointer2 },
+    { id: 'admin-03', title: '07. AI 交互', icon: Sparkles },
+    { id: 'admin-04', title: '08. 业务逻辑', icon: Cpu },
+    { id: 'admin-05', title: '09. 看板度量', icon: Gauge },
+    { id: 'admin-06', title: '10. 高级过滤', icon: Filter },
+    { id: 'admin-07', title: '11. 详情面板', icon: Layout },
+    { id: 'admin-08', title: '12. 权限审计', icon: Settings },
+    { id: 'admin-09', title: '13. 异常与撤销', icon: AlertCircle },
+    { id: 'admin-10', title: '14. 缺省与加载', icon: Ghost },
+    { id: 'admin-11', title: '15. 通知与对话', icon: Bell },
   ];
 
   const sections = activeSystem === 'frontend' ? frontendSections : adminSections;
 
   useEffect(() => {
-    setActiveSection(activeSystem === 'frontend' ? 'section-00' : 'admin-01');
+    setActiveSection(activeSystem === 'frontend' ? 'section-00' : 'admin-shared-01');
   }, [activeSystem]);
 
   useEffect(() => {
