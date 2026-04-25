@@ -23,12 +23,19 @@ import {
   Loader2, 
   Image as ImageIcon, 
   Film,
-  Video
+  Video,
+  Plus,
+  Trash2,
+  ArrowUp,
+  ArrowDown,
+  Layers
 } from 'lucide-react';
 import { setDocumentNonBlocking } from '@/firebase/non-blocking-updates';
 import { useToast } from '@/hooks/use-toast';
 import { translateContent } from '@/ai/flows/translate-flow';
 import { cn } from '@/lib/utils';
+import { GalleryPicker } from '@/components/admin/GalleryPicker';
+import Image from 'next/image';
 
 // AI 极光渐变定义组件
 const AiGradientDef = () => (
@@ -77,6 +84,7 @@ export default function AdminHomePage() {
     heroProjectButtonEn: '',
     heroWholesaleCategoryId: '',
     heroProjectCategoryId: '',
+    heroSlides: [],
     isVideoEnabled: true,
     videoTitleZh: '',
     videoTitleEn: '',
@@ -86,9 +94,23 @@ export default function AdminHomePage() {
 
   const [isSaving, setIsSaving] = useState(false);
   const [isAiProcessing, setIsAiProcessing] = useState(false);
+  const [pickerConfig, setPickerConfig] = useState<{ open: boolean, slideIndex: number | null }>({ open: false, slideIndex: null });
 
   useEffect(() => {
     if (homeData) {
+      const existingSlides = homeData.heroSlides || [];
+      const initialSlides = existingSlides.length > 0 
+        ? existingSlides 
+        : [{
+            id: 'legacy-default',
+            headlineZh: homeData.heroHeadlineZh || '',
+            headlineEn: homeData.heroHeadlineEn || '',
+            subheadlineZh: homeData.heroSubheadlineZh || '',
+            subheadlineEn: homeData.heroSubheadlineEn || '',
+            bgImage: "/image/hero-bg.png",
+            priority: 0
+          }];
+
       setFormData({ 
         ...formData, 
         heroHeadlineZh: homeData.heroHeadlineZh || '',
@@ -101,6 +123,7 @@ export default function AdminHomePage() {
         heroProjectButtonEn: homeData.heroProjectButtonEn || '',
         heroWholesaleCategoryId: homeData.heroWholesaleCategoryId || '',
         heroProjectCategoryId: homeData.heroProjectCategoryId || '',
+        heroSlides: initialSlides,
         isVideoEnabled: homeData.isVideoEnabled ?? true,
         videoTitleZh: homeData.videoTitleZh || '',
         videoTitleEn: homeData.videoTitleEn || '',
@@ -121,7 +144,7 @@ export default function AdminHomePage() {
 
     setTimeout(() => {
       setIsSaving(false);
-      toast({ title: "首页基础内容已保存" });
+      toast({ title: "首页配置已保存" });
     }, 800);
   };
 
@@ -133,7 +156,8 @@ export default function AdminHomePage() {
 
     setIsAiProcessing(true);
     try {
-      const updates: any = {};
+      const updates: any = { ...localFormData };
+      
       for (const field of fields) {
         if (!localFormData[field.source]) continue;
         const res = await translateContent({
@@ -143,6 +167,26 @@ export default function AdminHomePage() {
         });
         if (res.en) updates[field.targetKey] = res.en;
       }
+
+      const translatedSlides = await Promise.all(localFormData.heroSlides.map(async (slide: any) => {
+        const headlineRes = await translateContent({
+          text: slide.headlineZh || '',
+          targetLangs: ['en'],
+          apiKey: aiConfig.apiKey
+        });
+        const subheadlineRes = await translateContent({
+          text: slide.subheadlineZh || '',
+          targetLangs: ['en'],
+          apiKey: aiConfig.apiKey
+        });
+        return {
+          ...slide,
+          headlineEn: headlineRes.en || slide.headlineEn,
+          subheadlineEn: subheadlineRes.en || slide.subheadlineEn
+        };
+      }));
+
+      updates.heroSlides = translatedSlides;
       return updates;
     } catch (error: any) {
       toast({ variant: "destructive", title: "智译失败", description: error.message });
@@ -150,6 +194,42 @@ export default function AdminHomePage() {
     } finally {
       setIsAiProcessing(false);
     }
+  };
+
+  const addSlide = () => {
+    const newSlide = {
+      id: `slide_${Date.now()}`,
+      headlineZh: '新标题',
+      headlineEn: 'New Headline',
+      subheadlineZh: '新副标题',
+      subheadlineEn: 'New Subheadline',
+      bgImage: "/image/hero-bg.png",
+      priority: formData.heroSlides.length
+    };
+    setFormData({ ...formData, heroSlides: [...formData.heroSlides, newSlide] });
+  };
+
+  const removeSlide = (index: number) => {
+    const newSlides = formData.heroSlides.filter((_: any, i: number) => i !== index);
+    setFormData({ ...formData, heroSlides: newSlides });
+  };
+
+  const updateSlide = (index: number, updates: any) => {
+    const newSlides = [...formData.heroSlides];
+    newSlides[index] = { ...newSlides[index], ...updates };
+    setFormData({ ...formData, heroSlides: newSlides });
+  };
+
+  const moveSlide = (index: number, direction: 'up' | 'down') => {
+    const newSlides = [...formData.heroSlides];
+    const targetIndex = direction === 'up' ? index - 1 : index + 1;
+    if (targetIndex < 0 || targetIndex >= newSlides.length) return;
+    
+    const temp = newSlides[index];
+    newSlides[index] = newSlides[targetIndex];
+    newSlides[targetIndex] = temp;
+    
+    setFormData({ ...formData, heroSlides: newSlides });
   };
 
   const getCategoryName = (id: string) => {
@@ -197,84 +277,174 @@ export default function AdminHomePage() {
         </TabsList>
 
         <TabsContent value="hero" className="space-y-6">
+          <div className="bg-white p-8 rounded-3xl border shadow-sm space-y-6">
+            <h3 className="text-sm font-bold text-primary uppercase tracking-widest flex items-center gap-2 border-b pb-4">
+              <Layers className="h-4 w-4" /> 底部入口卡片配置
+            </h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
+              <div className="p-5 rounded-2xl bg-muted/5 border border-dashed space-y-4">
+                <span className="text-[10px] font-bold uppercase text-primary">批发入口按钮 (ZH / EN)</span>
+                <div className="grid grid-cols-2 gap-3">
+                  <Input value={formData.heroWholesaleButtonZh} onChange={e => setFormData({...formData, heroWholesaleButtonZh: e.target.value})} placeholder="中文" className="h-10 rounded-xl" />
+                  <Input value={formData.heroWholesaleButtonEn} onChange={e => setFormData({...formData, heroWholesaleButtonEn: e.target.value})} placeholder="English" className="h-10 rounded-xl border-dashed" />
+                </div>
+                <Select value={formData.heroWholesaleCategoryId} onValueChange={v => setFormData({...formData, heroWholesaleCategoryId: v})}>
+                  <SelectTrigger className="h-10 rounded-xl"><SelectValue placeholder="选择跳转分类" /></SelectTrigger>
+                  <SelectContent className="rounded-xl">
+                    <SelectItem value="none">全部分类</SelectItem>
+                    {categories?.map((cat: any) => <SelectItem key={cat.id} value={cat.id} className="text-xs">{getCategoryName(cat.id)}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="p-5 rounded-2xl bg-muted/5 border border-dashed space-y-4">
+                <span className="text-[10px] font-bold uppercase text-primary">项目入口按钮 (ZH / EN)</span>
+                <div className="grid grid-cols-2 gap-3">
+                  <Input value={formData.heroProjectButtonZh} onChange={e => setFormData({...formData, heroProjectButtonZh: e.target.value})} placeholder="中文" className="h-10 rounded-xl" />
+                  <Input value={formData.heroProjectButtonEn} onChange={e => setFormData({...formData, heroProjectButtonEn: e.target.value})} placeholder="English" className="h-10 rounded-xl border-dashed" />
+                </div>
+                <Select value={formData.heroProjectCategoryId} onValueChange={v => setFormData({...formData, heroProjectCategoryId: v})}>
+                  <SelectTrigger className="h-10 rounded-xl"><SelectValue placeholder="选择跳转分类" /></SelectTrigger>
+                  <SelectContent className="rounded-xl">
+                    {categories?.map((cat: any) => <SelectItem key={cat.id} value={cat.id} className="text-xs">{getCategoryName(cat.id)}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+          </div>
+
           <div className="bg-white p-8 rounded-3xl border shadow-sm space-y-8">
             <div className="flex items-center justify-between border-b pb-4">
-              <h3 className="text-sm font-bold text-primary uppercase tracking-widest flex items-center gap-2">
-                <ImageIcon className="h-4 w-4" /> 英雄屏核心内容
-              </h3>
-              <Button 
-                variant="ghost" 
-                size="sm" 
-                className="ai-btn-glow h-9 px-4 text-[10px] gap-2 font-bold"
-                onClick={async () => {
-                   const updates = await handleTranslate([
-                     {source: 'heroHeadlineZh', targetKey: 'heroHeadlineEn'}, 
-                     {source: 'heroSubheadlineZh', targetKey: 'heroSubheadlineEn'},
-                     {source: 'heroWholesaleButtonZh', targetKey: 'heroWholesaleButtonEn'},
-                     {source: 'heroProjectButtonZh', targetKey: 'heroProjectButtonEn'}
-                   ]);
-                   if(updates) setFormData({...formData, ...updates});
-                }}
-                disabled={isAiProcessing}
-              >
-                <Sparkles className="h-3.5 w-3.5 ai-icon-gradient" /> AI 智译本页
-              </Button>
-            </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
-              <div className="space-y-6">
-                <div className="space-y-4">
-                  <div className="space-y-2">
-                    <Label className="text-[10px] font-bold uppercase text-primary/40 tracking-wider">主标题 (ZH)</Label>
-                    <Input value={formData.heroHeadlineZh} onChange={e => setFormData({...formData, heroHeadlineZh: e.target.value})} className="h-11 rounded-xl" />
-                  </div>
-                  <div className="space-y-2">
-                    <Label className="text-[10px] font-bold uppercase text-primary/40 tracking-wider">副标题 (ZH)</Label>
-                    <Input value={formData.heroSubheadlineZh} onChange={e => setFormData({...formData, heroSubheadlineZh: e.target.value})} className="h-11 rounded-xl" />
-                  </div>
-                </div>
-                <div className="grid grid-cols-1 gap-6">
-                  <div className="p-5 rounded-2xl bg-muted/5 border border-dashed space-y-4">
-                    <span className="text-[10px] font-bold uppercase text-primary">批发入口按钮</span>
-                    <Input value={formData.heroWholesaleButtonZh} onChange={e => setFormData({...formData, heroWholesaleButtonZh: e.target.value})} placeholder="按钮显示文字" className="h-10 rounded-xl" />
-                    <Select value={formData.heroWholesaleCategoryId} onValueChange={v => setFormData({...formData, heroWholesaleCategoryId: v})}>
-                      <SelectTrigger className="h-10 rounded-xl"><SelectValue placeholder="选择跳转分类" /></SelectTrigger>
-                      <SelectContent className="rounded-xl">
-                        <SelectItem value="none">全部分类</SelectItem>
-                        {categories?.map((cat: any) => <SelectItem key={cat.id} value={cat.id} className="text-xs">{getCategoryName(cat.id)}</SelectItem>)}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div className="p-5 rounded-2xl bg-muted/5 border border-dashed space-y-4">
-                    <span className="text-[10px] font-bold uppercase text-primary">项目入口按钮</span>
-                    <Input value={formData.heroProjectButtonZh} onChange={e => setFormData({...formData, heroProjectButtonZh: e.target.value})} placeholder="按钮显示文字" className="h-10 rounded-xl" />
-                    <Select value={formData.heroProjectCategoryId} onValueChange={v => setFormData({...formData, heroProjectCategoryId: v})}>
-                      <SelectTrigger className="h-10 rounded-xl"><SelectValue placeholder="选择跳转分类" /></SelectTrigger>
-                      <SelectContent className="rounded-xl">
-                        {categories?.map((cat: any) => <SelectItem key={cat.id} value={cat.id} className="text-xs">{getCategoryName(cat.id)}</SelectItem>)}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </div>
+              <div className="space-y-1">
+                <h3 className="text-sm font-bold text-primary uppercase tracking-widest flex items-center gap-2">
+                  <ImageIcon className="h-4 w-4" /> 英雄屏视觉卡片管理
+                </h3>
+                <p className="text-[10px] text-muted-foreground">设置一张或多张背景卡片。多张卡片将自动启用轮播效果。</p>
               </div>
-              <div className="space-y-6 border-l pl-10 border-dashed">
-                <div className="space-y-2">
-                  <Label className="text-[10px] font-bold uppercase text-primary/40 tracking-wider">HEADLINE (EN)</Label>
-                  <Input value={formData.heroHeadlineEn} onChange={e => setFormData({...formData, heroHeadlineEn: e.target.value})} className="h-11 rounded-xl border-dashed" />
-                </div>
-                <div className="space-y-2">
-                  <Label className="text-[10px] font-bold uppercase text-primary/40 tracking-wider">SUBHEADLINE (EN)</Label>
-                  <Input value={formData.heroSubheadlineEn} onChange={e => setFormData({...formData, heroSubheadlineEn: e.target.value})} className="h-11 rounded-xl border-dashed" />
-                </div>
-                <div className="space-y-2 pt-14">
-                  <Label className="text-[10px] font-bold uppercase text-primary/40 tracking-wider">WHOLESALE BUTTON (EN)</Label>
-                  <Input value={formData.heroWholesaleButtonEn} onChange={e => setFormData({...formData, heroWholesaleButtonEn: e.target.value})} className="h-10 rounded-xl border-dashed" />
-                </div>
-                <div className="space-y-2 pt-14">
-                  <Label className="text-[10px] font-bold uppercase text-primary/40 tracking-wider">PROJECT BUTTON (EN)</Label>
-                  <Input value={formData.heroProjectButtonEn} onChange={e => setFormData({...formData, heroProjectButtonEn: e.target.value})} className="h-10 rounded-xl border-dashed" />
-                </div>
+              <div className="flex gap-3">
+                <Button 
+                  variant="ghost" 
+                  size="sm" 
+                  className="ai-btn-glow h-9 px-4 text-[10px] gap-2 font-bold"
+                  onClick={async () => {
+                    const updates = await handleTranslate([
+                      {source: 'heroWholesaleButtonZh', targetKey: 'heroWholesaleButtonEn'},
+                      {source: 'heroProjectButtonZh', targetKey: 'heroProjectButtonEn'}
+                    ]);
+                    if(updates) setFormData({...formData, ...updates});
+                  }}
+                  disabled={isAiProcessing}
+                >
+                  <Sparkles className="h-3.5 w-3.5 ai-icon-gradient" /> AI 智译全部内容
+                </Button>
+                <Button onClick={addSlide} size="sm" className="rounded-xl h-9 px-4 gap-2 text-[10px] font-bold uppercase tracking-wider shadow-md">
+                  <Plus className="h-3.5 w-3.5" /> 添加新内容卡片
+                </Button>
               </div>
             </div>
+
+            <div className="space-y-6">
+              {formData.heroSlides.map((slide: any, index: number) => (
+                <div key={slide.id} className="group relative bg-muted/5 rounded-3xl border border-dashed p-6 hover:border-primary/40 hover:bg-muted/10 transition-all duration-500">
+                  <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+                    <div className="lg:col-span-3 space-y-3">
+                      <Label className="text-[10px] font-bold uppercase opacity-40">背景图片</Label>
+                      <div 
+                        className="relative aspect-[16/9] rounded-2xl overflow-hidden cursor-pointer group/img border-2 border-transparent hover:border-primary transition-all shadow-lg"
+                        onClick={() => setPickerConfig({ open: true, slideIndex: index })}
+                      >
+                        <Image src={slide.bgImage} alt="Preview" fill className="object-cover" unoptimized />
+                        <div className="absolute inset-0 bg-black/40 opacity-0 group-hover/img:opacity-100 flex items-center justify-center transition-opacity">
+                          <ImageIcon className="text-white h-8 w-8" />
+                        </div>
+                      </div>
+                      <Button 
+                        variant="outline" 
+                        size="sm" 
+                        className="w-full rounded-xl h-9 text-[10px] font-bold"
+                        onClick={() => setPickerConfig({ open: true, slideIndex: index })}
+                      >
+                        更改背景
+                      </Button>
+                    </div>
+
+                    <div className="lg:col-span-8 grid grid-cols-1 md:grid-cols-2 gap-6">
+                      <div className="space-y-4">
+                        <div className="space-y-2">
+                          <Label className="text-[10px] font-bold uppercase opacity-40">主标题 (ZH)</Label>
+                          <Input 
+                            value={slide.headlineZh} 
+                            onChange={e => updateSlide(index, { headlineZh: e.target.value })} 
+                            className="h-10 rounded-xl bg-white" 
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label className="text-[10px] font-bold uppercase opacity-40">副标题 (ZH)</Label>
+                          <Input 
+                            value={slide.subheadlineZh} 
+                            onChange={e => updateSlide(index, { subheadlineZh: e.target.value })} 
+                            className="h-10 rounded-xl bg-white" 
+                          />
+                        </div>
+                      </div>
+                      <div className="space-y-4 md:border-l md:pl-6 border-dashed">
+                        <div className="space-y-2">
+                          <Label className="text-[10px] font-bold uppercase opacity-40">HEADLINE (EN)</Label>
+                          <Input 
+                            value={slide.headlineEn} 
+                            onChange={e => updateSlide(index, { headlineEn: e.target.value })} 
+                            className="h-10 rounded-xl bg-white border-dashed" 
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label className="text-[10px] font-bold uppercase opacity-40">SUBHEADLINE (EN)</Label>
+                          <Input 
+                            value={slide.subheadlineEn} 
+                            onChange={e => updateSlide(index, { subheadlineEn: e.target.value })} 
+                            className="h-10 rounded-xl bg-white border-dashed" 
+                          />
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="lg:col-span-1 flex flex-row lg:flex-col items-center justify-center gap-2 border-t lg:border-t-0 lg:border-l pt-4 lg:pt-0 lg:pl-4 border-dashed">
+                      <Button 
+                        variant="ghost" 
+                        size="icon" 
+                        className="h-8 w-8 rounded-full text-muted-foreground hover:text-primary"
+                        onClick={() => moveSlide(index, 'up')}
+                        disabled={index === 0}
+                      >
+                        <ArrowUp className="h-4 w-4" />
+                      </Button>
+                      <Button 
+                        variant="ghost" 
+                        size="icon" 
+                        className="h-8 w-8 rounded-full text-muted-foreground hover:text-primary"
+                        onClick={() => moveSlide(index, 'down')}
+                        disabled={index === formData.heroSlides.length - 1}
+                      >
+                        <ArrowDown className="h-4 w-4" />
+                      </Button>
+                      <Button 
+                        variant="ghost" 
+                        size="icon" 
+                        className="h-8 w-8 rounded-full text-destructive/40 hover:text-destructive hover:bg-destructive/5"
+                        onClick={() => removeSlide(index)}
+                        disabled={formData.heroSlides.length <= 1}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {formData.heroSlides.length === 0 && (
+              <div className="py-20 text-center bg-muted/5 border-2 border-dashed rounded-[2.5rem]">
+                <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest opacity-40">暂无内容卡片，请点击右上角添加</p>
+              </div>
+            )}
           </div>
         </TabsContent>
 
@@ -340,6 +510,17 @@ export default function AdminHomePage() {
           </div>
         </TabsContent>
       </Tabs>
+
+      <GalleryPicker 
+        open={pickerConfig.open}
+        onOpenChange={(open) => setPickerConfig({ ...pickerConfig, open })}
+        onSelect={(url) => {
+          if (pickerConfig.slideIndex !== null) {
+            updateSlide(pickerConfig.slideIndex, { bgImage: url });
+          }
+        }}
+        currentValue={pickerConfig.slideIndex !== null ? formData.heroSlides[pickerConfig.slideIndex]?.bgImage : undefined}
+      />
     </div>
   );
 }
