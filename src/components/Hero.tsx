@@ -169,69 +169,73 @@ export function Hero({ locale, homeConfig }: HeroProps) {
       <div className="pointer-events-none absolute inset-0 z-40">
         <div className="container mx-auto px-6 h-full relative">
 
-          {/* Entry Cards - Responsive & Balanced */}
+          {/* Entry Cards - Responsive & Balanced with Enhanced Hover */}
           <div className="absolute bottom-10 md:bottom-[102px] right-0 left-0 md:left-auto md:right-0 px-6 md:px-0 w-full md:max-w-2xl pointer-events-auto transform translate-z-0 z-50">
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 md:gap-8 w-full">
               {/* Wholesale Card */}
               <Link 
                 href={wholesaleHref}
-                className="group relative h-32 md:h-40 rounded-[2rem] md:rounded-[2.5rem] hover:border-primary/30 transition-all duration-700 cursor-pointer overflow-hidden shadow-2xl border border-white/10"
+                className="group relative h-32 md:h-40 rounded-[2rem] md:rounded-[2.5rem] transition-all duration-700 ease-[cubic-bezier(0.23,1,0.32,1)] cursor-pointer overflow-hidden shadow-2xl border border-white/10 hover:-translate-y-3 hover:scale-[1.02] hover:shadow-primary/30 hover:border-primary/30"
               >
                 <div className="absolute inset-0 z-0">
                   <Image
                     src={wholesaleBg}
                     alt="Wholesale"
                     fill
-                    className="object-cover transition-transform duration-1000 group-hover:scale-110"
+                    className="object-cover transition-transform duration-1000 ease-out group-hover:scale-110"
                   />
-                  <div className="absolute inset-0 bg-black/50 group-hover:bg-black/30 transition-colors duration-700" />
+                  <div className="absolute inset-0 bg-black/60 group-hover:bg-primary/20 transition-colors duration-700" />
                 </div>
                 <div className="relative z-20 h-full p-6 md:p-8 flex flex-col justify-end">
                   <div className="flex items-end justify-between">
-                    <div className="space-y-1">
-                      <h3 className="text-xl md:text-2xl font-headline font-bold text-white leading-tight tracking-tight">
+                    <div className="space-y-1 transform transition-transform duration-500 group-hover:-translate-y-1">
+                      <h3 className="text-xl md:text-2xl font-headline font-bold text-white leading-tight tracking-tight group-hover:text-primary-foreground transition-colors">
                         {displayWholesaleButton}
                       </h3>
-                      <p className="text-white/50 text-[8px] md:text-[10px] uppercase tracking-[0.2em] font-bold group-hover:text-primary transition-colors">
+                      <p className="text-white/50 text-[8px] md:text-[10px] uppercase tracking-[0.2em] font-bold group-hover:text-white transition-colors">
                         Standard Wholesale
                       </p>
                     </div>
-                    <div className="w-10 h-10 md:w-12 md:h-12 rounded-full glass-frosted flex items-center justify-center text-white border border-white/20 group-hover:bg-white group-hover:text-primary transition-all duration-500 shadow-xl group-hover:scale-110">
+                    <div className="w-10 h-10 md:w-12 md:h-12 rounded-full glass-frosted flex items-center justify-center text-white border border-white/20 group-hover:bg-primary group-hover:text-white group-hover:border-transparent transition-all duration-500 shadow-xl group-hover:scale-110 group-hover:rotate-45">
                       <ArrowUpRight className="h-5 w-5 md:h-6 md:w-6" />
                     </div>
                   </div>
                 </div>
+                {/* Shine Effect on Hover */}
+                <div className="absolute inset-0 bg-gradient-to-tr from-white/0 via-white/5 to-white/0 translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-1000 ease-in-out pointer-events-none" />
               </Link>
 
               {/* Project Card */}
               <Link 
                 href={projectHref}
-                className="group relative h-32 md:h-40 rounded-[2rem] md:rounded-[2.5rem] hover:border-accent/30 transition-all duration-700 cursor-pointer overflow-hidden shadow-2xl border border-white/10"
+                className="group relative h-32 md:h-40 rounded-[2rem] md:rounded-[2.5rem] transition-all duration-700 ease-[cubic-bezier(0.23,1,0.32,1)] cursor-pointer overflow-hidden shadow-2xl border border-white/10 hover:-translate-y-3 hover:scale-[1.02] hover:shadow-accent/30 hover:border-accent/30"
               >
                 <div className="absolute inset-0 z-0">
                   <Image
                     src={projectBg}
                     alt="Projects"
                     fill
-                    className="object-cover transition-transform duration-1000 group-hover:scale-110"
+                    className="object-cover transition-transform duration-1000 ease-out group-hover:scale-110"
                   />
-                  <div className="absolute inset-0 bg-black/50 group-hover:bg-black/30 transition-colors duration-700" />
+                  <div className="absolute inset-0 bg-black/60 group-hover:bg-accent/20 transition-colors duration-700" />
                 </div>
                 <div className="relative z-20 h-full p-6 md:p-8 flex flex-col justify-end">
                   <div className="flex items-end justify-between">
-                    <div className="space-y-1">
-                      <h3 className="text-xl md:text-2xl font-headline font-bold text-white leading-tight tracking-tight">
+                    <div className="space-y-1 transform transition-transform duration-500 group-hover:-translate-y-1">
+                      <h3 className="text-xl md:text-2xl font-headline font-bold text-white leading-tight tracking-tight group-hover:text-accent-foreground transition-colors">
                         {displayProjectButton}
                       </h3>
-                      <p className="text-white/50 text-[8px] md:text-[10px] uppercase tracking-[0.2em] font-bold group-hover:text-accent transition-colors">
+                      <p className="text-white/50 text-[8px] md:text-[10px] uppercase tracking-[0.2em] font-bold group-hover:text-white transition-colors">
                         Custom Projects
                       </p>
                     </div>
-                    <div className="w-10 h-10 md:w-12 md:h-12 rounded-full glass-frosted flex items-center justify-center text-white border border-white/20 group-hover:bg-white group-hover:text-accent transition-all duration-500 shadow-xl group-hover:scale-110">
+                    <div className="w-10 h-10 md:w-12 md:h-12 rounded-full glass-frosted flex items-center justify-center text-white border border-white/20 group-hover:bg-accent group-hover:text-white group-hover:border-transparent transition-all duration-500 shadow-xl group-hover:scale-110 group-hover:rotate-45">
                       <ArrowUpRight className="h-5 w-5 md:h-6 md:w-6" />
                     </div>
                   </div>
                 </div>
+                {/* Shine Effect on Hover */}
+                <div className="absolute inset-0 bg-gradient-to-tr from-white/0 via-white/5 to-white/0 translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-1000 ease-in-out pointer-events-none" />
               </Link>
             </div>
           </div>
