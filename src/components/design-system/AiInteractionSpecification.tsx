@@ -18,7 +18,7 @@ export const AiInteractionSpecification = React.memo(() => {
         <div className="absolute top-0 right-0 -translate-y-1/2 translate-x-1/2 w-96 h-96 bg-primary/5 rounded-full blur-3xl" />
         
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-16">
-          {/* 14.3 AI 视觉资产标准 (Aurora Glow) */}
+          {/* 14.2 AI 视觉资产标准 (Aurora Glow) */}
           <div className="space-y-8">
             <div className="flex items-center gap-3">
               <Sparkles className="h-4 w-4 text-primary" />
@@ -54,7 +54,7 @@ export const AiInteractionSpecification = React.memo(() => {
             </div>
             
             <div className="grid grid-cols-1 gap-12">
-              {/* 14.2 AI 按钮几何形态 */}
+              {/* 14.1 AI 按钮几何形态 */}
               <div className="space-y-4">
                 <p className="text-[9px] font-bold text-muted-foreground uppercase tracking-widest">Capsule (旗舰级独立功能)</p>
                 <div className="flex flex-wrap gap-4 items-center">
@@ -87,41 +87,6 @@ export const AiInteractionSpecification = React.memo(() => {
                   </ShinyButton>
                 </div>
               </div>
-            </div>
-          </div>
-        </div>
-
-        {/* 14.1 AI-Aura 加载态 */}
-        <div className="pt-16 border-t border-dashed border-border/60">
-          <div className="flex items-center gap-3 mb-8">
-            <Loader2 className="h-4 w-4 text-primary" />
-            <span className="text-[11px] font-bold text-primary uppercase tracking-widest">AI-Aura 加载与生成逻辑 (Aura Loading)</span>
-          </div>
-          
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
-            <div className="space-y-4">
-              <Label className="text-[10px] font-bold uppercase text-primary">智算态输入框 (Active Aura)</Label>
-              <div className="relative group">
-                <div className="absolute -inset-[1px] bg-gradient-to-r from-cyan-400 via-indigo-500 to-rose-400 rounded-lg blur-sm opacity-20 group-hover:opacity-40 transition-opacity animate-pulse" />
-                <Input 
-                  readOnly 
-                  defaultValue="正在智能生成内容..." 
-                  className="h-12 bg-white/80 border-primary/20 rounded-lg relative z-10 text-xs font-medium pl-10" 
-                />
-                <Loader2 className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-primary animate-spin z-20" />
-              </div>
-              <p className="text-[9px] text-muted-foreground italic">规范：激活 AI 任务时，Input 强制 Read-only 并开启流光外扩光晕。</p>
-            </div>
-
-            <div className="space-y-4">
-              <p className="text-[10px] font-bold uppercase text-primary">生成式骨架屏 (Generative Skeleton)</p>
-              <div className="p-6 bg-muted/5 rounded-2xl border border-border/40 space-y-4 overflow-hidden relative">
-                 <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent -translate-x-full animate-[shimmer_2s_infinite]" />
-                 <div className="h-4 w-3/4 bg-gradient-to-r from-cyan-500/10 via-indigo-500/10 to-rose-500/10 rounded-full" />
-                 <div className="h-4 w-full bg-gradient-to-r from-cyan-500/10 via-indigo-500/10 to-rose-500/10 rounded-full" />
-                 <div className="h-4 w-1/2 bg-gradient-to-r from-cyan-500/10 via-indigo-500/10 to-rose-500/10 rounded-full" />
-              </div>
-              <p className="text-[9px] text-muted-foreground italic">规范：不使用纯灰色，采用低饱和色彩梯度模拟生成感。</p>
             </div>
           </div>
         </div>

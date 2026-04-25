@@ -258,22 +258,17 @@
 
 ## 14. AI 智算与交互全链路规范 (AI Interaction Standards)
 
-### 14.1 AI-Aura 加载态 (AI-Aura Loading)
-针对正在与 API 交互或生成内容的组件，必须提供具备品牌辨识度的动态反馈：
-*   **流光边框 (Shimmer Border)**: 输入框或容器外围应用 `2px` 的旋转 `conic-gradient`（使用品牌彩虹色：Cyan, Indigo, Rose）。
-*   **生成式骨架屏 (Generative Skeleton)**: 占位内容不使用纯灰色，而是采用低饱和度的彩虹渐变微光 (`animate-shimmer`)。
-
-### 14.2 AI 按钮几何形态 (Button Geometry)
+### 14.1 AI 按钮几何形态 (Button Geometry)
 为了平衡“高科技感”与“系统一致性”，AI 按钮支持双形态配置：
 *   **胶囊型 (Capsule)**: 默认形态，使用 `rounded-[360px]`，适用于旗舰级独立功能。
 *   **圆角型 (Rounded)**: 遵循系统标准 `rounded-lg` (8px)，适用于嵌入式表单或次级 AI 操作，确保几何语言不产生割裂。
 
-### 14.3 AI 视觉资产标准 (Visual Assets)
+### 14.2 AI 视觉资产标准 (Visual Assets)
 *   **极光背景 (Aurora Glow)**: AI 核心展区必须应用多层 `Mesh Gradient`（网格渐变），模糊度设定为 `100px`，配合 `animate-aurora` 实现流体律动。
 *   **物理旋转 (Physical Rotation)**: AI 相关图标（如 Sparkles）禁止使用匀速旋转。必须采用 **非线性物理旋转**：每隔 `3s` 触发一次 `360deg` 旋转，且旋转过程伴随物理加速度感知。
 *   **虹彩渐变 (Iridescent Gradient)**: 图标描边必须应用 `linearGradient` 虹彩定义，且渐变位移须与旋转周期同步重置，确保视觉连续性。
 
-### 14.4 交互逻辑约束
+### 14.3 交互逻辑约束
 *   **智译/生成态**: 激活 AI 任务时，相关 Input 强制开启 `AI-Aura` 流光效果，并锁定为 Read-only，直到数据回传完成。
 
 ---

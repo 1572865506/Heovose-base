@@ -46,6 +46,10 @@
 
 ### 2.2 AI 交互规范 (AI Interaction)
 *   **视觉效果**: AI 相关图标与边框必须应用 **`ai-btn-glow`** 与 **`ai-icon-gradient`**。采用 4 色极光流动渐变，配合呼吸感光晕。
+*   **AI-Aura 加载与生成逻辑 (Aura Loading)**:
+    针对正在与 API 交互或生成内容的组件，必须提供具备品牌辨识度的动态反馈：
+    *   **流光边框 (Shimmer Border)**: 输入框或容器外围应用 `2px` 的旋转 `conic-gradient`（使用品牌彩虹色：Cyan, Indigo, Rose）。
+    *   **生成式骨架屏 (Generative Skeleton)**: 占位内容不使用纯灰色，而是采用低饱和度的彩虹渐变微光 (`animate-shimmer`)。
 *   **智译按钮标准**: 
     1.  **完整版 (Full)**: 图标 + "AI 智译"，用于页面级主工具栏。
     2.  **简短版 (Short)**: 图标 + "智译"，用于板块级副工具栏。
