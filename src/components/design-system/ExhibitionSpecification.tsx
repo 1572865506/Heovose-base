@@ -3,7 +3,7 @@
 import React from 'react';
 import { Monitor, Globe, ChevronRight, LayoutGrid, ChevronDown, ArrowUpRight, GalleryHorizontal, Play, Maximize } from 'lucide-react';
 
-export const ExhibitionSpecification = React.memo(() => {
+export const ExhibitionSpecification = React.memo(({ variant = 'frontend' }: { variant?: 'frontend' | 'backend' }) => {
   return (
     <section id="section-16" className="space-y-10 pb-40">
       <div className="flex items-center gap-4 border-b pb-4 border-primary/10">

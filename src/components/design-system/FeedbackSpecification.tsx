@@ -6,7 +6,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { useToast } from '@/hooks/use-toast';
 import { Box, Monitor, Bell, CheckCircle2, AlertCircle } from 'lucide-react';
 
-export const FeedbackSpecification = React.memo(() => {
+export const FeedbackSpecification = React.memo(({ variant = 'frontend' }: { variant?: 'frontend' | 'backend' }) => {
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
 
