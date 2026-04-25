@@ -15,9 +15,6 @@ export function SectionHeading({ title, subtitle, centered = false, className }:
       centered ? "text-center" : "text-left",
       className
     )}>
-      <h2 className="text-3xl md:text-5xl font-headline font-bold text-primary animate-fade-in-up">
-        {title}
-      </h2>
       {subtitle && (
         <p className="text-muted-foreground text-lg md:text-xl max-w-2xl mx-auto md:mx-0 animate-fade-in-up [animation-delay:100ms]">
           {subtitle}

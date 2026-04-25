@@ -1,37 +1,39 @@
+
 "use client";
 
 import React, { useState, useEffect } from 'react';
 import { cn } from '@/lib/utils';
-import { 
-  ShoppingBag, 
-  Type, 
-  Layers, 
-  Zap, 
-  MousePointer2, 
-  Terminal, 
-  TableProperties, 
-  Tag, 
-  Workflow, 
-  LayoutGrid, 
-  Layout, 
-  GalleryHorizontal, 
-  Sparkles, 
-  Activity, 
-  Loader2, 
-  Monitor, 
-  Building2, 
-  Cpu, 
-  Gauge, 
-  Filter, 
-  Settings, 
-  AlertCircle, 
-  Ghost, 
-  Bell, 
-  ChevronRight, 
-  Smartphone, 
-  LineChart, 
+import {
+  ShoppingBag,
+  Type,
+  Layers,
+  Zap,
+  MousePointer2,
+  Terminal,
+  TableProperties,
+  Tag,
+  Workflow,
+  LayoutGrid,
+  Layout,
+  GalleryHorizontal,
+  Sparkles,
+  Activity,
+  Loader2,
+  Monitor,
+  Building2,
+  Cpu,
+  Gauge,
+  Filter,
+  Settings,
+  AlertCircle,
+  Ghost,
+  Bell,
+  ChevronRight,
+  Smartphone,
+  LineChart,
   Moon,
-  Wand2
+  Wand2,
+  Eye
 } from 'lucide-react';
 
 export const TimelineNav = ({ activeSystem }: { activeSystem: string }) => {
@@ -55,6 +57,7 @@ export const TimelineNav = ({ activeSystem }: { activeSystem: string }) => {
     { id: 'frontend-14', title: '14. AI 智算交互', icon: Wand2 },
     { id: 'section-15', title: '15. 反馈与加载', icon: Loader2 },
     { id: 'section-16', title: '16. 导航与展示', icon: Monitor },
+    { id: 'section-17', title: '17. 文字可读性规范', icon: Eye },
   ];
 
   const adminSections = [
@@ -91,9 +94,9 @@ export const TimelineNav = ({ activeSystem }: { activeSystem: string }) => {
           }
         });
       },
-      { 
-        threshold: 0.1, 
-        rootMargin: '-20% 0px -60% 0px' 
+      {
+        threshold: 0.1,
+        rootMargin: '-20% 0px -60% 0px'
       }
     );
 
@@ -150,12 +153,12 @@ export const TimelineNav = ({ activeSystem }: { activeSystem: string }) => {
                 </div>
               </div>
             )}
-            
+
             {/* Dot/Icon container */}
             <div className={cn(
               "h-6 w-6 rounded-full flex items-center justify-center transition-all duration-500 border relative overflow-hidden",
-              isActive 
-                ? "border-primary bg-primary text-white scale-110 shadow-lg shadow-primary/20" 
+              isActive
+                ? "border-primary bg-primary text-white scale-110 shadow-lg shadow-primary/20"
                 : "border-border/20 bg-white/60 text-muted-foreground hover:border-primary/40 hover:text-primary hover:scale-105"
             )}>
               <Icon className={cn(

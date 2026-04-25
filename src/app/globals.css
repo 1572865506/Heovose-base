@@ -36,6 +36,11 @@
     /* Project Specific Color */
     --project: 24.6 95% 53.1%;
     --project-foreground: 0 0% 100%;
+
+    /* Radius Tokens */
+    --radius-brand: 2.5rem;
+    --radius-container: 1rem;
+    --radius-component: 0.5rem;
   }
 }
 
@@ -133,4 +138,50 @@
 
 .glass-morphism {
   @apply bg-white/70 backdrop-blur-md border border-white/20;
+}
+
+/* Design System Glass Levels */
+.glass-crystal {
+  @apply bg-white/30 backdrop-blur-[4px] border border-white/20;
+}
+
+.glass-frosted {
+  @apply bg-white/60 backdrop-blur-[12px] border border-white/20;
+}
+
+.glass-deep {
+  @apply bg-white/80 backdrop-blur-[40px] border border-white/10 shadow-2xl;
+}
+
+.glass-eclipse {
+  @apply bg-black/40 backdrop-blur-[12px] border border-white/10;
+}
+
+/* Aurora Mesh Gradient */
+.bg-aurora {
+  background: linear-gradient(
+    135deg,
+    rgba(0, 91, 153, 0.15) 0%,
+    rgba(249, 115, 22, 0.1) 50%,
+    rgba(252, 220, 0, 0.05) 100%
+  );
+  position: relative;
+  overflow: hidden;
+}
+
+.bg-aurora::after {
+  content: "";
+  position: absolute;
+  top: -50%;
+  left: -50%;
+  width: 200%;
+  height: 200%;
+  background: radial-gradient(
+    circle at center,
+    rgba(0, 91, 153, 0.1) 0%,
+    transparent 50%
+  );
+  animation: aurora-mesh 15s linear infinite;
+  filter: blur(100px);
+  z-index: -1;
 }

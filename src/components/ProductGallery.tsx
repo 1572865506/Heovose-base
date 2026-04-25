@@ -24,8 +24,10 @@ export function ProductGallery({ locale }: { locale: Locale }) {
   const [current, setCurrent] = useState(0);
   const [count, setCount] = useState(0);
   const [isPlaying, setIsPlaying] = useState(true);
+  const [progress, setProgress] = useState(0);
+
   const plugin = useRef(
-    Autoplay({ delay: 4000, stopOnInteraction: false })
+    Autoplay({ delay: 5000, stopOnInteraction: false })
   );
 
   const products = [
@@ -75,8 +77,25 @@ export function ProductGallery({ locale }: { locale: Locale }) {
 
     api.on("select", () => {
       setCurrent(api.selectedScrollSnap());
+      setProgress(0);
     });
   }, [api]);
+
+  useEffect(() => {
+    if (!isPlaying || !api) return;
+    
+    const intervalTime = 50;
+    const step = (intervalTime / 5000) * 100;
+
+    const timer = setInterval(() => {
+      setProgress((prev) => {
+        if (prev >= 100) return 0;
+        return prev + step;
+      });
+    }, intervalTime);
+
+    return () => clearInterval(timer);
+  }, [isPlaying, current, api]);
 
   const toggleAutoplay = useCallback(() => {
     const autoplay = plugin.current;
@@ -90,7 +109,7 @@ export function ProductGallery({ locale }: { locale: Locale }) {
   }, []);
 
   return (
-    <section id="products" className="relative z-20 py-24 bg-background overflow-hidden shadow-[0_50px_100px_rgba(0,0,0,0.1)]">
+    <section id="products" className="relative z-20 py-24 bg-background overflow-hidden shadow-[0_50px_100px_rgba(0,0,0,0.1)] group/carousel">
       <div className="container mx-auto px-6">
         <SectionHeading title={t.title} subtitle={t.subtitle} />
       </div>
@@ -105,13 +124,13 @@ export function ProductGallery({ locale }: { locale: Locale }) {
           }}
           className="w-full overflow-visible"
         >
-          <CarouselContent className="-ml-6" viewportClassName="py-16 overflow-visible">
+          <CarouselContent className="-ml-8" viewportClassName="py-16 overflow-visible">
             {products.map((product) => {
               const imgData = PlaceHolderImages.find(img => img.id === product.id);
               return (
-                <CarouselItem key={product.id} className="pl-6 md:basis-1/2 lg:basis-1/3 xl:basis-1/4">
-                  <div className="group flex flex-col bg-white rounded-[2rem] shadow-sm hover:shadow-2xl hover:-translate-y-2 transition-all duration-500 border border-border/20 h-full">
-                    <div className="relative aspect-[11/9] w-full overflow-hidden bg-muted/20 rounded-t-[2rem]">
+                <CarouselItem key={product.id} className="pl-8 md:basis-1/2 lg:basis-1/3 xl:basis-1/4">
+                  <div className="group flex flex-col bg-white rounded-[2.5rem] shadow-sm hover:shadow-2xl hover:-translate-y-2 transition-all duration-500 border border-border/20 h-full overflow-hidden">
+                    <div className="relative aspect-[11/9] w-full overflow-hidden bg-muted/20">
                       {imgData?.imageUrl && (
                         <Image
                           src={imgData.imageUrl}
@@ -133,7 +152,7 @@ export function ProductGallery({ locale }: { locale: Locale }) {
                         </p>
                       </div>
                       
-                      <div className="flex items-center justify-between mt-auto pt-6">
+                      <div className="flex items-center justify-between mt-auto pt-6 border-t border-border/50">
                         <Link 
                           href={`/products?category=${encodeURIComponent(product.slug)}`}
                           className="flex items-center gap-2 text-sm font-bold text-primary group/btn tracking-tighter"
@@ -153,28 +172,48 @@ export function ProductGallery({ locale }: { locale: Locale }) {
           </CarouselContent>
         </Carousel>
 
-        <div className="container mx-auto px-6 mt-4">
-          <div className="flex items-center justify-end gap-6 max-w-md ml-auto">
-            <div className="flex gap-2 flex-grow h-1.5 items-center">
+        {/* Carousel Indicators & Progress Bar */}
+        <div className="container mx-auto px-6 mt-12">
+          <div className="flex items-center justify-center lg:justify-end gap-8 max-w-4xl ml-auto">
+            {/* Progress Indicators */}
+            <div className="flex gap-3 h-1.5 items-center flex-grow max-w-xs">
               {Array.from({ length: count }).map((_, i) => (
-                <div
+                <button
                   key={i}
+                  onClick={() => api?.scrollTo(i)}
                   className={cn(
-                    "h-full rounded-full transition-all duration-500",
-                    i === current ? "bg-primary w-12" : "bg-muted w-6"
+                    "relative h-full rounded-full transition-all duration-500 cursor-pointer overflow-hidden flex-grow",
+                    i === current ? "bg-muted w-16" : "bg-muted w-8 hover:bg-muted-foreground/20"
                   )}
-                />
+                >
+                  {i === current && (
+                    <div 
+                      className="absolute inset-0 bg-primary origin-left transition-all duration-[50ms] linear"
+                      style={{ width: `${progress}%` }}
+                    />
+                  )}
+                </button>
               ))}
             </div>
 
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={toggleAutoplay}
-              className="rounded-full hover:bg-primary/10 text-primary h-12 w-12 shrink-0"
-            >
-              {isPlaying ? <Pause className="h-6 w-6" /> : <Play className="h-6 w-6" />}
-            </Button>
+            {/* Digital Index */}
+            <div className="flex items-center gap-3 text-primary/40 font-mono text-sm font-bold">
+              <span className="text-primary">{String(current + 1).padStart(2, '0')}</span>
+              <span className="h-4 w-[1px] bg-border" />
+              <span>{String(count).padStart(2, '0')}</span>
+            </div>
+
+            {/* Controls */}
+            <div className="flex items-center gap-2">
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={toggleAutoplay}
+                className="rounded-full hover:bg-primary/10 text-primary h-12 w-12 shrink-0 border border-border/50"
+              >
+                {isPlaying ? <Pause className="h-5 w-5" /> : <Play className="h-5 w-5" />}
+              </Button>
+            </div>
           </div>
         </div>
       </div>

@@ -1,3 +1,4 @@
+
 "use client";
 
 import React, { useState } from 'react';
@@ -40,6 +41,7 @@ import { MotionSpecification } from '@/components/design-system/MotionSpecificat
 import { AiInteractionSpecification } from '@/components/design-system/AiInteractionSpecification';
 import { FeedbackSpecification } from '@/components/design-system/FeedbackSpecification';
 import { ExhibitionSpecification } from '@/components/design-system/ExhibitionSpecification';
+import { ReadabilitySpecification } from '@/components/design-system/ReadabilitySpecification';
 import { AdminSystemSpecification } from '@/components/design-system/AdminSystemSpecification';
 
 export default function DesignSystemPage() {
@@ -117,6 +119,7 @@ export default function DesignSystemPage() {
             <AiInteractionSpecification />
             <FeedbackSpecification />
             <ExhibitionSpecification />
+            <ReadabilitySpecification />
           </div>
         ) : (
           <div className="animate-in fade-in slide-in-from-bottom-4 duration-700">

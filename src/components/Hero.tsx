@@ -4,7 +4,7 @@
 import Image from 'next/image';
 import Link from 'next/link';
 import { Locale, translations } from "@/lib/translations";
-import { ShoppingBag, Building2 } from "lucide-react";
+import { ArrowUpRight } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface HeroProps {
@@ -33,12 +33,10 @@ export function Hero({ locale, homeConfig }: HeroProps) {
     : (homeConfig?.heroProjectButtonEn || t.project);
 
   // 动态解析跳转路径
-  // 批发按钮：如果设置了分类ID则跳转至分类，否则跳转全部分类
   const wholesaleHref = homeConfig?.heroWholesaleCategoryId && homeConfig.heroWholesaleCategoryId !== 'none'
     ? `/products?category=${homeConfig.heroWholesaleCategoryId}`
     : "/products";
 
-  // 项目按钮：如果设置了分类ID则跳转至分类，否则默认跳转 Industrial
   const projectHref = homeConfig?.heroProjectCategoryId && homeConfig.heroProjectCategoryId !== 'none'
     ? `/products?category=${homeConfig.heroProjectCategoryId}`
     : "/products?category=Industrial";
@@ -50,70 +48,111 @@ export function Hero({ locale, homeConfig }: HeroProps) {
       {/* Background Image with Dynamic Glass Effect */}
       <div className="absolute inset-0 z-0">
         <Image
-          src="/image/whiteboard02.png"
+          src="/image/hero-bg.png"
           alt="Heovose Hero Background"
           fill
           className="object-cover opacity-100"
           priority
         />
         
-        {/* Left-to-Right Glass Blur Gradient - Optimized for responsive clear view */}
+        {/* Left-to-Right Glass Blur Gradient */}
         <div 
           className="absolute inset-0 z-10 backdrop-blur-3xl [mask-image:linear-gradient(to_right,rgba(0,0,0,1)_0%,rgba(0,0,0,1)_15%,rgba(0,0,0,0)_50%)]" 
         />
         
-        {/* Subtle color overlay for text contrast */}
+        {/* Subtle color overlay */}
         <div className="absolute inset-0 bg-gradient-to-r from-primary/20 via-transparent to-transparent z-20" />
       </div>
 
-      <div className="container mx-auto px-6 relative z-30">
-        <div className="max-w-4xl animate-fade-in-up">
-          {/* Headline and Subheadline */}
-          <div className="space-y-6">
-            <span className="text-accent font-bold tracking-[0.3em] uppercase text-xs bg-accent/20 px-5 py-2 rounded-full inline-block border border-accent/30 backdrop-blur-md">
-              Heovose Elevate
-            </span>
-            <h1 className="text-6xl md:text-8xl lg:text-9xl font-headline font-bold text-white leading-[0.85] tracking-tighter uppercase">
-              {displayHeadline}
-            </h1>
-            <h2 className="text-2xl md:text-3xl text-white/80 font-light max-w-xl leading-relaxed">
-              {displaySubheadline}
-            </h2>
+      <div className="container mx-auto px-6 relative z-30 h-[calc(100vh-160px)] min-h-[600px]">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 h-full animate-fade-in-up">
+          {/* Left Column: Headline and Subheadline - Vertically Centered */}
+          <div className="flex items-center h-full">
+            <div className="max-w-4xl space-y-10">
+              <div className="space-y-6">
+                <h1 className="text-6xl md:text-8xl lg:text-[120px] font-headline font-bold text-white leading-[0.8] tracking-[-0.05em] uppercase">
+                  {displayHeadline}
+                </h1>
+                <h2 className="text-2xl md:text-4xl text-white/70 font-body max-w-2xl leading-tight">
+                  {displaySubheadline}
+                </h2>
+              </div>
+            </div>
           </div>
           
-          {/* Entry Cards */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 pt-12 max-w-xl">
-            {/* Wholesale Card */}
-            <Link 
-              href={wholesaleHref}
-              className="group relative bg-white/10 backdrop-blur-2xl p-6 rounded-[2rem] border border-white/20 hover:border-accent/40 transition-all duration-700 cursor-pointer overflow-hidden shadow-[0_20px_40px_rgba(0,0,0,0.3)]"
-            >
-              <div className="absolute inset-0 bg-gradient-to-br from-accent/30 via-transparent to-white/10 opacity-0 group-hover:opacity-100 transition-opacity duration-700 pointer-events-none" />
-              <div className="relative space-y-4">
-                <div className="w-14 h-14 bg-[#6b7c7c]/40 backdrop-blur-sm rounded-xl flex items-center justify-center text-accent shadow-inner transition-transform duration-500">
-                  <ShoppingBag className="h-7 w-7 stroke-[1.5]" />
+          {/* Right Column: Entry Cards - Bottom Aligned */}
+          <div className="flex items-end h-full pb-12 lg:pb-0">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 w-full lg:max-w-xl ml-auto">
+              {/* Wholesale Card */}
+              <Link 
+                href={wholesaleHref}
+                className="group relative h-48 rounded-[2.5rem] hover:border-[#005B99]/50 transition-all duration-700 cursor-pointer overflow-hidden shadow-2xl border border-white/10"
+              >
+                {/* Background Image */}
+                <div className="absolute inset-0 z-0">
+                  <Image
+                    src="/image/Wholesale Product.png"
+                    alt="Wholesale"
+                    fill
+                    className="object-cover transition-transform duration-1000 group-hover:scale-110"
+                  />
+                  <div className="absolute inset-0 bg-black/40 group-hover:bg-black/30 transition-colors duration-700" />
                 </div>
-                <h3 className="text-xl md:text-2xl font-headline font-bold text-white leading-tight tracking-tight">
-                  {displayWholesaleButton}
-                </h3>
-              </div>
-            </Link>
 
-            {/* Project Card */}
-            <Link 
-              href={projectHref}
-              className="group relative bg-white/10 backdrop-blur-2xl p-6 rounded-[2rem] border border-white/20 hover:border-accent/40 transition-all duration-700 cursor-pointer overflow-hidden shadow-[0_20px_40px_rgba(0,0,0,0.3)]"
-            >
-              <div className="absolute inset-0 bg-gradient-to-br from-accent/30 via-transparent to-white/10 opacity-0 group-hover:opacity-100 transition-opacity duration-700 pointer-events-none" />
-              <div className="relative space-y-4">
-                <div className="w-14 h-14 bg-[#6b7c7c]/40 backdrop-blur-sm rounded-xl flex items-center justify-center text-white/90 shadow-inner transition-transform duration-500">
-                  <Building2 className="h-7 w-7 stroke-[1.5]" />
+                <div className="absolute inset-0 bg-gradient-to-br from-[#005B99]/40 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-700 pointer-events-none z-10" />
+                
+                <div className="relative z-20 h-full p-6 flex flex-col justify-end">
+                  <div className="flex items-end justify-between">
+                    <div className="space-y-1">
+                      <h3 className="text-xl font-headline font-bold text-white leading-tight tracking-tight">
+                        {displayWholesaleButton}
+                      </h3>
+                      <p className="text-white/60 text-[9px] uppercase tracking-widest font-bold group-hover:text-[#005B99] transition-colors">
+                        Standard Wholesale
+                      </p>
+                    </div>
+                    <div className="w-10 h-10 rounded-full glass-frosted flex items-center justify-center text-white border border-white/20 group-hover:bg-white group-hover:text-[#005B99] transition-all duration-500 shadow-lg">
+                      <ArrowUpRight className="h-5 w-5" />
+                    </div>
+                  </div>
                 </div>
-                <h3 className="text-xl md:text-2xl font-headline font-bold text-white leading-tight tracking-tight">
-                  {displayProjectButton}
-                </h3>
-              </div>
-            </Link>
+              </Link>
+
+              {/* Project Card */}
+              <Link 
+                href={projectHref}
+                className="group relative h-48 rounded-[2.5rem] hover:border-[#F97316]/50 transition-all duration-700 cursor-pointer overflow-hidden shadow-2xl border border-white/10"
+              >
+                {/* Background Image */}
+                <div className="absolute inset-0 z-0">
+                  <Image
+                    src="/image/Project Product-2.png"
+                    alt="Projects"
+                    fill
+                    className="object-cover transition-transform duration-1000 group-hover:scale-110"
+                  />
+                  <div className="absolute inset-0 bg-black/40 group-hover:bg-black/30 transition-colors duration-700" />
+                </div>
+
+                <div className="absolute inset-0 bg-gradient-to-br from-[#F97316]/40 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-700 pointer-events-none z-10" />
+                
+                <div className="relative z-20 h-full p-6 flex flex-col justify-end">
+                  <div className="flex items-end justify-between">
+                    <div className="space-y-1">
+                      <h3 className="text-xl font-headline font-bold text-white leading-tight tracking-tight">
+                        {displayProjectButton}
+                      </h3>
+                      <p className="text-white/60 text-[9px] uppercase tracking-widest font-bold group-hover:text-[#F97316] transition-colors">
+                        Custom Projects
+                      </p>
+                    </div>
+                    <div className="w-10 h-10 rounded-full glass-frosted flex items-center justify-center text-white border border-white/20 group-hover:bg-white group-hover:text-[#F97316] transition-all duration-500 shadow-lg">
+                      <ArrowUpRight className="h-5 w-5" />
+                    </div>
+                  </div>
+                </div>
+              </Link>
+            </div>
           </div>
         </div>
       </div>

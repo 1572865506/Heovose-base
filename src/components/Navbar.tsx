@@ -89,19 +89,19 @@ export function Navbar({ locale, setLocale }: NavbarProps) {
       onMouseEnter={onMouseEnter}
       onMouseLeave={onMouseLeave}
     >
-      <div className="flex-1 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-x-8 gap-y-10">
-        <div className="col-span-full border-b border-border pb-4">
+      <div className="flex-1 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-x-8 gap-y-10">
+        <div className="col-span-full border-b border-border/50 pb-4">
           <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">
             {locale === 'en' ? 'Portfolio' : '产品组合'}
           </span>
         </div>
         {items.map((item) => (
-          <DropdownMenuItem key={item.label} asChild className="p-0 bg-transparent hover:bg-transparent focus:bg-transparent">
+          <DropdownMenuItem key={item.label} asChild className="p-0 bg-transparent hover:bg-transparent focus:bg-transparent transition-all duration-300">
             <Link 
               href={item.href} 
               className="flex gap-4 group cursor-pointer outline-none focus:outline-none"
             >
-              <div className="w-12 h-12 rounded-xl bg-primary/5 flex items-center justify-center text-primary group-hover:bg-primary group-hover:text-white transition-all duration-300">
+              <div className="w-12 h-12 rounded-xl bg-primary/5 flex items-center justify-center text-primary group-hover:bg-primary group-hover:text-white transition-all duration-300 group-hover:scale-110">
                 <item.icon className="h-6 w-6" />
               </div>
               <div className="flex-1">
@@ -115,11 +115,11 @@ export function Navbar({ locale, setLocale }: NavbarProps) {
       
       {/* Featured Card */}
       <div className="lg:w-80 shrink-0">
-        <div className="bg-muted/30 rounded-3xl p-6 border border-border/50 h-full flex flex-col">
+        <div className="bg-primary/5 rounded-[2rem] p-6 border border-primary/10 h-full flex flex-col group/card transition-all duration-500 hover:bg-primary/10">
           <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest mb-4 block">
             {sub.featured}
           </span>
-          <div className="relative aspect-video rounded-2xl overflow-hidden mb-6 shadow-lg">
+          <div className="relative aspect-video rounded-2xl overflow-hidden mb-6 shadow-lg group-hover/card:scale-[1.02] transition-transform duration-500">
             <Image 
               src="https://picsum.photos/seed/nav-featured/400/225" 
               alt="Featured"
@@ -144,9 +144,9 @@ export function Navbar({ locale, setLocale }: NavbarProps) {
 
   return (
     <nav className={cn(
-      "fixed top-0 left-0 right-0 z-[110] transition-all duration-500 border-b",
+      "fixed top-0 left-0 right-0 z-[110] transition-all duration-500 border-b border-t-0 border-x-0",
       isNavbarActive 
-        ? "bg-white/90 backdrop-blur-xl border-white/20 shadow-sm" 
+        ? "glass-frosted border-white/20 shadow-sm" 
         : "bg-transparent border-transparent"
     )}>
       <div className={cn(
@@ -189,8 +189,8 @@ export function Navbar({ locale, setLocale }: NavbarProps) {
                   onMouseEnter={() => setOpenWholesale(true)}
                   onMouseLeave={() => setOpenWholesale(false)}
                 >
-                  <div className="w-full">
-                    <div className="bg-white/95 backdrop-blur-xl shadow-2xl border-b border-border animate-in fade-in slide-in-from-top-2 duration-300">
+                  <div className="container mx-auto px-6 py-4">
+                    <div className="glass-deep rounded-[2.5rem] shadow-2xl border border-white/20 animate-in fade-in slide-in-from-top-4 duration-500">
                       <MegaMenuContent 
                         items={wholesaleItems} 
                         onMouseEnter={() => setOpenWholesale(true)}
@@ -223,8 +223,8 @@ export function Navbar({ locale, setLocale }: NavbarProps) {
                   onMouseEnter={() => setOpenProjects(true)}
                   onMouseLeave={() => setOpenProjects(false)}
                 >
-                  <div className="w-full">
-                    <div className="bg-white/95 backdrop-blur-xl shadow-2xl border-b border-border animate-in fade-in slide-in-from-top-2 duration-300">
+                  <div className="container mx-auto px-6 py-4">
+                    <div className="glass-deep rounded-[2.5rem] shadow-2xl border border-white/20 animate-in fade-in slide-in-from-top-4 duration-500">
                       <MegaMenuContent 
                         items={projectItems} 
                         onMouseEnter={() => setOpenProjects(true)}

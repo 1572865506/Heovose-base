@@ -43,7 +43,7 @@ export function ProductBento({ locale }: { locale: Locale }) {
                 key={index}
                 href={`/products?category=${encodeURIComponent(item.slug)}`}
                 className={cn(
-                  "group relative rounded-[2rem] overflow-hidden border border-border/40 bg-muted/20 transition-all duration-700 hover:shadow-2xl hover:border-primary/20",
+                  "group relative rounded-[2.5rem] overflow-hidden border border-border/40 bg-muted/5 transition-all duration-700 hover:shadow-2xl hover:border-primary/20",
                   item.grid
                 )}
               >
@@ -58,20 +58,20 @@ export function ProductBento({ locale }: { locale: Locale }) {
                 )}
                 
                 {/* Overlay with glass effect */}
-                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/10 to-transparent opacity-60 group-hover:opacity-100 transition-opacity duration-500" />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/20 to-transparent opacity-70 group-hover:opacity-100 transition-opacity duration-500" />
                 
                 {/* Content Area */}
-                <div className="absolute inset-0 p-6 flex flex-col justify-end">
-                  <div className="space-y-2 transform translate-y-4 group-hover:translate-y-0 transition-transform duration-500">
-                    <span className="inline-block px-2 py-0.5 bg-accent/20 backdrop-blur-md text-accent text-[9px] font-bold tracking-widest uppercase rounded-sm border border-accent/20">
+                <div className="absolute inset-0 p-8 flex flex-col justify-end">
+                  <div className="space-y-3 transform translate-y-4 group-hover:translate-y-0 transition-transform duration-500">
+                    <span className="inline-block px-3 py-1 glass-crystal text-accent text-[10px] font-bold tracking-[0.2em] uppercase rounded-full border border-white/10">
                       {item.category}
                     </span>
-                    <div className="flex items-center justify-between gap-2">
-                      <h3 className="text-lg font-headline font-bold text-white leading-tight">
+                    <div className="flex items-center justify-between gap-4">
+                      <h3 className="text-xl md:text-2xl font-headline font-bold text-white leading-tight tracking-tight">
                         {item.label}
                       </h3>
-                      <div className="h-8 w-8 rounded-full bg-white/10 backdrop-blur-md flex items-center justify-center text-white opacity-0 group-hover:opacity-100 transition-all duration-500 hover:bg-accent hover:text-accent-foreground">
-                        <ArrowUpRight className="h-4 w-4" />
+                      <div className="h-10 w-10 rounded-full glass-frosted flex items-center justify-center text-white opacity-0 group-hover:opacity-100 transition-all duration-500 hover:bg-primary hover:text-white hover:scale-110">
+                        <ArrowUpRight className="h-5 w-5" />
                       </div>
                     </div>
                   </div>

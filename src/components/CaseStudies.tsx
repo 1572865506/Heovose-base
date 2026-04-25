@@ -218,34 +218,6 @@ export function CaseStudies({ locale }: { locale: Locale }) {
         </Carousel>
       </div>
 
-      <div className="container mx-auto px-6 mt-16 relative z-10">
-        <div className="flex items-center justify-end gap-6 max-w-xl ml-auto">
-          <div className="flex gap-2 h-1 items-center">
-            {Array.from({ length: count }).map((_, i) => (
-              <button
-                key={i}
-                onClick={() => api?.scrollTo(i)}
-                className={cn(
-                  "relative h-full rounded-full transition-all duration-500 cursor-pointer border-none p-0 outline-none overflow-hidden bg-muted-foreground/20",
-                  i === current ? "w-10" : "w-3 hover:bg-muted-foreground/40"
-                )}
-              >
-                {i === current && (
-                  <div 
-                    className="absolute inset-0 bg-primary origin-left"
-                    style={{ width: `${progress}%`, transition: progress === 0 ? 'none' : 'width 50ms linear' }}
-                  />
-                )}
-              </button>
-            ))}
-          </div>
-          <div className="flex items-center ml-2">
-            <Button variant="ghost" size="icon" onClick={toggleAutoplay} className="rounded-full hover:bg-primary/5 text-primary h-9 w-9 shrink-0 border border-transparent">
-              {isPlaying ? <Pause className="h-5 w-5" /> : <Play className="h-5 w-5" />}
-            </Button>
-          </div>
-        </div>
-      </div>
     </section>
   );
 }
