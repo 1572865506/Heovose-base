@@ -39,6 +39,7 @@ import {
   ShieldCheck,
   Copy,
   ExternalLink,
+  CheckCircle2,
   ChevronRight,
   Sparkles,
   GitMerge,
@@ -58,7 +59,9 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { ShinyButton } from '@/components/ui/shiny-button';
 import { translateContent } from '@/ai/flows/translate-flow';
+import { translations as localLibrary } from '@/lib/translations';
 
 // AI 极光渐变定义组件 - 增强色距与饱和度
 const AiGradientDef = () => (
@@ -80,6 +83,12 @@ const AiGradientDef = () => (
       </linearGradient>
     </defs>
   </svg>
+);
+
+const GlassCard = ({ children, className }: { children: React.ReactNode, className?: string }) => (
+  <div className={cn("bg-white/70 backdrop-blur-xl border border-white/40 shadow-2xl rounded-3xl overflow-hidden", className)}>
+    {children}
+  </div>
 );
 
 interface LocalizedString {
@@ -113,6 +122,8 @@ export default function TranslationsPage() {
   const [isCleaning, setIsCleaning] = useState(false);
   const [isMerging, setIsMerging] = useState(false);
   const [translatingId, setTranslatingId] = useState<string | null>(null);
+  const [isSyncingLocal, setIsSyncingLocal] = useState(false);
+  const [showSyncConfirm, setShowSyncConfirm] = useState(false);
   
   const [formData, setFormData] = useState<Record<string, string>>({ id: '' });
   const [newLang, setNewLang] = useState({ code: '', label: '' });
@@ -283,13 +294,71 @@ export default function TranslationsPage() {
     if (ml.length === 0) return;
     setTranslatingId(t.id);
     try {
-      const res = await translateContent({ text: st, sourceLang: sc, targetLangs: ml, model: aiConfig.model });
+      const res = await translateContent({ text: st, sourceLang: sc, targetLangs: ml, model: aiConfig.model, apiKey: aiConfig.apiKey });
       if (res && firestore) {
         setDocumentNonBlocking(doc(firestore, 'localizedStrings', t.id), { ...t, ...res, updatedAt: serverTimestamp() }, { merge: true });
         toast({ title: "AI 智译成功" });
       }
     } catch (e) { toast({ variant: "destructive", title: "AI 翻译失败" }); }
     finally { setTranslatingId(null); }
+  };
+
+  const handleSyncFromLocal = async () => {
+    if (!firestore) return;
+    setIsSyncingLocal(true);
+    setShowSyncConfirm(false);
+    
+    try {
+      const { writeBatch } = await import('firebase/firestore');
+      const batch = writeBatch(firestore);
+
+      const flatten = (obj: any, prefix = '') => {
+        let result: any = {};
+        for (let key in obj) {
+          if (typeof obj[key] === 'object' && obj[key] !== null) {
+            Object.assign(result, flatten(obj[key], `${prefix}${key}_`));
+          } else {
+            result[`${prefix}${key}`] = obj[key];
+          }
+        }
+        return result;
+      };
+
+      const locales = Object.keys(localLibrary);
+      const allKeys = new Set<string>();
+      const flattenedByLocale: any = {};
+
+      locales.forEach(l => {
+        flattenedByLocale[l] = flatten((localLibrary as any)[l]);
+        Object.keys(flattenedByLocale[l]).forEach(k => allKeys.add(k));
+      });
+
+      const keysArray = Array.from(allKeys);
+      const CHUNK_SIZE = 400; // 安全阈值，避免 500 限制
+      
+      for (let i = 0; i < keysArray.length; i += CHUNK_SIZE) {
+        const batch = writeBatch(firestore);
+        const chunk = keysArray.slice(i, i + CHUNK_SIZE);
+        
+        chunk.forEach(key => {
+          const payload: any = { id: key };
+          locales.forEach(l => {
+            if (flattenedByLocale[l][key]) payload[l] = flattenedByLocale[l][key];
+          });
+          const dRef = doc(firestore, 'localizedStrings', key);
+          batch.set(dRef, { ...payload, updatedAt: serverTimestamp() }, { merge: true });
+        });
+        
+        await batch.commit();
+      }
+
+      toast({ title: "同步成功", description: `已同步 ${keysArray.length} 条多语言资产至云端。` });
+    } catch (e) {
+      console.error(e);
+      toast({ variant: "destructive", title: "同步失败", description: "由于数据量过大或网络问题，同步未能完成。" });
+    } finally {
+      setIsSyncingLocal(false);
+    }
   };
 
   const filteredTranslations = useMemo(() => {
@@ -312,79 +381,175 @@ export default function TranslationsPage() {
   };
 
   return (
-    <div className="space-y-6 animate-in fade-in duration-500 pb-20">
+    <div className="space-y-8 animate-in fade-in duration-700 pb-20 relative">
       <AiGradientDef />
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <div>
-          <h2 className="text-xl font-headline font-bold text-primary flex items-center gap-2"><Languages className="h-5 w-5" /> 翻译资产管理</h2>
-          <p className="text-xs text-muted-foreground">分域管理业务内容与系统文案。支持 AI 批量填充与引用冲突合并。</p>
+      
+      {/* Background Aurora Glows */}
+      <div className="absolute top-[-10%] right-[-5%] w-[40%] h-[40%] bg-primary/10 blur-[120px] rounded-full -z-10 animate-pulse" />
+      <div className="absolute bottom-[20%] left-[-10%] w-[30%] h-[30%] bg-accent/10 blur-[100px] rounded-full -z-10" />
+
+      <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
+        <div className="space-y-2">
+          <div className="flex items-center gap-3">
+            <div className="h-12 w-12 rounded-2xl bg-primary flex items-center justify-center text-white shadow-lg shadow-primary/20">
+              <Languages className="h-6 w-6" />
+            </div>
+            <h2 className="text-3xl font-headline font-bold text-slate-900">翻译资产管理</h2>
+          </div>
+          <p className="text-sm text-slate-500 font-medium max-w-2xl pl-1">分域管理业务内容与系统文案。支持 AI 智能批量填充、引用冲突合并及全站一致性诊断。</p>
         </div>
         
-        <div className="flex gap-2">
+        <div className="flex items-center gap-3">
           {activeTab === 'business' && duplicatableCount > 0 && (
-            <Button variant="outline" size="sm" onClick={handleAutoCleanup} disabled={isCleaning || isMerging} className="rounded-lg h-9 border-orange-200 bg-orange-50 text-orange-700 hover:bg-orange-100 gap-1.5 shadow-sm font-bold text-[10px] uppercase">
-              {isCleaning ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Zap className="h-3.5 w-3.5" />}
-              一键清理 ({duplicatableCount})
+            <Button 
+              variant="outline" 
+              onClick={handleAutoCleanup} 
+              disabled={isCleaning || isMerging} 
+              className="rounded-full h-12 px-6 border-orange-200 bg-orange-50 text-orange-700 hover:bg-orange-100 gap-2 shadow-sm font-bold text-xs uppercase tracking-wider"
+            >
+              {isCleaning ? <Loader2 className="h-4 w-4 animate-spin" /> : <Zap className="h-4 w-4" />}
+              一键清理冗余 ({duplicatableCount})
             </Button>
           )}
+          
           <Dialog open={isSettingsOpen} onOpenChange={setIsSettingsOpen}>
-            <DialogTrigger asChild><Button variant="outline" size="sm" className="rounded-lg h-9 gap-1.5 text-xs"><Settings2 className="h-3.5 w-3.5" /> 语种</Button></DialogTrigger>
-            <DialogContent className="rounded-xl max-w-sm p-6 border-none shadow-2xl">
-               <DialogHeader><DialogTitle className="text-sm font-bold uppercase tracking-widest">语种配置</DialogTitle></DialogHeader>
-               <div className="space-y-4 py-4">
-                 <div className="space-y-2">
+            <DialogTrigger asChild>
+              <Button variant="outline" className="rounded-full h-12 px-6 gap-2 text-xs font-bold uppercase tracking-wider border-slate-200 bg-white hover:bg-slate-50">
+                <Settings2 className="h-4 w-4" /> 语种配置
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="rounded-[2rem] max-w-sm p-8 border-none shadow-2xl bg-white/90 backdrop-blur-2xl">
+               <DialogHeader>
+                 <DialogTitle className="text-lg font-headline font-bold uppercase tracking-widest text-slate-900 flex items-center gap-2">
+                    <Globe className="h-5 w-5 text-primary" /> 语种配置中心
+                 </DialogTitle>
+                 <DialogDescription className="text-slate-400 text-xs">定义全站支持的多语言维度。</DialogDescription>
+               </DialogHeader>
+               <div className="space-y-6 py-6">
+                 <div className="space-y-3">
                    {activeLanguages.map(l => (
-                     <div key={l.code} className="flex items-center justify-between p-2.5 bg-muted/30 rounded-lg border text-xs">
-                       <span className="font-bold">{l.label}</span><span className="font-mono uppercase opacity-40">{l.code}</span>
+                     <div key={l.code} className="flex items-center justify-between p-4 bg-slate-50 rounded-2xl border border-slate-100 transition-all hover:border-primary/20">
+                       <div className="flex flex-col">
+                         <span className="font-bold text-slate-900">{l.label}</span>
+                         <span className="text-[10px] text-slate-400 font-mono uppercase">System Code: {l.code}</span>
+                       </div>
+                       <Badge variant="secondary" className="bg-white border-slate-200 text-slate-500 font-bold px-3">ACTIVE</Badge>
                      </div>
                    ))}
                  </div>
-                 <div className="pt-4 border-t space-y-3">
-                   <Label className="text-[10px] font-bold uppercase text-primary">新增语种</Label>
-                   <div className="grid grid-cols-2 gap-2">
-                     <Input placeholder="代码" value={newLang.code} onChange={e => setNewLang({...newLang, code: e.target.value.toLowerCase()})} className="h-9 text-xs" />
-                     <Input placeholder="名称" value={newLang.label} onChange={e => setNewLang({...newLang, label: e.target.value})} className="h-9 text-xs" />
+                 <div className="pt-6 border-t border-dashed space-y-4">
+                   <Label className="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-400">新增目标语种</Label>
+                   <div className="grid grid-cols-2 gap-3">
+                     <Input placeholder="代码 (如: jp)" value={newLang.code} onChange={e => setNewLang({...newLang, code: e.target.value.toLowerCase()})} className="h-12 rounded-xl text-xs bg-slate-50 border-none" />
+                     <Input placeholder="名称 (如: 日语)" value={newLang.label} onChange={e => setNewLang({...newLang, label: e.target.value})} className="h-12 rounded-xl text-xs bg-slate-50 border-none" />
                    </div>
-                   <Button size="sm" onClick={() => { if(!newLang.code) return; const updated = [...activeLanguages, newLang]; setDoc(doc(firestore, 'settings', 'languages'), { supportedLanguages: updated }); setNewLang({ code: '', label: '' }); }} className="w-full h-9 rounded-lg text-xs">确认添加</Button>
+                   <Button onClick={() => { if(!newLang.code) return; const updated = [...activeLanguages, newLang]; setDoc(doc(firestore, 'settings', 'languages'), { supportedLanguages: updated }); setNewLang({ code: '', label: '' }); }} className="w-full h-12 rounded-xl text-xs font-bold uppercase tracking-widest shadow-lg">确认添加新语种</Button>
                  </div>
                </div>
             </DialogContent>
           </Dialog>
-          <Button size="sm" onClick={() => { setIsAdding(true); setFormData({id:''}); }} className="rounded-lg h-9 px-4 font-bold uppercase tracking-widest text-[10px] gap-1.5 shadow-sm"><Plus className="h-3.5 w-3.5" /> 新增词条</Button>
+
+          <Dialog open={showSyncConfirm} onOpenChange={setShowSyncConfirm}>
+            <DialogTrigger asChild>
+              <Button 
+                variant="outline"
+                disabled={isSyncingLocal}
+                className="rounded-full h-12 px-6 gap-2 text-xs font-bold uppercase tracking-wider border-primary/20 bg-primary/5 text-primary hover:bg-primary/10"
+              >
+                {isSyncingLocal ? <Loader2 className="h-4 w-4 animate-spin" /> : <GitMerge className="h-4 w-4" />}
+                本地库签署并同步
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="rounded-[2.5rem] max-w-md p-0 overflow-hidden shadow-2xl border-none bg-white">
+              <div className="bg-orange-500 p-8 text-white relative overflow-hidden">
+                <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 blur-2xl rounded-full translate-x-16 -translate-y-16" />
+                <DialogHeader className="relative z-10">
+                  <DialogTitle className="text-xl font-headline font-bold uppercase tracking-wider flex items-center gap-3">
+                    <AlertTriangle className="h-6 w-6" /> 关键同步确认
+                  </DialogTitle>
+                  <DialogDescription className="text-orange-100 text-xs font-medium uppercase tracking-widest mt-2">
+                    System Asset Synchronization Notice
+                  </DialogDescription>
+                </DialogHeader>
+              </div>
+              <div className="p-8 space-y-6">
+                <p className="text-sm text-slate-600 leading-relaxed">
+                  您即将启动从 <span className="font-bold text-slate-900">本地硬编码库 (lib/translations.ts)</span> 同步内容至 <span className="font-bold text-primary">云端资产库 (Firestore)</span> 的操作。
+                </p>
+                <div className="bg-orange-50 border border-orange-100 p-4 rounded-2xl flex gap-4">
+                  <Info className="h-5 w-5 text-orange-500 shrink-0 mt-0.5" />
+                  <div className="space-y-1">
+                    <p className="text-[11px] font-bold text-orange-800 uppercase">重要提示</p>
+                    <p className="text-[10px] text-orange-700/70 leading-relaxed">此操作将覆盖云端已存在的同名系统词条（如导航栏、页脚等）。建议在同步前确保本地库代码已包含最新修订。</p>
+                  </div>
+                </div>
+              </div>
+              <DialogFooter className="bg-slate-50 p-6 border-t border-slate-100 gap-3">
+                <Button variant="ghost" onClick={() => setShowSyncConfirm(false)} className="h-12 rounded-xl flex-1 font-bold uppercase tracking-widest text-[10px] text-slate-400">取消</Button>
+                <Button onClick={handleSyncFromLocal} disabled={isSyncingLocal} className="h-12 rounded-xl flex-1 font-bold uppercase tracking-widest text-[10px] bg-orange-500 hover:bg-orange-600 shadow-lg shadow-orange-100">
+                  {isSyncingLocal ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <CheckCircle2 className="h-4 w-4 mr-2" />}
+                  确认签署并同步
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
+
+          <Button onClick={() => { setIsAdding(true); setFormData({id:''}); }} className="rounded-full h-12 px-8 font-bold uppercase tracking-widest text-xs gap-2 shadow-xl shadow-primary/20">
+            <Plus className="h-5 w-5" /> 新增词条
+          </Button>
         </div>
       </div>
 
-      <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-4">
-          <TabsList className="bg-muted/40 p-1 rounded-lg h-10">
-            <TabsTrigger value="business" className="rounded-md h-8 px-4 font-bold text-[10px] uppercase tracking-wider flex items-center gap-1.5">
-              <LayoutGrid className="h-3 w-3" /> 业务内容 <Badge variant="secondary" className="ml-1 text-[8px] h-3.5 px-1">{categorizedTranslations.business.length}</Badge>
-            </TabsTrigger>
-            <TabsTrigger value="system" className="rounded-md h-8 px-4 font-bold text-[10px] uppercase tracking-wider flex items-center gap-1.5">
-              <FileText className="h-3 w-3" /> 系统文案 <Badge variant="secondary" className="ml-1 text-[8px] h-3.5 px-1">{categorizedTranslations.system.length}</Badge>
-            </TabsTrigger>
-          </TabsList>
+      <div className="space-y-6">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <Tabs value={activeTab} onValueChange={setActiveTab} className="bg-slate-100/50 p-1.5 rounded-2xl h-14 w-fit border border-slate-200/50 backdrop-blur-sm">
+            <TabsList className="bg-transparent border-none p-0 gap-1">
+              <TabsTrigger value="business" className="rounded-xl h-11 px-8 font-bold text-xs uppercase tracking-wider data-[state=active]:bg-white data-[state=active]:shadow-lg data-[state=active]:text-primary transition-all">
+                <LayoutGrid className="h-4 w-4 mr-2" /> 业务库 
+                <span className="ml-2 py-0.5 px-2 bg-slate-200 rounded-full text-[10px]">{categorizedTranslations.business.length}</span>
+              </TabsTrigger>
+              <TabsTrigger value="system" className="rounded-xl h-11 px-8 font-bold text-xs uppercase tracking-wider data-[state=active]:bg-white data-[state=active]:shadow-lg data-[state=active]:text-primary transition-all">
+                <FileText className="h-4 w-4 mr-2" /> 系统库 
+                <span className="ml-2 py-0.5 px-2 bg-slate-200 rounded-full text-[10px]">{categorizedTranslations.system.length}</span>
+              </TabsTrigger>
+            </TabsList>
+          </Tabs>
 
-          <div className="flex items-center gap-3 bg-white p-1.5 rounded-lg border border-border/40 shadow-sm flex-1 max-w-xl">
-            <div className="relative flex-1">
-              <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
-              <Input placeholder="搜索 ID 或文本..." className="pl-8 border-none bg-muted/30 rounded-md h-8 text-[11px] focus-visible:ring-0" value={searchQuery} onChange={e => setSearchQuery(e.target.value)} />
+          <div className="flex items-center gap-4 bg-white/70 backdrop-blur-xl p-2 rounded-2xl border border-white/40 shadow-xl flex-1 max-w-2xl">
+            <div className="relative flex-1 group">
+              <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 transition-colors group-focus-within:text-primary" />
+              <Input 
+                placeholder="键入 ID、中文或英文关键词实时检索..." 
+                className="pl-12 border-none bg-slate-50/50 rounded-xl h-12 text-sm focus-visible:ring-0 placeholder:text-slate-400 placeholder:font-medium" 
+                value={searchQuery} 
+                onChange={e => setSearchQuery(e.target.value)} 
+              />
             </div>
             {activeTab === 'business' && (
-              <Button variant={showOnlyDuplicates ? "default" : "ghost"} size="sm" onClick={() => setShowOnlyDuplicates(!showOnlyDuplicates)} className={cn("h-8 rounded-md text-[10px] uppercase font-bold gap-1", showOnlyDuplicates && "bg-orange-600 text-white")}>
-                <AlertTriangle className="h-3 w-3" /> {showOnlyDuplicates ? "显示冗余" : "查重"}
+              <Button 
+                variant={showOnlyDuplicates ? "default" : "ghost"} 
+                onClick={() => setShowOnlyDuplicates(!showOnlyDuplicates)} 
+                className={cn(
+                  "h-12 rounded-xl px-5 text-xs uppercase font-bold gap-2 transition-all", 
+                  showOnlyDuplicates ? "bg-orange-500 hover:bg-orange-600 text-white shadow-lg shadow-orange-200" : "text-slate-500 hover:bg-slate-100"
+                )}
+              >
+                <AlertTriangle className={cn("h-4 w-4", showOnlyDuplicates ? "text-white" : "text-orange-500")} /> 
+                冲突查重
               </Button>
             )}
           </div>
         </div>
 
-        <div className="bg-white rounded-xl border border-border/40 shadow-sm overflow-x-auto min-h-[400px]">
+        <GlassCard>
           <Table>
-            <TableHeader className="bg-muted/30">
-              <TableRow>
-                <TableHead className="pl-6 py-4 font-bold uppercase text-[9px] tracking-wider w-56">锚点 ID / 引用</TableHead>
-                {activeLanguages.map(lang => (<TableHead key={lang.code} className="font-bold uppercase text-[9px] tracking-wider">{lang.label}</TableHead>))}
-                <TableHead className="text-right pr-6 font-bold uppercase text-[9px] tracking-wider w-24">操作</TableHead>
+            <TableHeader className="bg-slate-50/50 border-b border-slate-100">
+              <TableRow className="hover:bg-transparent">
+                <TableHead className="pl-8 py-5 font-bold uppercase text-[10px] tracking-[0.2em] text-slate-400 w-72">Resource Identifier</TableHead>
+                {activeLanguages.map(lang => (
+                  <TableHead key={lang.code} className="font-bold uppercase text-[10px] tracking-[0.2em] text-slate-400">{lang.label}</TableHead>
+                ))}
+                <TableHead className="text-right pr-8 font-bold uppercase text-[10px] tracking-[0.2em] text-slate-400 w-32">Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -399,51 +564,120 @@ export default function TranslationsPage() {
                 const isDuplicate = semanticIds.length > 1;
 
                 return (
-                  <TableRow key={t.id} className={cn("group transition-colors", isDuplicate ? "bg-orange-50/30" : "hover:bg-muted/5", refs.length > 0 ? "border-l-4 border-l-primary/20" : "border-l-4 border-l-transparent")}>
-                    <TableCell className="pl-6">
-                      <div className="flex flex-col gap-1">
-                        <div className="flex items-center gap-1.5">
-                          <code className="text-[10px] font-bold text-primary bg-primary/5 px-1.5 py-0.5 rounded uppercase">{t.id}</code>
+                  <TableRow key={t.id} className={cn("group transition-all duration-300 border-slate-100", isDuplicate ? "bg-orange-50/40" : "hover:bg-slate-50/80", refs.length > 0 ? "border-l-[6px] border-l-primary" : "border-l-[6px] border-l-transparent")}>
+                    <TableCell className="pl-8 py-6">
+                      <div className="flex flex-col gap-2">
+                        <div className="flex items-center gap-2">
+                          <code className="text-[11px] font-bold text-primary bg-primary/5 px-2.5 py-1 rounded-lg uppercase tracking-tight shadow-sm">{t.id}</code>
                           {isDuplicate && (
-                            <TooltipProvider><Tooltip><TooltipTrigger asChild><Badge variant="outline" className="text-[7px] bg-orange-100 text-orange-700 border-orange-200 h-4 px-1 cursor-help">冗余</Badge></TooltipTrigger><TooltipContent className="p-3 rounded-lg max-w-xs bg-white border-orange-200 shadow-xl"><div className="space-y-3 text-[10px]"><p className="font-bold uppercase text-orange-700 border-b pb-1">语义冲突：内容完全一致</p><div className="space-y-1">{semanticIds.map(sid => (<div key={sid} className={cn("font-mono p-1 rounded", sid === t.id ? "bg-primary/5 text-primary font-bold" : "opacity-40")}>{sid}</div>))}</div><Button size="sm" disabled={isMerging} className="w-full h-7 text-[9px] font-bold bg-orange-600 hover:bg-orange-700" onClick={() => handleMergeReferences(t.id, semanticIds.filter(id => id !== t.id))}>{isMerging ? <Loader2 className="h-3 w-3 animate-spin" /> : "设为主锚点并合并所有引用"}</Button></div></TooltipContent></Tooltip></TooltipProvider>
+                            <TooltipProvider>
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <Badge variant="outline" className="text-[8px] bg-orange-100 text-orange-700 border-orange-200 h-5 px-2 cursor-help font-bold uppercase">语义冲突</Badge>
+                                </TooltipTrigger>
+                                <TooltipContent className="p-4 rounded-2xl max-w-xs bg-white/95 backdrop-blur-xl border-orange-200 shadow-2xl">
+                                  <div className="space-y-4 text-xs">
+                                    <p className="font-bold uppercase text-orange-700 border-b border-orange-100 pb-2 flex items-center gap-2">
+                                      <AlertTriangle className="h-3.5 w-3.5" /> 内容重复诊断
+                                    </p>
+                                    <div className="space-y-1.5">
+                                      {semanticIds.map(sid => (
+                                        <div key={sid} className={cn("font-mono p-2 rounded-xl text-[10px] transition-all", sid === t.id ? "bg-primary text-white font-bold shadow-md" : "bg-slate-50 text-slate-400")}>
+                                          {sid}
+                                        </div>
+                                      ))}
+                                    </div>
+                                    <Button disabled={isMerging} className="w-full h-10 rounded-xl text-[10px] font-bold bg-orange-600 hover:bg-orange-700 shadow-lg shadow-orange-200" onClick={() => handleMergeReferences(t.id, semanticIds.filter(id => id !== t.id))}>
+                                      {isMerging ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <GitMerge className="h-4 w-4 mr-2" />}
+                                      一键合并引用至主锚点
+                                    </Button>
+                                  </div>
+                                </TooltipContent>
+                              </Tooltip>
+                            </TooltipProvider>
                           )}
                         </div>
                         {refs.length > 0 ? (
-                          <TooltipProvider><Tooltip><TooltipTrigger asChild><div className="flex items-center gap-1 text-green-600 cursor-help opacity-60"><ShieldCheck className="h-2.5 w-2.5" /><span className="text-[8px] font-bold uppercase tracking-tighter">引用中 ({refs.length})</span></div></TooltipTrigger><TooltipContent className="p-3 rounded-lg bg-white shadow-xl border-primary/10"><div className="space-y-2 text-[10px]"><p className="font-bold uppercase text-primary border-b pb-1">引用来源</p>{refs.map((ref, idx) => (<div key={idx} className="flex items-center justify-between gap-4"><div className="flex flex-col"><span className="text-[8px] opacity-40 font-bold uppercase">{ref.type}</span><span className="font-bold">{ref.name}</span></div><Button variant="ghost" size="icon" className="h-5 w-5" onClick={() => window.open(ref.type.includes('图库') ? '/admin/gallery' : `/admin/products/editor?id=${ref.id}`, '_blank')}><ExternalLink className="h-3 w-3" /></Button></div>))}</div></TooltipContent></Tooltip></TooltipProvider>
-                        ) : (<div className="flex items-center gap-1 text-muted-foreground opacity-20"><X className="h-2.5 w-2.5" /><span className="text-[8px] font-bold uppercase tracking-tighter">闲置</span></div>)}
+                          <TooltipProvider>
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <div className="flex items-center gap-2 text-primary cursor-help group/ref transition-opacity">
+                                  <ShieldCheck className="h-3.5 w-3.5" />
+                                  <span className="text-[10px] font-bold uppercase tracking-tight border-b border-primary/20 group-hover/ref:border-primary">生效中 ({refs.length} 处应用)</span>
+                                </div>
+                              </TooltipTrigger>
+                              <TooltipContent className="p-4 rounded-2xl bg-white/95 backdrop-blur-xl shadow-2xl border-primary/10">
+                                <div className="space-y-4 text-xs">
+                                  <p className="font-bold uppercase text-primary border-b border-slate-100 pb-2 flex items-center gap-2">
+                                    <CheckCircle2 className="h-3.5 w-3.5" /> 数据链路引用轨迹
+                                  </p>
+                                  <div className="max-h-[200px] overflow-y-auto pr-2 space-y-2">
+                                    {refs.map((ref, idx) => (
+                                      <div key={idx} className="flex items-center justify-between gap-6 p-2 rounded-xl hover:bg-slate-50 transition-colors">
+                                        <div className="flex flex-col">
+                                          <span className="text-[9px] text-slate-400 font-bold uppercase">{ref.type}</span>
+                                          <span className="font-bold text-slate-700">{ref.name}</span>
+                                        </div>
+                                        <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full hover:bg-primary/10 hover:text-primary" onClick={() => window.open(ref.type.includes('图库') ? '/admin/gallery' : `/admin/products/editor?id=${ref.id}`, '_blank')}>
+                                          <ExternalLink className="h-4 w-4" />
+                                        </Button>
+                                      </div>
+                                    ))}
+                                  </div>
+                                </div>
+                              </TooltipContent>
+                            </Tooltip>
+                          </TooltipProvider>
+                        ) : (
+                          <div className="flex items-center gap-2 text-slate-300">
+                            <X className="h-3.5 w-3.5" />
+                            <span className="text-[10px] font-bold uppercase tracking-tight">未检测到外部引用</span>
+                          </div>
+                        )}
                       </div>
                     </TableCell>
                     {activeLanguages.map(lang => (
-                      <TableCell key={lang.code}>
+                      <TableCell key={lang.code} className="py-6">
                         {editingId === t.id ? (
-                          <Input value={formData[lang.code] || ''} onChange={e => setFormData({...formData, [lang.code]: e.target.value})} className="h-8 text-[11px] rounded-md" />
+                          <Input 
+                            value={formData[lang.code] || ''} 
+                            onChange={e => setFormData({...formData, [lang.code]: e.target.value})} 
+                            className="h-12 text-sm rounded-xl bg-slate-50 border-none focus-visible:ring-1 focus-visible:ring-primary/20" 
+                          />
                         ) : (
-                          <span className="text-[11px] text-muted-foreground line-clamp-2 leading-relaxed">{t[lang.code] || '-'}</span>
+                          <span className="text-sm font-medium text-slate-600 line-clamp-3 leading-relaxed">{t[lang.code] || <span className="opacity-20 italic">Empty Payload</span>}</span>
                         )}
                       </TableCell>
                     ))}
-                    <TableCell className="pr-6 text-right">
+                    <TableCell className="pr-8 text-right py-6">
                        {editingId === t.id ? (
-                         <div className="flex justify-end gap-1.5">
-                           <Button size="icon" variant="ghost" onClick={handleSave} className="h-7 w-7 text-green-600 bg-green-50"><Check className="h-3.5 w-3.5" /></Button>
-                           <Button size="icon" variant="ghost" onClick={() => setEditingId(null)} className="h-7 w-7"><X className="h-3.5 w-3.5" /></Button>
+                         <div className="flex justify-end gap-2">
+                           <Button onClick={handleSave} className="h-10 px-4 rounded-xl bg-green-600 hover:bg-green-700 shadow-lg shadow-green-100">
+                             <Check className="h-4 w-4" />
+                           </Button>
+                           <Button variant="outline" onClick={() => setEditingId(null)} className="h-10 px-4 rounded-xl border-slate-200">
+                             <X className="h-4 w-4" />
+                           </Button>
                          </div>
                        ) : (
-                         <div className="flex justify-end items-center gap-0.5">
+                         <div className="flex justify-end items-center gap-1">
                            {aiConfig?.isEnabled && (
-                             <Button 
-                              variant="ghost"
-                              size="icon" 
-                              className="h-8 w-8 text-primary ai-btn-glow" 
+                             <ShinyButton 
                               onClick={() => handleAiTranslate(t)} 
                               disabled={translatingId === t.id}
+                              className="w-10 h-10 !p-0 flex items-center justify-center shadow-xl shadow-primary/10"
+                              shape="rounded"
                              >
-                               {translatingId === t.id ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Sparkles className="h-4 w-4 ai-icon-gradient" />}
-                             </Button>
+                               {translatingId === t.id ? <Loader2 className="h-4 w-4 animate-spin text-white" /> : <Sparkles className="h-4 w-4 text-white" />}
+                             </ShinyButton>
                            )}
-                           <Button size="icon" variant="ghost" onClick={() => { setFormData(t); setEditingId(t.id); }} className="h-7 w-7 opacity-0 group-hover:opacity-100 transition-opacity"><Edit2 className="h-3.5 w-3.5" /></Button>
+                           <Button variant="ghost" size="icon" onClick={() => { setFormData(t); setEditingId(t.id); }} className="h-10 w-10 rounded-xl opacity-0 group-hover:opacity-100 transition-all hover:bg-primary/5 hover:text-primary">
+                             <Edit2 className="h-4 w-4" />
+                           </Button>
                            {refs.length === 0 && (
-                             <Button size="icon" variant="ghost" className="h-7 w-7 text-destructive opacity-0 group-hover:opacity-100 transition-opacity" onClick={() => { if(confirm('删除此词条？')) deleteDocumentNonBlocking(doc(firestore, 'localizedStrings', t.id)); }}><Trash2 className="h-3.5 w-3.5" /></Button>
+                             <Button variant="ghost" size="icon" className="h-10 w-10 rounded-xl text-destructive opacity-0 group-hover:opacity-100 transition-all hover:bg-destructive/5" onClick={() => { if(confirm('彻底删除此词条资产？')) deleteDocumentNonBlocking(doc(firestore, 'localizedStrings', t.id)); }}>
+                               <Trash2 className="h-4 w-4" />
+                             </Button>
                            )}
                          </div>
                        )}
@@ -453,22 +687,47 @@ export default function TranslationsPage() {
               })}
             </TableBody>
           </Table>
-        </div>
-      </Tabs>
+        </GlassCard>
+      </div>
 
       <Dialog open={isAdding} onOpenChange={setIsAdding}>
-        <DialogContent className="rounded-xl max-md p-0 overflow-hidden shadow-2xl border-none">
-          <div className="bg-primary p-6 text-white"><DialogHeader><DialogTitle className="text-lg font-bold uppercase tracking-widest">创建翻译词条</DialogTitle></DialogHeader></div>
-          <div className="p-6 space-y-5 bg-white">
-            <div className="space-y-1.5">
-              <Label className="text-[10px] font-bold uppercase text-primary">唯一 ID</Label>
-              <Input placeholder="建议前缀: ui_ 或 prod_" value={formData.id} onChange={e => setFormData({...formData, id: e.target.value})} className="h-10 rounded-lg bg-muted/20 border-none font-mono text-xs" />
-            </div>
-            {activeLanguages.map(lang => (
-              <div key={lang.code} className="space-y-1.5"><Label className="text-[10px] font-bold uppercase text-muted-foreground">{lang.label}</Label><Input value={formData[lang.code] || ''} onChange={e => setFormData({...formData, [lang.code]: e.target.value})} className="rounded-lg h-10 text-xs" /></div>
-            ))}
+        <DialogContent className="rounded-[2.5rem] max-w-lg p-0 overflow-hidden shadow-[0_32px_64px_-12px_rgba(0,0,0,0.14)] border-none bg-white/90 backdrop-blur-2xl">
+          <div className="bg-primary p-10 text-white relative overflow-hidden">
+            <div className="absolute top-0 right-0 w-40 h-40 bg-white/10 blur-3xl rounded-full translate-x-20 -translate-y-20" />
+            <DialogHeader className="relative z-10">
+              <DialogTitle className="text-2xl font-headline font-bold uppercase tracking-wider">创建词条资产</DialogTitle>
+              <DialogDescription className="text-white/60 text-xs font-medium uppercase tracking-[0.1em] mt-1">Definition of a new localized data point.</DialogDescription>
+            </DialogHeader>
           </div>
-          <DialogFooter className="bg-muted/20 p-4 border-t gap-2"><Button variant="outline" size="sm" onClick={() => setIsAdding(false)} className="h-9 rounded-lg flex-1">取消</Button><Button size="sm" onClick={handleSave} className="h-9 rounded-lg flex-1">立即保存</Button></DialogFooter>
+          <div className="p-10 space-y-8 bg-transparent">
+            <div className="space-y-3">
+              <Label className="text-[10px] font-bold uppercase tracking-[0.2em] text-primary pl-1">Unique Resource ID</Label>
+              <Input 
+                placeholder="建议前缀: ui_ (界面), prod_ (产品), spec_ (规格)" 
+                value={formData.id} 
+                onChange={e => setFormData({...formData, id: e.target.value})} 
+                className="h-14 rounded-2xl bg-slate-100/50 border-none font-mono text-sm focus-visible:ring-2 focus-visible:ring-primary/20 shadow-inner" 
+              />
+              <p className="text-[10px] text-slate-400 italic">ID 必须全局唯一。保存后不可更改。</p>
+            </div>
+            
+            <div className="space-y-6">
+              {activeLanguages.map(lang => (
+                <div key={lang.code} className="space-y-3">
+                  <Label className="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-400 pl-1">{lang.label} 内容</Label>
+                  <Input 
+                    value={formData[lang.code] || ''} 
+                    onChange={e => setFormData({...formData, [lang.code]: e.target.value})} 
+                    className="rounded-2xl h-14 text-sm bg-slate-50 border-slate-100 focus-visible:ring-2 focus-visible:ring-primary/10 transition-all" 
+                  />
+                </div>
+              ))}
+            </div>
+          </div>
+          <DialogFooter className="bg-slate-50/50 p-8 border-t border-slate-100 gap-4">
+            <Button variant="ghost" onClick={() => setIsAdding(false)} className="h-14 rounded-2xl flex-1 font-bold uppercase tracking-widest text-xs text-slate-400">取消操作</Button>
+            <Button onClick={handleSave} className="h-14 rounded-2xl flex-1 font-bold uppercase tracking-widest text-xs shadow-xl shadow-primary/20">签署并同步</Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
     </div>

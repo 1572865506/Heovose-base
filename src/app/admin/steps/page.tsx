@@ -36,6 +36,7 @@ import { setDocumentNonBlocking, deleteDocumentNonBlocking, updateDocumentNonBlo
 import { useToast } from '@/hooks/use-toast';
 import { translateContent } from '@/ai/flows/translate-flow';
 import { cn } from '@/lib/utils';
+import { ShinyButton } from '@/components/ui/shiny-button';
 import { Badge } from '@/components/ui/badge';
 import Image from 'next/image';
 
@@ -168,7 +169,7 @@ export default function ProductionStepsAdminPage() {
           <h2 className="text-xl font-headline font-bold text-primary flex items-center gap-2">
             <ClipboardList className="h-5 w-5" /> 生产流程管理
           </h2>
-          <p className="text-xs text-muted-foreground">定义前台 11 步精密制造流程，支持多图轮播配置。</p>
+          <p className="text-sm text-muted-foreground">定义前台 11 步精密制造流程，支持多图轮播配置。</p>
         </div>
         <Button onClick={() => handleOpenDialog()} className="rounded-xl h-10 px-6 gap-2 text-xs font-bold uppercase tracking-widest shadow-md">
           <Plus className="h-4 w-4" /> 新增生产步骤
@@ -181,7 +182,7 @@ export default function ProductionStepsAdminPage() {
             <div className="py-20 text-center"><Loader2 className="h-8 w-8 animate-spin mx-auto opacity-10" /></div>
           ) : steps?.length === 0 ? (
             <div className="py-20 text-center border-2 border-dashed rounded-2xl bg-muted/5">
-               <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest">暂无生产步骤数据</p>
+               <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest italic opacity-40">暂无生产步骤数据 / NO DATA</p>
             </div>
           ) : (
             <div className="space-y-3">
@@ -198,13 +199,13 @@ export default function ProductionStepsAdminPage() {
                       <div className="flex items-center justify-center h-full opacity-20"><ImageIcon className="h-5 w-5" /></div>
                     )}
                     {step.imageUrls && step.imageUrls.length > 1 && (
-                      <Badge className="absolute bottom-1 right-1 h-3.5 px-1 text-[8px] bg-black/60 border-none">+{step.imageUrls.length-1}</Badge>
+                      <Badge className="absolute bottom-1.5 right-1.5 h-4 px-1.5 text-[9px] bg-black/60 border-none font-bold">+{step.imageUrls.length-1}</Badge>
                     )}
                   </div>
 
                   <div className="flex-1 space-y-1">
                     <h4 className="text-sm font-bold text-primary">{step.titleZh}</h4>
-                    <p className="text-[10px] text-muted-foreground line-clamp-1 italic uppercase tracking-wider">{step.titleEn || 'No English Translation'}</p>
+                    <p className="text-xs text-muted-foreground line-clamp-1 italic uppercase tracking-wider font-medium">{step.titleEn || 'No English Translation'}</p>
                   </div>
 
                   <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
@@ -236,18 +237,18 @@ export default function ProductionStepsAdminPage() {
             <div className="space-y-6">
               <div className="space-y-4">
                 <div className="space-y-2">
-                  <Label className="text-[10px] font-bold uppercase opacity-40">步骤标题 (ZH)</Label>
+                  <Label className="text-xs font-bold uppercase opacity-40 tracking-widest pl-1">步骤标题 (ZH)</Label>
                   <Input value={form.titleZh} onChange={e => setForm({...form, titleZh: e.target.value})} className="h-11 rounded-xl" placeholder="例如: PMC 生产计划" />
                 </div>
                 <div className="space-y-2">
-                  <Label className="text-[10px] font-bold uppercase opacity-40">核心描述 (ZH)</Label>
+                  <Label className="text-xs font-bold uppercase opacity-40 tracking-widest pl-1">核心描述 (ZH)</Label>
                   <Textarea value={form.descZh} onChange={e => setForm({...form, descZh: e.target.value})} className="min-h-[120px] rounded-xl" placeholder="详细说明此环节的操作逻辑与质量标准..." />
                 </div>
               </div>
 
               <div className="space-y-4 pt-4 border-t border-dashed">
                 <div className="flex items-center justify-between">
-                  <Label className="text-[10px] font-bold uppercase opacity-40">步骤关联素材 ({form.imageUrls?.length || 0})</Label>
+                  <Label className="text-xs font-bold uppercase opacity-40 tracking-widest pl-1">步骤关联素材 ({form.imageUrls?.length || 0})</Label>
                   <Button variant="outline" size="sm" onClick={() => setIsPickerOpen(true)} className="h-8 rounded-lg text-[10px] font-bold uppercase tracking-widest gap-2">
                     <Plus className="h-3 w-3" /> 导入素材库
                   </Button>
@@ -266,7 +267,7 @@ export default function ProductionStepsAdminPage() {
                   {(!form.imageUrls || form.imageUrls.length === 0) && (
                     <div className="flex-1 flex flex-col items-center justify-center gap-2 opacity-30">
                        <ImageIcon className="h-8 w-8" />
-                       <span className="text-[10px] font-bold uppercase tracking-widest">请选择至少一张图片</span>
+                       <span className="text-xs font-bold uppercase tracking-widest">请选择至少一张图片</span>
                     </div>
                   )}
                 </div>
@@ -275,27 +276,36 @@ export default function ProductionStepsAdminPage() {
             </div>
 
             <div className="space-y-6">
-              <div className="flex justify-end border-l pl-8">
-                <Button variant="ghost" onClick={handleTranslate} className="ai-btn-glow h-10 px-5 gap-2 text-xs" disabled={isAiProcessing}>
-                  {isAiProcessing ? <Loader2 className="h-4 w-4 animate-spin ai-icon-gradient" /> : <Sparkles className="h-4 w-4 ai-icon-gradient" />}
-                  AI 智译右侧信息
-                </Button>
+               <div className="flex justify-end border-l pl-8">
+                {aiConfig?.isEnabled && (
+                  <ShinyButton 
+                    onClick={handleTranslate} 
+                    disabled={isAiProcessing}
+                    className="h-10 px-5"
+                    shape="capsule"
+                  >
+                    <div className="flex items-center gap-2">
+                      {isAiProcessing ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
+                      <span className="text-[11px] font-bold uppercase tracking-widest">AI 智译右侧信息</span>
+                    </div>
+                  </ShinyButton>
+                )}
               </div>
 
               <div className="space-y-4 pt-4 border-l pl-8 border-dashed flex-1">
                 <div className="space-y-2">
-                  <Label className="text-[10px] font-bold uppercase opacity-40 tracking-widest">Title (EN)</Label>
+                  <Label className="text-xs font-bold uppercase opacity-40 tracking-widest pl-1">Title (EN)</Label>
                   <Input value={form.titleEn} onChange={e => setForm({...form, titleEn: e.target.value})} className="h-11 rounded-xl border-dashed" placeholder="STEP TITLE IN ENGLISH" />
                 </div>
                 <div className="space-y-2">
-                  <Label className="text-[10px] font-bold uppercase opacity-40 tracking-widest">Description (EN)</Label>
+                  <Label className="text-xs font-bold uppercase opacity-40 tracking-widest pl-1">Description (EN)</Label>
                   <Textarea value={form.descEn} onChange={e => setForm({...form, descEn: e.target.value})} className="min-h-[120px] rounded-xl border-dashed" placeholder="DETAILED ENGLISH DESCRIPTION..." />
                 </div>
               </div>
               
               <div className="pt-6 border-l pl-8 border-dashed">
                 <div className="space-y-2">
-                  <Label className="text-[10px] font-bold uppercase opacity-40">步骤排序权重</Label>
+                  <Label className="text-xs font-bold uppercase opacity-40 tracking-widest pl-1">步骤排序权重</Label>
                   <Input type="number" value={form.order} onChange={e => setForm({...form, order: parseInt(e.target.value)})} className="h-10 rounded-xl bg-muted/10 border-transparent font-mono" />
                 </div>
               </div>
@@ -303,8 +313,8 @@ export default function ProductionStepsAdminPage() {
           </div>
 
           <DialogFooter className="bg-muted/10 p-6 flex gap-3 border-t">
-            <Button variant="outline" onClick={() => setIsDialogOpen(false)} className="rounded-xl h-11 flex-1 font-bold uppercase text-[10px]">取消编辑</Button>
-            <Button onClick={handleSave} className="rounded-xl h-11 flex-1 font-bold uppercase text-[10px]">确认步骤配置</Button>
+            <Button variant="outline" onClick={() => setIsDialogOpen(false)} className="rounded-xl h-12 flex-1 font-bold uppercase text-xs tracking-widest">取消编辑</Button>
+            <Button onClick={handleSave} className="rounded-xl h-12 flex-1 font-bold uppercase text-xs tracking-widest shadow-lg shadow-primary/20">确认步骤配置</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

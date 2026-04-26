@@ -82,6 +82,12 @@ interface AiConfig {
   lastDiagnosis?: DiagnosisRecord;
 }
 
+const GlassCard = ({ children, className }: { children: React.ReactNode, className?: string }) => (
+  <div className={cn("bg-white/70 backdrop-blur-xl border border-white/40 shadow-2xl rounded-3xl overflow-hidden", className)}>
+    {children}
+  </div>
+);
+
 export default function AiSettingsPage() {
   const firestore = useFirestore();
   const { toast } = useToast();
@@ -192,249 +198,222 @@ export default function AiSettingsPage() {
   };
 
   return (
-    <div className="space-y-6 animate-in fade-in duration-500 max-w-7xl mx-auto pb-20">
-      <div className="flex items-center justify-between">
-        <div className="space-y-1">
-          <h2 className="text-xl font-headline font-bold text-primary flex items-center gap-2">
-            <BrainCircuit className="h-5 w-5" /> AI 智译中枢管理
-          </h2>
-          <p className="text-xs text-muted-foreground">配置 2026 版 Gemini 2.5 核心引擎、API 密钥及专家技能指令。</p>
+    <div className="space-y-8 animate-in fade-in duration-700 max-w-7xl mx-auto pb-20 relative">
+      {/* Background Aurora Glows */}
+      <div className="absolute top-[-10%] right-[-5%] w-[40%] h-[40%] bg-primary/10 blur-[120px] rounded-full -z-10 animate-pulse" />
+      <div className="absolute bottom-[20%] left-[-10%] w-[35%] h-[35%] bg-accent/10 blur-[100px] rounded-full -z-10" />
+
+      <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
+        <div className="space-y-2">
+          <div className="flex items-center gap-3">
+            <div className="h-12 w-12 rounded-2xl bg-slate-900 flex items-center justify-center text-white shadow-xl shadow-slate-200">
+              <BrainCircuit className="h-6 w-6" />
+            </div>
+            <h2 className="text-3xl font-headline font-bold text-slate-900">AI 智译中枢</h2>
+          </div>
+          <p className="text-sm text-slate-500 font-medium max-w-2xl pl-1">配置全站级 Gemini 2.5 核心引擎、专家级翻译指令及云端 API 交互链路。</p>
         </div>
-        <div className="flex items-center gap-3">
+        
+        <div className="flex items-center gap-4">
           {testReport.timestamp && (
-            <span className="text-[9px] text-muted-foreground font-mono uppercase mr-2">
-              上次测试: {new Date(testReport.timestamp).toLocaleString()}
+            <span className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mr-2 flex items-center gap-2">
+              <div className="w-1.5 h-1.5 rounded-full bg-slate-300" />
+              Synced: {new Date(testReport.timestamp).toLocaleString('zh-CN', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
             </span>
           )}
           
           <Button 
             onClick={handleSave} 
             disabled={isSaving}
-            className="h-10 px-6 gap-2 font-bold uppercase tracking-widest text-xs shadow-md"
+            className="rounded-full h-12 px-8 gap-2 font-bold uppercase tracking-widest text-xs shadow-xl shadow-primary/20 transition-all hover:scale-105 active:scale-95"
           >
             {isSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
-            部署配置并保存状态
+            签署并同步引擎配置
           </Button>
-
-          <Badge variant="outline" className={cn(
-            "h-10 px-4 rounded-lg gap-2 font-bold text-[10px] uppercase",
-            testReport.status === 'success' ? "bg-green-50 text-green-700 border-green-200" : 
-            testReport.status === 'quota' ? "bg-orange-50 text-orange-700 border-orange-200" :
-            testReport.status === 'failed' ? "bg-destructive/5 text-destructive border-destructive/10" :
-            "bg-primary/5 text-primary border-primary/20"
-          )}>
-            {testReport.status === 'success' ? <CheckCircle2 className="h-3 w-3" /> : 
-             testReport.status === 'quota' ? <Clock className="h-3 w-3" /> :
-             testReport.status === 'failed' ? <AlertCircle className="h-3 w-3" /> :
-             <div className="h-1.5 w-1.5 rounded-full bg-blue-400 animate-pulse" />}
-            状态: {testReport.status === 'success' ? '已就绪' : testReport.status === 'quota' ? '配额受限' : testReport.status === 'failed' ? '诊断失败' : '待自检'}
-          </Badge>
         </div>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
         <div className="lg:col-span-8 space-y-8">
-          <Card className="rounded-2xl border-none shadow-2xl overflow-hidden">
-            <div className="bg-primary p-6 text-white">
-              <CardHeader className="p-0 flex flex-row items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <Bot className="h-6 w-6" />
+          <GlassCard className="border-none shadow-[0_32px_64px_-12px_rgba(0,0,0,0.1)]">
+            <div className="bg-slate-900 p-8 text-white relative overflow-hidden">
+              <div className="absolute top-0 right-0 w-64 h-64 bg-primary/20 blur-[100px] rounded-full translate-x-32 -translate-y-32" />
+              <div className="relative z-10 flex flex-row items-center justify-between">
+                <div className="flex items-center gap-4">
+                  <div className="h-12 w-12 rounded-2xl bg-white/10 backdrop-blur-md flex items-center justify-center border border-white/10">
+                    <Bot className="h-6 w-6 text-primary" />
+                  </div>
                   <div>
-                    <CardTitle className="text-lg font-bold">核心引擎配置</CardTitle>
-                    <CardDescription className="text-white/60 text-xs uppercase tracking-widest">Gemini 2.5 Generation</CardDescription>
+                    <CardTitle className="text-xl font-headline font-bold">引擎核心协议</CardTitle>
+                    <CardDescription className="text-white/40 text-[10px] uppercase tracking-[0.2em] mt-1 font-bold">Gemini-Pro High Performance Mode</CardDescription>
                   </div>
                 </div>
-                <Switch 
-                  checked={formData.isEnabled} 
-                  onCheckedChange={(v) => setFormData({...formData, isEnabled: v})} 
-                  className="data-[state=checked]:bg-accent"
-                />
-              </CardHeader>
+                <div className="flex items-center gap-3 bg-white/5 p-2 rounded-2xl border border-white/5">
+                  <span className="text-[10px] font-bold uppercase tracking-widest opacity-60 mr-2">服务状态</span>
+                  <Switch 
+                    checked={formData.isEnabled} 
+                    onCheckedChange={(v) => setFormData({...formData, isEnabled: v})} 
+                    className="data-[state=checked]:bg-primary"
+                  />
+                </div>
+              </div>
             </div>
-            <CardContent className="p-8 space-y-8 bg-white">
+            <CardContent className="p-10 space-y-10">
               <div className="space-y-4">
-                <Label className="text-[10px] font-bold uppercase text-primary tracking-widest flex items-center gap-2">
-                  <Key className="h-3.5 w-3.5" /> Google AI API 密钥 (Studio Key)
+                <Label className="text-[11px] font-bold uppercase text-slate-400 tracking-[0.2em] flex items-center gap-2 pl-1">
+                  <Key className="h-4 w-4 text-primary" /> Studio Authorization Key
                 </Label>
                 <div className="relative group">
+                  <div className="absolute -inset-1 bg-gradient-to-r from-primary/20 to-accent/20 rounded-2xl blur opacity-0 group-focus-within:opacity-100 transition-opacity" />
                   <Input 
                     type={showKey ? "text" : "password"}
-                    placeholder="在此粘贴您的 API Key..."
+                    placeholder="在此粘贴您的 Google AI API Key..."
                     value={formData.apiKey}
                     onChange={(e) => setFormData({...formData, apiKey: e.target.value})}
-                    className="h-11 rounded-xl bg-muted/5 pr-10 font-mono text-sm border-muted/40 focus:bg-white transition-all"
+                    className="relative h-14 rounded-2xl bg-slate-50 border-slate-100 pr-12 font-mono text-sm focus-visible:ring-2 focus-visible:ring-primary/20 transition-all shadow-inner"
                   />
                   <button 
                     onClick={() => setShowKey(!showKey)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-primary transition-colors"
+                    className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-300 hover:text-primary transition-colors"
                   >
-                    {showKey ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                    {showKey ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
                   </button>
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-8 pt-4">
-                <div className="space-y-3">
-                  <Label className="text-[10px] font-bold uppercase text-primary tracking-widest flex items-center gap-2"><Cpu className="h-3.5 w-3.5" /> 选用模型</Label>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
+                <div className="space-y-4">
+                  <Label className="text-[11px] font-bold uppercase text-slate-400 tracking-[0.2em] flex items-center gap-2 pl-1">
+                    <Cpu className="h-4 w-4 text-primary" /> 计算模型版本
+                  </Label>
                   <Select 
                     value={formData.model} 
                     onValueChange={(v) => setFormData({...formData, model: v})}
                   >
-                    <SelectTrigger className="h-11 rounded-xl bg-muted/10 border-transparent font-medium">
-                      <SelectValue placeholder="选择 AI 模型" />
+                    <SelectTrigger className="h-14 rounded-2xl bg-slate-50 border-none font-bold text-slate-700 shadow-inner">
+                      <SelectValue placeholder="选择计算模型" />
                     </SelectTrigger>
-                    <SelectContent className="rounded-xl">
+                    <SelectContent className="rounded-2xl border-none shadow-2xl p-2">
                       {AI_MODELS.map(m => (
-                        <SelectItem key={m.id} value={m.id} className="text-xs font-bold">{m.name}</SelectItem>
+                        <SelectItem key={m.id} value={m.id} className="rounded-xl h-10 text-xs font-bold my-1">
+                          {m.name}
+                        </SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
                 </div>
 
-                <div className="space-y-3">
-                  <Label className="text-[10px] font-bold uppercase text-primary tracking-widest flex items-center gap-2"><Zap className="h-3.5 w-3.5" /> 创造力权重 ({formData.temperature})</Label>
-                  <div className="flex items-center gap-4 py-3">
+                <div className="space-y-4">
+                  <Label className="text-[11px] font-bold uppercase text-slate-400 tracking-[0.2em] flex items-center gap-2 pl-1">
+                    <Zap className="h-4 w-4 text-primary" /> 逻辑创造力权重 (Temp: {formData.temperature})
+                  </Label>
+                  <div className="pt-4 px-2">
                     <input 
                       type="range" min="0" max="1" step="0.1" 
                       value={formData.temperature}
                       onChange={(e) => setFormData({...formData, temperature: parseFloat(e.target.value)})}
-                      className="flex-1 h-1.5 bg-muted rounded-lg appearance-none cursor-pointer accent-primary"
+                      className="w-full h-2 bg-slate-100 rounded-full appearance-none cursor-pointer accent-primary"
                     />
+                    <div className="flex justify-between mt-3 text-[10px] font-bold text-slate-300 uppercase tracking-tighter">
+                      <span>严格还原</span>
+                      <span>平衡</span>
+                      <span>发散创造</span>
+                    </div>
                   </div>
                 </div>
               </div>
             </CardContent>
-          </Card>
+          </GlassCard>
 
-          <Card className="rounded-2xl border border-border/40 shadow-xl overflow-hidden bg-white">
-            <CardHeader className="p-6 border-b bg-muted/10">
+          <GlassCard className="border-none shadow-xl">
+            <CardHeader className="p-8 border-b border-slate-100">
               <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <div className="h-10 w-10 rounded-xl bg-accent/20 text-accent flex items-center justify-center">
-                    <Wand2 className="h-5 w-5" />
+                <div className="flex items-center gap-4">
+                  <div className="h-12 w-12 rounded-2xl bg-accent/10 text-accent flex items-center justify-center shadow-inner">
+                    <Wand2 className="h-6 w-6" />
                   </div>
                   <div>
-                    <CardTitle className="text-sm font-bold uppercase tracking-widest">AI 专家人设与专业指令</CardTitle>
-                    <CardDescription className="text-[10px]">定义 AI 在产品翻译任务中的专业身份与偏好。</CardDescription>
+                    <CardTitle className="text-lg font-headline font-bold text-slate-900">AI 专家人设与执行准则</CardTitle>
+                    <CardDescription className="text-[10px] uppercase font-bold text-slate-400 tracking-widest mt-1">Expert System Prompt Injection</CardDescription>
                   </div>
                 </div>
-                <Badge className="bg-primary/5 text-primary border-primary/10 text-[9px] uppercase h-5">Expert Skill v2.5</Badge>
+                <Badge className="bg-primary/10 text-primary border-none text-[10px] font-bold uppercase tracking-wider px-4 h-7 rounded-full">ACTIVE PAYLOAD</Badge>
               </div>
             </CardHeader>
-            <CardContent className="p-8 space-y-6">
-              <div className="space-y-3">
-                <div className="flex items-center justify-between">
-                  <Label className="text-[10px] font-bold uppercase opacity-60 flex items-center gap-1.5">
-                    <Hammer className="h-3 w-3" /> 系统级专家指令 (Skill Payload)
+            <CardContent className="p-8 space-y-8">
+              <div className="space-y-4">
+                <div className="flex items-center justify-between px-1">
+                  <Label className="text-[11px] font-bold uppercase tracking-[0.2em] text-slate-400 flex items-center gap-2">
+                    <Terminal className="h-4 w-4 text-primary" /> 全局系统指令 (System Payload)
                   </Label>
-                  <span className="text-[9px] font-mono opacity-40">{formData.systemInstruction.length} chars</span>
+                  <span className="text-[10px] font-mono text-slate-300">{formData.systemInstruction.length} / 4096</span>
                 </div>
-                <Textarea 
-                  value={formData.systemInstruction}
-                  onChange={(e) => setFormData({...formData, systemInstruction: e.target.value})}
-                  className="min-h-[140px] rounded-xl border-muted/60 bg-muted/5 focus:bg-white transition-all text-sm leading-relaxed"
-                />
+                <div className="relative">
+                  <div className="absolute top-4 left-4 h-full w-[2px] bg-primary/20 rounded-full" />
+                  <Textarea 
+                    value={formData.systemInstruction}
+                    onChange={(e) => setFormData({...formData, systemInstruction: e.target.value})}
+                    className="min-h-[160px] rounded-2xl border-slate-100 bg-slate-50/50 pl-10 pt-6 text-sm leading-relaxed font-medium focus-visible:ring-2 focus-visible:ring-primary/10 shadow-inner resize-none"
+                  />
+                </div>
               </div>
 
-              <div className="p-4 bg-primary/5 rounded-xl border border-primary/10 space-y-3">
-                <div className="flex items-center gap-2 text-primary">
-                  <ListChecks className="h-4 w-4" />
-                  <span className="text-[10px] font-bold uppercase tracking-wider">已激活的静态技能</span>
-                </div>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-                   <div className="flex items-center gap-2 p-2 bg-white rounded-lg border border-primary/10 text-[10px] font-medium">
-                      <div className="w-1.5 h-1.5 rounded-full bg-green-500" /> 硬件专业术语库动态关联
-                   </div>
-                   <div className="flex items-center gap-2 p-2 bg-white rounded-lg border border-primary/10 text-[10px] font-medium">
-                      <div className="w-1.5 h-1.5 rounded-full bg-green-500" /> HTML 长文排版无损映射
-                   </div>
-                </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                 <div className="flex items-center gap-4 p-4 bg-slate-50 rounded-2xl border border-slate-100">
+                    <div className="h-10 w-10 rounded-xl bg-white flex items-center justify-center shadow-sm text-green-500">
+                      <ListChecks className="h-5 w-5" />
+                    </div>
+                    <div className="flex flex-col">
+                      <span className="text-xs font-bold text-slate-900">术语库动态映射</span>
+                      <span className="text-[10px] text-slate-400">已激活工业级硬件字典</span>
+                    </div>
+                 </div>
+                 <div className="flex items-center gap-4 p-4 bg-slate-50 rounded-2xl border border-slate-100">
+                    <div className="h-10 w-10 rounded-xl bg-white flex items-center justify-center shadow-sm text-blue-500">
+                      <ShieldAlert className="h-5 w-5" />
+                    </div>
+                    <div className="flex flex-col">
+                      <span className="text-xs font-bold text-slate-900">语义结构保护</span>
+                      <span className="text-[10px] text-slate-400">防止 HTML 标签解析冲突</span>
+                    </div>
+                 </div>
               </div>
             </CardContent>
-          </Card>
-
-          <Card className="rounded-2xl border border-border/40 shadow-sm overflow-hidden bg-white">
-            <CardHeader className="p-6 bg-muted/10 border-b">
-              <div className="flex items-center gap-3">
-                <LayoutGrid className="h-5 w-5 text-primary" />
-                <div>
-                  <CardTitle className="text-sm font-bold uppercase tracking-widest">全系列模型配额参考看板</CardTitle>
-                  <CardDescription className="text-[10px]">静态参数查询表，用于管理人员进行策略规划。</CardDescription>
-                </div>
-              </div>
-            </CardHeader>
-            <CardContent className="p-0">
-              <Table>
-                <TableHeader className="bg-muted/20">
-                  <TableRow>
-                    <TableHead className="pl-6 text-[9px] font-bold uppercase">模型名称</TableHead>
-                    <TableHead className="text-[9px] font-bold uppercase">RPM (分钟)</TableHead>
-                    <TableHead className="text-[9px] font-bold uppercase">RPD (日限)</TableHead>
-                    <TableHead className="text-[9px] font-bold uppercase">TPM (流量)</TableHead>
-                    <TableHead className="pr-6 text-[9px] font-bold uppercase">核心场景建议</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {AI_MODELS.map((item) => (
-                    <TableRow key={item.id} className={cn(formData.model === item.id && "bg-primary/5")}>
-                      <TableCell className="pl-6 font-bold text-xs">
-                        <div className="flex flex-col">
-                          <span>{item.name}</span>
-                          {formData.model === item.id && <span className="text-[8px] text-primary uppercase font-bold tracking-tighter">当前选用</span>}
-                        </div>
-                      </TableCell>
-                      <TableCell className="font-mono text-xs">{item.rpm}</TableCell>
-                      <TableCell className="font-mono text-xs">{item.rpd}</TableCell>
-                      <TableCell className="font-mono text-xs">{item.tpm}</TableCell>
-                      <TableCell className="pr-6">
-                        <Badge variant="outline" className={cn("text-[9px] border-none px-0 font-medium", item.color)}>
-                          {item.id.includes('pro') ? '超长排版 / 深度逻辑' : item.id.includes('lite') ? '高频并发 / 批量处理' : '通用翻译 / 速度优先'}
-                        </Badge>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </CardContent>
-          </Card>
+          </GlassCard>
         </div>
 
-        <div className="lg:col-span-4 space-y-6">
-          <Card className="rounded-2xl border-none bg-white shadow-xl overflow-hidden h-fit">
-            <CardHeader className="p-6 pb-2 border-b">
-              <CardTitle className="text-[10px] font-bold flex items-center gap-2 text-primary uppercase tracking-[0.2em]">
-                <Activity className="h-4 w-4 text-accent" />
-                动态连通性诊断
+        <div className="lg:col-span-4 space-y-8">
+          <GlassCard className="border-none bg-slate-900 text-white shadow-2xl">
+            <CardHeader className="p-8 border-b border-white/5">
+              <CardTitle className="text-[11px] font-bold flex items-center gap-3 uppercase tracking-[0.2em] text-primary">
+                <Activity className="h-5 w-5 text-accent animate-pulse" />
+                连通性实时监控
               </CardTitle>
             </CardHeader>
-            <CardContent className="p-6 space-y-6">
+            <CardContent className="p-8 space-y-8">
               <div className={cn(
-                "p-4 rounded-xl border transition-all text-xs min-h-[120px]",
-                testReport.status === 'success' ? "bg-green-50 border-green-100 text-green-800" : 
-                testReport.status === 'quota' ? "bg-orange-50 border-orange-100 text-orange-800" :
-                testReport.status === 'failed' ? "bg-destructive/5 border-destructive/10 text-destructive" : "bg-muted/30 border-border/40 text-muted-foreground"
+                "p-6 rounded-[2rem] border transition-all min-h-[160px] relative overflow-hidden flex flex-col justify-center",
+                testReport.status === 'success' ? "bg-green-500/10 border-green-500/20 text-green-400" : 
+                testReport.status === 'quota' ? "bg-orange-500/10 border-orange-500/20 text-orange-400" :
+                testReport.status === 'failed' ? "bg-red-500/10 border-red-500/20 text-red-400" : "bg-white/5 border-white/5 text-white/40"
               )}>
-                <div className="flex items-start gap-3">
-                   {testReport.status === 'running' ? <Loader2 className="h-4 w-4 animate-spin text-primary" /> : 
-                    testReport.status === 'success' ? <CheckCircle2 className="h-4 w-4 text-green-600" /> :
-                    testReport.status === 'quota' ? <Clock className="h-4 w-4 text-orange-600" /> :
-                    testReport.status === 'failed' ? <AlertCircle className="h-4 w-4" /> : <Bot className="h-4 w-4" />}
-                   <div className="space-y-1 flex-1">
-                      <p className="font-bold uppercase tracking-tighter">诊断报告</p>
-                      <p className="opacity-80 leading-relaxed text-[11px]">{testReport.message}</p>
+                <div className="flex items-start gap-4">
+                   <div className="h-10 w-10 rounded-full bg-white/5 flex items-center justify-center shrink-0 border border-white/10">
+                     {testReport.status === 'running' ? <Loader2 className="h-5 w-5 animate-spin text-primary" /> : 
+                      testReport.status === 'success' ? <CheckCircle2 className="h-5 w-5 text-green-400" /> :
+                      testReport.status === 'quota' ? <Clock className="h-5 w-5 text-orange-400" /> :
+                      testReport.status === 'failed' ? <AlertCircle className="h-5 w-5" /> : <Bot className="h-5 w-5" />}
+                   </div>
+                   <div className="space-y-2 flex-1">
+                      <p className="font-bold uppercase tracking-widest text-xs">诊断报告 (Report)</p>
+                      <p className="opacity-80 leading-relaxed text-[11px] font-medium">{testReport.message}</p>
                       
-                      {testReport.status === 'quota' && (
-                        <div className="mt-3 p-2 bg-white/50 rounded border border-orange-200 text-[10px] text-orange-900 italic">
-                          这说明配置已鉴权成功。
-                        </div>
-                      )}
-
                       {testReport.modelUsed && (
-                        <div className="mt-3 space-y-1.5">
-                           <div className="flex items-center gap-1.5 font-mono text-[9px] bg-black/5 p-1 rounded">
-                             <Terminal className="h-2.5 w-2.5 opacity-40" /> ID: {testReport.modelUsed}
+                        <div className="mt-4 flex items-center gap-3">
+                           <div className="px-2 py-1 bg-black/40 rounded-lg font-mono text-[9px] border border-white/5">
+                             ID: {testReport.modelUsed.split('/').pop()}
                            </div>
-                           {testReport.latency && <div className="text-[8px] font-bold opacity-40 uppercase">Latency: {testReport.latency}ms</div>}
+                           {testReport.latency && <div className="text-[9px] font-bold opacity-40 uppercase tracking-tighter">Delay: {testReport.latency}ms</div>}
                         </div>
                       )}
                    </div>
@@ -445,50 +424,50 @@ export default function AiSettingsPage() {
                 variant="outline" 
                 disabled={isTesting}
                 onClick={runAutoTest}
-                className="w-full rounded-xl h-10 font-bold text-[10px] uppercase tracking-widest border-primary/20 text-primary hover:bg-primary/5 shadow-inner"
+                className="w-full rounded-2xl h-14 font-bold text-xs uppercase tracking-widest border-white/10 text-white bg-white/5 hover:bg-white/10 transition-all shadow-2xl"
               >
-                {isTesting ? '正在尝试握手...' : '立即测试当前配置'}
+                {isTesting ? '正在尝试握手鉴权...' : '执行连通性自检'}
               </Button>
             </CardContent>
-          </Card>
+          </GlassCard>
 
-          <Card className="rounded-2xl border-none bg-white shadow-xl overflow-hidden">
-            <CardHeader className="p-6 pb-2 border-b bg-muted/10">
-              <CardTitle className="text-[10px] font-bold flex items-center gap-2 text-primary uppercase tracking-[0.2em]">
-                <Gauge className="h-4 w-4 text-blue-500" />
-                当前模型调用仪表盘
+          <GlassCard className="border-none shadow-xl">
+            <CardHeader className="p-8 border-b border-slate-50">
+              <CardTitle className="text-[11px] font-bold flex items-center gap-3 text-slate-400 uppercase tracking-[0.2em]">
+                <Gauge className="h-5 w-5 text-primary" />
+                模型资源负载控制
               </CardTitle>
             </CardHeader>
-            <CardContent className="p-6 space-y-6">
-              <div className="space-y-5">
+            <CardContent className="p-8 space-y-8">
+              <div className="space-y-6">
                 <div className="flex justify-between items-end">
                    <div className="space-y-1">
-                      <p className="text-[10px] font-bold text-muted-foreground uppercase">当前选用</p>
-                      <Badge className="bg-primary/10 text-primary border-none text-[9px] uppercase">{currentQuota.name.split(' ').pop()}</Badge>
+                      <p className="text-[10px] font-bold text-slate-300 uppercase">当前计算力</p>
+                      <Badge className="bg-primary/10 text-primary border-none text-[10px] font-bold uppercase h-6 px-3">{currentQuota.name.split(' ').pop()}</Badge>
                    </div>
                    <div className="text-right">
-                      <p className="text-[10px] font-bold text-muted-foreground uppercase">RPM 限制</p>
-                      <p className="text-xl font-headline font-bold text-primary">{currentQuota.rpm}</p>
+                      <p className="text-[10px] font-bold text-slate-300 uppercase">RPM 峰值</p>
+                      <p className="text-3xl font-headline font-bold text-slate-900">{currentQuota.rpm}</p>
                    </div>
                 </div>
 
-                <div className="space-y-2">
-                  <div className="flex justify-between text-[10px] font-bold uppercase opacity-60">
-                    <span>每日额度 (RPD)</span>
-                    <span>{currentQuota.rpd} / DAY</span>
+                <div className="space-y-3">
+                  <div className="flex justify-between text-[11px] font-bold uppercase text-slate-400">
+                    <span>每日配额消耗 (RPD)</span>
+                    <span className="text-slate-900">{currentQuota.rpd} / DAY</span>
                   </div>
-                  <Progress value={(currentQuota.rpd / 1000) * 100} className="h-1.5" />
+                  <Progress value={(currentQuota.rpd / 1000) * 100} className="h-2 bg-slate-100" />
                 </div>
 
-                <div className="p-4 bg-orange-50/50 rounded-xl border border-orange-100 flex gap-3">
-                   <ShieldAlert className="h-4 w-4 text-orange-600 shrink-0 mt-0.5" />
-                   <p className="text-[9px] text-orange-800 leading-relaxed italic">
-                     <b>隐私提醒：</b>免费层级输入数据会被 Google 用于改进模型。
+                <div className="p-5 bg-orange-50 rounded-[1.5rem] border border-orange-100 flex gap-4">
+                   <ShieldAlert className="h-5 w-5 text-orange-600 shrink-0 mt-1" />
+                   <p className="text-[10px] text-orange-900/60 leading-relaxed font-medium italic">
+                     <b>安全基则：</b>由于当前处于免费层级，输入的数据将通过 Google AI 隐私隧道进行训练改进，请避免输入核心商业机密文稿。
                    </p>
                 </div>
               </div>
             </CardContent>
-          </Card>
+          </GlassCard>
         </div>
       </div>
     </div>

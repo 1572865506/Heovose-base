@@ -5,10 +5,10 @@ import Image from 'next/image';
 import { Locale, translations } from "@/lib/translations";
 import { Linkedin, Twitter, Facebook, Mail, Phone } from "lucide-react";
 
+import { useTranslations } from '@/hooks/use-translations';
+
 export function Footer({ locale }: { locale: Locale }) {
-  const t = translations[locale];
-  const sub = translations[locale].nav_sub;
-  const f = translations[locale].footer;
+  const { t: tr } = useTranslations(locale);
 
   return (
     <footer className="bg-primary text-primary-foreground py-24">
@@ -26,8 +26,8 @@ export function Footer({ locale }: { locale: Locale }) {
                 className="h-9 w-auto object-contain"
               />
               <div className="space-y-1">
-                <p className="text-accent font-bold text-sm tracking-wide">{f.slogan1}</p>
-                <p className="opacity-60 text-xs leading-relaxed max-w-[240px]">{f.slogan2}</p>
+                <p className="text-accent font-bold text-sm tracking-wide">{tr('footer_slogan1')}</p>
+                <p className="opacity-60 text-xs leading-relaxed max-w-[240px]">{tr('footer_slogan2')}</p>
               </div>
             </div>
             <div className="flex gap-4">
@@ -45,27 +45,27 @@ export function Footer({ locale }: { locale: Locale }) {
 
           {/* Column 2: Products (Wholesale + Projects) */}
           <div>
-            <h4 className="font-bold mb-8 text-white uppercase tracking-widest text-xs border-b border-white/10 pb-4">{t.nav.products}</h4>
+            <h4 className="font-bold mb-8 text-white uppercase tracking-widest text-xs border-b border-white/10 pb-4">{tr('nav_products')}</h4>
             <div className="grid grid-cols-1 gap-10">
               <div className="space-y-4">
-                <span className="text-[10px] font-bold text-accent uppercase tracking-widest opacity-80">{t.nav.wholesale}</span>
+                <span className="text-[10px] font-bold text-accent uppercase tracking-widest opacity-80">{tr('nav_wholesale')}</span>
                 <ul className="space-y-3 opacity-60 text-[13px]">
-                  <li className="hover:text-accent cursor-pointer transition-colors">{sub.aio}</li>
-                  <li className="hover:text-accent cursor-pointer transition-colors">{sub.minipc}</li>
-                  <li className="hover:text-accent cursor-pointer transition-colors">{sub.monitor}</li>
-                  <li className="hover:text-accent cursor-pointer transition-colors">{sub.laptop}</li>
-                  <li className="hover:text-accent cursor-pointer transition-colors">{sub.electromechanical}</li>
-                  <li className="hover:text-accent cursor-pointer transition-colors">{sub.components}</li>
+                  <li className="hover:text-accent cursor-pointer transition-colors">{tr('nav_sub_aio')}</li>
+                  <li className="hover:text-accent cursor-pointer transition-colors">{tr('nav_sub_minipc')}</li>
+                  <li className="hover:text-accent cursor-pointer transition-colors">{tr('nav_sub_monitor')}</li>
+                  <li className="hover:text-accent cursor-pointer transition-colors">{tr('nav_sub_laptop')}</li>
+                  <li className="hover:text-accent cursor-pointer transition-colors">{tr('nav_sub_electromechanical')}</li>
+                  <li className="hover:text-accent cursor-pointer transition-colors">{tr('nav_sub_components')}</li>
                 </ul>
               </div>
               <div className="space-y-4">
-                <span className="text-[10px] font-bold text-accent uppercase tracking-widest opacity-80">{t.nav.projects}</span>
+                <span className="text-[10px] font-bold text-accent uppercase tracking-widest opacity-80">{tr('nav_projects')}</span>
                 <ul className="space-y-3 opacity-60 text-[13px]">
-                  <li className="hover:text-accent cursor-pointer transition-colors">{sub.conference}</li>
-                  <li className="hover:text-accent cursor-pointer transition-colors">{sub.selfservice}</li>
-                  <li className="hover:text-accent cursor-pointer transition-colors">{sub.industrial}</li>
-                  <li className="hover:text-accent cursor-pointer transition-colors">{sub.led}</li>
-                  <li className="hover:text-accent cursor-pointer transition-colors">{sub.showroom}</li>
+                  <li className="hover:text-accent cursor-pointer transition-colors">{tr('nav_sub_conference')}</li>
+                  <li className="hover:text-accent cursor-pointer transition-colors">{tr('nav_sub_selfservice')}</li>
+                  <li className="hover:text-accent cursor-pointer transition-colors">{tr('nav_sub_industrial')}</li>
+                  <li className="hover:text-accent cursor-pointer transition-colors">{tr('nav_sub_led')}</li>
+                  <li className="hover:text-accent cursor-pointer transition-colors">{tr('nav_sub_showroom')}</li>
                 </ul>
               </div>
             </div>
@@ -73,17 +73,17 @@ export function Footer({ locale }: { locale: Locale }) {
 
           {/* Column 3: Company Info */}
           <div>
-            <h4 className="font-bold mb-8 text-white uppercase tracking-widest text-xs border-b border-white/10 pb-4">{t.nav.company}</h4>
+            <h4 className="font-bold mb-8 text-white uppercase tracking-widest text-xs border-b border-white/10 pb-4">{tr('nav_company')}</h4>
             <ul className="space-y-4 opacity-60 text-[13px]">
-              <li className="hover:text-accent cursor-pointer transition-colors">{t.nav.about}</li>
-              <li className="hover:text-accent cursor-pointer transition-colors">{t.nav.career}</li>
-              <li className="hover:text-accent cursor-pointer transition-colors">{t.nav.cases}</li>
+              <li className="hover:text-accent cursor-pointer transition-colors">{tr('nav_about')}</li>
+              <li className="hover:text-accent cursor-pointer transition-colors">{tr('nav_career')}</li>
+              <li className="hover:text-accent cursor-pointer transition-colors">{tr('nav_cases')}</li>
             </ul>
           </div>
 
           {/* Column 4: Contact Us */}
           <div>
-            <h4 className="font-bold mb-8 text-white uppercase tracking-widest text-xs border-b border-white/10 pb-4">{t.nav.contact}</h4>
+            <h4 className="font-bold mb-8 text-white uppercase tracking-widest text-xs border-b border-white/10 pb-4">{tr('nav_contact')}</h4>
             <ul className="space-y-6 opacity-60 text-[13px]">
               <li className="group cursor-pointer">
                 <span className="block text-[10px] text-accent mb-1 uppercase font-bold tracking-tighter">Email</span>

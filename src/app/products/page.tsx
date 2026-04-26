@@ -15,6 +15,7 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
+import { useTranslations } from '@/hooks/use-translations';
 
 interface Product {
   id: string;
@@ -51,6 +52,7 @@ function ProductListContent() {
   const firestore = useFirestore();
   
   const [locale, setLocale] = useState<Locale>('en');
+  const { t: tr } = useTranslations(locale);
   const [searchQuery, setSearchQuery] = useState('');
   const [activeLine, setActiveLine] = useState<BusinessLine>('wholesale');
   const [selectedCategoryId, setSelectedCategoryId] = useState<string | null>(null);
@@ -116,20 +118,29 @@ function ProductListContent() {
   const filteredProducts = useMemo(() => {
     if (!products || !categories) return [];
     
+    // 递归获取所有子分类 ID
+    const getAllDescendantIds = (parentId: string): string[] => {
+      const children = categories.filter(c => c.parentId === parentId);
+      let ids = children.map(c => c.id);
+      children.forEach(child => {
+        ids = [...ids, ...getAllDescendantIds(child.id)];
+      });
+      return ids;
+    };
+
     // 获取当前业务线下所有的子分类 ID 列表
-    const parentId = activeLine === 'wholesale' ? 'WHOLESALE' : 'PROJECT';
-    const subCategoryIds = categories.filter(c => c.parentId === parentId).map(c => c.id);
-    // 包含顶级分类本身（以防万一产品直接挂在顶级分类下）
-    subCategoryIds.push(parentId);
+    const rootId = activeLine === 'wholesale' ? 'WHOLESALE' : 'PROJECT';
+    const subCategoryIds = [rootId, ...getAllDescendantIds(rootId)];
 
     return products.filter(p => {
       if (p.status !== 'published') return false;
       
-      // 首先必须属于当前业务线
+      // 首先必须属于当前业务线（直接或间接属于根分类）
       const belongsToActiveLine = subCategoryIds.includes(p.productCategoryId);
       if (!belongsToActiveLine) return false;
 
-      // 其次匹配选中的子分类
+      // 其次匹配选中的具体子分类
+      // 如果没有选中具体分类，则显示该业务线下所有产品
       const matchesCategory = !selectedCategoryId || p.productCategoryId === selectedCategoryId;
       
       // 最后匹配搜索
@@ -141,10 +152,10 @@ function ProductListContent() {
   }, [products, categories, activeLine, selectedCategoryId, searchQuery, allTranslations, locale]);
 
   const activeCategoryName = useMemo(() => {
-    if (!selectedCategoryId) return t.allCategories;
+    if (!selectedCategoryId) return tr('products_allCategories');
     const cat = categories?.find(c => c.id === selectedCategoryId);
-    return cat ? getT(cat.nameTextId) : t.allCategories;
-  }, [selectedCategoryId, categories, allTranslations, locale, t.allCategories]);
+    return cat ? getT(cat.nameTextId) : tr('products_allCategories');
+  }, [selectedCategoryId, categories, allTranslations, locale, tr]);
 
   const handleLineSwitch = (line: BusinessLine) => {
     setActiveLine(line);
@@ -170,13 +181,13 @@ function ProductListContent() {
         <div className="container mx-auto px-6 relative z-10">
           <div className="max-w-3xl space-y-6 animate-in fade-in slide-in-from-left-4 duration-700">
             <Badge variant="outline" className="bg-white/10 border-white/30 text-white text-[10px] font-bold uppercase tracking-[0.2em] px-4 py-1">
-              {activeLine === 'wholesale' ? 'Wholesale Line' : 'Project Solutions'}
+              {activeLine === 'wholesale' ? tr('products_wholesaleLine') : tr('products_projectSolutions')}
             </Badge>
             <h1 className="text-5xl md:text-7xl font-headline font-bold tracking-tight leading-[0.9]">
-              {t.listTitle}
+              {tr('products_listTitle')}
             </h1>
             <p className="text-xl opacity-70 font-light max-w-xl">
-              {t.listSubtitle}
+              {tr('products_listSubtitle')}
             </p>
           </div>
         </div>
@@ -194,7 +205,7 @@ function ProductListContent() {
               )}
             >
               <ShoppingBag className={cn("h-3.5 w-3.5", activeLine === 'wholesale' ? "text-primary" : "opacity-40")} />
-              {translations[locale].nav.wholesale}
+              {tr('nav_wholesale')}
             </button>
             <button 
               onClick={() => handleLineSwitch('project')}
@@ -204,17 +215,17 @@ function ProductListContent() {
               )}
             >
               <Building2 className={cn("h-3.5 w-3.5", activeLine === 'project' ? "text-[#F97316]" : "opacity-40")} />
-              {translations[locale].nav.projects}
+              {tr('nav_projects')}
             </button>
           </div>
 
           <div className="flex items-center gap-4 w-full md:w-auto">
              <div className="flex items-center gap-2 bg-[#3C434A] text-white px-3 py-1.5 rounded-lg">
-                <span className="text-[10px] font-bold uppercase tracking-tighter">{filteredProducts.length} Items</span>
+                <span className="text-[10px] font-bold uppercase tracking-tighter">{filteredProducts.length} {tr('products_itemsCount')}</span>
              </div>
              <span className={cn(
-               "text-sm italic font-bold transition-colors",
-               activeLine === 'wholesale' ? "text-primary" : "text-[#F97316]"
+                "text-sm italic font-bold transition-colors",
+                activeLine === 'wholesale' ? "text-primary" : "text-[#F97316]"
              )}>
                {activeCategoryName}
              </span>
@@ -229,11 +240,11 @@ function ProductListContent() {
           <aside className="lg:col-span-3 space-y-10">
             <div className="space-y-4">
               <h3 className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground flex items-center gap-2">
-                <Search className="h-3 w-3" /> Quick Search
+                <Search className="h-3 w-3" /> {tr('products_quickSearch')}
               </h3>
               <div className="relative">
                 <Input
-                  placeholder={t.searchPlaceholder}
+                  placeholder={tr('products_searchPlaceholder')}
                   className="rounded-xl pl-10 border-none bg-white shadow-sm h-12 text-sm"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
@@ -244,7 +255,7 @@ function ProductListContent() {
 
             <div className="space-y-4">
               <h3 className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground flex items-center gap-2">
-                <LayoutGrid className="h-3 w-3" /> Categories
+                <LayoutGrid className="h-3 w-3" /> {tr('products_categories')}
               </h3>
               <div className="space-y-1 bg-white p-2 rounded-[1.5rem] shadow-sm border border-border/20">
                 <button
@@ -256,7 +267,7 @@ function ProductListContent() {
                       : "hover:bg-muted text-muted-foreground"
                   )}
                 >
-                  <span>{t.allCategories}</span>
+                  <span>{tr('products_allCategories')}</span>
                   {selectedCategoryId === null && <div className="h-1.5 w-1.5 rounded-full bg-accent animate-pulse" />}
                 </button>
                 {filteredCategories.map((cat) => (
@@ -276,7 +287,7 @@ function ProductListContent() {
                 ))}
                 {filteredCategories.length === 0 && !isCatsLoading && (
                   <div className="px-5 py-8 text-center text-[10px] text-muted-foreground italic uppercase tracking-widest opacity-40">
-                    No sub-categories defined
+                    {tr('products_noSubCategories')}
                   </div>
                 )}
               </div>
@@ -288,9 +299,9 @@ function ProductListContent() {
               activeLine === 'wholesale' ? "bg-primary" : "bg-[#F97316]"
             )}>
               <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -mr-16 -mt-16 blur-2xl" />
-              <h4 className="font-bold text-lg leading-tight">Need a custom quote?</h4>
-              <p className="text-xs opacity-70 leading-relaxed">Our experts are ready to help you with large-scale deployment and technical specs.</p>
-              <Button variant="secondary" className="w-full rounded-xl h-12 bg-white text-primary hover:bg-accent border-none font-bold uppercase text-[10px] tracking-widest">Contact Sales</Button>
+              <h4 className="font-bold text-lg leading-tight">{tr('products_needQuote')}</h4>
+              <p className="text-xs opacity-70 leading-relaxed">{tr('products_expertHelp')}</p>
+              <Button variant="secondary" className="w-full rounded-xl h-12 bg-white text-primary hover:bg-accent border-none font-bold uppercase text-[10px] tracking-widest">{tr('products_contactSales')}</Button>
             </div>
           </aside>
 
@@ -299,7 +310,7 @@ function ProductListContent() {
             {isLoading ? (
               <div className="py-32 flex flex-col items-center justify-center gap-4 text-muted-foreground">
                 <Loader2 className="h-10 w-10 animate-spin text-primary opacity-20" />
-                <p className="text-[10px] font-bold uppercase tracking-widest opacity-40">Synchronizing Global Inventory...</p>
+                <p className="text-[10px] font-bold uppercase tracking-widest opacity-40">{tr('products_syncing')}</p>
               </div>
             ) : filteredProducts.length > 0 ? (
               <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-8 animate-in fade-in duration-700">
@@ -311,11 +322,11 @@ function ProductListContent() {
                   >
                     <div className="relative aspect-[4/3] bg-muted/20">
                       <Image
-                        src={product.mainImageUrl || 'https://picsum.photos/seed/placeholder/600/450'}
-                        alt={product.id}
+                        src={product.mainImageUrl || '/image/product-placeholder.png'}
+                        alt={getT(product.nameTextId)}
                         fill
                         className="object-contain p-6 group-hover:scale-110 transition-transform duration-700"
-                        unoptimized={product.mainImageUrl.startsWith('data:')}
+                        unoptimized={product.mainImageUrl?.startsWith('data:')}
                       />
                     </div>
                     <div className="p-8 space-y-4 flex-grow flex flex-col">
@@ -333,7 +344,7 @@ function ProductListContent() {
                           "text-xs font-bold group-hover:translate-x-1 transition-all flex items-center gap-2",
                           activeLine === 'wholesale' ? "text-primary" : "text-[#F97316]"
                         )}>
-                          {t.viewDetails} <ArrowRight className="h-3.5 w-3.5" />
+                          {tr('products_viewDetails')} <ArrowRight className="h-3.5 w-3.5" />
                         </span>
                         <div className="h-8 w-8 rounded-full bg-muted/30 flex items-center justify-center text-primary/20 group-hover:bg-primary group-hover:text-white transition-all">
                            <Package className="h-4 w-4" />
@@ -349,10 +360,10 @@ function ProductListContent() {
                    <LayoutGrid className="h-10 w-10 opacity-10" />
                 </div>
                 <div className="space-y-2">
-                  <p className="font-bold text-primary">{t.noResults}</p>
-                  <p className="text-xs text-muted-foreground">Please try another category or clear your search query.</p>
+                  <p className="font-bold text-primary">{tr('products_noResults')}</p>
+                  <p className="text-xs text-muted-foreground">{tr('products_listSubtitle')}</p>
                 </div>
-                <Button onClick={() => { setSelectedCategoryId(null); setSearchQuery(''); }} variant="outline" className="rounded-xl px-8">Reset All Filters</Button>
+                <Button onClick={() => { setSelectedCategoryId(null); setSearchQuery(''); }} variant="outline" className="rounded-xl px-8">{tr('products_resetFilters')}</Button>
               </div>
             )}
           </div>

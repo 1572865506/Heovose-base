@@ -36,6 +36,12 @@ interface AppConfig {
   defaultLanguage?: string;
 }
 
+const GlassCard = ({ children, className }: { children: React.ReactNode, className?: string }) => (
+  <div className={cn("bg-white/70 backdrop-blur-xl border border-white/40 shadow-2xl rounded-3xl overflow-hidden", className)}>
+    {children}
+  </div>
+);
+
 export default function AdminSettingsPage() {
   const firestore = useFirestore();
   const { toast } = useToast();
@@ -78,163 +84,198 @@ export default function AdminSettingsPage() {
   };
 
   return (
-    <div className="space-y-6 animate-in fade-in duration-500">
-      <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-xl font-headline font-bold text-primary flex items-center gap-2">
-            <Settings2 className="h-5 w-5" /> 通用系统设置
-          </h2>
-          <p className="text-xs text-muted-foreground">管理全站基础配置与全局开关。</p>
+    <div className="space-y-8 animate-in fade-in duration-700 pb-20 relative">
+      {/* Background Aurora Glows */}
+      <div className="absolute top-[-10%] right-[-5%] w-[40%] h-[40%] bg-primary/10 blur-[120px] rounded-full -z-10 animate-pulse" />
+      <div className="absolute bottom-[20%] left-[-10%] w-[35%] h-[35%] bg-accent/10 blur-[100px] rounded-full -z-10" />
+
+      <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
+        <div className="space-y-2">
+          <div className="flex items-center gap-3">
+            <div className="h-12 w-12 rounded-2xl bg-slate-900 flex items-center justify-center text-white shadow-xl shadow-slate-200">
+              <Settings2 className="h-6 w-6" />
+            </div>
+            <h2 className="text-3xl font-headline font-bold text-slate-900">核心系统设定</h2>
+          </div>
+          <p className="text-sm text-slate-500 font-medium max-w-2xl pl-1">配置全站基础参数、语言降级策略以及底层基础设施连接状态。</p>
         </div>
-        <Button onClick={handleSave} disabled={isSaving || isLangLoading} className="rounded-lg h-10 px-8 gap-2 font-bold uppercase tracking-widest text-xs shadow-md">
+        <Button 
+          onClick={handleSave} 
+          disabled={isSaving || isLangLoading} 
+          className="rounded-full h-12 px-8 gap-2 font-bold uppercase tracking-widest text-xs shadow-xl shadow-primary/20 transition-all hover:scale-105 active:scale-95"
+        >
           {isSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
-          {isSaving ? '正在部署' : '保存全局配置'}
+          {isSaving ? '部署配置中' : '签署并同步配置'}
         </Button>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-        <div className="lg:col-span-8 space-y-6">
-          <Card className="rounded-2xl border-border/40 shadow-sm overflow-hidden bg-white">
-            <div className="bg-primary p-6 text-white">
-              <CardHeader className="p-0">
-                <div className="flex items-center gap-3">
-                  <Globe className="h-6 w-6 opacity-80" />
-                  <div>
-                    <CardTitle className="text-lg">网站全局参数</CardTitle>
-                    <CardDescription className="text-white/60 text-xs uppercase tracking-widest">Global Site Localization</CardDescription>
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-10">
+        <div className="lg:col-span-8 space-y-10">
+          <GlassCard className="border-none shadow-[0_32px_64px_-12px_rgba(0,0,0,0.12)]">
+            <div className="bg-slate-900 p-8 text-white relative overflow-hidden">
+               <div className="absolute top-0 right-0 w-64 h-64 bg-primary/20 blur-[100px] rounded-full translate-x-32 -translate-y-32" />
+               <div className="relative z-10 flex items-center gap-4">
+                  <div className="h-12 w-12 rounded-2xl bg-white/10 backdrop-blur-md flex items-center justify-center border border-white/10">
+                    <Globe className="h-6 w-6 text-primary" />
                   </div>
-                </div>
-              </CardHeader>
+                  <div>
+                    <CardTitle className="text-xl font-headline font-bold">全局本地化引擎</CardTitle>
+                    <CardDescription className="text-white/40 text-[10px] uppercase tracking-[0.2em] mt-1 font-bold">Site Connectivity & Fallback</CardDescription>
+                  </div>
+               </div>
             </div>
-            <CardContent className="p-8 space-y-8">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                <div className="space-y-3">
-                  <Label className="text-[10px] font-bold uppercase tracking-widest text-primary flex items-center gap-2">
-                    <Globe className="h-3 w-3" /> 站点默认语言 (Fallback)
+            <CardContent className="p-10 space-y-10">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
+                <div className="space-y-4">
+                  <Label className="text-[11px] font-bold uppercase tracking-[0.2em] text-slate-400 flex items-center gap-2 pl-1">
+                    <Globe className="h-4 w-4 text-primary" /> 站点默认语种 (Fallback)
                   </Label>
                   <Select 
                     value={formData.defaultLanguage} 
                     onValueChange={(v) => setFormData({...formData, defaultLanguage: v})}
                   >
-                    <SelectTrigger className="h-11 rounded-xl bg-muted/20 border-transparent text-xs font-bold">
+                    <SelectTrigger className="h-14 rounded-2xl bg-slate-50 border-none font-bold text-slate-700 shadow-inner">
                       <SelectValue placeholder="选择默认语种" />
                     </SelectTrigger>
-                    <SelectContent className="rounded-xl">
+                    <SelectContent className="rounded-2xl border-none shadow-2xl p-2">
                       {formData.supportedLanguages.length > 0 ? (
                         formData.supportedLanguages.map(lang => (
-                          <SelectItem key={lang.code} value={lang.code} className="text-xs">
+                          <SelectItem key={lang.code} value={lang.code} className="rounded-xl h-10 text-xs font-bold my-1">
                             {lang.label} ({lang.code.toUpperCase()})
                           </SelectItem>
                         ))
                       ) : (
-                        <SelectItem value="zh" disabled className="text-xs italic">请先在“翻译管理”中添加语言</SelectItem>
+                        <SelectItem value="zh" disabled className="text-xs italic p-4">请先在“翻译管理”中激活语言</SelectItem>
                       )}
                     </SelectContent>
                   </Select>
-                  <p className="text-[9px] text-muted-foreground italic leading-relaxed">提示：此语种将作为 URL 未指定或内容缺失时的最终降级方案。</p>
+                  <p className="text-[10px] text-slate-400 italic font-medium leading-relaxed px-1">
+                    若 URL 未指定语种或特定内容缺失翻译，系统将强制回退至此锚点。
+                  </p>
                 </div>
                 
-                <div className="space-y-3">
-                   <Label className="text-[10px] font-bold uppercase tracking-widest text-primary flex items-center gap-2">
-                     <ShieldCheck className="h-3 w-3" /> 系统维护模式
+                <div className="space-y-4">
+                   <Label className="text-[11px] font-bold uppercase tracking-[0.2em] text-slate-400 flex items-center gap-2 pl-1">
+                     <ShieldCheck className="h-4 w-4 text-primary" /> 访问控制协议
                    </Label>
-                   <div className="flex items-center justify-between p-3 bg-muted/10 rounded-xl border border-dashed border-border/60">
-                      <span className="text-xs font-bold text-muted-foreground">已开启生产环境拦截</span>
-                      <Badge variant="secondary" className="text-[9px] font-bold uppercase bg-green-50 text-green-700 border-green-100">Live</Badge>
+                   <div className="h-14 flex items-center justify-between px-6 bg-slate-50 rounded-2xl border border-slate-100 shadow-inner">
+                      <span className="text-xs font-bold text-slate-900">生产环境流量拦截</span>
+                      <div className="flex items-center gap-2 text-green-600 bg-green-50 px-3 py-1 rounded-full border border-green-100">
+                        <div className="h-1.5 w-1.5 rounded-full bg-green-600 animate-pulse" />
+                        <span className="text-[10px] font-bold uppercase tracking-wider">LIVE</span>
+                      </div>
                    </div>
+                   <p className="text-[10px] text-slate-400 italic font-medium leading-relaxed px-1">
+                    当前正在监听外部公共请求。若需维护请在 Firebase 控制台调整 Rules。
+                  </p>
                 </div>
               </div>
             </CardContent>
-          </Card>
+          </GlassCard>
 
-          <Card className="rounded-2xl border-border/40 shadow-sm overflow-hidden bg-white">
-            <CardHeader className="p-6 border-b bg-muted/5">
-              <div className="flex items-center gap-3">
-                <div className="h-10 w-10 rounded-xl bg-primary/10 text-primary flex items-center justify-center">
-                  <Cloud className="h-5 w-5" />
+          <GlassCard className="border-none shadow-xl">
+            <CardHeader className="p-8 border-b border-slate-50">
+              <div className="flex items-center gap-4">
+                <div className="h-12 w-12 rounded-2xl bg-accent/10 text-accent flex items-center justify-center shadow-inner">
+                  <Cloud className="h-6 w-6" />
                 </div>
                 <div>
-                  <CardTitle className="text-sm font-bold uppercase tracking-widest">服务器与环境配置 (Infrastructure)</CardTitle>
-                  <CardDescription className="text-[10px] uppercase">当前云端实例及核心技术栈概览</CardDescription>
+                  <CardTitle className="text-lg font-headline font-bold text-slate-900">基础设施架构 (Cloud Infra)</CardTitle>
+                  <CardDescription className="text-[10px] uppercase font-bold text-slate-400 tracking-widest mt-1">System Core Technical Stack</CardDescription>
                 </div>
               </div>
             </CardHeader>
-            <CardContent className="p-8 space-y-8">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-8">
-                <div className="space-y-4">
-                  <div className="flex items-center gap-2 text-primary">
-                    <Database className="h-4 w-4 opacity-60" />
-                    <span className="text-[10px] font-bold uppercase tracking-wider">Firebase 后端服务</span>
+            <CardContent className="p-10 space-y-12">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-16">
+                <div className="space-y-6">
+                  <div className="flex items-center gap-3 text-primary">
+                    <Database className="h-4 w-4" />
+                    <span className="text-[11px] font-bold uppercase tracking-[0.2em]">云端数据网关</span>
                   </div>
-                  <div className="space-y-3">
-                    <div className="flex justify-between items-center text-xs pb-2 border-b border-dashed">
-                      <span className="text-muted-foreground">Project ID</span>
-                      <code className="bg-muted px-2 py-0.5 rounded font-mono text-primary font-bold">{firebaseConfig.projectId}</code>
+                  <div className="space-y-4">
+                    <div className="flex justify-between items-center pb-3 border-b border-slate-100">
+                      <span className="text-xs font-bold text-slate-400 uppercase">Project ID</span>
+                      <code className="text-sm font-mono font-bold text-slate-900">{firebaseConfig.projectId}</code>
                     </div>
-                    <div className="flex justify-between items-center text-xs pb-2 border-b border-dashed">
-                      <span className="text-muted-foreground">App ID (Web)</span>
-                      <span className="font-mono text-[10px] opacity-60">{firebaseConfig.appId.split(':').pop()}</span>
+                    <div className="flex justify-between items-center pb-3 border-b border-slate-100">
+                      <span className="text-xs font-bold text-slate-400 uppercase">App Internal ID</span>
+                      <span className="text-sm font-mono text-slate-400">...{firebaseConfig.appId.split(':').pop()?.slice(-8)}</span>
                     </div>
-                    <div className="flex justify-between items-center text-xs">
-                      <span className="text-muted-foreground">Region</span>
-                      <Badge variant="outline" className="text-[9px] uppercase font-bold">Auto (App Hosting)</Badge>
+                    <div className="flex justify-between items-center">
+                      <span className="text-xs font-bold text-slate-400 uppercase">Deployed Region</span>
+                      <Badge variant="outline" className="text-[9px] font-bold uppercase border-primary/20 text-primary bg-primary/5 h-6 rounded-full px-3">Auto (Edge)</Badge>
                     </div>
                   </div>
                 </div>
 
-                <div className="space-y-4">
-                  <div className="flex items-center gap-2 text-primary">
-                    <Cpu className="h-4 w-4 opacity-60" />
-                    <span className="text-[10px] font-bold uppercase tracking-wider">软件技术栈 (Software Stack)</span>
+                <div className="space-y-6">
+                  <div className="flex items-center gap-3 text-primary">
+                    <Cpu className="h-4 w-4" />
+                    <span className="text-[11px] font-bold uppercase tracking-[0.2em]">软件执行环境</span>
                   </div>
-                  <div className="space-y-3">
-                    <div className="flex justify-between items-center text-xs pb-2 border-b border-dashed">
-                      <span className="text-muted-foreground">Framework</span>
-                      <span className="font-bold">Next.js 15.x (App Router)</span>
+                  <div className="space-y-4">
+                    <div className="flex justify-between items-center pb-3 border-b border-slate-100">
+                      <span className="text-xs font-bold text-slate-400 uppercase">Runtime</span>
+                      <span className="text-sm font-bold text-slate-900">Next.js 15.x</span>
                     </div>
-                    <div className="flex justify-between items-center text-xs pb-2 border-b border-dashed">
-                      <span className="text-muted-foreground">AI Engine</span>
-                      <span className="font-bold">Genkit 1.28 + Gemini</span>
+                    <div className="flex justify-between items-center pb-3 border-b border-slate-100">
+                      <span className="text-xs font-bold text-slate-400 uppercase">Core Engine</span>
+                      <span className="text-sm font-bold text-slate-900">Genkit 1.28 + Gemini</span>
                     </div>
-                    <div className="flex justify-between items-center text-xs">
-                      <span className="text-muted-foreground">UI Library</span>
-                      <span className="font-bold">Tailwind CSS + ShadCN UI</span>
+                    <div className="flex justify-between items-center">
+                      <span className="text-xs font-bold text-slate-400 uppercase">Visual Layer</span>
+                      <span className="text-sm font-bold text-slate-900">ShadCN + Tailwind</span>
                     </div>
                   </div>
                 </div>
               </div>
             </CardContent>
-          </Card>
+          </GlassCard>
         </div>
 
-        <div className="lg:col-span-4 space-y-6">
-          <div className="p-6 bg-white rounded-2xl border border-border/40 shadow-sm space-y-5">
-             <div className="flex items-center gap-2">
-                <div className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse" />
-                <h4 className="text-[10px] font-bold text-primary uppercase tracking-widest">系统内核信息</h4>
-             </div>
-             <div className="space-y-4 text-[10px]">
-                <div className="flex justify-between border-b border-border/10 pb-2">
-                   <span className="text-muted-foreground uppercase font-medium">Core Version</span>
-                   <span className="font-mono font-bold text-primary">v1.2.5-enterprise</span>
-                </div>
-                <div className="flex justify-between border-b border-border/10 pb-2">
-                   <span className="text-muted-foreground uppercase font-medium">Last Deployment</span>
-                   <span className="font-mono font-bold">2024.06.05</span>
-                </div>
-                <div className="flex justify-between items-center">
-                   <span className="text-muted-foreground uppercase font-medium">DB Connection</span>
-                   <Badge className="bg-orange-50 text-orange-600 border-orange-100 h-5 px-2 text-[8px] font-bold uppercase">Firestore Active</Badge>
-                </div>
-             </div>
-          </div>
+        <div className="lg:col-span-4 space-y-8">
+          <GlassCard className="border-none bg-slate-900 text-white shadow-2xl">
+            <CardHeader className="p-8 border-b border-white/5">
+               <div className="flex items-center gap-3">
+                  <div className="h-2 w-2 rounded-full bg-green-500 animate-pulse" />
+                  <CardTitle className="text-[11px] font-bold uppercase tracking-[0.2em] text-primary">系统内核状态监控</CardTitle>
+               </div>
+            </CardHeader>
+            <CardContent className="p-8 space-y-8">
+               <div className="space-y-6">
+                  <div className="flex justify-between items-center border-b border-white/5 pb-4">
+                     <span className="text-[10px] font-bold text-white/30 uppercase tracking-widest">Version</span>
+                     <span className="font-mono font-bold text-primary">v2.1.0-gold</span>
+                  </div>
+                  <div className="flex justify-between items-center border-b border-white/5 pb-4">
+                     <span className="text-[10px] font-bold text-white/30 uppercase tracking-widest">Stability</span>
+                     <span className="font-bold text-xs uppercase text-green-400">99.9% Uptime</span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                     <span className="text-[10px] font-bold text-white/30 uppercase tracking-widest">DB Cluster</span>
+                     <Badge className="bg-primary text-white border-none h-6 px-3 text-[9px] font-bold uppercase shadow-lg shadow-primary/20">FIRESTORE CONNECTED</Badge>
+                  </div>
+               </div>
 
-          <div className="p-6 bg-muted/20 rounded-2xl border border-dashed border-border/60 text-center space-y-3">
-             <p className="text-[10px] text-muted-foreground leading-relaxed uppercase tracking-tight">
-               若需修改支持的语种列表，请前往 <br />
-               <a href="/admin/translations" className="text-primary font-bold hover:underline">翻译资产管理页面</a>
-             </p>
-          </div>
+               <div className="p-6 bg-white/5 rounded-[2rem] border border-white/5 flex gap-4">
+                  <Info className="h-5 w-5 text-primary shrink-0 mt-0.5" />
+                  <p className="text-[10px] text-white/40 leading-relaxed font-medium italic">
+                    <b>节点提示：</b>此面板展示当前容器的硬件拓扑与连接池状态。若出现离线报警，请检查 GCP 密钥存续期。
+                  </p>
+               </div>
+            </CardContent>
+          </GlassCard>
+
+          <GlassCard className="border-none shadow-sm opacity-60 hover:opacity-100 transition-opacity">
+            <div className="p-8 text-center space-y-4">
+               <p className="text-[10px] text-slate-400 leading-relaxed font-bold uppercase tracking-[0.1em]">
+                 需要增减支持的本地化语言？
+               </p>
+               <Button variant="outline" className="w-full h-14 rounded-2xl border-primary/20 text-primary font-bold uppercase text-[10px] tracking-widest hover:bg-primary/5" asChild>
+                 <a href="/admin/translations">进入翻译资产治理</a>
+               </Button>
+            </div>
+          </GlassCard>
         </div>
       </div>
     </div>

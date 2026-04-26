@@ -160,114 +160,143 @@ export default function AdminProductsPage() {
   };
 
   return (
-    <div className="space-y-6 animate-in fade-in duration-500">
-      <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-xl font-headline font-bold text-primary flex items-center gap-2">
-            <Package className="h-5 w-5" />
-            产品列表
+    <div className="space-y-10 animate-in fade-in slide-in-from-bottom-4 duration-700">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
+        <div className="space-y-1">
+          <h2 className="text-2xl font-headline font-bold text-slate-900 flex items-center gap-4">
+            <div className="h-10 w-10 rounded-2xl bg-primary/10 flex items-center justify-center text-primary">
+              <Package className="h-5 w-5" />
+            </div>
+            产品资源中心
           </h2>
-          <p className="text-xs text-muted-foreground">管理全站展示的硬件产品及多语言详情。</p>
+          <p className="text-xs text-slate-400 font-bold uppercase tracking-[0.2em] pl-14">Management / Product Catalog</p>
         </div>
         
         <Link href="/admin/products/editor">
-          <Button className="rounded-lg h-10 px-4 font-bold uppercase tracking-widest text-xs gap-1.5 shadow-sm">
-            <Plus className="h-4 w-4" /> 发布产品
+          <Button className="rounded-2xl h-14 px-8 font-bold uppercase tracking-widest text-xs gap-2.5 shadow-xl shadow-primary/20 hover:scale-105 transition-all">
+            <Plus className="h-4 w-4" /> 发布新硬件
           </Button>
         </Link>
       </div>
 
-      <div className="flex flex-col md:flex-row items-center gap-3 bg-white p-3 rounded-xl border border-border/40 shadow-sm">
-        <div className="relative flex-1 w-full">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+      {/* 高级搜索与筛选栏 - Glassmorphism */}
+      <div className="flex flex-col lg:flex-row items-center gap-4 bg-white/60 backdrop-blur-md p-4 rounded-[2rem] border border-white/40 shadow-[0_8px_30px_rgb(0,0,0,0.04)]">
+        <div className="relative flex-1 w-full group">
+          <Search className="absolute left-5 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 group-focus-within:text-primary transition-colors" />
           <Input 
-            placeholder="按名称或 ID 搜索..." 
-            className="pl-9 border-none bg-muted/30 focus-visible:ring-0 rounded-lg h-9 text-xs"
+            placeholder="按名称、型号或序列号搜索 / SEARCH PRODUCTS..." 
+            className="pl-12 border-none bg-slate-500/5 focus-visible:ring-0 rounded-[1.25rem] h-12 text-xs font-medium placeholder:text-slate-400 placeholder:font-bold placeholder:uppercase placeholder:tracking-widest"
             value={searchQuery}
             onChange={e => setSearchQuery(e.target.value)}
           />
         </div>
-        <div className="flex items-center gap-2 w-full md:w-auto">
-          <Filter className="h-3.5 w-3.5 text-muted-foreground" />
-          <Select value={filterCategory} onValueChange={setFilterCategory}>
-            <SelectTrigger className="w-full md:w-48 rounded-lg h-9 border-none bg-muted/30 text-xs">
-              <SelectValue placeholder="分类筛选" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all" className="text-xs">全部分类</SelectItem>
-              {categories?.map(cat => (
-                <SelectItem key={cat.id} value={cat.id} className="text-xs">{getCategoryName(cat.id)}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+        <div className="flex items-center gap-3 w-full lg:w-auto">
+          <div className="h-12 flex items-center gap-3 px-5 bg-slate-500/5 rounded-[1.25rem] border border-transparent focus-within:border-primary/20 transition-all w-full lg:w-64 relative">
+             <Filter className="h-3.5 w-3.5 text-slate-400 shrink-0" />
+             <Select value={filterCategory} onValueChange={setFilterCategory}>
+                <SelectTrigger className="border-none bg-transparent h-full p-0 shadow-none focus:ring-0 text-xs font-bold uppercase tracking-widest text-slate-600">
+                  <SelectValue placeholder="分类筛选" />
+                </SelectTrigger>
+                <SelectContent className="rounded-2xl border-border/40 shadow-2xl">
+                  <SelectItem value="all" className="text-xs font-bold uppercase tracking-widest py-3">全部分类 (ALL)</SelectItem>
+                  {categories?.map(cat => (
+                    <SelectItem key={cat.id} value={cat.id} className="text-xs font-bold uppercase tracking-widest py-3">{getTranslation(cat.nameTextId)}</SelectItem>
+                  ))}
+                </SelectContent>
+             </Select>
+          </div>
+          <Button variant="ghost" size="icon" className="h-12 w-12 rounded-[1.25rem] bg-slate-500/5 hover:bg-destructive/5 text-slate-400 hover:text-destructive transition-all" onClick={() => {setSearchQuery(''); setFilterCategory('all');}}>
+             <X className="h-4 w-4" />
+          </Button>
         </div>
       </div>
 
-      <div className="bg-white rounded-xl border border-border/40 shadow-sm overflow-hidden">
+      <div className="bg-white/80 backdrop-blur-xl rounded-[2.5rem] border border-white/40 shadow-[0_30px_60px_-15px_rgba(0,0,0,0.05)] overflow-hidden">
         <Table>
-          <TableHeader className="bg-muted/30">
-            <TableRow>
-              <TableHead className="w-14 pl-5">预览</TableHead>
-              <TableHead className="font-bold uppercase text-[9px] tracking-wider">名称 / 英文</TableHead>
-              <TableHead className="font-bold uppercase text-[9px] tracking-wider">分类</TableHead>
-              <TableHead className="font-bold uppercase text-[9px] tracking-wider">全局状态</TableHead>
-              <TableHead className="font-bold uppercase text-[9px] tracking-wider">展示语种控制</TableHead>
-              <TableHead className="font-bold uppercase text-[9px] tracking-wider">产品 ID</TableHead>
-              <TableHead className="w-24 text-right pr-5 font-bold uppercase text-[9px] tracking-wider">操作</TableHead>
+          <TableHeader className="bg-slate-500/[0.03] border-b border-border/40">
+            <TableRow className="hover:bg-transparent border-none h-14">
+              <TableHead className="w-20 pl-8 text-xs font-bold uppercase tracking-[0.2em] text-slate-400">Preview</TableHead>
+              <TableHead className="text-xs font-bold uppercase tracking-[0.2em] text-slate-400">Identity / Info</TableHead>
+              <TableHead className="text-xs font-bold uppercase tracking-[0.2em] text-slate-400 text-center">Business Category</TableHead>
+              <TableHead className="text-xs font-bold uppercase tracking-[0.2em] text-slate-400 text-center">Global Status</TableHead>
+              <TableHead className="text-xs font-bold uppercase tracking-[0.2em] text-slate-400 text-center">Localization Visibility</TableHead>
+              <TableHead className="text-right pr-8 text-xs font-bold uppercase tracking-[0.2em] text-slate-400">Actions</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {isProdsLoading ? (
-              <TableRow><TableCell colSpan={7} className="h-32 text-center"><Loader2 className="h-5 w-5 animate-spin mx-auto opacity-20" /></TableCell></TableRow>
+              <TableRow><TableCell colSpan={6} className="h-64 text-center"><div className="flex flex-col items-center justify-center gap-3"><Loader2 className="h-8 w-8 animate-spin text-primary opacity-20" /><p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">正在拉取资源库...</p></div></TableCell></TableRow>
             ) : filteredProducts.length === 0 ? (
-              <TableRow><TableCell colSpan={7} className="h-32 text-center text-[10px] text-muted-foreground italic uppercase">暂无数据</TableCell></TableRow>
+              <TableRow><TableCell colSpan={6} className="h-64 text-center"><div className="flex flex-col items-center justify-center gap-3 opacity-30"><Package className="h-10 w-10 text-slate-300" /><p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">未找到符合条件的硬件资源</p></div></TableCell></TableRow>
             ) : filteredProducts.map((p) => {
-              const enabledLangs = p.enabledLanguages || ['zh', 'en']; // 默认中英可见
+              const enabledLangs = p.enabledLanguages || ['zh', 'en'];
               return (
-                <TableRow key={p.id} className="group hover:bg-muted/5 transition-colors">
-                  <TableCell className="pl-5">
-                    <div className="relative h-10 w-10 rounded-md border bg-muted/10 overflow-hidden">
-                      {p.mainImageUrl && <Image src={p.mainImageUrl} alt={p.id} fill className="object-contain p-1" unoptimized />}
+                <TableRow key={p.id} className="group hover:bg-primary/[0.015] transition-all duration-300 border-b border-border/40 last:border-0 min-h-24">
+                  <TableCell className="pl-8">
+                    <div className="relative h-14 w-14 rounded-2xl border border-border/40 bg-white shadow-sm overflow-hidden group-hover:scale-110 transition-transform duration-500">
+                      {p.mainImageUrl ? (
+                        <Image src={p.mainImageUrl} alt="" fill className="object-contain p-2" unoptimized />
+                      ) : (
+                        <div className="absolute inset-0 bg-slate-50 flex items-center justify-center text-slate-300"><Package className="h-6 w-6" /></div>
+                      )}
                     </div>
                   </TableCell>
                   <TableCell>
-                    <div className="flex flex-col">
-                      <span className="font-bold text-xs text-primary">{getTranslation(p.nameTextId, 'zh')}</span>
-                      <span className="text-[9px] text-muted-foreground line-clamp-1">{getTranslation(p.nameTextId, 'en')}</span>
+                    <div className="flex flex-col gap-1">
+                      <div className="flex items-center gap-3">
+                        <span className="font-headline font-bold text-[14px] text-slate-900 group-hover:text-primary transition-colors">{getTranslation(p.nameTextId, 'zh')}</span>
+                        <span className="text-[9px] font-mono bg-slate-100 text-slate-400 px-1.5 py-0.5 rounded uppercase">{p.id.slice(-6)}</span>
+                      </div>
+                      <span className="text-xs font-bold text-slate-400 uppercase tracking-widest line-clamp-1">{getTranslation(p.nameTextId, 'en')}</span>
                     </div>
                   </TableCell>
-                  <TableCell>
-                    <span className="text-[10px] bg-muted px-2 py-0.5 rounded-md font-medium text-muted-foreground">{getCategoryName(p.productCategoryId)}</span>
+                  <TableCell className="text-center">
+                    <span className="inline-flex items-center h-7 px-3 rounded-full bg-slate-100 text-xs font-bold text-slate-600 uppercase tracking-tighter ring-1 ring-slate-200">{getCategoryName(p.productCategoryId)}</span>
                   </TableCell>
                   <TableCell>
-                    <div className="flex items-center gap-1.5">
-                      <Badge variant={p.status === 'published' ? 'default' : 'secondary'} className={cn("text-[8px] uppercase h-4 px-1.5", p.status === 'published' ? "bg-green-600/90" : "bg-muted-foreground/20 text-muted-foreground")}>{p.status === 'published' ? '已发' : '草稿'}</Badge>
-                      <button className="h-6 w-6 rounded-full hover:bg-muted flex items-center justify-center transition-opacity opacity-0 group-hover:opacity-100" onClick={() => toggleStatus(p)}>
-                        {p.status === 'published' ? <EyeOff className="h-3 w-3" /> : <Eye className="h-3 w-3 text-green-600" />}
+                    <div className="flex items-center justify-center gap-4">
+                      <div className={cn(
+                        "h-2 w-2 rounded-full",
+                        p.status === 'published' ? "bg-emerald-500 shadow-[0_0_10px_rgba(16,185,129,0.4)]" : "bg-slate-300"
+                      )} />
+                      <span className={cn(
+                        "text-xs font-bold uppercase tracking-[0.15em]",
+                        p.status === 'published' ? "text-emerald-600" : "text-slate-400"
+                      )}>
+                        {p.status === 'published' ? 'Active / 发布' : 'Draft / 草稿'}
+                      </span>
+                      <button className="h-8 w-8 rounded-xl hover:bg-slate-100 flex items-center justify-center transition-all opacity-0 group-hover:opacity-100" onClick={() => toggleStatus(p)}>
+                        {p.status === 'published' ? <EyeOff className="h-4 w-4 text-slate-400" /> : <Eye className="h-4 w-4 text-emerald-600" />}
                       </button>
                     </div>
                   </TableCell>
                   <TableCell>
-                    <div className="flex items-center gap-3">
-                      {activeLanguages.map(lang => (
-                        <div key={lang.code} className="flex flex-col items-center gap-1">
-                          <span className="text-[8px] font-bold opacity-40 uppercase">{lang.code}</span>
-                          <Switch 
-                            className="scale-75"
-                            checked={enabledLangs.includes(lang.code)}
-                            onCheckedChange={() => handleToggleLanguage(p, lang.code, enabledLangs)}
-                          />
-                        </div>
-                      ))}
+                    <div className="flex items-center justify-center gap-5">
+                      {activeLanguages.map(lang => {
+                        const isEnabled = enabledLangs.includes(lang.code);
+                        return (
+                          <div key={lang.code} className="flex flex-col items-center gap-2">
+                            <span className={cn("text-xs font-bold uppercase transition-colors", isEnabled ? "text-primary" : "text-slate-300")}>{lang.code}</span>
+                            <Switch 
+                              checked={isEnabled}
+                              onCheckedChange={() => handleToggleLanguage(p, lang.code, enabledLangs)}
+                              className="scale-75"
+                            />
+                          </div>
+                        );
+                      })}
                     </div>
                   </TableCell>
-                  <TableCell className="text-[9px] font-mono opacity-40">{p.id}</TableCell>
-                  <TableCell className="pr-5 text-right space-x-0.5">
-                    <div className="flex justify-end items-center gap-1">
+                  <TableCell className="pr-8 text-right">
+                    <div className="flex justify-end items-center gap-2">
                       <Link href={`/admin/products/editor?id=${p.id}`}>
-                        <Button size="icon" variant="ghost" className="h-8 w-8 hover:text-primary"><Edit2 className="h-3.5 w-3.5" /></Button>
+                        <Button size="icon" variant="ghost" className="h-10 w-10 rounded-xl hover:bg-primary/5 hover:text-primary transition-all">
+                          <Edit2 className="h-4 w-4" />
+                        </Button>
                       </Link>
-                      <Button size="icon" variant="ghost" className="h-8 w-8 text-destructive hover:bg-destructive/5" onClick={() => handleDelete(p)}><Trash2 className="h-3.5 w-3.5" /></Button>
+                      <Button size="icon" variant="ghost" className="h-10 w-10 rounded-xl text-destructive hover:bg-destructive/5 transition-all" onClick={() => handleDelete(p)}>
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
                     </div>
                   </TableCell>
                 </TableRow>
@@ -275,6 +304,14 @@ export default function AdminProductsPage() {
             })}
           </TableBody>
         </Table>
+
+        {/* 底部信息提示 */}
+        <div className="px-8 py-5 bg-slate-50/50 border-t border-border/40 flex items-center justify-between">
+           <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Total Hardware: {filteredProducts.length}</p>
+           <div className="flex items-center gap-2 text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+              <Globe className="h-3 w-3" /> System: Multi-language Enabled
+           </div>
+        </div>
       </div>
     </div>
   );

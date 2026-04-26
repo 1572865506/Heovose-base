@@ -125,6 +125,27 @@ export function CaseStudies({ locale }: { locale: Locale }) {
     return "scale-[0.8] z-10 opacity-30 translate-y-2";
   };
 
+  const [isVisible, setIsVisible] = useState(false);
+  const sectionRef = useRef<HTMLElement>(null);
+
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          setIsVisible(true);
+          observer.unobserve(entry.target);
+        }
+      },
+      { threshold: 0.1 }
+    );
+
+    if (sectionRef.current) {
+      observer.observe(sectionRef.current);
+    }
+
+    return () => observer.disconnect();
+  }, []);
+
   if (isLoading) {
     return (
       <div className="py-40 flex flex-col items-center justify-center gap-4 bg-background">
@@ -135,7 +156,11 @@ export function CaseStudies({ locale }: { locale: Locale }) {
   }
 
   return (
-    <section id="cases" className="relative py-32 bg-background overflow-hidden">
+    <section 
+      id="cases" 
+      ref={sectionRef}
+      className="relative py-32 bg-background overflow-hidden"
+    >
       {/* 动态背景联动 */}
       <div className="absolute inset-0 z-0">
         {cases.map((item, index) => (
@@ -165,7 +190,10 @@ export function CaseStudies({ locale }: { locale: Locale }) {
         <SectionHeading title={t.title} subtitle={t.subtitle} className="max-w-xl" />
       </div>
 
-      <div className="relative w-full z-10">
+      <div className={cn(
+        "relative w-full z-10 transition-all duration-1000 delay-300",
+        isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-20"
+      )}>
         <Carousel
           setApi={setApi}
           plugins={[plugin.current]}

@@ -41,6 +41,16 @@
     --radius-brand: 2.5rem;
     --radius-container: 1rem;
     --radius-component: 0.5rem;
+
+    /* Sidebar Specific */
+    --sidebar-background: 0 0% 100%;
+    --sidebar-foreground: 210 33% 9%;
+    --sidebar-primary: 204 100% 30%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 204 100% 96%;
+    --sidebar-accent-foreground: 204 100% 30%;
+    --sidebar-border: 210 10% 85%;
+    --sidebar-ring: 204 100% 30%;
   }
 }
 
@@ -184,4 +194,17 @@
   animation: aurora-mesh 15s linear infinite;
   filter: blur(100px);
   z-index: -1;
+}
+
+@keyframes aurora-mesh {
+  0% { transform: rotate(0deg) scale(1); }
+  50% { transform: rotate(180deg) scale(1.1); }
+  100% { transform: rotate(360deg) scale(1); }
+}
+
+/* GPU Acceleration Utilities */
+.gpu-accelerated {
+  will-change: transform, opacity;
+  transform: translateZ(0);
+  backface-visibility: hidden;
 }

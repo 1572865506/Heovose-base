@@ -43,6 +43,7 @@ import { setDocumentNonBlocking } from '@/firebase/non-blocking-updates';
 import { useToast } from '@/hooks/use-toast';
 import { translateContent } from '@/ai/flows/translate-flow';
 import { cn } from '@/lib/utils';
+import { ShinyButton } from '@/components/ui/shiny-button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
 import Image from 'next/image';
@@ -73,7 +74,7 @@ export default function GlobalMapAdminPage() {
   const firestore = useFirestore();
   const { toast } = useToast();
   
-  const homeRef = useMemoFirebase(() => firestore ? doc(firestore, 'homepageContent', 'main') : null, [firestore]);
+  const homeRef = useMemoFirebase(() => firestore ? doc(firestore, 'homepageContent', 'map') : null, [firestore]);
   const aiRef = useMemoFirebase(() => firestore ? doc(firestore, 'settings', 'ai') : null, [firestore]);
   const assetsQuery = useMemoFirebase(() => firestore ? query(collection(firestore, 'galleryAssets'), orderBy('createdAt', 'desc')) : null, [firestore]);
   
@@ -226,21 +227,25 @@ export default function GlobalMapAdminPage() {
             </h3>
             <p className="text-[10px] text-muted-foreground uppercase font-medium">前台地图板块顶部的标题与描述。</p>
           </div>
-          <Button 
-            variant="ghost" 
-            size="sm" 
-            className="ai-btn-glow h-9 px-4 text-[10px] gap-2 font-bold"
-            onClick={async () => {
-              const updates = await handleTranslateFields([
-                { source: 'mapTitleZh', targetKey: 'mapTitleEn' },
-                { source: 'mapSubtitleZh', targetKey: 'mapSubtitleEn' }
-              ], formData);
-              if (updates) setFormData({ ...formData, ...updates });
-            }}
-            disabled={isAiProcessing}
-          >
-            <Sparkles className="h-3.5 w-3.5 ai-icon-gradient" /> AI 智译标题
-          </Button>
+           {aiConfig?.isEnabled && (
+            <ShinyButton 
+              onClick={async () => {
+                const updates = await handleTranslateFields([
+                  { source: 'mapTitleZh', targetKey: 'mapTitleEn' },
+                  { source: 'mapSubtitleZh', targetKey: 'mapSubtitleEn' }
+                ], formData);
+                if (updates) setFormData({ ...formData, ...updates });
+              }}
+              disabled={isAiProcessing}
+              className="h-9 px-4"
+              shape="capsule"
+            >
+              <div className="flex items-center gap-2">
+                {isAiProcessing ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Sparkles className="h-3.5 w-3.5" />}
+                <span className="text-[10px] font-bold uppercase tracking-widest">AI 智译标题</span>
+              </div>
+            </ShinyButton>
+          )}
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
@@ -400,10 +405,19 @@ export default function GlobalMapAdminPage() {
 
             <div className="space-y-6">
               <div className="flex justify-end border-l pl-8">
-                <Button variant="ghost" onClick={handleTranslateLocation} className="ai-btn-glow h-10 px-5 gap-2 text-xs" disabled={isAiProcessing}>
-                  {isAiProcessing ? <Loader2 className="h-4 w-4 animate-spin ai-icon-gradient" /> : <Sparkles className="h-4 w-4 ai-icon-gradient" />}
-                  AI 智译右侧信息
-                </Button>
+                {aiConfig?.isEnabled && (
+                  <ShinyButton 
+                    onClick={handleTranslateLocation} 
+                    disabled={isAiProcessing}
+                    className="h-10 px-5"
+                    shape="capsule"
+                  >
+                    <div className="flex items-center gap-2">
+                      {isAiProcessing ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
+                      <span className="text-[11px] font-bold uppercase tracking-widest">AI 智译右侧信息</span>
+                    </div>
+                  </ShinyButton>
+                )}
               </div>
 
               <div className="space-y-4 pt-4 border-l pl-8 border-dashed">

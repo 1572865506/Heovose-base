@@ -34,6 +34,7 @@ import { setDocumentNonBlocking } from '@/firebase/non-blocking-updates';
 import { useToast } from '@/hooks/use-toast';
 import { translateContent } from '@/ai/flows/translate-flow';
 import { cn } from '@/lib/utils';
+import { ShinyButton } from '@/components/ui/shiny-button';
 import { GalleryPicker } from '@/components/admin/GalleryPicker';
 import Image from 'next/image';
 
@@ -63,15 +64,19 @@ export default function AdminHomePage() {
   const firestore = useFirestore();
   const { toast } = useToast();
   
-  const homeRef = useMemoFirebase(() => firestore ? doc(firestore, 'homepageContent', 'main') : null, [firestore]);
+  const homeHeroRef = useMemoFirebase(() => firestore ? doc(firestore, 'homepageContent', 'hero') : null, [firestore]);
+  const homeVideoRef = useMemoFirebase(() => firestore ? doc(firestore, 'homepageContent', 'video') : null, [firestore]);
   const aiRef = useMemoFirebase(() => firestore ? doc(firestore, 'settings', 'ai') : null, [firestore]);
   const catsQuery = useMemoFirebase(() => firestore ? collection(firestore, 'productCategories') : null, [firestore]);
   const transQuery = useMemoFirebase(() => firestore ? collection(firestore, 'localizedStrings') : null, [firestore]);
   
-  const { data: homeData, isLoading } = useDoc<any>(homeRef);
+  const { data: heroData, isLoading: isHeroLoading } = useDoc<any>(homeHeroRef);
+  const { data: videoData, isLoading: isVideoLoading } = useDoc<any>(homeVideoRef);
   const { data: aiConfig } = useDoc<any>(aiRef);
   const { data: categories } = useCollection<any>(catsQuery);
   const { data: translations } = useCollection<any>(transQuery);
+
+  const isLoading = isHeroLoading || isVideoLoading;
 
   const [formData, setFormData] = useState<any>({
     heroHeadlineZh: '',
@@ -89,7 +94,8 @@ export default function AdminHomePage() {
     videoTitleZh: '',
     videoTitleEn: '',
     videoSubtitleZh: '',
-    videoSubtitleEn: ''
+    videoSubtitleEn: '',
+    videoUrl: ''
   });
 
   const [isSaving, setIsSaving] = useState(false);
@@ -97,50 +103,75 @@ export default function AdminHomePage() {
   const [pickerConfig, setPickerConfig] = useState<{ open: boolean, slideIndex: number | null }>({ open: false, slideIndex: null });
 
   useEffect(() => {
-    if (homeData) {
-      const existingSlides = homeData.heroSlides || [];
+    if (heroData || videoData) {
+      const existingSlides = heroData?.heroSlides || [];
       const initialSlides = existingSlides.length > 0 
         ? existingSlides 
         : [{
             id: 'legacy-default',
-            headlineZh: homeData.heroHeadlineZh || '',
-            headlineEn: homeData.heroHeadlineEn || '',
-            subheadlineZh: homeData.heroSubheadlineZh || '',
-            subheadlineEn: homeData.heroSubheadlineEn || '',
+            headlineZh: heroData?.heroHeadlineZh || '',
+            headlineEn: heroData?.heroHeadlineEn || '',
+            subheadlineZh: heroData?.heroSubheadlineZh || '',
+            subheadlineEn: heroData?.heroSubheadlineEn || '',
             bgImage: "/image/hero-bg.png",
             priority: 0
           }];
 
       setFormData({ 
         ...formData, 
-        heroHeadlineZh: homeData.heroHeadlineZh || '',
-        heroHeadlineEn: homeData.heroHeadlineEn || '',
-        heroSubheadlineZh: homeData.heroSubheadlineZh || '',
-        heroSubheadlineEn: homeData.heroSubheadlineEn || '',
-        heroWholesaleButtonZh: homeData.heroWholesaleButtonZh || '',
-        heroWholesaleButtonEn: homeData.heroWholesaleButtonEn || '',
-        heroProjectButtonZh: homeData.heroProjectButtonZh || '',
-        heroProjectButtonEn: homeData.heroProjectButtonEn || '',
-        heroWholesaleCategoryId: homeData.heroWholesaleCategoryId || '',
-        heroProjectCategoryId: homeData.heroProjectCategoryId || '',
+        heroHeadlineZh: heroData?.heroHeadlineZh || '',
+        heroHeadlineEn: heroData?.heroHeadlineEn || '',
+        heroSubheadlineZh: heroData?.heroSubheadlineZh || '',
+        heroSubheadlineEn: heroData?.heroSubheadlineEn || '',
+        heroWholesaleButtonZh: heroData?.heroWholesaleButtonZh || '',
+        heroWholesaleButtonEn: heroData?.heroWholesaleButtonEn || '',
+        heroProjectButtonZh: heroData?.heroProjectButtonZh || '',
+        heroProjectButtonEn: heroData?.heroProjectButtonEn || '',
+        heroWholesaleCategoryId: heroData?.heroWholesaleCategoryId || '',
+        heroProjectCategoryId: heroData?.heroProjectCategoryId || '',
         heroSlides: initialSlides,
-        isVideoEnabled: homeData.isVideoEnabled ?? true,
-        videoTitleZh: homeData.videoTitleZh || '',
-        videoTitleEn: homeData.videoTitleEn || '',
-        videoSubtitleZh: homeData.videoSubtitleZh || '',
-        videoSubtitleEn: homeData.videoSubtitleEn || ''
+        isVideoEnabled: videoData?.isVideoEnabled ?? true,
+        videoTitleZh: videoData?.videoTitleZh || '',
+        videoTitleEn: videoData?.videoTitleEn || '',
+        videoSubtitleZh: videoData?.videoSubtitleZh || '',
+        videoSubtitleEn: videoData?.videoSubtitleEn || '',
+        videoUrl: videoData?.videoUrl || '/video/alibaba2023_x264.mp4'
       });
     }
-  }, [homeData]);
+  }, [heroData, videoData]);
 
   const handleSave = () => {
     if (!firestore) return;
     setIsSaving(true);
     
-    setDocumentNonBlocking(homeRef!, {
-      ...formData,
+    // Split the data back into hero and video documents
+    const heroPayload = {
+      heroSlides: formData.heroSlides,
+      heroHeadlineZh: formData.heroHeadlineZh,
+      heroHeadlineEn: formData.heroHeadlineEn,
+      heroSubheadlineZh: formData.heroSubheadlineZh,
+      heroSubheadlineEn: formData.heroSubheadlineEn,
+      heroWholesaleButtonZh: formData.heroWholesaleButtonZh,
+      heroWholesaleButtonEn: formData.heroWholesaleButtonEn,
+      heroProjectButtonZh: formData.heroProjectButtonZh,
+      heroProjectButtonEn: formData.heroProjectButtonEn,
+      heroWholesaleCategoryId: formData.heroWholesaleCategoryId,
+      heroProjectCategoryId: formData.heroProjectCategoryId,
       updatedAt: serverTimestamp()
-    }, { merge: true });
+    };
+
+    const videoPayload = {
+      isVideoEnabled: formData.isVideoEnabled,
+      videoTitleZh: formData.videoTitleZh,
+      videoTitleEn: formData.videoTitleEn,
+      videoSubtitleZh: formData.videoSubtitleZh,
+      videoSubtitleEn: formData.videoSubtitleEn,
+      videoUrl: formData.videoUrl,
+      updatedAt: serverTimestamp()
+    };
+
+    setDocumentNonBlocking(homeHeroRef!, heroPayload, { merge: true });
+    setDocumentNonBlocking(homeVideoRef!, videoPayload, { merge: true });
 
     setTimeout(() => {
       setIsSaving(false);
@@ -252,15 +283,18 @@ export default function AdminHomePage() {
     <div className="space-y-6 animate-in fade-in duration-500 pb-20">
       <AiGradientDef />
       
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 sticky top-[-24px] z-50 bg-background/95 backdrop-blur-md py-4 border-b -mx-6 px-6">
-        <div>
-          <h2 className="text-xl font-headline font-bold text-primary flex items-center gap-2">
-            <Home className="h-5 w-5" /> 首页视觉配置
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 sticky top-[-24px] z-50 bg-white/80 backdrop-blur-xl py-5 border-b border-white/40 -mx-6 px-10 shadow-sm transition-all duration-300">
+        <div className="space-y-1">
+          <h2 className="text-xl font-headline font-bold text-slate-900 flex items-center gap-3">
+            <div className="h-9 w-9 rounded-xl bg-primary/10 flex items-center justify-center text-primary">
+              <Home className="h-4.5 w-4.5" />
+            </div>
+            首页视觉配置
           </h2>
-          <p className="text-xs text-muted-foreground">管理英雄屏及品牌故事文案。全球网点请前往“全球地图”模块管理。</p>
+          <p className="text-[10px] text-slate-400 font-bold uppercase tracking-[0.2em] pl-12">Management / Content / Home Visuals</p>
         </div>
         
-        <Button onClick={handleSave} disabled={isSaving} className="rounded-xl h-12 px-8 gap-2 font-bold uppercase tracking-widest text-xs shadow-xl">
+        <Button onClick={handleSave} disabled={isSaving} className="rounded-2xl h-14 px-10 gap-3 font-bold uppercase tracking-widest text-xs shadow-xl shadow-primary/20 hover:scale-105 transition-all">
           {isSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
           发布配置变更
         </Button>
@@ -320,22 +354,26 @@ export default function AdminHomePage() {
                 </h3>
                 <p className="text-[10px] text-muted-foreground">设置一张或多张背景卡片。多张卡片将自动启用轮播效果。</p>
               </div>
-              <div className="flex gap-3">
-                <Button 
-                  variant="ghost" 
-                  size="sm" 
-                  className="ai-btn-glow h-9 px-4 text-[10px] gap-2 font-bold"
-                  onClick={async () => {
-                    const updates = await handleTranslate([
-                      {source: 'heroWholesaleButtonZh', targetKey: 'heroWholesaleButtonEn'},
-                      {source: 'heroProjectButtonZh', targetKey: 'heroProjectButtonEn'}
-                    ]);
-                    if(updates) setFormData({...formData, ...updates});
-                  }}
-                  disabled={isAiProcessing}
-                >
-                  <Sparkles className="h-3.5 w-3.5 ai-icon-gradient" /> AI 智译全部内容
-                </Button>
+               <div className="flex gap-3">
+                {aiConfig?.isEnabled && (
+                  <ShinyButton 
+                    onClick={async () => {
+                      const updates = await handleTranslate([
+                        {source: 'heroWholesaleButtonZh', targetKey: 'heroWholesaleButtonEn'},
+                        {source: 'heroProjectButtonZh', targetKey: 'heroProjectButtonEn'}
+                      ]);
+                      if(updates) setFormData({...formData, ...updates});
+                    }}
+                    disabled={isAiProcessing}
+                    className="h-9 px-4"
+                    shape="capsule"
+                  >
+                    <div className="flex items-center gap-2">
+                      {isAiProcessing ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Sparkles className="h-3.5 w-3.5" />}
+                      <span className="text-[10px] font-bold uppercase tracking-widest">AI 智译全部内容</span>
+                    </div>
+                  </ShinyButton>
+                )}
                 <Button onClick={addSlide} size="sm" className="rounded-xl h-9 px-4 gap-2 text-[10px] font-bold uppercase tracking-wider shadow-md">
                   <Plus className="h-3.5 w-3.5" /> 添加新内容卡片
                 </Button>
@@ -472,18 +510,25 @@ export default function AdminHomePage() {
                   <h3 className="text-xs font-bold text-primary uppercase tracking-widest flex items-center gap-2">
                     <Film className="h-4 w-4" /> 品牌故事滚动文案配置
                   </h3>
-                  <Button 
-                    variant="ghost" size="sm" className="ai-btn-glow h-9 px-4 text-[10px] font-bold"
-                    onClick={async () => {
-                      const updates = await handleTranslate([
-                        {source: 'videoTitleZh', targetKey: 'videoTitleEn'},
-                        {source: 'videoSubtitleZh', targetKey: 'videoSubtitleEn'}
-                      ]);
-                      if(updates) setFormData({...formData, ...updates});
-                    }}
-                  >
-                    <Sparkles className="h-3.5 w-3.5 ai-icon-gradient" /> AI 智译
-                  </Button>
+                   {aiConfig?.isEnabled && (
+                    <ShinyButton 
+                      onClick={async () => {
+                        const updates = await handleTranslate([
+                          {source: 'videoTitleZh', targetKey: 'videoTitleEn'},
+                          {source: 'videoSubtitleZh', targetKey: 'videoSubtitleEn'}
+                        ]);
+                        if(updates) setFormData({...formData, ...updates});
+                      }}
+                      disabled={isAiProcessing}
+                      className="h-9 px-4"
+                      shape="capsule"
+                    >
+                      <div className="flex items-center gap-2">
+                        {isAiProcessing ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Sparkles className="h-3.5 w-3.5" />}
+                        <span className="text-[10px] font-bold uppercase tracking-widest">AI 智译</span>
+                      </div>
+                    </ShinyButton>
+                  )}
                 </div>
                 <div className="grid grid-cols-2 gap-10">
                   <div className="space-y-4">
@@ -498,6 +543,32 @@ export default function AdminHomePage() {
                     <Label className="text-[10px] font-bold uppercase opacity-40">SECOND SEGMENT (EN)</Label>
                     <Input value={formData.videoSubtitleEn} onChange={e => setFormData({...formData, videoSubtitleEn: e.target.value})} className="h-11 rounded-xl border-dashed" />
                   </div>
+                </div>
+
+                <div className="pt-8 border-t border-dashed space-y-4">
+                  <div className="flex items-center justify-between">
+                    <Label className="text-[10px] font-bold uppercase opacity-40">视频资源地址 (Video Source URL)</Label>
+                    <Button 
+                      variant="ghost" 
+                      size="sm" 
+                      className="h-8 px-3 rounded-xl text-[10px] font-bold uppercase text-primary hover:bg-primary/5"
+                      onClick={() => setPickerConfig({ open: true, slideIndex: -1 })}
+                    >
+                      <ImageIcon className="h-3.5 w-3.5 mr-2" /> 从素材库选择
+                    </Button>
+                  </div>
+                  <div className="flex gap-4">
+                    <Input 
+                      value={formData.videoUrl} 
+                      onChange={e => setFormData({...formData, videoUrl: e.target.value})} 
+                      placeholder="https://... 或 /video/..." 
+                      className="h-11 rounded-xl font-mono text-xs" 
+                    />
+                    <div className="w-20 h-11 rounded-xl bg-black flex items-center justify-center overflow-hidden shrink-0 border border-white/10 shadow-lg">
+                      <Video className="h-4 w-4 text-white/20" />
+                    </div>
+                  </div>
+                  <p className="text-[10px] text-muted-foreground italic">支持 MP4 直接链接或本地路径。建议使用 H.264 编码以获得最佳兼容性。</p>
                 </div>
               </div>
             )}
@@ -515,11 +586,13 @@ export default function AdminHomePage() {
         open={pickerConfig.open}
         onOpenChange={(open) => setPickerConfig({ ...pickerConfig, open })}
         onSelect={(url) => {
-          if (pickerConfig.slideIndex !== null) {
+          if (pickerConfig.slideIndex === -1) {
+            setFormData({ ...formData, videoUrl: url });
+          } else if (pickerConfig.slideIndex !== null) {
             updateSlide(pickerConfig.slideIndex, { bgImage: url });
           }
         }}
-        currentValue={pickerConfig.slideIndex !== null ? formData.heroSlides[pickerConfig.slideIndex]?.bgImage : undefined}
+        currentValue={pickerConfig.slideIndex === -1 ? formData.videoUrl : pickerConfig.slideIndex !== null ? formData.heroSlides[pickerConfig.slideIndex]?.bgImage : undefined}
       />
     </div>
   );

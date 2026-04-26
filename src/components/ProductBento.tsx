@@ -1,6 +1,7 @@
 
 "use client";
 
+import { useMemo, useState, useEffect, useRef } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { Locale, translations } from "@/lib/translations";
@@ -8,31 +9,103 @@ import { PlaceHolderImages } from "@/lib/placeholder-images";
 import { SectionHeading } from "./SectionHeading";
 import { cn } from "@/lib/utils";
 import { ArrowUpRight } from "lucide-react";
+import { useFirestore, useCollection, useMemoFirebase } from '@/firebase';
+import { collection } from 'firebase/firestore';
+
+import { useTranslations } from '@/hooks/use-translations';
 
 export function ProductBento({ locale }: { locale: Locale }) {
-  const t = translations[locale].nav;
-  const sub = translations[locale].nav_sub;
+  const { t: tr } = useTranslations(locale);
+  const firestore = useFirestore();
 
-  const items = [
-    { label: sub.aio, id: 'product-aio', grid: 'lg:col-span-2 lg:row-span-2', category: t.wholesale, slug: 'AIO' },
-    { label: sub.minipc, id: 'product-minipc', grid: 'lg:col-span-1 lg:row-span-2', category: t.wholesale, slug: 'Mini PC' },
-    { label: sub.monitor, id: 'product-monitor', grid: 'lg:col-span-1 lg:row-span-1', category: t.wholesale, slug: 'Monitor' },
-    { label: sub.laptop, id: 'product-laptop', grid: 'lg:col-span-1 lg:row-span-1', category: t.wholesale, slug: 'Laptop' },
-    { label: sub.conference, id: 'case-office', grid: 'lg:col-span-1 lg:row-span-2', category: t.projects, slug: 'Conference' },
-    { label: sub.selfservice, id: 'product-kiosk', grid: 'lg:col-span-2 lg:row-span-2', category: t.projects, slug: 'KIOSK' },
-    { label: sub.industrial, id: 'case-factory', grid: 'lg:col-span-1 lg:row-span-1', category: t.projects, slug: 'Industrial' },
-    { label: sub.led, id: 'case-transport', grid: 'lg:col-span-1 lg:row-span-1', category: t.projects, slug: 'LED' },
-    { label: sub.showroom, id: 'case-retail', grid: 'lg:col-span-1 lg:row-span-2', category: t.projects, slug: 'Showroom' },
-    { label: sub.electromechanical, id: 'product-minipc', grid: 'lg:col-span-2 lg:row-span-2', category: t.wholesale, slug: 'Electromechanical' },
-    { label: sub.components, id: 'factory-china', grid: 'lg:col-span-2 lg:row-span-1', category: t.wholesale, slug: 'Components' },
-  ];
+  // Fetch dynamic categories
+  const catsQuery = useMemoFirebase(() => firestore ? collection(firestore, 'productCategories') : null, [firestore]);
+  const transQuery = useMemoFirebase(() => firestore ? collection(firestore, 'localizedStrings') : null, [firestore]);
+
+  const { data: remoteCats } = useCollection<any>(catsQuery);
+  const { data: allTranslations } = useCollection<any>(transQuery);
+
+  const getT = (id: string) => {
+    const entry = allTranslations?.find((item: any) => item.id === id);
+    if (!entry) return id;
+    return entry[locale] || entry['en'] || entry['zh'] || id;
+  };
+
+  const items = useMemo(() => {
+    if (remoteCats && remoteCats.length > 0) {
+      // Map remote categories to bento layout
+      // We can use a predefined layout strategy for the first N categories
+      const layouts = [
+        'lg:col-span-2 lg:row-span-2',
+        'lg:col-span-1 lg:row-span-2',
+        'lg:col-span-1 lg:row-span-1',
+        'lg:col-span-1 lg:row-span-1',
+        'lg:col-span-1 lg:row-span-2',
+        'lg:col-span-2 lg:row-span-2',
+        'lg:col-span-1 lg:row-span-1',
+        'lg:col-span-1 lg:row-span-1',
+        'lg:col-span-1 lg:row-span-2',
+        'lg:col-span-2 lg:row-span-2',
+        'lg:col-span-2 lg:row-span-1',
+      ];
+
+      return remoteCats.slice(0, layouts.length).map((cat: any, index: number) => ({
+        label: getT(cat.nameTextId),
+        id: cat.id,
+        grid: layouts[index % layouts.length],
+        category: cat.parentId === 'PROJECT' ? tr('nav_projects') : tr('nav_wholesale'),
+        slug: cat.slug || cat.id,
+        imageUrl: cat.thumbnailImageUrl || cat.imageUrl || PlaceHolderImages[index % PlaceHolderImages.length].imageUrl
+      }));
+    }
+
+    // Static fallback if no categories yet
+    return [
+      { label: tr('nav_sub_aio'), id: 'product-aio', grid: 'lg:col-span-2 lg:row-span-2', category: tr('nav_wholesale'), slug: 'AIO' },
+      { label: tr('nav_sub_minipc'), id: 'product-minipc', grid: 'lg:col-span-1 lg:row-span-2', category: tr('nav_wholesale'), slug: 'Mini PC' },
+      { label: tr('nav_sub_monitor'), id: 'product-monitor', grid: 'lg:col-span-1 lg:row-span-1', category: tr('nav_wholesale'), slug: 'Monitor' },
+      { label: tr('nav_sub_laptop'), id: 'product-laptop', grid: 'lg:col-span-1 lg:row-span-1', category: tr('nav_wholesale'), slug: 'Laptop' },
+      { label: tr('nav_sub_conference'), id: 'case-office', grid: 'lg:col-span-1 lg:row-span-2', category: tr('nav_projects'), slug: 'Conference' },
+      { label: tr('nav_sub_selfservice'), id: 'product-kiosk', grid: 'lg:col-span-2 lg:row-span-2', category: tr('nav_projects'), slug: 'KIOSK' },
+      { label: tr('nav_sub_industrial'), id: 'case-factory', grid: 'lg:col-span-1 lg:row-span-1', category: tr('nav_projects'), slug: 'Industrial' },
+      { label: tr('nav_sub_led'), id: 'case-transport', grid: 'lg:col-span-1 lg:row-span-1', category: tr('nav_projects'), slug: 'LED' },
+      { label: tr('nav_sub_showroom'), id: 'case-retail', grid: 'lg:col-span-1 lg:row-span-2', category: tr('nav_projects'), slug: 'Showroom' },
+      { label: tr('nav_sub_electromechanical'), id: 'product-minipc', grid: 'lg:col-span-2 lg:row-span-2', category: tr('nav_wholesale'), slug: 'Electromechanical' },
+      { label: tr('nav_sub_components'), id: 'factory-china', grid: 'lg:col-span-2 lg:row-span-1', category: tr('nav_wholesale'), slug: 'Components' },
+    ];
+  }, [remoteCats, allTranslations, locale, tr]);
+
+  const [isVisible, setIsVisible] = useState(false);
+  const sectionRef = useRef<HTMLElement>(null);
+
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          setIsVisible(true);
+          observer.unobserve(entry.target);
+        }
+      },
+      { threshold: 0.1 }
+    );
+
+    if (sectionRef.current) {
+      observer.observe(sectionRef.current);
+    }
+
+    return () => observer.disconnect();
+  }, []);
 
   return (
-    <section id="portfolio" className="py-24 bg-background overflow-hidden">
+    <section 
+      id="portfolio" 
+      ref={sectionRef}
+      className="py-24 bg-background overflow-hidden"
+    >
       <div className="container mx-auto px-6">
         <SectionHeading 
-          title={translations[locale].products.title} 
-          subtitle={translations[locale].products.subtitle}
+          title={tr('products_title')} 
+          subtitle={tr('products_subtitle')}
         />
         
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 auto-rows-[180px] lg:auto-rows-[220px]">
@@ -44,16 +117,21 @@ export function ProductBento({ locale }: { locale: Locale }) {
                 href={`/products?category=${encodeURIComponent(item.slug)}`}
                 className={cn(
                   "group relative rounded-[2.5rem] overflow-hidden border border-border/40 bg-muted/5 transition-all duration-700 hover:shadow-2xl hover:border-primary/20",
+                  "opacity-0 translate-y-12",
+                  isVisible && "opacity-100 translate-y-0",
                   item.grid
                 )}
+                style={{ 
+                  transitionDelay: isVisible ? `${index * 50}ms` : '0ms'
+                }}
               >
-                {imgData?.imageUrl && (
+                {item.imageUrl && (
                   <Image
-                    src={imgData.imageUrl}
+                    src={item.imageUrl}
                     alt={item.label}
                     fill
                     className="object-cover transition-transform duration-1000 group-hover:scale-110"
-                    data-ai-hint={imgData.imageHint}
+                    sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
                   />
                 )}
                 

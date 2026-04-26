@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { Locale, translations } from "@/lib/translations";
@@ -17,9 +17,12 @@ import {
 } from "@/components/ui/carousel";
 import Autoplay from "embla-carousel-autoplay";
 import { cn } from "@/lib/utils";
+import { useFirestore, useCollection, useMemoFirebase } from '@/firebase';
+import { collection, query, where, limit } from 'firebase/firestore';
 
 export function ProductGallery({ locale }: { locale: Locale }) {
   const t = translations[locale].products;
+  const firestore = useFirestore();
   const [api, setApi] = useState<CarouselApi>();
   const [current, setCurrent] = useState(0);
   const [count, setCount] = useState(0);
@@ -30,44 +33,42 @@ export function ProductGallery({ locale }: { locale: Locale }) {
     Autoplay({ delay: 5000, stopOnInteraction: false })
   );
 
-  const products = [
-    { 
-      id: 'product-aio', 
-      label: t.aio, 
-      desc: locale === 'en' ? 'Sleek, powerful desktop integration for modern workspaces.' : '专为现代办公空间设计的强劲一体化桌面方案。',
-      slug: 'AIO'
-    },
-    { 
-      id: 'product-minipc', 
-      label: t.minipc, 
-      desc: locale === 'en' ? 'Ultra-compact performance for edge computing and business.' : '适用于边缘计算和商业应用的高性能迷你电脑。',
-      slug: 'Mini PC'
-    },
-    { 
-      id: 'product-monitor', 
-      label: t.monitor, 
-      desc: locale === 'en' ? 'Rugged industrial displays built for 24/7 durability.' : '专为 24/7 全天候运行设计的耐用工业级显示器。',
-      slug: 'Monitor'
-    },
-    { 
-      id: 'product-kiosk', 
-      label: t.kiosk, 
-      desc: locale === 'en' ? 'Smart self-service terminals for retail and hospitality.' : '适用于零售和酒店业的高性能智能自助服务终端。',
-      slug: 'KIOSK'
-    },
-    { 
-      id: 'factory-china', 
-      label: locale === 'en' ? 'Custom Hardware Design' : '定制硬件设计', 
-      desc: locale === 'en' ? 'Bespoke hardware manufacturing solutions for global partners.' : '为全球合作伙伴提供的定制硬件制造解决方案。',
-      slug: 'Components'
-    },
-    { 
-      id: 'factory-indonesia', 
-      label: locale === 'en' ? 'Supply Chain Management' : '供应链管理', 
-      desc: locale === 'en' ? 'End-to-end logistics and component sourcing services.' : '端到端的物流和元器件采购服务。',
-      slug: 'Components'
-    },
-  ];
+  // 1. Fetch dynamic data
+  const prodsQuery = useMemoFirebase(() => 
+    firestore ? query(collection(firestore, 'products'), where('status', '==', 'published'), limit(8)) : null, 
+    [firestore]
+  );
+  const transQuery = useMemoFirebase(() => 
+    firestore ? collection(firestore, 'localizedStrings') : null, 
+    [firestore]
+  );
+
+  const { data: remoteProducts, isLoading } = useCollection<any>(prodsQuery);
+  const { data: allTranslations } = useCollection<any>(transQuery);
+
+  const getT = (id: string) => {
+    const entry = allTranslations?.find((item: any) => item.id === id);
+    if (!entry) return id;
+    return entry[locale] || entry['en'] || entry['zh'] || id;
+  };
+
+  // 2. Data transformation
+  const products = useMemo(() => {
+    if (remoteProducts && remoteProducts.length > 0) {
+      return remoteProducts.map((p: any) => ({
+        id: p.id,
+        label: getT(p.nameTextId),
+        desc: getT(p.descriptionTextId),
+        imageUrl: p.mainImageUrl || PlaceHolderImages.find(img => img.id === p.productCategoryId)?.imageUrl || '/image/product-placeholder.png',
+        slug: p.productCategoryId || p.id
+      }));
+    }
+
+    // Fallback if no products in DB
+    return [
+      { id: 'p1', label: 'Loading...', desc: '...', imageUrl: '', slug: '' }
+    ];
+  }, [remoteProducts, allTranslations, locale]);
 
   useEffect(() => {
     if (!api) return;
@@ -131,13 +132,12 @@ export function ProductGallery({ locale }: { locale: Locale }) {
                 <CarouselItem key={product.id} className="pl-8 md:basis-1/2 lg:basis-1/3 xl:basis-1/4">
                   <div className="group flex flex-col bg-white rounded-[2.5rem] shadow-sm hover:shadow-2xl hover:-translate-y-2 transition-all duration-500 border border-border/20 h-full overflow-hidden">
                     <div className="relative aspect-[11/9] w-full overflow-hidden bg-muted/20">
-                      {imgData?.imageUrl && (
+                      {product.imageUrl && (
                         <Image
-                          src={imgData.imageUrl}
+                          src={product.imageUrl}
                           alt={product.label}
                           fill
                           className="object-cover group-hover:scale-110 transition-transform duration-700"
-                          data-ai-hint={imgData.imageHint}
                         />
                       )}
                     </div>

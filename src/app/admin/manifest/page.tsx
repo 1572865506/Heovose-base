@@ -13,15 +13,25 @@ import {
   ShieldAlert, 
   CheckCircle2,
   AlertTriangle,
+  Activity,
   ExternalLink,
   Eye,
-  Edit3
+  Edit3,
+  Terminal
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { cn } from '@/lib/utils';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
+
+const GlassCard = ({ children, className }: { children: React.ReactNode, className?: string }) => (
+  <div className={cn("bg-white/70 backdrop-blur-xl border border-white/40 shadow-2xl rounded-3xl overflow-hidden", className)}>
+    {children}
+  </div>
+);
 
 export default function ManifestPage() {
   const { toast } = useToast();
@@ -66,123 +76,154 @@ export default function ManifestPage() {
   }
 
   return (
-    <div className="space-y-6 animate-in fade-in duration-500 max-w-5xl mx-auto">
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <div className="space-y-1">
-          <h2 className="text-xl font-headline font-bold text-primary flex items-center gap-2">
-            <ShieldAlert className="h-5 w-5 text-orange-500" />
-            系统设计与功能规范白皮书
-          </h2>
-          <p className="text-xs text-muted-foreground">本项目治理的最高准则。任何重大业务逻辑修改均需在此备案。</p>
+    <div className="space-y-8 animate-in fade-in duration-700 pb-20 relative max-w-7xl mx-auto">
+      {/* Background Aurora Glows */}
+      <div className="absolute top-[-10%] right-[-5%] w-[40%] h-[40%] bg-primary/10 blur-[120px] rounded-full -z-10 animate-pulse" />
+      <div className="absolute bottom-[20%] left-[-10%] w-[35%] h-[35%] bg-accent/10 blur-[100px] rounded-full -z-10" />
+
+      <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
+        <div className="space-y-2">
+          <div className="flex items-center gap-3">
+            <div className="h-12 w-12 rounded-2xl bg-slate-900 flex items-center justify-center text-white shadow-xl shadow-slate-200">
+              <FileText className="h-6 w-6" />
+            </div>
+            <h2 className="text-3xl font-headline font-bold text-slate-900">设计与架构白皮书</h2>
+          </div>
+          <p className="text-sm text-slate-500 font-medium max-w-2xl pl-1">治理全站设计语言、业务逻辑约束及跨模块交互协议的元数据中心。</p>
         </div>
         
-        <div className="flex items-center gap-3">
-          <Badge variant="outline" className="h-9 px-3 bg-green-50 text-green-700 border-green-200 gap-1.5 font-bold text-[10px] uppercase">
-            <CheckCircle2 className="h-3 w-3" /> 契约生效中
-          </Badge>
-          <Button onClick={handleSave} disabled={isSaving} className="rounded-lg h-10 px-6 gap-2 font-bold uppercase tracking-widest text-xs shadow-md">
+        <div className="flex items-center gap-4">
+          <span className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mr-2 flex items-center gap-2">
+            <div className="w-1.5 h-1.5 rounded-full bg-primary" />
+            Version 2.0 Premium
+          </span>
+          <Button 
+            onClick={handleSave} 
+            disabled={isSaving}
+            className="rounded-full h-12 px-8 gap-2 font-bold uppercase tracking-widest text-xs shadow-xl shadow-primary/20 transition-all hover:scale-105 active:scale-95"
+          >
             {isSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
-            签署并保存变更
+            签署并同步白皮书
           </Button>
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-10">
         <div className="lg:col-span-8">
-          <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-            <TabsList className="bg-muted/30 p-1 rounded-xl mb-4 h-11">
-              <TabsTrigger value="edit" className="rounded-lg px-6 text-[11px] font-bold uppercase tracking-wider gap-2">
-                <Edit3 className="h-3.5 w-3.5" /> 编辑模式
-              </TabsTrigger>
-              <TabsTrigger value="preview" className="rounded-lg px-6 text-[11px] font-bold uppercase tracking-wider gap-2">
-                <Eye className="h-3.5 w-3.5" /> 预览模式
-              </TabsTrigger>
-            </TabsList>
+          <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full space-y-6">
+            <div className="flex items-center justify-between bg-white/50 backdrop-blur-md p-1.5 rounded-2xl border border-white/40 shadow-sm w-fit">
+              <TabsList className="bg-transparent h-10 gap-1">
+                <TabsTrigger value="edit" className="rounded-xl px-6 text-[11px] font-bold uppercase tracking-wider gap-2 data-[state=active]:bg-primary data-[state=active]:text-white shadow-none transition-all">
+                  <Edit3 className="h-3.5 w-3.5" /> 核心协议编辑
+                </TabsTrigger>
+                <TabsTrigger value="preview" className="rounded-xl px-6 text-[11px] font-bold uppercase tracking-wider gap-2 data-[state=active]:bg-primary data-[state=active]:text-white shadow-none transition-all">
+                  <Eye className="h-3.5 w-3.5" /> 实时视图预览
+                </TabsTrigger>
+              </TabsList>
+            </div>
 
             <TabsContent value="edit" className="m-0 focus-visible:ring-0">
-              <div className="relative group">
-                <div className="absolute -inset-0.5 bg-gradient-to-r from-primary/10 to-orange-500/10 rounded-2xl blur opacity-30 group-hover:opacity-100 transition duration-1000"></div>
-                <Textarea 
-                  value={content}
-                  onChange={(e) => setContent(e.target.value)}
-                  className="relative min-h-[calc(100vh-320px)] rounded-2xl p-8 bg-white border-border/40 shadow-2xl font-mono text-[13px] leading-relaxed resize-none focus-visible:ring-primary/20"
-                  placeholder="# 在此输入系统规范内容..."
-                />
-              </div>
+              <GlassCard className="border-none shadow-[0_32px_64px_-12px_rgba(0,0,0,0.12)]">
+                <div className="bg-slate-900 p-8 text-white relative overflow-hidden">
+                  <div className="absolute top-0 right-0 w-64 h-64 bg-primary/20 blur-[100px] rounded-full translate-x-32 -translate-y-32" />
+                  <div className="relative z-10 flex items-center justify-between">
+                    <div className="flex items-center gap-4">
+                      <div className="h-10 w-10 rounded-xl bg-white/10 backdrop-blur-md flex items-center justify-center border border-white/10">
+                        <Terminal className="h-5 w-5 text-primary" />
+                      </div>
+                      <span className="text-[11px] font-bold uppercase tracking-[0.2em] text-white/60">Markdown Payload Editor</span>
+                    </div>
+                    <span className="text-[10px] font-mono text-white/30">{content.length} characters</span>
+                  </div>
+                </div>
+                <CardContent className="p-0">
+                  <Textarea 
+                    value={content}
+                    onChange={(e) => setContent(e.target.value)}
+                    className="min-h-[600px] w-full border-none bg-slate-50/50 p-10 text-sm leading-relaxed font-mono focus-visible:ring-0 shadow-inner resize-none transition-all placeholder:text-slate-300"
+                    placeholder="# 在此录入系统架构规格..."
+                  />
+                </CardContent>
+              </GlassCard>
             </TabsContent>
 
-            <TabsContent value="preview" className="m-0">
-              <div className="bg-white rounded-2xl p-10 border border-border/40 shadow-xl min-h-[calc(100vh-320px)] prose prose-sm max-w-none prose-slate prose-headings:font-headline prose-headings:text-primary">
-                {/* 简单的 Markdown 预览模拟 */}
-                <pre className="whitespace-pre-wrap font-body text-sm leading-relaxed text-slate-700">
+            <TabsContent value="preview" className="m-0 focus-visible:ring-0">
+              <GlassCard className="p-12 border-none shadow-xl bg-white prose prose-slate max-w-none prose-headings:font-headline prose-headings:text-slate-900 prose-p:text-slate-600 prose-li:text-slate-600 min-h-[700px] overflow-y-auto">
+                <ReactMarkdown remarkPlugins={[remarkGfm]}>
                   {content}
-                </pre>
-              </div>
+                </ReactMarkdown>
+              </GlassCard>
             </TabsContent>
           </Tabs>
         </div>
 
-        <div className="lg:col-span-4 space-y-6">
-          <Card className="rounded-2xl border-orange-200 bg-orange-50/50 shadow-sm overflow-hidden">
-            <CardHeader className="pb-2">
-              <CardTitle className="text-xs font-bold flex items-center gap-2 text-orange-700 uppercase tracking-widest">
-                <AlertTriangle className="h-4 w-4" /> 授权与准则
-              </CardTitle>
+        <div className="lg:col-span-4 space-y-8">
+          <GlassCard className="border-none bg-orange-600 text-white shadow-2xl">
+            <CardHeader className="p-8 border-b border-white/10">
+              <div className="flex items-center gap-4">
+                <div className="h-12 w-12 rounded-2xl bg-white/10 flex items-center justify-center shadow-inner">
+                  <ShieldAlert className="h-6 w-6" />
+                </div>
+                <div>
+                  <CardTitle className="text-lg font-headline font-bold">治理准则与效力</CardTitle>
+                  <CardDescription className="text-white/40 text-[10px] uppercase font-bold tracking-widest mt-1">Governance Efficiency</CardDescription>
+                </div>
+              </div>
             </CardHeader>
-            <CardContent className="space-y-4">
-              <p className="text-[11px] text-orange-800/80 leading-relaxed font-medium">
-                本文件是 <b>AI Agent (App Prototyper)</b> 执行开发的底层逻辑依据。
+            <CardContent className="p-8 space-y-6">
+              <p className="text-[11px] leading-relaxed opacity-70 font-medium">
+                本文件作为 <b>Heovose Elevate</b> 的“数字宪法”，直接指导 AI Agent 的开发行为。
               </p>
-              <ul className="space-y-3 text-[10px] text-orange-900/60">
-                <li className="flex gap-2">
-                  <div className="h-1.5 w-1.5 rounded-full bg-orange-400 mt-1 shrink-0" />
-                  <span>修改本白皮书条款后，必须点击右上方“保存”按钮才能生效。</span>
-                </li>
-                <li className="flex gap-2">
-                  <div className="h-1.5 w-1.5 rounded-full bg-orange-400 mt-1 shrink-0" />
-                  <span>AI Agent 在后续开发中会优先比对本文档中的逻辑（如 ID 生成规则）。</span>
-                </li>
-                <li className="flex gap-2">
-                  <div className="h-1.5 w-1.5 rounded-full bg-orange-400 mt-1 shrink-0" />
-                  <span>如果您在此文档中定义了新规则，请在对话中明确告知 AI 重新同步。</span>
-                </li>
-              </ul>
-            </CardContent>
-          </Card>
-
-          <Card className="rounded-2xl border-border/40 shadow-sm">
-            <CardHeader className="pb-2">
-              <CardTitle className="text-xs font-bold text-primary uppercase tracking-widest">文档信息</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-3 pt-2">
-              <div className="flex justify-between items-center text-[10px] border-b border-dashed pb-2">
-                <span className="text-muted-foreground uppercase">文件位置</span>
-                <code className="bg-muted px-1.5 py-0.5 rounded text-primary">/docs/manifest.md</code>
-              </div>
-              <div className="flex justify-between items-center text-[10px] border-b border-dashed pb-2">
-                <span className="text-muted-foreground uppercase">当前版本</span>
-                <span className="font-bold">v1.0.2-governance</span>
-              </div>
-              <div className="pt-2">
-                 <Button variant="ghost" size="sm" className="w-full text-[9px] font-bold uppercase gap-2 text-primary/60" onClick={loadManifest}>
-                   <History className="h-3 w-3" /> 强制刷新本地缓存
-                 </Button>
+              <div className="space-y-4">
+                {[
+                  "修改内容必须手动同步至云端。","定义规则后需重启 Agent 认知。","ID 生成规则具有最高优先级。"
+                ].map((text, i) => (
+                  <div key={i} className="flex gap-3 text-[10px] font-bold uppercase tracking-wider">
+                    <div className="h-1.5 w-1.5 rounded-full bg-accent mt-1.5 shrink-0 animate-pulse" />
+                    <span>{text}</span>
+                  </div>
+                ))}
               </div>
             </CardContent>
-          </Card>
+          </GlassCard>
 
-          <div className="p-6 bg-primary rounded-2xl text-white space-y-4 shadow-xl">
-             <div className="flex items-center gap-2">
-               <FileText className="h-5 w-5 text-accent" />
-               <h4 className="font-bold text-sm uppercase tracking-tight">外部资源</h4>
+          <GlassCard className="border-none shadow-xl">
+             <CardHeader className="p-8 border-b border-slate-50">
+                <CardTitle className="text-[11px] font-bold flex items-center gap-3 text-slate-400 uppercase tracking-[0.2em]">
+                  <Activity className="h-5 w-5 text-primary" />
+                  元数据信息 (Manifest Info)
+                </CardTitle>
+             </CardHeader>
+             <CardContent className="p-8 space-y-6">
+                <div className="space-y-4">
+                   <div className="flex justify-between items-center pb-3 border-b border-slate-100">
+                      <span className="text-xs font-bold text-slate-400 uppercase">Version</span>
+                      <span className="text-xs font-bold text-slate-900">v2.1.5-final</span>
+                   </div>
+                   <div className="flex justify-between items-center pb-3 border-b border-slate-100">
+                      <span className="text-xs font-bold text-slate-400 uppercase">Status</span>
+                      <Badge className="bg-green-500 text-white border-none h-6 px-3 text-[9px] font-bold uppercase">Active</Badge>
+                   </div>
+                   <Button variant="ghost" size="sm" className="w-full h-12 rounded-2xl text-[10px] font-bold uppercase gap-2 text-slate-400 hover:bg-slate-50" onClick={loadManifest}>
+                     <History className="h-4 w-4" /> 刷新核心缓存
+                   </Button>
+                </div>
+             </CardContent>
+          </GlassCard>
+
+          <GlassCard className="border-none bg-slate-900 p-8 text-white space-y-4 shadow-2xl relative overflow-hidden">
+             <div className="absolute top-0 right-0 w-32 h-32 bg-primary/20 blur-3xl rounded-full translate-x-16 -translate-y-16" />
+             <div className="relative z-10 flex items-center gap-3">
+                <ExternalLink className="h-5 w-5 text-primary" />
+                <h4 className="font-bold text-sm uppercase tracking-tight">外部资源链接</h4>
              </div>
-             <p className="text-[10px] opacity-60 leading-relaxed">
-               查阅项目 UI 组件库文档以确保开发一致性。
+             <p className="text-[10px] text-white/40 leading-relaxed font-medium">
+               查阅项目 UI 组件库文档以确保全站设计原子的一致性。
              </p>
-             <Button variant="outline" size="sm" className="w-full rounded-xl bg-white/10 border-white/20 text-white text-[10px] uppercase font-bold gap-2">
-               ShadCN UI 规范 <ExternalLink className="h-3 w-3" />
+             <Button variant="outline" size="sm" className="w-full rounded-2xl h-12 bg-white/5 border-white/10 text-white text-[10px] uppercase font-bold gap-2 hover:bg-white/10 transition-all">
+               ShadCN UI Documentation
              </Button>
-          </div>
+          </GlassCard>
         </div>
       </div>
     </div>

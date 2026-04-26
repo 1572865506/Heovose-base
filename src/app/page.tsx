@@ -33,13 +33,23 @@ function HomeContent() {
     firestore ? doc(firestore, 'settings', 'languages') : null, 
     [firestore]
   );
-  const homeContentRef = useMemoFirebase(() =>
-    firestore ? doc(firestore, 'homepageContent', 'main') : null,
+  const homeHeroRef = useMemoFirebase(() =>
+    firestore ? doc(firestore, 'homepageContent', 'hero') : null,
+    [firestore]
+  );
+  const homeVideoRef = useMemoFirebase(() =>
+    firestore ? doc(firestore, 'homepageContent', 'video') : null,
+    [firestore]
+  );
+  const homeMapRef = useMemoFirebase(() =>
+    firestore ? doc(firestore, 'homepageContent', 'map') : null,
     [firestore]
   );
 
   const { data: langSettings } = useDoc<any>(langConfigRef);
-  const { data: homeConfig } = useDoc<any>(homeContentRef);
+  const { data: heroConfig } = useDoc<any>(homeHeroRef);
+  const { data: videoConfig } = useDoc<any>(homeVideoRef);
+  const { data: mapConfig } = useDoc<any>(homeMapRef);
 
   useEffect(() => {
     // 智能语种判定逻辑
@@ -48,6 +58,12 @@ function HomeContent() {
       const langParam = searchParams.get('lang');
       if (langParam && ['en', 'zh', 'id', 'vi'].includes(langParam)) {
         return langParam as Locale;
+      }
+
+      // 1.5 检查路径前缀 (处理直接访问 /zh 的情况)
+      const pathSegments = window.location.pathname.split('/');
+      if (pathSegments[1] && ['en', 'zh', 'id', 'vi'].includes(pathSegments[1])) {
+        return pathSegments[1] as Locale;
       }
 
       // 2. 检查本地持久化存储
@@ -78,22 +94,22 @@ function HomeContent() {
     <main className="relative min-h-screen">
       <Navbar locale={locale} setLocale={setLocale} />
       
-      <Hero locale={locale} homeConfig={homeConfig} />
+      <Hero locale={locale} homeConfig={heroConfig} />
       
       <ProductBento locale={locale} />
       
       <ProductGallery locale={locale} />
       
       {/* 动态开关：视频/品牌故事模块 */}
-      {homeConfig?.isVideoEnabled !== false && (
-        <VideoSection locale={locale} homeConfig={homeConfig} />
+      {videoConfig?.isVideoEnabled !== false && (
+        <VideoSection locale={locale} homeConfig={videoConfig} />
       )}
       
       <ProductionProcess locale={locale} />
       
       <CaseStudies locale={locale} />
       
-      <GlobalMap locale={locale} homeConfig={homeConfig} />
+      <GlobalMap locale={locale} homeConfig={mapConfig} />
       
       <Footer locale={locale} />
     </main>

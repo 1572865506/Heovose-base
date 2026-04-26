@@ -110,7 +110,7 @@ export function ProductionProcess({ locale }: { locale: Locale }) {
       return;
     }
 
-    const intervalTime = 50;
+    const intervalTime = 100;
     const increment = (intervalTime / AUTOPLAY_DELAY) * 100;
 
     const timer = setInterval(() => {

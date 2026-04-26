@@ -1,5 +1,7 @@
 
+import { useState, useEffect, useRef } from 'react';
 import { cn } from "@/lib/utils";
+import SplitText from "./ui/SplitText";
 
 interface SectionHeadingProps {
   title: string;
@@ -9,14 +11,51 @@ interface SectionHeadingProps {
 }
 
 export function SectionHeading({ title, subtitle, centered = false, className }: SectionHeadingProps) {
+  const [isVisible, setIsVisible] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          setIsVisible(true);
+          observer.unobserve(entry.target);
+        }
+      },
+      { threshold: 0.1 }
+    );
+
+    if (ref.current) {
+      observer.observe(ref.current);
+    }
+
+    return () => observer.disconnect();
+  }, []);
+
   return (
-    <div className={cn(
-      "mb-12 md:mb-16 space-y-4",
-      centered ? "text-center" : "text-left",
-      className
-    )}>
+    <div 
+      ref={ref}
+      className={cn(
+        "mb-12 md:mb-16 space-y-4",
+        centered ? "text-center" : "text-left",
+        className
+      )}
+    >
+      <SplitText
+        text={title}
+        tag="h2"
+        className="text-4xl md:text-5xl lg:text-6xl font-headline font-bold text-primary tracking-tight block"
+        textAlign={centered ? "center" : "left"}
+        delay={30}
+        duration={0.8}
+        threshold={0.2}
+      />
       {subtitle && (
-        <p className="text-muted-foreground text-lg md:text-xl max-w-2xl mx-auto md:mx-0 animate-fade-in-up [animation-delay:100ms]">
+        <p className={cn(
+          "text-muted-foreground text-lg md:text-xl max-w-2xl font-medium transition-all duration-1000 delay-300",
+          centered ? "mx-auto" : "mx-0",
+          isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-10"
+        )}>
           {subtitle}
         </p>
       )}

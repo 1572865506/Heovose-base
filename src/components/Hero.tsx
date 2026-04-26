@@ -27,8 +27,10 @@ interface HeroProps {
   homeConfig?: any;
 }
 
+import { useTranslations } from '@/hooks/use-translations';
+
 export function Hero({ locale, homeConfig }: HeroProps) {
-  const t = translations[locale].hero;
+  const { t: tr } = useTranslations(locale);
 
   // 1. Prepare Slides Data
   const slides: HeroSlide[] = React.useMemo(() => {
@@ -39,13 +41,13 @@ export function Hero({ locale, homeConfig }: HeroProps) {
     // Legacy Fallback
     return [{
       id: 'legacy-default',
-      headlineZh: homeConfig?.heroHeadlineZh || t.headline,
-      headlineEn: homeConfig?.heroHeadlineEn || t.headline,
-      subheadlineZh: homeConfig?.heroSubheadlineZh || t.subheadline,
-      subheadlineEn: homeConfig?.heroSubheadlineEn || t.subheadline,
+      headlineZh: homeConfig?.heroHeadlineZh || tr('hero_headline'),
+      headlineEn: homeConfig?.heroHeadlineEn || tr('hero_headline'),
+      subheadlineZh: homeConfig?.heroSubheadlineZh || tr('hero_subheadline'),
+      subheadlineEn: homeConfig?.heroSubheadlineEn || tr('hero_subheadline'),
       bgImage: "/image/hero-bg.png",
     }];
-  }, [homeConfig, t]);
+  }, [homeConfig, tr]);
 
   // 2. Carousel Setup
   const [emblaRef, emblaApi] = useEmblaCarousel(
@@ -79,12 +81,12 @@ export function Hero({ locale, homeConfig }: HeroProps) {
 
   // 3. Entry Cards Config
   const displayWholesaleButton = locale === 'zh'
-    ? (homeConfig?.heroWholesaleButtonZh || t.wholesale)
-    : (homeConfig?.heroWholesaleButtonEn || t.wholesale);
+    ? (homeConfig?.heroWholesaleButtonZh || tr('hero_wholesale'))
+    : (homeConfig?.heroWholesaleButtonEn || tr('hero_wholesale'));
 
   const displayProjectButton = locale === 'zh'
-    ? (homeConfig?.heroProjectButtonZh || t.project)
-    : (homeConfig?.heroProjectButtonEn || t.project);
+    ? (homeConfig?.heroProjectButtonZh || tr('hero_project'))
+    : (homeConfig?.heroProjectButtonEn || tr('hero_project'));
 
   const wholesaleHref = homeConfig?.heroWholesaleCategoryId && homeConfig.heroWholesaleCategoryId !== 'none'
     ? `/products?category=${homeConfig.heroWholesaleCategoryId}`
@@ -97,6 +99,11 @@ export function Hero({ locale, homeConfig }: HeroProps) {
   const wholesaleBg = homeConfig?.entryCards?.wholesaleBg || "/image/Wholesale Product.png";
   const projectBg = homeConfig?.entryCards?.projectBg || "/image/Project Product-2.png";
 
+  const headlineAnimateFrom = React.useMemo(() => ({ opacity: 0, y: 80, rotateX: 30 }), []);
+  const headlineAnimateTo = React.useMemo(() => ({ opacity: 1, y: 0, rotateX: 0 }), []);
+  const subheadlineAnimateFrom = React.useMemo(() => ({ opacity: 0, y: 20 }), []);
+  const subheadlineAnimateTo = React.useMemo(() => ({ opacity: 1, y: 0 }), []);
+
   return (
     <section className="relative min-h-screen pt-20 overflow-hidden z-20 bg-black">
       {/* --- CAROUSEL LAYER --- */}
@@ -106,13 +113,14 @@ export function Hero({ locale, homeConfig }: HeroProps) {
             <div key={slide.id} className="relative flex-[0_0_100%] min-w-0 h-full">
               {/* Slide Background */}
               <div className="absolute inset-0">
-                <Image
-                  src={slide.bgImage}
-                  alt={locale === 'zh' ? slide.headlineZh : slide.headlineEn}
-                  fill
-                  className="object-cover"
-                  priority={slide.id === 'legacy-default'}
-                />
+                  <Image
+                    src={slide.bgImage}
+                    alt={locale === 'zh' ? slide.headlineZh : slide.headlineEn}
+                    fill
+                    className="object-cover"
+                    priority={index === 0 || slide.id === 'legacy-default'}
+                    sizes="100vw"
+                  />
 
                 {/* Visual Enhancements */}
                 <div className="absolute inset-0 z-10 backdrop-blur-3xl [mask-image:linear-gradient(to_right,rgba(0,0,0,1)_0%,rgba(0,0,0,1)_15%,rgba(0,0,0,0)_50%)] opacity-60 lg:opacity-100" />
@@ -129,13 +137,13 @@ export function Hero({ locale, homeConfig }: HeroProps) {
                     <SplitText
                       key={`headline-${slide.id}-${selectedIndex === index}`}
                       text={locale === 'zh' ? slide.headlineZh : slide.headlineEn}
-                      className="text-4xl md:text-7xl lg:text-[120px] font-headline font-bold text-white leading-[0.9] tracking-[-0.05em] uppercase drop-shadow-[0_4px_30px_rgba(0,0,0,0.5)]"
+                      className="text-4xl md:text-7xl lg:text-[120px] font-headline font-bold text-white leading-[0.9] tracking-[-0.05em] uppercase drop-shadow-[0_4px_30px_rgba(0,0,0,0.5)] gpu-accelerated"
                       tag="h1"
                       delay={40}
                       duration={0.8}
                       ease="power4.out"
-                      from={{ opacity: 0, y: 80, rotateX: 30 }}
-                      to={{ opacity: 1, y: 0, rotateX: 0 }}
+                      from={headlineAnimateFrom}
+                      to={headlineAnimateTo}
                       textAlign="center"
                       threshold={0.1}
                       rootMargin="0px"
@@ -146,13 +154,13 @@ export function Hero({ locale, homeConfig }: HeroProps) {
                     <SplitText
                       key={`subheadline-${slide.id}-${selectedIndex === index}`}
                       text={locale === 'zh' ? slide.subheadlineZh : slide.subheadlineEn}
-                      className="text-base md:text-xl lg:text-3xl text-white/90 font-body max-w-2xl leading-tight drop-shadow-[0_2px_15px_rgba(0,0,0,0.4)] block mx-auto md:mx-0"
+                      className="text-base md:text-xl lg:text-3xl text-white/90 font-body max-w-2xl leading-tight drop-shadow-[0_2px_15px_rgba(0,0,0,0.4)] block mx-auto md:mx-0 gpu-accelerated"
                       tag="h2"
                       delay={20}
                       duration={1}
                       ease="power3.out"
-                      from={{ opacity: 0, y: 20 }}
-                      to={{ opacity: 1, y: 0 }}
+                      from={subheadlineAnimateFrom}
+                      to={subheadlineAnimateTo}
                       textAlign="center"
                       threshold={0.1}
                       rootMargin="0px"
@@ -175,7 +183,7 @@ export function Hero({ locale, homeConfig }: HeroProps) {
               {/* Wholesale Card */}
               <Link 
                 href={wholesaleHref}
-                className="group relative h-32 md:h-40 rounded-[2rem] md:rounded-[2.5rem] transition-all duration-700 ease-[cubic-bezier(0.23,1,0.32,1)] cursor-pointer overflow-hidden shadow-2xl border border-white/10 hover:-translate-y-3 hover:scale-[1.02] hover:shadow-primary/30 hover:border-primary/30"
+                className="group relative h-32 md:h-40 rounded-[2rem] md:rounded-[2.5rem] transition-all duration-700 ease-[cubic-bezier(0.23,1,0.32,1)] cursor-pointer overflow-hidden shadow-2xl border border-white/10 hover:-translate-y-3 hover:scale-[1.02] hover:shadow-primary/30 hover:border-primary/30 gpu-accelerated"
               >
                 <div className="absolute inset-0 z-0">
                   <Image
@@ -183,6 +191,7 @@ export function Hero({ locale, homeConfig }: HeroProps) {
                     alt="Wholesale"
                     fill
                     className="object-cover transition-transform duration-1000 ease-out group-hover:scale-110"
+                    sizes="(max-width: 768px) 100vw, 50vw"
                   />
                   <div className="absolute inset-0 bg-black/60 group-hover:bg-primary/20 transition-colors duration-700" />
                 </div>
@@ -208,7 +217,7 @@ export function Hero({ locale, homeConfig }: HeroProps) {
               {/* Project Card */}
               <Link 
                 href={projectHref}
-                className="group relative h-32 md:h-40 rounded-[2rem] md:rounded-[2.5rem] transition-all duration-700 ease-[cubic-bezier(0.23,1,0.32,1)] cursor-pointer overflow-hidden shadow-2xl border border-white/10 hover:-translate-y-3 hover:scale-[1.02] hover:shadow-accent/30 hover:border-accent/30"
+                className="group relative h-32 md:h-40 rounded-[2rem] md:rounded-[2.5rem] transition-all duration-700 ease-[cubic-bezier(0.23,1,0.32,1)] cursor-pointer overflow-hidden shadow-2xl border border-white/10 hover:-translate-y-3 hover:scale-[1.02] hover:shadow-accent/30 hover:border-accent/30 gpu-accelerated"
               >
                 <div className="absolute inset-0 z-0">
                   <Image
@@ -216,6 +225,7 @@ export function Hero({ locale, homeConfig }: HeroProps) {
                     alt="Projects"
                     fill
                     className="object-cover transition-transform duration-1000 ease-out group-hover:scale-110"
+                    sizes="(max-width: 768px) 100vw, 50vw"
                   />
                   <div className="absolute inset-0 bg-black/60 group-hover:bg-accent/20 transition-colors duration-700" />
                 </div>

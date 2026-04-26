@@ -29,17 +29,36 @@ export function VideoSection({ locale, homeConfig }: VideoSectionProps) {
     : (homeConfig?.videoSubtitleEn || t.subtitle);
 
   useEffect(() => {
+    let requestRunning = false;
+
     const handleScroll = () => {
-      if (!sectionRef.current) return;
-      
-      const rect = sectionRef.current.getBoundingClientRect();
-      const windowHeight = window.innerHeight;
-      
-      const scrolledPastTop = Math.max(-rect.top, 0);
-      const contentScrollableHeight = rect.height - windowHeight;
-      const progress = Math.min(Math.max(scrolledPastTop / contentScrollableHeight, 0), 1);
-      
-      setTextProgress(progress);
+      if (requestRunning) return;
+      requestRunning = true;
+
+      requestAnimationFrame(() => {
+        if (!sectionRef.current) {
+          requestRunning = false;
+          return;
+        }
+        
+        const rect = sectionRef.current.getBoundingClientRect();
+        const windowHeight = window.innerHeight;
+        
+        // Use a more efficient calculation
+        const scrolledPastTop = Math.max(-rect.top, 0);
+        const contentScrollableHeight = rect.height - windowHeight;
+        const progress = Math.min(Math.max(scrolledPastTop / contentScrollableHeight, 0), 1);
+        
+        // Only update state if visible or significant change
+        setTextProgress(prev => {
+          if (Math.abs(prev - progress) > 0.001) {
+            return progress;
+          }
+          return prev;
+        });
+        
+        requestRunning = false;
+      });
     };
 
     window.addEventListener('scroll', handleScroll, { passive: true });
@@ -77,7 +96,7 @@ export function VideoSection({ locale, homeConfig }: VideoSectionProps) {
             className="h-full w-full object-cover"
             key={locale}
           >
-            <source src="/video/alibaba2023_x264.mp4" type="video/mp4" />
+            <source src={homeConfig?.videoUrl || "/video/alibaba2023_x264.mp4"} type="video/mp4" />
           </video>
           <div className="absolute inset-0 bg-black/50 z-10" />
         </div>
@@ -89,7 +108,7 @@ export function VideoSection({ locale, homeConfig }: VideoSectionProps) {
             {/* First Segment */}
             <h2 
               className={cn(
-                "absolute text-5xl md:text-8xl lg:text-9xl font-headline font-bold text-white tracking-tighter leading-none transition-all duration-1000 ease-in-out uppercase",
+                "absolute text-5xl md:text-8xl lg:text-9xl font-headline font-bold text-white tracking-tighter leading-none transition-all duration-1000 ease-in-out uppercase gpu-accelerated",
                 isFirstTextVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-20"
               )}
             >
@@ -99,7 +118,7 @@ export function VideoSection({ locale, homeConfig }: VideoSectionProps) {
             {/* Second Segment */}
             <h2 
               className={cn(
-                "absolute text-5xl md:text-8xl lg:text-9xl font-headline font-bold text-white tracking-tighter leading-none transition-all duration-1000 ease-in-out uppercase",
+                "absolute text-5xl md:text-8xl lg:text-9xl font-headline font-bold text-white tracking-tighter leading-none transition-all duration-1000 ease-in-out uppercase gpu-accelerated",
                 isSecondTextVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-20"
               )}
             >

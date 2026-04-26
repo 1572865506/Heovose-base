@@ -35,6 +35,7 @@ import { setDocumentNonBlocking, deleteDocumentNonBlocking, updateDocumentNonBlo
 import { useToast } from '@/hooks/use-toast';
 import { translateContent } from '@/ai/flows/translate-flow';
 import { cn } from '@/lib/utils';
+import { ShinyButton } from '@/components/ui/shiny-button';
 import { Badge } from '@/components/ui/badge';
 import Image from 'next/image';
 
@@ -275,10 +276,19 @@ export default function CaseStudiesAdminPage() {
 
             <div className="space-y-6">
               <div className="flex justify-end border-l pl-8">
-                <Button variant="ghost" onClick={handleTranslate} className="ai-btn-glow h-10 px-5 gap-2 text-xs" disabled={isAiProcessing}>
-                  {isAiProcessing ? <Loader2 className="h-4 w-4 animate-spin ai-icon-gradient" /> : <Sparkles className="h-4 w-4 ai-icon-gradient" />}
-                  AI 智译右侧信息
-                </Button>
+                {aiConfig?.isEnabled && (
+                  <ShinyButton 
+                    onClick={handleTranslate} 
+                    disabled={isAiProcessing}
+                    className="h-10 px-5"
+                    shape="capsule"
+                  >
+                    <div className="flex items-center gap-2">
+                      {isAiProcessing ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
+                      <span className="text-[11px] font-bold uppercase tracking-widest">AI 智译右侧信息</span>
+                    </div>
+                  </ShinyButton>
+                )}
               </div>
 
               <div className="space-y-4 pt-4 border-l pl-8 border-dashed flex-1">

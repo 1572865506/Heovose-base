@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect, useRef } from 'react';
 import { Locale, translations } from "@/lib/translations";
 import { SectionHeading } from "./SectionHeading";
 import { MapPin, Building2, Factory, Microscope, Globe, Move } from "lucide-react";
@@ -16,6 +16,26 @@ interface GlobalMapProps {
 export function GlobalMap({ locale, homeConfig }: GlobalMapProps) {
   const t = translations[locale].map;
   const [activeLocation, setActiveLocation] = useState<string | null>(null);
+  const [isVisible, setIsVisible] = useState(false);
+  const sectionRef = useRef<HTMLElement>(null);
+
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          setIsVisible(true);
+          observer.unobserve(entry.target);
+        }
+      },
+      { threshold: 0.1 }
+    );
+
+    if (sectionRef.current) {
+      observer.observe(sectionRef.current);
+    }
+
+    return () => observer.disconnect();
+  }, []);
 
   // 映射图标逻辑
   const getIcon = (type: string) => {
@@ -63,11 +83,14 @@ export function GlobalMap({ locale, homeConfig }: GlobalMapProps) {
   }, [homeConfig, locale, t]);
 
   return (
-    <section id="global" className="py-24 bg-white overflow-hidden relative">
+    <section id="global" ref={sectionRef} className="py-24 bg-white overflow-hidden relative">
       <div className="container mx-auto px-6">
         <SectionHeading title={displayTitle} subtitle={displaySubtitle} />
         
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-start">
+        <div className={cn(
+          "grid grid-cols-1 lg:grid-cols-12 gap-12 items-start transition-all duration-1000 delay-300",
+          isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-20"
+        )}>
           {/* 左侧卡片列表 */}
           <div className="lg:col-span-4 space-y-4 max-h-[600px] overflow-y-auto pr-2 scrollbar-minimal">
             {pins.map((pin: any) => (

@@ -62,6 +62,12 @@ interface AdminUser {
   status: 'active' | 'disabled';
 }
 
+const GlassCard = ({ children, className }: { children: React.ReactNode, className?: string }) => (
+  <div className={cn("bg-white/70 backdrop-blur-xl border border-white/40 shadow-2xl rounded-3xl overflow-hidden", className)}>
+    {children}
+  </div>
+);
+
 export default function AdminUsersPage() {
   const firestore = useFirestore();
   const { toast } = useToast();
@@ -141,225 +147,243 @@ export default function AdminUsersPage() {
   });
 
   return (
-    <div className="space-y-6 animate-in fade-in duration-500 pb-10">
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <div>
-          <h2 className="text-xl font-headline font-bold text-primary flex items-center gap-2">
-            <Users className="h-5 w-5" /> 管理员权限中心
-          </h2>
-          <p className="text-xs text-muted-foreground">管理全站访问权限，分配管理角色及账号状态。</p>
+    <div className="space-y-8 animate-in fade-in duration-700 pb-20 relative">
+      {/* Background Aurora Glows */}
+      <div className="absolute top-[-10%] right-[-5%] w-[40%] h-[40%] bg-primary/10 blur-[120px] rounded-full -z-10 animate-pulse" />
+      <div className="absolute bottom-[20%] left-[-10%] w-[35%] h-[35%] bg-accent/10 blur-[100px] rounded-full -z-10" />
+
+      <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
+        <div className="space-y-2">
+          <div className="flex items-center gap-3">
+            <div className="h-12 w-12 rounded-2xl bg-slate-900 flex items-center justify-center text-white shadow-xl shadow-slate-200">
+              <ShieldCheck className="h-6 w-6" />
+            </div>
+            <h2 className="text-3xl font-headline font-bold text-slate-900">权限治理中心</h2>
+          </div>
+          <p className="text-sm text-slate-500 font-medium max-w-2xl pl-1">管理全站访问权限矩阵，分配多级管理角色、账号状态及安全审计记录。</p>
         </div>
         
-        <Button onClick={handleOpenDialog} className="rounded-xl h-10 px-5 font-bold uppercase text-xs gap-2 shadow-md">
-          <UserPlus className="h-4 w-4" /> 授权新管理员
+        <Button onClick={handleOpenDialog} className="rounded-full h-12 px-8 font-bold uppercase tracking-widest text-xs gap-2 shadow-xl shadow-primary/20 transition-all hover:scale-105 active:scale-95">
+          <UserPlus className="h-5 w-5" /> 授权新成员
         </Button>
       </div>
 
-      <Card className="border-primary/20 bg-primary/5 rounded-2xl overflow-hidden shadow-sm">
-        <CardContent className="p-6">
-          <div className="flex flex-col md:flex-row gap-8">
-            <div className="flex-1 space-y-4">
-              <div className="flex items-center gap-2 text-primary">
-                <Info className="h-4 w-4" />
-                <span className="text-[10px] font-bold uppercase tracking-widest">如何新增成员？(双步验证模式)</span>
+      <GlassCard className="border-primary/20 bg-primary/5 shadow-none">
+        <CardContent className="p-8">
+          <div className="flex flex-col md:flex-row gap-12">
+            <div className="flex-1 space-y-6">
+              <div className="flex items-center gap-3 text-primary">
+                <div className="h-8 w-8 rounded-lg bg-primary/10 flex items-center justify-center">
+                  <Info className="h-4 w-4" />
+                </div>
+                <span className="text-[11px] font-bold uppercase tracking-[0.2em]">成员准入协议 (Dual-Step Verification)</span>
               </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="bg-white/60 p-4 rounded-xl border border-primary/10 space-y-2">
-                  <div className="flex items-center gap-2">
-                    <Badge className="h-5 w-5 rounded-full p-0 flex items-center justify-center bg-primary text-white text-[10px]">1</Badge>
-                    <span className="text-[11px] font-bold">控制台创建认证</span>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="bg-white/80 p-6 rounded-2xl border border-primary/10 space-y-3 shadow-sm group hover:border-primary/30 transition-colors">
+                  <div className="flex items-center gap-3">
+                    <div className="h-7 w-7 rounded-full flex items-center justify-center bg-primary text-white text-xs font-bold shadow-lg shadow-primary/20">1</div>
+                    <span className="text-sm font-bold text-slate-900">云端身份鉴权</span>
                   </div>
-                  <p className="text-[10px] text-muted-foreground leading-relaxed">
-                    访问 <a href="https://console.firebase.google.com/" target="_blank" className="text-primary hover:underline font-bold inline-flex items-center gap-0.5">Firebase Console <ExternalLink className="h-2 w-2" /></a>，在 Auth 模块手动添加邮箱账号并获取其 <b>UID</b>。
+                  <p className="text-[11px] text-slate-500 leading-relaxed font-medium">
+                    访问 <a href="https://console.firebase.google.com/" target="_blank" className="text-primary hover:underline font-bold inline-flex items-center gap-1">Firebase 控制台 <ExternalLink className="h-2.5 w-2.5" /></a>，在 Auth 模块预先注册账号并提取其专属 <b>UID</b>。
                   </p>
                 </div>
-                <div className="bg-white/60 p-4 rounded-xl border border-primary/10 space-y-2">
-                  <div className="flex items-center gap-2">
-                    <Badge className="h-5 w-5 rounded-full p-0 flex items-center justify-center bg-primary text-white text-[10px]">2</Badge>
-                    <span className="text-[11px] font-bold">此处赋予管理权限</span>
+                <div className="bg-white/80 p-6 rounded-2xl border border-primary/10 space-y-3 shadow-sm group hover:border-primary/30 transition-colors">
+                  <div className="flex items-center gap-3">
+                    <div className="h-7 w-7 rounded-full flex items-center justify-center bg-primary text-white text-xs font-bold shadow-lg shadow-primary/20">2</div>
+                    <span className="text-sm font-bold text-slate-900">系统权限握手</span>
                   </div>
-                  <p className="text-[10px] text-muted-foreground leading-relaxed">
-                    点击右上角“授权新管理员”，填入获取的 <b>UID</b>。系统将自动识别该用户并允许其进入后台。
+                  <p className="text-[11px] text-slate-500 leading-relaxed font-medium">
+                    在此处填入 <b>UID</b> 并指定角色。系统将完成最终的权限链条闭环，激活该成员的后台管理契约。
                   </p>
                 </div>
               </div>
             </div>
-            <div className="w-full md:w-48 shrink-0 flex flex-col justify-center border-t md:border-t-0 md:border-l border-primary/10 pt-4 md:pt-0 md:pl-8">
-               <div className="space-y-3">
-                  <div className="text-[10px] font-bold uppercase opacity-40">当前统计</div>
-                  <div className="flex justify-between items-end">
-                    <span className="text-[10px] font-medium">总管理员</span>
-                    <span className="text-2xl font-headline font-bold text-primary">{admins?.length || 0}</span>
-                  </div>
-                  <div className="flex justify-between items-end">
-                    <span className="text-[10px] font-medium">超级权限</span>
-                    <span className="text-lg font-headline font-bold text-orange-600">{admins?.filter(a => a.role === 'superadmin').length || 0}</span>
+            <div className="w-full md:w-64 shrink-0 flex flex-col justify-center border-t md:border-t-0 md:border-l border-primary/10 pt-6 md:pt-0 md:pl-12">
+               <div className="space-y-6">
+                  <div className="text-[10px] font-bold uppercase tracking-[0.3em] opacity-40 text-slate-900">Governance Stats</div>
+                  <div className="space-y-4">
+                    <div className="flex justify-between items-end">
+                      <span className="text-xs font-bold text-slate-500">成员总数</span>
+                      <span className="text-4xl font-headline font-bold text-primary tabular-nums tracking-tighter">{admins?.length || 0}</span>
+                    </div>
+                    <div className="flex justify-between items-end">
+                      <span className="text-xs font-bold text-slate-500">超管席位</span>
+                      <span className="text-2xl font-headline font-bold text-orange-600 tabular-nums tracking-tighter">{admins?.filter(a => a.role === 'superadmin').length || 0}</span>
+                    </div>
                   </div>
                </div>
             </div>
           </div>
         </CardContent>
-      </Card>
+      </GlassCard>
 
-      <div className="flex items-center gap-3 bg-white p-3 rounded-2xl border border-border/40 shadow-sm">
-        <div className="relative flex-1">
-          <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+      <div className="flex items-center gap-4 bg-white/70 backdrop-blur-xl p-2 rounded-2xl border border-white/40 shadow-xl max-w-2xl">
+        <div className="relative flex-1 group">
+          <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 group-focus-within:text-primary transition-colors" />
           <Input 
-            placeholder="按名称、邮箱或 UID 检索..." 
-            className="pl-10 border-none bg-muted/30 h-10 text-xs rounded-xl focus-visible:ring-0" 
+            placeholder="通过 姓名、邮箱 或 28位 UID 实时检索成员..." 
+            className="pl-12 border-none bg-slate-50/50 h-12 text-sm rounded-xl focus-visible:ring-0 font-medium placeholder:text-slate-400" 
             value={searchQuery}
             onChange={e => setSearchQuery(e.target.value)}
           />
         </div>
       </div>
 
-      <div className="bg-white rounded-2xl border border-border/40 shadow-sm overflow-hidden">
+      <GlassCard>
         <Table>
-          <TableHeader className="bg-muted/30">
-            <TableRow>
-              <TableHead className="w-16 pl-6">用户</TableHead>
-              <TableHead className="font-bold uppercase text-[10px] tracking-widest">身份信息</TableHead>
-              <TableHead className="font-bold uppercase text-[10px] tracking-widest">所属角色</TableHead>
-              <TableHead className="font-bold uppercase text-[10px] tracking-widest">账号状态</TableHead>
-              <TableHead className="w-32 text-right pr-6 font-bold uppercase text-[10px] tracking-widest">管理操作</TableHead>
+          <TableHeader className="bg-slate-50/50 border-b border-slate-100">
+            <TableRow className="hover:bg-transparent">
+              <TableHead className="w-20 pl-8 py-5">Profile</TableHead>
+              <TableHead className="font-bold uppercase text-[10px] tracking-[0.2em] text-slate-400">身份凭证信息</TableHead>
+              <TableHead className="font-bold uppercase text-[10px] tracking-[0.2em] text-slate-400">权限等级</TableHead>
+              <TableHead className="font-bold uppercase text-[10px] tracking-[0.2em] text-slate-400">生命周期状态</TableHead>
+              <TableHead className="text-right pr-8 font-bold uppercase text-[10px] tracking-[0.2em] text-slate-400">管理指令</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {isLoading ? (
-              <TableRow><TableCell colSpan={5} className="h-40 text-center"><Loader2 className="h-8 w-8 animate-spin mx-auto opacity-20" /></TableCell></TableRow>
+              <TableRow><TableCell colSpan={5} className="h-60 text-center"><Loader2 className="h-10 w-10 animate-spin mx-auto opacity-10" /></TableCell></TableRow>
             ) : filteredAdmins?.length === 0 ? (
-              <TableRow><TableCell colSpan={5} className="h-40 text-center text-xs text-muted-foreground italic uppercase">未找到匹配的管理员</TableCell></TableRow>
+              <TableRow><TableCell colSpan={5} className="h-60 text-center text-xs text-slate-400 italic uppercase font-bold tracking-widest">NO MATCHING ADMINS FOUND</TableCell></TableRow>
             ) : filteredAdmins?.map((admin) => (
-              <TableRow key={admin.uid} className="group hover:bg-muted/5 transition-colors">
-                <TableCell className="pl-6">
-                  <Avatar className="h-10 w-10 border border-border/40">
+              <TableRow key={admin.uid} className="group hover:bg-slate-50/80 transition-all duration-300 border-slate-50">
+                <TableCell className="pl-8 py-6">
+                  <Avatar className="h-12 w-12 border-2 border-white shadow-xl">
                     <AvatarImage src={admin.avatarUrl} className="object-cover" />
-                    <AvatarFallback className="bg-primary/5 text-primary text-xs font-bold">
+                    <AvatarFallback className="bg-primary/10 text-primary text-sm font-bold">
                       {(admin.displayName || admin.email || 'U')[0].toUpperCase()}
                     </AvatarFallback>
                   </Avatar>
                 </TableCell>
-                <TableCell>
-                  <div className="flex flex-col gap-0.5">
-                    <span className="font-bold text-xs text-primary">{admin.displayName || '未命名'}</span>
-                    <span className="text-[10px] text-muted-foreground">{admin.email}</span>
-                    <div className="flex items-center gap-1 mt-1">
-                      <code className="text-[8px] font-mono opacity-30 uppercase">UID: {admin.uid}</code>
-                      <Button variant="ghost" size="icon" className="h-4 w-4 opacity-0 group-hover:opacity-40" onClick={() => { navigator.clipboard.writeText(admin.uid); toast({ title: "UID 已复制" }); }}><Key className="h-2 w-2" /></Button>
+                <TableCell className="py-6">
+                  <div className="flex flex-col gap-1.5">
+                    <span className="font-bold text-sm text-slate-900">{admin.displayName || 'Unnamed Protocol Entity'}</span>
+                    <span className="text-xs text-slate-400 font-medium">{admin.email}</span>
+                    <div className="flex items-center gap-2 mt-1.5">
+                      <code className="text-[9px] font-mono opacity-30 uppercase bg-slate-100 px-2 py-0.5 rounded-md">ID: {admin.uid.substring(0, 12)}...</code>
+                      <Button variant="ghost" size="icon" className="h-6 w-6 rounded-lg opacity-0 group-hover:opacity-60 hover:bg-primary/10 hover:text-primary transition-all" onClick={() => { navigator.clipboard.writeText(admin.uid); toast({ title: "UID 已复制至剪贴板" }); }}><Key className="h-3 w-3" /></Button>
                     </div>
                   </div>
                 </TableCell>
-                <TableCell>
+                <TableCell className="py-6">
                   <Badge variant="outline" className={cn(
-                    "text-[8px] font-bold uppercase tracking-tighter h-5 px-1.5 border-none",
-                    admin.role === 'superadmin' ? "bg-orange-50 text-orange-700" : "bg-blue-50 text-blue-700"
+                    "text-[9px] font-bold uppercase tracking-wider h-6 px-3 border-none rounded-full",
+                    admin.role === 'superadmin' ? "bg-orange-500 text-white shadow-lg shadow-orange-100" : "bg-blue-500 text-white shadow-lg shadow-blue-100"
                   )}>
-                    {admin.role === 'superadmin' ? <ShieldCheck className="h-2.5 w-2.5 mr-1" /> : null}
+                    {admin.role === 'superadmin' ? <ShieldCheck className="h-3 w-3 mr-1.5" /> : <Users className="h-3 w-3 mr-1.5" />}
                     {admin.role}
                   </Badge>
                 </TableCell>
-                <TableCell>
+                <TableCell className="py-6">
                   <div className="flex items-center gap-2">
                     {admin.status === 'active' ? (
-                      <span className="flex items-center gap-1.5 text-green-600 text-[10px] font-bold uppercase">
-                        <CheckCircle2 className="h-3 w-3" /> 正常
-                      </span>
+                      <div className="flex items-center gap-2 text-green-600 bg-green-50 px-3 py-1 rounded-full border border-green-100">
+                        <div className="h-1.5 w-1.5 rounded-full bg-green-600 animate-pulse" />
+                        <span className="text-[10px] font-bold uppercase tracking-wider">Active</span>
+                      </div>
                     ) : (
-                      <span className="flex items-center gap-1.5 text-destructive text-[10px] font-bold uppercase">
-                        <XCircle className="h-3 w-3" /> 已禁用
-                      </span>
+                      <div className="flex items-center gap-2 text-red-600 bg-red-50 px-3 py-1 rounded-full border border-red-100">
+                        <XCircle className="h-3 w-3" />
+                        <span className="text-[10px] font-bold uppercase tracking-wider">Disabled</span>
+                      </div>
                     )}
                   </div>
                 </TableCell>
-                <TableCell className="pr-6 text-right">
-                  <div className="flex items-center justify-end gap-1">
-                    <Button size="icon" variant="ghost" className="h-8 w-8 hover:text-primary" onClick={() => handleStartEdit(admin)} title="修改角色"><Edit2 className="h-3.5 w-3.5" /></Button>
+                <TableCell className="pr-8 text-right py-6">
+                  <div className="flex items-center justify-end gap-2">
+                    <Button variant="ghost" size="icon" className="h-10 w-10 rounded-full hover:bg-primary/10 hover:text-primary transition-all" onClick={() => handleStartEdit(admin)} title="修改权限角色"><Edit2 className="h-4 w-4" /></Button>
                     <Button 
-                      size="icon" 
                       variant="ghost" 
-                      className={cn("h-8 w-8", admin.status === 'active' ? "text-destructive hover:bg-destructive/5" : "text-green-600 hover:bg-green-50")}
+                      size="icon" 
+                      className={cn("h-10 w-10 rounded-full transition-all", admin.status === 'active' ? "text-red-500 hover:bg-red-50" : "text-green-600 hover:bg-green-50")}
                       onClick={() => toggleStatus(admin)}
-                      title={admin.status === 'active' ? "禁用账号" : "激活账号"}
+                      title={admin.status === 'active' ? "禁用该账户权限" : "恢复账户访问权限"}
                     >
-                      <ShieldAlert className="h-3.5 w-3.5" />
+                      <ShieldAlert className="h-4 w-4" />
                     </Button>
-                    <Button size="icon" variant="ghost" className="h-8 w-8 text-destructive/40 hover:text-destructive" onClick={() => confirm('确定移除该管理员授权吗？') && deleteDocumentNonBlocking(doc(firestore!, 'admins', admin.uid))} title="彻底移除"><Trash2 className="h-3.5 w-3.5" /></Button>
+                    <Button variant="ghost" size="icon" className="h-10 w-10 rounded-full text-slate-300 hover:text-red-600 hover:bg-red-50 transition-all" onClick={() => confirm('彻底移除该管理员的系统授权吗？') && deleteDocumentNonBlocking(doc(firestore!, 'admins', admin.uid))} title="彻底移除授权项"><Trash2 className="h-4 w-4" /></Button>
                   </div>
                 </TableCell>
               </TableRow>
             ))}
           </TableBody>
         </Table>
-      </div>
+      </GlassCard>
 
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-        <DialogContent className="rounded-2xl max-w-md p-0 overflow-hidden border-none shadow-2xl">
-          <div className="bg-primary p-6 text-white">
-            <DialogHeader>
-              <div className="flex items-center gap-2 mb-1">
-                 <ShieldCheck className="h-5 w-5" />
-                 <DialogTitle className="text-lg font-bold uppercase tracking-widest">{editingUser ? '编辑管理员权限' : '新增管理员授权'}</DialogTitle>
+        <DialogContent className="rounded-[2.5rem] max-w-md p-0 overflow-hidden border-none shadow-[0_32px_64px_-12px_rgba(0,0,0,0.14)] bg-white/90 backdrop-blur-2xl">
+          <div className="bg-slate-900 p-10 text-white relative overflow-hidden">
+            <div className="absolute top-0 right-0 w-48 h-48 bg-primary/20 blur-[80px] rounded-full translate-x-24 -translate-y-24" />
+            <DialogHeader className="relative z-10">
+              <div className="flex items-center gap-3 mb-2">
+                 <ShieldCheck className="h-6 w-6 text-primary" />
+                 <DialogTitle className="text-2xl font-headline font-bold uppercase tracking-wider">{editingUser ? '权限级别修订' : '初始化成员授权'}</DialogTitle>
               </div>
-              <DialogDescription className="text-white/60 text-xs">授权后，该 UID 对应的用户将获得进入后台的权限。</DialogDescription>
+              <DialogDescription className="text-white/40 text-[10px] font-bold uppercase tracking-widest leading-relaxed">Authorization of a new administrative security entity.</DialogDescription>
             </DialogHeader>
           </div>
 
-          <div className="p-6 space-y-6 bg-white">
-            <div className="grid grid-cols-1 gap-4">
-              <div className="space-y-1.5">
-                <Label className="text-[10px] font-bold uppercase text-primary flex items-center justify-between">
-                  唯一 UID (Firebase UID)
-                  <span className="text-[9px] text-muted-foreground lowercase font-normal italic">*必填</span>
+          <div className="p-10 space-y-8 bg-transparent">
+            <div className="space-y-6">
+              <div className="space-y-3">
+                <Label className="text-[11px] font-bold uppercase tracking-[0.2em] text-slate-400 pl-1 flex items-center justify-between">
+                  Unique Identity (UID)
+                  <span className="text-[9px] text-primary/60 lowercase font-medium italic">required</span>
                 </Label>
                 <Input 
                   disabled={!!editingUser} 
-                  placeholder="从 Firebase Console 复制的 28 位 UID..." 
+                  placeholder="粘贴 Firebase 控制台生成的 28位 UID..." 
                   value={formData.uid}
                   onChange={e => setFormData({...formData, uid: e.target.value})}
-                  className="h-11 rounded-xl bg-muted/20 font-mono text-xs"
+                  className="h-14 rounded-2xl bg-slate-50 border-none font-mono text-xs focus-visible:ring-2 focus-visible:ring-primary/20 shadow-inner"
                 />
               </div>
-              <div className="space-y-1.5">
-                <Label className="text-[10px] font-bold uppercase text-primary flex items-center justify-between">
-                  电子邮箱
-                  <span className="text-[9px] text-muted-foreground lowercase font-normal italic">*必填</span>
+              <div className="space-y-3">
+                <Label className="text-[11px] font-bold uppercase tracking-[0.2em] text-slate-400 pl-1 flex items-center justify-between">
+                  电子邮箱地址
+                  <span className="text-[9px] text-primary/60 lowercase font-medium italic">required</span>
                 </Label>
                 <Input 
                   placeholder="admin@heovose.com" 
                   value={formData.email}
                   onChange={e => setFormData({...formData, email: e.target.value})}
-                  className="h-11 rounded-xl bg-muted/20"
+                  className="h-14 rounded-2xl bg-slate-50 border-none text-sm font-medium focus-visible:ring-2 focus-visible:ring-primary/20 shadow-inner"
                 />
               </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-4 pt-4 border-t border-dashed">
-              <div className="space-y-1.5">
-                <Label className="text-[10px] font-bold uppercase text-primary">分配角色</Label>
+            <div className="grid grid-cols-2 gap-6 pt-6 border-t border-dashed border-slate-200">
+              <div className="space-y-3">
+                <Label className="text-[11px] font-bold uppercase tracking-[0.2em] text-slate-400 pl-1">分配治理角色</Label>
                 <Select value={formData.role} onValueChange={(v:any) => setFormData({...formData, role: v})}>
-                   <SelectTrigger className="h-11 rounded-xl"><SelectValue /></SelectTrigger>
-                   <SelectContent className="rounded-xl">
-                      <SelectItem value="editor" className="text-xs">Editor (编辑员)</SelectItem>
-                      <SelectItem value="superadmin" className="text-xs font-bold text-orange-600">Superadmin (超管)</SelectItem>
+                   <SelectTrigger className="h-14 rounded-2xl bg-slate-50 border-none shadow-inner">
+                      <SelectValue />
+                   </SelectTrigger>
+                   <SelectContent className="rounded-2xl border-none shadow-2xl p-2">
+                      <SelectItem value="editor" className="rounded-xl h-10 text-xs font-medium my-1">Editor (业务编辑员)</SelectItem>
+                      <SelectItem value="superadmin" className="rounded-xl h-10 text-xs font-bold text-orange-600 my-1">Superadmin (全局超管)</SelectItem>
                    </SelectContent>
                 </Select>
               </div>
-              <div className="space-y-1.5">
-                <Label className="text-[10px] font-bold uppercase text-primary">账号状态</Label>
+              <div className="space-y-3">
+                <Label className="text-[11px] font-bold uppercase tracking-[0.2em] text-slate-400 pl-1">赋予准入状态</Label>
                 <Select value={formData.status} onValueChange={(v:any) => setFormData({...formData, status: v})}>
-                   <SelectTrigger className="h-11 rounded-xl"><SelectValue /></SelectTrigger>
-                   <SelectContent className="rounded-xl">
-                      <SelectItem value="active" className="text-xs text-green-600 font-bold">已激活</SelectItem>
-                      <SelectItem value="disabled" className="text-xs text-destructive">已禁用</SelectItem>
+                   <SelectTrigger className="h-14 rounded-2xl bg-slate-50 border-none shadow-inner">
+                      <SelectValue />
+                   </SelectTrigger>
+                   <SelectContent className="rounded-2xl border-none shadow-2xl p-2">
+                      <SelectItem value="active" className="rounded-xl h-10 text-xs text-green-600 font-bold my-1">已激活 (Grant)</SelectItem>
+                      <SelectItem value="disabled" className="rounded-xl h-10 text-xs text-red-500 font-bold my-1">锁定 (Revoke)</SelectItem>
                    </SelectContent>
                 </Select>
               </div>
             </div>
           </div>
 
-          <DialogFooter className="bg-muted/10 p-4 border-t gap-2">
-            <Button variant="outline" onClick={() => setIsDialogOpen(false)} className="rounded-xl h-11 flex-1 text-xs font-bold uppercase">取消</Button>
-            <Button onClick={handleSave} className="rounded-xl h-11 flex-1 text-xs font-bold uppercase shadow-lg">确认授权</Button>
+          <DialogFooter className="bg-slate-50/50 p-10 border-t border-slate-100 gap-4">
+            <Button variant="ghost" onClick={() => setIsDialogOpen(false)} className="h-14 rounded-2xl flex-1 text-xs font-bold uppercase tracking-widest text-slate-400">中止授权</Button>
+            <Button onClick={handleSave} className="h-14 rounded-2xl flex-1 text-xs font-bold uppercase tracking-widest shadow-xl shadow-primary/20">确认并签署契约</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

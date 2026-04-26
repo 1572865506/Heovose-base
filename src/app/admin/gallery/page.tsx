@@ -204,11 +204,14 @@ export default function GalleryPage() {
       const el = itemRefs.current.get(asset.id);
       if (!el) return;
       
+      const rect = el.getBoundingClientRect();
+      const containerRect = e.currentTarget.getBoundingClientRect();
+      
       const elRect = {
-        left: el.offsetLeft,
-        top: el.offsetTop,
-        right: el.offsetLeft + el.offsetWidth,
-        bottom: el.offsetTop + el.offsetHeight
+        left: rect.left - containerRect.left,
+        top: rect.top - containerRect.top,
+        right: rect.right - containerRect.left,
+        bottom: rect.bottom - containerRect.top
       };
 
       const intersects = !(
@@ -344,113 +347,285 @@ export default function GalleryPage() {
 
   return (
     <div 
-      className="space-y-6 animate-in fade-in duration-500 relative min-h-[80vh] select-none" 
+      className="space-y-10 animate-in fade-in duration-700 relative min-h-[80vh] select-none pb-20" 
       onMouseUp={handleMouseUp} 
       onMouseMove={handleMouseMove}
       onMouseDown={handleMouseDown}
       ref={containerRef}
     >
+      {/* 背景装饰 */}
+      <div className="fixed inset-0 pointer-events-none z-0">
+        <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-primary/[0.02] rounded-full blur-[100px] -translate-y-1/2 translate-x-1/3" />
+        <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-[0.015] brightness-100 contrast-150" />
+      </div>
       
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <div>
-          <h2 className="text-xl font-headline font-bold text-primary flex items-center gap-2"><ImageIcon className="h-5 w-5" /> 全球素材图库</h2>
-          <p className="text-xs text-muted-foreground">支持点击、Shift 加选或鼠标框选。体积限制：单个素材不可超过 700KB。</p>
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 relative z-10">
+        <div className="space-y-1">
+          <h2 className="text-2xl font-headline font-bold text-slate-900 flex items-center gap-4">
+            <div className="h-10 w-10 rounded-2xl bg-primary/10 flex items-center justify-center text-primary shadow-sm">
+              <ImageIcon className="h-5 w-5" />
+            </div>
+            全球素材图库
+          </h2>
+          <p className="text-[10px] text-slate-400 font-bold uppercase tracking-[0.2em] pl-14">Management / Digital Assets / Gallery</p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex gap-3">
           <Dialog open={isCategoryDialogOpen} onOpenChange={(o) => { setIsCategoryDialogOpen(o); if (!o) resetCatForm(); }}>
-            <DialogTrigger asChild><Button variant="outline" className="rounded-xl h-10 gap-2 text-xs font-bold uppercase tracking-wider shadow-sm"><Settings2 className="h-4 w-4" /> 架构设置</Button></DialogTrigger>
-            <DialogContent className="rounded-2xl max-w-2xl p-0 overflow-hidden border-none shadow-2xl">
-              <div className="p-6 space-y-6">
-                <DialogHeader>
-                  <DialogTitle className="text-lg font-bold flex items-center gap-2 text-primary"><Layers className="h-5 w-5" /> 树状分类管理</DialogTitle>
-                  <DialogDescription>定义和管理图库的层级结构。</DialogDescription>
-                </DialogHeader>
-                <div className={cn("space-y-4 p-5 rounded-2xl border", editingCatId ? "bg-primary/5 border-primary/20" : "bg-muted/30 border-border/40")}>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div className="space-y-2"><Label className="text-[10px] font-bold uppercase opacity-60">分类名称</Label><Input value={catForm.name} onChange={e => setCatForm({...catForm, name: e.target.value})} className="rounded-xl h-10 bg-white" /></div>
-                    <div className="space-y-2"><Label className="text-[10px] font-bold uppercase opacity-60">上级分类</Label><Select value={catForm.parentId} onValueChange={v => setCatForm({...catForm, parentId: v})}><SelectTrigger className="h-10 rounded-xl bg-white"><SelectValue /></SelectTrigger><SelectContent className="rounded-xl"><SelectItem value="none">无 (顶级分类)</SelectItem>{categoryTree.filter(c => c.id !== editingCatId).map(cat => (<SelectItem key={cat.id} value={cat.id} className="text-xs"><span style={{ paddingLeft: `${cat.depth * 0.8}rem` }}>{cat.name}</span></SelectItem>))}</SelectContent></Select></div>
+            <DialogTrigger asChild>
+              <Button variant="outline" className="rounded-2xl h-14 px-8 gap-3 text-xs font-bold uppercase tracking-widest border-slate-200 bg-white/50 backdrop-blur-sm hover:bg-white transition-all shadow-sm">
+                <Settings2 className="h-4 w-4" /> 架构管理
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="rounded-[2.5rem] max-w-2xl p-0 overflow-hidden border-none shadow-[0_50px_100px_-20px_rgba(0,0,0,0.15)]">
+              <div className="p-10 space-y-8 bg-white/90 backdrop-blur-2xl">
+                <DialogHeader className="space-y-2">
+                  <div className="h-12 w-12 rounded-2xl bg-primary/10 flex items-center justify-center text-primary mb-2">
+                    <Layers className="h-6 w-6" />
                   </div>
-                  <Button onClick={handleSaveCategory} className="w-full rounded-xl h-10 font-bold uppercase text-xs tracking-widest">{editingCatId ? '保存架构变更' : '确认添加分类'}</Button>
+                  <DialogTitle className="text-2xl font-headline font-bold text-slate-900 tracking-tight">树状分类管理</DialogTitle>
+                  <DialogDescription className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Digital Asset Hierarchy Configuration</DialogDescription>
+                </DialogHeader>
+                <div className={cn("space-y-6 p-8 rounded-[2rem] border transition-all duration-500", editingCatId ? "bg-primary/[0.02] border-primary/20" : "bg-slate-500/[0.03] border-slate-200")}>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div className="space-y-2">
+                      <Label className="text-[10px] font-bold uppercase text-slate-400 tracking-widest pl-1">分类名称</Label>
+                      <Input value={catForm.name} onChange={e => setCatForm({...catForm, name: e.target.value})} className="rounded-xl h-12 bg-white border-slate-200 text-sm font-medium" placeholder="例如：产品外观" />
+                    </div>
+                    <div className="space-y-2">
+                      <Label className="text-[10px] font-bold uppercase text-slate-400 tracking-widest pl-1">上级分类</Label>
+                      <Select value={catForm.parentId} onValueChange={v => setCatForm({...catForm, parentId: v})}>
+                        <SelectTrigger className="h-12 rounded-xl bg-white border-slate-200 text-sm">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent className="rounded-2xl border-slate-200 shadow-2xl">
+                          <SelectItem value="none" className="text-xs font-bold uppercase tracking-widest py-3">无 (顶级分类)</SelectItem>
+                          {categoryTree.filter(c => c.id !== editingCatId).map(cat => (
+                            <SelectItem key={cat.id} value={cat.id} className="text-xs py-3">
+                              <span style={{ paddingLeft: `${cat.depth * 0.8}rem` }} className={cn(cat.depth > 0 && "opacity-60")}>{cat.name}</span>
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+                  <Button onClick={handleSaveCategory} className="w-full rounded-2xl h-14 font-bold uppercase text-xs tracking-widest shadow-xl shadow-primary/10">
+                    {editingCatId ? '保存架构变更' : '确认添加分类'}
+                  </Button>
                 </div>
               </div>
             </DialogContent>
           </Dialog>
 
           <Dialog open={isUploadDialogOpen} onOpenChange={setIsUploadDialogOpen}>
-            <DialogTrigger asChild><Button className="rounded-xl h-10 px-5 font-bold uppercase tracking-widest gap-2 text-xs shadow-md"><CloudUpload className="h-4 w-4" /> 批量上传</Button></DialogTrigger>
-            <DialogContent className="rounded-2xl max-w-3xl p-0 overflow-hidden border-none shadow-2xl">
-              <div className="bg-primary p-6 text-white">
-                <DialogHeader>
-                  <DialogTitle className="text-xl font-bold flex items-center gap-3"><CloudUpload className="h-6 w-6" /> 上传资产中心</DialogTitle>
-                  <DialogDescription className="text-white/60">上传图片并选择冲突处理策略。</DialogDescription>
+            <DialogTrigger asChild>
+              <Button className="rounded-2xl h-14 px-8 font-bold uppercase tracking-widest gap-3 text-xs shadow-xl shadow-primary/20 hover:scale-105 transition-all">
+                <CloudUpload className="h-4 w-4" /> 批量上传
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="rounded-[2.5rem] max-w-4xl p-0 overflow-hidden border-none shadow-[0_50px_100px_-20px_rgba(0,0,0,0.15)]">
+              <div className="bg-slate-900 p-10 text-white relative overflow-hidden">
+                <div className="absolute top-0 right-0 p-10 opacity-10">
+                  <CloudUpload className="h-32 w-32" />
+                </div>
+                <DialogHeader className="relative z-10 space-y-2">
+                  <DialogTitle className="text-2xl font-headline font-bold flex items-center gap-4">
+                    <div className="h-10 w-10 rounded-xl bg-white/10 flex items-center justify-center">
+                      <CloudUpload className="h-5 w-5" />
+                    </div>
+                    上传资产中心
+                  </DialogTitle>
+                  <DialogDescription className="text-[10px] font-bold text-white/40 uppercase tracking-widest">Global Asset Ingestion Hub</DialogDescription>
                 </DialogHeader>
               </div>
-              <div className="p-6 grid grid-cols-1 md:grid-cols-12 gap-8 bg-white">
-                <div className="md:col-span-7"><div onDragOver={e => e.preventDefault()} onDrop={e => { e.preventDefault(); handleFileUpload(e.dataTransfer.files); }} className="h-64 border-2 border-dashed border-muted rounded-2xl flex flex-col items-center justify-center hover:bg-muted/10 transition-all cursor-pointer group" onClick={() => fileInputRef.current?.click()}><Upload className="h-12 w-12 text-muted-foreground/40 mb-3 group-hover:text-primary transition-colors" /><p className="text-sm font-bold opacity-60">点击或拖拽图片至此处</p><p className="text-[10px] opacity-40 mt-1 uppercase tracking-widest text-destructive flex items-center gap-1"><AlertTriangle className="h-3 w-3" /> 单个文件限制 700KB 以内</p><input type="file" ref={fileInputRef} multiple accept="image/*" className="hidden" onChange={e => handleFileUpload(e.target.files)} /></div></div>
-                <div className="md:col-span-5 space-y-6"><div className="space-y-5"><div className="space-y-2"><Label className="text-[10px] font-bold uppercase opacity-60">上传目标分类</Label><Select value={targetUploadCategoryId} onValueChange={setTargetUploadCategoryId}><SelectTrigger className="h-11 rounded-xl bg-muted/20 border-transparent"><SelectValue placeholder="选择目标分类" /></SelectTrigger><SelectContent className="rounded-xl">{categoryTree.map(cat => (<SelectItem key={cat.id} value={cat.id} className="text-xs"><span style={{ paddingLeft: `${cat.depth * 0.6}rem` }}>{cat.name}</span></SelectItem>))}</SelectContent></Select></div><div className="space-y-2"><Label className="text-[10px] font-bold uppercase opacity-60">重名冲突处理策略</Label><Select value={duplicateStrategy} onValueChange={(v: DuplicateStrategy) => setDuplicateStrategy(v)}><SelectTrigger className="h-11 rounded-xl bg-muted/20 border-transparent"><SelectValue /></SelectTrigger><SelectContent className="rounded-xl"><SelectItem value="rename" className="text-xs">自动重命名 (生成副本)</SelectItem><SelectItem value="overwrite" className="text-xs text-orange-600 font-bold">覆盖现有文件 (全站同步更新)</SelectItem></SelectContent></Select><p className="text-[9px] text-muted-foreground leading-relaxed mt-2 italic">提示：为了满足 Firestore 限制，系统严格限制图片体积以防保存失败。</p></div></div></div>
+              <div className="p-10 grid grid-cols-1 md:grid-cols-12 gap-10 bg-white/90 backdrop-blur-2xl">
+                <div className="md:col-span-7">
+                  <div 
+                    onDragOver={e => e.preventDefault()} 
+                    onDrop={e => { e.preventDefault(); handleFileUpload(e.dataTransfer.files); }} 
+                    className="h-80 border-2 border-dashed border-slate-200 rounded-[2rem] flex flex-col items-center justify-center hover:bg-primary/[0.02] hover:border-primary/40 transition-all cursor-pointer group" 
+                    onClick={() => fileInputRef.current?.click()}
+                  >
+                    <div className="h-16 w-16 rounded-2xl bg-slate-50 flex items-center justify-center mb-4 group-hover:scale-110 group-hover:bg-primary/10 transition-all duration-500">
+                      <Upload className="h-7 w-7 text-slate-400 group-hover:text-primary" />
+                    </div>
+                    <p className="text-sm font-bold text-slate-900">点击或拖拽图片至此处</p>
+                    <p className="text-[10px] text-slate-400 mt-2 uppercase font-bold tracking-widest">DRAG & DROP MEDIA FILES</p>
+                    <div className="mt-6 px-4 py-2 bg-destructive/5 rounded-full flex items-center gap-2">
+                      <AlertTriangle className="h-3 w-3 text-destructive" />
+                      <span className="text-[9px] font-bold text-destructive uppercase">单个文件限制 700KB 以内</span>
+                    </div>
+                    <input type="file" ref={fileInputRef} multiple accept="image/*" className="hidden" onChange={e => handleFileUpload(e.target.files)} />
+                  </div>
+                </div>
+                <div className="md:col-span-5 space-y-8">
+                  <div className="space-y-6">
+                    <div className="space-y-2.5">
+                      <Label className="text-[10px] font-bold uppercase text-slate-400 tracking-widest pl-1">上传目标分类</Label>
+                      <Select value={targetUploadCategoryId} onValueChange={setTargetUploadCategoryId}>
+                        <SelectTrigger className="h-12 rounded-xl bg-slate-500/5 border-transparent text-sm font-medium">
+                          <SelectValue placeholder="选择目标分类" />
+                        </SelectTrigger>
+                        <SelectContent className="rounded-2xl border-slate-200 shadow-2xl">
+                          {categoryTree.map(cat => (
+                            <SelectItem key={cat.id} value={cat.id} className="text-xs py-3">
+                              <span style={{ paddingLeft: `${cat.depth * 0.6}rem` }}>{cat.name}</span>
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="space-y-2.5">
+                      <Label className="text-[10px] font-bold uppercase text-slate-400 tracking-widest pl-1">重名冲突处理策略</Label>
+                      <Select value={duplicateStrategy} onValueChange={(v: DuplicateStrategy) => setDuplicateStrategy(v)}>
+                        <SelectTrigger className="h-12 rounded-xl bg-slate-500/5 border-transparent text-sm font-medium">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent className="rounded-2xl border-slate-200 shadow-2xl">
+                          <SelectItem value="rename" className="text-xs py-3 font-medium">自动重命名 (生成副本)</SelectItem>
+                          <SelectItem value="overwrite" className="text-xs py-3 text-orange-600 font-bold">覆盖现有文件 (全站同步)</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <p className="text-[9px] text-slate-400 leading-relaxed mt-4 italic font-medium">
+                        重要提示：由于云端存储限制，系统会严格校验图片 Base64 体积。建议在上传前进行必要的压缩。
+                      </p>
+                    </div>
+                  </div>
+                </div>
               </div>
-              <DialogFooter className="bg-muted/10 p-4"><Button variant="outline" onClick={() => setIsUploadDialogOpen(false)} className="rounded-xl h-10 px-8 text-xs font-bold uppercase tracking-widest">关闭上传器</Button></DialogFooter>
+              <DialogFooter className="bg-slate-50 p-6 border-t border-slate-200">
+                <Button variant="outline" onClick={() => setIsUploadDialogOpen(false)} className="rounded-xl h-12 px-8 text-xs font-bold uppercase tracking-widest border-slate-200">完成并关闭</Button>
+              </DialogFooter>
             </DialogContent>
           </Dialog>
         </div>
       </div>
 
-      <div className="flex flex-col md:flex-row items-center gap-3 bg-white p-3 rounded-2xl border border-border/40 shadow-sm">
-        <div className="relative flex-1 w-full"><Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" /><Input placeholder="按标题搜索云端素材..." className="pl-10 border-none bg-muted/30 h-10 text-xs rounded-xl focus-visible:ring-0" value={searchQuery} onChange={e => setSearchQuery(e.target.value)} /></div>
-        <Select value={filterCategory} onValueChange={setFilterCategory}>
-          <SelectTrigger className="w-full md:w-56 rounded-xl h-10 text-xs border-none bg-muted/30"><SelectValue placeholder="全部分类" /></SelectTrigger>
-          <SelectContent className="rounded-xl">
-            <SelectItem value="all" className="text-xs">全部分类</SelectItem>
-            {categoryTree.map(cat => (<SelectItem key={cat.id} value={cat.id} className="text-xs"><span style={{ paddingLeft: `${cat.depth * 0.8}rem` }}>{cat.name}</span></SelectItem>))}
-          </SelectContent>
-        </Select>
+      <div className="flex flex-col md:flex-row items-center gap-4 bg-white/60 backdrop-blur-md p-4 rounded-[2rem] border border-white/40 shadow-[0_8px_30px_rgb(0,0,0,0.04)] relative z-10">
+        <div className="relative flex-1 w-full group">
+          <Search className="absolute left-5 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 group-focus-within:text-primary transition-colors" />
+          <Input 
+            placeholder="搜索素材标题 / SEARCH ASSETS..." 
+            className="pl-12 border-none bg-slate-500/5 focus-visible:ring-0 rounded-[1.25rem] h-12 text-xs font-medium placeholder:text-slate-400 placeholder:font-bold placeholder:uppercase" 
+            value={searchQuery} 
+            onChange={e => setSearchQuery(e.target.value)} 
+          />
+        </div>
+        <div className="h-12 flex items-center gap-3 px-5 bg-slate-500/5 rounded-[1.25rem] border border-transparent focus-within:border-primary/20 transition-all w-full md:w-64">
+          <Layers className="h-3.5 w-3.5 text-slate-400 shrink-0" />
+          <Select value={filterCategory} onValueChange={setFilterCategory}>
+            <SelectTrigger className="border-none bg-transparent h-full p-0 shadow-none focus:ring-0 text-xs font-bold uppercase tracking-widest text-slate-600">
+              <SelectValue placeholder="全部分类" />
+            </SelectTrigger>
+            <SelectContent className="rounded-2xl border-slate-200 shadow-2xl">
+              <SelectItem value="all" className="text-[10px] font-bold uppercase py-3">全部分类 (ALL)</SelectItem>
+              {categoryTree.map(cat => (
+                <SelectItem key={cat.id} value={cat.id} className="text-[10px] font-bold uppercase py-3">
+                  <span style={{ paddingLeft: `${cat.depth * 0.8}rem` }}>{cat.name}</span>
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
       </div>
 
       {isLoading ? (
-        <div className="py-24 text-center"><Loader2 className="h-10 w-10 animate-spin text-primary opacity-10 mx-auto mb-3" /><p className="text-[10px] font-bold uppercase tracking-widest opacity-40">正在同步云端媒体库...</p></div>
+        <div className="py-24 text-center relative z-10">
+          <Loader2 className="h-10 w-10 animate-spin text-primary opacity-20 mx-auto mb-4" />
+          <p className="text-[10px] font-bold uppercase tracking-[0.25em] text-slate-400">正在同步云端媒体库 / Syncing Repository...</p>
+        </div>
       ) : (
-        <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-6">
+        <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-8 relative z-10">
           {filteredAssets.map((asset) => (
             <div 
               key={asset.id} 
               ref={el => { if(el) itemRefs.current.set(asset.id, el); else itemRefs.current.delete(asset.id); }}
               className={cn(
-                "group relative bg-white rounded-2xl border transition-all duration-300 overflow-hidden", 
-                selectedIds.has(asset.id) ? "border-primary ring-2 ring-primary/10 shadow-xl" : "border-border/40 hover:shadow-2xl"
+                "group relative bg-white/60 backdrop-blur-md rounded-[2rem] border transition-all duration-500 overflow-hidden", 
+                selectedIds.has(asset.id) 
+                  ? "border-primary ring-4 ring-primary/10 shadow-[0_20px_40px_-15px_rgba(0,91,153,0.2)]" 
+                  : "border-white/40 hover:shadow-[0_30px_60px_-15px_rgba(0,0,0,0.1)] hover:-translate-y-1 hover:bg-white"
               )}
             >
-              <div className="absolute top-2 left-2 z-20 transition-opacity">
+              <div className="absolute top-4 left-4 z-20">
                 <Checkbox 
                   checked={selectedIds.has(asset.id)} 
                   onCheckedChange={() => toggleSelectAsset(asset.id)} 
-                  className={cn("rounded-md bg-white/60 backdrop-blur-md border-white/60 shadow-sm", selectedIds.has(asset.id) ? "opacity-100" : "opacity-0 group-hover:opacity-100")} 
+                  className={cn(
+                    "h-5 w-5 rounded-lg bg-white/80 backdrop-blur-md border-slate-200 shadow-sm transition-all duration-300", 
+                    selectedIds.has(asset.id) ? "opacity-100 scale-110" : "opacity-0 group-hover:opacity-100"
+                  )} 
                 />
               </div>
               
-              <div className="relative aspect-square bg-muted/10 overflow-hidden flex items-center justify-center">
-                <Image src={asset.url} alt={asset.title} fill className="object-cover group-hover:scale-110 transition-transform duration-700" unoptimized />
-                <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
-                  <Button size="icon" variant="secondary" className="h-10 w-10 rounded-full shadow-2xl" onClick={(e) => { e.stopPropagation(); setPreviewAsset(asset); setPreviewZoom('fit'); }}>
-                    <Maximize className="h-4 w-4" />
+              <div className="relative aspect-square bg-slate-500/5 overflow-hidden flex items-center justify-center m-2 rounded-[1.5rem]">
+                <Image 
+                  src={asset.url} 
+                  alt={asset.title} 
+                  fill 
+                  className="object-cover group-hover:scale-110 transition-transform duration-1000 ease-out" 
+                  unoptimized 
+                />
+                <div className="absolute inset-0 bg-slate-900/40 opacity-0 group-hover:opacity-100 transition-all duration-500 flex items-center justify-center gap-3 backdrop-blur-[2px]">
+                  <Button 
+                    size="icon" 
+                    variant="secondary" 
+                    className="h-11 w-11 rounded-2xl shadow-2xl bg-white hover:bg-primary hover:text-white transition-all scale-75 group-hover:scale-100 duration-500" 
+                    onClick={(e) => { e.stopPropagation(); setPreviewAsset(asset); setPreviewZoom('fit'); }}
+                  >
+                    <Maximize className="h-5 w-5" />
                   </Button>
                 </div>
-                <div className="absolute bottom-2 left-2 pointer-events-none"><Badge className="text-[8px] bg-black/50 border-none px-2 h-4 max-w-[100px] truncate">{categoryTree.find(c => c.id === asset.categoryId)?.name || '未分类'}</Badge></div>
+                <div className="absolute bottom-3 left-3 pointer-events-none">
+                  <Badge className="text-[8px] bg-black/40 backdrop-blur-md border-none px-2.5 py-0.5 h-5 font-bold uppercase tracking-widest text-white/90">
+                    {categoryTree.find(c => c.id === asset.categoryId)?.name || 'UNCLASSIFIED'}
+                  </Badge>
+                </div>
               </div>
-
-              <div className="p-3 space-y-2 border-t border-border/40">
-                <p className="text-[10px] font-bold truncate text-primary/80">{asset.title}</p>
-                <div className="flex items-center justify-between">
-                  <div className="flex gap-0.5">
-                    <Button size="icon" variant="ghost" className="h-7 w-7 text-muted-foreground hover:text-primary" onClick={() => { navigator.clipboard.writeText(asset.url); toast({ title: "链接已复制" }); }} title="复制地址"><Copy className="h-3.5 w-3.5" /></Button>
-                    <Button size="icon" variant="ghost" className="h-7 w-7 text-muted-foreground hover:text-primary" onClick={() => setEditingAsset(asset)} title="编辑属性"><Edit3 className="h-3.5 w-3.5" /></Button>
+ 
+              <div className="p-4 pt-1 space-y-3">
+                <div className="space-y-0.5">
+                  <p className="text-[11px] font-bold text-slate-900 truncate tracking-tight">{asset.title}</p>
+                  <p className="text-[8px] font-bold text-slate-400 uppercase tracking-widest">
+                    {( (asset.fileSize || 0) / 1024).toFixed(0)}KB • {asset.fileName.split('.').pop()?.toUpperCase()}
+                  </p>
+                </div>
+                <div className="flex items-center justify-between border-t border-slate-100 pt-3">
+                  <div className="flex gap-1">
+                    <Button 
+                      size="icon" 
+                      variant="ghost" 
+                      className="h-8 w-8 rounded-xl text-slate-400 hover:text-primary hover:bg-primary/5" 
+                      onClick={() => { navigator.clipboard.writeText(asset.url); toast({ title: "链接已复制" }); }} 
+                      title="复制地址"
+                    >
+                      <Copy className="h-4 w-4" />
+                    </Button>
+                    <Button 
+                      size="icon" 
+                      variant="ghost" 
+                      className="h-8 w-8 rounded-xl text-slate-400 hover:text-primary hover:bg-primary/5" 
+                      onClick={() => setEditingAsset(asset)} 
+                      title="编辑属性"
+                    >
+                      <Edit3 className="h-4 w-4" />
+                    </Button>
                   </div>
-                  <Button size="icon" variant="ghost" className="h-7 w-7 text-destructive/40 hover:text-destructive hover:bg-destructive/5" onClick={() => confirm('永久移除该图片？') && deleteDocumentNonBlocking(doc(firestore!, 'galleryAssets', asset.id))} title="删除素材"><Trash2 className="h-3.5 w-3.5" /></Button>
+                  <Button 
+                    size="icon" 
+                    variant="ghost" 
+                    className="h-8 w-8 rounded-xl text-destructive/40 hover:text-destructive hover:bg-destructive/5" 
+                    onClick={() => confirm('永久移除该图片？') && deleteDocumentNonBlocking(doc(firestore!, 'galleryAssets', asset.id))} 
+                    title="删除素材"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
                 </div>
               </div>
             </div>
           ))}
         </div>
       )}
+
 
       {selectionBox && (
         <div 

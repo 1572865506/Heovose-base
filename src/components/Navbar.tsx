@@ -38,10 +38,17 @@ interface NavbarProps {
   setLocale: (locale: Locale) => void;
 }
 
+import { useMemo } from 'react';
+import { useFirestore, useCollection, useMemoFirebase } from '@/firebase';
+import { collection } from 'firebase/firestore';
+import { LayoutGrid } from 'lucide-react';
+
+import { useTranslations } from '@/hooks/use-translations';
+
 export function Navbar({ locale, setLocale }: NavbarProps) {
-  const t = translations[locale].nav;
-  const sub = translations[locale].nav_sub;
+  const { t: tr } = useTranslations(locale);
   const pathname = usePathname();
+  const firestore = useFirestore();
   
   const [isScrolled, setIsScrolled] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -66,22 +73,78 @@ export function Navbar({ locale, setLocale }: NavbarProps) {
   // 4. We are on a page that DOES NOT have a dark header background
   const isNavbarActive = !isTransparentHeaderPage || isScrolled || openWholesale || openProjects || mobileMenuOpen;
 
-  const wholesaleItems = [
-    { label: sub.aio, desc: sub.aio_desc, icon: Monitor, href: '/products?category=AIO' },
-    { label: sub.laptop, desc: sub.laptop_desc, icon: Laptop, href: '/products?category=Laptop' },
-    { label: sub.minipc, desc: sub.minipc_desc, icon: Cpu, href: '/products?category=Mini%20PC' },
-    { label: sub.electromechanical, desc: sub.electromechanical_desc, icon: Zap, href: '/products?category=Electromechanical' },
-    { label: sub.monitor, desc: sub.monitor_desc, icon: Tv, href: '/products?category=Monitor' },
-    { label: sub.components, desc: sub.components_desc, icon: HardDrive, href: '/products?category=Components' },
-  ];
+  // 1. Fetch dynamic categories
+  const catsQuery = useMemoFirebase(() => firestore ? collection(firestore, 'productCategories') : null, [firestore]);
+  const transQuery = useMemoFirebase(() => firestore ? collection(firestore, 'localizedStrings') : null, [firestore]);
 
-  const projectItems = [
-    { label: sub.conference, desc: sub.conference_desc, icon: Presentation, href: '/products?category=Conference' },
-    { label: sub.selfservice, desc: sub.selfservice_desc, icon: MousePointerClick, href: '/products?category=KIOSK' },
-    { label: sub.industrial, desc: sub.industrial_desc, icon: Factory, href: '/products?category=Industrial' },
-    { label: sub.led, desc: sub.led_desc, icon: Lightbulb, href: '/products?category=LED' },
-    { label: sub.showroom, desc: sub.showroom_desc, icon: Store, href: '/products?category=Showroom' },
-  ];
+  const { data: remoteCats } = useCollection<any>(catsQuery);
+  const { data: allTranslations } = useCollection<any>(transQuery);
+
+  const getT = (id: string, field: string = locale) => {
+    const entry = allTranslations?.find((item: any) => item.id === id);
+    if (!entry) return id;
+    return entry[field] || entry['en'] || entry['zh'] || id;
+  };
+
+  const getIcon = (id: string) => {
+    const map: Record<string, any> = {
+      'AIO': Monitor,
+      'Laptop': Laptop,
+      'MINIPC': Cpu,
+      'ELECTROMECHANICAL': Zap,
+      'MONITOR': Tv,
+      'COMPONENTS': HardDrive,
+      'CONFERENCE': Presentation,
+      'KIOSK': MousePointerClick,
+      'INDUSTRIAL': Factory,
+      'LED': Lightbulb,
+      'SHOWROOM': Store
+    };
+    return map[id.toUpperCase()] || LayoutGrid;
+  };
+
+  const { wholesaleItems, projectItems } = useMemo(() => {
+    if (!remoteCats || remoteCats.length === 0) {
+      // Return hardcoded fallbacks if no data yet to avoid empty navbar
+      return {
+        wholesaleItems: [
+          { label: tr('nav_sub_aio'), desc: tr('nav_sub_aio_desc'), icon: Monitor, href: '/products?category=AIO' },
+          { label: tr('nav_sub_laptop'), desc: tr('nav_sub_laptop_desc'), icon: Laptop, href: '/products?category=Laptop' },
+          { label: tr('nav_sub_minipc'), desc: tr('nav_sub_minipc_desc'), icon: Cpu, href: '/products?category=Mini%20PC' },
+          { label: tr('nav_sub_electromechanical'), desc: tr('nav_sub_electromechanical_desc'), icon: Zap, href: '/products?category=Electromechanical' },
+          { label: tr('nav_sub_monitor'), desc: tr('nav_sub_monitor_desc'), icon: Tv, href: '/products?category=Monitor' },
+          { label: tr('nav_sub_components'), desc: tr('nav_sub_components_desc'), icon: HardDrive, href: '/products?category=Components' },
+        ],
+        projectItems: [
+          { label: tr('nav_sub_conference'), desc: tr('nav_sub_conference_desc'), icon: Presentation, href: '/products?category=Conference' },
+          { label: tr('nav_sub_selfservice'), desc: tr('nav_sub_selfservice_desc'), icon: MousePointerClick, href: '/products?category=KIOSK' },
+          { label: tr('nav_sub_industrial'), desc: tr('nav_sub_industrial_desc'), icon: Factory, href: '/products?category=Industrial' },
+          { label: tr('nav_sub_led'), desc: tr('nav_sub_led_desc'), icon: Lightbulb, href: '/products?category=LED' },
+          { label: tr('nav_sub_showroom'), desc: tr('nav_sub_showroom_desc'), icon: Store, href: '/products?category=Showroom' },
+        ]
+      };
+    }
+
+    const wholesale = remoteCats
+      .filter((c: any) => c.parentId === 'WHOLESALE')
+      .map((c: any) => ({
+        label: getT(c.nameTextId),
+        desc: getT(c.descriptionTextId),
+        icon: getIcon(c.id),
+        href: `/products?category=${encodeURIComponent(c.slug)}`
+      }));
+
+    const projects = remoteCats
+      .filter((c: any) => c.parentId === 'PROJECT')
+      .map((c: any) => ({
+        label: getT(c.nameTextId),
+        desc: getT(c.descriptionTextId),
+        icon: getIcon(c.id),
+        href: `/products?category=${encodeURIComponent(c.slug)}`
+      }));
+
+    return { wholesaleItems: wholesale, projectItems: projects };
+  }, [remoteCats, allTranslations, locale, tr]);
 
   const MegaMenuContent = ({ items, onMouseEnter, onMouseLeave }: { items: any[], onMouseEnter: () => void, onMouseLeave: () => void }) => (
     <div 
@@ -116,27 +179,30 @@ export function Navbar({ locale, setLocale }: NavbarProps) {
       {/* Featured Card */}
       <div className="lg:w-80 shrink-0">
         <div className="bg-primary/5 rounded-[2rem] p-6 border border-primary/10 h-full flex flex-col group/card transition-all duration-500 hover:bg-primary/10">
-          <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest mb-4 block">
-            {sub.featured}
+          <span className="text-[10px] font-bold uppercase tracking-widest text-primary/40 flex items-center gap-2">
+            <div className="h-1 w-1 rounded-full bg-primary animate-pulse" />
+            {tr('nav_sub_featured')}
           </span>
-          <div className="relative aspect-video rounded-2xl overflow-hidden mb-6 shadow-lg group-hover/card:scale-[1.02] transition-transform duration-500">
+          <div className="relative aspect-video rounded-2xl overflow-hidden shadow-lg border border-white/20">
             <Image 
-              src="https://picsum.photos/seed/nav-featured/400/225" 
-              alt="Featured"
-              fill
-              className="object-cover"
-              data-ai-hint="tech product"
+              src="/image/whiteboard01.png" 
+              alt="Featured Catalog" 
+              fill 
+              className="object-cover transition-transform duration-700 group-hover:scale-110"
             />
+            <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
           </div>
-          <h4 className="text-sm font-bold text-primary mb-2 leading-tight">
-            {sub.catalog_title}
-          </h4>
-          <p className="text-xs text-muted-foreground leading-relaxed mb-6">
-            {sub.catalog_desc}
-          </p>
-          <Button variant="ghost" size="sm" className="mt-auto w-fit text-primary font-bold text-[10px] p-0 hover:bg-transparent hover:translate-x-1 transition-all">
-            {sub.download} <ArrowRight className="ml-2 h-3 w-3" />
-          </Button>
+          <div className="space-y-2">
+            <h4 className="text-white font-headline font-bold text-lg leading-tight">
+            {tr('nav_sub_catalog_title')}
+            </h4>
+            <p className="text-white/60 text-xs leading-relaxed">
+            {tr('nav_sub_catalog_desc')}
+            </p>
+            <Button variant="link" className="p-0 h-auto text-accent text-[10px] font-bold uppercase tracking-widest hover:text-white transition-colors">
+            {tr('nav_sub_download')} <ArrowRight className="ml-2 h-3 w-3" />
+            </Button>
+          </div>
         </div>
       </div>
     </div>
@@ -175,12 +241,16 @@ export function Navbar({ locale, setLocale }: NavbarProps) {
               className="h-full relative flex items-center"
             >
               <DropdownMenu open={openWholesale} onOpenChange={setOpenWholesale} modal={false}>
-                <DropdownMenuTrigger className={cn(
-                  "h-full flex items-center gap-1 text-sm font-semibold transition-colors outline-none focus:outline-none focus:ring-0 px-2",
-                  isNavbarActive ? "text-muted-foreground" : "text-white/90",
-                  "hover:text-primary/70"
-                )}>
-                  {t.wholesale} <ChevronDown className={cn("h-3 w-3 transition-transform duration-300", openWholesale && "rotate-180")} />
+                <DropdownMenuTrigger asChild>
+                <button 
+                  onMouseEnter={() => { setOpenWholesale(true); setOpenProjects(false); }}
+                  className={cn(
+                    "flex items-center gap-2 px-6 py-2 rounded-full text-xs font-bold uppercase tracking-widest transition-all",
+                    isNavbarActive ? "text-primary hover:bg-primary/5" : "text-white hover:bg-white/10"
+                  )}
+                >
+                  {tr('nav_wholesale')} <ChevronDown className={cn("h-3 w-3 transition-transform duration-300", openWholesale && "rotate-180")} />
+                </button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent 
                   sideOffset={0}
@@ -209,12 +279,16 @@ export function Navbar({ locale, setLocale }: NavbarProps) {
               className="h-full relative flex items-center"
             >
               <DropdownMenu open={openProjects} onOpenChange={setOpenProjects} modal={false}>
-                <DropdownMenuTrigger className={cn(
-                  "h-full flex items-center gap-1 text-sm font-semibold transition-colors outline-none focus:outline-none focus:ring-0 px-2",
-                  isNavbarActive ? "text-muted-foreground" : "text-white/90",
-                  "hover:text-primary/70"
-                )}>
-                  {t.projects} <ChevronDown className={cn("h-3 w-3 transition-transform duration-300", openProjects && "rotate-180")} />
+                <DropdownMenuTrigger asChild>
+                <button 
+                  onMouseEnter={() => { setOpenProjects(true); setOpenWholesale(false); }}
+                  className={cn(
+                    "flex items-center gap-2 px-6 py-2 rounded-full text-xs font-bold uppercase tracking-widest transition-all",
+                    isNavbarActive ? "text-primary hover:bg-primary/5" : "text-white hover:bg-white/10"
+                  )}
+                >
+                  {tr('nav_projects')} <ChevronDown className={cn("h-3 w-3 transition-transform duration-300", openProjects && "rotate-180")} />
+                </button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent 
                   sideOffset={0}
@@ -236,23 +310,19 @@ export function Navbar({ locale, setLocale }: NavbarProps) {
               </DropdownMenu>
             </div>
 
-            <Link 
-              href="/#cases" 
-              className={cn(
-                "text-sm font-semibold transition-colors h-full flex items-center px-2",
-                isNavbarActive ? "text-muted-foreground" : "text-white/90",
-                "hover:text-primary/70"
-              )}
-            >
-              {t.cases}
-            </Link>
+            <Link href="/#cases" className={cn(
+                "text-xs font-bold uppercase tracking-widest transition-all",
+                isNavbarActive ? "text-primary hover:text-accent" : "text-white/80 hover:text-white"
+              )}>
+              {tr('nav_cases')}
+              </Link>
           </div>
 
           <div className="flex items-center gap-6 h-full">
             <LanguageToggle currentLocale={locale} setLocale={setLocale} />
             <Link href="/products">
               <Button size="sm" className="rounded-full px-6 bg-primary hover:bg-primary/90 shadow-lg">
-                {t.contact}
+                {tr('nav_contact')}
               </Button>
             </Link>
           </div>
@@ -275,8 +345,8 @@ export function Navbar({ locale, setLocale }: NavbarProps) {
         <div className="lg:hidden absolute top-full left-0 right-0 bg-white border-t border-border p-6 shadow-2xl animate-in slide-in-from-top duration-300 h-screen overflow-y-auto">
           <div className="flex flex-col gap-8 pb-32">
             <div className="space-y-4">
-               <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">{t.wholesale}</p>
-               <div className="grid grid-cols-1 gap-4 pl-4">
+               <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">{tr('nav_wholesale')}</p>
+               <div className="grid grid-cols-2 gap-4">
                  {wholesaleItems.map((item) => (
                    <Link key={item.label} href={item.href} onClick={() => setMobileMenuOpen(false)} className="flex items-center gap-3">
                      <item.icon className="h-5 w-5 text-primary" />
@@ -285,9 +355,9 @@ export function Navbar({ locale, setLocale }: NavbarProps) {
                  ))}
                </div>
             </div>
-            <div className="space-y-4">
-               <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">{t.projects}</p>
-               <div className="grid grid-cols-1 gap-4 pl-4">
+            <div className="space-y-4 pt-4 border-t border-dashed">
+               <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">{tr('nav_projects')}</p>
+               <div className="grid grid-cols-2 gap-4">
                  {projectItems.map((item) => (
                    <Link key={item.label} href={item.href} onClick={() => setMobileMenuOpen(false)} className="flex items-center gap-3">
                      <item.icon className="h-5 w-5 text-primary" />
@@ -296,11 +366,11 @@ export function Navbar({ locale, setLocale }: NavbarProps) {
                  ))}
                </div>
             </div>
-            <Link href="/#cases" onClick={() => setMobileMenuOpen(false)} className="text-lg font-bold text-primary">{t.cases}</Link>
-            <div className="pt-6 border-t border-border flex flex-col gap-6">
-              <LanguageToggle currentLocale={locale} setLocale={setLocale} />
-              <Link href="/products" onClick={() => setMobileMenuOpen(false)}>
-                <Button className="w-full rounded-xl bg-primary">{t.contact}</Button>
+            <Link href="/#cases" onClick={() => setMobileMenuOpen(false)} className="text-lg font-bold text-primary">{tr('nav_cases')}</Link>
+            
+            <div className="pt-6 border-t border-slate-100 mt-auto">
+              <Link href="/#contact" onClick={() => setMobileMenuOpen(false)}>
+                <Button className="w-full rounded-xl bg-primary">{tr('nav_contact')}</Button>
               </Link>
             </div>
           </div>
