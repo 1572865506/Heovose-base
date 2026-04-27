@@ -1,7 +1,6 @@
-
 "use client";
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
@@ -53,14 +52,32 @@ export function Navbar({ locale, setLocale }: NavbarProps) {
   const [isScrolled, setIsScrolled] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   
-  // Hover states for Mega Menus
-  const [openWholesale, setOpenWholesale] = useState(false);
-  const [openProjects, setOpenProjects] = useState(false);
+  // Unified state for Mega Menus with debounce
+  const [activeMenu, setActiveMenu] = useState<string | null>(null);
+  const timeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  const handleMouseEnter = (menu: string) => {
+    if (timeoutRef.current) {
+      clearTimeout(timeoutRef.current);
+      timeoutRef.current = null;
+    }
+    setActiveMenu(menu);
+  };
+
+  const handleMouseLeave = () => {
+    if (timeoutRef.current) clearTimeout(timeoutRef.current);
+    timeoutRef.current = setTimeout(() => {
+      setActiveMenu(null);
+    }, 300); // Increased delay for smoother transitions
+  };
 
   useEffect(() => {
-    const handleScroll = () => setIsScrolled(window.scrollY > 20);
+    const handleScroll = () => setIsScrolled(window.scrollY > 100);
     window.addEventListener('scroll', handleScroll);
-    return () => window.removeEventListener('scroll', handleScroll);
+    return () => {
+      window.removeEventListener('scroll', handleScroll);
+      if (timeoutRef.current) clearTimeout(timeoutRef.current);
+    };
   }, []);
 
   // Determine if the page has a dark/colored header area at the top
@@ -71,7 +88,7 @@ export function Navbar({ locale, setLocale }: NavbarProps) {
   // 2. A mega menu is hovered
   // 3. Mobile menu is open
   // 4. We are on a page that DOES NOT have a dark header background
-  const isNavbarActive = !isTransparentHeaderPage || isScrolled || openWholesale || openProjects || mobileMenuOpen;
+  const isNavbarActive = !isTransparentHeaderPage || isScrolled || activeMenu !== null || mobileMenuOpen;
 
   // 1. Fetch dynamic categories
   const catsQuery = useMemoFirebase(() => firestore ? collection(firestore, 'productCategories') : null, [firestore]);
@@ -210,15 +227,12 @@ export function Navbar({ locale, setLocale }: NavbarProps) {
 
   return (
     <nav className={cn(
-      "fixed top-0 left-0 right-0 z-[110] transition-all duration-500 border-b border-t-0 border-x-0",
+      "fixed top-0 left-0 right-0 z-[110] transition-all duration-500 border-b h-20 flex items-center !border-t-0 !border-x-0",
       isNavbarActive 
         ? "glass-frosted border-white/20 shadow-sm" 
         : "bg-transparent border-transparent"
     )}>
-      <div className={cn(
-        "container mx-auto px-6 flex justify-between items-center transition-all duration-500",
-        isScrolled ? "h-16" : "h-24"
-      )}>
+      <div className="container mx-auto px-6 flex justify-between items-center w-full">
         <Link href="/" className="flex items-center">
           <Image
             src={isNavbarActive ? "/image/Heovose-color.svg" : "/image/Heovose.svg"}
@@ -232,39 +246,42 @@ export function Navbar({ locale, setLocale }: NavbarProps) {
 
         {/* Desktop Nav */}
         <div className="hidden lg:flex h-full items-center gap-12">
-          <div className="flex h-full items-center gap-8">
+          {/* Mega Menus with shared hover container to prevent flicker */}
+          <div className="flex h-full items-center gap-4" onMouseLeave={handleMouseLeave}>
             
             {/* Wholesale Mega Menu Container */}
-            <div 
-              onMouseEnter={() => setOpenWholesale(true)} 
-              onMouseLeave={() => setOpenWholesale(false)}
-              className="h-full relative flex items-center"
-            >
-              <DropdownMenu open={openWholesale} onOpenChange={setOpenWholesale} modal={false}>
+            <div className="h-full relative flex items-center">
+              <DropdownMenu open={activeMenu === 'wholesale'} onOpenChange={(open) => !open && handleMouseLeave()} modal={false}>
                 <DropdownMenuTrigger asChild>
-                <button 
-                  onMouseEnter={() => { setOpenWholesale(true); setOpenProjects(false); }}
-                  className={cn(
-                    "flex items-center gap-2 px-6 py-2 rounded-full text-xs font-bold uppercase tracking-widest transition-all",
-                    isNavbarActive ? "text-primary hover:bg-primary/5" : "text-white hover:bg-white/10"
-                  )}
-                >
-                  {tr('nav_wholesale')} <ChevronDown className={cn("h-3 w-3 transition-transform duration-300", openWholesale && "rotate-180")} />
-                </button>
+                  <button 
+                    className={cn(
+                      "flex items-center space-x-1 px-4 py-2 rounded-full transition-all duration-300 font-medium whitespace-nowrap",
+                      isNavbarActive 
+                        ? "text-slate-800 hover:bg-slate-100" 
+                        : "text-white hover:bg-white/10"
+                    )}
+                    onMouseEnter={() => handleMouseEnter('wholesale')}
+                  >
+                    <span>{tr('nav_wholesale')}</span>
+                    <ChevronDown className={cn(
+                      "w-4 h-4 transition-transform duration-300",
+                      activeMenu === 'wholesale' ? "rotate-180" : ""
+                    )} />
+                  </button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent 
                   sideOffset={0}
                   align="start"
                   className="w-screen max-w-none left-0 right-0 border-none rounded-none shadow-none bg-transparent p-0 overflow-visible"
-                  onMouseEnter={() => setOpenWholesale(true)}
-                  onMouseLeave={() => setOpenWholesale(false)}
+                  onMouseEnter={() => handleMouseEnter('wholesale')}
+                  onOpenAutoFocus={(e) => e.preventDefault()}
                 >
                   <div className="container mx-auto px-6 py-4">
                     <div className="glass-deep rounded-[2.5rem] shadow-2xl border border-white/20 animate-in fade-in slide-in-from-top-4 duration-500">
                       <MegaMenuContent 
                         items={wholesaleItems} 
-                        onMouseEnter={() => setOpenWholesale(true)}
-                        onMouseLeave={() => setOpenWholesale(false)}
+                        onMouseEnter={() => handleMouseEnter('wholesale')}
+                        onMouseLeave={handleMouseLeave}
                       />
                     </div>
                   </div>
@@ -273,36 +290,38 @@ export function Navbar({ locale, setLocale }: NavbarProps) {
             </div>
 
             {/* Projects Mega Menu Container */}
-            <div 
-              onMouseEnter={() => setOpenProjects(true)} 
-              onMouseLeave={() => setOpenProjects(false)}
-              className="h-full relative flex items-center"
-            >
-              <DropdownMenu open={openProjects} onOpenChange={setOpenProjects} modal={false}>
+            <div className="h-full relative flex items-center">
+              <DropdownMenu open={activeMenu === 'projects'} onOpenChange={(open) => !open && handleMouseLeave()} modal={false}>
                 <DropdownMenuTrigger asChild>
-                <button 
-                  onMouseEnter={() => { setOpenProjects(true); setOpenWholesale(false); }}
-                  className={cn(
-                    "flex items-center gap-2 px-6 py-2 rounded-full text-xs font-bold uppercase tracking-widest transition-all",
-                    isNavbarActive ? "text-primary hover:bg-primary/5" : "text-white hover:bg-white/10"
-                  )}
-                >
-                  {tr('nav_projects')} <ChevronDown className={cn("h-3 w-3 transition-transform duration-300", openProjects && "rotate-180")} />
-                </button>
+                  <button 
+                    className={cn(
+                      "flex items-center space-x-1 px-4 py-2 rounded-full transition-all duration-300 font-medium whitespace-nowrap",
+                      isNavbarActive 
+                        ? "text-slate-800 hover:bg-slate-100" 
+                        : "text-white hover:bg-white/10"
+                    )}
+                    onMouseEnter={() => handleMouseEnter('projects')}
+                  >
+                    <span>{tr('nav_projects')}</span>
+                    <ChevronDown className={cn(
+                      "w-4 h-4 transition-transform duration-300",
+                      activeMenu === 'projects' ? "rotate-180" : ""
+                    )} />
+                  </button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent 
                   sideOffset={0}
                   align="start"
                   className="w-screen max-w-none left-0 right-0 border-none rounded-none shadow-none bg-transparent p-0 overflow-visible"
-                  onMouseEnter={() => setOpenProjects(true)}
-                  onMouseLeave={() => setOpenProjects(false)}
+                  onMouseEnter={() => handleMouseEnter('projects')}
+                  onOpenAutoFocus={(e) => e.preventDefault()}
                 >
                   <div className="container mx-auto px-6 py-4">
                     <div className="glass-deep rounded-[2.5rem] shadow-2xl border border-white/20 animate-in fade-in slide-in-from-top-4 duration-500">
                       <MegaMenuContent 
                         items={projectItems} 
-                        onMouseEnter={() => setOpenProjects(true)}
-                        onMouseLeave={() => setOpenProjects(false)}
+                        onMouseEnter={() => handleMouseEnter('projects')}
+                        onMouseLeave={handleMouseLeave}
                       />
                     </div>
                   </div>
@@ -311,11 +330,13 @@ export function Navbar({ locale, setLocale }: NavbarProps) {
             </div>
 
             <Link href="/#cases" className={cn(
-                "text-xs font-bold uppercase tracking-widest transition-all",
-                isNavbarActive ? "text-primary hover:text-accent" : "text-white/80 hover:text-white"
-              )}>
+              "px-4 py-2 rounded-full transition-all duration-300 font-medium whitespace-nowrap",
+              isNavbarActive 
+                ? "text-slate-800 hover:bg-slate-100" 
+                : "text-white hover:bg-white/10"
+            )}>
               {tr('nav_cases')}
-              </Link>
+            </Link>
           </div>
 
           <div className="flex items-center gap-6 h-full">

@@ -47,9 +47,9 @@ function HomeContent() {
   );
 
   const { data: langSettings } = useDoc<any>(langConfigRef);
-  const { data: heroConfig } = useDoc<any>(homeHeroRef);
-  const { data: videoConfig } = useDoc<any>(homeVideoRef);
-  const { data: mapConfig } = useDoc<any>(homeMapRef);
+  const { data: heroConfig, isLoading: isHeroLoading } = useDoc<any>(homeHeroRef);
+  const { data: videoConfig, isLoading: isVideoLoading } = useDoc<any>(homeVideoRef);
+  const { data: mapConfig, isLoading: isMapLoading } = useDoc<any>(homeMapRef);
 
   useEffect(() => {
     // 智能语种判定逻辑
@@ -94,26 +94,27 @@ function HomeContent() {
     <main className="relative min-h-screen">
       <Navbar locale={locale} setLocale={setLocale} />
       
-      <Hero locale={locale} homeConfig={heroConfig} />
+      <Hero locale={locale} homeConfig={heroConfig} isLoading={isHeroLoading} />
       
       <ProductBento locale={locale} />
       
       <ProductGallery locale={locale} />
       
       {/* 动态开关：视频/品牌故事模块 */}
-      {videoConfig?.isVideoEnabled !== false && (
-        <VideoSection locale={locale} homeConfig={videoConfig} />
+      {(isVideoLoading || videoConfig?.isVideoEnabled !== false) && (
+        <VideoSection locale={locale} homeConfig={videoConfig} isLoading={isVideoLoading} />
       )}
       
       <ProductionProcess locale={locale} />
       
       <CaseStudies locale={locale} />
       
-      <GlobalMap locale={locale} homeConfig={mapConfig} />
+      <GlobalMap locale={locale} homeConfig={mapConfig} isLoading={isMapLoading} />
       
       <Footer locale={locale} />
     </main>
   );
+
 }
 
 export default function Home() {

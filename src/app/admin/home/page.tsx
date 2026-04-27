@@ -85,8 +85,12 @@ export default function AdminHomePage() {
     heroSubheadlineEn: '',
     heroWholesaleButtonZh: '',
     heroWholesaleButtonEn: '',
+    heroWholesaleDescriptionZh: '',
+    heroWholesaleDescriptionEn: '',
     heroProjectButtonZh: '',
     heroProjectButtonEn: '',
+    heroProjectDescriptionZh: '',
+    heroProjectDescriptionEn: '',
     heroWholesaleCategoryId: '',
     heroProjectCategoryId: '',
     heroSlides: [],
@@ -125,8 +129,12 @@ export default function AdminHomePage() {
         heroSubheadlineEn: heroData?.heroSubheadlineEn || '',
         heroWholesaleButtonZh: heroData?.heroWholesaleButtonZh || '',
         heroWholesaleButtonEn: heroData?.heroWholesaleButtonEn || '',
+        heroWholesaleDescriptionZh: heroData?.heroWholesaleDescriptionZh || '',
+        heroWholesaleDescriptionEn: heroData?.heroWholesaleDescriptionEn || '',
         heroProjectButtonZh: heroData?.heroProjectButtonZh || '',
         heroProjectButtonEn: heroData?.heroProjectButtonEn || '',
+        heroProjectDescriptionZh: heroData?.heroProjectDescriptionZh || '',
+        heroProjectDescriptionEn: heroData?.heroProjectDescriptionEn || '',
         heroWholesaleCategoryId: heroData?.heroWholesaleCategoryId || '',
         heroProjectCategoryId: heroData?.heroProjectCategoryId || '',
         heroSlides: initialSlides,
@@ -153,8 +161,12 @@ export default function AdminHomePage() {
       heroSubheadlineEn: formData.heroSubheadlineEn,
       heroWholesaleButtonZh: formData.heroWholesaleButtonZh,
       heroWholesaleButtonEn: formData.heroWholesaleButtonEn,
+      heroWholesaleDescriptionZh: formData.heroWholesaleDescriptionZh,
+      heroWholesaleDescriptionEn: formData.heroWholesaleDescriptionEn,
       heroProjectButtonZh: formData.heroProjectButtonZh,
       heroProjectButtonEn: formData.heroProjectButtonEn,
+      heroProjectDescriptionZh: formData.heroProjectDescriptionZh,
+      heroProjectDescriptionEn: formData.heroProjectDescriptionEn,
       heroWholesaleCategoryId: formData.heroWholesaleCategoryId,
       heroProjectCategoryId: formData.heroProjectCategoryId,
       updatedAt: serverTimestamp()
@@ -317,10 +329,14 @@ export default function AdminHomePage() {
             </h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
               <div className="p-5 rounded-2xl bg-muted/5 border border-dashed space-y-4">
-                <span className="text-[10px] font-bold uppercase text-primary">批发入口按钮 (ZH / EN)</span>
+                <span className="text-[10px] font-bold uppercase text-primary">批发入口按钮及描述 (ZH / EN)</span>
                 <div className="grid grid-cols-2 gap-3">
-                  <Input value={formData.heroWholesaleButtonZh} onChange={e => setFormData({...formData, heroWholesaleButtonZh: e.target.value})} placeholder="中文" className="h-10 rounded-xl" />
-                  <Input value={formData.heroWholesaleButtonEn} onChange={e => setFormData({...formData, heroWholesaleButtonEn: e.target.value})} placeholder="English" className="h-10 rounded-xl border-dashed" />
+                  <Input value={formData.heroWholesaleButtonZh} onChange={e => setFormData({...formData, heroWholesaleButtonZh: e.target.value})} placeholder="按钮中文" className="h-10 rounded-xl" />
+                  <Input value={formData.heroWholesaleButtonEn} onChange={e => setFormData({...formData, heroWholesaleButtonEn: e.target.value})} placeholder="Button English" className="h-10 rounded-xl border-dashed" />
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <Input value={formData.heroWholesaleDescriptionZh} onChange={e => setFormData({...formData, heroWholesaleDescriptionZh: e.target.value})} placeholder="描述中文" className="h-10 rounded-xl" />
+                  <Input value={formData.heroWholesaleDescriptionEn} onChange={e => setFormData({...formData, heroWholesaleDescriptionEn: e.target.value})} placeholder="Desc English" className="h-10 rounded-xl border-dashed" />
                 </div>
                 <Select value={formData.heroWholesaleCategoryId} onValueChange={v => setFormData({...formData, heroWholesaleCategoryId: v})}>
                   <SelectTrigger className="h-10 rounded-xl"><SelectValue placeholder="选择跳转分类" /></SelectTrigger>
@@ -331,10 +347,14 @@ export default function AdminHomePage() {
                 </Select>
               </div>
               <div className="p-5 rounded-2xl bg-muted/5 border border-dashed space-y-4">
-                <span className="text-[10px] font-bold uppercase text-primary">项目入口按钮 (ZH / EN)</span>
+                <span className="text-[10px] font-bold uppercase text-primary">项目入口按钮及描述 (ZH / EN)</span>
                 <div className="grid grid-cols-2 gap-3">
-                  <Input value={formData.heroProjectButtonZh} onChange={e => setFormData({...formData, heroProjectButtonZh: e.target.value})} placeholder="中文" className="h-10 rounded-xl" />
-                  <Input value={formData.heroProjectButtonEn} onChange={e => setFormData({...formData, heroProjectButtonEn: e.target.value})} placeholder="English" className="h-10 rounded-xl border-dashed" />
+                  <Input value={formData.heroProjectButtonZh} onChange={e => setFormData({...formData, heroProjectButtonZh: e.target.value})} placeholder="按钮中文" className="h-10 rounded-xl" />
+                  <Input value={formData.heroProjectButtonEn} onChange={e => setFormData({...formData, heroProjectButtonEn: e.target.value})} placeholder="Button English" className="h-10 rounded-xl border-dashed" />
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <Input value={formData.heroProjectDescriptionZh} onChange={e => setFormData({...formData, heroProjectDescriptionZh: e.target.value})} placeholder="描述中文" className="h-10 rounded-xl" />
+                  <Input value={formData.heroProjectDescriptionEn} onChange={e => setFormData({...formData, heroProjectDescriptionEn: e.target.value})} placeholder="Desc English" className="h-10 rounded-xl border-dashed" />
                 </div>
                 <Select value={formData.heroProjectCategoryId} onValueChange={v => setFormData({...formData, heroProjectCategoryId: v})}>
                   <SelectTrigger className="h-10 rounded-xl"><SelectValue placeholder="选择跳转分类" /></SelectTrigger>
@@ -360,7 +380,9 @@ export default function AdminHomePage() {
                     onClick={async () => {
                       const updates = await handleTranslate([
                         {source: 'heroWholesaleButtonZh', targetKey: 'heroWholesaleButtonEn'},
-                        {source: 'heroProjectButtonZh', targetKey: 'heroProjectButtonEn'}
+                        {source: 'heroWholesaleDescriptionZh', targetKey: 'heroWholesaleDescriptionEn'},
+                        {source: 'heroProjectButtonZh', targetKey: 'heroProjectButtonEn'},
+                        {source: 'heroProjectDescriptionZh', targetKey: 'heroProjectDescriptionEn'}
                       ]);
                       if(updates) setFormData({...formData, ...updates});
                     }}

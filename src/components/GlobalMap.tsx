@@ -11,9 +11,10 @@ import Image from 'next/image';
 interface GlobalMapProps {
   locale: Locale;
   homeConfig?: any;
+  isLoading?: boolean;
 }
 
-export function GlobalMap({ locale, homeConfig }: GlobalMapProps) {
+export function GlobalMap({ locale, homeConfig, isLoading }: GlobalMapProps) {
   const t = translations[locale].map;
   const [activeLocation, setActiveLocation] = useState<string | null>(null);
   const [isVisible, setIsVisible] = useState(false);
@@ -81,6 +82,27 @@ export function GlobalMap({ locale, homeConfig }: GlobalMapProps) {
       { key: 'jakarta', style: { top: '65%', left: '72.5%' }, title: locs.jakarta.title, address: locs.jakarta.address, desc: locs.jakarta.desc, type: 'Factory', icon: Factory },
     ];
   }, [homeConfig, locale, t]);
+
+  if (isLoading) {
+    return (
+      <section className="py-24 bg-white overflow-hidden relative">
+        <div className="container mx-auto px-6">
+          <div className="space-y-4 mb-16">
+            <div className="h-4 w-32 bg-muted rounded-full animate-pulse mx-auto" />
+            <div className="h-10 w-64 bg-muted rounded-lg animate-pulse mx-auto" />
+          </div>
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-12">
+            <div className="lg:col-span-4 space-y-4">
+              {Array.from({ length: 3 }).map((_, i) => (
+                <div key={i} className="h-32 rounded-3xl bg-muted/20 animate-pulse border border-border/20" />
+              ))}
+            </div>
+            <div className="lg:col-span-8 aspect-[16/9] bg-muted/20 rounded-[3rem] animate-pulse border border-border/20" />
+          </div>
+        </div>
+      </section>
+    );
+  }
 
   return (
     <section id="global" ref={sectionRef} className="py-24 bg-white overflow-hidden relative">
@@ -227,4 +249,3 @@ export function GlobalMap({ locale, homeConfig }: GlobalMapProps) {
     </section>
   );
 }
-

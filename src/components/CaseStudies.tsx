@@ -148,9 +148,29 @@ export function CaseStudies({ locale }: { locale: Locale }) {
 
   if (isLoading) {
     return (
-      <div className="py-40 flex flex-col items-center justify-center gap-4 bg-background">
-        <Loader2 className="h-10 w-10 animate-spin text-primary opacity-20" />
-        <p className="text-[10px] font-bold uppercase tracking-widest opacity-40">同步全球成功案例...</p>
+      <div className="py-32 bg-background overflow-hidden">
+        <div className="container mx-auto px-6 mb-16">
+          <div className="space-y-4 max-w-xl">
+            <div className="h-4 w-32 bg-muted rounded-full animate-pulse" />
+            <div className="h-10 w-64 bg-muted rounded-lg animate-pulse" />
+          </div>
+        </div>
+        <div className="flex gap-6 px-6 overflow-hidden">
+          {Array.from({ length: 4 }).map((_, i) => (
+            <div 
+              key={i} 
+              className={cn(
+                "basis-[75%] sm:basis-[45%] md:basis-[30%] lg:basis-[22%] shrink-0",
+                "aspect-[4/5] rounded-2xl bg-muted/20 animate-pulse relative"
+              )}
+            >
+              <div className="absolute bottom-0 left-0 p-6 w-full space-y-3">
+                <div className="h-3 w-16 bg-muted rounded-sm" />
+                <div className="h-5 w-32 bg-muted rounded-md" />
+              </div>
+            </div>
+          ))}
+        </div>
       </div>
     );
   }

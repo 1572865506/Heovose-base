@@ -10,23 +10,15 @@ import { Button } from "@/components/ui/button";
 interface VideoSectionProps {
   locale: Locale;
   homeConfig?: any;
+  isLoading?: boolean;
 }
 
-export function VideoSection({ locale, homeConfig }: VideoSectionProps) {
+export function VideoSection({ locale, homeConfig, isLoading }: VideoSectionProps) {
   const t = translations[locale].video;
   const sectionRef = useRef<HTMLDivElement>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
   const [textProgress, setTextProgress] = useState(0); 
   const [isPlaying, setIsPlaying] = useState(true);
-
-  // 动态文案回退逻辑
-  const displayTitle = locale === 'zh'
-    ? (homeConfig?.videoTitleZh || t.title)
-    : (homeConfig?.videoTitleEn || t.title);
-
-  const displaySubtitle = locale === 'zh'
-    ? (homeConfig?.videoSubtitleZh || t.subtitle)
-    : (homeConfig?.videoSubtitleEn || t.subtitle);
 
   useEffect(() => {
     let requestRunning = false;
@@ -44,12 +36,10 @@ export function VideoSection({ locale, homeConfig }: VideoSectionProps) {
         const rect = sectionRef.current.getBoundingClientRect();
         const windowHeight = window.innerHeight;
         
-        // Use a more efficient calculation
         const scrolledPastTop = Math.max(-rect.top, 0);
         const contentScrollableHeight = rect.height - windowHeight;
         const progress = Math.min(Math.max(scrolledPastTop / contentScrollableHeight, 0), 1);
         
-        // Only update state if visible or significant change
         setTextProgress(prev => {
           if (Math.abs(prev - progress) > 0.001) {
             return progress;
@@ -75,6 +65,23 @@ export function VideoSection({ locale, homeConfig }: VideoSectionProps) {
     }
     setIsPlaying(!isPlaying);
   }, [isPlaying]);
+
+  if (isLoading) {
+    return (
+      <section className="relative h-[100vh] z-10 bg-black flex items-center justify-center">
+        <div className="h-20 md:h-40 w-3/4 bg-white/10 rounded-2xl animate-pulse" />
+      </section>
+    );
+  }
+
+  // 动态文案回退逻辑
+  const displayTitle = locale === 'zh'
+    ? (homeConfig?.videoTitleZh || t.title)
+    : (homeConfig?.videoTitleEn || t.title);
+
+  const displaySubtitle = locale === 'zh'
+    ? (homeConfig?.videoSubtitleZh || t.subtitle)
+    : (homeConfig?.videoSubtitleEn || t.subtitle);
 
   const isFirstTextVisible = textProgress >= 0.5 && textProgress < 0.75;
   const isSecondTextVisible = textProgress >= 0.8 && textProgress < 0.98;

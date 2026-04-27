@@ -178,8 +178,8 @@ const SplitText = ({
 
   const style: React.CSSProperties = {
     textAlign: textAlign as any,
-    overflow: 'hidden',
-    display: 'inline-block',
+    overflow: 'visible',
+    display: 'block',
     whiteSpace: 'normal',
     wordWrap: 'break-word',
     willChange: 'transform, opacity'
