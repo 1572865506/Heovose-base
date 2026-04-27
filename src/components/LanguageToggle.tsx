@@ -61,7 +61,7 @@ export function LanguageToggle({ currentLocale, setLocale }: LanguageToggleProps
         <Button 
           variant="ghost" 
           size="sm" 
-          className="rounded-full h-9 px-4 flex items-center gap-2 bg-muted/30 hover:bg-muted/50 border border-border/20 transition-all group shrink-0"
+          className="!rounded-full h-9 px-5 flex items-center gap-2 bg-muted/30 hover:bg-muted/50 border border-border/20 transition-all group shrink-0"
         >
           {isLoading ? (
             <Loader2 className="h-3.5 w-3.5 animate-spin opacity-40" />

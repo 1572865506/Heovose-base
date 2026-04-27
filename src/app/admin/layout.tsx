@@ -41,7 +41,8 @@ import {
   ShieldCheck,
   RefreshCw,
   Key,
-  Star
+  Star,
+  Compass
 } from 'lucide-react';
 import Link from 'next/link';
 import Image from 'next/image';
@@ -195,6 +196,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         { title: "全球地图", icon: MapPin, href: "/admin/map" },
         { title: "成功案例", icon: Star, href: "/admin/cases" },
         { title: "制造流程", icon: ClipboardList, href: "/admin/steps" },
+        { title: "导航设置", icon: Compass, href: "/admin/navigation" },
       ]
     },
     {

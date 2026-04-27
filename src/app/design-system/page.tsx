@@ -43,6 +43,7 @@ import { FeedbackSpecification } from '@/components/design-system/FeedbackSpecif
 import { ExhibitionSpecification } from '@/components/design-system/ExhibitionSpecification';
 import { ReadabilitySpecification } from '@/components/design-system/ReadabilitySpecification';
 import { AdminSystemSpecification } from '@/components/design-system/AdminSystemSpecification';
+import { NavbarSpecification } from '@/components/design-system/NavbarSpecification';
 
 export default function DesignSystemPage() {
   const [activeSystem, setActiveSystem] = useState<'frontend' | 'backend'>('frontend');
@@ -119,6 +120,7 @@ export default function DesignSystemPage() {
             <AiInteractionSpecification />
             <FeedbackSpecification />
             <ExhibitionSpecification />
+            <NavbarSpecification />
             <ReadabilitySpecification />
           </div>
         ) : (

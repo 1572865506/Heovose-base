@@ -33,7 +33,8 @@ import {
   LineChart,
   Moon,
   Wand2,
-  Eye
+  Eye,
+  Menu
 } from 'lucide-react';
 
 export const TimelineNav = ({ activeSystem }: { activeSystem: string }) => {
@@ -56,8 +57,9 @@ export const TimelineNav = ({ activeSystem }: { activeSystem: string }) => {
     { id: 'section-13', title: '13. 动力学系统', icon: Activity },
     { id: 'frontend-14', title: '14. AI 智算交互', icon: Wand2 },
     { id: 'section-15', title: '15. 反馈与加载', icon: Loader2 },
-    { id: 'section-16', title: '16. 导航与展示', icon: Monitor },
-    { id: 'section-17', title: '17. 文字可读性规范', icon: Eye },
+    {id: 'section-16', title: '16. 展陈系统规范', icon: Monitor },
+    {id: 'section-18', title: '18. 导航与二级菜单', icon: Menu },
+    {id: 'section-17', title: '17. 文字可读性规范', icon: Eye },
   ];
 
   const adminSections = [

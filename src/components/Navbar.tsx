@@ -21,7 +21,8 @@ import {
   Factory, 
   Lightbulb, 
   Store,
-  ArrowRight 
+  ArrowRight,
+  Download
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -38,8 +39,8 @@ interface NavbarProps {
 }
 
 import { useMemo } from 'react';
-import { useFirestore, useCollection, useMemoFirebase } from '@/firebase';
-import { collection } from 'firebase/firestore';
+import { useFirestore, useCollection, useDoc, useMemoFirebase } from '@/firebase';
+import { collection, doc } from 'firebase/firestore';
 import { LayoutGrid } from 'lucide-react';
 
 import { useTranslations } from '@/hooks/use-translations';
@@ -96,6 +97,10 @@ export function Navbar({ locale, setLocale }: NavbarProps) {
 
   const { data: remoteCats } = useCollection<any>(catsQuery);
   const { data: allTranslations } = useCollection<any>(transQuery);
+
+  // 2. Fetch dynamic navigation settings
+  const navSettingsRef = useMemoFirebase(() => firestore ? doc(firestore, 'settings', 'navigation') : null, [firestore]);
+  const { data: navSettings } = useDoc<any>(navSettingsRef);
 
   const getT = (id: string, field: string = locale) => {
     const entry = allTranslations?.find((item: any) => item.id === id);
@@ -165,60 +170,78 @@ export function Navbar({ locale, setLocale }: NavbarProps) {
 
   const MegaMenuContent = ({ items, onMouseEnter, onMouseLeave }: { items: any[], onMouseEnter: () => void, onMouseLeave: () => void }) => (
     <div 
-      className="container mx-auto px-6 py-12 flex flex-col lg:flex-row gap-12"
+      className="container mx-auto px-6 py-12 flex flex-col lg:flex-row gap-16"
       onMouseEnter={onMouseEnter}
       onMouseLeave={onMouseLeave}
     >
-      <div className="flex-1 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-x-8 gap-y-10">
-        <div className="col-span-full border-b border-border/50 pb-4">
-          <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">
-            {locale === 'en' ? 'Portfolio' : '产品组合'}
-          </span>
+      {/* Left: Product List (8 Columns equivalent) */}
+      <div className="flex-1 space-y-8">
+        <div className="flex items-center justify-between border-b border-primary/10 pb-4">
+          <h4 className="text-[10px] font-bold text-primary/40 uppercase tracking-widest font-headline">
+            {locale === 'en' ? 'Product Categories' : '核心产品序列'}
+          </h4>
+          <Link 
+            href="/products" 
+            className="flex items-center gap-2 text-[9px] font-bold text-primary uppercase tracking-widest cursor-pointer hover:translate-x-1 transition-transform"
+          >
+            {locale === 'en' ? 'View All' : '查看全部'} <ArrowRight className="h-3 w-3" />
+          </Link>
         </div>
-        {items.map((item) => (
-          <DropdownMenuItem key={item.label} asChild className="p-0 bg-transparent hover:bg-transparent focus:bg-transparent transition-all duration-300">
-            <Link 
-              href={item.href} 
-              className="flex gap-4 group cursor-pointer outline-none focus:outline-none"
-            >
-              <div className="w-12 h-12 rounded-xl bg-primary/5 flex items-center justify-center text-primary group-hover:bg-primary group-hover:text-white transition-all duration-300 group-hover:scale-110">
-                <item.icon className="h-6 w-6" />
-              </div>
-              <div className="flex-1">
-                <h4 className="text-sm font-bold text-primary mb-1 group-hover:translate-x-1 transition-transform">{item.label}</h4>
-                <p className="text-[11px] text-muted-foreground leading-snug line-clamp-2">{item.desc}</p>
-              </div>
-            </Link>
-          </DropdownMenuItem>
-        ))}
+        
+        <div className={cn(
+          "grid gap-y-10",
+          navSettings?.megaMenuColumns === 1 ? "grid-cols-1" : "grid-cols-1 md:grid-cols-2",
+          navSettings?.megaMenuGap ? `gap-x-${navSettings.megaMenuGap}` : "gap-x-12"
+        )}>
+          {items.map((item) => (
+            <DropdownMenuItem key={item.label} asChild className="p-0 bg-transparent hover:bg-transparent focus:bg-transparent transition-all duration-300">
+              <Link 
+                href={item.href} 
+                className="flex gap-5 group cursor-pointer outline-none focus:outline-none"
+              >
+                <div className="h-14 w-14 shrink-0 rounded-2xl bg-white shadow-sm border border-primary/5 flex items-center justify-center text-primary group-hover:bg-primary group-hover:text-white transition-all duration-500 group-hover:scale-110 group-hover:rotate-6">
+                  <item.icon className="h-7 w-7" />
+                </div>
+                <div className="space-y-1">
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm font-bold text-primary group-hover:text-primary transition-colors font-headline">{item.label}</span>
+                    <ChevronDown className="h-3 w-3 opacity-0 group-hover:opacity-40 -rotate-90 transition-all" />
+                  </div>
+                  <p className="text-[11px] text-muted-foreground leading-relaxed line-clamp-2">{item.desc}</p>
+                </div>
+              </Link>
+            </DropdownMenuItem>
+          ))}
+        </div>
       </div>
       
-      {/* Featured Card */}
-      <div className="lg:w-80 shrink-0">
-        <div className="bg-primary/5 rounded-[2rem] p-6 border border-primary/10 h-full flex flex-col group/card transition-all duration-500 hover:bg-primary/10">
-          <span className="text-[10px] font-bold uppercase tracking-widest text-primary/40 flex items-center gap-2">
-            <div className="h-1 w-1 rounded-full bg-primary animate-pulse" />
-            {tr('nav_sub_featured')}
-          </span>
-          <div className="relative aspect-video rounded-2xl overflow-hidden shadow-lg border border-white/20">
-            <Image 
-              src="/image/whiteboard01.png" 
-              alt="Featured Catalog" 
-              fill 
-              className="object-cover transition-transform duration-700 group-hover:scale-110"
-            />
-            <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
-          </div>
-          <div className="space-y-2">
-            <h4 className="text-white font-headline font-bold text-lg leading-tight">
-            {tr('nav_sub_catalog_title')}
-            </h4>
-            <p className="text-white/60 text-xs leading-relaxed">
-            {tr('nav_sub_catalog_desc')}
-            </p>
-            <Button variant="link" className="p-0 h-auto text-accent text-[10px] font-bold uppercase tracking-widest hover:text-white transition-colors">
-            {tr('nav_sub_download')} <ArrowRight className="ml-2 h-3 w-3" />
-            </Button>
+      {/* Right: Featured Card (4 Columns equivalent) */}
+      <div className="lg:w-[380px] shrink-0">
+        <div className="bg-primary/5 rounded-[2.5rem] p-8 border border-primary/5 h-full flex flex-col group/card transition-all duration-500 hover:bg-primary/10 relative overflow-hidden">
+          <div className="absolute top-0 right-0 w-32 h-32 bg-primary/5 rounded-full blur-2xl -mr-16 -mt-16" />
+          
+          <div className="relative z-10 space-y-6 flex flex-col h-full">
+            <div className="relative aspect-[4/3] rounded-2xl overflow-hidden border border-white/10 shadow-sm bg-white">
+              <Image 
+                src={navSettings?.featuredCoverUrl || "/image/catalog-placeholder.png"} 
+                alt="Featured Catalog" 
+                fill 
+                className="object-contain p-4 transition-transform duration-700 group-hover:scale-110"
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-black/20 via-transparent to-transparent pointer-events-none" />
+            </div>
+            
+            <div className="mt-auto">
+              <Button 
+                asChild
+                className="w-full h-11 px-6 rounded-2xl bg-primary/5 text-primary border-none font-bold text-[10px] uppercase gap-3 hover:bg-primary hover:text-white transition-all group/download shadow-none cursor-pointer"
+              >
+                <Link href={navSettings?.featuredDownloadUrl || "#"}>
+                  <Download className="h-3.5 w-3.5 opacity-40 group-hover/download:opacity-100 transition-opacity" /> 
+                  <span>{navSettings?.featuredText || tr('nav_sub_download')}</span>
+                </Link>
+              </Button>
+            </div>
           </div>
         </div>
       </div>
@@ -229,11 +252,15 @@ export function Navbar({ locale, setLocale }: NavbarProps) {
     <nav className={cn(
       "fixed top-0 left-0 right-0 z-[110] transition-all duration-500 border-b h-20 flex items-center !border-t-0 !border-x-0",
       isNavbarActive 
-        ? "glass-frosted border-white/20 shadow-sm" 
+        ? cn(
+            navSettings?.navbarMaterial === 'level-03' ? "glass-deep" : "glass-frosted",
+            navSettings?.showBorder ? "border-white/20" : "border-transparent",
+            navSettings?.showShadow ? "shadow-sm" : "shadow-none"
+          )
         : "bg-transparent border-transparent"
     )}>
-      <div className="container mx-auto px-6 flex justify-between items-center w-full">
-        <Link href="/" className="flex items-center">
+      <div className="container mx-auto px-6 flex items-center w-full h-full">
+        <Link href="/" className="flex items-center shrink-0">
           <Image
             src={isNavbarActive ? "/image/Heovose-color.svg" : "/image/Heovose.svg"}
             alt="Heovose Logo"
@@ -245,7 +272,7 @@ export function Navbar({ locale, setLocale }: NavbarProps) {
         </Link>
 
         {/* Desktop Nav */}
-        <div className="hidden lg:flex h-full items-center gap-12">
+        <div className="hidden lg:flex h-full items-center gap-10 ml-auto">
           {/* Mega Menus with shared hover container to prevent flicker */}
           <div className="flex h-full items-center gap-4" onMouseLeave={handleMouseLeave}>
             
@@ -270,14 +297,14 @@ export function Navbar({ locale, setLocale }: NavbarProps) {
                   </button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent 
-                  sideOffset={0}
+                  sideOffset={25}
                   align="start"
                   className="w-screen max-w-none left-0 right-0 border-none rounded-none shadow-none bg-transparent p-0 overflow-visible"
                   onMouseEnter={() => handleMouseEnter('wholesale')}
                   onOpenAutoFocus={(e) => e.preventDefault()}
                 >
-                  <div className="container mx-auto px-6 py-4">
-                    <div className="glass-deep rounded-[2.5rem] shadow-2xl border border-white/20 animate-in fade-in slide-in-from-top-4 duration-500">
+                  <div className="container mx-auto px-6">
+                    <div className="glass-frosted rounded-[2.5rem] shadow-2xl border border-white/20 animate-in fade-in slide-in-from-top-4 duration-500">
                       <MegaMenuContent 
                         items={wholesaleItems} 
                         onMouseEnter={() => handleMouseEnter('wholesale')}
@@ -310,14 +337,14 @@ export function Navbar({ locale, setLocale }: NavbarProps) {
                   </button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent 
-                  sideOffset={0}
+                  sideOffset={25}
                   align="start"
                   className="w-screen max-w-none left-0 right-0 border-none rounded-none shadow-none bg-transparent p-0 overflow-visible"
                   onMouseEnter={() => handleMouseEnter('projects')}
                   onOpenAutoFocus={(e) => e.preventDefault()}
                 >
-                  <div className="container mx-auto px-6 py-4">
-                    <div className="glass-deep rounded-[2.5rem] shadow-2xl border border-white/20 animate-in fade-in slide-in-from-top-4 duration-500">
+                  <div className="container mx-auto px-6">
+                    <div className="glass-frosted rounded-[2.5rem] shadow-2xl border border-white/20 animate-in fade-in slide-in-from-top-4 duration-500">
                       <MegaMenuContent 
                         items={projectItems} 
                         onMouseEnter={() => handleMouseEnter('projects')}
@@ -352,7 +379,7 @@ export function Navbar({ locale, setLocale }: NavbarProps) {
         {/* Mobile Menu Trigger */}
         <button 
           className={cn(
-            "lg:hidden p-2 transition-colors duration-500",
+            "lg:hidden ml-auto p-2 transition-colors duration-500",
             isNavbarActive ? "text-primary" : "text-white"
           )} 
           onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
