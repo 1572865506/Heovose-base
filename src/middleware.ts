@@ -1,35 +1,42 @@
+import { auth } from "@/auth";
 import { NextResponse } from 'next/server';
-import type { NextRequest } from 'next/request';
+import type { NextRequest } from 'next/server';
 
 const locales = ['en', 'zh', 'id', 'vi'];
 
-export function middleware(request: NextRequest) {
-  const pathname = request.nextUrl.pathname;
+export default auth((request) => {
+  const { nextUrl } = request;
+  const pathname = nextUrl.pathname;
+  const isLoggedIn = !!request.auth;
 
-  // 1. 检查路径是否以支持的语种开头 (例如 /zh 或 /zh/products)
+  // 1. Protect Admin routes
+  if (pathname.startsWith("/admin")) {
+    if (!isLoggedIn) {
+      return NextResponse.redirect(new URL("/auth/login", nextUrl));
+    }
+  }
+
+  // 2. Locale Redirection logic (existing)
   const pathnameIsMissingLocale = locales.every(
     (locale) => !pathname.startsWith(`/${locale}/`) && pathname !== `/${locale}`
   );
 
   if (!pathnameIsMissingLocale) {
-    // 提取语种和剩余路径
     const segments = pathname.split('/');
     const locale = segments[1];
     const remainingPath = segments.slice(2).join('/') || '';
 
-    // 将 /zh/products 重写为 /products?lang=zh (改为重定向以确保可靠性)
-    const url = new URL(`/${remainingPath}`, request.url);
+    const url = new URL(`/${remainingPath}`, nextUrl);
     url.searchParams.set('lang', locale);
     
     return NextResponse.redirect(url);
   }
 
   return NextResponse.next();
-}
+});
 
 export const config = {
-  // 匹配所有路径，除了 api, _next/static, _next/image, favicon.ico, image, admin
   matcher: [
-    '/((?!api|_next/static|_next/image|favicon.ico|image|admin|admin-panel).*)',
+    '/((?!api|_next/static|_next/image|favicon.ico|image|video).*)',
   ],
 };

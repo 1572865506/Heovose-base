@@ -5,8 +5,8 @@ import React, { useState, useMemo, useEffect, Suspense, use } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { useSearchParams, useRouter } from 'next/navigation';
-import { useFirestore, useCollection, useMemoFirebase, useDoc } from '@/firebase';
-import { collection, doc } from 'firebase/firestore';
+import { useLocalCollection } from '@/hooks/use-local-collection';
+import { useLocalDoc } from '@/hooks/use-local-doc';
 import { Locale, translations } from '@/lib/translations';
 import { Navbar } from '@/components/Navbar';
 import { Footer } from '@/components/Footer';
@@ -49,7 +49,6 @@ type BusinessLine = 'wholesale' | 'project';
 function ProductListContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
-  const firestore = useFirestore();
   
   const [locale, setLocale] = useState<Locale>('en');
   const { t: tr } = useTranslations(locale);
@@ -61,15 +60,10 @@ function ProductListContent() {
   const lineParam = searchParams.get('line') as BusinessLine;
   const t = translations[locale].products;
 
-  const prodsRef = useMemoFirebase(() => collection(firestore, 'products'), [firestore]);
-  const catsRef = useMemoFirebase(() => collection(firestore, 'productCategories'), [firestore]);
-  const transRef = useMemoFirebase(() => collection(firestore, 'localizedStrings'), [firestore]);
-  const langConfigRef = useMemoFirebase(() => doc(firestore, 'settings', 'languages'), [firestore]);
-
-  const { data: products, isLoading: isProdsLoading } = useCollection<Product>(prodsRef);
-  const { data: categories, isLoading: isCatsLoading } = useCollection<Category>(catsRef);
-  const { data: allTranslations } = useCollection<LocalizedString>(transRef);
-  const { data: langSettings } = useDoc<any>(langConfigRef);
+  const { data: products, isLoading: isProdsLoading } = useLocalCollection<Product>('products');
+  const { data: categories, isLoading: isCatsLoading } = useLocalCollection<Category>('productCategories');
+  const { data: allTranslations } = useLocalCollection<LocalizedString>('localizedStrings');
+  const { data: langSettings } = useLocalDoc<any>('settings', 'languages');
 
   // 1. 智能判定语种
   useEffect(() => {

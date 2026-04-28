@@ -2,8 +2,8 @@
 "use client";
 
 import { useState, useMemo } from 'react';
-import { useFirestore, useCollection, useMemoFirebase, useDoc } from '@/firebase';
-import { collection, doc, serverTimestamp, query, orderBy } from 'firebase/firestore';
+import { useLocalDoc } from '@/hooks/use-local-doc';
+import { useLocalCollection } from '@/hooks/use-local-collection';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -32,7 +32,6 @@ import {
   DialogTitle, 
   DialogDescription,
 } from '@/components/ui/dialog';
-import { setDocumentNonBlocking, deleteDocumentNonBlocking, updateDocumentNonBlocking } from '@/firebase/non-blocking-updates';
 import { useToast } from '@/hooks/use-toast';
 import { translateContent } from '@/ai/flows/translate-flow';
 import { cn } from '@/lib/utils';
@@ -51,19 +50,11 @@ interface ProductionStep {
 }
 
 export default function ProductionStepsAdminPage() {
-  const firestore = useFirestore();
   const { toast } = useToast();
   
-  const stepsQuery = useMemoFirebase(() => 
-    firestore ? query(collection(firestore, 'productionSteps'), orderBy('order', 'asc')) : null, 
-    [firestore]
-  );
-  const aiRef = useMemoFirebase(() => firestore ? doc(firestore, 'settings', 'ai') : null, [firestore]);
-  const assetsQuery = useMemoFirebase(() => firestore ? query(collection(firestore, 'galleryAssets'), orderBy('createdAt', 'desc')) : null, [firestore]);
-
-  const { data: steps, isLoading } = useCollection<ProductionStep>(stepsQuery);
-  const { data: aiConfig } = useDoc<any>(aiRef);
-  const { data: galleryAssets } = useCollection<any>(assetsQuery);
+  const { data: steps, isLoading, mutate: mutateSteps } = useLocalCollection<ProductionStep>('productionSteps');
+  const { data: aiConfig } = useLocalDoc<any>('settings', 'ai');
+  const { data: galleryAssets } = useLocalCollection<any>('galleryAssets');
 
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isAiProcessing, setIsAiProcessing] = useState(false);
@@ -98,36 +89,60 @@ export default function ProductionStepsAdminPage() {
     setIsDialogOpen(true);
   };
 
-  const handleSave = () => {
-    if (!firestore || !form.titleZh) return;
+  const handleSave = async () => {
+    if (!form.titleZh) return;
     
     const id = editingStep?.id || `step_${Date.now()}`;
-    const finalData = {
-      ...form,
-      id,
-      updatedAt: serverTimestamp()
-    };
-
-    setDocumentNonBlocking(doc(firestore, 'productionSteps', id), finalData, { merge: true });
-    setIsDialogOpen(false);
-    toast({ title: editingStep ? "步骤已更新" : "新步骤已添加" });
+    try {
+      await fetch(`/api/productionSteps/${id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(form),
+      });
+      mutateSteps();
+      setIsDialogOpen(false);
+      toast({ title: editingStep ? "步骤已更新" : "新步骤已添加" });
+    } catch (e) {
+      toast({ variant: "destructive", title: "保存失败" });
+    }
   };
 
-  const handleDelete = (id: string) => {
-    if (!firestore || !confirm('确定要永久删除此生产环节吗？')) return;
-    deleteDocumentNonBlocking(doc(firestore, 'productionSteps', id));
+  const handleDelete = async (id: string) => {
+    if (!confirm('确定要永久删除此生产环节吗？')) return;
+    try {
+      await fetch(`/api/productionSteps/${id}`, { method: 'DELETE' });
+      mutateSteps();
+      toast({ title: "步骤已删除" });
+    } catch (e) {
+      toast({ variant: "destructive", title: "删除失败" });
+    }
   };
 
-  const handleMove = (index: number, direction: 'up' | 'down') => {
-    if (!firestore || !steps) return;
+  const handleMove = async (index: number, direction: 'up' | 'down') => {
+    if (!steps) return;
     const targetIndex = direction === 'up' ? index - 1 : index + 1;
     if (targetIndex < 0 || targetIndex >= steps.length) return;
 
     const currentStep = steps[index];
     const targetStep = steps[targetIndex];
 
-    updateDocumentNonBlocking(doc(firestore, 'productionSteps', currentStep.id), { order: targetStep.order });
-    updateDocumentNonBlocking(doc(firestore, 'productionSteps', targetStep.id), { order: currentStep.order });
+    try {
+      await Promise.all([
+        fetch(`/api/productionSteps/${currentStep.id}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ ...currentStep, order: targetStep.order }),
+        }),
+        fetch(`/api/productionSteps/${targetStep.id}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ ...targetStep, order: currentStep.order }),
+        })
+      ]);
+      mutateSteps();
+    } catch (e) {
+      toast({ variant: "destructive", title: "排序更新失败" });
+    }
   };
 
   const handleTranslate = async () => {

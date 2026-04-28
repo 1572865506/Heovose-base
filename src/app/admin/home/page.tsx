@@ -2,8 +2,8 @@
 "use client";
 
 import { useState, useEffect } from 'react';
-import { useFirestore, useDoc, useCollection, useMemoFirebase } from '@/firebase';
-import { doc, collection, serverTimestamp } from 'firebase/firestore';
+import { useLocalDoc } from '@/hooks/use-local-doc';
+import { useLocalCollection } from '@/hooks/use-local-collection';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -30,7 +30,6 @@ import {
   ArrowDown,
   Layers
 } from 'lucide-react';
-import { setDocumentNonBlocking } from '@/firebase/non-blocking-updates';
 import { useToast } from '@/hooks/use-toast';
 import { translateContent } from '@/ai/flows/translate-flow';
 import { cn } from '@/lib/utils';
@@ -61,20 +60,12 @@ const AiGradientDef = () => (
 );
 
 export default function AdminHomePage() {
-  const firestore = useFirestore();
   const { toast } = useToast();
-  
-  const homeHeroRef = useMemoFirebase(() => firestore ? doc(firestore, 'homepageContent', 'hero') : null, [firestore]);
-  const homeVideoRef = useMemoFirebase(() => firestore ? doc(firestore, 'homepageContent', 'video') : null, [firestore]);
-  const aiRef = useMemoFirebase(() => firestore ? doc(firestore, 'settings', 'ai') : null, [firestore]);
-  const catsQuery = useMemoFirebase(() => firestore ? collection(firestore, 'productCategories') : null, [firestore]);
-  const transQuery = useMemoFirebase(() => firestore ? collection(firestore, 'localizedStrings') : null, [firestore]);
-  
-  const { data: heroData, isLoading: isHeroLoading } = useDoc<any>(homeHeroRef);
-  const { data: videoData, isLoading: isVideoLoading } = useDoc<any>(homeVideoRef);
-  const { data: aiConfig } = useDoc<any>(aiRef);
-  const { data: categories } = useCollection<any>(catsQuery);
-  const { data: translations } = useCollection<any>(transQuery);
+  const { data: heroData, isLoading: isHeroLoading, mutate: mutateHero } = useLocalDoc<any>('homepageContent', 'hero');
+  const { data: videoData, isLoading: isVideoLoading, mutate: mutateVideo } = useLocalDoc<any>('homepageContent', 'video');
+  const { data: aiConfig } = useLocalDoc<any>('settings', 'ai');
+  const { data: categories } = useLocalCollection<any>('productCategories');
+  const { data: translations } = useLocalCollection<any>('localizedStrings');
 
   const isLoading = isHeroLoading || isVideoLoading;
 
@@ -148,47 +139,59 @@ export default function AdminHomePage() {
     }
   }, [heroData, videoData]);
 
-  const handleSave = () => {
-    if (!firestore) return;
+  const handleSave = async () => {
     setIsSaving(true);
     
-    // Split the data back into hero and video documents
-    const heroPayload = {
-      heroSlides: formData.heroSlides,
-      heroHeadlineZh: formData.heroHeadlineZh,
-      heroHeadlineEn: formData.heroHeadlineEn,
-      heroSubheadlineZh: formData.heroSubheadlineZh,
-      heroSubheadlineEn: formData.heroSubheadlineEn,
-      heroWholesaleButtonZh: formData.heroWholesaleButtonZh,
-      heroWholesaleButtonEn: formData.heroWholesaleButtonEn,
-      heroWholesaleDescriptionZh: formData.heroWholesaleDescriptionZh,
-      heroWholesaleDescriptionEn: formData.heroWholesaleDescriptionEn,
-      heroProjectButtonZh: formData.heroProjectButtonZh,
-      heroProjectButtonEn: formData.heroProjectButtonEn,
-      heroProjectDescriptionZh: formData.heroProjectDescriptionZh,
-      heroProjectDescriptionEn: formData.heroProjectDescriptionEn,
-      heroWholesaleCategoryId: formData.heroWholesaleCategoryId,
-      heroProjectCategoryId: formData.heroProjectCategoryId,
-      updatedAt: serverTimestamp()
-    };
+    try {
+      // Split the data back into hero and video documents
+      const heroPayload = {
+        heroSlides: formData.heroSlides,
+        heroHeadlineZh: formData.heroHeadlineZh,
+        heroHeadlineEn: formData.heroHeadlineEn,
+        heroSubheadlineZh: formData.heroSubheadlineZh,
+        heroSubheadlineEn: formData.heroSubheadlineEn,
+        heroWholesaleButtonZh: formData.heroWholesaleButtonZh,
+        heroWholesaleButtonEn: formData.heroWholesaleButtonEn,
+        heroWholesaleDescriptionZh: formData.heroWholesaleDescriptionZh,
+        heroWholesaleDescriptionEn: formData.heroWholesaleDescriptionEn,
+        heroProjectButtonZh: formData.heroProjectButtonZh,
+        heroProjectButtonEn: formData.heroProjectButtonEn,
+        heroProjectDescriptionZh: formData.heroProjectDescriptionZh,
+        heroProjectDescriptionEn: formData.heroProjectDescriptionEn,
+        heroWholesaleCategoryId: formData.heroWholesaleCategoryId,
+        heroProjectCategoryId: formData.heroProjectCategoryId,
+      };
 
-    const videoPayload = {
-      isVideoEnabled: formData.isVideoEnabled,
-      videoTitleZh: formData.videoTitleZh,
-      videoTitleEn: formData.videoTitleEn,
-      videoSubtitleZh: formData.videoSubtitleZh,
-      videoSubtitleEn: formData.videoSubtitleEn,
-      videoUrl: formData.videoUrl,
-      updatedAt: serverTimestamp()
-    };
+      const videoPayload = {
+        isVideoEnabled: formData.isVideoEnabled,
+        videoTitleZh: formData.videoTitleZh,
+        videoTitleEn: formData.videoTitleEn,
+        videoSubtitleZh: formData.videoSubtitleZh,
+        videoSubtitleEn: formData.videoSubtitleEn,
+        videoUrl: formData.videoUrl,
+      };
 
-    setDocumentNonBlocking(homeHeroRef!, heroPayload, { merge: true });
-    setDocumentNonBlocking(homeVideoRef!, videoPayload, { merge: true });
+      await Promise.all([
+        fetch('/api/homepageContent/hero', {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(heroPayload),
+        }),
+        fetch('/api/homepageContent/video', {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(videoPayload),
+        })
+      ]);
 
-    setTimeout(() => {
+      mutateHero();
+      mutateVideo();
       setIsSaving(false);
       toast({ title: "首页配置已保存" });
-    }, 800);
+    } catch (e) {
+      setIsSaving(false);
+      toast({ variant: "destructive", title: "保存失败" });
+    }
   };
 
   const handleTranslate = async (fields: { source: string, targetKey: string }[], localFormData = formData) => {

@@ -1,8 +1,7 @@
 "use client";
 
 import { useState } from 'react';
-import { useFirestore, useCollection, useMemoFirebase } from '@/firebase';
-import { collection, doc, serverTimestamp } from 'firebase/firestore';
+import { useLocalCollection } from '@/hooks/use-local-collection';
 import { 
   Table, 
   TableBody, 
@@ -44,7 +43,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { setDocumentNonBlocking, deleteDocumentNonBlocking } from '@/firebase/non-blocking-updates';
 import { Label } from '@/components/ui/label';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { useToast } from '@/hooks/use-toast';
@@ -69,7 +67,6 @@ const GlassCard = ({ children, className }: { children: React.ReactNode, classNa
 );
 
 export default function AdminUsersPage() {
-  const firestore = useFirestore();
   const { toast } = useToast();
   
   const [searchQuery, setSearchQuery] = useState('');
@@ -84,11 +81,7 @@ export default function AdminUsersPage() {
     status: 'active' as 'active' | 'disabled'
   });
 
-  const adminsQuery = useMemoFirebase(() => 
-    firestore ? collection(firestore, 'admins') : null, 
-    [firestore]
-  );
-  const { data: admins, isLoading } = useCollection<AdminUser>(adminsQuery);
+  const { data: admins, isLoading, mutate: mutateAdmins } = useLocalCollection<AdminUser>('users');
 
   const resetForm = () => {
     setFormData({ uid: '', email: '', displayName: '', role: 'editor', status: 'active' });
@@ -102,7 +95,7 @@ export default function AdminUsersPage() {
 
   const handleStartEdit = (user: AdminUser) => {
     setFormData({
-      uid: user.uid,
+      uid: user.id,
       email: user.email || '',
       displayName: user.displayName || '',
       role: user.role,
@@ -112,38 +105,57 @@ export default function AdminUsersPage() {
     setIsDialogOpen(true);
   };
 
-  const handleSave = () => {
-    if (!firestore || !formData.uid || !formData.email) {
-      toast({ variant: "destructive", title: "请填写 UID 和 邮箱" });
+  const handleSave = async () => {
+    if (!formData.email) {
+      toast({ variant: "destructive", title: "请填写邮箱" });
       return;
     }
 
-    setDocumentNonBlocking(doc(firestore, 'admins', formData.uid), {
-      ...formData,
-      updatedAt: serverTimestamp()
-    }, { merge: true });
+    try {
+      const url = editingUser ? `/api/users/${editingUser.id}` : '/api/users';
+      const method = editingUser ? 'PUT' : 'POST';
+      
+      await fetch(url, {
+        method,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email: formData.email,
+          name: formData.displayName,
+          role: formData.role,
+          status: formData.status
+        }),
+      });
 
-    setIsDialogOpen(false);
-    resetForm();
-    toast({ title: "管理员授权已更新" });
+      setIsDialogOpen(false);
+      resetForm();
+      mutateAdmins();
+      toast({ title: editingUser ? "管理员授权已更新" : "新管理员已创建" });
+    } catch (e) {
+      toast({ variant: "destructive", title: "保存失败" });
+    }
   };
 
-  const toggleStatus = (user: AdminUser) => {
-    if (!firestore) return;
+  const toggleStatus = async (user: AdminUser) => {
     const newStatus = user.status === 'active' ? 'disabled' : 'active';
-    setDocumentNonBlocking(doc(firestore, 'admins', user.uid), {
-      status: newStatus,
-      updatedAt: serverTimestamp()
-    }, { merge: true });
-    toast({ title: newStatus === 'active' ? "账号已激活" : "账号已封禁" });
+    try {
+      await fetch(`/api/users/${user.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: newStatus }),
+      });
+      mutateAdmins();
+      toast({ title: newStatus === 'active' ? "账号已激活" : "账号已封禁" });
+    } catch (e) {
+      toast({ variant: "destructive", title: "状态更新失败" });
+    }
   };
 
   const filteredAdmins = admins?.filter(a => {
     const s = searchQuery.toLowerCase();
     const emailMatch = (a.email || '').toLowerCase().includes(s);
-    const nameMatch = (a.displayName || '').toLowerCase().includes(s);
-    const uidMatch = (a.uid || '').includes(searchQuery);
-    return emailMatch || nameMatch || uidMatch;
+    const nameMatch = (a.displayName || a.name || '').toLowerCase().includes(s);
+    const idMatch = (a.id || '').includes(searchQuery);
+    return emailMatch || nameMatch || idMatch;
   });
 
   return (
@@ -182,19 +194,19 @@ export default function AdminUsersPage() {
                 <div className="bg-white/80 p-6 rounded-2xl border border-primary/10 space-y-3 shadow-sm group hover:border-primary/30 transition-colors">
                   <div className="flex items-center gap-3">
                     <div className="h-7 w-7 rounded-full flex items-center justify-center bg-primary text-white text-xs font-bold shadow-lg shadow-primary/20">1</div>
-                    <span className="text-sm font-bold text-slate-900">云端身份鉴权</span>
+                    <span className="text-sm font-bold text-slate-900">填写成员信息</span>
                   </div>
                   <p className="text-[11px] text-slate-500 leading-relaxed font-medium">
-                    访问 <a href="https://console.firebase.google.com/" target="_blank" className="text-primary hover:underline font-bold inline-flex items-center gap-1">Firebase 控制台 <ExternalLink className="h-2.5 w-2.5" /></a>，在 Auth 模块预先注册账号并提取其专属 <b>UID</b>。
+                    在此处输入新成员的邮箱和姓名。系统将为其预留权限席位。
                   </p>
                 </div>
                 <div className="bg-white/80 p-6 rounded-2xl border border-primary/10 space-y-3 shadow-sm group hover:border-primary/30 transition-colors">
                   <div className="flex items-center gap-3">
                     <div className="h-7 w-7 rounded-full flex items-center justify-center bg-primary text-white text-xs font-bold shadow-lg shadow-primary/20">2</div>
-                    <span className="text-sm font-bold text-slate-900">系统权限握手</span>
+                    <span className="text-sm font-bold text-slate-900">成员激活登录</span>
                   </div>
                   <p className="text-[11px] text-slate-500 leading-relaxed font-medium">
-                    在此处填入 <b>UID</b> 并指定角色。系统将完成最终的权限链条闭环，激活该成员的后台管理契约。
+                    新成员使用指定邮箱登录系统后，将自动获得预设的管理权限。
                   </p>
                 </div>
               </div>
@@ -222,7 +234,7 @@ export default function AdminUsersPage() {
         <div className="relative flex-1 group">
           <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 group-focus-within:text-primary transition-colors" />
           <Input 
-            placeholder="通过 姓名、邮箱 或 28位 UID 实时检索成员..." 
+            placeholder="通过 姓名、邮箱 或 ID 实时检索成员..." 
             className="pl-12 border-none bg-slate-50/50 h-12 text-sm rounded-xl focus-visible:ring-0 font-medium placeholder:text-slate-400" 
             value={searchQuery}
             onChange={e => setSearchQuery(e.target.value)}
@@ -246,8 +258,8 @@ export default function AdminUsersPage() {
               <TableRow><TableCell colSpan={5} className="h-60 text-center"><Loader2 className="h-10 w-10 animate-spin mx-auto opacity-10" /></TableCell></TableRow>
             ) : filteredAdmins?.length === 0 ? (
               <TableRow><TableCell colSpan={5} className="h-60 text-center text-xs text-slate-400 italic uppercase font-bold tracking-widest">NO MATCHING ADMINS FOUND</TableCell></TableRow>
-            ) : filteredAdmins?.map((admin) => (
-              <TableRow key={admin.uid} className="group hover:bg-slate-50/80 transition-all duration-300 border-slate-50">
+            ) : filteredAdmins?.map((admin: any) => (
+              <TableRow key={admin.id} className="group hover:bg-slate-50/80 transition-all duration-300 border-slate-50">
                 <TableCell className="pl-8 py-6">
                   <Avatar className="h-12 w-12 border-2 border-white shadow-xl">
                     <AvatarImage src={admin.avatarUrl} className="object-cover" />
@@ -258,11 +270,11 @@ export default function AdminUsersPage() {
                 </TableCell>
                 <TableCell className="py-6">
                   <div className="flex flex-col gap-1.5">
-                    <span className="font-bold text-sm text-slate-900">{admin.displayName || 'Unnamed Protocol Entity'}</span>
+                    <span className="font-bold text-sm text-slate-900">{admin.name || 'Unnamed Protocol Entity'}</span>
                     <span className="text-xs text-slate-400 font-medium">{admin.email}</span>
                     <div className="flex items-center gap-2 mt-1.5">
-                      <code className="text-[9px] font-mono opacity-30 uppercase bg-slate-100 px-2 py-0.5 rounded-md">ID: {admin.uid.substring(0, 12)}...</code>
-                      <Button variant="ghost" size="icon" className="h-6 w-6 rounded-lg opacity-0 group-hover:opacity-60 hover:bg-primary/10 hover:text-primary transition-all" onClick={() => { navigator.clipboard.writeText(admin.uid); toast({ title: "UID 已复制至剪贴板" }); }}><Key className="h-3 w-3" /></Button>
+                      <code className="text-[9px] font-mono opacity-30 uppercase bg-slate-100 px-2 py-0.5 rounded-md">ID: {admin.id.substring(0, 12)}...</code>
+                      <Button variant="ghost" size="icon" className="h-6 w-6 rounded-lg opacity-0 group-hover:opacity-60 hover:bg-primary/10 hover:text-primary transition-all" onClick={() => { navigator.clipboard.writeText(admin.id); toast({ title: "ID 已复制至剪贴板" }); }}><Key className="h-3 w-3" /></Button>
                     </div>
                   </div>
                 </TableCell>
@@ -302,7 +314,7 @@ export default function AdminUsersPage() {
                     >
                       <ShieldAlert className="h-4 w-4" />
                     </Button>
-                    <Button variant="ghost" size="icon" className="h-10 w-10 rounded-full text-slate-300 hover:text-red-600 hover:bg-red-50 transition-all" onClick={() => confirm('彻底移除该管理员的系统授权吗？') && deleteDocumentNonBlocking(doc(firestore!, 'admins', admin.uid))} title="彻底移除授权项"><Trash2 className="h-4 w-4" /></Button>
+                    <Button variant="ghost" size="icon" className="h-10 w-10 rounded-full text-slate-300 hover:text-red-600 hover:bg-red-50 transition-all" onClick={async () => { if(confirm('彻底移除该管理员的系统授权吗？')) { await fetch(`/api/users/${admin.id}`, { method: 'DELETE' }); mutateAdmins(); toast({ title: "授权已移除" }); } }} title="彻底移除授权项"><Trash2 className="h-4 w-4" /></Button>
                   </div>
                 </TableCell>
               </TableRow>
@@ -326,19 +338,19 @@ export default function AdminUsersPage() {
 
           <div className="p-10 space-y-8 bg-transparent">
             <div className="space-y-6">
-              <div className="space-y-3">
-                <Label className="text-[11px] font-bold uppercase tracking-[0.2em] text-slate-400 pl-1 flex items-center justify-between">
-                  Unique Identity (UID)
-                  <span className="text-[9px] text-primary/60 lowercase font-medium italic">required</span>
-                </Label>
-                <Input 
-                  disabled={!!editingUser} 
-                  placeholder="粘贴 Firebase 控制台生成的 28位 UID..." 
-                  value={formData.uid}
-                  onChange={e => setFormData({...formData, uid: e.target.value})}
-                  className="h-14 rounded-2xl bg-slate-50 border-none font-mono text-xs focus-visible:ring-2 focus-visible:ring-primary/20 shadow-inner"
-                />
-              </div>
+              {!editingUser && (
+                <div className="space-y-3">
+                  <Label className="text-[11px] font-bold uppercase tracking-[0.2em] text-slate-400 pl-1 flex items-center justify-between">
+                    展示名称
+                  </Label>
+                  <Input 
+                    placeholder="张工 / Alex" 
+                    value={formData.displayName}
+                    onChange={e => setFormData({...formData, displayName: e.target.value})}
+                    className="h-14 rounded-2xl bg-slate-50 border-none text-sm font-medium focus-visible:ring-2 focus-visible:ring-primary/20 shadow-inner"
+                  />
+                </div>
+              )}
               <div className="space-y-3">
                 <Label className="text-[11px] font-bold uppercase tracking-[0.2em] text-slate-400 pl-1 flex items-center justify-between">
                   电子邮箱地址

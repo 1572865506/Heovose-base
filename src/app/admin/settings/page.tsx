@@ -1,8 +1,7 @@
 "use client";
 
 import { useState, useEffect } from 'react';
-import { useFirestore, useDoc, useMemoFirebase } from '@/firebase';
-import { doc, serverTimestamp } from 'firebase/firestore';
+import { useLocalDoc } from '@/hooks/use-local-doc';
 import { 
   Card, 
   CardContent, 
@@ -22,9 +21,7 @@ import { Button } from '@/components/ui/button';
 import { Settings2, Save, Globe, ShieldCheck, Loader2, Cloud, Database, Cpu, Info } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
-import { setDocumentNonBlocking } from '@/firebase/non-blocking-updates';
 import { useToast } from '@/hooks/use-toast';
-import { firebaseConfig } from '@/firebase/config';
 
 interface LanguageOption {
   code: string;
@@ -43,16 +40,9 @@ const GlassCard = ({ children, className }: { children: React.ReactNode, classNa
 );
 
 export default function AdminSettingsPage() {
-  const firestore = useFirestore();
   const { toast } = useToast();
   const [isSaving, setIsSaving] = useState(false);
-
-  const langConfigRef = useMemoFirebase(() => 
-    firestore ? doc(firestore, 'settings', 'languages') : null, 
-    [firestore]
-  );
-  
-  const { data: langSettings, isLoading: isLangLoading } = useDoc<AppConfig>(langConfigRef);
+  const { data: langSettings, isLoading: isLangLoading, mutate: mutateLangs } = useLocalDoc<AppConfig>('settings', 'languages');
   
   const [formData, setFormData] = useState<AppConfig>({
     supportedLanguages: [],
@@ -68,19 +58,21 @@ export default function AdminSettingsPage() {
     }
   }, [langSettings]);
 
-  const handleSave = () => {
-    if (!firestore) return;
+  const handleSave = async () => {
     setIsSaving(true);
-    
-    setDocumentNonBlocking(doc(firestore, 'settings', 'languages'), {
-      ...formData,
-      updatedAt: serverTimestamp()
-    }, { merge: true });
-
-    setTimeout(() => {
+    try {
+      await fetch('/api/settings/languages', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(formData),
+      });
+      mutateLangs();
       setIsSaving(false);
       toast({ title: "系统配置已保存" });
-    }, 800);
+    } catch (e) {
+      setIsSaving(false);
+      toast({ variant: "destructive", title: "保存失败" });
+    }
   };
 
   return (
@@ -166,7 +158,7 @@ export default function AdminSettingsPage() {
                       </div>
                    </div>
                    <p className="text-[10px] text-slate-400 italic font-medium leading-relaxed px-1">
-                    当前正在监听外部公共请求。若需维护请在 Firebase 控制台调整 Rules。
+                    当前正在监听外部公共请求。权限由 <b>Auth.js</b> 与后端路由守卫共同保障。
                   </p>
                 </div>
               </div>
@@ -194,16 +186,16 @@ export default function AdminSettingsPage() {
                   </div>
                   <div className="space-y-4">
                     <div className="flex justify-between items-center pb-3 border-b border-slate-100">
-                      <span className="text-xs font-bold text-slate-400 uppercase">Project ID</span>
-                      <code className="text-sm font-mono font-bold text-slate-900">{firebaseConfig.projectId}</code>
+                      <span className="text-xs font-bold text-slate-400 uppercase">Database</span>
+                      <code className="text-sm font-mono font-bold text-slate-900">PostgreSQL (Prisma)</code>
                     </div>
                     <div className="flex justify-between items-center pb-3 border-b border-slate-100">
-                      <span className="text-xs font-bold text-slate-400 uppercase">App Internal ID</span>
-                      <span className="text-sm font-mono text-slate-400">...{firebaseConfig.appId.split(':').pop()?.slice(-8)}</span>
+                      <span className="text-xs font-bold text-slate-400 uppercase">Object Storage</span>
+                      <span className="text-sm font-mono font-bold text-slate-900">MinIO (S3-Compatible)</span>
                     </div>
                     <div className="flex justify-between items-center">
-                      <span className="text-xs font-bold text-slate-400 uppercase">Deployed Region</span>
-                      <Badge variant="outline" className="text-[9px] font-bold uppercase border-primary/20 text-primary bg-primary/5 h-6 rounded-full px-3">Auto (Edge)</Badge>
+                      <span className="text-xs font-bold text-slate-400 uppercase">Auth Provider</span>
+                      <Badge variant="outline" className="text-[9px] font-bold uppercase border-primary/20 text-primary bg-primary/5 h-6 rounded-full px-3">Auth.js v5</Badge>
                     </div>
                   </div>
                 </div>
@@ -253,7 +245,7 @@ export default function AdminSettingsPage() {
                   </div>
                   <div className="flex justify-between items-center">
                      <span className="text-[10px] font-bold text-white/30 uppercase tracking-widest">DB Cluster</span>
-                     <Badge className="bg-primary text-white border-none h-6 px-3 text-[9px] font-bold uppercase shadow-lg shadow-primary/20">FIRESTORE CONNECTED</Badge>
+                     <Badge className="bg-primary text-white border-none h-6 px-3 text-[9px] font-bold uppercase shadow-lg shadow-primary/20">POSTGRESQL CONNECTED</Badge>
                   </div>
                </div>
 

@@ -7,8 +7,7 @@ import { Locale, translations } from "@/lib/translations";
 import { SectionHeading } from "./SectionHeading";
 import { cn } from "@/lib/utils";
 import { Play, Pause, Loader2 } from "lucide-react";
-import { useFirestore, useCollection, useMemoFirebase } from '@/firebase';
-import { collection, query, orderBy } from 'firebase/firestore';
+import { useLocalCollection } from '@/hooks/use-local-collection';
 
 interface StepData {
   id: string;
@@ -21,7 +20,6 @@ interface StepData {
 }
 
 export function ProductionProcess({ locale }: { locale: Locale }) {
-  const firestore = useFirestore();
   const [activeStep, setActiveStep] = useState(0);
   const [subImageIndex, setSubImageIndex] = useState(0);
   const [isPlaying, setIsPlaying] = useState(true);
@@ -30,12 +28,8 @@ export function ProductionProcess({ locale }: { locale: Locale }) {
   
   const AUTOPLAY_DELAY = 4000;
 
-  // 1. 从 Firestore 获取动态数据
-  const stepsQuery = useMemoFirebase(() => 
-    firestore ? query(collection(firestore, 'productionSteps'), orderBy('order', 'asc')) : null, 
-    [firestore]
-  );
-  const { data: remoteSteps, isLoading } = useCollection<StepData>(stepsQuery);
+  // 1. 从 API 获取动态数据
+  const { data: remoteSteps, isLoading } = useLocalCollection<StepData>('productionSteps');
 
   // 2. 数据转换逻辑
   const steps = useMemo(() => {

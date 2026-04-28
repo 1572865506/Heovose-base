@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useMemo } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
@@ -38,9 +38,8 @@ interface NavbarProps {
   setLocale: (locale: Locale) => void;
 }
 
-import { useMemo } from 'react';
-import { useFirestore, useCollection, useDoc, useMemoFirebase } from '@/firebase';
-import { collection, doc } from 'firebase/firestore';
+import { useLocalDoc } from '@/hooks/use-local-doc';
+import { useLocalCollection } from '@/hooks/use-local-collection';
 import { LayoutGrid } from 'lucide-react';
 
 import { useTranslations } from '@/hooks/use-translations';
@@ -48,7 +47,6 @@ import { useTranslations } from '@/hooks/use-translations';
 export function Navbar({ locale, setLocale }: NavbarProps) {
   const { t: tr } = useTranslations(locale);
   const pathname = usePathname();
-  const firestore = useFirestore();
   
   const [isScrolled, setIsScrolled] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -92,15 +90,11 @@ export function Navbar({ locale, setLocale }: NavbarProps) {
   const isNavbarActive = !isTransparentHeaderPage || isScrolled || activeMenu !== null || mobileMenuOpen;
 
   // 1. Fetch dynamic categories
-  const catsQuery = useMemoFirebase(() => firestore ? collection(firestore, 'productCategories') : null, [firestore]);
-  const transQuery = useMemoFirebase(() => firestore ? collection(firestore, 'localizedStrings') : null, [firestore]);
-
-  const { data: remoteCats } = useCollection<any>(catsQuery);
-  const { data: allTranslations } = useCollection<any>(transQuery);
-
+  const { data: remoteCats } = useLocalCollection<any>('productCategories');
+  const { data: allTranslations } = useLocalCollection<any>('localizedStrings');
+  
   // 2. Fetch dynamic navigation settings
-  const navSettingsRef = useMemoFirebase(() => firestore ? doc(firestore, 'settings', 'navigation') : null, [firestore]);
-  const { data: navSettings } = useDoc<any>(navSettingsRef);
+  const { data: navSettings } = useLocalDoc<any>('settings', 'navigation');
 
   const getT = (id: string, field: string = locale) => {
     const entry = allTranslations?.find((item: any) => item.id === id);

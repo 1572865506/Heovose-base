@@ -17,12 +17,10 @@ import {
 } from "@/components/ui/carousel";
 import Autoplay from "embla-carousel-autoplay";
 import { cn } from "@/lib/utils";
-import { useFirestore, useCollection, useMemoFirebase } from '@/firebase';
-import { collection, query, where, limit } from 'firebase/firestore';
+import { useLocalCollection } from '@/hooks/use-local-collection';
 
 export function ProductGallery({ locale }: { locale: Locale }) {
   const t = translations[locale].products;
-  const firestore = useFirestore();
   const [api, setApi] = useState<CarouselApi>();
   const [current, setCurrent] = useState(0);
   const [count, setCount] = useState(0);
@@ -34,17 +32,8 @@ export function ProductGallery({ locale }: { locale: Locale }) {
   );
 
   // 1. Fetch dynamic data
-  const prodsQuery = useMemoFirebase(() => 
-    firestore ? query(collection(firestore, 'products'), where('status', '==', 'published'), limit(8)) : null, 
-    [firestore]
-  );
-  const transQuery = useMemoFirebase(() => 
-    firestore ? collection(firestore, 'localizedStrings') : null, 
-    [firestore]
-  );
-
-  const { data: remoteProducts, isLoading } = useCollection<any>(prodsQuery);
-  const { data: allTranslations } = useCollection<any>(transQuery);
+  const { data: remoteProducts, isLoading } = useLocalCollection<any>('products?status=published&limit=8');
+  const { data: allTranslations } = useLocalCollection<any>('localizedStrings');
 
   const getT = (id: string) => {
     const entry = allTranslations?.find((item: any) => item.id === id);

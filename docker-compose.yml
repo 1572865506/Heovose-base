@@ -1,0 +1,31 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: heovose-db
+    environment:
+      POSTGRES_USER: heovose
+      POSTGRES_PASSWORD: heovose_password
+      POSTGRES_DB: heovose_elevate
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    restart: always
+
+  minio:
+    image: minio/minio
+    container_name: heovose-storage
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    environment:
+      MINIO_ROOT_USER: minioadmin
+      MINIO_ROOT_PASSWORD: minio_password
+    volumes:
+      - minio_data:/data
+    command: server /data --console-address ":9001"
+    restart: always
+
+volumes:
+  postgres_data:
+  minio_data:

@@ -3,8 +3,8 @@
 
 import { useEffect, useState } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
-import { useUser, useAuth, useFirestore, useMemoFirebase, useDoc } from '@/firebase';
-import { doc } from 'firebase/firestore';
+import { useSession, signOut } from 'next-auth/react';
+import { useLocalDoc } from '@/hooks/use-local-doc';
 import { 
   SidebarProvider, 
   Sidebar, 
@@ -62,35 +62,23 @@ import {
 import { useToast } from '@/hooks/use-toast';
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
-  const { user, isUserLoading } = useUser();
-  const firestore = useFirestore();
-  const auth = useAuth();
+  const { data: session, status } = useSession();
+  const user = session?.user;
   const router = useRouter();
   const pathname = usePathname();
   const { toast } = useToast();
 
-  const adminDocRef = useMemoFirebase(() => {
-    if (!firestore || !user?.uid) return null;
-    return doc(firestore, 'admins', user.uid);
-  }, [firestore, user?.uid]);
+  const { data: adminData, isLoading: isAdminDataLoading } = useLocalDoc<any>('profile', '');
+  const { data: aiConfig } = useLocalDoc<any>('settings', 'ai');
 
-  const { data: adminData, isLoading: isAdminDataLoading, error: adminError } = useDoc<any>(adminDocRef);
-
-  const aiConfigRef = useMemoFirebase(() => {
-    if (!firestore || !adminData) return null;
-    return doc(firestore, 'settings', 'ai');
-  }, [firestore, adminData]);
-
-  const { data: aiConfig } = useDoc<any>(aiConfigRef);
-
-  const isDeterminingAccess = isUserLoading || (user && isAdminDataLoading);
-  const isUnauthorized = !isDeterminingAccess && user && !adminData && pathname !== '/admin/login';
+  const isDeterminingAccess = status === 'loading' || (session && isAdminDataLoading);
+  const isUnauthorized = !isDeterminingAccess && session && !adminData && pathname !== '/admin/login';
 
   useEffect(() => {
-    if (!isUserLoading && !user && pathname !== '/admin/login') {
+    if (status !== 'loading' && !session && pathname !== '/admin/login') {
       router.push('/admin/login');
     }
-  }, [user, isUserLoading, pathname, router]);
+  }, [session, status, pathname, router]);
 
   if (isDeterminingAccess) {
     return (
@@ -126,12 +114,6 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
               <p className="text-muted-foreground text-sm leading-relaxed">
                 您的账号 <span className="font-bold text-primary">{user?.email}</span> 已通过 SSO 验证，但在管理员白名单中未找到对应记录。
               </p>
-              {adminError && (
-                <div className="p-4 bg-destructive/5 border border-destructive/10 rounded-xl text-[10px] font-mono text-destructive flex items-center gap-3">
-                   <AlertCircle className="h-4 w-4 shrink-0" />
-                   <span>{adminError.message}</span>
-                </div>
-              )}
             </div>
 
             <div className="p-8 bg-primary/[0.02] rounded-3xl border border-primary/10 space-y-6">
@@ -140,16 +122,16 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
               </h4>
               <div className="space-y-4">
                 <div className="space-y-2">
-                  <span className="text-[9px] text-muted-foreground font-bold uppercase tracking-widest">您的唯一身份标识 (UID)</span>
+                  <span className="text-[9px] text-muted-foreground font-bold uppercase tracking-widest">您的唯一身份标识 (ID)</span>
                   <div className="flex items-center justify-between bg-white/60 border border-primary/10 p-3 rounded-xl group hover:border-primary/40 transition-all">
-                    <code className="text-[11px] font-mono text-primary font-bold tracking-tight">{user?.uid}</code>
+                    <code className="text-[11px] font-mono text-primary font-bold tracking-tight">{user?.id}</code>
                     <Button 
                       variant="ghost" 
                       size="icon" 
                       className="h-8 w-8 rounded-lg hover:bg-primary/10 text-primary" 
                       onClick={() => {
-                        navigator.clipboard.writeText(user?.uid || '');
-                        toast({ title: "UID 已复制", description: "请确保 Firestore /admins/ 集合中存在此文档。" });
+                        navigator.clipboard.writeText(user?.id || '');
+                        toast({ title: "ID 已复制", description: "请确保数据库中存在此用户记录。" });
                       }}
                     >
                       <Key className="h-4 w-4" />
@@ -161,7 +143,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
             <div className="flex gap-4 pt-4">
               <Button variant="outline" className="flex-1 h-14 rounded-2xl font-bold uppercase tracking-widest text-[10px] border-border/60 hover:bg-muted/10" onClick={() => window.location.reload()}><RefreshCw className="mr-2 h-4 w-4" /> 重新同步权限</Button>
-              <Button className="flex-1 h-14 rounded-2xl font-bold uppercase tracking-widest text-[10px] shadow-lg shadow-primary/20" onClick={() => auth.signOut()}><LogOut className="mr-2 h-4 w-4" /> 退出当前账号</Button>
+              <Button className="flex-1 h-14 rounded-2xl font-bold uppercase tracking-widest text-[10px] shadow-lg shadow-primary/20" onClick={() => signOut()}><LogOut className="mr-2 h-4 w-4" /> 退出当前账号</Button>
             </div>
           </AlertDescription>
         </Alert>
@@ -170,7 +152,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   }
 
   if (pathname === '/admin/login') return <>{children}</>;
-  if (!user || !adminData) return null;
+  if (!session || !adminData) return null;
 
   const isSuperAdmin = adminData.role === 'superadmin';
 
@@ -325,14 +307,14 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                 <DropdownMenuTrigger asChild>
                   <button className="flex items-center gap-4 hover:opacity-80 transition-all outline-none group pl-2">
                     <div className="hidden md:flex flex-col items-end">
-                      <span className="text-[12px] font-bold text-primary group-hover:text-primary/70 transition-colors">{adminData.displayName || user.email?.split('@')[0]}</span>
-                      <span className="text-xs text-muted-foreground uppercase tracking-[0.15em] font-bold opacity-40">{adminData.role === 'superadmin' ? 'SuperAdmin' : 'Editor'}</span>
+                      <span className="text-[12px] font-bold text-primary group-hover:text-primary/70 transition-colors">{adminData.name || user?.email?.split('@')[0]}</span>
+                      <span className="text-xs text-muted-foreground uppercase tracking-[0.15em] font-bold opacity-40">{(adminData as any).role === 'superadmin' ? 'SuperAdmin' : 'Editor'}</span>
                     </div>
                     <div className="relative">
                       <Avatar className="h-10 w-10 rounded-2xl shadow-lg border border-border/40 ring-0 group-data-[state=open]:ring-4 group-data-[state=open]:ring-primary/10 transition-all overflow-hidden bg-white">
-                        {adminData.avatarUrl ? <AvatarImage src={adminData.avatarUrl} className="object-cover" /> : null}
+                        {adminData.image ? <AvatarImage src={adminData.image} className="object-cover" /> : null}
                         <AvatarFallback className="bg-primary/5 text-primary text-xs font-bold uppercase">
-                          {(adminData.displayName || user.email)?.[0]}
+                          {(adminData.name || user?.email)?.[0]}
                         </AvatarFallback>
                       </Avatar>
                       <div className="absolute -bottom-1 -right-1 h-3 w-3 bg-green-500 border-2 border-white rounded-full shadow-sm" />
@@ -342,8 +324,8 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                 <DropdownMenuContent align="end" sideOffset={16} className="w-64 p-2 rounded-2xl shadow-[0_30px_60px_-15px_rgba(0,0,0,0.15)] border-border/40 bg-white/90 backdrop-blur-2xl ring-1 ring-black/5">
                   <DropdownMenuLabel className="px-4 py-4">
                     <div className="flex flex-col space-y-1">
-                      <p className="text-[12px] font-bold text-primary">{adminData.displayName || 'Administrator'}</p>
-                      <p className="text-[10px] text-muted-foreground font-medium truncate opacity-60">{user.email}</p>
+                      <p className="text-[12px] font-bold text-primary">{adminData.name || 'Administrator'}</p>
+                      <p className="text-[10px] text-muted-foreground font-medium truncate opacity-60">{user?.email}</p>
                     </div>
                   </DropdownMenuLabel>
                   <DropdownMenuSeparator className="mx-2 bg-border/40" />
@@ -360,7 +342,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                     </Link>
                   </DropdownMenuItem>
                   <DropdownMenuSeparator className="mx-2 bg-border/40" />
-                  <DropdownMenuItem className="rounded-xl px-4 py-3 cursor-pointer text-destructive focus:bg-destructive/5 focus:text-destructive transition-colors" onClick={() => auth.signOut()}>
+                  <DropdownMenuItem className="rounded-xl px-4 py-3 cursor-pointer text-destructive focus:bg-destructive/5 focus:text-destructive transition-colors" onClick={() => signOut()}>
                     <div className="flex items-center gap-4">
                       <LogOut className="h-4 w-4" />
                       <span className="text-xs font-bold uppercase tracking-widest">注销登录</span>

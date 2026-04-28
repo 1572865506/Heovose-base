@@ -9,21 +9,16 @@ import { PlaceHolderImages } from "@/lib/placeholder-images";
 import { SectionHeading } from "./SectionHeading";
 import { cn } from "@/lib/utils";
 import { ArrowUpRight } from "lucide-react";
-import { useFirestore, useCollection, useMemoFirebase } from '@/firebase';
-import { collection } from 'firebase/firestore';
+import { useLocalCollection } from '@/hooks/use-local-collection';
 
 import { useTranslations } from '@/hooks/use-translations';
 
 export function ProductBento({ locale }: { locale: Locale }) {
   const { t: tr } = useTranslations(locale);
-  const firestore = useFirestore();
 
   // Fetch dynamic categories
-  const catsQuery = useMemoFirebase(() => firestore ? collection(firestore, 'productCategories') : null, [firestore]);
-  const transQuery = useMemoFirebase(() => firestore ? collection(firestore, 'localizedStrings') : null, [firestore]);
-
-  const { data: remoteCats, isLoading } = useCollection<any>(catsQuery);
-  const { data: allTranslations } = useCollection<any>(transQuery);
+  const { data: remoteCats, isLoading } = useLocalCollection<any>('productCategories');
+  const { data: allTranslations } = useLocalCollection<any>('localizedStrings');
 
   const getT = (id: string) => {
     const entry = allTranslations?.find((item: any) => item.id === id);

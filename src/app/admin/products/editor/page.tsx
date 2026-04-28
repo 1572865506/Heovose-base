@@ -2,8 +2,9 @@
 
 import React, { useState, useEffect, useMemo, Suspense, useRef, use } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { useUser, useFirestore, useDoc, useCollection, useMemoFirebase } from '@/firebase';
-import { doc, collection, serverTimestamp, query, orderBy } from 'firebase/firestore';
+import { useSession } from 'next-auth/react';
+import { useLocalDoc } from '@/hooks/use-local-doc';
+import { useLocalCollection } from '@/hooks/use-local-collection';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -67,7 +68,6 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { Badge } from '@/components/ui/badge';
-import { setDocumentNonBlocking, deleteDocumentNonBlocking, updateDocumentNonBlocking } from '@/firebase/non-blocking-updates';
 import { Label } from '@/components/ui/label';
 import Image from 'next/image';
 import { useToast } from '@/hooks/use-toast';
@@ -201,14 +201,13 @@ function robustJsonParse(rawStr: string) {
 function ProductEditorContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const firestore = useFirestore();
+  const { data: session } = useSession();
+  const user = session?.user;
   const { toast } = useToast();
-  const fileInputRef = useRef<HTMLInputElement>(null);
-  
+  const productId = searchParams.get('id');
   const zhEditorRef = useRef<any>(null);
   const targetEditorRef = useRef<any>(null);
-  
-  const productId = searchParams.get('id');
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const isEditing = !!productId;
 
   const [formData, setFormData] = useState({
@@ -247,23 +246,14 @@ function ProductEditorContent() {
   const [pickerSearch, setPickerSearch] = useState('');
   const [selectedPickerUrls, setSelectedPickerUrls] = useState<Set<string>>(new Set());
 
-  const prodRef = useMemoFirebase(() => (firestore && productId) ? doc(firestore, 'products', productId) : null, [firestore, productId]);
-  const catsQuery = useMemoFirebase(() => firestore ? collection(firestore, 'productCategories') : null, [firestore]);
-  const transQuery = useMemoFirebase(() => firestore ? collection(firestore, 'localizedStrings') : null, [firestore]);
-  const assetsQuery = useMemoFirebase(() => firestore ? query(collection(firestore, 'galleryAssets'), orderBy('createdAt', 'desc')) : null, [firestore]);
-  const allProdsQuery = useMemoFirebase(() => firestore ? collection(firestore, 'products') : null, [firestore]);
-  const aiRef = useMemoFirebase(() => firestore ? doc(firestore, 'settings', 'ai') : null, [firestore]);
-  const langRef = useMemoFirebase(() => firestore ? doc(firestore, 'settings', 'languages') : null, [firestore]);
-  const templatesQuery = useMemoFirebase(() => firestore ? query(collection(firestore, 'specTemplates'), orderBy('createdAt', 'desc')) : null, [firestore]);
-
-  const { data: product, isLoading: isProdLoading } = useDoc<Product>(prodRef);
-  const { data: categories } = useCollection<ProductCategory>(catsQuery);
-  const { data: translations } = useCollection<LocalizedString>(transQuery);
-  const { data: galleryAssets } = useCollection<GalleryAsset>(assetsQuery);
-  const { data: allProducts } = useCollection<Product>(allProdsQuery);
-  const { data: aiConfig } = useDoc<AiConfig>(aiRef);
-  const { data: langConfig } = useDoc<AppConfig>(langRef);
-  const { data: specTemplates } = useCollection<SpecTemplate>(templatesQuery);
+  const { data: product, isLoading: isProdLoading } = useLocalDoc<Product>('products', productId || 'new');
+  const { data: categories } = useLocalCollection<ProductCategory>('productCategories');
+  const { data: translations } = useLocalCollection<LocalizedString>('localizedStrings');
+  const { data: galleryAssets } = useLocalCollection<GalleryAsset>('galleryAssets');
+  const { data: allProducts } = useLocalCollection<Product>('products');
+  const { data: aiConfig } = useLocalDoc<AiConfig>('settings', 'ai');
+  const { data: langConfig } = useLocalDoc<AppConfig>('settings', 'languages');
+  const { data: specTemplates, mutate: mutateTemplates } = useLocalCollection<SpecTemplate>('specTemplates');
 
   const supportedLangs = useMemo(() => langConfig?.supportedLanguages || [{ code: 'zh', label: '中文' }, { code: 'en', label: 'English' }], [langConfig]);
 
@@ -390,8 +380,8 @@ function ProductEditorContent() {
     }
   }, [formData.id, allProducts, isEditing]);
 
-  const handleSave = () => {
-    if (!firestore || !formData.id || !formData.categoryId) {
+  const handleSave = async () => {
+    if (!formData.id || !formData.categoryId) {
       toast({ variant: "destructive", title: "请填写完整产品 ID 和分类" });
       return;
     }
@@ -400,55 +390,63 @@ function ProductEditorContent() {
       return;
     }
 
-    const totalDataSize = JSON.stringify(formData).length;
-    if (totalDataSize > 900000) {
-      toast({ 
-        variant: "destructive", 
-        title: "文档体积过大 (接近 1MB)", 
-        description: "产品详情中包含的 Base64 图片过多或过大。请先在素材库上传并压缩图片，然后再引用，或减少图片数量。" 
-      });
-      return;
-    }
+    try {
+      const saveLang = async (en: any, zh: any, defaultId: string) => {
+        await fetch(`/api/localizedStrings/${defaultId}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ id: defaultId, en: String(en || '').trim(), zh: String(zh || '').trim() }),
+        });
+        return defaultId;
+      };
 
-    const saveLang = (en: any, zh: any, defaultId: string) => {
-      setDocumentNonBlocking(doc(firestore, 'localizedStrings', defaultId), { 
-        id: defaultId, en: String(en || '').trim(), zh: String(zh || '').trim(), updatedAt: serverTimestamp() 
-      }, { merge: true });
-      return defaultId;
-    };
-    const nameId = saveLang(formData.nameEn, formData.nameZh, `prod_name_${formData.id}`);
-    const descId = saveLang(formData.descEn, formData.descZh, `prod_desc_${formData.id}`);
-    const advantageIds = formData.advantages.filter(a => a.zh || a.en).map((adv, idx) => 
-      saveLang(adv.en, adv.zh, `prod_adv_${formData.id}_${idx}`)
-    );
-    const savedSpecGroups = formData.specGroups.map((group, gIdx) => {
-      const titleId = saveLang(group.titleEn, group.titleZh, `prod_spec_group_${formData.id}_${gIdx}`);
-      const items = group.items.map((item, iIdx) => ({
-        labelId: saveLang(item.labelEn, item.labelZh, `prod_spec_lbl_${formData.id}_${gIdx}_${iIdx}`),
-        valueId: saveLang(item.valueEn, item.valueZh, `prod_spec_val_${formData.id}_${gIdx}_${iIdx}`)
-      }));
-      return { titleId, items };
-    });
-    setDocumentNonBlocking(doc(firestore, 'products', formData.id), {
-      id: formData.id, 
-      nameTextId: nameId, 
-      descriptionTextId: descId, 
-      localizedDetails: formData.localizedDetails,
-      advantageTextIds: advantageIds, 
-      specGroups: savedSpecGroups, 
-      mainImageUrl: formData.mainImageUrl, 
-      productCategoryId: formData.categoryId, 
-      galleryImageUrls: formData.galleryUrls.filter(Boolean), 
-      status: formData.status, 
-      updatedAt: serverTimestamp()
-    }, { merge: true });
-    toast({ title: "产品已保存" });
-    router.push('/admin/products');
+      const nameId = await saveLang(formData.nameEn, formData.nameZh, `prod_name_${formData.id}`);
+      const descId = await saveLang(formData.descEn, formData.descZh, `prod_desc_${formData.id}`);
+      
+      const advantageIds = await Promise.all(
+        formData.advantages.filter(a => a.zh || a.en).map((adv, idx) => 
+          saveLang(adv.en, adv.zh, `prod_adv_${formData.id}_${idx}`)
+        )
+      );
+
+      const savedSpecGroups = await Promise.all(
+        formData.specGroups.map(async (group, gIdx) => {
+          const titleId = await saveLang(group.titleEn, group.titleZh, `prod_spec_group_${formData.id}_${gIdx}`);
+          const items = await Promise.all(
+            group.items.map(async (item, iIdx) => ({
+              labelId: await saveLang(item.labelEn, item.labelZh, `prod_spec_lbl_${formData.id}_${gIdx}_${iIdx}`),
+              valueId: await saveLang(item.valueEn, item.valueZh, `prod_spec_val_${formData.id}_${gIdx}_${iIdx}`)
+            }))
+          );
+          return { titleId, items };
+        })
+      );
+
+      await fetch(`/api/products/${formData.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          id: formData.id, 
+          nameTextId: nameId, 
+          descriptionTextId: descId, 
+          localizedDetails: formData.localizedDetails,
+          advantageTextIds: advantageIds, 
+          specGroups: savedSpecGroups, 
+          mainImageUrl: formData.mainImageUrl, 
+          categoryId: formData.categoryId, 
+          galleryImageUrls: formData.galleryUrls.filter(Boolean), 
+          status: formData.status, 
+        }),
+      });
+
+      toast({ title: "产品已保存" });
+      router.push('/admin/products');
+    } catch (e) {
+      toast({ variant: "destructive", title: "保存失败" });
+    }
   };
 
-  const handleSaveTemplate = () => {
-    if (!firestore) return;
-    
+  const handleSaveTemplate = async () => {
     let templateId = '';
     let templateName = '';
 
@@ -479,24 +477,36 @@ function ProductEditorContent() {
       }))
     }));
 
-    setDocumentNonBlocking(doc(firestore, 'specTemplates', templateId), {
-      id: templateId,
-      name: templateName,
-      specGroups: cleanSpecGroups,
-      createdAt: saveMode === 'create' ? serverTimestamp() : (specTemplates?.find(t => t.id === templateId)?.createdAt || serverTimestamp()),
-      updatedAt: serverTimestamp()
-    }, { merge: true });
+    try {
+      await fetch(`/api/specTemplates/${templateId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          id: templateId,
+          name: templateName,
+          specGroups: cleanSpecGroups,
+        }),
+      });
 
-    setIsSaveTemplateDialogOpen(false);
-    setNewTemplateName('');
-    setSelectedTemplateId('');
-    toast({ title: saveMode === 'create' ? "规格模板已存入云端库" : "模板内容已更新成功" });
+      setIsSaveTemplateDialogOpen(false);
+      setNewTemplateName('');
+      setSelectedTemplateId('');
+      mutateTemplates();
+      toast({ title: saveMode === 'create' ? "规格模板已存入云端库" : "模板内容已更新成功" });
+    } catch (e) {
+      toast({ variant: "destructive", title: "保存模板失败" });
+    }
   };
 
-  const handleDeleteTemplate = (id: string, name: string) => {
-    if (!firestore || !confirm(`确定要从云端规格库中永久删除模板“${name}”吗？`)) return;
-    deleteDocumentNonBlocking(doc(firestore, 'specTemplates', id));
-    toast({ title: "模板已移除" });
+  const handleDeleteTemplate = async (id: string, name: string) => {
+    if (!confirm(`确定要从云端规格库中永久删除模板“${name}”吗？`)) return;
+    try {
+      await fetch(`/api/specTemplates/${id}`, { method: 'DELETE' });
+      mutateTemplates();
+      toast({ title: "模板已移除" });
+    } catch (e) {
+      toast({ variant: "destructive", title: "删除模板失败" });
+    }
   };
 
   const handleApplyTemplate = (template: SpecTemplate) => {

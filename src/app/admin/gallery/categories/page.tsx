@@ -2,8 +2,7 @@
 "use client";
 
 import { useState } from 'react';
-import { useFirestore, useCollection, useMemoFirebase } from '@/firebase';
-import { collection, doc, serverTimestamp, query, orderBy } from 'firebase/firestore';
+import { useLocalCollection } from '@/hooks/use-local-collection';
 import { Plus, Trash2, Layers, MoveUp, MoveDown, ArrowLeft, Languages } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -15,7 +14,6 @@ import {
   TableHeader, 
   TableRow 
 } from '@/components/ui/table';
-import { setDocumentNonBlocking, deleteDocumentNonBlocking } from '@/firebase/non-blocking-updates';
 import { Label } from '@/components/ui/label';
 import Link from 'next/link';
 import { useToast } from '@/hooks/use-toast';
@@ -36,7 +34,6 @@ interface LocalizedString {
 }
 
 export default function GalleryCategoriesPage() {
-  const firestore = useFirestore();
   const { toast } = useToast();
   
   const [formData, setFormData] = useState({
@@ -44,21 +41,11 @@ export default function GalleryCategoriesPage() {
     en: ''
   });
 
-  const categoriesQuery = useMemoFirebase(() => {
-    if (!firestore) return null;
-    return query(collection(firestore, 'galleryCategories'), orderBy('order', 'asc'));
-  }, [firestore]);
+  const { data: categories, isLoading: isCatsLoading, mutate: mutateCats } = useLocalCollection<GalleryCategory>('galleryCategories');
+  const { data: translations, mutate: mutateTrans } = useLocalCollection<LocalizedString>('localizedStrings');
 
-  const transQuery = useMemoFirebase(() => {
-    if (!firestore) return null;
-    return collection(firestore, 'localizedStrings');
-  }, [firestore]);
-
-  const { data: categories, isLoading } = useCollection<GalleryCategory>(categoriesQuery);
-  const { data: translations } = useCollection<LocalizedString>(transQuery);
-
-  const handleAdd = () => {
-    if (!firestore || !formData.zh.trim()) {
+  const handleAdd = async () => {
+    if (!formData.zh.trim()) {
       toast({ variant: "destructive", title: "名称不能为空" });
       return;
     }
@@ -67,41 +54,75 @@ export default function GalleryCategoriesPage() {
     const nameTextId = `gal_cat_name_${id}`;
     const order = (categories?.length || 0) + 1;
     
-    // 1. 保存翻译
-    setDocumentNonBlocking(doc(firestore, 'localizedStrings', nameTextId), {
-      id: nameTextId,
-      en: formData.en || formData.zh,
-      zh: formData.zh,
-      updatedAt: serverTimestamp()
-    }, { merge: true });
+    try {
+      // 1. 保存翻译
+      await fetch(`/api/localizedStrings/${nameTextId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          id: nameTextId,
+          en: formData.en || formData.zh,
+          zh: formData.zh
+        })
+      });
 
-    // 2. 保存分类
-    setDocumentNonBlocking(doc(firestore, 'galleryCategories', id), {
-      id,
-      nameTextId,
-      order
-    }, { merge: true });
+      // 2. 保存分类
+      await fetch(`/api/galleryCategories/${id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          id,
+          nameTextId,
+          order
+        })
+      });
 
-    setFormData({ zh: '', en: '' });
-    toast({ title: "分类已添加（双语）" });
+      setFormData({ zh: '', en: '' });
+      mutateCats();
+      mutateTrans();
+      toast({ title: "分类已添加（双语）" });
+    } catch (e) {
+      toast({ variant: "destructive", title: "添加失败" });
+    }
   };
 
-  const handleDelete = (cat: GalleryCategory) => {
-    if (!firestore || !confirm('删除分类不会删除图片，但会将相关图片设为“未分类”。确定吗？')) return;
-    deleteDocumentNonBlocking(doc(firestore, 'galleryCategories', cat.id));
-    deleteDocumentNonBlocking(doc(firestore, 'localizedStrings', cat.nameTextId));
+  const handleDelete = async (cat: GalleryCategory) => {
+    if (!confirm('删除分类不会删除图片，但会将相关图片设为“未分类”。确定吗？')) return;
+    
+    try {
+      await fetch(`/api/galleryCategories/${cat.id}`, { method: 'DELETE' });
+      await fetch(`/api/localizedStrings/${cat.nameTextId}`, { method: 'DELETE' });
+      mutateCats();
+      mutateTrans();
+      toast({ title: "分类已删除" });
+    } catch (e) {
+      toast({ variant: "destructive", title: "删除失败" });
+    }
   };
 
-  const updateOrder = (cat: GalleryCategory, direction: 'up' | 'down') => {
-    if (!firestore || !categories) return;
+  const updateOrder = async (cat: GalleryCategory, direction: 'up' | 'down') => {
+    if (!categories) return;
     const idx = categories.indexOf(cat);
     const targetIdx = direction === 'up' ? idx - 1 : idx + 1;
     if (targetIdx < 0 || targetIdx >= categories.length) return;
 
     const targetCat = categories[targetIdx];
     
-    setDocumentNonBlocking(doc(firestore, 'galleryCategories', cat.id), { ...cat, order: targetCat.order }, { merge: true });
-    setDocumentNonBlocking(doc(firestore, 'galleryCategories', targetCat.id), { ...targetCat, order: cat.order }, { merge: true });
+    try {
+      await fetch(`/api/galleryCategories/${cat.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ...cat, order: targetCat.order })
+      });
+      await fetch(`/api/galleryCategories/${targetCat.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ...targetCat, order: cat.order })
+      });
+      mutateCats();
+    } catch (e) {
+      toast({ variant: "destructive", title: "排序更新失败" });
+    }
   };
 
   const getT = (id: string) => {

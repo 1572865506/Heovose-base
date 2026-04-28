@@ -1,8 +1,8 @@
 "use client";
 
 import { useState, useMemo } from 'react';
-import { useUser, useFirestore, useCollection, useMemoFirebase, useDoc } from '@/firebase';
-import { collection, doc, serverTimestamp, setDoc } from 'firebase/firestore';
+import { useLocalDoc } from '@/hooks/use-local-doc';
+import { useLocalCollection } from '@/hooks/use-local-collection';
 import { 
   Table, 
   TableBody, 
@@ -48,7 +48,6 @@ import {
   FileText
 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
-import { setDocumentNonBlocking, deleteDocumentNonBlocking, updateDocumentNonBlocking } from '@/firebase/non-blocking-updates';
 import { Label } from '@/components/ui/label';
 import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
@@ -111,7 +110,6 @@ interface AiConfig {
 }
 
 export default function TranslationsPage() {
-  const firestore = useFirestore();
   const { toast } = useToast();
   const [searchQuery, setSearchQuery] = useState('');
   const [activeTab, setActiveTab] = useState('business');
@@ -128,22 +126,12 @@ export default function TranslationsPage() {
   const [formData, setFormData] = useState<Record<string, string>>({ id: '' });
   const [newLang, setNewLang] = useState({ code: '', label: '' });
 
-  const langConfigRef = useMemoFirebase(() => firestore ? doc(firestore, 'settings', 'languages') : null, [firestore]);
-  const aiRef = useMemoFirebase(() => firestore ? doc(firestore, 'settings', 'ai') : null, [firestore]);
-  
-  const { data: langSettings } = useDoc<LanguageSettings>(langConfigRef);
-  const { data: aiConfig } = useDoc<AiConfig>(aiRef);
-  
-  const translationsQuery = useMemoFirebase(() => firestore ? collection(firestore, 'localizedStrings') : null, [firestore]);
-  const { data: translations, isLoading } = useCollection<LocalizedString>(translationsQuery);
-
-  const productsQuery = useMemoFirebase(() => firestore ? collection(firestore, 'products') : null, [firestore]);
-  const catsQuery = useMemoFirebase(() => firestore ? collection(firestore, 'productCategories') : null, [firestore]);
-  const galCatsQuery = useMemoFirebase(() => collection(firestore, 'galleryCategories'), [firestore]);
-  
-  const { data: products } = useCollection(productsQuery);
-  const { data: categories } = useCollection(catsQuery);
-  const { data: galleryCategories } = useCollection(galCatsQuery);
+  const { data: langSettings, mutate: mutateLangs } = useLocalDoc<LanguageSettings>('settings', 'languages');
+  const { data: aiConfig } = useLocalDoc<AiConfig>('settings', 'ai');
+  const { data: translations, isLoading, mutate: mutateTrans } = useLocalCollection<LocalizedString>('localizedStrings');
+  const { data: products, mutate: mutateProducts } = useLocalCollection<any>('products');
+  const { data: categories, mutate: mutateCategories } = useLocalCollection<any>('productCategories');
+  const { data: galleryCategories, mutate: mutateGalleryCats } = useLocalCollection<any>('galleryCategories');
 
   const activeLanguages = useMemo(() => langSettings?.supportedLanguages || [
     { code: 'zh', label: '中文' }, 
@@ -225,65 +213,79 @@ export default function TranslationsPage() {
   const duplicatableCount = useMemo(() => {
     let count = 0;
     semanticDuplicates.forEach(ids => {
-      const referencedCount = ids.filter(id => usedIds.has(id)).length;
-      if (ids.length > referencedCount && ids.length > 1) count++;
+      const referencedOnes = ids.filter(id => usedIds.has(id));
+      const masterId = referencedOnes.length > 0 ? referencedOnes[0] : ids[0];
+      count += ids.filter(id => id !== masterId && !usedIds.has(id)).length;
     });
     return count;
   }, [semanticDuplicates, usedIds]);
 
   const handleMergeReferences = async (masterId: string, redundantIds: string[]) => {
-    if (!firestore || !products || !categories) return;
+    if (!products || !categories) return;
     if (!confirm(`确定要合并引用吗？这将修改全站关联位置。`)) return;
     
     setIsMerging(true);
     const redundantSet = new Set(redundantIds);
     const migrate = (id: string) => redundantSet.has(id) ? masterId : id;
 
-    products.forEach(p => {
-      let changed = false;
-      const newName = migrate(p.nameTextId); if (newName !== p.nameTextId) changed = true;
-      const newDesc = migrate(p.descriptionTextId); if (newDesc !== p.descriptionTextId) changed = true;
-      const newAdvs = p.advantageTextIds?.map((id: string) => { const mid = migrate(id); if (mid !== id) changed = true; return mid; });
-      const newSpecs = p.specGroups?.map((g: any) => {
-        let gChanged = false;
-        const newTitle = migrate(g.titleId); if (newTitle !== g.titleId) gChanged = true;
-        const newItems = g.items?.map((item: any) => {
-          const nl = migrate(item.labelId); const nv = migrate(item.valueId);
-          if (nl !== item.labelId || nv !== item.valueId) gChanged = true;
-          return { labelId: nl, valueId: nv };
-        });
-        if (gChanged) changed = true;
-        return { titleId: newTitle, items: newItems };
-      });
+    try {
+      await Promise.all(products.map(async (p: any) => {
+        let changed = false;
+        const newName = migrate(p.nameTextId); if (newName !== p.nameTextId) changed = true;
+        const newDesc = migrate(p.descriptionTextId); if (newDesc !== p.descriptionTextId) changed = true;
+        
+        if (changed) {
+          return fetch(`/api/products/${p.id}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ ...p, nameTextId: newName, descriptionTextId: newDesc }),
+          });
+        }
+      }));
 
-      if (changed) {
-        updateDocumentNonBlocking(doc(firestore, 'products', p.id), {
-          nameTextId: newName, descriptionTextId: newDesc, advantageTextIds: newAdvs, specGroups: newSpecs, updatedAt: serverTimestamp()
-        });
-      }
-    });
+      await Promise.all(categories.map(async (c: any) => {
+        const nn = migrate(c.nameTextId);
+        if (nn !== c.nameTextId) {
+          return fetch(`/api/productCategories/${c.id}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ ...c, nameTextId: nn }),
+          });
+        }
+      }));
 
-    categories.forEach(c => {
-      const nn = migrate(c.nameTextId);
-      if (nn !== c.nameTextId) updateDocumentNonBlocking(doc(firestore, 'productCategories', c.id), { nameTextId: nn });
-    });
-
-    setTimeout(() => { setIsMerging(false); toast({ title: "合并引用完成" }); }, 1000);
+      setIsMerging(false);
+      mutateProducts();
+      mutateCategories();
+      mutateGalleryCats();
+      toast({ title: "合并引用完成" });
+    } catch (e) {
+      setIsMerging(false);
+      toast({ variant: "destructive", title: "合并失败" });
+    }
   };
 
-  const handleAutoCleanup = () => {
-    if (!firestore || semanticDuplicates.size === 0) return;
+  const handleAutoCleanup = async () => {
+    if (semanticDuplicates.size === 0) return;
     if (!confirm(`将安全移除业务库中的闲置冗余词条。`)) return;
     setIsCleaning(true);
-    semanticDuplicates.forEach((ids) => {
-      const referencedOnes = ids.filter(id => usedIds.has(id));
-      const masterId = referencedOnes.length > 0 ? referencedOnes[0] : ids[0];
-      ids.filter(id => id !== masterId && !usedIds.has(id)).forEach(id => { 
-        deleteDocumentNonBlocking(doc(firestore, 'localizedStrings', id)); 
+    try {
+      const deletePromises: Promise<any>[] = [];
+      semanticDuplicates.forEach((ids) => {
+        const referencedOnes = ids.filter(id => usedIds.has(id));
+        const masterId = referencedOnes.length > 0 ? referencedOnes[0] : ids[0];
+        ids.filter(id => id !== masterId && !usedIds.has(id)).forEach(id => { 
+          deletePromises.push(fetch(`/api/localizedStrings/${id}`, { method: 'DELETE' }));
+        });
       });
-    });
-    setIsCleaning(false);
-    toast({ title: "清理完成" });
+      await Promise.all(deletePromises);
+      setIsCleaning(false);
+      mutateTrans();
+      toast({ title: "清理完成" });
+    } catch (e) {
+      setIsCleaning(false);
+      toast({ variant: "destructive", title: "清理失败" });
+    }
   };
 
   const handleAiTranslate = async (t: LocalizedString) => {
@@ -295,8 +297,13 @@ export default function TranslationsPage() {
     setTranslatingId(t.id);
     try {
       const res = await translateContent({ text: st, sourceLang: sc, targetLangs: ml, model: aiConfig.model, apiKey: aiConfig.apiKey });
-      if (res && firestore) {
-        setDocumentNonBlocking(doc(firestore, 'localizedStrings', t.id), { ...t, ...res, updatedAt: serverTimestamp() }, { merge: true });
+      if (res) {
+        await fetch(`/api/localizedStrings/${t.id}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ ...t, ...res }),
+        });
+        mutateTrans();
         toast({ title: "AI 智译成功" });
       }
     } catch (e) { toast({ variant: "destructive", title: "AI 翻译失败" }); }
@@ -304,14 +311,10 @@ export default function TranslationsPage() {
   };
 
   const handleSyncFromLocal = async () => {
-    if (!firestore) return;
     setIsSyncingLocal(true);
     setShowSyncConfirm(false);
     
     try {
-      const { writeBatch } = await import('firebase/firestore');
-      const batch = writeBatch(firestore);
-
       const flatten = (obj: any, prefix = '') => {
         let result: any = {};
         for (let key in obj) {
@@ -334,25 +337,21 @@ export default function TranslationsPage() {
       });
 
       const keysArray = Array.from(allKeys);
-      const CHUNK_SIZE = 400; // 安全阈值，避免 500 限制
       
-      for (let i = 0; i < keysArray.length; i += CHUNK_SIZE) {
-        const batch = writeBatch(firestore);
-        const chunk = keysArray.slice(i, i + CHUNK_SIZE);
-        
-        chunk.forEach(key => {
-          const payload: any = { id: key };
-          locales.forEach(l => {
-            if (flattenedByLocale[l][key]) payload[l] = flattenedByLocale[l][key];
-          });
-          const dRef = doc(firestore, 'localizedStrings', key);
-          batch.set(dRef, { ...payload, updatedAt: serverTimestamp() }, { merge: true });
+      await Promise.all(keysArray.map(async key => {
+        const payload: any = { id: key };
+        locales.forEach(l => {
+          if (flattenedByLocale[l][key]) payload[l] = flattenedByLocale[l][key];
         });
-        
-        await batch.commit();
-      }
+        return fetch(`/api/localizedStrings/${key}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload),
+        });
+      }));
 
-      toast({ title: "同步成功", description: `已同步 ${keysArray.length} 条多语言资产至云端。` });
+      mutateTrans();
+      toast({ title: "同步成功", description: `已同步 ${keysArray.length} 条多语言资产至本地库。` });
     } catch (e) {
       console.error(e);
       toast({ variant: "destructive", title: "同步失败", description: "由于数据量过大或网络问题，同步未能完成。" });
@@ -374,10 +373,20 @@ export default function TranslationsPage() {
     });
   }, [categorizedTranslations, searchQuery, showOnlyDuplicates, semanticDuplicates, activeTab]);
 
-  const handleSave = () => {
-    if (!firestore || !formData.id) return;
-    setDocumentNonBlocking(doc(firestore, 'localizedStrings', formData.id), { ...formData, updatedAt: serverTimestamp() }, { merge: true });
-    setIsAdding(false); setEditingId(null); setFormData({ id: '' });
+  const handleSave = async () => {
+    if (!formData.id) return;
+    try {
+      await fetch(`/api/localizedStrings/${formData.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(formData),
+      });
+      setIsAdding(false); setEditingId(null); setFormData({ id: '' });
+      mutateTrans();
+      toast({ title: "词条已保存" });
+    } catch (e) {
+      toast({ variant: "destructive", title: "保存失败" });
+    }
   };
 
   return (
@@ -443,7 +452,22 @@ export default function TranslationsPage() {
                      <Input placeholder="代码 (如: jp)" value={newLang.code} onChange={e => setNewLang({...newLang, code: e.target.value.toLowerCase()})} className="h-12 rounded-xl text-xs bg-slate-50 border-none" />
                      <Input placeholder="名称 (如: 日语)" value={newLang.label} onChange={e => setNewLang({...newLang, label: e.target.value})} className="h-12 rounded-xl text-xs bg-slate-50 border-none" />
                    </div>
-                   <Button onClick={() => { if(!newLang.code) return; const updated = [...activeLanguages, newLang]; setDoc(doc(firestore, 'settings', 'languages'), { supportedLanguages: updated }); setNewLang({ code: '', label: '' }); }} className="w-full h-12 rounded-xl text-xs font-bold uppercase tracking-widest shadow-lg">确认添加新语种</Button>
+                   <Button onClick={async () => { 
+                     if(!newLang.code) return; 
+                     const updated = [...activeLanguages, newLang]; 
+                     try {
+                       await fetch('/api/settings/languages', {
+                         method: 'PUT',
+                         headers: { 'Content-Type': 'application/json' },
+                         body: JSON.stringify({ supportedLanguages: updated }),
+                       });
+                       mutateLangs();
+                       setNewLang({ code: '', label: '' });
+                       toast({ title: "语种已添加" });
+                     } catch (e) {
+                       toast({ variant: "destructive", title: "添加失败" });
+                     }
+                   }} className="w-full h-12 rounded-xl text-xs font-bold uppercase tracking-widest shadow-lg">确认添加新语种</Button>
                  </div>
                </div>
             </DialogContent>
@@ -474,13 +498,13 @@ export default function TranslationsPage() {
               </div>
               <div className="p-8 space-y-6">
                 <p className="text-sm text-slate-600 leading-relaxed">
-                  您即将启动从 <span className="font-bold text-slate-900">本地硬编码库 (lib/translations.ts)</span> 同步内容至 <span className="font-bold text-primary">云端资产库 (Firestore)</span> 的操作。
+                  您即将启动从 <span className="font-bold text-slate-900">本地硬编码库 (lib/translations.ts)</span> 同步内容至 <span className="font-bold text-primary">云端资产库 (PostgreSQL)</span> 的操作。
                 </p>
                 <div className="bg-orange-50 border border-orange-100 p-4 rounded-2xl flex gap-4">
                   <Info className="h-5 w-5 text-orange-500 shrink-0 mt-0.5" />
                   <div className="space-y-1">
                     <p className="text-[11px] font-bold text-orange-800 uppercase">重要提示</p>
-                    <p className="text-[10px] text-orange-700/70 leading-relaxed">此操作将覆盖云端已存在的同名系统词条（如导航栏、页脚等）。建议在同步前确保本地库代码已包含最新修订。</p>
+                    <p className="text-[10px] text-orange-700/70 leading-relaxed">此操作将覆盖数据库中已存在的同名系统词条（如导航栏、页脚等）。建议在同步前确保本地库代码已包含最新修订。</p>
                   </div>
                 </div>
               </div>
@@ -674,8 +698,8 @@ export default function TranslationsPage() {
                            <Button variant="ghost" size="icon" onClick={() => { setFormData(t); setEditingId(t.id); }} className="h-10 w-10 rounded-xl opacity-0 group-hover:opacity-100 transition-all hover:bg-primary/5 hover:text-primary">
                              <Edit2 className="h-4 w-4" />
                            </Button>
-                           {refs.length === 0 && (
-                             <Button variant="ghost" size="icon" className="h-10 w-10 rounded-xl text-destructive opacity-0 group-hover:opacity-100 transition-all hover:bg-destructive/5" onClick={() => { if(confirm('彻底删除此词条资产？')) deleteDocumentNonBlocking(doc(firestore, 'localizedStrings', t.id)); }}>
+                            {refs.length === 0 && (
+                             <Button variant="ghost" size="icon" className="h-10 w-10 rounded-xl text-destructive opacity-0 group-hover:opacity-100 transition-all hover:bg-destructive/5" onClick={async () => { if(confirm('彻底删除此词条资产？')) { await fetch(`/api/localizedStrings/${t.id}`, { method: 'DELETE' }); mutateTrans(); toast({ title: "已删除" }); } }}>
                                <Trash2 className="h-4 w-4" />
                              </Button>
                            )}

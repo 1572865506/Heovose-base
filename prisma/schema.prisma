@@ -1,0 +1,210 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model LocalizedString {
+  id                String            @id @default(cuid())
+  zh                String
+  en                String
+  productDescs      Product[]         @relation("ProductDesc")
+  productNames      Product[]         @relation("ProductName")
+  productCategories ProductCategory[]
+}
+
+model HomepageContent {
+  id                         String        @id @default("hero")
+  heroHeadlineEn             String?
+  heroHeadlineZh             String?
+  heroSubheadlineEn          String?
+  heroSubheadlineZh          String?
+  heroWholesaleButtonEn      String?
+  heroWholesaleButtonZh      String?
+  heroWholesaleDescriptionEn String?
+  heroWholesaleDescriptionZh String?
+  heroProjectButtonEn        String?
+  heroProjectButtonZh        String?
+  heroProjectDescriptionEn   String?
+  heroProjectDescriptionZh   String?
+  heroWholesaleCategoryId    String?
+  heroProjectCategoryId      String?
+  heroSlides                 Json?
+  isVideoEnabled             Boolean       @default(true)
+  videoTitleEn               String?
+  videoTitleZh               String?
+  videoSubtitleEn            String?
+  videoSubtitleZh            String?
+  videoUrl                   String?
+  mapTitleEn                 String?
+  mapTitleZh                 String?
+  mapSubtitleEn              String?
+  mapSubtitleZh              String?
+  locations                  MapLocation[]
+}
+
+model MapLocation {
+  id              String          @id @default(cuid())
+  type            String
+  titleZh         String
+  titleEn         String
+  addressZh       String
+  addressEn       String
+  descZh          String
+  descEn          String
+  imageUrl        String?
+  posTop          String
+  posLeft         String
+  homepageId      String
+  homepageContent HomepageContent @relation(fields: [homepageId], references: [id])
+}
+
+model CaseStudy {
+  id       String @id @default(cuid())
+  order    Int    @default(0)
+  tagZh    String
+  tagEn    String
+  titleZh  String
+  titleEn  String
+  descZh   String
+  descEn   String
+  imageUrl String
+}
+
+model ProductionStep {
+  id        String   @id @default(cuid())
+  order     Int      @default(0)
+  titleZh   String
+  titleEn   String
+  descZh    String
+  descEn    String
+  imageUrls String[]
+}
+
+model Product {
+  id                String           @id @default(cuid())
+  status            String           @default("draft")
+  nameTextId        String
+  descriptionTextId String?
+  mainImageUrl      String?
+  galleryImageUrls  String[]
+  categoryId        String?
+  localizedDetails  Json?
+  advantageTextIds  String[]
+  specGroups        Json?
+  enabledLanguages  String[]
+  createdAt         DateTime         @default(now())
+  updatedAt         DateTime         @updatedAt
+  category          ProductCategory? @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+  descriptionText   LocalizedString? @relation("ProductDesc", fields: [descriptionTextId], references: [id], onDelete: Cascade)
+  nameText          LocalizedString  @relation("ProductName", fields: [nameTextId], references: [id], onDelete: Cascade)
+
+  @@index([categoryId])
+  @@index([nameTextId])
+  @@index([descriptionTextId])
+}
+
+model ProductCategory {
+  id                String            @id @default(cuid())
+  slug              String            @unique
+  thumbnailImageUrl String?
+  parentId          String?
+  nameTextId        String
+  products          Product[]
+  nameText          LocalizedString   @relation(fields: [nameTextId], references: [id], onDelete: Cascade)
+  parent            ProductCategory?  @relation("CategoryToCategory", fields: [parentId], references: [id], onDelete: SetNull)
+  children          ProductCategory[] @relation("CategoryToCategory")
+
+  @@index([parentId])
+  @@index([nameTextId])
+}
+
+model User {
+  id            String    @id @default(cuid())
+  name          String?
+  email         String    @unique
+  emailVerified DateTime?
+  image         String?
+  password      String?
+  role          String    @default("editor")
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  accounts      Account[]
+  sessions      Session[]
+}
+
+model Account {
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String?
+  access_token      String?
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String?
+  session_state     String?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+  user              User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([provider, providerAccountId])
+}
+
+model Session {
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model VerificationToken {
+  identifier String
+  token      String
+  expires    DateTime
+
+  @@id([identifier, token])
+}
+
+model GalleryCategory {
+  id          String          @id @default(cuid())
+  name        String
+  parentId    String?
+  order       Int             @default(0)
+  assets      GalleryAsset[]
+
+  parent      GalleryCategory?  @relation("GalleryToGallery", fields: [parentId], references: [id])
+  children    GalleryCategory[] @relation("GalleryToGallery")
+}
+
+model GalleryAsset {
+  id         String           @id @default(cuid())
+  title      String
+  url        String
+  fileName   String
+  fileSize   Int?
+  categoryId String?
+  createdAt  DateTime         @default(now())
+  category   GalleryCategory? @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+
+  @@index([categoryId])
+}
+
+model Setting {
+  id    String @id
+  value String
+}
+
+model SpecTemplate {
+  id         String   @id @default(cuid())
+  name       String
+  specGroups Json
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+}

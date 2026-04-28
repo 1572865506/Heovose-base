@@ -2,8 +2,7 @@
 "use client";
 
 import { useState, useMemo } from 'react';
-import { useFirestore, useCollection, useMemoFirebase } from '@/firebase';
-import { collection, doc, serverTimestamp, query, orderBy } from 'firebase/firestore';
+import { useLocalCollection } from '@/hooks/use-local-collection';
 import { 
   Table, 
   TableBody, 
@@ -46,7 +45,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { setDocumentNonBlocking, deleteDocumentNonBlocking } from '@/firebase/non-blocking-updates';
 import { Label } from '@/components/ui/label';
 import Image from 'next/image';
 import { useToast } from '@/hooks/use-toast';
@@ -72,7 +70,6 @@ interface LocalizedString {
 }
 
 export default function CategoriesPage() {
-  const firestore = useFirestore();
   const { toast } = useToast();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingCategory, setEditingCategory] = useState<ProductCategory | null>(null);
@@ -92,13 +89,9 @@ export default function CategoriesPage() {
     parentId: 'none'
   });
 
-  const categoriesQuery = useMemoFirebase(() => firestore ? collection(firestore, 'productCategories') : null, [firestore]);
-  const translationsQuery = useMemoFirebase(() => firestore ? collection(firestore, 'localizedStrings') : null, [firestore]);
-  const assetsQuery = useMemoFirebase(() => firestore ? query(collection(firestore, 'galleryAssets'), orderBy('createdAt', 'desc')) : null, [firestore]);
-
-  const { data: categories, isLoading: isCatsLoading } = useCollection<ProductCategory>(categoriesQuery);
-  const { data: translations } = useCollection<LocalizedString>(translationsQuery);
-  const { data: galleryAssets } = useCollection<any>(assetsQuery);
+  const { data: categories, isLoading: isCatsLoading, mutate: mutateCats } = useLocalCollection<ProductCategory>('productCategories');
+  const { data: translations, mutate: mutateTrans } = useLocalCollection<LocalizedString>('localizedStrings');
+  const { data: galleryAssets } = useLocalCollection<any>('galleryAssets');
 
   // 计算树状结构用于展示和选择
   const categoryTree = useMemo(() => {
@@ -152,8 +145,8 @@ export default function CategoriesPage() {
     setIsDialogOpen(true);
   };
 
-  const handleSave = () => {
-    if (!firestore || !formData.id || !formData.slug) {
+  const handleSave = async () => {
+    if (!formData.id || !formData.slug) {
       toast({ variant: "destructive", title: "请填写 ID 和 SLUG" });
       return;
     }
@@ -162,63 +155,87 @@ export default function CategoriesPage() {
     const descriptionTextId = editingCategory?.descriptionTextId || `cat_desc_${formData.id}`;
     const pId = formData.parentId === 'none' ? 'none' : formData.parentId;
     
-    // 1. 保存名称翻译
-    setDocumentNonBlocking(doc(firestore, 'localizedStrings', nameTextId), {
-      id: nameTextId,
-      en: formData.nameEn.trim(),
-      zh: formData.nameZh.trim(),
-      updatedAt: serverTimestamp()
-    }, { merge: true });
+    try {
+      // 1. 保存名称翻译
+      await fetch(`/api/localizedStrings/${nameTextId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: nameTextId, en: formData.nameEn.trim(), zh: formData.nameZh.trim() }),
+      });
 
-    // 2. 保存描述翻译
-    setDocumentNonBlocking(doc(firestore, 'localizedStrings', descriptionTextId), {
-      id: descriptionTextId,
-      en: formData.descEn.trim(),
-      zh: formData.descZh.trim(),
-      updatedAt: serverTimestamp()
-    }, { merge: true });
+      // 2. 保存描述翻译
+      await fetch(`/api/localizedStrings/${descriptionTextId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: descriptionTextId, en: formData.descEn.trim(), zh: formData.descZh.trim() }),
+      });
 
-    // 3. 保存分类
-    setDocumentNonBlocking(doc(firestore, 'productCategories', formData.id), {
-      id: formData.id,
-      slug: formData.slug,
-      nameTextId: nameTextId,
-      descriptionTextId: descriptionTextId,
-      thumbnailImageUrl: formData.thumbnailImageUrl,
-      parentId: pId,
-      updatedAt: serverTimestamp()
-    }, { merge: true });
+      // 3. 保存分类
+      await fetch(`/api/productCategories/${formData.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          id: formData.id,
+          slug: formData.slug,
+          nameTextId: nameTextId,
+          descriptionTextId: descriptionTextId,
+          thumbnailImageUrl: formData.thumbnailImageUrl,
+          parentId: pId === 'none' ? null : pId,
+        }),
+      });
 
-    setIsDialogOpen(false);
-    resetForm();
-    toast({ title: "分类已保存" });
+      setIsDialogOpen(false);
+      resetForm();
+      mutateCats();
+      mutateTrans();
+      toast({ title: "分类已保存" });
+    } catch (e) {
+      toast({ variant: "destructive", title: "保存失败" });
+    }
   };
 
-  const handleInitPresets = () => {
-    if (!firestore) return;
-
-    // 初始化批发产品
+  const handleInitPresets = async () => {
+    // This could be an API call or just client-side loops calling PUT
+    const presets = [];
     if (!systemPresets.hasWholesale) {
-      const id = 'WHOLESALE';
-      const nameId = `cat_name_${id}`;
-      setDocumentNonBlocking(doc(firestore, 'localizedStrings', nameId), { id: nameId, en: 'Wholesale Products', zh: '批发产品' }, { merge: true });
-      setDocumentNonBlocking(doc(firestore, 'productCategories', id), { id, slug: 'wholesale', nameTextId: nameId, parentId: 'none', thumbnailImageUrl: '' }, { merge: true });
+      presets.push({ id: 'WHOLESALE', slug: 'wholesale', name: { en: 'Wholesale Products', zh: '批发产品' } });
     }
-
-    // 初始化项目产品
     if (!systemPresets.hasProject) {
-      const id = 'PROJECT';
-      const nameId = `cat_name_${id}`;
-      setDocumentNonBlocking(doc(firestore, 'localizedStrings', nameId), { id: nameId, en: 'Project Products', zh: '项目产品' }, { merge: true });
-      setDocumentNonBlocking(doc(firestore, 'productCategories', id), { id, slug: 'project', nameTextId: nameId, parentId: 'none', thumbnailImageUrl: '' }, { merge: true });
+      presets.push({ id: 'PROJECT', slug: 'project', name: { en: 'Project Products', zh: '项目产品' } });
     }
 
-    toast({ title: "系统预设顶级分类已初始化" });
+    try {
+      for (const p of presets) {
+        const nameId = `cat_name_${p.id}`;
+        await fetch(`/api/localizedStrings/${nameId}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ id: nameId, ...p.name }),
+        });
+        await fetch(`/api/productCategories/${p.id}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ id: p.id, slug: p.slug, nameTextId: nameId, parentId: null, thumbnailImageUrl: '' }),
+        });
+      }
+      mutateCats();
+      mutateTrans();
+      toast({ title: "系统预设顶级分类已初始化" });
+    } catch (e) {
+      toast({ variant: "destructive", title: "初始化失败" });
+    }
   };
 
-  const handleDelete = (id: string) => {
-    if (!firestore || !confirm('确定要删除此分类吗？其子分类将失去关联。')) return;
-    deleteDocumentNonBlocking(doc(firestore, 'productCategories', id));
+  const handleDelete = async (id: string) => {
+    if (!confirm('确定要删除此分类吗？其子分类将失去关联。')) return;
+    try {
+      const res = await fetch(`/api/productCategories/${id}`, { method: 'DELETE' });
+      if (!res.ok) throw new Error("Failed to delete");
+      mutateCats();
+      toast({ title: "分类已删除" });
+    } catch (e) {
+      toast({ variant: "destructive", title: "删除失败" });
+    }
   };
 
   const getT = (id: string) => {

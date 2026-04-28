@@ -1,8 +1,7 @@
 "use client";
 
 import { useState, useMemo, useRef, useEffect, useCallback } from 'react';
-import { useFirestore, useCollection, useMemoFirebase } from '@/firebase';
-import { collection, doc, serverTimestamp, query, orderBy } from 'firebase/firestore';
+import { useLocalCollection } from '@/hooks/use-local-collection';
 import { 
   Plus, 
   Search, 
@@ -26,7 +25,9 @@ import {
   Maximize2 as FitIcon,
   ZoomIn,
   Move,
-  AlertTriangle
+  AlertTriangle,
+  ChevronUp,
+  ChevronDown
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -49,7 +50,6 @@ import {
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { Checkbox } from '@/components/ui/checkbox';
-import { setDocumentNonBlocking, deleteDocumentNonBlocking, updateDocumentNonBlocking } from '@/firebase/non-blocking-updates';
 import { Label } from '@/components/ui/label';
 import Image from 'next/image';
 import { useToast } from '@/hooks/use-toast';
@@ -84,7 +84,6 @@ interface UploadTask {
 type DuplicateStrategy = 'rename' | 'overwrite';
 
 export default function GalleryPage() {
-  const firestore = useFirestore();
   const { toast } = useToast();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -118,17 +117,20 @@ export default function GalleryPage() {
     setSelectedIds(new Set());
   }, [filterCategory, searchQuery]);
 
-  const categoriesQuery = useMemoFirebase(() => firestore ? query(collection(firestore, 'galleryCategories'), orderBy('order', 'asc')) : null, [firestore]);
-  const assetsQuery = useMemoFirebase(() => firestore ? query(collection(firestore, 'galleryAssets'), orderBy('createdAt', 'desc')) : null, [firestore]);
+  const { data: categories, mutate: mutateCats } = useLocalCollection<GalleryCategory>('galleryCategories');
+  const { data: assets, isLoading, mutate: mutateAssets } = useLocalCollection<GalleryAsset>('galleryAssets');
 
-  const { data: categories } = useCollection<GalleryCategory>(categoriesQuery);
-  const { data: assets, isLoading } = useCollection<GalleryAsset>(assetsQuery);
+  const getDisplayName = useCallback((cat?: GalleryCategory) => {
+    if (!cat) return '未分类';
+    return cat.name;
+  }, []);
 
   const categoryTree = useMemo(() => {
     if (!categories) return [];
     const getFullPath = (cat: GalleryCategory): string => {
       const parent = categories.find(c => c.id === cat.parentId);
-      return parent ? `${getFullPath(parent)} > ${cat.name}` : cat.name;
+      const name = getDisplayName(cat);
+      return parent ? `${getFullPath(parent)} > ${name}` : name;
     };
     const getDepth = (cat: GalleryCategory): number => {
       const parent = categories.find(c => c.id === cat.parentId);
@@ -144,7 +146,7 @@ export default function GalleryPage() {
     };
     build(null);
     return tree;
-  }, [categories]);
+  }, [categories, getDisplayName]);
 
   useEffect(() => {
     if (categoryTree.length > 0 && !targetUploadCategoryId) setTargetUploadCategoryId(categoryTree[0].id);
@@ -231,7 +233,7 @@ export default function GalleryPage() {
   }, []);
 
   const handleFileUpload = async (files: FileList | null) => {
-    if (!files || !firestore) return;
+    if (!files) return;
     if (!categories || categories.length === 0) {
       toast({ variant: "destructive", title: "操作受阻", description: "请先添加至少一个分类。" });
       return;
@@ -245,61 +247,51 @@ export default function GalleryPage() {
       id: `task_${Date.now()}_${i}`,
       fileName: file.name,
       progress: 0,
-      status: 'reading'
+      status: 'uploading'
     }));
     
     setUploadTasks(prev => [...prev, ...newTasks]);
 
-    fileArray.forEach((file, index) => {
-      const taskId = newTasks[index].id;
-      if (!file.type.startsWith('image/')) { updateTask(taskId, { status: 'error', error: '类型不符' }); return; }
-      
-      // Firestore 单个文档限制为 1MB。Base64 会增加约 33% 的大小，
-      // 因此我们将原始文件大小限制在 700KB 左右以确保安全。
-      const MAX_FILE_SIZE = 700 * 1024; 
-      if (file.size > MAX_FILE_SIZE) { 
-        updateTask(taskId, { status: 'error', error: '超过 700KB' }); 
-        return; 
-      }
+    for (let i = 0; i < fileArray.length; i++) {
+      const file = fileArray[i];
+      const taskId = newTasks[i].id;
 
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        updateTask(taskId, { status: 'uploading', progress: 50 });
-        const base64 = e.target?.result as string;
+      try {
+        const formData = new FormData();
+        formData.append('file', file);
         
-        const existingAsset = assets?.find(a => a.fileName === file.name);
-        let finalAssetId = `asset_${Date.now()}_${index}`;
-        let finalTitle = file.name.split('.')[0];
-        let isUpdate = false;
+        const uploadRes = await fetch('/api/upload', {
+          method: 'POST',
+          body: formData,
+        });
 
-        if (existingAsset) {
-          if (duplicateStrategy === 'overwrite') {
-            finalAssetId = existingAsset.id;
-            finalTitle = existingAsset.title;
-            isUpdate = true;
-          } else {
-            finalTitle = `${finalTitle}_${Date.now().toString().slice(-4)}`;
-          }
-        }
+        if (!uploadRes.ok) throw new Error("Upload failed");
+        const { url, fileName } = await uploadRes.json();
 
-        updateTask(taskId, { isUpdate, progress: 70 });
+        updateTask(taskId, { progress: 70 });
 
-        const assetRef = doc(firestore, 'galleryAssets', finalAssetId);
-        setDocumentNonBlocking(assetRef, {
-          id: finalAssetId,
-          url: base64,
-          title: finalTitle,
-          fileName: file.name,
+        const assetId = `asset_${Date.now()}_${i}`;
+        const assetData = {
+          id: assetId,
+          url,
+          title: file.name.split('.')[0],
+          fileName: fileName,
           fileSize: file.size,
           categoryId: categoryId,
-          createdAt: isUpdate ? (existingAsset?.createdAt || serverTimestamp()) : serverTimestamp(),
-          updatedAt: serverTimestamp()
-        }, { merge: true });
+        };
 
-        setTimeout(() => updateTask(taskId, { status: 'completed', progress: 100 }), 500);
-      };
-      reader.readAsDataURL(file);
-    });
+        await fetch(`/api/galleryAssets/${assetId}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(assetData),
+        });
+
+         mutateAssets();
+        updateTask(taskId, { status: 'completed', progress: 100 });
+      } catch (e: any) {
+        updateTask(taskId, { status: 'error', error: e.message });
+      }
+    }
   };
 
   const updateTask = (id: string, updates: Partial<UploadTask>) => {
@@ -312,20 +304,38 @@ export default function GalleryPage() {
     setSelectedIds(newSelected);
   };
 
-  const handleBatchDelete = () => {
-    if (!firestore || selectedIds.size === 0) return;
+  const handleBatchDelete = async () => {
+    if (selectedIds.size === 0) return;
     if (!confirm(`永久移除选中的 ${selectedIds.size} 项素材？`)) return;
-    selectedIds.forEach(id => deleteDocumentNonBlocking(doc(firestore, 'galleryAssets', id)));
-    setSelectedIds(new Set());
-    toast({ title: "批量删除已启动" });
+    try {
+      await Promise.all(Array.from(selectedIds).map(id => fetch(`/api/galleryAssets/${id}`, { method: 'DELETE' })));
+      mutateAssets();
+      setSelectedIds(new Set());
+      toast({ title: `已删除 ${selectedIds.size} 项素材` });
+    } catch (e) {
+      toast({ variant: "destructive", title: "批量删除失败" });
+    }
   };
 
-  const handleBatchUpdateCategory = () => {
-    if (!firestore || selectedIds.size === 0 || !batchTargetCategoryId) return;
-    selectedIds.forEach(id => updateDocumentNonBlocking(doc(firestore, 'galleryAssets', id), { categoryId: batchTargetCategoryId }));
-    setSelectedIds(new Set());
-    setIsBatchCategoryDialogOpen(false);
-    toast({ title: `已移动 ${selectedIds.size} 项素材` });
+  const handleBatchUpdateCategory = async () => {
+    if (selectedIds.size === 0 || !batchTargetCategoryId) return;
+    try {
+      await Promise.all(Array.from(selectedIds).map(async id => {
+        const asset = assets?.find(a => a.id === id);
+        if (!asset) return;
+        return fetch(`/api/galleryAssets/${id}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ ...asset, categoryId: batchTargetCategoryId }),
+        });
+      }));
+      mutateAssets();
+      setSelectedIds(new Set());
+      setIsBatchCategoryDialogOpen(false);
+      toast({ title: `已移动 ${selectedIds.size} 项素材` });
+    } catch (e) {
+      toast({ variant: "destructive", title: "批量移动失败" });
+    }
   };
 
   const resetCatForm = () => { 
@@ -333,16 +343,67 @@ export default function GalleryPage() {
     setCatForm({ name: '', parentId: 'none' }); 
   };
 
-  const handleSaveCategory = () => {
-    if (!firestore || !catForm.name.trim()) return;
-    const pId = catForm.parentId === 'none' ? null : catForm.parentId;
-    if (editingCatId) {
-      updateDocumentNonBlocking(doc(firestore, 'galleryCategories', editingCatId), { name: catForm.name, parentId: pId });
-    } else {
-      const id = `cat_${Date.now()}`;
-      setDocumentNonBlocking(doc(firestore, 'galleryCategories', id), { id, name: catForm.name, parentId: pId, order: (categories?.length || 0) + 1 }, { merge: true });
+  const handleDeleteCategory = async (id: string) => {
+    if (!confirm('确定要删除此分类吗？关联的素材将变为“未分类”。')) return;
+    try {
+      const res = await fetch(`/api/galleryCategories/${id}`, { method: 'DELETE' });
+      if (!res.ok) throw new Error();
+      mutateCats();
+      toast({ title: "分类已删除" });
+    } catch (e) {
+      toast({ variant: "destructive", title: "删除失败" });
     }
-    resetCatForm();
+  };
+
+  const handleMoveCategory = async (cat: GalleryCategory, direction: 'up' | 'down') => {
+    if (!categories) return;
+    const sameLevel = categories.filter(c => c.parentId === cat.parentId).sort((a, b) => a.order - b.order);
+    const idx = sameLevel.findIndex(c => c.id === cat.id);
+    const targetIdx = direction === 'up' ? idx - 1 : idx + 1;
+    if (targetIdx < 0 || targetIdx >= sameLevel.length) return;
+
+    const targetCat = sameLevel[targetIdx];
+    try {
+      await Promise.all([
+        fetch(`/api/galleryCategories/${cat.id}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ ...cat, order: targetCat.order })
+        }),
+        fetch(`/api/galleryCategories/${targetCat.id}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ ...targetCat, order: cat.order })
+        })
+      ]);
+      mutateCats();
+    } catch (e) {
+      toast({ variant: "destructive", title: "排序失败" });
+    }
+  };
+
+  const handleSaveCategory = async () => {
+    if (!catForm.name.trim()) return;
+    const pId = catForm.parentId === 'none' ? null : catForm.parentId;
+    const id = editingCatId || `cat_${Date.now()}`;
+    
+    try {
+      await fetch(`/api/galleryCategories/${id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          id,
+          name: catForm.name,
+          parentId: pId,
+          order: editingCatId ? undefined : (categories?.length || 0) + 1
+        }),
+      });
+      resetCatForm();
+      mutateCats();
+      toast({ title: "分类已保存" });
+    } catch (e) {
+      toast({ variant: "destructive", title: "分类保存失败" });
+    }
   };
 
   return (
@@ -408,9 +469,73 @@ export default function GalleryPage() {
                       </Select>
                     </div>
                   </div>
-                  <Button onClick={handleSaveCategory} className="w-full rounded-2xl h-14 font-bold uppercase text-xs tracking-widest shadow-xl shadow-primary/10">
-                    {editingCatId ? '保存架构变更' : '确认添加分类'}
-                  </Button>
+                  <div className="flex gap-3">
+                    {editingCatId && (
+                      <Button variant="outline" onClick={resetCatForm} className="flex-1 rounded-2xl h-14 font-bold uppercase text-xs tracking-widest border-slate-200">
+                        取消编辑
+                      </Button>
+                    )}
+                    <Button onClick={handleSaveCategory} className="flex-[2] rounded-2xl h-14 font-bold uppercase text-xs tracking-widest shadow-xl shadow-primary/10">
+                      {editingCatId ? '保存架构变更' : '确认添加分类'}
+                    </Button>
+                  </div>
+                </div>
+
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between px-2">
+                    <Label className="text-[10px] font-bold uppercase text-slate-400 tracking-[0.2em]">当前架构概览</Label>
+                    <Badge variant="outline" className="text-[9px] border-slate-200 text-slate-400 rounded-full">{categories?.length || 0} 个分类</Badge>
+                  </div>
+                  <div className="max-h-[350px] overflow-y-auto pr-2 custom-scrollbar space-y-2">
+                    {categoryTree.length === 0 ? (
+                      <div className="py-12 text-center border-2 border-dashed border-slate-100 rounded-[2rem]">
+                        <Layers className="h-8 w-8 text-slate-200 mx-auto mb-3" />
+                        <p className="text-[10px] font-bold text-slate-300 uppercase tracking-widest">暂无分类架构 / Empty Hierarchy</p>
+                      </div>
+                    ) : (
+                      categoryTree.map((cat, idx) => {
+                        const sameLevel = categoryTree.filter(c => c.parentId === cat.parentId);
+                        const isFirst = sameLevel[0]?.id === cat.id;
+                        const isLast = sameLevel[sameLevel.length - 1]?.id === cat.id;
+                        
+                        return (
+                          <div key={cat.id} className="group flex items-center justify-between p-4 bg-slate-50 hover:bg-white hover:shadow-xl hover:shadow-slate-200/50 rounded-2xl transition-all duration-300 border border-transparent hover:border-slate-100">
+                            <div className="flex items-center gap-4">
+                              <div className="flex flex-col items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                <Button size="icon" variant="ghost" disabled={isFirst} onClick={() => handleMoveCategory(cat, 'up')} className="h-6 w-6 rounded-lg hover:bg-primary/10 hover:text-primary disabled:opacity-10">
+                                  <ChevronUp className="h-3.5 w-3.5" />
+                                </Button>
+                                <Button size="icon" variant="ghost" disabled={isLast} onClick={() => handleMoveCategory(cat, 'down')} className="h-6 w-6 rounded-lg hover:bg-primary/10 hover:text-primary disabled:opacity-10">
+                                  <ChevronDown className="h-3.5 w-3.5" />
+                                </Button>
+                              </div>
+                              <div className="flex flex-col">
+                                <div className="flex items-center gap-2">
+                                  <div style={{ width: `${cat.depth * 1.5}rem` }} className="h-px bg-slate-200 flex-shrink-0" />
+                                  <span className={cn("text-sm font-bold tracking-tight", cat.depth === 0 ? "text-slate-900" : "text-slate-500")}>
+                                    {cat.name}
+                                  </span>
+                                </div>
+                                {cat.parentId && (
+                                  <span className="text-[8px] font-bold text-slate-300 uppercase tracking-widest pl-[1.5rem]" style={{ marginLeft: `${cat.depth * 1.5}rem` }}>
+                                    Sub-category of {categories?.find(c => c.id === cat.parentId)?.name}
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+                            <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-all">
+                              <Button size="icon" variant="ghost" onClick={() => { setEditingCatId(cat.id); setCatForm({ name: cat.name, parentId: cat.parentId || 'none' }); }} className="h-10 w-10 rounded-xl hover:bg-primary/10 hover:text-primary">
+                                <Edit3 className="h-4 w-4" />
+                              </Button>
+                              <Button size="icon" variant="ghost" onClick={() => handleDeleteCategory(cat.id)} className="h-10 w-10 rounded-xl hover:bg-destructive/10 hover:text-destructive">
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            </div>
+                          </div>
+                        );
+                      })
+                    )}
+                  </div>
                 </div>
               </div>
             </DialogContent>
@@ -468,7 +593,7 @@ export default function GalleryPage() {
                         <SelectContent className="rounded-2xl border-slate-200 shadow-2xl">
                           {categoryTree.map(cat => (
                             <SelectItem key={cat.id} value={cat.id} className="text-xs py-3">
-                              <span style={{ paddingLeft: `${cat.depth * 0.6}rem` }}>{cat.name}</span>
+                              <span style={{ paddingLeft: `${cat.depth * 0.6}rem` }}>{getDisplayName(cat)}</span>
                             </SelectItem>
                           ))}
                         </SelectContent>
@@ -520,7 +645,7 @@ export default function GalleryPage() {
               <SelectItem value="all" className="text-[10px] font-bold uppercase py-3">全部分类 (ALL)</SelectItem>
               {categoryTree.map(cat => (
                 <SelectItem key={cat.id} value={cat.id} className="text-[10px] font-bold uppercase py-3">
-                  <span style={{ paddingLeft: `${cat.depth * 0.8}rem` }}>{cat.name}</span>
+                  <span style={{ paddingLeft: `${cat.depth * 0.8}rem` }}>{getDisplayName(cat)}</span>
                 </SelectItem>
               ))}
             </SelectContent>
@@ -577,7 +702,7 @@ export default function GalleryPage() {
                 </div>
                 <div className="absolute bottom-3 left-3 pointer-events-none">
                   <Badge className="text-[8px] bg-black/40 backdrop-blur-md border-none px-2.5 py-0.5 h-5 font-bold uppercase tracking-widest text-white/90">
-                    {categoryTree.find(c => c.id === asset.categoryId)?.name || 'UNCLASSIFIED'}
+                    {getDisplayName(categories?.find(c => c.id === asset.categoryId))}
                   </Badge>
                 </div>
               </div>
@@ -610,13 +735,23 @@ export default function GalleryPage() {
                       <Edit3 className="h-4 w-4" />
                     </Button>
                   </div>
-                  <Button 
-                    size="icon" 
-                    variant="ghost" 
-                    className="h-8 w-8 rounded-xl text-destructive/40 hover:text-destructive hover:bg-destructive/5" 
-                    onClick={() => confirm('永久移除该图片？') && deleteDocumentNonBlocking(doc(firestore!, 'galleryAssets', asset.id))} 
-                    title="删除素材"
-                  >
+                    <Button 
+                      size="icon" 
+                      variant="ghost" 
+                      className="h-8 w-8 rounded-xl text-destructive/40 hover:text-destructive hover:bg-destructive/5" 
+                      onClick={async () => {
+                        if (confirm('永久移除该图片？')) {
+                          try {
+                            await fetch(`/api/galleryAssets/${asset.id}`, { method: 'DELETE' });
+                            mutateAssets();
+                            toast({ title: "素材已删除" });
+                          } catch (e) {
+                            toast({ variant: "destructive", title: "删除失败" });
+                          }
+                        }
+                      }} 
+                      title="删除素材"
+                    >
                     <Trash2 className="h-4 w-4" />
                   </Button>
                 </div>
@@ -666,7 +801,7 @@ export default function GalleryPage() {
                   <Label className="text-[10px] font-bold uppercase opacity-60">目标分类</Label>
                   <Select value={batchTargetCategoryId} onValueChange={setBatchTargetCategoryId}>
                     <SelectTrigger className="rounded-xl h-11"><SelectValue placeholder="请选择..." /></SelectTrigger>
-                    <SelectContent className="rounded-xl">{categoryTree.map(cat => (<SelectItem key={cat.id} value={cat.id}><span style={{ paddingLeft: `${cat.depth * 0.8}rem` }} className={cn("text-xs", cat.depth > 0 && "text-muted-foreground")}>{cat.name}</span></SelectItem>))}</SelectContent>
+                    <SelectContent className="rounded-xl">{categoryTree.map(cat => (<SelectItem key={cat.id} value={cat.id}><span style={{ paddingLeft: `${cat.depth * 0.8}rem` }} className={cn("text-xs", cat.depth > 0 && "text-muted-foreground")}>{getDisplayName(cat)}</span></SelectItem>))}</SelectContent>
                   </Select>
                 </div>
                 <DialogFooter className="flex gap-2">
@@ -698,8 +833,26 @@ export default function GalleryPage() {
             <DialogTitle className="text-lg font-bold flex items-center gap-2 text-primary">编辑素材属性</DialogTitle>
             <DialogDescription>修改素材的显示标题或归属分类。</DialogDescription>
           </DialogHeader>
-          {editingAsset && (<div className="p-6 space-y-5 bg-white"><div className="space-y-2"><Label className="text-[10px] font-bold uppercase opacity-60">素材标题</Label><Input value={editingAsset.title} onChange={e => setEditingAsset({...editingAsset, title: e.target.value})} className="rounded-xl h-11" /></div><div className="space-y-2"><Label className="text-[10px] font-bold uppercase opacity-60">归属分类</Label><Select value={editingAsset.categoryId} onValueChange={v => setEditingAsset({...editingAsset, categoryId: v})}><SelectTrigger className="h-11 rounded-xl"><SelectValue /></SelectTrigger><SelectContent className="rounded-xl">{categoryTree.map(cat => (<SelectItem key={cat.id} value={cat.id} className="text-xs"><span style={{ paddingLeft: `${cat.depth * 0.6}rem` }}>{cat.name}</span></SelectItem>))}</SelectContent></Select></div></div>)}
-          <DialogFooter className="p-6 bg-muted/5 flex gap-2 border-t border-border/40"><Button variant="outline" onClick={() => setEditingAsset(null)} className="rounded-xl h-11 flex-1 text-xs">放弃修改</Button><Button onClick={() => { if(firestore && editingAsset) { updateDocumentNonBlocking(doc(firestore, 'galleryAssets', editingAsset.id), editingAsset); setEditingAsset(null); toast({ title: "属性已同步至云端" }); } }} className="rounded-xl h-11 flex-1 text-xs">保存变更</Button></DialogFooter>
+          {editingAsset && (<div className="p-6 space-y-5 bg-white"><div className="space-y-2"><Label className="text-[10px] font-bold uppercase opacity-60">素材标题</Label><Input value={editingAsset.title} onChange={e => setEditingAsset({...editingAsset, title: e.target.value})} className="rounded-xl h-11" /></div><div className="space-y-2"><Label className="text-[10px] font-bold uppercase opacity-60">归属分类</Label><Select value={editingAsset.categoryId} onValueChange={v => setEditingAsset({...editingAsset, categoryId: v})}><SelectTrigger className="h-11 rounded-xl"><SelectValue /></SelectTrigger><SelectContent className="rounded-xl">{categoryTree.map(cat => (<SelectItem key={cat.id} value={cat.id} className="text-xs"><span style={{ paddingLeft: `${cat.depth * 0.6}rem` }}>{getDisplayName(cat)}</span></SelectItem>))}</SelectContent></Select></div></div>)}
+          <DialogFooter className="p-6 bg-muted/5 flex gap-2 border-t border-border/40">
+            <Button variant="outline" onClick={() => setEditingAsset(null)} className="rounded-xl h-11 flex-1 text-xs">放弃修改</Button>
+            <Button onClick={async () => {
+              if (editingAsset) {
+                try {
+                  await fetch(`/api/galleryAssets/${editingAsset.id}`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(editingAsset),
+                  });
+                  mutateAssets();
+                  setEditingAsset(null);
+                  toast({ title: "属性已保存" });
+                } catch (e) {
+                  toast({ variant: "destructive", title: "保存失败" });
+                }
+              }
+            }} className="rounded-xl h-11 flex-1 text-xs">保存变更</Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
 

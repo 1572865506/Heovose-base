@@ -21,23 +21,16 @@ import { Switch } from '@/components/ui/switch';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import Image from 'next/image';
 import { cn } from '@/lib/utils';
-import { useFirestore, useDoc, useMemoFirebase } from '@/firebase';
-import { doc, setDoc } from 'firebase/firestore';
+import { useLocalDoc } from '@/hooks/use-local-doc';
 import { useToast } from '@/hooks/use-toast';
 import { GalleryPicker } from '@/components/admin/GalleryPicker';
 
 export default function NavigationSettingsPage() {
-  const firestore = useFirestore();
   const { toast } = useToast();
   const [isSaving, setIsSaving] = useState(false);
   const [isPickerOpen, setIsPickerOpen] = useState(false);
 
-  const navSettingsRef = useMemoFirebase(() => {
-    if (!firestore) return null;
-    return doc(firestore, 'settings', 'navigation');
-  }, [firestore]);
-
-  const { data: remoteSettings, isLoading } = useDoc<any>(navSettingsRef);
+  const { data: remoteSettings, isLoading, mutate: mutateSettings } = useLocalDoc<any>('settings', 'navigation');
   const [settings, setSettings] = useState<any>({
     navbarMaterial: 'level-02',
     showBorder: true,
@@ -50,16 +43,22 @@ export default function NavigationSettingsPage() {
   });
 
   useEffect(() => {
-    if (remoteSettings) {
+    if (remoteSettings && Object.keys(remoteSettings).length > 0) {
       setSettings(remoteSettings);
     }
   }, [remoteSettings]);
 
   const handleSave = async () => {
-    if (!navSettingsRef) return;
     setIsSaving(true);
     try {
-      await setDoc(navSettingsRef, settings);
+      const res = await fetch('/api/settings/navigation', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(settings),
+      });
+
+      if (!res.ok) throw new Error("Failed to save");
+      mutateSettings();
       toast({
         title: "保存成功",
         description: "导航设置已全局更新。",

@@ -2,8 +2,8 @@
 "use client";
 
 import { useState, useEffect, useRef } from 'react';
-import { useUser, useFirestore, useDoc, useMemoFirebase } from '@/firebase';
-import { doc, serverTimestamp } from 'firebase/firestore';
+import { useLocalDoc } from '@/hooks/use-local-doc';
+import { useSession } from 'next-auth/react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -21,22 +21,16 @@ import {
   Copy
 } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { setDocumentNonBlocking } from '@/firebase/non-blocking-updates';
 import { useToast } from '@/hooks/use-toast';
 import { Badge } from '@/components/ui/badge';
 
 export default function ProfilePage() {
-  const { user } = useUser();
-  const firestore = useFirestore();
+  const { data: session } = useSession();
+  const user = session?.user;
   const { toast } = useToast();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [isSaving, setIsSaving] = useState(false);
-
-  const adminRef = useMemoFirebase(() => 
-    (firestore && user?.uid) ? doc(firestore, 'admins', user.uid) : null, 
-    [firestore, user?.uid]
-  );
-  const { data: profile } = useDoc<any>(adminRef);
+  const { data: profile, mutate: mutateProfile } = useLocalDoc<any>('profile', '');
 
   const [formData, setFormData] = useState({
     displayName: '',
@@ -46,8 +40,8 @@ export default function ProfilePage() {
   useEffect(() => {
     if (profile) {
       setFormData({
-        displayName: profile.displayName || '',
-        avatarUrl: profile.avatarUrl || ''
+        displayName: profile.name || '',
+        avatarUrl: profile.image || ''
       });
     }
   }, [profile]);
@@ -75,19 +69,26 @@ export default function ProfilePage() {
     reader.readAsDataURL(file);
   };
 
-  const handleSave = () => {
-    if (!firestore || !user?.uid) return;
+  const handleSave = async () => {
+    if (!user?.id) return;
     setIsSaving(true);
     
-    setDocumentNonBlocking(doc(firestore, 'admins', user.uid), {
-      ...formData,
-      updatedAt: serverTimestamp()
-    }, { merge: true });
-
-    setTimeout(() => {
+    try {
+      await fetch('/api/profile', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: formData.displayName,
+          image: formData.avatarUrl
+        }),
+      });
+      mutateProfile();
       setIsSaving(false);
       toast({ title: "个人资料已更新", description: "新的名称和头像将立即在全站管理界面生效。" });
-    }, 800);
+    } catch (e) {
+      setIsSaving(false);
+      toast({ variant: "destructive", title: "更新失败" });
+    }
   };
 
   return (
@@ -139,15 +140,15 @@ export default function ProfilePage() {
                        <div className="flex items-center gap-1.5">
                           <div className="flex items-center gap-1.5 px-2 py-0.5 bg-muted/30 rounded-md border border-border/40">
                              <Key className="h-2.5 w-2.5 text-muted-foreground/60" />
-                             <code className="text-[8px] font-mono text-muted-foreground/80 uppercase tracking-tighter">UID: {user?.uid}</code>
+                             <code className="text-[8px] font-mono text-muted-foreground/80 uppercase tracking-tighter">ID: {user?.id}</code>
                           </div>
                           <Button 
                             variant="ghost" 
                             size="icon" 
                             className="h-5 w-5 opacity-40 hover:opacity-100 transition-opacity"
                             onClick={() => {
-                              navigator.clipboard.writeText(user?.uid || '');
-                              toast({ title: "UID 已复制" });
+                              navigator.clipboard.writeText(user?.id || '');
+                              toast({ title: "ID 已复制" });
                             }}
                           >
                             <Copy className="h-3 w-3" />

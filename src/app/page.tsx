@@ -1,17 +1,16 @@
-
 "use client";
 
 import { useState, useEffect } from 'react';
 import dynamic from 'next/dynamic';
 import { useSearchParams } from 'next/navigation';
-import { useFirestore, useDoc, useMemoFirebase } from '@/firebase';
-import { doc } from 'firebase/firestore';
+import { useLocalDoc } from '@/hooks/use-local-doc';
 import { Locale } from '@/lib/translations';
 import { Navbar } from '@/components/Navbar';
 import { Hero } from '@/components/Hero';
 import { ProductBento } from '@/components/ProductBento';
 import { ProductGallery } from '@/components/ProductGallery';
 import { Footer } from '@/components/Footer';
+import { Suspense } from 'react';
 
 // 对首屏以下的重型组件采用动态导入
 const VideoSection = dynamic(() => import('@/components/VideoSection').then(mod => mod.VideoSection), { ssr: false });
@@ -19,37 +18,17 @@ const ProductionProcess = dynamic(() => import('@/components/ProductionProcess')
 const CaseStudies = dynamic(() => import('@/components/CaseStudies').then(mod => mod.CaseStudies), { ssr: false });
 const GlobalMap = dynamic(() => import('@/components/GlobalMap').then(mod => mod.GlobalMap), { ssr: false });
 
-import { Suspense } from 'react';
-
 function HomeContent() {
   const searchParams = useSearchParams();
-  const firestore = useFirestore();
   
   // 默认语种，等待自动判定
   const [locale, setLocale] = useState<Locale>('en');
 
-  // 获取云端语种及首页内容配置
-  const langConfigRef = useMemoFirebase(() => 
-    firestore ? doc(firestore, 'settings', 'languages') : null, 
-    [firestore]
-  );
-  const homeHeroRef = useMemoFirebase(() =>
-    firestore ? doc(firestore, 'homepageContent', 'hero') : null,
-    [firestore]
-  );
-  const homeVideoRef = useMemoFirebase(() =>
-    firestore ? doc(firestore, 'homepageContent', 'video') : null,
-    [firestore]
-  );
-  const homeMapRef = useMemoFirebase(() =>
-    firestore ? doc(firestore, 'homepageContent', 'map') : null,
-    [firestore]
-  );
-
-  const { data: langSettings } = useDoc<any>(langConfigRef);
-  const { data: heroConfig, isLoading: isHeroLoading } = useDoc<any>(homeHeroRef);
-  const { data: videoConfig, isLoading: isVideoLoading } = useDoc<any>(homeVideoRef);
-  const { data: mapConfig, isLoading: isMapLoading } = useDoc<any>(homeMapRef);
+  // 使用本地 Doc Hook 获取配置
+  const { data: langSettings } = useLocalDoc<any>('settings', 'languages');
+  const { data: heroConfig, isLoading: isHeroLoading } = useLocalDoc<any>('homepageContent', 'hero');
+  const { data: videoConfig, isLoading: isVideoLoading } = useLocalDoc<any>('homepageContent', 'video');
+  const { data: mapConfig, isLoading: isMapLoading } = useLocalDoc<any>('homepageContent', 'map');
 
   useEffect(() => {
     // 智能语种判定逻辑
@@ -78,7 +57,7 @@ function HomeContent() {
         return browserLang;
       }
 
-      // 4. 回退至云端设置的默认语种
+      // 4. 回退至数据库设置的默认语种
       if (langSettings?.defaultLanguage) {
         return langSettings.defaultLanguage as Locale;
       }
@@ -114,7 +93,6 @@ function HomeContent() {
       <Footer locale={locale} />
     </main>
   );
-
 }
 
 export default function Home() {

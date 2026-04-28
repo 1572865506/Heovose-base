@@ -16,8 +16,7 @@ import {
 import Autoplay from "embla-carousel-autoplay";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import { useFirestore, useCollection, useMemoFirebase } from '@/firebase';
-import { collection, query, orderBy } from 'firebase/firestore';
+import { useLocalCollection } from '@/hooks/use-local-collection';
 
 interface RemoteCase {
   id: string;
@@ -32,7 +31,6 @@ interface RemoteCase {
 
 export function CaseStudies({ locale }: { locale: Locale }) {
   const t = translations[locale].cases;
-  const firestore = useFirestore();
   const [api, setApi] = useState<CarouselApi>();
   const [current, setCurrent] = useState(0);
   const [count, setCount] = useState(0);
@@ -45,12 +43,8 @@ export function CaseStudies({ locale }: { locale: Locale }) {
     Autoplay({ delay: AUTOPLAY_DELAY, stopOnInteraction: false })
   );
 
-  // 1. 从 Firestore 获取云端案例
-  const casesQuery = useMemoFirebase(() => 
-    firestore ? query(collection(firestore, 'caseStudies'), orderBy('order', 'asc')) : null, 
-    [firestore]
-  );
-  const { data: remoteCases, isLoading } = useCollection<RemoteCase>(casesQuery);
+  // 1. 从 API 获取云端案例
+  const { data: remoteCases, isLoading } = useLocalCollection<RemoteCase>('caseStudies');
 
   // 2. 数据处理与回退逻辑
   const cases = useMemo(() => {

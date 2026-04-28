@@ -2,8 +2,7 @@
 "use client";
 
 import { useState, useMemo } from 'react';
-import { useFirestore, useCollection, useMemoFirebase } from '@/firebase';
-import { collection, query, orderBy } from 'firebase/firestore';
+import { useLocalCollection } from '@/hooks/use-local-collection';
 import { 
   Search, 
   Image as ImageIcon, 
@@ -38,16 +37,12 @@ interface GalleryPickerProps {
 }
 
 export function GalleryPicker({ open, onOpenChange, onSelect, currentValue }: GalleryPickerProps) {
-  const firestore = useFirestore();
   const [searchQuery, setSearchQuery] = useState('');
   const [filterCategory, setFilterCategory] = useState<string>('all');
   const [selectedUrl, setSelectedUrl] = useState<string | null>(currentValue || null);
 
-  const categoriesQuery = useMemoFirebase(() => firestore ? query(collection(firestore, 'galleryCategories'), orderBy('order', 'asc')) : null, [firestore]);
-  const assetsQuery = useMemoFirebase(() => firestore ? query(collection(firestore, 'galleryAssets'), orderBy('createdAt', 'desc')) : null, [firestore]);
-
-  const { data: categories } = useCollection<any>(categoriesQuery);
-  const { data: assets, isLoading } = useCollection<any>(assetsQuery);
+  const { data: categories } = useLocalCollection<any>('galleryCategories');
+  const { data: assets, isLoading } = useLocalCollection<any>('galleryAssets');
 
   const filteredAssets = useMemo(() => {
     if (!assets) return [];

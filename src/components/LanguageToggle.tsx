@@ -3,8 +3,7 @@
 
 import { useMemo } from "react";
 import { Locale } from "@/lib/translations";
-import { useFirestore, useDoc, useMemoFirebase } from "@/firebase";
-import { doc } from "firebase/firestore";
+import { useLocalDoc } from "@/hooks/use-local-doc";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -29,14 +28,8 @@ interface LanguageToggleProps {
 }
 
 export function LanguageToggle({ currentLocale, setLocale }: LanguageToggleProps) {
-  const firestore = useFirestore();
-  
   // 1. 实时获取云端语种配置
-  const langConfigRef = useMemoFirebase(() => 
-    firestore ? doc(firestore, 'settings', 'languages') : null, 
-    [firestore]
-  );
-  const { data: langSettings, isLoading } = useDoc<LanguageSettings>(langConfigRef);
+  const { data: langSettings, isLoading } = useLocalDoc<LanguageSettings>('settings', 'languages');
 
   // 2. 处理动态语种列表
   const availableLanguages = useMemo(() => {

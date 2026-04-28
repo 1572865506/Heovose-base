@@ -2,8 +2,7 @@
 "use client";
 
 import { useState, useEffect, useMemo } from 'react';
-import { useFirestore, useDoc, useMemoFirebase } from '@/firebase';
-import { doc, serverTimestamp } from 'firebase/firestore';
+import { useLocalDoc } from '@/hooks/use-local-doc';
 import { 
   Card, 
   CardContent, 
@@ -56,7 +55,6 @@ import {
   Gauge,
   LayoutGrid
 } from 'lucide-react';
-import { setDocumentNonBlocking } from '@/firebase/non-blocking-updates';
 import { useToast } from '@/hooks/use-toast';
 import { Badge } from '@/components/ui/badge';
 import { testAiConnection } from '@/ai/flows/test-connection-flow';
@@ -89,11 +87,8 @@ const GlassCard = ({ children, className }: { children: React.ReactNode, classNa
 );
 
 export default function AiSettingsPage() {
-  const firestore = useFirestore();
   const { toast } = useToast();
-  
-  const aiRef = useMemoFirebase(() => firestore ? doc(firestore, 'settings', 'ai') : null, [firestore]);
-  const { data: aiConfig } = useDoc<AiConfig>(aiRef);
+  const { data: aiConfig, isLoading: isConfigLoading } = useLocalDoc<AiConfig>('settings', 'ai');
 
   const [formData, setFormData] = useState<AiConfig>({
     isEnabled: true,
@@ -117,6 +112,8 @@ export default function AiSettingsPage() {
       setFormData({
         ...aiConfig,
         apiKey: aiConfig.apiKey || '',
+        isEnabled: aiConfig.isEnabled ?? true,
+        temperature: aiConfig.temperature ?? 0.7,
         systemInstruction: aiConfig.systemInstruction || formData.systemInstruction
       });
       
@@ -130,23 +127,28 @@ export default function AiSettingsPage() {
     return getModelQuota(formData.model);
   }, [formData.model]);
 
-  const handleSave = () => {
-    if (!firestore) return;
+  const handleSave = async () => {
     setIsSaving(true);
     
-    setDocumentNonBlocking(doc(firestore, 'settings', 'ai'), {
-      ...formData,
-      lastDiagnosis: testReport,
-      updatedAt: serverTimestamp()
-    }, { merge: true });
+    try {
+      await fetch('/api/settings/ai', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          ...formData,
+          lastDiagnosis: testReport,
+        }),
+      });
 
-    setTimeout(() => {
       setIsSaving(false);
       toast({ 
         title: "配置已同步至云端", 
         description: "AI 引擎配置及诊断状态已持久化保存。" 
       });
-    }, 800);
+    } catch (e) {
+      setIsSaving(false);
+      toast({ variant: "destructive", title: "同步失败" });
+    }
   };
 
   const runAutoTest = async () => {
@@ -310,7 +312,7 @@ export default function AiSettingsPage() {
                   <div className="pt-4 px-2">
                     <input 
                       type="range" min="0" max="1" step="0.1" 
-                      value={formData.temperature}
+                      value={formData.temperature ?? 0.7}
                       onChange={(e) => setFormData({...formData, temperature: parseFloat(e.target.value)})}
                       className="w-full h-2 bg-slate-100 rounded-full appearance-none cursor-pointer accent-primary"
                     />

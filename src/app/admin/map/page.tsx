@@ -1,8 +1,8 @@
 "use client";
 
 import { useState, useEffect } from 'react';
-import { useFirestore, useDoc, useCollection, useMemoFirebase } from '@/firebase';
-import { doc, collection, serverTimestamp, query, orderBy } from 'firebase/firestore';
+import { useLocalDoc } from '@/hooks/use-local-doc';
+import { useLocalCollection } from '@/hooks/use-local-collection';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -39,7 +39,6 @@ import {
   DialogTitle, 
   DialogDescription,
 } from '@/components/ui/dialog';
-import { setDocumentNonBlocking } from '@/firebase/non-blocking-updates';
 import { useToast } from '@/hooks/use-toast';
 import { translateContent } from '@/ai/flows/translate-flow';
 import { cn } from '@/lib/utils';
@@ -71,16 +70,10 @@ const AiGradientDef = () => (
 );
 
 export default function GlobalMapAdminPage() {
-  const firestore = useFirestore();
   const { toast } = useToast();
-  
-  const homeRef = useMemoFirebase(() => firestore ? doc(firestore, 'homepageContent', 'map') : null, [firestore]);
-  const aiRef = useMemoFirebase(() => firestore ? doc(firestore, 'settings', 'ai') : null, [firestore]);
-  const assetsQuery = useMemoFirebase(() => firestore ? query(collection(firestore, 'galleryAssets'), orderBy('createdAt', 'desc')) : null, [firestore]);
-  
-  const { data: homeData, isLoading } = useDoc<any>(homeRef);
-  const { data: aiConfig } = useDoc<any>(aiRef);
-  const { data: galleryAssets } = useCollection<any>(assetsQuery);
+  const { data: homeData, isLoading, mutate: mutateMap } = useLocalDoc<any>('homepageContent', 'map');
+  const { data: aiConfig } = useLocalDoc<any>('settings', 'ai');
+  const { data: galleryAssets } = useLocalCollection<any>('galleryAssets');
 
   const [formData, setFormData] = useState<any>({
     mapTitleZh: '',
@@ -125,19 +118,21 @@ export default function GlobalMapAdminPage() {
     }
   }, [homeData]);
 
-  const handleSave = () => {
-    if (!firestore) return;
+  const handleSave = async () => {
     setIsSaving(true);
-    
-    setDocumentNonBlocking(homeRef!, {
-      ...formData,
-      updatedAt: serverTimestamp()
-    }, { merge: true });
-
-    setTimeout(() => {
+    try {
+      await fetch('/api/homepageContent/map', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(formData),
+      });
+      mutateMap();
       setIsSaving(false);
       toast({ title: "地图配置已同步至前台" });
-    }, 800);
+    } catch (e) {
+      setIsSaving(false);
+      toast({ variant: "destructive", title: "保存失败" });
+    }
   };
 
   const handleTranslateFields = async (fields: { source: string, targetKey: string }[], localData: any) => {

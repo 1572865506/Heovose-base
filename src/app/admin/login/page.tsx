@@ -4,8 +4,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
-import { useAuth } from '@/firebase';
-import { signInWithEmailAndPassword } from 'firebase/auth';
+import { signIn } from 'next-auth/react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -24,7 +23,6 @@ export default function AdminLoginPage() {
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   
-  const auth = useAuth();
   const router = useRouter();
 
   async function handleLogin(e: React.FormEvent) {
@@ -33,11 +31,20 @@ export default function AdminLoginPage() {
     setError(null);
 
     try {
-      await signInWithEmailAndPassword(auth, email, password);
-      router.push('/admin');
+      const result = await signIn('credentials', {
+        email,
+        password,
+        redirect: false,
+      });
+
+      if (result?.error) {
+        setError('登录失败。请检查邮箱和密码是否正确。');
+      } else {
+        router.push('/admin');
+      }
     } catch (err: any) {
       console.error(err);
-      setError('登录失败。请检查邮箱和密码是否正确，并确保在 Firebase Console 中已创建该账号。');
+      setError('发生意外错误，请稍后再试。');
     } finally {
       setIsLoading(false);
     }
@@ -92,10 +99,9 @@ export default function AdminLoginPage() {
                     <div className="space-y-2 text-[10px] leading-relaxed">
                       <p className="font-bold text-primary uppercase tracking-tight">如何登录：</p>
                       <ol className="list-decimal list-inside space-y-1 opacity-70">
-                        <li>访问 <strong>Firebase Console</strong></li>
-                        <li>在 <strong>Authentication</strong> 添加用户</li>
-                        <li>在 <strong>Firestore</strong> 创建 <code>admins</code> 集合</li>
-                        <li>添加 ID 为用户 <strong>UID</strong> 的文档</li>
+                        <li>确保已在本地 <strong>PostgreSQL</strong> 数据库中创建账号</li>
+                        <li>密码需经过 <strong>bcrypt</strong> 加密存储</li>
+                        <li>账号必须具有 <code>ADMIN</code> 角色权限</li>
                       </ol>
                     </div>
                   </PopoverContent>

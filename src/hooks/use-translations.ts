@@ -2,18 +2,10 @@
 
 import { useMemo } from 'react';
 import { Locale, translations as fallbackLibrary } from '@/lib/translations';
-import { useFirestore, useCollection, useMemoFirebase } from '@/firebase';
-import { collection } from 'firebase/firestore';
+import { useLocalCollection } from '@/hooks/use-local-collection';
 
 export function useTranslations(locale: Locale) {
-  const firestore = useFirestore();
-  
-  const transQuery = useMemoFirebase(() => 
-    firestore ? collection(firestore, 'localizedStrings') : null, 
-    [firestore]
-  );
-  
-  const { data: remoteTranslations } = useCollection<any>(transQuery);
+  const { data: remoteTranslations } = useLocalCollection<any>('localizedStrings');
 
   const t = useMemo(() => {
     // Helper to get nested value from the fallback library
@@ -22,7 +14,7 @@ export function useTranslations(locale: Locale) {
     };
 
     return (key: string) => {
-      // 1. Try remote Firestore translation
+      // 1. Try remote Database translation
       const remote = remoteTranslations?.find((item: any) => item.id === key);
       if (remote) {
         return remote[locale] || remote['en'] || remote['zh'] || key;

@@ -5,8 +5,9 @@ import React, { useState, useMemo, useEffect, use } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
-import { useUser, useFirestore, useDoc, useCollection, useMemoFirebase } from '@/firebase';
-import { doc, collection } from 'firebase/firestore';
+import { useLocalCollection } from '@/hooks/use-local-collection';
+import { useLocalDoc } from '@/hooks/use-local-doc';
+import { useSession } from "next-auth/react";
 import { Locale } from '@/lib/translations';
 import { Navbar } from '@/components/Navbar';
 import { Footer } from '@/components/Footer';
@@ -54,19 +55,14 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
   const id = resolvedParams.id;
   const searchParams = useSearchParams();
 
-  const { user } = useUser();
-  const firestore = useFirestore();
+  const { data: session } = useSession();
   
   const [locale, setLocale] = useState<Locale>('en');
   const [activeImage, setActiveImage] = useState<string | null>(null);
 
-  const prodRef = useMemoFirebase(() => id ? doc(firestore, 'products', id) : null, [firestore, id]);
-  const transRef = useMemoFirebase(() => collection(firestore, 'localizedStrings'), [firestore]);
-  const langConfigRef = useMemoFirebase(() => doc(firestore, 'settings', 'languages'), [firestore]);
-
-  const { data: product, isLoading: isProdLoading } = useDoc<Product>(prodRef);
-  const { data: translationsData } = useCollection<LocalizedString>(transRef);
-  const { data: langSettings } = useDoc<any>(langConfigRef);
+  const { data: product, isLoading: isProdLoading } = useLocalDoc<Product>('products', id);
+  const { data: translationsData } = useLocalCollection<LocalizedString>('localizedStrings');
+  const { data: langSettings } = useLocalDoc<any>('settings', 'languages');
 
   // 智能判定语种
   useEffect(() => {
@@ -118,7 +114,7 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
     return <div className="min-h-screen flex items-center justify-center"><Loader2 className="h-10 w-10 animate-spin opacity-20" /></div>;
   }
 
-  if (!product || (product.status !== 'published' && !user)) {
+  if (!product || (product.status !== 'published' && !session)) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center space-y-4">

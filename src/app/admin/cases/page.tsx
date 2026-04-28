@@ -2,8 +2,8 @@
 "use client";
 
 import { useState, useMemo } from 'react';
-import { useFirestore, useCollection, useMemoFirebase, useDoc } from '@/firebase';
-import { collection, doc, serverTimestamp, query, orderBy } from 'firebase/firestore';
+import { useLocalCollection } from '@/hooks/use-local-collection';
+import { useLocalDoc } from '@/hooks/use-local-doc';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -31,7 +31,6 @@ import {
   DialogTitle, 
   DialogDescription,
 } from '@/components/ui/dialog';
-import { setDocumentNonBlocking, deleteDocumentNonBlocking, updateDocumentNonBlocking } from '@/firebase/non-blocking-updates';
 import { useToast } from '@/hooks/use-toast';
 import { translateContent } from '@/ai/flows/translate-flow';
 import { cn } from '@/lib/utils';
@@ -52,19 +51,10 @@ interface CaseStudy {
 }
 
 export default function CaseStudiesAdminPage() {
-  const firestore = useFirestore();
   const { toast } = useToast();
-  
-  const casesQuery = useMemoFirebase(() => 
-    firestore ? query(collection(firestore, 'caseStudies'), orderBy('order', 'asc')) : null, 
-    [firestore]
-  );
-  const aiRef = useMemoFirebase(() => firestore ? doc(firestore, 'settings', 'ai') : null, [firestore]);
-  const assetsQuery = useMemoFirebase(() => firestore ? query(collection(firestore, 'galleryAssets'), orderBy('createdAt', 'desc')) : null, [firestore]);
-
-  const { data: cases, isLoading } = useCollection<CaseStudy>(casesQuery);
-  const { data: aiConfig } = useDoc<any>(aiRef);
-  const { data: galleryAssets } = useCollection<any>(assetsQuery);
+  const { data: cases, isLoading, mutate: mutateCases } = useLocalCollection<CaseStudy>('caseStudies');
+  const { data: aiConfig } = useLocalDoc<any>('settings', 'ai');
+  const { data: galleryAssets } = useLocalCollection<any>('galleryAssets');
 
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isAiProcessing, setIsAiProcessing] = useState(false);
@@ -103,39 +93,69 @@ export default function CaseStudiesAdminPage() {
     setIsDialogOpen(true);
   };
 
-  const handleSave = () => {
-    if (!firestore || !form.titleZh || !form.imageUrl) {
+  const handleSave = async () => {
+    if (!form.titleZh || !form.imageUrl) {
       toast({ variant: "destructive", title: "请填写标题并选择封面图" });
       return;
     }
     
     const id = editingCase?.id || `case_${Date.now()}`;
-    const finalData = {
-      ...form,
-      id,
-      updatedAt: serverTimestamp()
-    };
+    
+    try {
+      const res = await fetch(`/api/caseStudies/${id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(form),
+      });
+      
+      if (!res.ok) throw new Error("Failed to save");
 
-    setDocumentNonBlocking(doc(firestore, 'caseStudies', id), finalData, { merge: true });
-    setIsDialogOpen(false);
-    toast({ title: editingCase ? "案例已更新" : "新案例已成功添加" });
+      setIsDialogOpen(false);
+      mutateCases();
+      toast({ title: editingCase ? "案例已更新" : "新案例已成功添加" });
+    } catch (e) {
+      toast({ variant: "destructive", title: "保存失败" });
+    }
   };
 
-  const handleDelete = (id: string) => {
-    if (!firestore || !confirm('确定要永久删除此成功案例吗？')) return;
-    deleteDocumentNonBlocking(doc(firestore, 'caseStudies', id));
+  const handleDelete = async (id: string) => {
+    if (!confirm('确定要永久删除此成功案例吗？')) return;
+    try {
+      const res = await fetch(`/api/caseStudies/${id}`, { method: 'DELETE' });
+      if (!res.ok) throw new Error("Failed to delete");
+      mutateCases();
+      toast({ title: "案例已删除" });
+    } catch (e) {
+      toast({ variant: "destructive", title: "删除失败" });
+    }
   };
 
-  const handleMove = (index: number, direction: 'up' | 'down') => {
-    if (!firestore || !cases) return;
+  const handleMove = async (index: number, direction: 'up' | 'down') => {
+    if (!cases) return;
     const targetIndex = direction === 'up' ? index - 1 : index + 1;
     if (targetIndex < 0 || targetIndex >= cases.length) return;
 
     const current = cases[index];
     const target = cases[targetIndex];
 
-    updateDocumentNonBlocking(doc(firestore, 'caseStudies', current.id), { order: target.order });
-    updateDocumentNonBlocking(doc(firestore, 'caseStudies', target.id), { order: current.order });
+    try {
+      await Promise.all([
+        fetch(`/api/caseStudies/${current.id}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ ...current, order: target.order }),
+        }),
+        fetch(`/api/caseStudies/${target.id}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ ...target, order: current.order }),
+        })
+      ]);
+      mutateCases();
+      toast({ title: "排序已更新" });
+    } catch (e) {
+      toast({ variant: "destructive", title: "排序更新失败" });
+    }
   };
 
   const handleTranslate = async () => {

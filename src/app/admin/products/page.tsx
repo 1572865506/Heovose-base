@@ -2,8 +2,8 @@
 "use client";
 
 import { useState, useMemo } from 'react';
-import { useFirestore, useCollection, useMemoFirebase, useDoc } from '@/firebase';
-import { collection, doc, serverTimestamp } from 'firebase/firestore';
+import { useLocalCollection } from '@/hooks/use-local-collection';
+import { useLocalDoc } from '@/hooks/use-local-doc';
 import { 
   Table, 
   TableBody, 
@@ -36,7 +36,6 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Switch } from '@/components/ui/switch';
-import { deleteDocumentNonBlocking, updateDocumentNonBlocking } from '@/firebase/non-blocking-updates';
 import Link from 'next/link';
 import Image from 'next/image';
 import { Badge } from '@/components/ui/badge';
@@ -73,33 +72,14 @@ interface LanguageSettings {
 }
 
 export default function AdminProductsPage() {
-  const firestore = useFirestore();
   const { toast } = useToast();
-  
   const [searchQuery, setSearchQuery] = useState('');
   const [filterCategory, setFilterCategory] = useState('all');
 
-  const productsQuery = useMemoFirebase(() => {
-    if (!firestore) return null;
-    return collection(firestore, 'products');
-  }, [firestore]);
-
-  const catsQuery = useMemoFirebase(() => {
-    if (!firestore) return null;
-    return collection(firestore, 'productCategories');
-  }, [firestore]);
-
-  const transQuery = useMemoFirebase(() => {
-    if (!firestore) return null;
-    return collection(firestore, 'localizedStrings');
-  }, [firestore]);
-
-  const langConfigRef = useMemoFirebase(() => firestore ? doc(firestore, 'settings', 'languages') : null, [firestore]);
-
-  const { data: products, isLoading: isProdsLoading } = useCollection<Product>(productsQuery);
-  const { data: categories } = useCollection<ProductCategory>(catsQuery);
-  const { data: translations } = useCollection<LocalizedString>(transQuery);
-  const { data: langSettings } = useDoc<LanguageSettings>(langConfigRef);
+  const { data: products, isLoading: isProdsLoading, mutate: mutateProducts } = useLocalCollection<Product>('products');
+  const { data: categories } = useLocalCollection<ProductCategory>('productCategories');
+  const { data: translations } = useLocalCollection<LocalizedString>('localizedStrings');
+  const { data: langSettings } = useLocalDoc<LanguageSettings>('settings', 'languages');
 
   const activeLanguages = useMemo(() => langSettings?.supportedLanguages || [
     { code: 'zh', label: '中文' }, 
@@ -130,33 +110,47 @@ export default function AdminProductsPage() {
     });
   }, [products, searchQuery, filterCategory, translations]);
 
-  const handleDelete = (p: Product) => {
-    if (!firestore || !confirm('确定要删除此产品吗？')) return;
-    deleteDocumentNonBlocking(doc(firestore, 'products', p.id));
+  const handleDelete = async (p: Product) => {
+    if (!confirm('确定要删除此产品吗？')) return;
+    try {
+      await fetch(`/api/products/${p.id}`, { method: 'DELETE' });
+      mutateProducts();
+      toast({ title: "产品已删除" });
+    } catch (e) {
+      toast({ variant: "destructive", title: "删除失败" });
+    }
   };
 
-  const toggleStatus = (p: Product) => {
-    if (!firestore) return;
+  const toggleStatus = async (p: Product) => {
     const newStatus = p.status === 'published' ? 'draft' : 'published';
-    updateDocumentNonBlocking(doc(firestore, 'products', p.id), {
-      status: newStatus,
-      updatedAt: serverTimestamp()
-    });
-    toast({
-      title: newStatus === 'published' ? "产品已发布" : "产品已下架",
-    });
+    try {
+      await fetch(`/api/products/${p.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: newStatus }),
+      });
+      mutateProducts();
+      toast({ title: newStatus === 'published' ? "产品已发布" : "产品已下架" });
+    } catch (e) {
+      toast({ variant: "destructive", title: "状态更新失败" });
+    }
   };
 
-  const handleToggleLanguage = (p: Product, langCode: string, currentEnabled: string[]) => {
-    if (!firestore) return;
+  const handleToggleLanguage = async (p: Product, langCode: string, currentEnabled: string[]) => {
     const newList = currentEnabled.includes(langCode) 
       ? currentEnabled.filter(c => c !== langCode)
       : [...currentEnabled, langCode];
     
-    updateDocumentNonBlocking(doc(firestore, 'products', p.id), {
-      enabledLanguages: newList,
-      updatedAt: serverTimestamp()
-    });
+    try {
+      await fetch(`/api/products/${p.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ enabledLanguages: newList }),
+      });
+      mutateProducts();
+    } catch (e) {
+      toast({ variant: "destructive", title: "语言设置更新失败" });
+    }
   };
 
   return (
