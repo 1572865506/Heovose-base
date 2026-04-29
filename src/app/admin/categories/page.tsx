@@ -55,6 +55,7 @@ import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
 import { translateContent } from '@/ai/flows/translate-flow';
 import { ShinyButton } from '@/components/ui/shiny-button';
+import { MediaLibraryDialog } from '@/components/admin/media-library-dialog';
 
 const AiGradientDef = () => (
   <svg width="0" height="0" className="absolute">
@@ -103,7 +104,6 @@ export default function CategoriesPage() {
   
   // 图库选择器状态
   const [isPickerOpen, setIsPickerOpen] = useState(false);
-  const [pickerSearch, setPickerSearch] = useState('');
 
   const handleAutoTranslate = async () => {
     if (!formData.nameZh && !formData.descZh) {
@@ -532,70 +532,18 @@ export default function CategoriesPage() {
         </DialogContent>
       </Dialog>
 
-      {/* 媒体资产库选择器 */}
-      <Dialog open={isPickerOpen} onOpenChange={setIsPickerOpen}>
-        <DialogContent className="max-w-6xl p-0 h-[85vh] rounded-[2.5rem] overflow-hidden flex flex-col shadow-[0_50px_100px_-20px_rgba(0,0,0,0.2)] border-none bg-white/95 backdrop-blur-3xl">
-          <div className="bg-slate-900 p-8 text-white flex items-center justify-between relative overflow-hidden">
-             <div className="absolute top-0 right-0 p-8 opacity-10">
-               <ImageIcon className="h-24 w-24" />
-             </div>
-             <div className="flex items-center gap-4 relative z-10">
-               <div className="h-10 w-10 rounded-xl bg-white/10 flex items-center justify-center">
-                 <ImageIcon className="h-5 w-5" />
-               </div>
-               <div>
-                 <DialogTitle className="text-xl font-headline font-bold tracking-tight">选择资产缩略图</DialogTitle>
-                 <DialogDescription className="text-[10px] font-bold text-white/40 uppercase tracking-widest">Global Asset Library Selector</DialogDescription>
-               </div>
-             </div>
-             <Button variant="ghost" size="icon" onClick={() => setIsPickerOpen(false)} className="text-white hover:bg-white/10 h-10 w-10 relative z-10"><X className="h-5 w-5" /></Button>
-          </div>
-          
-          <div className="px-8 py-5 bg-slate-500/5 border-b border-slate-200 flex gap-6 items-center">
-            <div className="relative flex-1 group">
-              <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 group-focus-within:text-primary transition-colors" />
-              <Input 
-                placeholder="搜索素材标题 / SEARCH ASSETS..." 
-                value={pickerSearch} 
-                onChange={e => setPickerSearch(e.target.value)} 
-                className="pl-11 h-12 border-none bg-white text-xs font-medium rounded-xl shadow-sm focus-visible:ring-2 focus-visible:ring-primary/10" 
-              />
-            </div>
-          </div>
-
-          <div className="flex-1 overflow-y-auto p-8 grid grid-cols-2 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-8 gap-6 bg-slate-50/50">
-            {galleryAssets?.filter((a: any) => (a.title || '').toLowerCase().includes(pickerSearch.toLowerCase())).map((a: any) => (
-              <div 
-                key={a.id} 
-                className={cn(
-                  "group relative aspect-square rounded-[1.25rem] overflow-hidden border-2 transition-all duration-500 cursor-pointer shadow-sm bg-white", 
-                  formData.thumbnailImageUrl === a.url 
-                    ? "border-primary scale-95 ring-4 ring-primary/10" 
-                    : "border-transparent hover:border-primary/40 hover:-translate-y-1 hover:shadow-xl"
-                )} 
-                onClick={() => {
-                  setFormData({ ...formData, thumbnailImageUrl: a.url });
-                  setIsPickerOpen(false);
-                }}
-              >
-                <Image src={a.url} alt={a.title} fill className="object-cover transition-transform duration-700 group-hover:scale-110" unoptimized />
-                {formData.thumbnailImageUrl === a.url && (
-                  <div className="absolute inset-0 bg-primary/20 flex items-center justify-center backdrop-blur-[1px] animate-in fade-in duration-300">
-                    <div className="bg-white text-primary rounded-full p-1.5 shadow-2xl scale-125"><Check className="h-4 w-4 stroke-[3px]" /></div>
-                  </div>
-                )}
-                <div className="absolute inset-x-0 bottom-0 p-2 bg-gradient-to-t from-black/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity">
-                  <p className="text-[8px] font-bold text-white uppercase truncate tracking-widest">{a.title}</p>
-                </div>
-              </div>
-            ))}
-          </div>
-          
-          <div className="p-6 border-t border-slate-200 flex justify-end bg-white">
-            <Button variant="ghost" onClick={() => setIsPickerOpen(false)} className="px-10 h-12 rounded-2xl text-xs font-bold uppercase tracking-widest hover:bg-slate-50 transition-colors">取消选择并返回</Button>
-          </div>
-        </DialogContent>
-      </Dialog>
+      {/* 引用统一媒体资产库选择器 */}
+      <MediaLibraryDialog 
+        open={isPickerOpen}
+        onOpenChange={setIsPickerOpen}
+        selectionMode="single"
+        title="选择分类缩略图"
+        onSelect={(assets) => {
+          if (assets.length > 0) {
+            setFormData({ ...formData, thumbnailImageUrl: assets[0].url });
+          }
+        }}
+      />
 
       {/* Main Content Area */}
       <div className="relative z-10 space-y-4">

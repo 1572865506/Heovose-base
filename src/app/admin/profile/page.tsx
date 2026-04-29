@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useState, useEffect, useRef } from 'react';
@@ -18,18 +17,20 @@ import {
   Key,
   Info,
   ExternalLink,
-  Copy
+  Copy,
+  Image as ImageIcon
 } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { useToast } from '@/hooks/use-toast';
 import { Badge } from '@/components/ui/badge';
+import { MediaLibraryDialog } from '@/components/admin/media-library-dialog';
 
 export default function ProfilePage() {
   const { data: session } = useSession();
   const user = session?.user;
   const { toast } = useToast();
-  const fileInputRef = useRef<HTMLInputElement>(null);
   const [isSaving, setIsSaving] = useState(false);
+  const [isLibraryOpen, setIsLibraryOpen] = useState(false);
   const { data: profile, mutate: mutateProfile } = useLocalDoc<any>('profile', '');
 
   const [formData, setFormData] = useState({
@@ -45,29 +46,6 @@ export default function ProfilePage() {
       });
     }
   }, [profile]);
-
-  const handleAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
-    // 限制大小在 200KB 以内
-    if (file.size > 200 * 1024) {
-      toast({
-        variant: "destructive",
-        title: "图片过大",
-        description: "为了系统性能，头像图片请控制在 200KB 以内。"
-      });
-      return;
-    }
-
-    const reader = new FileReader();
-    reader.onload = (ev) => {
-      const base64 = ev.target?.result as string;
-      setFormData(prev => ({ ...prev, avatarUrl: base64 }));
-      toast({ title: "头像已预览", description: "点击下方保存按钮以永久生效。" });
-    };
-    reader.readAsDataURL(file);
-  };
 
   const handleSave = async () => {
     if (!user?.id) return;
@@ -91,6 +69,22 @@ export default function ProfilePage() {
     }
   };
 
+  const copyUserId = () => {
+    const id = user?.id || '';
+    if (navigator.clipboard && window.isSecureContext) {
+      navigator.clipboard.writeText(id);
+      toast({ title: "ID 已复制" });
+    } else {
+      const el = document.createElement('textarea');
+      el.value = id;
+      document.body.appendChild(el);
+      el.select();
+      document.execCommand('copy');
+      document.body.removeChild(el);
+      toast({ title: "ID 已复制 (兼容模式)" });
+    }
+  };
+
   return (
     <div className="max-w-4xl mx-auto space-y-8 animate-in fade-in duration-500">
       <div className="space-y-1">
@@ -107,8 +101,8 @@ export default function ProfilePage() {
                <div className="flex items-center gap-6">
                  <div 
                    className="relative group cursor-pointer"
-                   onClick={() => fileInputRef.current?.click()}
-                   title="点击上传本地图片"
+                   onClick={() => setIsLibraryOpen(true)}
+                   title="从素材库选择头像"
                  >
                     <Avatar className="h-20 w-20 rounded-2xl border-2 border-white shadow-xl transition-transform group-hover:scale-95">
                       {formData.avatarUrl ? <AvatarImage src={formData.avatarUrl} className="object-cover" /> : null}
@@ -117,16 +111,8 @@ export default function ProfilePage() {
                       </AvatarFallback>
                     </Avatar>
                     <div className="absolute inset-0 bg-black/40 rounded-2xl flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                      <Camera className="h-6 w-6 text-white" />
+                      <ImageIcon className="h-6 w-6 text-white" />
                     </div>
-                    {/* 隐藏的上传控件 */}
-                    <input 
-                      type="file" 
-                      ref={fileInputRef} 
-                      className="hidden" 
-                      accept="image/*" 
-                      onChange={handleAvatarChange} 
-                    />
                  </div>
                  <div className="space-y-2">
                     <h3 className="text-lg font-bold text-primary">{formData.displayName || '未命名管理员'}</h3>
@@ -146,10 +132,7 @@ export default function ProfilePage() {
                             variant="ghost" 
                             size="icon" 
                             className="h-5 w-5 opacity-40 hover:opacity-100 transition-opacity"
-                            onClick={() => {
-                              navigator.clipboard.writeText(user?.id || '');
-                              toast({ title: "ID 已复制" });
-                            }}
+                            onClick={copyUserId}
                           >
                             <Copy className="h-3 w-3" />
                           </Button>
@@ -195,26 +178,26 @@ export default function ProfilePage() {
           <Card className="rounded-2xl border-border/40 shadow-sm bg-white">
             <CardHeader className="pb-2">
               <CardTitle className="text-xs font-bold text-primary uppercase tracking-widest flex items-center gap-2">
-                <Info className="h-4 w-4" /> 头像上传规则
+                <Info className="h-4 w-4" /> 头像更换方式
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4 pt-2">
+               <div className="flex gap-3">
+                  <div className="h-8 w-8 rounded-full bg-blue-50 flex items-center justify-center shrink-0">
+                    <ImageIcon className="h-4 w-4 text-blue-600" />
+                  </div>
+                  <div className="space-y-1">
+                     <p className="text-[10px] font-bold">统一素材库</p>
+                     <p className="text-[9px] text-muted-foreground leading-relaxed">点击头像框即可打开全局素材中心，选择您已上传的任何图片作为头像。</p>
+                  </div>
+               </div>
                <div className="flex gap-3">
                   <div className="h-8 w-8 rounded-full bg-orange-50 flex items-center justify-center shrink-0">
                     <Camera className="h-4 w-4 text-orange-600" />
                   </div>
                   <div className="space-y-1">
-                     <p className="text-[10px] font-bold">本地直传</p>
-                     <p className="text-[9px] text-muted-foreground leading-relaxed">点击头像框即可从本地选择图片，无需再输入复杂的 URL。</p>
-                  </div>
-               </div>
-               <div className="flex gap-3">
-                  <div className="h-8 w-8 rounded-full bg-blue-50 flex items-center justify-center shrink-0">
-                    <ShieldCheck className="h-4 w-4 text-blue-600" />
-                  </div>
-                  <div className="space-y-1">
-                     <p className="text-[10px] font-bold">大小限制: 200KB</p>
-                     <p className="text-[9px] text-muted-foreground leading-relaxed">为了保证后台加载速度，头像会自动压缩，请确保文件小于 200KB。</p>
+                     <p className="text-[10px] font-bold">即时同步</p>
+                     <p className="text-[9px] text-muted-foreground leading-relaxed">选择后头像将立即预览，点击保存即可同步到所有管理终端。</p>
                   </div>
                </div>
             </CardContent>
@@ -231,6 +214,19 @@ export default function ProfilePage() {
           </div>
         </div>
       </div>
+
+      <MediaLibraryDialog 
+        open={isLibraryOpen}
+        onOpenChange={setIsLibraryOpen}
+        selectionMode="single"
+        title="选择个人头像"
+        onSelect={(assets) => {
+          if (assets.length > 0) {
+            setFormData(prev => ({ ...prev, avatarUrl: assets[0].url }));
+            toast({ title: "头像已预览", description: "已从素材库选择。点击下方保存按钮生效。" });
+          }
+        }}
+      />
     </div>
   );
 }

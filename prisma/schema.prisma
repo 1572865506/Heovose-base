@@ -195,6 +195,8 @@ model GalleryAsset {
   createdAt  DateTime         @default(now())
   fileName   String
   fileSize   Int?
+  width      Int?
+  height     Int?
   category   GalleryCategory? @relation(fields: [categoryId], references: [id])
 
   @@index([categoryId])

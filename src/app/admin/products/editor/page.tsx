@@ -75,6 +75,7 @@ import { cn } from '@/lib/utils';
 import { translateContent } from '@/ai/flows/translate-flow';
 import { ShinyButton } from '@/components/ui/shiny-button';
 import RichTextEditor from '@/components/RichTextEditor';
+import { MediaLibraryDialog } from '@/components/admin/media-library-dialog';
 
 // AI 极光渐变定义组件
 const AiGradientDef = () => (
@@ -1317,85 +1318,27 @@ function ProductEditorContent() {
         </DialogContent>
       </Dialog>
 
-      {/* 媒体资产库选择器 */}
-      <Dialog open={isPickerOpen} onOpenChange={setIsPickerOpen}>
-        <DialogContent className="max-w-6xl p-0 h-[85vh] rounded-[2.5rem] overflow-hidden flex flex-col shadow-[0_50px_100px_-20px_rgba(0,0,0,0.2)] border-none bg-white/95 backdrop-blur-3xl">
-          <div className="bg-slate-900 p-8 text-white flex items-center justify-between relative overflow-hidden">
-             <div className="absolute top-0 right-0 p-8 opacity-10">
-               <ImageIcon className="h-24 w-24" />
-             </div>
-             <div className="flex items-center gap-4 relative z-10">
-               <div className="h-10 w-10 rounded-xl bg-white/10 flex items-center justify-center">
-                 <ImageIcon className="h-5 w-5" />
-               </div>
-               <div>
-                 <DialogTitle className="text-xl font-headline font-bold tracking-tight">选择资产缩略图</DialogTitle>
-                 <DialogDescription className="text-[10px] font-bold text-white/40 uppercase tracking-widest">Global Asset Library Selector</DialogDescription>
-               </div>
-             </div>
-             <Button variant="ghost" size="icon" onClick={() => setIsPickerOpen(false)} className="text-white hover:bg-white/10 h-10 w-10 relative z-10"><X className="h-5 w-5" /></Button>
-          </div>
+      {/* 引用统一素材库选择器 */}
+      <MediaLibraryDialog 
+        open={isPickerOpen}
+        onOpenChange={setIsPickerOpen}
+        selectionMode={pickerTarget === 'gallery' ? 'multiple' : 'single'}
+        title="选择资产缩略图"
+        onSelect={(assets) => {
+          if (assets.length === 0) return;
+          const urls = assets.map(a => a.url);
           
-          <div className="px-8 py-5 bg-slate-500/5 border-b border-slate-200 flex gap-6 items-center">
-            <div className="relative flex-1 group">
-              <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 group-focus-within:text-primary transition-colors" />
-              <Input 
-                placeholder="搜索素材标题 / SEARCH ASSETS..." 
-                value={pickerSearch} 
-                onChange={e => setPickerSearch(e.target.value)} 
-                className="pl-11 h-12 border-none bg-white text-xs font-medium rounded-xl shadow-sm focus-visible:ring-2 focus-visible:ring-primary/10" 
-              />
-            </div>
-            {pickerTarget === 'gallery' && (
-              <Button onClick={handleConfirmPicker} className="rounded-xl h-12 px-8 text-xs font-bold uppercase tracking-widest shadow-xl shadow-primary/20">确认添加已选项</Button>
-            )}
-          </div>
-
-          <div className="flex-1 overflow-y-auto p-8 grid grid-cols-2 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-8 gap-6 bg-slate-50/50">
-            {galleryAssets?.filter((a: any) => (a.title || '').toLowerCase().includes(pickerSearch.toLowerCase())).map((a: any) => (
-              <div 
-                key={a.id} 
-                className={cn(
-                  "group relative aspect-square rounded-[1.25rem] overflow-hidden border-2 transition-all duration-500 cursor-pointer shadow-sm bg-white", 
-                  selectedPickerUrls.has(a.url) 
-                    ? "border-primary scale-95 ring-4 ring-primary/10" 
-                    : "border-transparent hover:border-primary/40 hover:-translate-y-1 hover:shadow-xl"
-                )} 
-                onClick={() => {
-                  if (pickerTarget === 'gallery') {
-                    const next = new Set(selectedPickerUrls);
-                    if (next.has(a.url)) next.delete(a.url);
-                    else next.add(a.url);
-                    setSelectedPickerUrls(next);
-                  } else {
-                    if (pickerTarget === 'main') setFormData({ ...formData, mainImageUrl: a.url });
-                    else if (pickerTarget === 'richtext-zh') zhEditorRef.current?.editor?.commands.setImage({ src: a.url });
-                    else if (pickerTarget === 'richtext-target') targetEditorRef.current?.editor?.commands.setImage({ src: a.url });
-                    setIsPickerOpen(false);
-                  }
-                }}
-              >
-                <Image src={a.url} alt={a.title} fill className="object-cover transition-transform duration-700 group-hover:scale-110" unoptimized />
-                {selectedPickerUrls.has(a.url) && (
-                  <div className="absolute inset-0 bg-primary/20 flex items-center justify-center backdrop-blur-[1px] animate-in fade-in duration-300">
-                    <div className="bg-white text-primary rounded-full p-1.5 shadow-2xl scale-125"><Check className="h-4 w-4 stroke-[3px]" /></div>
-                  </div>
-                )}
-                <div className="absolute inset-x-0 bottom-0 p-2 bg-gradient-to-t from-black/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity">
-                  <p className="text-[8px] font-bold text-white uppercase truncate tracking-widest">{a.title}</p>
-                </div>
-              </div>
-            ))}
-          </div>
-          <DialogFooter className="p-4 border-t flex items-center justify-between bg-white">
-            <Button variant="ghost" size="sm" onClick={()=>setSelectedPickerUrls(new Set())} className="text-[10px] font-bold text-destructive uppercase tracking-wider">清除选中</Button>
-            <div className="flex gap-2">
-              <Button variant="outline" size="sm" onClick={()=>setIsPickerOpen(false)} className="px-6 h-10 rounded-lg text-xs font-bold uppercase tracking-widest">取消</Button>
-              <Button size="sm" onClick={handleConfirmPicker} disabled={selectedPickerUrls.size===0} className="px-8 h-10 rounded-lg text-xs font-bold uppercase tracking-widest">确认插入</Button>
-            </div>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+          if (pickerTarget === 'main') {
+            setFormData({ ...formData, mainImageUrl: urls[0] });
+          } else if (pickerTarget === 'gallery') {
+            setFormData({ ...formData, galleryUrls: [...formData.galleryUrls, ...urls] });
+          } else if (pickerTarget === 'richtext-zh') {
+            zhEditorRef.current?.editor?.commands.setImage({ src: urls[0] });
+          } else if (pickerTarget === 'richtext-target') {
+            targetEditorRef.current?.editor?.commands.setImage({ src: urls[0] });
+          }
+        }}
+      />
     </div>
   );
 }

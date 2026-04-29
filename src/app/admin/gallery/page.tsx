@@ -480,7 +480,10 @@ export default function GalleryPage() {
         const { w, h } = await getImageDimensions(url);
         updateTask(taskId, { progress: 70 });
 
-        const assetId = `asset_${Date.now()}_${i}`;
+        // 使用更安全的 ID 生成方式
+        const randomString = Math.random().toString(36).substring(2, 7);
+        const assetId = `asset_${Date.now()}_${randomString}_${i}`;
+        
         const assetData = {
           id: assetId,
           url,
@@ -501,10 +504,11 @@ export default function GalleryPage() {
         updateTask(taskId, { status: 'completed', progress: 100 });
       } catch (e: any) {
         updateTask(taskId, { status: 'error', error: e.message });
+        toast({ variant: "destructive", title: "上传中断", description: `文件 ${file.name} 处理失败` });
       }
     }
 
-    // 全部上传完成后统一刷新一次数据
+    // 整个队列完成后统一刷新数据
     mutateAssets();
     setIsUploading(false);
   };
