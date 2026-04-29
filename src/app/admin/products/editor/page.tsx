@@ -40,7 +40,9 @@ import {
   Settings,
   RotateCcw,
   BarChart3,
-  HelpCircle
+  HelpCircle,
+  Eye,
+  EyeOff
 } from 'lucide-react';
 import { 
   Dialog, 
@@ -744,20 +746,20 @@ function ProductEditorContent() {
         <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-[0.012] brightness-100 contrast-150" />
       </div>
 
-      <div className="flex flex-col md:flex-row items-center justify-between sticky top-[0px] z-50 bg-white/80 backdrop-blur-xl py-4 border-b border-white/40 shadow-[0_4px_20px_rgba(0,0,0,0.02)] -mx-8 px-8 relative">
+      <div className="flex flex-col md:flex-row items-center justify-between sticky top-[-40px] -mt-10 z-50 bg-white/90 backdrop-blur-xl py-2 border border-white/40 shadow-[0_20px_50px_rgba(0,0,0,0.05)] rounded-2xl px-8 relative mb-8">
         <div className="flex items-center gap-8 flex-1 min-w-0">
           <div className="flex items-center gap-4 shrink-0">
-            <Button variant="ghost" size="icon" onClick={() => router.back()} className="rounded-2xl h-12 w-12 hover:bg-slate-500/5 transition-all">
+            <Button variant="ghost" size="icon" onClick={() => router.back()} className="rounded-2xl h-10 w-10 hover:bg-slate-500/5 transition-all">
               <ArrowLeft className="h-5 w-5" />
             </Button>
-            <div className="space-y-0.5">
+            <div className="space-y-1">
+              <span className="text-[8px] font-bold uppercase tracking-widest text-slate-400 pl-1 block">Heovose Admin / 资源中心</span>
               <h2 className="text-xl font-headline font-bold text-slate-900 whitespace-nowrap tracking-tight flex items-center gap-3">
                 <div className="h-8 w-8 rounded-xl bg-primary/10 flex items-center justify-center text-primary">
                   <Settings className="h-4 w-4" />
                 </div>
-                {isEditing ? '配置核心资产' : '创建新全息资产'}
+                {isEditing ? '修改产品' : '创建产品'}
               </h2>
-              <p className="text-[10px] text-slate-400 font-bold uppercase tracking-[0.2em] pl-11">Management / Resource / Editor</p>
             </div>
           </div>
           <div className="flex items-center gap-4 flex-1 min-w-0 max-w-4xl">
@@ -776,7 +778,7 @@ function ProductEditorContent() {
                    return { ...prev, ...up };
                  });
                }}>
-                 <SelectTrigger className="h-12 rounded-xl bg-slate-500/5 border-transparent text-xs font-bold uppercase tracking-widest text-slate-600 focus:ring-primary/20">
+                 <SelectTrigger className="h-10 rounded-xl bg-slate-500/5 border-transparent text-xs font-bold uppercase tracking-widest text-slate-600 focus:ring-primary/20">
                    <SelectValue placeholder="选择所属分类..." />
                  </SelectTrigger>
                                    <SelectContent className="rounded-2xl border-slate-200 shadow-2xl">
@@ -792,18 +794,20 @@ function ProductEditorContent() {
                   </SelectContent>
                </Select>
              </div>
-             <div className="space-y-1 flex-1 min-w-0">
+             <div className="space-y-1 w-[280px] shrink-0">
                 <Label className="text-[8px] font-bold uppercase tracking-widest text-slate-400 pl-1">资产唯一标识 (ID)</Label>
                 <div className="relative group">
-                  <Input disabled={isEditing} value={formData.id} onChange={e => setFormData({...formData, id: e.target.value})} className={cn("h-12 rounded-xl bg-slate-500/5 border-transparent font-mono text-xs font-bold w-full focus-visible:ring-primary/20", idConflict && "border-destructive")} placeholder="GLOBAL_RESOURCE_ID" />
+                  <Input disabled={isEditing} value={formData.id} onChange={e => setFormData({...formData, id: e.target.value})} className={cn("h-10 rounded-xl bg-slate-500/5 border-transparent font-mono text-xs font-bold w-full focus-visible:ring-primary/20", idConflict && "border-destructive")} placeholder="GLOBAL_RESOURCE_ID" />
                   {idConflict && <AlertCircle className="absolute right-4 top-1/2 -translate-y-1/2 h-4 w-4 text-destructive" />}
                 </div>
              </div>
 
-             <TooltipProvider>
+             <div className="space-y-1">
+                <Label className="text-[8px] font-bold uppercase tracking-widest text-slate-400 pl-1">智译完整度诊断</Label>
+                <TooltipProvider>
                 <Tooltip>
                   <TooltipTrigger asChild>
-                    <div className="mt-5 flex items-center gap-2 cursor-help h-12 px-4 bg-slate-500/5 rounded-xl border border-transparent hover:border-primary/20 transition-all">
+                    <div className="flex items-center gap-2 cursor-help h-10 px-4 bg-slate-500/5 rounded-xl border border-transparent hover:border-primary/20 transition-all">
                       <BarChart3 className="h-4 w-4 text-primary opacity-60" />
                       <Badge 
                         variant="outline" 
@@ -841,23 +845,31 @@ function ProductEditorContent() {
                     </div>
                   </TooltipContent>
                 </Tooltip>
-             </TooltipProvider>
+              </TooltipProvider>
+             </div>
 
-             <div className="space-y-1 w-[120px] shrink-0">
-               <Label className="text-[8px] font-bold uppercase tracking-widest text-slate-400 pl-1">发布状态</Label>
-               <Select value={formData.status} onValueChange={(v:any) => setFormData({...formData, status: v})}>
-                 <SelectTrigger className={cn("h-12 rounded-xl border-transparent text-[10px] font-bold uppercase tracking-widest focus:ring-0", formData.status === 'published' ? "bg-green-50 text-green-700 shadow-[0_4px_15px_rgba(34,197,94,0.15)]" : "bg-slate-500/10 text-slate-600")}><SelectValue /></SelectTrigger>
-                 <SelectContent className="rounded-2xl border-slate-200 shadow-2xl">
-                   <SelectItem value="published" className="text-[10px] font-bold uppercase py-3 text-green-600">正式发布 (Live)</SelectItem>
-                   <SelectItem value="draft" className="text-[10px] font-bold uppercase py-3">草稿备份 (Draft)</SelectItem>
-                 </SelectContent>
-               </Select>
+             <div className="space-y-1 w-[140px] shrink-0">
+               <Label className="text-[8px] font-bold uppercase tracking-widest text-slate-400 pl-1">发布状态 (Toggle)</Label>
+               <button 
+                 onClick={() => setFormData({...formData, status: formData.status === 'published' ? 'draft' : 'published'})}
+                 className={cn(
+                   "w-full h-10 rounded-xl flex items-center px-4 gap-3 transition-all duration-300 border",
+                   formData.status === 'published' 
+                     ? "bg-green-50 text-green-700 border-green-200/50 shadow-[0_4px_15px_rgba(34,197,94,0.15)]" 
+                     : "bg-slate-500/5 text-slate-400 border-transparent hover:bg-slate-500/10"
+                 )}
+               >
+                 {formData.status === 'published' ? (
+                   <><Eye className="h-4 w-4" /><span className="text-[10px] font-bold uppercase tracking-widest">已发布 / LIVE</span></>
+                 ) : (
+                   <><EyeOff className="h-4 w-4" /><span className="text-[10px] font-bold uppercase tracking-widest">草稿 / DRAFT</span></>
+                 )}
+               </button>
              </div>
           </div>
         </div>
         <div className="flex gap-3 ml-6 shrink-0 relative z-10">
-          <Button variant="outline" size="lg" onClick={() => router.back()} className="rounded-2xl h-14 px-8 text-[10px] font-bold uppercase tracking-widest border-slate-200 hover:bg-slate-50 transition-all">取消编辑</Button>
-          <Button onClick={handleSave} className="rounded-2xl h-14 px-10 text-xs font-bold uppercase tracking-widest gap-3 shadow-xl shadow-primary/20 hover:scale-105 active:scale-95 transition-all">
+          <Button onClick={handleSave} className="rounded-2xl h-10 px-8 text-xs font-bold uppercase tracking-widest gap-3 shadow-xl shadow-primary/20 hover:scale-105 active:scale-95 transition-all">
             <Save className="h-5 w-5" /> 同步至云端
           </Button>
         </div>
@@ -886,19 +898,17 @@ function ProductEditorContent() {
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-10">
               <div className="lg:col-span-7 space-y-10">
                 <section className="bg-white/60 backdrop-blur-md rounded-[2.5rem] border border-white/40 p-10 space-y-8 shadow-[0_8px_30px_rgb(0,0,0,0.04)] relative group overflow-hidden">
-                   <div className="absolute top-0 left-0 w-2 h-full bg-primary/40 opacity-0 group-focus-within:opacity-100 transition-all" />
-                   <div className="space-y-1 border-b border-slate-100 pb-6 relative z-10">
+
+                   <div className="border-b border-slate-100 pb-6 relative z-10">
                       <h3 className="text-xl font-headline font-bold text-slate-900 flex items-center gap-3">
                         核心名称与叙述
-                        <Badge variant="outline" className="text-[8px] font-bold uppercase tracking-widest border-primary/20 text-primary bg-primary/5">CRITICAL</Badge>
                       </h3>
-                      <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">Nomenclature & Core Narrative</p>
                    </div>
 
                    <div className="space-y-10 relative z-10">
                       <div className="space-y-6">
                         <div className="flex items-center justify-between pl-1">
-                          <Label className="text-[10px] font-bold uppercase tracking-[0.25em] text-slate-400">产品型号/名称 (中)</Label>
+                          <Label className="text-[11px] font-bold uppercase tracking-widest text-slate-400">产品型号/名称 (中)</Label>
                           {aiConfig?.isEnabled && (
                             <ShinyButton 
                               onClick={handleAiTranslateBasicInfo} 
@@ -916,39 +926,39 @@ function ProductEditorContent() {
                         <Input 
                           value={formData.nameZh} 
                           onChange={e => setFormData({...formData, nameZh: e.target.value})} 
-                          className="h-16 rounded-2xl bg-white border-slate-200 text-lg font-bold tracking-tight px-6 focus-visible:ring-primary/20 placeholder:font-normal placeholder:text-slate-300" 
+                          className="h-12 rounded-xl bg-slate-500/5 border-slate-200 text-sm font-bold tracking-tight px-5 focus-visible:ring-4 focus-visible:ring-primary/5 placeholder:font-normal placeholder:text-slate-300" 
                           placeholder="例如: Heovose Elevate 全能商用一体机" 
                         />
-                        <div className="space-y-2.5">
-                          <Label className="text-[10px] font-bold uppercase tracking-[0.25em] text-slate-400 pl-1">Product Model / Name (English)</Label>
+                        <div className="space-y-2">
+                          <Label className="text-[11px] font-bold uppercase tracking-widest text-slate-400 pl-1">Product Model / Name (English)</Label>
                           <Input 
                             value={formData.nameEn} 
                             onChange={e => setFormData({...formData, nameEn: e.target.value})} 
-                            className="h-14 rounded-2xl bg-slate-500/5 border-dashed border-slate-200 text-sm font-bold tracking-tight px-6 focus-visible:ring-primary/20 placeholder:font-normal placeholder:text-slate-300" 
+                            className="h-12 rounded-xl bg-slate-500/5 border-dashed border-slate-200 text-sm font-bold tracking-tight px-5 focus-visible:ring-4 focus-visible:ring-primary/5 placeholder:font-normal placeholder:text-slate-300" 
                             placeholder="e.g. Heovose Elevate Pro AIO Series" 
                           />
                         </div>
                       </div>
 
-                      <div className="space-y-6">
-                        <Label className="text-[10px] font-bold uppercase tracking-[0.25em] text-slate-400 pl-1">产品核心卖点描述 (中/英)</Label>
+                      <div className="space-y-5">
+                        <Label className="text-[11px] font-bold uppercase tracking-widest text-slate-400 pl-1">产品核心卖点描述 (中/英)</Label>
                         <div className="space-y-4">
                           <div className="relative group/area">
                             <Textarea 
                               value={formData.descZh} 
                               onChange={e => setFormData({...formData, descZh: e.target.value})} 
-                              className="min-h-[120px] rounded-[2rem] bg-white border-slate-200 text-sm font-medium leading-relaxed px-6 py-5 focus-visible:ring-primary/20 placeholder:text-slate-300" 
+                              className="min-h-[80px] rounded-xl bg-slate-500/5 border-slate-200 text-xs font-medium leading-relaxed px-5 py-3 focus-visible:ring-4 focus-visible:ring-primary/5 placeholder:text-slate-300" 
                               placeholder="输入产品的核心优势或市场定位叙述..." 
                             />
-                            <div className="absolute top-5 right-6 pointer-events-none opacity-10">
-                              <Languages className="h-8 w-8" />
+                            <div className="absolute top-3 right-5 pointer-events-none opacity-5">
+                              <Languages className="h-6 w-6" />
                             </div>
                           </div>
                           <div className="relative group/area">
                             <Textarea 
                               value={formData.descEn} 
                               onChange={e => setFormData({...formData, descEn: e.target.value})} 
-                              className="min-h-[120px] rounded-[2rem] bg-slate-500/5 border-dashed border-slate-200 text-sm font-medium leading-relaxed px-6 py-5 focus-visible:ring-primary/20 placeholder:text-slate-300" 
+                              className="min-h-[80px] rounded-xl bg-slate-500/5 border-dashed border-slate-200 text-xs font-medium leading-relaxed px-5 py-3 focus-visible:ring-4 focus-visible:ring-primary/5 placeholder:text-slate-300" 
                               placeholder="Product USP Narrative in English..." 
                             />
                           </div>
@@ -960,23 +970,21 @@ function ProductEditorContent() {
 
               <div className="lg:col-span-5 space-y-10">
                 <section className="bg-white/60 backdrop-blur-md rounded-[2.5rem] border border-white/40 p-10 space-y-8 shadow-[0_8px_30px_rgb(0,0,0,0.04)] relative group overflow-hidden h-full">
-                  <div className="space-y-1 border-b border-slate-100 pb-6">
+                  <div className="border-b border-slate-100 pb-6">
                     <h3 className="text-xl font-headline font-bold text-slate-900 flex items-center gap-3">
                       产品视觉头图
-                      <Badge variant="outline" className="text-[8px] font-bold uppercase tracking-widest border-slate-200 text-slate-400 bg-slate-50">REQUIRED</Badge>
                     </h3>
-                    <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">Master Visual Asset</p>
                   </div>
 
                   <div className="space-y-8">
                     <div 
-                      className="relative aspect-[4/3] rounded-[2rem] bg-slate-500/5 border-2 border-dashed border-slate-200 overflow-hidden flex flex-col items-center justify-center group cursor-pointer hover:bg-primary/[0.02] hover:border-primary/40 transition-all duration-700"
+                      className="relative aspect-[11/9] rounded-[2rem] bg-slate-500/5 border-2 border-dashed border-slate-200 overflow-hidden flex flex-col items-center justify-center group cursor-pointer hover:bg-primary/[0.02] hover:border-primary/40 transition-all duration-700"
                       onClick={() => openPicker('main')}
                     >
                       {formData.mainImageUrl ? (
                         <>
-                          <Image src={formData.mainImageUrl} alt="Main" fill className="object-contain p-8 transition-transform duration-1000 group-hover:scale-110" unoptimized />
-                          <div className="absolute inset-0 bg-slate-900/60 opacity-0 group-hover:opacity-100 transition-all duration-500 flex flex-col items-center justify-center gap-4 backdrop-blur-sm">
+                          <Image src={formData.mainImageUrl} alt="Main" fill className="object-cover transition-transform duration-1000 group-hover:scale-110" unoptimized />
+                          <div className="absolute inset-0 rounded-[2rem] bg-slate-900/60 opacity-0 group-hover:opacity-100 transition-all duration-500 flex flex-col items-center justify-center gap-4 backdrop-blur-md">
                             <div className="h-14 w-14 rounded-2xl bg-white/10 flex items-center justify-center text-white backdrop-blur-md border border-white/20 scale-50 group-hover:scale-100 transition-transform duration-700">
                               <RotateCcw className="h-6 w-6" />
                             </div>
