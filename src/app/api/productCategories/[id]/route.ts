@@ -12,7 +12,17 @@ export async function PUT(
   try {
     const { id } = await params;
     const data = await request.json();
-    const { id: _, updatedAt: __, ...updateData } = data;
+    const { 
+      id: _, 
+      updatedAt: __, 
+      createdAt: ___, 
+      nameText: ____, 
+      descriptionText: _____,
+      products: ______,
+      parent: _______,
+      children: ________,
+      ...updateData 
+    } = data;
 
     const item = await db.productCategory.upsert({
       where: { id },

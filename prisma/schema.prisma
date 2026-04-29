@@ -13,7 +13,8 @@ model LocalizedString {
   en                String
   productDescs      Product[]         @relation("ProductDesc")
   productNames      Product[]         @relation("ProductName")
-  productCategories ProductCategory[]
+  categoryNames     ProductCategory[] @relation("CategoryName")
+  categoryDescs     ProductCategory[] @relation("CategoryDesc")
 }
 
 model HomepageContent {
@@ -24,25 +25,25 @@ model HomepageContent {
   heroSubheadlineZh          String?
   heroWholesaleButtonEn      String?
   heroWholesaleButtonZh      String?
-  heroWholesaleDescriptionEn String?
-  heroWholesaleDescriptionZh String?
   heroProjectButtonEn        String?
   heroProjectButtonZh        String?
-  heroProjectDescriptionEn   String?
-  heroProjectDescriptionZh   String?
   heroWholesaleCategoryId    String?
   heroProjectCategoryId      String?
-  heroSlides                 Json?
   isVideoEnabled             Boolean       @default(true)
   videoTitleEn               String?
   videoTitleZh               String?
   videoSubtitleEn            String?
   videoSubtitleZh            String?
-  videoUrl                   String?
   mapTitleEn                 String?
   mapTitleZh                 String?
   mapSubtitleEn              String?
   mapSubtitleZh              String?
+  heroProjectDescriptionEn   String?
+  heroProjectDescriptionZh   String?
+  heroSlides                 Json?
+  heroWholesaleDescriptionEn String?
+  heroWholesaleDescriptionZh String?
+  videoUrl                   String?
   locations                  MapLocation[]
 }
 
@@ -88,17 +89,17 @@ model Product {
   id                String           @id @default(cuid())
   status            String           @default("draft")
   nameTextId        String
-  descriptionTextId String?
-  mainImageUrl      String?
-  galleryImageUrls  String[]
   categoryId        String?
-  localizedDetails  Json?
   advantageTextIds  String[]
-  specGroups        Json?
-  enabledLanguages  String[]
   createdAt         DateTime         @default(now())
+  descriptionTextId String?
+  enabledLanguages  String[]
+  galleryImageUrls  String[]
+  localizedDetails  Json?
+  mainImageUrl      String?
+  specGroups        Json?
   updatedAt         DateTime         @updatedAt
-  category          ProductCategory? @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+  category          ProductCategory? @relation(fields: [categoryId], references: [id])
   descriptionText   LocalizedString? @relation("ProductDesc", fields: [descriptionTextId], references: [id], onDelete: Cascade)
   nameText          LocalizedString  @relation("ProductName", fields: [nameTextId], references: [id], onDelete: Cascade)
 
@@ -113,13 +114,17 @@ model ProductCategory {
   thumbnailImageUrl String?
   parentId          String?
   nameTextId        String
+  descriptionTextId String?
+  order             Int               @default(0)
   products          Product[]
-  nameText          LocalizedString   @relation(fields: [nameTextId], references: [id], onDelete: Cascade)
-  parent            ProductCategory?  @relation("CategoryToCategory", fields: [parentId], references: [id], onDelete: SetNull)
+  nameText          LocalizedString   @relation("CategoryName", fields: [nameTextId], references: [id], onDelete: Cascade)
+  descriptionText   LocalizedString?  @relation("CategoryDesc", fields: [descriptionTextId], references: [id], onDelete: Cascade)
+  parent            ProductCategory?  @relation("CategoryToCategory", fields: [parentId], references: [id])
   children          ProductCategory[] @relation("CategoryToCategory")
 
   @@index([parentId])
   @@index([nameTextId])
+  @@index([descriptionTextId])
 }
 
 model User {
@@ -173,25 +178,24 @@ model VerificationToken {
 }
 
 model GalleryCategory {
-  id          String          @id @default(cuid())
-  name        String
-  parentId    String?
-  order       Int             @default(0)
-  assets      GalleryAsset[]
-
-  parent      GalleryCategory?  @relation("GalleryToGallery", fields: [parentId], references: [id])
-  children    GalleryCategory[] @relation("GalleryToGallery")
+  id       String            @id @default(cuid())
+  name     String
+  order    Int               @default(0)
+  parentId String?
+  assets   GalleryAsset[]
+  parent   GalleryCategory?  @relation("GalleryToGallery", fields: [parentId], references: [id])
+  children GalleryCategory[] @relation("GalleryToGallery")
 }
 
 model GalleryAsset {
   id         String           @id @default(cuid())
   title      String
   url        String
-  fileName   String
-  fileSize   Int?
   categoryId String?
   createdAt  DateTime         @default(now())
-  category   GalleryCategory? @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+  fileName   String
+  fileSize   Int?
+  category   GalleryCategory? @relation(fields: [categoryId], references: [id])
 
   @@index([categoryId])
 }

@@ -6,6 +6,10 @@ export async function GET() {
     const categories = await db.productCategory.findMany({
       include: {
         nameText: true,
+        descriptionText: true,
+      },
+      orderBy: {
+        order: 'asc',
       },
     });
     return NextResponse.json(categories);

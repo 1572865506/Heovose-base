@@ -16,6 +16,7 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
+import { useToast } from "@/hooks/use-toast";
 
 export default function AdminLoginPage() {
   const [email, setEmail] = useState('');
@@ -23,6 +24,7 @@ export default function AdminLoginPage() {
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   
+  const { toast } = useToast();
   const router = useRouter();
 
   async function handleLogin(e: React.FormEvent) {
@@ -38,13 +40,34 @@ export default function AdminLoginPage() {
       });
 
       if (result?.error) {
-        setError('登录失败。请检查邮箱和密码是否正确。');
+        let errorMsg = '登录失败。请检查邮箱和密码是否正确。';
+        
+        if (result.error === "Configuration" || result.error === "AccessDenied") {
+          errorMsg = '系统配置或数据库连接错误，请检查服务器状态。';
+        }
+
+        setError(errorMsg);
+        toast({
+          title: "登录失败",
+          description: errorMsg,
+          variant: "destructive",
+        });
       } else {
+        toast({
+          title: "登录成功",
+          description: "欢迎回来，正在跳转到管理中心...",
+        });
         router.push('/admin');
       }
     } catch (err: any) {
       console.error(err);
-      setError('发生意外错误，请稍后再试。');
+      const errorMsg = '发生意外错误，请稍后再试。';
+      setError(errorMsg);
+      toast({
+        title: "系统错误",
+        description: errorMsg,
+        variant: "destructive",
+      });
     } finally {
       setIsLoading(false);
     }

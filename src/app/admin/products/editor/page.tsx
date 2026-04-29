@@ -392,11 +392,12 @@ function ProductEditorContent() {
 
     try {
       const saveLang = async (en: any, zh: any, defaultId: string) => {
-        await fetch(`/api/localizedStrings/${defaultId}`, {
+        const res = await fetch(`/api/localizedStrings/${defaultId}`, {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ id: defaultId, en: String(en || '').trim(), zh: String(zh || '').trim() }),
         });
+        if (!res.ok) throw new Error(`翻译词条 ${defaultId} 保存失败`);
         return defaultId;
       };
 
@@ -422,7 +423,7 @@ function ProductEditorContent() {
         })
       );
 
-      await fetch(`/api/products/${formData.id}`, {
+      const resProd = await fetch(`/api/products/${formData.id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -439,10 +440,20 @@ function ProductEditorContent() {
         }),
       });
 
+      if (!resProd.ok) {
+        const errorData = await resProd.json();
+        throw new Error(errorData.error || '核心产品数据保存失败');
+      }
+
       toast({ title: "产品已保存" });
       router.push('/admin/products');
-    } catch (e) {
-      toast({ variant: "destructive", title: "保存失败" });
+    } catch (e: any) {
+      console.error('Product save error:', e);
+      toast({ 
+        variant: "destructive", 
+        title: "保存失败", 
+        description: e.message || "无法完成同步，请检查网络或配置"
+      });
     }
   };
 
@@ -478,7 +489,7 @@ function ProductEditorContent() {
     }));
 
     try {
-      await fetch(`/api/specTemplates/${templateId}`, {
+      const res = await fetch(`/api/specTemplates/${templateId}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -488,13 +499,19 @@ function ProductEditorContent() {
         }),
       });
 
+      if (!res.ok) throw new Error('规格模板同步至服务器失败');
+
       setIsSaveTemplateDialogOpen(false);
       setNewTemplateName('');
       setSelectedTemplateId('');
       mutateTemplates();
       toast({ title: saveMode === 'create' ? "规格模板已存入云端库" : "模板内容已更新成功" });
-    } catch (e) {
-      toast({ variant: "destructive", title: "保存模板失败" });
+    } catch (e: any) {
+      toast({ 
+        variant: "destructive", 
+        title: "模板保存失败",
+        description: e.message
+      });
     }
   };
 

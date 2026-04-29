@@ -16,25 +16,34 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
       async authorize(credentials) {
         if (!credentials?.email || !credentials?.password) return null;
 
-        const user = await db.user.findUnique({
-          where: { email: credentials.email as string },
-        });
+        try {
+          const user = await db.user.findUnique({
+            where: { email: credentials.email as string },
+          });
 
-        if (!user || !user.password) return null;
+          if (!user || !user.password) return null;
 
-        const isPasswordValid = await bcrypt.compare(
-          credentials.password as string,
-          user.password
-        );
+          const isPasswordValid = await bcrypt.compare(
+            credentials.password as string,
+            user.password
+          );
 
-        if (!isPasswordValid) return null;
+          if (!isPasswordValid) return null;
 
-        return {
-          id: user.id,
-          email: user.email,
-          name: user.name,
-          role: user.role,
-        };
+          return {
+            id: user.id,
+            email: user.email,
+            name: user.name,
+            role: user.role,
+          };
+        } catch (error: any) {
+          console.error("Database connection error during auth:", error);
+          // Special handling for Prisma connection/initialization errors
+          if (error.code === 'P1001' || error.name === 'PrismaClientInitializationError') {
+            throw new Error("DATABASE_CONNECTION_ERROR");
+          }
+          throw error;
+        }
       },
     }),
   ],

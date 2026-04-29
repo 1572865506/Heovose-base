@@ -12,7 +12,18 @@ export async function PUT(
   try {
     const { id } = await params;
     const data = await request.json();
-    const { id: _, updatedAt: __, ...updateData } = data;
+    const { 
+      id: _, 
+      updatedAt: __, 
+      createdAt: ___, 
+      fullPath: ____, 
+      depth: _____,
+      hasChildren: ______,
+      parent: _______,
+      children: ________,
+      assets: _________,
+      ...updateData 
+    } = data;
 
     const item = await db.galleryCategory.upsert({
       where: { id },

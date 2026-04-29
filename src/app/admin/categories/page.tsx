@@ -36,7 +36,10 @@ import {
   Image as ImageIcon,
   Search,
   Check,
-  X
+  X,
+  Sparkles,
+  ArrowUp,
+  ArrowDown
 } from 'lucide-react';
 import { 
   Select,
@@ -50,14 +53,38 @@ import Image from 'next/image';
 import { useToast } from '@/hooks/use-toast';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
+import { translateContent } from '@/ai/flows/translate-flow';
+import { ShinyButton } from '@/components/ui/shiny-button';
+
+const AiGradientDef = () => (
+  <svg width="0" height="0" className="absolute">
+    <defs>
+      <linearGradient id="ai-aurora-gradient" x1="0%" y1="0%" x2="100%" y2="100%">
+        <stop stopColor="#06B6D4" offset="0%">
+          <animate attributeName="stop-color" values="#06B6D4;#4F46E5;#06B6D4" dur="4s" repeatCount="indefinite" />
+        </stop>
+        <stop stopColor="#4F46E5" offset="33%">
+          <animate attributeName="stop-color" values="#4F46E5;#D946EF;#4F46E5" dur="4s" repeatCount="indefinite" />
+        </stop>
+        <stop stopColor="#D946EF" offset="66%">
+          <animate attributeName="stop-color" values="#D946EF;#F43F5E;#D946EF" dur="4s" repeatCount="indefinite" />
+        </stop>
+        <stop stopColor="#F43F5E" offset="100%">
+          <animate attributeName="stop-color" values="#F43F5E;#06B6D4;#F43F5E" dur="4s" repeatCount="indefinite" />
+        </stop>
+      </linearGradient>
+    </defs>
+  </svg>
+);
 
 interface ProductCategory {
   id: string;
-  nameTextId: string;
-  descriptionTextId: string;
   slug: string;
-  thumbnailImageUrl: string;
+  thumbnailImageUrl?: string;
+  nameTextId: string;
+  descriptionTextId?: string;
   parentId?: string | null;
+  order: number;
 }
 
 interface LocalizedString {
@@ -78,6 +105,32 @@ export default function CategoriesPage() {
   const [isPickerOpen, setIsPickerOpen] = useState(false);
   const [pickerSearch, setPickerSearch] = useState('');
 
+  const handleAutoTranslate = async () => {
+    if (!formData.nameZh && !formData.descZh) {
+      toast({ variant: "destructive", title: "请先输入中文名称或简述" });
+      return;
+    }
+
+    setIsTranslating(true);
+    try {
+      const results = await Promise.all([
+        formData.nameZh ? translateContent({ text: formData.nameZh, targetLangs: ['en'] }) : null,
+        formData.descZh ? translateContent({ text: formData.descZh, targetLangs: ['en'] }) : null
+      ]);
+
+      setFormData(prev => ({
+        ...prev,
+        nameEn: results[0]?.en || prev.nameEn,
+        descEn: results[1]?.en || prev.descEn
+      }));
+      toast({ title: "全项智译成功" });
+    } catch (error: any) {
+      toast({ variant: "destructive", title: error.message || "智译失败" });
+    } finally {
+      setIsTranslating(false);
+    }
+  };
+
   const [formData, setFormData] = useState({
     id: '',
     slug: '',
@@ -89,6 +142,7 @@ export default function CategoriesPage() {
     parentId: 'none'
   });
 
+  const [isTranslating, setIsTranslating] = useState(false);
   const { data: categories, isLoading: isCatsLoading, mutate: mutateCats } = useLocalCollection<ProductCategory>('productCategories');
   const { data: translations, mutate: mutateTrans } = useLocalCollection<LocalizedString>('localizedStrings');
   const { data: galleryAssets } = useLocalCollection<any>('galleryAssets');
@@ -145,6 +199,66 @@ export default function CategoriesPage() {
     setIsDialogOpen(true);
   };
 
+  const handleMove = async (cat: ProductCategory, direction: 'up' | 'down') => {
+    if (!categories) return;
+    
+    // 找出同一层级的邻居
+    const siblings = categories
+      .filter(c => (c.parentId || 'none') === (cat.parentId || 'none'))
+      .sort((a, b) => a.order - b.order);
+      
+    const idx = siblings.findIndex(s => s.id === cat.id);
+    const neighborIdx = direction === 'up' ? idx - 1 : idx + 1;
+    
+    if (neighborIdx < 0 || neighborIdx >= siblings.length) return;
+    
+    const neighbor = siblings[neighborIdx];
+    
+    // 交换 order
+    const oldOrder = cat.order;
+    const newOrder = neighbor.order;
+    
+    try {
+      // 如果 order 相同（初始化时），手动拉开间距
+      const finalOrder = oldOrder === newOrder ? (direction === 'up' ? newOrder - 1 : newOrder + 1) : newOrder;
+      
+      const res1 = await fetch(`/api/productCategories/${cat.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+          id: cat.id, 
+          slug: cat.slug, 
+          nameTextId: cat.nameTextId, 
+          descriptionTextId: cat.descriptionTextId, 
+          thumbnailImageUrl: cat.thumbnailImageUrl, 
+          parentId: cat.parentId, 
+          order: finalOrder 
+        }),
+      });
+      
+      const res2 = await fetch(`/api/productCategories/${neighbor.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+          id: neighbor.id, 
+          slug: neighbor.slug, 
+          nameTextId: neighbor.nameTextId, 
+          descriptionTextId: neighbor.descriptionTextId, 
+          thumbnailImageUrl: neighbor.thumbnailImageUrl, 
+          parentId: neighbor.parentId, 
+          order: oldOrder 
+        }),
+      });
+      
+      if (!res1.ok || !res2.ok) throw new Error('同步排序数据失败');
+      
+      mutateCats();
+      toast({ title: "排序已更新" });
+    } catch (error: any) {
+      toast({ variant: "destructive", title: "排序失败", description: error.message });
+    }
+  };
+
   const handleSave = async () => {
     if (!formData.id || !formData.slug) {
       toast({ variant: "destructive", title: "请填写 ID 和 SLUG" });
@@ -157,21 +271,23 @@ export default function CategoriesPage() {
     
     try {
       // 1. 保存名称翻译
-      await fetch(`/api/localizedStrings/${nameTextId}`, {
+      const resName = await fetch(`/api/localizedStrings/${nameTextId}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ id: nameTextId, en: formData.nameEn.trim(), zh: formData.nameZh.trim() }),
       });
+      if (!resName.ok) throw new Error('保存名称翻译失败');
 
       // 2. 保存描述翻译
-      await fetch(`/api/localizedStrings/${descriptionTextId}`, {
+      const resDesc = await fetch(`/api/localizedStrings/${descriptionTextId}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ id: descriptionTextId, en: formData.descEn.trim(), zh: formData.descZh.trim() }),
       });
+      if (!resDesc.ok) throw new Error('保存描述翻译失败');
 
       // 3. 保存分类
-      await fetch(`/api/productCategories/${formData.id}`, {
+      const resCat = await fetch(`/api/productCategories/${formData.id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -181,16 +297,26 @@ export default function CategoriesPage() {
           descriptionTextId: descriptionTextId,
           thumbnailImageUrl: formData.thumbnailImageUrl,
           parentId: pId === 'none' ? null : pId,
+          order: editingCategory?.order || 0,
         }),
       });
+      if (!resCat.ok) {
+        const errorData = await resCat.json();
+        throw new Error(errorData.error || '保存分类数据失败');
+      }
 
       setIsDialogOpen(false);
       resetForm();
       mutateCats();
       mutateTrans();
       toast({ title: "分类已保存" });
-    } catch (e) {
-      toast({ variant: "destructive", title: "保存失败" });
+    } catch (error: any) {
+      console.error('Save error:', error);
+      toast({ 
+        variant: "destructive", 
+        title: "保存失败", 
+        description: error.message || "无法连接到服务器，请检查网络或重试。" 
+      });
     }
   };
 
@@ -245,6 +371,7 @@ export default function CategoriesPage() {
 
   return (
     <div className="space-y-10 animate-in fade-in duration-700 relative min-h-[80vh] pb-20">
+      <AiGradientDef />
       {/* 背景装饰 */}
       <div className="fixed inset-0 pointer-events-none z-0">
         <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-primary/[0.02] rounded-full blur-[100px] -translate-y-1/2 translate-x-1/3" />
@@ -297,7 +424,7 @@ export default function CategoriesPage() {
               <DialogDescription className="text-xs font-bold text-white/40 uppercase tracking-widest">Taxonomy Structural Configuration</DialogDescription>
             </DialogHeader>
           </div>
-          <div className="p-8 space-y-8">
+          <div className="p-6 space-y-6">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="space-y-2.5">
                 <Label className="text-xs font-bold uppercase text-slate-400 tracking-widest pl-1">所属上级 (Parent)</Label>
@@ -329,10 +456,21 @@ export default function CategoriesPage() {
               </div>
             </div>
 
-            <div className="space-y-6 pt-6 border-t border-slate-100">
-              <Label className="text-xs font-bold uppercase text-slate-400 tracking-widest flex items-center gap-2"><Languages className="h-3.5 w-3.5" /> 双语名称与描述配置</Label>
+            <div className="space-y-5 pt-5 border-t border-slate-100">
+              <div className="flex items-center justify-between">
+                <Label className="text-xs font-bold uppercase text-slate-400 tracking-widest flex items-center gap-2"><Languages className="h-3.5 w-3.5" /> 双语名称与描述配置</Label>
+                <ShinyButton 
+                  onClick={handleAutoTranslate} 
+                  disabled={isTranslating} 
+                  className="h-7 px-4"
+                  shape="capsule"
+                >
+                  {isTranslating ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Sparkles className="h-3.5 w-3.5" />}
+                  <span className="text-[9px] font-bold uppercase tracking-widest">极光智译</span>
+                </ShinyButton>
+              </div>
               <div className="grid grid-cols-2 gap-6">
-                <div className="space-y-4">
+                <div className="space-y-3">
                    <div className="space-y-2">
                      <Label className="text-[9px] font-bold opacity-40 uppercase pl-1">中文名称</Label>
                      <Input placeholder="高性能一体机" value={formData.nameZh} onChange={e => setFormData({...formData, nameZh: e.target.value})} className="rounded-xl h-11 text-sm font-medium" />
@@ -342,7 +480,7 @@ export default function CategoriesPage() {
                      <Input placeholder="极致性能，为专业办公而生" value={formData.descZh} onChange={e => setFormData({...formData, descZh: e.target.value})} className="rounded-xl h-11 text-[11px] font-medium" />
                    </div>
                 </div>
-                <div className="space-y-4">
+                <div className="space-y-3">
                    <div className="space-y-2">
                      <Label className="text-[9px] font-bold opacity-40 uppercase pl-1">English Name</Label>
                      <Input placeholder="High Performance AIO" value={formData.nameEn} onChange={e => setFormData({...formData, nameEn: e.target.value})} className="rounded-xl h-11 text-sm font-medium border-dashed" />
@@ -355,10 +493,10 @@ export default function CategoriesPage() {
               </div>
             </div>
 
-            <div className="space-y-2.5 pt-6 border-t border-slate-100">
+            <div className="space-y-2.5 pt-4 border-t border-slate-100">
               <Label className="text-[10px] font-bold uppercase text-slate-400 tracking-widest pl-1">分类缩略图</Label>
               <div 
-                className="relative aspect-video rounded-[1.5rem] bg-slate-500/5 border-2 border-dashed border-slate-200 overflow-hidden flex flex-col items-center justify-center group cursor-pointer hover:bg-primary/[0.02] hover:border-primary/40 transition-all"
+                className="relative aspect-[6/1] rounded-[0.75rem] bg-slate-500/5 border-2 border-dashed border-slate-200 overflow-hidden flex flex-col items-center justify-center group cursor-pointer hover:bg-primary/[0.02] hover:border-primary/40 transition-all"
                 onClick={() => setIsPickerOpen(true)}
               >
                 {formData.thumbnailImageUrl ? (
@@ -387,9 +525,9 @@ export default function CategoriesPage() {
               </div>
             </div>
           </div>
-          <DialogFooter className="bg-slate-50 p-8 border-t border-slate-200 gap-4">
-            <Button variant="outline" onClick={() => setIsDialogOpen(false)} className="h-14 rounded-2xl flex-1 font-bold uppercase text-xs tracking-widest border-slate-200">放弃编辑</Button>
-            <Button onClick={handleSave} className="h-14 rounded-2xl flex-1 font-bold uppercase text-xs tracking-widest shadow-xl shadow-primary/20">确认保存架构</Button>
+          <DialogFooter className="bg-slate-50 p-6 border-t border-slate-200 gap-4">
+            <Button variant="outline" onClick={() => setIsDialogOpen(false)} className="h-12 rounded-2xl flex-1 font-bold uppercase text-xs tracking-widest border-slate-200">放弃编辑</Button>
+            <Button onClick={handleSave} className="h-12 rounded-2xl flex-1 font-bold uppercase text-xs tracking-widest shadow-xl shadow-primary/20">确认保存架构</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -532,6 +670,24 @@ export default function CategoriesPage() {
                     </TableCell>
                     <TableCell className="pr-8 text-right">
                       <div className="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-all duration-300">
+                        <div className="flex items-center bg-slate-100 rounded-xl p-1 mr-2">
+                           <Button 
+                             size="icon" 
+                             variant="ghost" 
+                             className="h-8 w-8 rounded-lg text-slate-400 hover:text-primary hover:bg-white" 
+                             onClick={() => handleMove(cat, 'up')}
+                           >
+                             <ArrowUp className="h-3.5 w-3.5" />
+                           </Button>
+                           <Button 
+                             size="icon" 
+                             variant="ghost" 
+                             className="h-8 w-8 rounded-lg text-slate-400 hover:text-primary hover:bg-white" 
+                             onClick={() => handleMove(cat, 'down')}
+                           >
+                             <ArrowDown className="h-3.5 w-3.5" />
+                           </Button>
+                        </div>
                         <Button 
                           size="icon" 
                           variant="ghost" 

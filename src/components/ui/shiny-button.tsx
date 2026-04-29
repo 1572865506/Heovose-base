@@ -58,12 +58,16 @@ export function ShinyButton({
           --shadow-size: 2px;
           --transition: 800ms cubic-bezier(0.25, 1, 0.5, 1);
           
+          display: flex;
+          align-items: center;
+          justify-content: center;
           isolation: isolate;
           position: relative;
           overflow: hidden;
           cursor: pointer;
           outline-offset: 4px;
-          padding: 0.5rem 1.25rem;
+          padding: 0 1.25rem;
+          height: 2.5rem;
           font-family: "Inter", sans-serif;
           font-size: 0.8125rem;
           line-height: 1.2;

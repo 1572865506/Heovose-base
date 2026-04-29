@@ -9,12 +9,14 @@ import { Card, CardHeader, CardTitle, CardContent, CardFooter } from "@/componen
 import { Label } from "@/components/ui/label";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Loader2 } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
 
 export default function LoginPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const { toast } = useToast();
   const router = useRouter();
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -23,19 +25,46 @@ export default function LoginPage() {
     setError("");
 
     try {
+      console.log("Attempting login for:", email);
       const result = await signIn("credentials", {
         email,
         password,
         redirect: false,
       });
 
+      console.log("Login result:", result);
+
       if (result?.error) {
-        setError("Invalid email or password");
+        let errorMsg = "Invalid email or password";
+        
+        // NextAuth doesn't always pass the throw message directly, 
+        // but we can infer from the result if it was a generic error vs credentials error.
+        if (result.error === "Configuration" || result.error === "AccessDenied") {
+          errorMsg = "System configuration or database error. Please check server logs.";
+        }
+        
+        setError(errorMsg);
+        toast({
+          title: "Login Failed",
+          description: errorMsg,
+          variant: "destructive",
+        });
       } else {
+        toast({
+          title: "Login Successful",
+          description: "Welcome back to the dashboard.",
+        });
         router.push("/admin");
       }
     } catch (err) {
-      setError("An unexpected error occurred");
+      console.error("Login catch block:", err);
+      const errorMsg = "An unexpected error occurred";
+      setError(errorMsg);
+      toast({
+        title: "Error",
+        description: errorMsg,
+        variant: "destructive",
+      });
     } finally {
       setIsLoading(false);
     }
