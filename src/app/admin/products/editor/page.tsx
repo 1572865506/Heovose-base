@@ -8,18 +8,18 @@ import { useLocalCollection } from '@/hooks/use-local-collection';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import { 
+import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { 
-  ArrowLeft, 
-  Save, 
-  Loader2, 
-  Image as ImageIcon, 
+import {
+  ArrowLeft,
+  Save,
+  Loader2,
+  Image as ImageIcon,
   X,
   Languages,
   Info,
@@ -30,6 +30,8 @@ import {
   Library,
   ChevronRight,
   ChevronLeft,
+  ChevronUp,
+  ChevronDown,
   Settings,
   RotateCcw,
   BarChart3,
@@ -40,21 +42,21 @@ import {
   Ban,
   GripVertical
 } from 'lucide-react';
-import { 
-  Dialog, 
-  DialogContent, 
-  DialogFooter, 
-  DialogHeader, 
-  DialogTitle, 
+import {
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
   DialogDescription
 } from '@/components/ui/dialog';
-import { 
-  Tabs, 
-  TabsContent, 
-  TabsList, 
-  TabsTrigger 
+import {
+  Tabs,
+  TabsContent,
+  TabsList,
+  TabsTrigger
 } from "@/components/ui/tabs";
-import { 
+import {
   Popover,
   PopoverContent,
   PopoverTrigger,
@@ -170,8 +172,8 @@ const SortableImageCard = ({ url, idx, onDelete, onMove }: { url: string, idx: n
   };
 
   return (
-    <div 
-      ref={setNodeRef} 
+    <div
+      ref={setNodeRef}
       style={style}
       className={cn(
         "group/card relative aspect-square rounded-[2rem] bg-white border border-slate-100 shadow-sm overflow-hidden transform-gpu",
@@ -180,35 +182,35 @@ const SortableImageCard = ({ url, idx, onDelete, onMove }: { url: string, idx: n
       )}
     >
       <Image src={url} alt={`Gallery ${idx}`} fill className="object-cover transition-transform duration-1000 group-hover/card:scale-110 rounded-[2rem]" unoptimized />
-      
+
       {/* 底部交互层 (毛玻璃) */}
       <div className="absolute inset-0 bg-slate-900/60 opacity-0 group-hover/card:opacity-100 transition-all duration-500 flex flex-col items-center justify-end pb-6 z-10 rounded-[2rem]">
-         <div className="flex gap-2" onClick={e => e.stopPropagation()}>
-            <Button 
-              variant="secondary" 
-              size="icon" 
-              className="h-10 w-10 rounded-xl bg-white/10 hover:bg-white/20 border-white/20 text-white backdrop-blur-md"
-              onClick={() => onMove(idx, 'left')}
-            >
-              <ChevronLeft className="h-4 w-4" />
-            </Button>
-            <Button 
-              variant="secondary" 
-              size="icon" 
-              className="h-10 w-10 rounded-xl bg-white/10 hover:bg-white/20 border-white/20 text-white backdrop-blur-md"
-              onClick={() => onMove(idx, 'right')}
-            >
-              <ChevronRight className="h-4 w-4" />
-            </Button>
-            <Button 
-              variant="destructive" 
-              size="icon" 
-              className="h-10 w-10 rounded-xl bg-red-500/20 hover:bg-red-500/40 border-red-500/20 text-red-200 backdrop-blur-md"
-              onClick={() => onDelete(idx)}
-            >
-              <Trash2 className="h-4 w-4" />
-            </Button>
-         </div>
+        <div className="flex gap-2" onClick={e => e.stopPropagation()}>
+          <Button
+            variant="secondary"
+            size="icon"
+            className="h-10 w-10 rounded-xl bg-white/10 hover:bg-white/20 border-white/20 text-white backdrop-blur-md"
+            onClick={() => onMove(idx, 'left')}
+          >
+            <ChevronLeft className="h-4 w-4" />
+          </Button>
+          <Button
+            variant="secondary"
+            size="icon"
+            className="h-10 w-10 rounded-xl bg-white/10 hover:bg-white/20 border-white/20 text-white backdrop-blur-md"
+            onClick={() => onMove(idx, 'right')}
+          >
+            <ChevronRight className="h-4 w-4" />
+          </Button>
+          <Button
+            variant="destructive"
+            size="icon"
+            className="h-10 w-10 rounded-xl bg-red-500/20 hover:bg-red-500/40 border-red-500/20 text-red-200 backdrop-blur-md"
+            onClick={() => onDelete(idx)}
+          >
+            <Trash2 className="h-4 w-4" />
+          </Button>
+        </div>
       </div>
 
       {/* 序号标记 - 置于左上角 */}
@@ -217,9 +219,9 @@ const SortableImageCard = ({ url, idx, onDelete, onMove }: { url: string, idx: n
       </div>
 
       {/* 拖拽手柄指示器 - 右上角 */}
-      <div 
-        className="absolute top-4 right-4 h-8 w-8 rounded-xl bg-white/90 backdrop-blur-xl flex items-center justify-center text-slate-500 opacity-0 group-hover/card:opacity-100 transition-opacity z-20 shadow-lg border border-white/50 cursor-grab active:cursor-grabbing" 
-        {...attributes} 
+      <div
+        className="absolute top-4 right-4 h-8 w-8 rounded-xl bg-white/90 backdrop-blur-xl flex items-center justify-center text-slate-500 opacity-0 group-hover/card:opacity-100 transition-opacity z-20 shadow-lg border border-white/50 cursor-grab active:cursor-grabbing"
+        {...attributes}
         {...listeners}
       >
         <GripVertical className="h-4 w-4" />
@@ -249,9 +251,9 @@ interface Product {
   descriptionTextId: string;
   localizedDetails?: Record<string, string>;
   advantageTextIds?: string[];
-  specGroups?: { 
-    titleId: string, 
-    items: { labelId: string, valueId: string }[] 
+  specGroups?: {
+    titleId: string,
+    items: { labelId: string, valueId: string }[]
   }[];
   mainImageUrl: string;
   productCategoryId: string;
@@ -302,12 +304,12 @@ interface AppConfig {
  */
 function robustJsonParse(rawStr: string) {
   let jsonStr = (String(rawStr) || '').trim();
-  
+
   // 1. 移除 Markdown 代码块包装
   if (jsonStr.includes('```')) {
     jsonStr = jsonStr.replace(/```json\n?|```/g, '').trim();
   }
-  
+
   try {
     return JSON.parse(jsonStr);
   } catch (initialError) {
@@ -318,7 +320,7 @@ function robustJsonParse(rawStr: string) {
       if (match === '\t') return '\\t';
       return '';
     });
-    
+
     try {
       return JSON.parse(sanitized);
     } catch (secondError) {
@@ -389,40 +391,40 @@ function ProductEditorContent() {
     // 1. Basic Info
     let basicTotal = 0;
     let basicTranslated = 0;
-    
+
     const nameZh = String(formData.nameZh || '').trim();
     if (nameZh) {
       basicTotal++;
       if (String(formData.nameEn || '').trim()) basicTranslated++;
     }
-    
+
     const descZh = String(formData.descZh || '').trim();
     if (descZh) {
       basicTotal++;
       if (String(formData.descEn || '').trim()) basicTranslated++;
     }
-    
+
     totalFields += basicTotal;
     translatedFields += basicTranslated;
 
     // 2. Technical Specs
     let specTotal = 0;
     let specTranslated = 0;
-    
+
     formData.specGroups.forEach(group => {
       const gTitleZh = String(group.titleZh || '').trim();
       if (gTitleZh) {
         specTotal++;
         if (String(group.titleEn || '').trim()) specTranslated++;
       }
-      
+
       group.items.forEach(item => {
         const iLabelZh = String(item.labelZh || '').trim();
         if (iLabelZh) {
           specTotal++;
           if (String(item.labelEn || '').trim()) specTranslated++;
         }
-        
+
         const iValueZh = String(item.valueZh || '').trim();
         if (iValueZh) {
           specTotal++;
@@ -430,26 +432,26 @@ function ProductEditorContent() {
         }
       });
     });
-    
+
     totalFields += specTotal;
     translatedFields += specTranslated;
 
     // 3. Details (Long-form)
     let detailTotal = 0;
     let detailTranslated = 0;
-    
+
     const zhClean = String(formData.localizedDetails.zh || '').replace(/<[^>]*>/g, '').trim();
     if (zhClean) {
       detailTotal++;
       const enClean = String(formData.localizedDetails.en || '').replace(/<[^>]*>/g, '').trim();
       if (enClean) detailTranslated++;
     }
-    
+
     totalFields += detailTotal;
     translatedFields += detailTranslated;
 
     const globalScore = totalFields > 0 ? Math.round((translatedFields / totalFields) * 100) : 0;
-    
+
     return {
       global: globalScore,
       basic: basicTotal > 0 ? Math.round((basicTranslated / basicTotal) * 100) : 100,
@@ -461,7 +463,7 @@ function ProductEditorContent() {
   useEffect(() => {
     if (isEditing && product && translations) {
       const getT = (id?: string) => translations?.find(t => t.id === id) || { en: '', zh: '' };
-      
+
       const advantages = (product.advantageTextIds || []).map((id: string, idx: number) => {
         const trans = translations.find(t => t.id === id);
         return {
@@ -532,9 +534,9 @@ function ProductEditorContent() {
 
       const nameId = await saveLang(formData.nameEn, formData.nameZh, `prod_name_${formData.id}`);
       const descId = await saveLang(formData.descEn, formData.descZh, `prod_desc_${formData.id}`);
-      
+
       const advantageIds = await Promise.all(
-        formData.advantages.filter(a => a.zh || a.en).map((adv: { uid: string; zh: string; en: string }, idx: number) => 
+        formData.advantages.filter(a => a.zh || a.en).map((adv: { uid: string; zh: string; en: string }, idx: number) =>
           saveLang(adv.en, adv.zh, `prod_adv_${formData.id}_${idx}`)
         )
       );
@@ -556,16 +558,16 @@ function ProductEditorContent() {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          id: formData.id, 
-          nameTextId: nameId, 
-          descriptionTextId: descId, 
+          id: formData.id,
+          nameTextId: nameId,
+          descriptionTextId: descId,
           localizedDetails: formData.localizedDetails,
-          advantageTextIds: advantageIds, 
-          specGroups: savedSpecGroups, 
-          mainImageUrl: formData.mainImageUrl, 
-          categoryId: formData.categoryId, 
-          galleryImageUrls: formData.galleryUrls.filter(Boolean), 
-          status: formData.status, 
+          advantageTextIds: advantageIds,
+          specGroups: savedSpecGroups,
+          mainImageUrl: formData.mainImageUrl,
+          categoryId: formData.categoryId,
+          galleryImageUrls: formData.galleryUrls.filter(Boolean),
+          status: formData.status,
         }),
       });
 
@@ -578,9 +580,9 @@ function ProductEditorContent() {
       router.push('/admin/products');
     } catch (e: any) {
       console.error('Product save error:', e);
-      toast({ 
-        variant: "destructive", 
-        title: "保存失败", 
+      toast({
+        variant: "destructive",
+        title: "保存失败",
         description: e.message || "无法完成同步，请检查网络或配置"
       });
     }
@@ -593,6 +595,15 @@ function ProductEditorContent() {
     if (saveMode === 'create') {
       if (!newTemplateName.trim()) {
         toast({ variant: "destructive", title: "请输入模板名称" });
+        return;
+      }
+      const isDuplicate = specTemplates?.some(t => t.name.trim() === newTemplateName.trim());
+      if (isDuplicate) {
+        toast({ 
+          variant: "destructive", 
+          title: "模板名称已存在", 
+          description: "请换一个名称，或使用“覆盖现有模板”模式。" 
+        });
         return;
       }
       templateId = `tpl_${Date.now()}`;
@@ -636,8 +647,8 @@ function ProductEditorContent() {
       mutateTemplates();
       toast({ title: saveMode === 'create' ? "规格模板已存入云端库" : "模板内容已更新成功" });
     } catch (e: any) {
-      toast({ 
-        variant: "destructive", 
+      toast({
+        variant: "destructive",
         title: "模板保存失败",
         description: e.message
       });
@@ -814,17 +825,17 @@ function ProductEditorContent() {
     if (!aiConfig?.isEnabled) return;
     const item = formData.specGroups[gIdx].items[iIdx];
     if (!String(item.labelZh || '').trim() && !String(item.valueZh || '').trim()) return;
-    
+
     const labelKey = `i_${gIdx}_${iIdx}_label`;
     const valueKey = `i_${gIdx}_${iIdx}_value`;
     setProcessingItems(prev => { const n = new Set(prev); n.add(labelKey); n.add(valueKey); return n; });
 
     try {
       const payload = { label: String(item.labelZh || ''), value: String(item.valueZh || '') };
-      const res = await translateContent({ 
-        text: `Translate hardware spec (JSON ONLY): ${JSON.stringify(payload)}. Format: {"label": "...", "value": "..."}`, 
-        targetLangs: ['en'], 
-        apiKey: aiConfig.apiKey 
+      const res = await translateContent({
+        text: `Translate hardware spec (JSON ONLY): ${JSON.stringify(payload)}. Format: {"label": "...", "value": "..."}`,
+        targetLangs: ['en'],
+        apiKey: aiConfig.apiKey
       });
 
       if (res?.en) {
@@ -845,6 +856,24 @@ function ProductEditorContent() {
         return next;
       });
     }
+  };
+
+  const handleMoveSpecGroup = (index: number, direction: 'up' | 'down') => {
+    const newGroups = [...formData.specGroups];
+    const targetIndex = direction === 'up' ? index - 1 : index + 1;
+    if (targetIndex < 0 || targetIndex >= newGroups.length) return;
+    [newGroups[index], newGroups[targetIndex]] = [newGroups[targetIndex], newGroups[index]];
+    setFormData({ ...formData, specGroups: newGroups });
+  };
+
+  const handleMoveSpecItem = (gIdx: number, iIdx: number, direction: 'up' | 'down') => {
+    const newGroups = [...formData.specGroups];
+    const items = [...newGroups[gIdx].items];
+    const targetIndex = direction === 'up' ? iIdx - 1 : iIdx + 1;
+    if (targetIndex < 0 || targetIndex >= items.length) return;
+    [items[iIdx], items[targetIndex]] = [items[targetIndex], items[iIdx]];
+    newGroups[gIdx].items = items;
+    setFormData({ ...formData, specGroups: newGroups });
   };
 
   const openPicker = (target: any) => { setPickerTarget(target); setSelectedPickerUrls(new Set()); setIsPickerOpen(true); };
@@ -879,7 +908,7 @@ function ProductEditorContent() {
   return (
     <div className="max-w-full w-full mx-auto space-y-10 pb-32 animate-in fade-in duration-700 relative min-h-screen">
       <AiGradientDef />
-      
+
       {/* 背景装饰 */}
       <div className="fixed inset-0 pointer-events-none z-0">
         <div className="absolute top-0 right-0 w-[800px] h-[800px] bg-primary/[0.01] rounded-full blur-[120px] -translate-y-1/2 translate-x-1/4" />
@@ -904,58 +933,58 @@ function ProductEditorContent() {
             </div>
           </div>
           <div className="flex items-center gap-4 flex-1 min-w-0 max-w-4xl">
-             <div className="space-y-1 w-[200px] shrink-0">
-               <Label className="text-[8px] font-bold uppercase tracking-widest text-slate-400 pl-1">资源归属分类</Label>
-               <Select value={formData.categoryId} onValueChange={v => {
-                 setFormData((prev: ProductFormData) => {
-                   const up: Partial<ProductFormData> = { categoryId: v };
-                   if (!isEditing) {
-                     const date = new Date();
-                     const mm = String(date.getMonth() + 1).padStart(2, '0');
-                     const dd = String(date.getDate()).padStart(2, '0');
-                     const rc = Math.random().toString(36).substring(2, 6).toUpperCase();
-                     up.id = `PROD_${v.toUpperCase().replace(/\s+/g, '_')}_${mm}${dd}_${rc}`;
-                   }
-                   return { ...prev, ...up };
-                 });
-               }}>
-                 <SelectTrigger className="h-10 rounded-xl bg-slate-500/5 border-transparent text-xs font-bold uppercase tracking-widest text-slate-600 focus:ring-primary/20">
-                   <SelectValue placeholder="选择所属分类..." />
-                 </SelectTrigger>
-                 <SelectContent className="rounded-2xl border-slate-200 shadow-2xl">
-                    {categories?.map(c => {
-                      const trans = translations?.find(t => t.id === c.nameTextId);
-                      const name = trans ? (trans.zh || trans.en || c.id) : c.id;
-                      return (
-                        <SelectItem key={c.id} value={c.id} className="text-[10px] font-bold uppercase py-3">
-                          {name}
-                        </SelectItem>
-                      );
-                    })}
-                  </SelectContent>
-               </Select>
-             </div>
-             <div className="space-y-1 w-[280px] shrink-0">
-                <Label className="text-[8px] font-bold uppercase tracking-widest text-slate-400 pl-1">资产唯一标识 (ID)</Label>
-                <div className="relative group">
-                  <Input disabled={isEditing} value={formData.id} onChange={e => setFormData({...formData, id: e.target.value})} className={cn("h-10 rounded-xl bg-slate-500/5 border-transparent font-mono text-xs font-bold w-full focus-visible:ring-primary/20", idConflict && "border-destructive")} placeholder="GLOBAL_RESOURCE_ID" />
-                  {idConflict && <AlertCircle className="absolute right-4 top-1/2 -translate-y-1/2 h-4 w-4 text-destructive" />}
-                </div>
-             </div>
+            <div className="space-y-1 w-[200px] shrink-0">
+              <Label className="text-[8px] font-bold uppercase tracking-widest text-slate-400 pl-1">资源归属分类</Label>
+              <Select value={formData.categoryId} onValueChange={v => {
+                setFormData((prev: ProductFormData) => {
+                  const up: Partial<ProductFormData> = { categoryId: v };
+                  if (!isEditing) {
+                    const date = new Date();
+                    const mm = String(date.getMonth() + 1).padStart(2, '0');
+                    const dd = String(date.getDate()).padStart(2, '0');
+                    const rc = Math.random().toString(36).substring(2, 6).toUpperCase();
+                    up.id = `PROD_${v.toUpperCase().replace(/\s+/g, '_')}_${mm}${dd}_${rc}`;
+                  }
+                  return { ...prev, ...up };
+                });
+              }}>
+                <SelectTrigger className="h-10 rounded-xl bg-slate-500/5 border-transparent text-xs font-bold uppercase tracking-widest text-slate-600 focus:ring-primary/20">
+                  <SelectValue placeholder="选择所属分类..." />
+                </SelectTrigger>
+                <SelectContent className="rounded-2xl border-slate-200 shadow-2xl">
+                  {categories?.map(c => {
+                    const trans = translations?.find(t => t.id === c.nameTextId);
+                    const name = trans ? (trans.zh || trans.en || c.id) : c.id;
+                    return (
+                      <SelectItem key={c.id} value={c.id} className="text-[10px] font-bold uppercase py-3">
+                        {name}
+                      </SelectItem>
+                    );
+                  })}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-1 w-[280px] shrink-0">
+              <Label className="text-[8px] font-bold uppercase tracking-widest text-slate-400 pl-1">资产唯一标识 (ID)</Label>
+              <div className="relative group">
+                <Input disabled={isEditing} value={formData.id} onChange={e => setFormData({ ...formData, id: e.target.value })} className={cn("h-10 rounded-xl bg-slate-500/5 border-transparent font-mono text-xs font-bold w-full focus-visible:ring-primary/20", idConflict && "border-destructive")} placeholder="GLOBAL_RESOURCE_ID" />
+                {idConflict && <AlertCircle className="absolute right-4 top-1/2 -translate-y-1/2 h-4 w-4 text-destructive" />}
+              </div>
+            </div>
 
-             <div className="space-y-1">
-                <Label className="text-[8px] font-bold uppercase tracking-widest text-slate-400 pl-1">智译完整度诊断</Label>
-                <TooltipProvider>
+            <div className="space-y-1">
+              <Label className="text-[8px] font-bold uppercase tracking-widest text-slate-400 pl-1">智译完整度诊断</Label>
+              <TooltipProvider>
                 <Tooltip>
                   <TooltipTrigger asChild>
                     <div className="flex items-center gap-2 cursor-help h-10 px-4 bg-slate-500/5 rounded-xl border border-transparent hover:border-primary/20 transition-all">
                       <BarChart3 className="h-4 w-4 text-primary opacity-60" />
-                      <Badge 
-                        variant="outline" 
+                      <Badge
+                        variant="outline"
                         className={cn(
                           "text-[9px] font-bold h-5 px-2 border-none uppercase tracking-widest",
-                          translationCoverage.global === 100 ? "text-green-600 bg-green-50" : 
-                          translationCoverage.global > 70 ? "text-orange-600 bg-orange-50" : "text-muted-foreground bg-muted/20"
+                          translationCoverage.global === 100 ? "text-green-600 bg-green-50" :
+                            translationCoverage.global > 70 ? "text-orange-600 bg-orange-50" : "text-muted-foreground bg-muted/20"
                         )}
                       >
                         HEALTH {translationCoverage.global}%
@@ -987,26 +1016,26 @@ function ProductEditorContent() {
                   </TooltipContent>
                 </Tooltip>
               </TooltipProvider>
-             </div>
+            </div>
 
-             <div className="space-y-1 w-[140px] shrink-0">
-               <Label className="text-[8px] font-bold uppercase tracking-widest text-slate-400 pl-1">发布状态 (Toggle)</Label>
-               <button 
-                 onClick={() => setFormData({...formData, status: formData.status === 'published' ? 'draft' : 'published'})}
-                 className={cn(
-                   "w-full h-10 rounded-xl flex items-center px-4 gap-3 transition-all duration-300 border",
-                   formData.status === 'published' 
-                     ? "bg-green-50 text-green-700 border-green-200/50 shadow-[0_4px_15px_rgba(34,197,94,0.15)]" 
-                     : "bg-slate-500/5 text-slate-400 border-transparent hover:bg-slate-500/10"
-                 )}
-               >
-                 {formData.status === 'published' ? (
-                   <><Eye className="h-4 w-4" /><span className="text-[10px] font-bold uppercase tracking-widest">已发布 / LIVE</span></>
-                 ) : (
-                   <><EyeOff className="h-4 w-4" /><span className="text-[10px] font-bold uppercase tracking-widest">草稿 / DRAFT</span></>
-                 )}
-               </button>
-             </div>
+            <div className="space-y-1 w-[140px] shrink-0">
+              <Label className="text-[8px] font-bold uppercase tracking-widest text-slate-400 pl-1">发布状态 (Toggle)</Label>
+              <button
+                onClick={() => setFormData({ ...formData, status: formData.status === 'published' ? 'draft' : 'published' })}
+                className={cn(
+                  "w-full h-10 rounded-xl flex items-center px-4 gap-3 transition-all duration-300 border",
+                  formData.status === 'published'
+                    ? "bg-green-50 text-green-700 border-green-200/50 shadow-[0_4px_15px_rgba(34,197,94,0.15)]"
+                    : "bg-slate-500/5 text-slate-400 border-transparent hover:bg-slate-500/10"
+                )}
+              >
+                {formData.status === 'published' ? (
+                  <><Eye className="h-4 w-4" /><span className="text-[10px] font-bold uppercase tracking-widest">已发布 / LIVE</span></>
+                ) : (
+                  <><EyeOff className="h-4 w-4" /><span className="text-[10px] font-bold uppercase tracking-widest">草稿 / DRAFT</span></>
+                )}
+              </button>
+            </div>
           </div>
         </div>
         <div className="flex gap-3 ml-6 shrink-0 relative z-10">
@@ -1040,72 +1069,72 @@ function ProductEditorContent() {
               <div className="lg:col-span-7 space-y-10">
                 <section className="bg-white/60 backdrop-blur-md rounded-[2.5rem] border border-white/40 p-10 space-y-8 shadow-[0_8px_30px_rgb(0,0,0,0.04)] relative group overflow-hidden">
 
-                   <div className="border-b border-slate-100 pb-6 relative z-10">
-                      <h3 className="text-xl font-headline font-bold text-slate-900 flex items-center gap-3">
-                        核心名称与叙述
-                      </h3>
-                   </div>
+                  <div className="border-b border-slate-100 pb-6 relative z-10">
+                    <h3 className="text-xl font-headline font-bold text-slate-900 flex items-center gap-3">
+                      核心名称与叙述
+                    </h3>
+                  </div>
 
-                   <div className="space-y-10 relative z-10">
-                      <div className="space-y-6">
-                        <div className="flex items-center justify-between pl-1">
-                          <Label className="text-[11px] font-bold uppercase tracking-widest text-slate-400">产品型号/名称 (中)</Label>
-                          {aiConfig?.isEnabled && (
-                            <ShinyButton 
-                              onClick={handleAiTranslateBasicInfo} 
-                              disabled={isAiProcessing} 
-                              className="h-7 px-3"
-                              shape="capsule"
-                            >
-                              <div className="flex items-center gap-2">
-                                {isAiProcessing ? <Loader2 className="h-3 w-3 animate-spin" /> : <Sparkles className="h-3 w-3" />}
-                                <span className="text-[9px] font-bold uppercase tracking-widest">极光智译</span>
-                              </div>
-                            </ShinyButton>
-                          )}
-                        </div>
-                        <Input 
-                          value={formData.nameZh} 
-                          onChange={e => setFormData({...formData, nameZh: e.target.value})} 
-                          className="h-12 rounded-xl bg-slate-500/5 border-slate-200 text-sm font-bold tracking-tight px-5 focus-visible:ring-4 focus-visible:ring-primary/5 placeholder:font-normal placeholder:text-slate-300" 
-                          placeholder="例如: Heovose Elevate 全能商用一体机" 
+                  <div className="space-y-10 relative z-10">
+                    <div className="space-y-6">
+                      <div className="flex items-center justify-between pl-1">
+                        <Label className="text-[11px] font-bold uppercase tracking-widest text-slate-400">产品型号/名称 (中)</Label>
+                        {aiConfig?.isEnabled && (
+                          <ShinyButton
+                            onClick={handleAiTranslateBasicInfo}
+                            disabled={isAiProcessing}
+                            className="h-7 px-3"
+                            shape="capsule"
+                          >
+                            <div className="flex items-center gap-2">
+                              {isAiProcessing ? <Loader2 className="h-3 w-3 animate-spin" /> : <Sparkles className="h-3 w-3" />}
+                              <span className="text-[9px] font-bold uppercase tracking-widest">极光智译</span>
+                            </div>
+                          </ShinyButton>
+                        )}
+                      </div>
+                      <Input
+                        value={formData.nameZh}
+                        onChange={e => setFormData({ ...formData, nameZh: e.target.value })}
+                        className="h-12 rounded-xl bg-slate-500/5 border-slate-200 text-sm font-bold tracking-tight px-5 focus-visible:ring-4 focus-visible:ring-primary/5 placeholder:font-normal placeholder:text-slate-300"
+                        placeholder="例如: Heovose Elevate 全能商用一体机"
+                      />
+                      <div className="space-y-2">
+                        <Label className="text-[11px] font-bold uppercase tracking-widest text-slate-400 pl-1">Product Model / Name (English)</Label>
+                        <Input
+                          value={formData.nameEn}
+                          onChange={e => setFormData({ ...formData, nameEn: e.target.value })}
+                          className="h-12 rounded-xl bg-slate-500/5 border-dashed border-slate-200 text-sm font-bold tracking-tight px-5 focus-visible:ring-4 focus-visible:ring-primary/5 placeholder:font-normal placeholder:text-slate-300"
+                          placeholder="e.g. Heovose Elevate Pro AIO Series"
                         />
-                        <div className="space-y-2">
-                          <Label className="text-[11px] font-bold uppercase tracking-widest text-slate-400 pl-1">Product Model / Name (English)</Label>
-                          <Input 
-                            value={formData.nameEn} 
-                            onChange={e => setFormData({...formData, nameEn: e.target.value})} 
-                            className="h-12 rounded-xl bg-slate-500/5 border-dashed border-slate-200 text-sm font-bold tracking-tight px-5 focus-visible:ring-4 focus-visible:ring-primary/5 placeholder:font-normal placeholder:text-slate-300" 
-                            placeholder="e.g. Heovose Elevate Pro AIO Series" 
+                      </div>
+                    </div>
+
+                    <div className="space-y-5">
+                      <Label className="text-[11px] font-bold uppercase tracking-widest text-slate-400 pl-1">产品核心卖点描述 (中/英)</Label>
+                      <div className="space-y-4">
+                        <div className="relative group/area">
+                          <Textarea
+                            value={formData.descZh}
+                            onChange={e => setFormData({ ...formData, descZh: e.target.value })}
+                            className="min-h-[80px] rounded-xl bg-slate-500/5 border-slate-200 text-xs font-medium leading-relaxed px-5 py-3 focus-visible:ring-4 focus-visible:ring-primary/5 placeholder:text-slate-300"
+                            placeholder="输入产品的核心优势或市场定位叙述..."
+                          />
+                          <div className="absolute top-3 right-5 pointer-events-none opacity-5">
+                            <Languages className="h-6 w-6" />
+                          </div>
+                        </div>
+                        <div className="relative group/area">
+                          <Textarea
+                            value={formData.descEn}
+                            onChange={e => setFormData({ ...formData, descEn: e.target.value })}
+                            className="min-h-[80px] rounded-xl bg-slate-500/5 border-dashed border-slate-200 text-xs font-medium leading-relaxed px-5 py-3 focus-visible:ring-4 focus-visible:ring-primary/5 placeholder:text-slate-300"
+                            placeholder="Product USP Narrative in English..."
                           />
                         </div>
                       </div>
-
-                      <div className="space-y-5">
-                        <Label className="text-[11px] font-bold uppercase tracking-widest text-slate-400 pl-1">产品核心卖点描述 (中/英)</Label>
-                        <div className="space-y-4">
-                          <div className="relative group/area">
-                            <Textarea 
-                              value={formData.descZh} 
-                              onChange={e => setFormData({...formData, descZh: e.target.value})} 
-                              className="min-h-[80px] rounded-xl bg-slate-500/5 border-slate-200 text-xs font-medium leading-relaxed px-5 py-3 focus-visible:ring-4 focus-visible:ring-primary/5 placeholder:text-slate-300" 
-                              placeholder="输入产品的核心优势或市场定位叙述..." 
-                            />
-                            <div className="absolute top-3 right-5 pointer-events-none opacity-5">
-                              <Languages className="h-6 w-6" />
-                            </div>
-                          </div>
-                          <div className="relative group/area">
-                            <Textarea 
-                              value={formData.descEn} 
-                              onChange={e => setFormData({...formData, descEn: e.target.value})} 
-                              className="min-h-[80px] rounded-xl bg-slate-500/5 border-dashed border-slate-200 text-xs font-medium leading-relaxed px-5 py-3 focus-visible:ring-4 focus-visible:ring-primary/5 placeholder:text-slate-300" 
-                              placeholder="Product USP Narrative in English..." 
-                            />
-                          </div>
-                        </div>
-                      </div>
-                   </div>
+                    </div>
+                  </div>
                 </section>
               </div>
 
@@ -1118,7 +1147,7 @@ function ProductEditorContent() {
                   </div>
 
                   <div className="space-y-8">
-                    <div 
+                    <div
                       className="relative aspect-[11/9] rounded-[2rem] bg-slate-500/5 border-2 border-dashed border-slate-200 overflow-hidden flex flex-col items-center justify-center group cursor-pointer hover:bg-primary/[0.02] hover:border-primary/40 transition-all duration-700"
                       onClick={() => openPicker('main')}
                     >
@@ -1138,24 +1167,24 @@ function ProductEditorContent() {
                             <Upload className="h-8 w-8" />
                           </div>
                           <div className="text-center space-y-2">
-                             <p className="text-sm font-bold text-slate-900">点击进入资产库选择</p>
-                             <p className="text-[10px] uppercase font-bold tracking-[0.2em] opacity-60">Master Hero Image Selection</p>
+                            <p className="text-sm font-bold text-slate-900">点击进入资产库选择</p>
+                            <p className="text-[10px] uppercase font-bold tracking-[0.2em] opacity-60">Master Hero Image Selection</p>
                           </div>
                         </div>
                       )}
                     </div>
-                    
+
                     <div className="bg-slate-500/5 p-6 rounded-2xl border border-white/40 space-y-3">
-                       <div className="flex items-center gap-3 text-slate-400">
-                          <Info className="h-4 w-4 shrink-0" />
-                          <p className="text-[10px] font-bold uppercase tracking-widest leading-relaxed">头图建议规格 (Recommended Specs):</p>
-                       </div>
-                       <ul className="grid grid-cols-2 gap-x-6 gap-y-2 text-[9px] font-bold text-slate-500 uppercase tracking-widest pl-7">
-                          <li>• PNG/WebP 透明底</li>
-                          <li>• 尺寸 1000x1000+</li>
-                          <li>• 居中构图</li>
-                          <li>• 体积 {'<'} 700KB</li>
-                       </ul>
+                      <div className="flex items-center gap-3 text-slate-400">
+                        <Info className="h-4 w-4 shrink-0" />
+                        <p className="text-[10px] font-bold uppercase tracking-widest leading-relaxed">头图建议规格 (Recommended Specs):</p>
+                      </div>
+                      <ul className="grid grid-cols-2 gap-x-6 gap-y-2 text-[9px] font-bold text-slate-500 uppercase tracking-widest pl-7">
+                        <li>• PNG/WebP 透明底</li>
+                        <li>• 尺寸 1000x1000+</li>
+                        <li>• 居中构图</li>
+                        <li>• 体积 {'<'} 700KB</li>
+                      </ul>
                     </div>
                   </div>
                 </section>
@@ -1165,169 +1194,246 @@ function ProductEditorContent() {
 
           <TabsContent value="media" className="animate-in fade-in slide-in-from-bottom-6 duration-700 space-y-10 focus-visible:outline-none">
             <section className="bg-white/60 backdrop-blur-md rounded-[2.5rem] border border-white/40 p-10 shadow-[0_8px_30px_rgb(0,0,0,0.04)] relative group overflow-hidden min-h-[400px] flex items-center justify-center">
-               <DndContext 
-                 sensors={sensors}
-                 collisionDetection={closestCenter}
-                 onDragEnd={handleDragEnd}
-               >
-                 <SortableContext 
-                   items={formData.galleryUrls}
-                   strategy={rectSortingStrategy}
-                 >
-                   <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-8 w-full">
-                      {formData.galleryUrls.map((url, idx) => (
-                        <SortableImageCard 
-                          key={url} 
-                          url={url} 
-                          idx={idx} 
-                          onDelete={(idx) => {
-                            const g = [...formData.galleryUrls];
-                            g.splice(idx, 1);
-                            setFormData({ ...formData, galleryUrls: g });
-                          }}
-                          onMove={handleMoveGalleryImage}
-                        />
-                      ))}
-                      
-                      <div 
-                        className={cn(
-                          "aspect-square rounded-[2rem] flex flex-col items-center justify-center gap-4 transition-all duration-500",
-                          formData.galleryUrls.length < 10 
-                            ? "bg-slate-500/5 border-2 border-dashed border-slate-200 cursor-pointer hover:bg-primary/[0.02] hover:border-primary/40 group/add" 
-                            : "bg-slate-100 border-2 border-slate-200 cursor-not-allowed opacity-60"
-                        )}
-                        onClick={() => formData.galleryUrls.length < 10 && openPicker('gallery')}
-                      >
-                        <div className={cn(
-                          "h-14 w-14 rounded-2xl flex items-center justify-center transition-all duration-500",
-                          formData.galleryUrls.length < 10 
-                            ? "bg-white shadow-sm group-hover/add:scale-110 group-hover/add:bg-primary group-hover/add:text-white" 
-                            : "bg-slate-200 text-slate-400"
-                        )}>
-                          {formData.galleryUrls.length < 10 ? <PlusCircle className="h-7 w-7" /> : <Ban className="h-7 w-7" />}
-                        </div>
-                        <p className={cn(
-                          "text-[10px] font-bold uppercase tracking-widest",
-                          formData.galleryUrls.length < 10 ? "text-slate-400" : "text-slate-500"
-                        )}>
-                          {formData.galleryUrls.length < 10 ? "添加矩阵资产" : `已达上限 (${formData.galleryUrls.length}/10)`}
-                        </p>
+              <DndContext
+                sensors={sensors}
+                collisionDetection={closestCenter}
+                onDragEnd={handleDragEnd}
+              >
+                <SortableContext
+                  items={formData.galleryUrls}
+                  strategy={rectSortingStrategy}
+                >
+                  <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-8 w-full">
+                    {formData.galleryUrls.map((url, idx) => (
+                      <SortableImageCard
+                        key={url}
+                        url={url}
+                        idx={idx}
+                        onDelete={(idx) => {
+                          const g = [...formData.galleryUrls];
+                          g.splice(idx, 1);
+                          setFormData({ ...formData, galleryUrls: g });
+                        }}
+                        onMove={handleMoveGalleryImage}
+                      />
+                    ))}
+
+                    <div
+                      className={cn(
+                        "aspect-square rounded-[2rem] flex flex-col items-center justify-center gap-4 transition-all duration-500",
+                        formData.galleryUrls.length < 10
+                          ? "bg-slate-500/5 border-2 border-dashed border-slate-200 cursor-pointer hover:bg-primary/[0.02] hover:border-primary/40 group/add"
+                          : "bg-slate-100 border-2 border-slate-200 cursor-not-allowed opacity-60"
+                      )}
+                      onClick={() => formData.galleryUrls.length < 10 && openPicker('gallery')}
+                    >
+                      <div className={cn(
+                        "h-14 w-14 rounded-2xl flex items-center justify-center transition-all duration-500",
+                        formData.galleryUrls.length < 10
+                          ? "bg-white shadow-sm group-hover/add:scale-110 group-hover/add:bg-primary group-hover/add:text-white"
+                          : "bg-slate-200 text-slate-400"
+                      )}>
+                        {formData.galleryUrls.length < 10 ? <PlusCircle className="h-7 w-7" /> : <Ban className="h-7 w-7" />}
                       </div>
-                   </div>
-                 </SortableContext>
-               </DndContext>
+                      <p className={cn(
+                        "text-[10px] font-bold uppercase tracking-widest",
+                        formData.galleryUrls.length < 10 ? "text-slate-400" : "text-slate-500"
+                      )}>
+                        {formData.galleryUrls.length < 10 ? "添加矩阵资产" : `已达上限 (${formData.galleryUrls.length}/10)`}
+                      </p>
+                    </div>
+                  </div>
+                </SortableContext>
+              </DndContext>
             </section>
           </TabsContent>
 
-          <TabsContent value="specs" className="animate-in fade-in slide-in-from-bottom-6 duration-700 space-y-10 focus-visible:outline-none">
-            <div className="flex items-center justify-between bg-white/60 backdrop-blur-md p-8 rounded-[2rem] border border-white/40 shadow-sm">
-               <div className="space-y-1">
-                  <h3 className="text-xl font-headline font-bold text-slate-900 flex items-center gap-3">
-                    规格参数矩阵
-                    <Badge variant="outline" className="text-[8px] font-bold uppercase tracking-widest border-slate-200 text-slate-400 bg-slate-50">TECHNICAL</Badge>
-                  </h3>
-                  <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">Hardware Configuration & Specification Matrix</p>
-               </div>
-               <div className="flex gap-3">
-                  <Popover>
-                    <PopoverTrigger asChild>
-                       <Button variant="outline" className="rounded-2xl h-12 px-6 text-[10px] font-bold uppercase tracking-widest border-slate-200 gap-2 hover:bg-slate-50">
-                         <Library className="h-4 w-4" /> 导入行业模板
-                       </Button>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-80 p-0 rounded-[2rem] border-slate-200 shadow-2xl overflow-hidden" align="end">
-                       <div className="bg-slate-900 p-5 text-white">
-                          <p className="text-[10px] font-bold uppercase tracking-widest opacity-60">SPEC TEMPLATES LIBRARY</p>
-                       </div>
-                       <div className="p-4 max-h-[300px] overflow-y-auto space-y-1">
-                          {specTemplates?.map(tpl => (
-                            <div key={tpl.id} className="flex items-center justify-between group p-3 hover:bg-slate-50 rounded-xl transition-all cursor-pointer" onClick={() => handleApplyTemplate(tpl)}>
-                               <span className="text-xs font-bold text-slate-700">{tpl.name}</span>
-                               <Button variant="ghost" size="icon" className="h-8 w-8 opacity-0 group-hover:opacity-100 text-destructive/40 hover:text-destructive hover:bg-destructive/5" onClick={(e) => { e.stopPropagation(); handleDeleteTemplate(tpl.id, tpl.name); }}>
-                                 <Trash2 className="h-3.5 w-3.5" />
-                               </Button>
-                            </div>
-                          ))}
-                       </div>
-                    </PopoverContent>
-                  </Popover>
+          <TabsContent value="specs" className="animate-in fade-in slide-in-from-bottom-6 duration-700 space-y-6 focus-visible:outline-none relative">
+            <div className="sticky top-4 z-40 flex items-center justify-between bg-white/80 backdrop-blur-xl p-4 px-8 rounded-3xl border border-white/40 shadow-[0_8px_30px_rgb(0,0,0,0.08)] transition-all">
+              <div className="space-y-1">
+                <h3 className="text-xl font-headline font-bold text-slate-900 flex items-center gap-3">
+                  规格参数矩阵
+                </h3>
+              </div>
+              <div className="flex gap-3">
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button variant="outline" className="rounded-xl h-10 px-5 text-[10px] font-bold uppercase tracking-widest border-slate-200 gap-2 hover:bg-slate-50 transition-all active:scale-95">
+                      <Library className="h-4 w-4" /> 管理模板
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-80 p-0 rounded-2xl border-slate-200 shadow-2xl overflow-hidden" align="end">
+                    <div className="bg-slate-900 p-5 text-white flex items-center justify-between">
+                      <p className="text-[10px] font-bold uppercase tracking-widest opacity-60">TEMPLATE CENTER</p>
+                    </div>
+                    
+                    {/* 快捷保存区 */}
+                    <div className="p-4 border-b border-slate-100 bg-slate-50/30">
+                      <Button 
+                        variant="ghost" 
+                        className="w-full justify-start gap-3 rounded-xl h-11 px-4 text-[10px] font-bold uppercase tracking-widest bg-primary/5 text-primary border border-primary/10 hover:bg-primary/10 transition-all shadow-sm"
+                        onClick={() => setIsSaveTemplateDialogOpen(true)}
+                      >
+                        <div className="h-7 w-7 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
+                          <Save className="h-3.5 w-3.5" />
+                        </div>
+                        <span className="font-bold">将当前配置存为模板</span>
+                      </Button>
+                    </div>
 
-                  {aiConfig?.isEnabled && (
-                    <ShinyButton 
-                      onClick={handleAiTranslateAllSpecs} 
-                      disabled={isAiProcessing} 
-                      className="h-12 px-6"
-                      shape="capsule"
-                    >
-                      <div className="flex items-center gap-2">
-                        <Sparkles className="h-4 w-4" />
-                        <span className="text-[10px] font-bold uppercase tracking-widest">矩阵全智译</span>
-                      </div>
-                    </ShinyButton>
-                  )}
-                  
-                  <Button className="rounded-2xl h-12 px-8 text-[10px] font-bold uppercase tracking-widest gap-2" onClick={() => setFormData({ ...formData, specGroups: [...formData.specGroups, { uid: `g_${Date.now()}`, titleEn: '', titleZh: '', items: [] }] })}>
-                    <PlusCircle className="h-4 w-4" /> 新增规格分组
-                  </Button>
-               </div>
+                    <div className="p-4 max-h-[300px] overflow-y-auto space-y-1">
+                      <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest px-2 pb-2">从现有库导入</p>
+                      {specTemplates?.map(tpl => (
+                        <div key={tpl.id} className="flex items-center justify-between group p-3 hover:bg-slate-50 rounded-xl transition-all cursor-pointer" onClick={() => handleApplyTemplate(tpl)}>
+                          <span className="text-xs font-bold text-slate-700">{tpl.name}</span>
+                          <Button variant="ghost" size="icon" className="h-8 w-8 opacity-0 group-hover:opacity-100 text-destructive/40 hover:text-destructive hover:bg-destructive/5" onClick={(e) => { e.stopPropagation(); handleDeleteTemplate(tpl.id, tpl.name); }}>
+                            <Trash2 className="h-3.5 w-3.5" />
+                          </Button>
+                        </div>
+                      ))}
+                    </div>
+                  </PopoverContent>
+                </Popover>
+
+                {aiConfig?.isEnabled && (
+                  <ShinyButton
+                    onClick={handleAiTranslateAllSpecs}
+                    disabled={isAiProcessing}
+                    className="h-12 px-6"
+                    shape="capsule"
+                  >
+                    <div className="flex items-center gap-2">
+                      <Sparkles className="h-4 w-4" />
+                      <span className="text-[10px] font-bold uppercase tracking-widest">矩阵全智译</span>
+                    </div>
+                  </ShinyButton>
+                )}
+
+                <Button className="rounded-xl h-10 px-5 text-[10px] font-bold uppercase tracking-widest gap-2" onClick={() => setFormData({ ...formData, specGroups: [...formData.specGroups, { uid: `g_${Date.now()}`, titleEn: '', titleZh: '', items: [] }] })}>
+                  <PlusCircle className="h-4 w-4" /> 新增规格分组
+                </Button>
+              </div>
             </div>
 
             <div className="grid grid-cols-1 gap-10">
               {formData.specGroups.map((group, gIdx) => (
-                <section key={group.uid} className="bg-white/60 backdrop-blur-md rounded-[2.5rem] border border-white/40 shadow-[0_8px_30px_rgb(0,0,0,0.04)] overflow-hidden group/group relative">
-                  <div className="bg-slate-500/[0.03] p-8 border-b border-white/40 flex items-center justify-between">
+                <section key={group.uid} className="bg-white/60 backdrop-blur-md rounded-2xl border border-white/40 shadow-[0_8px_30px_rgb(0,0,0,0.04)] overflow-hidden group/group relative">
+                  <div className="bg-slate-500/[0.03] p-4 px-8 border-b border-white/40 flex items-center justify-between">
                     <div className="flex-1 max-w-2xl grid grid-cols-2 gap-6">
-                       <div className="space-y-1.5">
-                         <Label className="text-[8px] font-bold uppercase tracking-widest text-slate-400 pl-1">分组标题 (中)</Label>
-                         <Input value={group.titleZh} onChange={e => { const g = [...formData.specGroups]; g[gIdx].titleZh = e.target.value; setFormData({ ...formData, specGroups: g }); }} className="h-11 rounded-xl bg-white border-slate-200 text-sm font-bold tracking-tight focus-visible:ring-primary/20" placeholder="例如: 处理器性能" />
-                       </div>
-                       <div className="space-y-1.5">
-                         <Label className="text-[8px] font-bold uppercase tracking-widest text-slate-400 pl-1">Group Title (English)</Label>
-                         <Input value={group.titleEn} onChange={e => { const g = [...formData.specGroups]; g[gIdx].titleEn = e.target.value; setFormData({ ...formData, specGroups: g }); }} className="h-11 rounded-xl bg-slate-500/5 border-dashed border-slate-200 text-sm font-bold tracking-tight focus-visible:ring-primary/20" placeholder="e.g. CPU Performance" />
-                       </div>
+                      <div className="space-y-1.5">
+                        <Label className="text-[8px] font-bold uppercase tracking-widest text-slate-400 pl-1">分组标题 (中)</Label>
+                        <Input value={group.titleZh} onChange={e => { const g = [...formData.specGroups]; g[gIdx].titleZh = e.target.value; setFormData({ ...formData, specGroups: g }); }} className="h-11 rounded-xl bg-white border-slate-200 text-sm font-bold tracking-tight focus-visible:ring-primary/20" placeholder="例如: 处理器性能" />
+                      </div>
+                      <div className="space-y-1.5">
+                        <Label className="text-[8px] font-bold uppercase tracking-widest text-slate-400 pl-1">Group Title (English)</Label>
+                        <Input value={group.titleEn} onChange={e => { const g = [...formData.specGroups]; g[gIdx].titleEn = e.target.value; setFormData({ ...formData, specGroups: g }); }} className="h-11 rounded-xl bg-slate-500/5 border-dashed border-slate-200 text-sm font-bold tracking-tight focus-visible:ring-primary/20" placeholder="e.g. CPU Performance" />
+                      </div>
                     </div>
                     <div className="flex gap-2 opacity-0 group-hover/group:opacity-100 transition-all translate-x-4 group-hover/group:translate-x-0">
-                       <Button variant="ghost" size="icon" className="h-10 w-10 rounded-xl text-destructive/40 hover:text-destructive hover:bg-destructive/5" onClick={() => { setGroupIndexToDelete(gIdx); setIsDeleteGroupConfirmOpen(true); }}>
-                         <Trash2 className="h-4 w-4" />
-                       </Button>
+                      <Button 
+                        variant="ghost" 
+                        size="icon" 
+                        className="h-10 w-10 rounded-xl text-slate-400 hover:text-primary hover:bg-primary/5 disabled:opacity-20" 
+                        disabled={gIdx === 0}
+                        onClick={() => handleMoveSpecGroup(gIdx, 'up')}
+                      >
+                        <ChevronUp className="h-4 w-4" />
+                      </Button>
+                      <Button 
+                        variant="ghost" 
+                        size="icon" 
+                        className="h-10 w-10 rounded-xl text-slate-400 hover:text-primary hover:bg-primary/5 disabled:opacity-20" 
+                        disabled={gIdx === formData.specGroups.length - 1}
+                        onClick={() => handleMoveSpecGroup(gIdx, 'down')}
+                      >
+                        <ChevronDown className="h-4 w-4" />
+                      </Button>
+                      <Button variant="ghost" size="icon" className="h-10 w-10 rounded-xl text-destructive/40 hover:text-destructive hover:bg-destructive/5" onClick={() => { setGroupIndexToDelete(gIdx); setIsDeleteGroupConfirmOpen(true); }}>
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
                     </div>
                   </div>
-                  
-                  <div className="p-8 space-y-4">
+
+                  <div className="p-6 space-y-4">
                     {group.items.map((item: ProductSpecEntry, iIdx: number) => (
-                      <div key={item.uid} className="grid grid-cols-12 gap-4 items-end animate-in fade-in slide-in-from-left-4 duration-500">
+                      <div key={item.uid} className="grid grid-cols-12 gap-x-4 gap-y-2 items-start animate-in fade-in slide-in-from-left-4 duration-500 group/item border-b border-slate-100/50 pb-4 last:border-0">
+                        {/* 中文行 */}
                         <div className="col-span-3 space-y-1.5">
-                           {iIdx === 0 && <Label className="text-[8px] font-bold uppercase tracking-widest text-slate-400 pl-1">参数名 (中/英)</Label>}
-                           <div className="space-y-2">
-                             <Input value={item.labelZh} onChange={e => { const g = [...formData.specGroups]; g[gIdx].items[iIdx].labelZh = e.target.value; setFormData({ ...formData, specGroups: g }); }} className="h-11 rounded-xl bg-white border-slate-200 text-xs font-bold" placeholder="标签 (中)" />
-                             <Input value={item.labelEn} onChange={e => { const g = [...formData.specGroups]; g[gIdx].items[iIdx].labelEn = e.target.value; setFormData({ ...formData, specGroups: g }); }} className="h-9 rounded-lg bg-slate-500/5 border-dashed border-slate-200 text-[10px] font-bold" placeholder="Label (En)" />
-                           </div>
+                          {iIdx === 0 && <Label className="text-[8px] font-bold uppercase tracking-widest text-slate-400 pl-1">参数名 (中)</Label>}
+                          <Input value={item.labelZh} onChange={e => { const g = [...formData.specGroups]; g[gIdx].items[iIdx].labelZh = e.target.value; setFormData({ ...formData, specGroups: g }); }} className="h-11 px-2 rounded-xl bg-white border-slate-200 text-sm placeholder:text-xs font-bold font-mono" placeholder="标签 (中)" />
                         </div>
-                        <div className="col-span-8 space-y-1.5">
-                           {iIdx === 0 && <Label className="text-[8px] font-bold uppercase tracking-widest text-slate-400 pl-1">参数值 (中/英)</Label>}
-                           <div className="flex gap-4">
-                              <div className="flex-1 space-y-2">
-                                <Input value={item.valueZh} onChange={e => { const g = [...formData.specGroups]; g[gIdx].items[iIdx].valueZh = e.target.value; setFormData({ ...formData, specGroups: g }); }} className="h-11 rounded-xl bg-white border-slate-200 text-xs font-medium" placeholder="数值内容 (中)" />
-                                <Input value={item.valueEn} onChange={e => { const g = [...formData.specGroups]; g[gIdx].items[iIdx].valueEn = e.target.value; setFormData({ ...formData, specGroups: g }); }} className="h-9 rounded-lg bg-slate-500/5 border-dashed border-slate-200 text-[10px] font-medium" placeholder="Value Content (En)" />
-                              </div>
-                              <div className="flex flex-col gap-2 shrink-0">
-                                {aiConfig?.isEnabled && (
-                                  <ShinyButton 
-                                    onClick={() => handleAiTranslateSpecItem(gIdx, iIdx)} 
-                                    disabled={isAiProcessing}
-                                    className="w-11 h-11 !p-0 flex items-center justify-center"
-                                    shape="rounded"
-                                  >
-                                    <Sparkles className={cn("h-4 w-4", processingItems.has(`i_${gIdx}_${iIdx}_label`) && "animate-spin")} />
-                                  </ShinyButton>
-                                )}
-                              </div>
-                           </div>
+                        <div className="col-span-7 space-y-1.5">
+                          {iIdx === 0 && <Label className="text-[8px] font-bold uppercase tracking-widest text-slate-400 pl-1">参数值 (中)</Label>}
+                          <Textarea 
+                            value={item.valueZh} 
+                            onChange={e => { const g = [...formData.specGroups]; g[gIdx].items[iIdx].valueZh = e.target.value; setFormData({ ...formData, specGroups: g }); }} 
+                            onInput={(e) => {
+                              const target = e.target as HTMLTextAreaElement;
+                              target.style.height = 'auto';
+                              target.style.height = `${target.scrollHeight}px`;
+                            }}
+                            className="min-h-[44px] max-h-[100px] h-auto px-2 py-2 rounded-xl bg-white border-slate-200 text-sm placeholder:text-xs font-medium font-mono leading-5 overflow-y-auto resize-none transition-all duration-200" 
+                            placeholder="数值内容 (中)" 
+                          />
                         </div>
-                        <div className="col-span-1 pb-1">
-                           <Button variant="ghost" size="icon" className="h-10 w-10 rounded-xl text-slate-300 hover:text-destructive hover:bg-destructive/5" onClick={() => { const g = [...formData.specGroups]; g[gIdx].items.splice(iIdx, 1); setFormData({ ...formData, specGroups: g }); }}>
-                             <X className="h-4 w-4" />
-                           </Button>
+                        
+                        {/* 综合操作区 (跨行垂直居中) */}
+                        <div className="col-span-2 row-span-2 self-center flex items-center justify-start gap-6 pl-4 h-full pt-1.5">
+                          {aiConfig?.isEnabled && (
+                            <ShinyButton
+                              onClick={() => handleAiTranslateSpecItem(gIdx, iIdx)}
+                              disabled={isAiProcessing}
+                              className="w-10 h-10 !p-0 flex items-center justify-center shadow-sm shrink-0"
+                              shape="rounded"
+                            >
+                              <Sparkles className={cn("h-4 w-4", processingItems.has(`i_${gIdx}_${iIdx}_label`) && "animate-spin")} />
+                            </ShinyButton>
+                          )}
+                          
+                          <div className="flex flex-col items-center gap-1.5 shrink-0">
+                            <Button 
+                              variant="ghost" 
+                              size="icon" 
+                              className="h-6 w-10 rounded-md text-slate-300 hover:text-primary hover:bg-primary/5 disabled:opacity-10"
+                              disabled={iIdx === 0}
+                              onClick={() => handleMoveSpecItem(gIdx, iIdx, 'up')}
+                            >
+                              <ChevronUp className="h-4 w-4" />
+                            </Button>
+                            <Button 
+                              variant="ghost" 
+                              size="icon" 
+                              className="h-6 w-10 rounded-md text-slate-300 hover:text-primary hover:bg-primary/5 disabled:opacity-10"
+                              disabled={iIdx === group.items.length - 1}
+                              onClick={() => handleMoveSpecItem(gIdx, iIdx, 'down')}
+                            >
+                              <ChevronDown className="h-4 w-4" />
+                            </Button>
+                          </div>
+
+                          <Button variant="ghost" size="icon" className="h-10 w-10 rounded-xl text-slate-200 hover:text-destructive hover:bg-destructive/5 shrink-0" onClick={() => { const g = [...formData.specGroups]; g[gIdx].items.splice(iIdx, 1); setFormData({ ...formData, specGroups: g }); }}>
+                            <X className="h-5 w-5" />
+                          </Button>
+                        </div>
+
+                        {/* 英文行 */}
+                        <div className="col-span-3 space-y-1.5">
+                          {iIdx === 0 && <Label className="text-[8px] font-bold uppercase tracking-widest text-slate-400 pl-1">参数名 (En)</Label>}
+                          <Input value={item.labelEn} onChange={e => { const g = [...formData.specGroups]; g[gIdx].items[iIdx].labelEn = e.target.value; setFormData({ ...formData, specGroups: g }); }} className="h-11 px-2 rounded-xl bg-slate-500/5 border-dashed border-slate-200 text-sm placeholder:text-xs font-bold font-mono" placeholder="Label (En)" />
+                        </div>
+                        <div className="col-span-7 space-y-1.5">
+                          {iIdx === 0 && <Label className="text-[8px] font-bold uppercase tracking-widest text-slate-400 pl-1">参数值 (En)</Label>}
+                          <Textarea 
+                            value={item.valueEn} 
+                            onChange={e => { const g = [...formData.specGroups]; g[gIdx].items[iIdx].valueEn = e.target.value; setFormData({ ...formData, specGroups: g }); }} 
+                            onInput={(e) => {
+                              const target = e.target as HTMLTextAreaElement;
+                              target.style.height = 'auto';
+                              target.style.height = `${target.scrollHeight}px`;
+                            }}
+                            className="min-h-[44px] max-h-[100px] h-auto px-2 py-2 rounded-xl bg-slate-500/5 border-dashed border-slate-200 text-sm placeholder:text-xs font-medium font-mono leading-5 overflow-y-auto resize-none transition-all duration-200" 
+                            placeholder="Value Content (En)" 
+                          />
                         </div>
                       </div>
                     ))}
@@ -1342,67 +1448,67 @@ function ProductEditorContent() {
 
           <TabsContent value="details" className="animate-in fade-in slide-in-from-bottom-6 duration-700 space-y-10 focus-visible:outline-none">
             <section className="bg-white/60 backdrop-blur-md rounded-[2.5rem] border border-white/40 p-10 space-y-10 shadow-[0_8px_30px_rgb(0,0,0,0.04)] relative group overflow-hidden">
-               <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 border-b border-slate-100 pb-8">
-                  <div className="space-y-1">
-                    <h3 className="text-xl font-headline font-bold text-slate-900 flex items-center gap-3">
-                      全息图文叙述
-                      <Badge variant="outline" className="text-[8px] font-bold uppercase tracking-widest border-slate-200 text-slate-400 bg-slate-50">STORYTELLING</Badge>
-                    </h3>
-                    <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">Global Product Story & Narrative Construction</p>
-                  </div>
-                  <div className="flex items-center gap-3 bg-slate-500/5 p-2 rounded-2xl border border-white/40">
-                     <Select value={targetDetailsLang} onValueChange={setTargetDetailsLang}>
-                        <SelectTrigger className="h-10 rounded-xl bg-white border-transparent text-[10px] font-bold uppercase tracking-widest w-[140px] shadow-sm">
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent className="rounded-2xl border-slate-200 shadow-2xl">
-                           {supportedLangs.filter(l => l.code !== 'zh').map(l => (
-                             <SelectItem key={l.code} value={l.code} className="text-[10px] font-bold uppercase py-3">{l.label}</SelectItem>
-                           ))}
-                        </SelectContent>
-                     </Select>
-                     {aiConfig?.isEnabled && (
-                        <ShinyButton 
-                          onClick={handleAiTranslateDetails} 
-                          disabled={isAiProcessing} 
-                          className="h-10 px-6"
-                          shape="capsule"
-                        >
-                          <div className="flex items-center gap-2">
-                            <Sparkles className="h-3.5 w-3.5" />
-                            <span className="text-[10px] font-bold uppercase tracking-widest">深度智译同步</span>
-                          </div>
-                        </ShinyButton>
-                     )}
-                  </div>
-               </div>
+              <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 border-b border-slate-100 pb-8">
+                <div className="space-y-1">
+                  <h3 className="text-xl font-headline font-bold text-slate-900 flex items-center gap-3">
+                    全息图文叙述
+                    <Badge variant="outline" className="text-[8px] font-bold uppercase tracking-widest border-slate-200 text-slate-400 bg-slate-50">STORYTELLING</Badge>
+                  </h3>
+                  <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">Global Product Story & Narrative Construction</p>
+                </div>
+                <div className="flex items-center gap-3 bg-slate-500/5 p-2 rounded-2xl border border-white/40">
+                  <Select value={targetDetailsLang} onValueChange={setTargetDetailsLang}>
+                    <SelectTrigger className="h-10 rounded-xl bg-white border-transparent text-[10px] font-bold uppercase tracking-widest w-[140px] shadow-sm">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent className="rounded-2xl border-slate-200 shadow-2xl">
+                      {supportedLangs.filter(l => l.code !== 'zh').map(l => (
+                        <SelectItem key={l.code} value={l.code} className="text-[10px] font-bold uppercase py-3">{l.label}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  {aiConfig?.isEnabled && (
+                    <ShinyButton
+                      onClick={handleAiTranslateDetails}
+                      disabled={isAiProcessing}
+                      className="h-10 px-6"
+                      shape="capsule"
+                    >
+                      <div className="flex items-center gap-2">
+                        <Sparkles className="h-3.5 w-3.5" />
+                        <span className="text-[10px] font-bold uppercase tracking-widest">深度智译同步</span>
+                      </div>
+                    </ShinyButton>
+                  )}
+                </div>
+              </div>
 
-               <div className="grid grid-cols-1 xl:grid-cols-2 gap-10">
-                  <div className="space-y-4">
-                    <Label className="text-[10px] font-bold uppercase tracking-[0.25em] text-slate-400 pl-1">源语言叙述 (ZH-CN)</Label>
-                    <div className="rounded-[2rem] border border-slate-200 bg-white overflow-hidden focus-within:ring-4 focus-within:ring-primary/5 transition-all">
-                      <RichTextEditor 
-                        ref={zhEditorRef}
-                        content={formData.localizedDetails.zh} 
-                        onChange={c => setFormData({ ...formData, localizedDetails: { ...formData.localizedDetails, zh: c } })} 
-                        placeholder="在此编排产品的视觉故事与核心卖点..."
-                        onImageClick={() => openPicker('richtext-zh')}
-                      />
-                    </div>
+              <div className="grid grid-cols-1 xl:grid-cols-2 gap-10">
+                <div className="space-y-4">
+                  <Label className="text-[10px] font-bold uppercase tracking-[0.25em] text-slate-400 pl-1">源语言叙述 (ZH-CN)</Label>
+                  <div className="rounded-[2rem] border border-slate-200 bg-white overflow-hidden focus-within:ring-4 focus-within:ring-primary/5 transition-all">
+                    <RichTextEditor
+                      ref={zhEditorRef}
+                      content={formData.localizedDetails.zh}
+                      onChange={c => setFormData({ ...formData, localizedDetails: { ...formData.localizedDetails, zh: c } })}
+                      placeholder="在此编排产品的视觉故事与核心卖点..."
+                      onImageClick={() => openPicker('richtext-zh')}
+                    />
                   </div>
-                  <div className="space-y-4">
-                    <Label className="text-[10px] font-bold uppercase tracking-[0.25em] text-slate-400 pl-1">智译同步目标 (GLOBAL)</Label>
-                    <div className="rounded-[2rem] border border-dashed border-slate-200 bg-slate-500/5 overflow-hidden focus-within:ring-4 focus-within:ring-primary/5 transition-all">
-                      <RichTextEditor 
-                        ref={targetEditorRef}
-                        content={formData.localizedDetails[targetDetailsLang] || ''} 
-                        onChange={c => setFormData({ ...formData, localizedDetails: { ...formData.localizedDetails, [targetDetailsLang]: c } })} 
-                        placeholder="Waiting for AI orchestration or manual input..."
-                        onImageClick={() => openPicker('richtext-target')}
-                      />
-                    </div>
+                </div>
+                <div className="space-y-4">
+                  <Label className="text-[10px] font-bold uppercase tracking-[0.25em] text-slate-400 pl-1">智译同步目标 (GLOBAL)</Label>
+                  <div className="rounded-[2rem] border border-dashed border-slate-200 bg-slate-500/5 overflow-hidden focus-within:ring-4 focus-within:ring-primary/5 transition-all">
+                    <RichTextEditor
+                      ref={targetEditorRef}
+                      content={formData.localizedDetails[targetDetailsLang] || ''}
+                      onChange={c => setFormData({ ...formData, localizedDetails: { ...formData.localizedDetails, [targetDetailsLang]: c } })}
+                      placeholder="Waiting for AI orchestration or manual input..."
+                      onImageClick={() => openPicker('richtext-target')}
+                    />
                   </div>
-               </div>
+                </div>
+              </div>
             </section>
           </TabsContent>
         </Tabs>
@@ -1410,76 +1516,79 @@ function ProductEditorContent() {
 
       {/* 极简安全确认: 删除规格组 */}
       <Dialog open={isDeleteGroupConfirmOpen} onOpenChange={setIsDeleteGroupConfirmOpen}>
-        <DialogContent className="rounded-[2.5rem] max-w-sm p-8 border-none shadow-[0_50px_100px_-20px_rgba(0,0,0,0.2)] bg-white/95 backdrop-blur-2xl">
+        <DialogContent className="rounded-2xl max-w-sm p-8 border-none shadow-[0_50px_100px_-20px_rgba(0,0,0,0.2)] bg-white/95 backdrop-blur-2xl">
+          <DialogHeader className="hidden">
+            <DialogTitle>确认删除规格分组</DialogTitle>
+          </DialogHeader>
           <div className="space-y-6 text-center">
-             <div className="h-20 w-20 rounded-3xl bg-destructive/10 text-destructive flex items-center justify-center mx-auto scale-110">
-                <Trash2 className="h-10 w-10" />
-             </div>
-             <div className="space-y-2">
-                <h4 className="text-xl font-headline font-bold text-slate-900">移除该参数矩阵？</h4>
-                <p className="text-xs text-slate-400 leading-relaxed font-medium">此操作将永久清空该分组下的所有规格映射。建议在云端已存有备份时进行该操作。</p>
-             </div>
-             <div className="flex gap-3">
-                <Button variant="outline" onClick={() => setIsDeleteGroupConfirmOpen(false)} className="flex-1 rounded-2xl h-12 font-bold uppercase text-[10px] tracking-widest border-slate-200">撤回</Button>
-                <Button variant="destructive" onClick={handleDeleteGroup} className="flex-1 rounded-2xl h-12 font-bold uppercase text-[10px] tracking-widest shadow-xl shadow-destructive/20">确认移除</Button>
-             </div>
+            <div className="h-20 w-20 rounded-3xl bg-destructive/10 text-destructive flex items-center justify-center mx-auto scale-110">
+              <Trash2 className="h-10 w-10" />
+            </div>
+            <div className="space-y-2">
+              <h4 className="text-xl font-headline font-bold text-slate-900">移除该参数矩阵？</h4>
+              <p className="text-xs text-slate-400 leading-relaxed font-medium">此操作将永久清空该分组下的所有规格映射。建议在云端已存有备份时进行该操作。</p>
+            </div>
+            <div className="flex gap-3">
+              <Button variant="outline" onClick={() => setIsDeleteGroupConfirmOpen(false)} className="flex-1 rounded-2xl h-12 font-bold uppercase text-[10px] tracking-widest border-slate-200">撤回</Button>
+              <Button variant="destructive" onClick={handleDeleteGroup} className="flex-1 rounded-2xl h-12 font-bold uppercase text-[10px] tracking-widest shadow-xl shadow-destructive/20">确认移除</Button>
+            </div>
           </div>
         </DialogContent>
       </Dialog>
 
       {/* 存为模板 Dialog */}
       <Dialog open={isSaveTemplateDialogOpen} onOpenChange={setIsSaveTemplateDialogOpen}>
-        <DialogContent className="rounded-[2.5rem] max-w-md p-0 overflow-hidden border-none shadow-[0_50px_100px_-20px_rgba(0,0,0,0.15)]">
+        <DialogContent className="rounded-2xl max-w-md p-0 overflow-hidden border-none shadow-[0_50px_100px_-20px_rgba(0,0,0,0.15)]">
           <div className="bg-slate-900 p-8 text-white relative overflow-hidden">
-             <div className="absolute top-0 right-0 p-8 opacity-10">
-                <Library className="h-20 w-20" />
-             </div>
-             <DialogHeader className="relative z-10 space-y-1">
-                <DialogTitle className="text-xl font-headline font-bold flex items-center gap-3">
-                  <div className="h-10 w-10 rounded-xl bg-white/10 flex items-center justify-center">
-                    <Library className="h-5 w-5" />
-                  </div>
-                  同步至云端规格库
-                </DialogTitle>
-                <DialogDescription className="text-[10px] font-bold text-white/40 uppercase tracking-widest">Technical Template Repository</DialogDescription>
-             </DialogHeader>
+            <div className="absolute top-0 right-0 p-8 opacity-10">
+              <Library className="h-20 w-20" />
+            </div>
+            <DialogHeader className="relative z-10 space-y-1">
+              <DialogTitle className="text-xl font-headline font-bold flex items-center gap-3">
+                <div className="h-10 w-10 rounded-xl bg-white/10 flex items-center justify-center">
+                  <Library className="h-5 w-5" />
+                </div>
+                同步至云端规格库
+              </DialogTitle>
+              <DialogDescription className="text-[10px] font-bold text-white/40 uppercase tracking-widest">Technical Template Repository</DialogDescription>
+            </DialogHeader>
           </div>
           <div className="p-8 space-y-8 bg-white/90 backdrop-blur-2xl">
-             <div className="grid grid-cols-2 p-1 bg-slate-500/5 rounded-2xl border border-slate-100">
-                <Button variant={saveMode === 'create' ? 'secondary' : 'ghost'} onClick={() => setSaveMode('create')} className="rounded-xl h-10 text-[10px] font-bold uppercase tracking-widest">另存为新模板</Button>
-                <Button variant={saveMode === 'overwrite' ? 'secondary' : 'ghost'} onClick={() => setSaveMode('overwrite')} className="rounded-xl h-10 text-[10px] font-bold uppercase tracking-widest">覆盖现有模板</Button>
-             </div>
-             
-             {saveMode === 'create' ? (
-                <div className="space-y-2.5">
-                   <Label className="text-[10px] font-bold uppercase tracking-widest text-slate-400 pl-1">新模板命名</Label>
-                   <Input value={newTemplateName} onChange={e => setNewTemplateName(e.target.value)} className="h-12 rounded-xl bg-slate-500/5 border-transparent text-sm font-bold placeholder:font-normal" placeholder="例如：高端一体机标准规格" />
-                </div>
-             ) : (
-                <div className="space-y-2.5">
-                   <Label className="text-[10px] font-bold uppercase tracking-widest text-slate-400 pl-1">选择目标模板</Label>
-                   <Select value={selectedTemplateId} onValueChange={setSelectedTemplateId}>
-                      <SelectTrigger className="h-12 rounded-xl bg-slate-500/5 border-transparent text-sm font-bold uppercase tracking-widest">
-                         <SelectValue placeholder="选择模板..." />
-                      </SelectTrigger>
-                      <SelectContent className="rounded-2xl border-slate-200 shadow-2xl">
-                         {specTemplates?.map(tpl => (
-                           <SelectItem key={tpl.id} value={tpl.id} className="text-[10px] font-bold uppercase py-3">{tpl.name}</SelectItem>
-                         ))}
-                      </SelectContent>
-                   </Select>
-                </div>
-             )}
+            <div className="grid grid-cols-2 p-1 bg-slate-500/5 rounded-2xl border border-slate-100">
+              <Button variant={saveMode === 'create' ? 'secondary' : 'ghost'} onClick={() => setSaveMode('create')} className="rounded-xl h-10 text-[10px] font-bold uppercase tracking-widest">另存为新模板</Button>
+              <Button variant={saveMode === 'overwrite' ? 'secondary' : 'ghost'} onClick={() => setSaveMode('overwrite')} className="rounded-xl h-10 text-[10px] font-bold uppercase tracking-widest">覆盖现有模板</Button>
+            </div>
+
+            {saveMode === 'create' ? (
+              <div className="space-y-2.5">
+                <Label className="text-[10px] font-bold uppercase tracking-widest text-slate-400 pl-1">新模板命名</Label>
+                <Input value={newTemplateName} onChange={e => setNewTemplateName(e.target.value)} className="h-12 rounded-xl bg-slate-500/5 border-transparent text-sm font-bold placeholder:font-normal" placeholder="例如：高端一体机标准规格" />
+              </div>
+            ) : (
+              <div className="space-y-2.5">
+                <Label className="text-[10px] font-bold uppercase tracking-widest text-slate-400 pl-1">选择目标模板</Label>
+                <Select value={selectedTemplateId} onValueChange={setSelectedTemplateId}>
+                  <SelectTrigger className="h-12 rounded-xl bg-slate-500/5 border-transparent text-sm font-bold uppercase tracking-widest">
+                    <SelectValue placeholder="选择模板..." />
+                  </SelectTrigger>
+                  <SelectContent className="rounded-2xl border-slate-200 shadow-2xl">
+                    {specTemplates?.map(tpl => (
+                      <SelectItem key={tpl.id} value={tpl.id} className="text-[10px] font-bold uppercase py-3">{tpl.name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
           </div>
           <DialogFooter className="bg-slate-50 p-8 border-t border-slate-200 gap-3">
-             <Button variant="outline" onClick={() => setIsSaveTemplateDialogOpen(false)} className="flex-1 rounded-2xl h-14 font-bold uppercase text-xs tracking-widest border-slate-200">返回</Button>
-             <Button onClick={handleSaveTemplate} className="flex-1 rounded-2xl h-14 font-bold uppercase text-xs tracking-widest shadow-xl shadow-primary/20">确认同步模板</Button>
+            <Button variant="outline" onClick={() => setIsSaveTemplateDialogOpen(false)} className="flex-1 rounded-2xl h-14 font-bold uppercase text-xs tracking-widest border-slate-200">返回</Button>
+            <Button onClick={handleSaveTemplate} className="flex-1 rounded-2xl h-14 font-bold uppercase text-xs tracking-widest shadow-xl shadow-primary/20">确认同步模板</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
 
       {/* 引用统一素材库选择器 */}
-      <MediaLibraryDialog 
+      <MediaLibraryDialog
         open={isPickerOpen}
         onOpenChange={setIsPickerOpen}
         selectionMode={pickerTarget === 'gallery' ? 'multiple' : 'single'}
@@ -1487,7 +1596,7 @@ function ProductEditorContent() {
         onSelect={(assets) => {
           if (assets.length === 0) return;
           const urls = assets.map(a => a.url);
-          
+
           if (pickerTarget === 'main') {
             setFormData({ ...formData, mainImageUrl: urls[0] });
           } else if (pickerTarget === 'gallery') {

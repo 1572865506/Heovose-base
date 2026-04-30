@@ -106,10 +106,14 @@ export function MediaLibraryDialog({
     return filteredAssets.slice(start, start + ITEMS_PER_PAGE);
   }, [filteredAssets, currentPage]);
 
-  // 重置分页
+  // 当弹窗打开时，重置选中状态
   useEffect(() => {
-    setCurrentPage(1);
-  }, [searchQuery, currentCategoryId]);
+    if (open) {
+      setSelectedIds(new Set());
+      setSearchQuery('');
+      setCurrentPage(1);
+    }
+  }, [open]);
 
   const toggleSelectAsset = (asset: GalleryAsset) => {
     const newSelected = new Set(selectedIds);
