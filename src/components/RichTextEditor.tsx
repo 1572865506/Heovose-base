@@ -9,15 +9,15 @@ import Image from '@tiptap/extension-image';
 import TextAlign from '@tiptap/extension-text-align';
 import TextStyle from '@tiptap/extension-text-style';
 import FontFamily from '@tiptap/extension-font-family';
-import { 
-  Bold, 
-  Italic, 
-  Underline as UnderlineIcon, 
-  List, 
-  ListOrdered, 
-  Quote, 
-  Undo, 
-  Redo, 
+import {
+  Bold,
+  Italic,
+  Underline as UnderlineIcon,
+  List,
+  ListOrdered,
+  Quote,
+  Undo,
+  Redo,
   Type,
   ImageIcon,
   Eraser,
@@ -29,7 +29,7 @@ import {
   Minimize2
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { 
+import {
   Select,
   SelectContent,
   SelectItem,
@@ -87,13 +87,13 @@ interface RichTextEditorProps {
   className?: string;
 }
 
-const MenuBar = ({ 
-  editor, 
-  onImageClick, 
-  isFullscreen, 
-  onToggleFullscreen 
-}: { 
-  editor: any, 
+const MenuBar = ({
+  editor,
+  onImageClick,
+  isFullscreen,
+  onToggleFullscreen
+}: {
+  editor: any,
   onImageClick?: () => void,
   isFullscreen: boolean,
   onToggleFullscreen: () => void
@@ -104,8 +104,8 @@ const MenuBar = ({
     <div className="flex flex-wrap items-center gap-1 p-2 bg-muted/20 border-b border-border/40 sticky top-0 z-10 backdrop-blur-sm">
       {/* Font & Size */}
       <div className="flex items-center gap-2 pr-2 border-r border-border/40">
-        <Select 
-          value={editor.getAttributes('textStyle').fontFamily || 'Inter'} 
+        <Select
+          value={editor.getAttributes('textStyle').fontFamily || 'Inter'}
           onValueChange={(val) => editor.chain().focus().setFontFamily(val).run()}
         >
           <SelectTrigger className="h-8 w-[110px] text-[10px] font-bold bg-white border-none shadow-none">
@@ -118,8 +118,8 @@ const MenuBar = ({
           </SelectContent>
         </Select>
 
-        <Select 
-          value={editor.getAttributes('textStyle').fontSize || '12px'} 
+        <Select
+          value={editor.getAttributes('textStyle').fontSize || '12px'}
           onValueChange={(val) => editor.chain().focus().setFontSize(val).run()}
         >
           <SelectTrigger className="h-8 w-[70px] text-[10px] font-bold bg-white border-none shadow-none">
@@ -373,18 +373,30 @@ const RichTextEditor = forwardRef<any, RichTextEditorProps>(({ content, onChange
 
   return (
     <div className={cn(
-      "border border-border/40 rounded-xl overflow-hidden bg-white flex flex-col group relative shadow-sm transition-all duration-300", 
+      "border border-border/40 rounded-2xl overflow-hidden bg-white flex flex-col group relative shadow-sm transition-all duration-300",
       isFullscreen ? "fixed inset-0 z-[200] rounded-none border-none h-screen w-screen" : className
     )}>
-      <MenuBar 
-        editor={editor} 
-        onImageClick={onImageClick} 
-        isFullscreen={isFullscreen} 
-        onToggleFullscreen={() => setIsFullscreen(!isFullscreen)} 
+      <MenuBar
+        editor={editor}
+        onImageClick={onImageClick}
+        isFullscreen={isFullscreen}
+        onToggleFullscreen={() => setIsFullscreen(!isFullscreen)}
       />
-      
+
+      {isFullscreen && (
+        <Button
+          variant="secondary"
+          size="sm"
+          onClick={() => setIsFullscreen(false)}
+          className="fixed top-4 right-4 z-[300] rounded-2xl shadow-2xl bg-slate-900 text-white hover:bg-slate-800 gap-2 px-4 h-12 border-none transition-all active:scale-95 animate-in fade-in slide-in-from-top-4 duration-500"
+        >
+          <Minimize2 className="h-4 w-4" />
+          <span className="text-[10px] font-bold uppercase tracking-widest">退出全屏编辑</span>
+        </Button>
+      )}
+
       <div className={cn(
-        "flex-1 overflow-y-auto scrollbar-minimal", 
+        "flex-1 overflow-y-auto scrollbar-minimal",
         isFullscreen ? "bg-muted/10 p-12" : "bg-muted/5 min-h-[500px]"
       )}>
         <div className={cn(
