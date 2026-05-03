@@ -24,6 +24,7 @@ import { TablePlugin } from '@lexical/react/LexicalTablePlugin';
 import { LexicalTheme } from './LexicalTheme';
 import ToolbarPlugin from './plugins/ToolbarPlugin';
 import ImagesPlugin, { INSERT_IMAGE_COMMAND } from './plugins/ImagesPlugin';
+import TableActionMenuPlugin from './plugins/TableActionMenuPlugin';
 import { ImageNode } from './nodes/ImageNode';
 import HtmlPlugin from './plugins/HtmlPlugin';
 import { Button } from '@/components/ui/button';
@@ -54,8 +55,8 @@ const LexicalEditor = forwardRef<any, LexicalEditorProps>(({
     setIsMounted(true);
   }, []);
 
-  const initialConfig = {
-    namespace: 'HeovoseEditor',
+  const initialConfig = React.useMemo(() => ({
+    namespace: `HeovoseEditor-${Math.random().toString(36).substring(7)}`,
     theme: LexicalTheme,
     onError: (error: Error) => {
       console.error(error);
@@ -73,7 +74,7 @@ const LexicalEditor = forwardRef<any, LexicalEditorProps>(({
       TableCellNode,
       TableRowNode,
     ],
-  };
+  }), []);
 
   // Expose editor methods to parent (like Tiptap)
   useImperativeHandle(ref, () => ({
@@ -177,7 +178,8 @@ const LexicalEditor = forwardRef<any, LexicalEditorProps>(({
       <LinkPlugin />
       <MarkdownShortcutPlugin transformers={TRANSFORMERS} />
       <HorizontalRulePlugin />
-      <TablePlugin />
+      <TablePlugin hasCellMerge={true} />
+      <TableActionMenuPlugin />
       <ImagesPlugin />
       <HtmlPlugin initialHtml={content} onHtmlChange={onEditorChange} />
       
@@ -205,11 +207,15 @@ const LexicalEditor = forwardRef<any, LexicalEditorProps>(({
     </div>
   );
 
-  return (
+  if (!isMounted) return null;
+  
+  const editorComposer = (
     <LexicalComposer initialConfig={initialConfig}>
-      {isFullscreen && isMounted ? createPortal(editorUI, document.body) : editorUI}
+      {editorUI}
     </LexicalComposer>
   );
+
+  return isFullscreen ? createPortal(editorComposer, document.body) : editorComposer;
 });
 
 // Helper plugin to capture editor instance

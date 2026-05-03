@@ -15,15 +15,32 @@ import {
   $createHeadingNode,
   $createQuoteNode,
   $isHeadingNode,
+  $isQuoteNode,
+  QuoteNode
 } from '@lexical/rich-text';
 import { $setBlocksType } from '@lexical/selection';
 import {
   INSERT_ORDERED_LIST_COMMAND,
   INSERT_UNORDERED_LIST_COMMAND,
   REMOVE_LIST_COMMAND,
+  $isListNode,
+  ListNode
 } from '@lexical/list';
-import { INSERT_TABLE_COMMAND } from '@lexical/table';
-import { mergeRegister } from '@lexical/utils';
+import { 
+  INSERT_TABLE_COMMAND,
+  $isTableCellNode,
+  $isTableNode,
+  TableCellNode,
+  $insertTableRowAtSelection,
+  $insertTableColumnAtSelection,
+  $deleteTableRowAtSelection,
+  $deleteTableColumnAtSelection,
+  $getTableNodeFromLexicalNodeOrThrow,
+  $mergeCells,
+  $unmergeCell,
+  $isTableSelection
+} from '@lexical/table';
+import { $getNearestNodeOfType, mergeRegister } from '@lexical/utils';
 import React, { useCallback, useEffect, useState } from 'react';
 import {
   Bold,
@@ -51,6 +68,10 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
+  DropdownMenuSub,
+  DropdownMenuSubContent,
+  DropdownMenuSubTrigger,
+  DropdownMenuPortal,
 } from "@/components/ui/dropdown-menu";
 import { cn } from '@/lib/utils';
 
@@ -71,6 +92,7 @@ export default function ToolbarPlugin({
   const [isBold, setIsBold] = useState(false);
   const [isItalic, setIsItalic] = useState(false);
   const [isUnderline, setIsUnderline] = useState(false);
+  const [isTable, setIsTable] = useState(false);
   const [blockType, setBlockType] = useState('paragraph');
 
   const updateToolbar = useCallback(() => {
@@ -91,9 +113,21 @@ export default function ToolbarPlugin({
       if (elementDOM !== null) {
         if ($isHeadingNode(element)) {
           setBlockType(element.getTag());
+        } else if ($isListNode(element)) {
+          setBlockType(element.getListType());
+        } else if ($isQuoteNode(element)) {
+          setBlockType('quote');
         } else {
           setBlockType(element.getType());
         }
+      }
+
+      // Check if in table
+      const tableCellNode = $getNearestNodeOfType(anchorNode, TableCellNode);
+      if (tableCellNode !== null) {
+        setIsTable(true);
+      } else {
+        setIsTable(false);
       }
     }
   }, [editor]);
@@ -148,6 +182,13 @@ export default function ToolbarPlugin({
         const selection = $getSelection();
         if ($isRangeSelection(selection)) {
           $setBlocksType(selection, () => $createQuoteNode());
+        }
+      });
+    } else {
+      editor.update(() => {
+        const selection = $getSelection();
+        if ($isRangeSelection(selection)) {
+          $setBlocksType(selection, () => $createParagraphNode());
         }
       });
     }
@@ -212,7 +253,7 @@ export default function ToolbarPlugin({
                 <ChevronDown className="h-3 w-3 opacity-50" />
               </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="start" className="rounded-xl border-white/20 shadow-2xl backdrop-blur-xl bg-white/90">
+            <DropdownMenuContent align="start" className="z-[10002] rounded-xl border-white/20 shadow-2xl backdrop-blur-xl bg-white/90">
               <DropdownMenuItem onClick={() => formatHeading('h1')} className="text-xs font-headline font-bold py-2">H1 Main Headline</DropdownMenuItem>
               <DropdownMenuItem onClick={() => formatHeading('h2')} className="text-xs font-headline font-bold py-2">H2 Section Title</DropdownMenuItem>
               <DropdownMenuItem onClick={() => formatHeading('h3')} className="text-xs font-headline font-bold py-2">H3 Subsection</DropdownMenuItem>
@@ -320,6 +361,107 @@ export default function ToolbarPlugin({
         >
           <TableIcon className="h-4 w-4" />
         </Button>
+
+        {isTable && (
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" size="icon" className="h-8 w-8 text-[#36578D] bg-[#36578D]/10 hover:bg-[#36578D]/20">
+                <ChevronDown className="h-3.5 w-3.5" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="start" className="z-[10002] rounded-xl border-white/20 shadow-2xl backdrop-blur-xl bg-white/90 min-w-[160px]">
+              <DropdownMenuSub>
+                <DropdownMenuSubTrigger className="text-xs py-2">行列操作</DropdownMenuSubTrigger>
+                <DropdownMenuPortal>
+                  <DropdownMenuSubContent className="z-[10003] rounded-xl border-white/20 shadow-2xl backdrop-blur-xl bg-white/90">
+                    <DropdownMenuItem onClick={() => editor.update(() => $insertTableRowAtSelection(false))} className="text-xs py-2">在上方插入行</DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => editor.update(() => $insertTableRowAtSelection(true))} className="text-xs py-2">在下方插入行</DropdownMenuItem>
+                    <div className="h-px bg-slate-200 my-1" />
+                    <DropdownMenuItem onClick={() => editor.update(() => $insertTableColumnAtSelection(false))} className="text-xs py-2">在左侧插入列</DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => editor.update(() => $insertTableColumnAtSelection(true))} className="text-xs py-2">在右侧插入列</DropdownMenuItem>
+                    <div className="h-px bg-slate-200 my-1" />
+                    <DropdownMenuItem onClick={() => editor.update(() => $deleteTableRowAtSelection())} className="text-xs py-2 text-red-600">删除当前行</DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => editor.update(() => $deleteTableColumnAtSelection())} className="text-xs py-2 text-red-600">删除当前列</DropdownMenuItem>
+                  </DropdownMenuSubContent>
+                </DropdownMenuPortal>
+              </DropdownMenuSub>
+
+              <DropdownMenuSub>
+                <DropdownMenuSubTrigger className="text-xs py-2">对齐方式</DropdownMenuSubTrigger>
+                <DropdownMenuPortal>
+                  <DropdownMenuSubContent className="z-[10003] rounded-xl border-white/20 shadow-2xl backdrop-blur-xl bg-white/90">
+                    <div className="px-2 py-1.5 text-[10px] font-bold text-slate-400 uppercase tracking-wider">垂直对齐</div>
+                    <DropdownMenuItem onClick={() => editor.update(() => {
+                      const selection = $getSelection();
+                      if ($isRangeSelection(selection)) {
+                        const cell = $getNearestNodeOfType(selection.anchor.getNode(), TableCellNode);
+                        if (cell) cell.setVerticalAlign('top');
+                      }
+                    })} className="text-xs py-2">顶部对齐</DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => editor.update(() => {
+                      const selection = $getSelection();
+                      if ($isRangeSelection(selection)) {
+                        const cell = $getNearestNodeOfType(selection.anchor.getNode(), TableCellNode);
+                        if (cell) cell.setVerticalAlign('middle');
+                      }
+                    })} className="text-xs py-2">居中对齐</DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => editor.update(() => {
+                      const selection = $getSelection();
+                      if ($isRangeSelection(selection)) {
+                        const cell = $getNearestNodeOfType(selection.anchor.getNode(), TableCellNode);
+                        if (cell) cell.setVerticalAlign('bottom');
+                      }
+                    })} className="text-xs py-2">底部对齐</DropdownMenuItem>
+                    <div className="h-px bg-slate-200 my-1" />
+                    <div className="px-2 py-1.5 text-[10px] font-bold text-slate-400 uppercase tracking-wider">水平对齐</div>
+                    <DropdownMenuItem onClick={() => editor.dispatchCommand(FORMAT_ELEMENT_COMMAND, 'left')} className="text-xs py-2">左对齐</DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => editor.dispatchCommand(FORMAT_ELEMENT_COMMAND, 'center')} className="text-xs py-2">居中对齐</DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => editor.dispatchCommand(FORMAT_ELEMENT_COMMAND, 'right')} className="text-xs py-2">右对齐</DropdownMenuItem>
+                  </DropdownMenuSubContent>
+                </DropdownMenuPortal>
+              </DropdownMenuSub>
+
+              <DropdownMenuSub>
+                <DropdownMenuSubTrigger className="text-xs py-2">合并与尺寸</DropdownMenuSubTrigger>
+                <DropdownMenuPortal>
+                  <DropdownMenuSubContent className="z-[10003] rounded-xl border-white/20 shadow-2xl backdrop-blur-xl bg-white/90">
+                    <DropdownMenuItem onClick={() => editor.update(() => {
+                      const selection = $getSelection();
+                      if ($isTableSelection(selection)) {
+                        $mergeCells(selection.getNodes().filter($isTableCellNode));
+                      }
+                    })} className="text-xs py-2">合并单元格</DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => editor.update(() => $unmergeCell())} className="text-xs py-2">拆分单元格</DropdownMenuItem>
+                    <div className="h-px bg-slate-200 my-1" />
+                    <DropdownMenuItem onClick={() => {
+                      const width = prompt('请输入单元格宽度 (单位 px):');
+                      if (width) {
+                        editor.update(() => {
+                          const selection = $getSelection();
+                          if ($isRangeSelection(selection)) {
+                            const cell = $getNearestNodeOfType(selection.anchor.getNode(), TableCellNode);
+                            if (cell) cell.setWidth(parseInt(width));
+                          }
+                        });
+                      }
+                    }} className="text-xs py-2">设置单元格宽度</DropdownMenuItem>
+                  </DropdownMenuSubContent>
+                </DropdownMenuPortal>
+              </DropdownMenuSub>
+
+              <div className="h-px bg-slate-200 my-1" />
+              <DropdownMenuItem onClick={() => editor.update(() => {
+                const selection = $getSelection();
+                if ($isRangeSelection(selection)) {
+                  const anchorNode = selection.anchor.getNode();
+                  const tableNode = $getTableNodeFromLexicalNodeOrThrow(anchorNode);
+                  if (tableNode) tableNode.remove();
+                }
+              })} className="text-xs py-2 text-red-600 font-bold">删除整个表格</DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        )}
+
         <Button
           variant="ghost"
           size="icon"

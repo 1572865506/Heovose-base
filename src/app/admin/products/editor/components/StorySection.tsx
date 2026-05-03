@@ -52,7 +52,7 @@ const StorySection = memo(({
             <SelectTrigger className="h-10 rounded-xl bg-white border-transparent text-[10px] font-bold uppercase tracking-widest w-[140px] shadow-sm">
               <SelectValue />
             </SelectTrigger>
-            <SelectContent className="rounded-2xl border-slate-200 shadow-2xl">
+            <SelectContent className="z-[10002] rounded-2xl border-slate-200 shadow-2xl">
               {supportedLangs.filter(l => l.code !== 'zh').map(l => (
                 <SelectItem key={l.code} value={l.code} className="text-[10px] font-bold uppercase py-3">{l.label}</SelectItem>
               ))}

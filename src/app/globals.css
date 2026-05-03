@@ -249,6 +249,19 @@
   min-width: 60px;
   position: relative;
   transition: background-color 0.2s;
+  vertical-align: top; /* Default */
+}
+
+.editor-table-cell[style*="vertical-align: middle"] {
+  vertical-align: middle;
+}
+
+.editor-table-cell[style*="vertical-align: bottom"] {
+  vertical-align: bottom;
+}
+
+.editor-table-cell[style*="vertical-align: top"] {
+  vertical-align: top;
 }
 
 .editor-table-cell:focus {

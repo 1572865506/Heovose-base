@@ -12,6 +12,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
 import { Languages, ChevronDown, Loader2 } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 interface LanguageOption {
   code: string;
@@ -25,9 +26,11 @@ interface LanguageSettings {
 interface LanguageToggleProps {
   currentLocale: Locale;
   setLocale: (locale: Locale) => void;
+  headerTheme?: 'light' | 'dark';
+  isNavbarActive?: boolean;
 }
 
-export function LanguageToggle({ currentLocale, setLocale }: LanguageToggleProps) {
+export function LanguageToggle({ currentLocale, setLocale, headerTheme = 'dark', isNavbarActive }: LanguageToggleProps) {
   // 1. 实时获取云端语种配置
   const { data: langSettings, isLoading } = useLocalDoc<LanguageSettings>('settings', 'languages');
 
@@ -54,7 +57,12 @@ export function LanguageToggle({ currentLocale, setLocale }: LanguageToggleProps
         <Button 
           variant="ghost" 
           size="sm" 
-          className="!rounded-full h-9 px-5 flex items-center gap-2 bg-muted/30 hover:bg-muted/50 border border-border/20 transition-all group shrink-0"
+          className={cn(
+            "!rounded-full h-9 px-5 flex items-center gap-2 transition-all group shrink-0 border outline-none",
+            (isNavbarActive || headerTheme === 'light')
+              ? "bg-muted/30 hover:bg-muted/50 border-border/20 text-slate-800"
+              : "bg-white/10 hover:bg-white/20 border-white/10 text-white"
+          )}
         >
           {isLoading ? (
             <Loader2 className="h-3.5 w-3.5 animate-spin opacity-40" />

@@ -26,11 +26,14 @@ interface HeroProps {
   locale: Locale;
   homeConfig?: any;
   isLoading?: boolean;
+  onThemeChange?: (theme: 'light' | 'dark') => void;
 }
+
+import { analyzeImageBrightness } from '@/lib/image-analysis';
 
 import { useTranslations } from '@/hooks/use-translations';
 
-export function Hero({ locale, homeConfig, isLoading }: HeroProps) {
+export function Hero({ locale, homeConfig, isLoading, onThemeChange }: HeroProps) {
   const { t: tr } = useTranslations(locale);
 
   // 1. Prepare Slides Data
@@ -64,6 +67,19 @@ export function Hero({ locale, homeConfig, isLoading }: HeroProps) {
   );
 
   const [selectedIndex, setSelectedIndex] = useState(0);
+  const [currentTheme, setCurrentTheme] = useState<'light' | 'dark'>('dark');
+
+  // Analyze brightness of the current slide
+  useEffect(() => {
+    if (slides.length > 0) {
+      const currentSlide = slides[selectedIndex];
+      analyzeImageBrightness(currentSlide.bgImage).then((brightness) => {
+        const theme = brightness > 160 ? 'light' : 'dark';
+        setCurrentTheme(theme);
+        if (onThemeChange) onThemeChange(theme);
+      });
+    }
+  }, [selectedIndex, slides, onThemeChange]);
 
   const onSelect = useCallback(() => {
     if (!emblaApi) return;
@@ -163,7 +179,10 @@ export function Hero({ locale, homeConfig, isLoading }: HeroProps) {
                   <SplitText
                     key={`headline-${slide.id}-${selectedIndex === index}`}
                     text={locale === 'zh' ? slide.headlineZh : slide.headlineEn}
-                    className="text-4xl md:text-7xl lg:text-[96px] font-headline font-black text-white leading-[1.1] tracking-tight drop-shadow-[0_4px_30px_rgba(0,0,0,0.5)] gpu-accelerated overflow-visible"
+                    className={cn(
+                      "text-4xl md:text-7xl lg:text-[96px] font-headline font-black leading-[1.1] tracking-tight drop-shadow-[0_4px_30px_rgba(0,0,0,0.5)] gpu-accelerated overflow-visible",
+                      currentTheme === 'light' ? "text-slate-900" : "text-white"
+                    )}
                     tag="h1"
                     delay={40}
                     duration={0.8}
@@ -179,7 +198,10 @@ export function Hero({ locale, homeConfig, isLoading }: HeroProps) {
                   <SplitText
                     key={`subheadline-${slide.id}-${selectedIndex === index}`}
                     text={locale === 'zh' ? slide.subheadlineZh : slide.subheadlineEn}
-                    className="text-[clamp(20px,4vw,64px)] text-white/90 font-body max-w-full leading-[1.2] drop-shadow-[0_2px_15px_rgba(0,0,0,0.4)] block mx-auto md:mx-0 gpu-accelerated overflow-visible"
+                    className={cn(
+                      "text-[clamp(20px,4vw,64px)] font-body max-w-full leading-[1.2] drop-shadow-[0_2px_15px_rgba(0,0,0,0.4)] block mx-auto md:mx-0 gpu-accelerated overflow-visible",
+                      currentTheme === 'light' ? "text-slate-800/80" : "text-white/90"
+                    )}
                     tag="h2"
                     delay={20}
                     duration={1}

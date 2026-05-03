@@ -36,6 +36,7 @@ import { cn } from "@/lib/utils";
 interface NavbarProps {
   locale: Locale;
   setLocale: (locale: Locale) => void;
+  headerTheme?: 'light' | 'dark';
 }
 
 import { useLocalDoc } from '@/hooks/use-local-doc';
@@ -44,7 +45,7 @@ import { LayoutGrid } from 'lucide-react';
 
 import { useTranslations } from '@/hooks/use-translations';
 
-export function Navbar({ locale, setLocale }: NavbarProps) {
+export function Navbar({ locale, setLocale, headerTheme = 'dark' }: NavbarProps) {
   const { t: tr } = useTranslations(locale);
   const pathname = usePathname();
   
@@ -243,8 +244,26 @@ export function Navbar({ locale, setLocale }: NavbarProps) {
   );
 
   return (
+    <>
+    {/* 1. Top Scrim & Gradient Blur Layer - The "Advanced Glass" Layer */}
+    {!isNavbarActive && isTransparentHeaderPage && (
+      <div className={cn(
+        "fixed top-0 left-0 right-0 z-[105] h-48 pointer-events-none transition-opacity duration-1000",
+        headerTheme === 'light' ? "opacity-60" : "opacity-80"
+      )}>
+        {/* The Scrim: Suble gradient to ensure contrast */}
+        <div className={cn(
+          "absolute inset-0 bg-gradient-to-b from-black/40 via-black/10 to-transparent",
+          headerTheme === 'light' && "from-white/60 via-white/20"
+        )} />
+        
+        {/* The Gradient Blur: Frosted glass that fades out */}
+        <div className="absolute inset-0 backdrop-blur-xl [mask-image:linear-gradient(to_bottom,black_0%,black_30%,transparent_100%)]" />
+      </div>
+    )}
+
     <nav className={cn(
-      "fixed top-0 left-0 right-0 z-[110] transition-all duration-500 border-b h-20 flex items-center !border-t-0 !border-x-0",
+      "fixed top-0 left-0 right-0 z-[110] transition-all duration-700 border-b h-20 flex items-center !border-t-0 !border-x-0",
       isNavbarActive 
         ? cn(
             navSettings?.navbarMaterial === 'level-03' ? "glass-deep" : "glass-frosted",
@@ -256,7 +275,7 @@ export function Navbar({ locale, setLocale }: NavbarProps) {
       <div className="container mx-auto px-6 flex items-center w-full h-full">
         <Link href="/" className="flex items-center shrink-0">
           <Image
-            src={isNavbarActive ? "/image/Heovose-color.svg" : "/image/Heovose.svg"}
+            src={isNavbarActive || headerTheme === 'light' ? "/image/Heovose-color.svg" : "/image/Heovose.svg"}
             alt="Heovose Logo"
             width={160}
             height={32}
@@ -276,8 +295,8 @@ export function Navbar({ locale, setLocale }: NavbarProps) {
                 <DropdownMenuTrigger asChild>
                   <button 
                     className={cn(
-                      "flex items-center space-x-1 px-4 py-2 rounded-full transition-all duration-300 font-medium whitespace-nowrap",
-                      isNavbarActive 
+                      "flex items-center space-x-1 px-4 py-2 rounded-full transition-all duration-300 font-medium whitespace-nowrap outline-none",
+                      (isNavbarActive || headerTheme === 'light')
                         ? "text-slate-800 hover:bg-slate-100" 
                         : "text-white hover:bg-white/10"
                     )}
@@ -316,8 +335,8 @@ export function Navbar({ locale, setLocale }: NavbarProps) {
                 <DropdownMenuTrigger asChild>
                   <button 
                     className={cn(
-                      "flex items-center space-x-1 px-4 py-2 rounded-full transition-all duration-300 font-medium whitespace-nowrap",
-                      isNavbarActive 
+                      "flex items-center space-x-1 px-4 py-2 rounded-full transition-all duration-300 font-medium whitespace-nowrap outline-none",
+                      (isNavbarActive || headerTheme === 'light')
                         ? "text-slate-800 hover:bg-slate-100" 
                         : "text-white hover:bg-white/10"
                     )}
@@ -352,7 +371,7 @@ export function Navbar({ locale, setLocale }: NavbarProps) {
 
             <Link href="/#cases" className={cn(
               "px-4 py-2 rounded-full transition-all duration-300 font-medium whitespace-nowrap",
-              isNavbarActive 
+              (isNavbarActive || headerTheme === 'light')
                 ? "text-slate-800 hover:bg-slate-100" 
                 : "text-white hover:bg-white/10"
             )}>
@@ -361,7 +380,7 @@ export function Navbar({ locale, setLocale }: NavbarProps) {
           </div>
 
           <div className="flex items-center gap-6 h-full">
-            <LanguageToggle currentLocale={locale} setLocale={setLocale} />
+            <LanguageToggle currentLocale={locale} setLocale={setLocale} headerTheme={headerTheme} isNavbarActive={isNavbarActive} />
             <Link href="/products">
               <Button size="sm" className="rounded-full px-6 bg-primary hover:bg-primary/90 shadow-lg">
                 {tr('nav_contact')}
@@ -419,5 +438,6 @@ export function Navbar({ locale, setLocale }: NavbarProps) {
         </div>
       )}
     </nav>
+    </>
   );
 }

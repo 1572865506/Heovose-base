@@ -23,6 +23,7 @@ function HomeContent() {
   
   // 默认语种，等待自动判定
   const [locale, setLocale] = useState<Locale>('en');
+  const [headerTheme, setHeaderTheme] = useState<'light' | 'dark'>('dark');
 
   // 使用本地 Doc Hook 获取配置
   const { data: langSettings } = useLocalDoc<any>('settings', 'languages');
@@ -71,9 +72,14 @@ function HomeContent() {
 
   return (
     <main className="relative min-h-screen">
-      <Navbar locale={locale} setLocale={setLocale} />
+      <Navbar locale={locale} setLocale={setLocale} headerTheme={headerTheme} />
       
-      <Hero locale={locale} homeConfig={heroConfig} isLoading={isHeroLoading} />
+      <Hero 
+        locale={locale} 
+        homeConfig={heroConfig} 
+        isLoading={isHeroLoading} 
+        onThemeChange={(theme) => setHeaderTheme(theme)}
+      />
       
       <ProductBento locale={locale} />
       

@@ -148,7 +148,7 @@ export function MediaLibraryDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-[1400px] p-0 h-[90vh] rounded-[2.5rem] overflow-hidden flex flex-col shadow-[0_50px_100px_-20px_rgba(0,0,0,0.3)] border-none bg-white/95 backdrop-blur-3xl z-[1000]">
+      <DialogContent className="max-w-[1400px] p-0 h-[90vh] rounded-[2.5rem] overflow-hidden flex flex-col shadow-[0_50px_100px_-20px_rgba(0,0,0,0.3)] border-none bg-white/95 backdrop-blur-3xl z-[10002]">
         {/* 深色头部 */}
         <div className="bg-slate-900 p-8 text-white flex items-center justify-between relative overflow-hidden shrink-0">
            <div className="absolute top-0 right-0 p-8 opacity-10">

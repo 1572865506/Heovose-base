@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 
 export function useLocalDoc<T = any>(path: string | null, id: string | null = '') {
   const [data, setData] = useState<T | null>(null);
-  const [isLoading, setIsLoading] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
 
   const fetchData = useCallback(async (currentPath: string, currentId: string) => {
