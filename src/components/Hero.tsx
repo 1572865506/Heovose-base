@@ -165,7 +165,7 @@ export function Hero({ locale, homeConfig, isLoading, onThemeChange }: HeroProps
                     src={slide.bgImage}
                     alt={locale === 'zh' ? slide.headlineZh : slide.headlineEn}
                     fill
-                    className="object-cover"
+                    className="object-cover object-[66%_center] md:object-center"
                     priority={index === 0 || slide.id === 'legacy-default'}
                     sizes="100vw"
                   />
@@ -174,7 +174,7 @@ export function Hero({ locale, homeConfig, isLoading, onThemeChange }: HeroProps
               </div>
 
               {/* Slide Content */}
-              <div className="container mx-auto px-6 relative z-30 h-[calc(100vh-160px)] min-h-[600px] flex items-center">
+              <div className="max-w-[1600px] mx-auto px-6 relative z-30 h-[calc(100vh-160px)] min-h-[600px] flex items-center">
                 <div className="max-w-6xl flex flex-col gap-4 md:gap-6 animate-fade-in text-center md:text-left mx-auto md:mx-0 mt-20 md:mt-32">
                   <SplitText
                     key={`headline-${slide.id}-${selectedIndex === index}`}
@@ -222,7 +222,7 @@ export function Hero({ locale, homeConfig, isLoading, onThemeChange }: HeroProps
 
       {/* --- ABSOLUTE HERO OVERLAY --- */}
       <div className="pointer-events-none absolute inset-0 z-40">
-        <div className="container mx-auto px-6 h-full relative">
+        <div className="max-w-[1600px] mx-auto px-6 h-full relative">
 
           {/* Entry Cards - Responsive & Balanced with Enhanced Hover */}
           {showEntryCards && (
@@ -314,7 +314,7 @@ export function Hero({ locale, homeConfig, isLoading, onThemeChange }: HeroProps
 
           {/* Minimalist Progress Indicators - Centered on Small/Tablet */}
           {slides.length > 1 && (
-            <div className="absolute bottom-10 md:bottom-[102px] left-1/2 -translate-x-1/2 md:left-0 md:translate-x-0 flex items-center gap-3 pointer-events-auto transform translate-z-0">
+            <div className="absolute bottom-10 md:bottom-[102px] left-1/2 -translate-x-1/2 min-[1600px]:left-0 md:left-6 min-[1600px]:translate-x-0 flex items-center gap-3 pointer-events-auto transform translate-z-0">
               {slides.map((_, index) => (
                 <button
                   key={index}
