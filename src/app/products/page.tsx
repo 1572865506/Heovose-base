@@ -70,11 +70,11 @@ function ProductListContent() {
   useEffect(() => {
     const detectLocale = () => {
       const langParam = searchParams.get('lang');
-      if (langParam && ['en', 'zh', 'id', 'vi'].includes(langParam)) return langParam as Locale;
+      if (langParam && ['en', 'zh', 'idn', 'vi'].includes(langParam)) return langParam as Locale;
       const saved = localStorage.getItem('heovose-locale') as Locale;
-      if (saved && ['en', 'zh', 'id', 'vi'].includes(saved)) return saved;
+      if (saved && ['en', 'zh', 'idn', 'vi'].includes(saved)) return saved;
       const browserLang = navigator.language.split('-')[0] as Locale;
-      if (['en', 'zh', 'id', 'vi'].includes(browserLang)) return browserLang;
+      if (['en', 'zh', 'idn', 'vi'].includes(browserLang)) return browserLang;
       return (langSettings?.defaultLanguage as Locale) || 'en';
     };
     setLocale(detectLocale());
@@ -346,7 +346,7 @@ function ProductListContent() {
                         src={product.mainImageUrl || '/image/product-placeholder.png'}
                         alt={getT(product.nameTextId)}
                         fill
-                        className="object-cover hover:scale-110 transition-transform duration-700"
+                        className="object-cover hover:scale-110 transition-transform duration-[1000ms] ease-[cubic-bezier(0.23,1,0.32,1)]"
                         unoptimized={product.mainImageUrl?.startsWith('data:')}
                       />
                     </div>

@@ -232,7 +232,7 @@ export function CaseStudies({ locale }: { locale: Locale }) {
                           src={item.imageUrl}
                           alt={item.title}
                           fill
-                          className="object-cover transition-transform duration-1000 group-hover:scale-110"
+                          className="object-cover transition-transform duration-[1000ms] ease-[cubic-bezier(0.23,1,0.32,1)] group-hover:scale-110"
                           unoptimized={item.imageUrl.startsWith('data:')}
                         />
                       )}

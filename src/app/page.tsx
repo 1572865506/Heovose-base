@@ -36,25 +36,25 @@ function HomeContent() {
     const detectLocale = () => {
       // 1. 检查 URL 参数 (?lang=zh)
       const langParam = searchParams.get('lang');
-      if (langParam && ['en', 'zh', 'id', 'vi'].includes(langParam)) {
+      if (langParam && ['en', 'zh', 'idn', 'vi'].includes(langParam)) {
         return langParam as Locale;
       }
 
       // 1.5 检查路径前缀 (处理直接访问 /zh 的情况)
       const pathSegments = window.location.pathname.split('/');
-      if (pathSegments[1] && ['en', 'zh', 'id', 'vi'].includes(pathSegments[1])) {
+      if (pathSegments[1] && ['en', 'zh', 'idn', 'vi'].includes(pathSegments[1])) {
         return pathSegments[1] as Locale;
       }
 
       // 2. 检查本地持久化存储
       const saved = localStorage.getItem('heovose-locale') as Locale;
-      if (saved && ['en', 'zh', 'id', 'vi'].includes(saved)) {
+      if (saved && ['en', 'zh', 'idn', 'vi'].includes(saved)) {
         return saved;
       }
 
       // 3. 检查浏览器语系 (navigator.language)
       const browserLang = navigator.language.split('-')[0] as Locale;
-      if (['en', 'zh', 'id', 'vi'].includes(browserLang)) {
+      if (['en', 'zh', 'idn', 'vi'].includes(browserLang)) {
         return browserLang;
       }
 

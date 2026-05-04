@@ -55,17 +55,17 @@ export function ProductBento({ locale }: { locale: Locale }) {
 
     // Static fallback if no categories yet
     return [
-      { label: tr('nav_sub_aio'), id: 'product-aio', grid: 'lg:col-span-2 lg:row-span-2', category: tr('nav_wholesale'), slug: 'AIO' },
-      { label: tr('nav_sub_minipc'), id: 'product-minipc', grid: 'lg:col-span-1 lg:row-span-2', category: tr('nav_wholesale'), slug: 'Mini PC' },
-      { label: tr('nav_sub_monitor'), id: 'product-monitor', grid: 'lg:col-span-1 lg:row-span-1', category: tr('nav_wholesale'), slug: 'Monitor' },
-      { label: tr('nav_sub_laptop'), id: 'product-laptop', grid: 'lg:col-span-1 lg:row-span-1', category: tr('nav_wholesale'), slug: 'Laptop' },
-      { label: tr('nav_sub_conference'), id: 'case-office', grid: 'lg:col-span-1 lg:row-span-2', category: tr('nav_projects'), slug: 'Conference' },
-      { label: tr('nav_sub_selfservice'), id: 'product-kiosk', grid: 'lg:col-span-2 lg:row-span-2', category: tr('nav_projects'), slug: 'KIOSK' },
-      { label: tr('nav_sub_industrial'), id: 'case-factory', grid: 'lg:col-span-1 lg:row-span-1', category: tr('nav_projects'), slug: 'Industrial' },
-      { label: tr('nav_sub_led'), id: 'case-transport', grid: 'lg:col-span-1 lg:row-span-1', category: tr('nav_projects'), slug: 'LED' },
-      { label: tr('nav_sub_showroom'), id: 'case-retail', grid: 'lg:col-span-1 lg:row-span-2', category: tr('nav_projects'), slug: 'Showroom' },
-      { label: tr('nav_sub_electromechanical'), id: 'product-minipc', grid: 'lg:col-span-2 lg:row-span-2', category: tr('nav_wholesale'), slug: 'Electromechanical' },
-      { label: tr('nav_sub_components'), id: 'factory-china', grid: 'lg:col-span-2 lg:row-span-1', category: tr('nav_wholesale'), slug: 'Components' },
+      { label: tr('nav_sub_aio'), id: 'product-aio', grid: 'lg:col-span-2 lg:row-span-2', category: tr('nav_wholesale'), slug: 'AIO', imageUrl: '' },
+      { label: tr('nav_sub_minipc'), id: 'product-minipc', grid: 'lg:col-span-1 lg:row-span-2', category: tr('nav_wholesale'), slug: 'Mini PC', imageUrl: '' },
+      { label: tr('nav_sub_monitor'), id: 'product-monitor', grid: 'lg:col-span-1 lg:row-span-1', category: tr('nav_wholesale'), slug: 'Monitor', imageUrl: '' },
+      { label: tr('nav_sub_laptop'), id: 'product-laptop', grid: 'lg:col-span-1 lg:row-span-1', category: tr('nav_wholesale'), slug: 'Laptop', imageUrl: '' },
+      { label: tr('nav_sub_conference'), id: 'case-office', grid: 'lg:col-span-1 lg:row-span-2', category: tr('nav_projects'), slug: 'Conference', imageUrl: '' },
+      { label: tr('nav_sub_selfservice'), id: 'product-kiosk', grid: 'lg:col-span-2 lg:row-span-2', category: tr('nav_projects'), slug: 'KIOSK', imageUrl: '' },
+      { label: tr('nav_sub_industrial'), id: 'case-factory', grid: 'lg:col-span-1 lg:row-span-1', category: tr('nav_projects'), slug: 'Industrial', imageUrl: '' },
+      { label: tr('nav_sub_led'), id: 'case-transport', grid: 'lg:col-span-1 lg:row-span-1', category: tr('nav_projects'), slug: 'LED', imageUrl: '' },
+      { label: tr('nav_sub_showroom'), id: 'case-retail', grid: 'lg:col-span-1 lg:row-span-2', category: tr('nav_projects'), slug: 'Showroom', imageUrl: '' },
+      { label: tr('nav_sub_electromechanical'), id: 'product-minipc', grid: 'lg:col-span-2 lg:row-span-2', category: tr('nav_wholesale'), slug: 'Electromechanical', imageUrl: '' },
+      { label: tr('nav_sub_components'), id: 'factory-china', grid: 'lg:col-span-2 lg:row-span-1', category: tr('nav_wholesale'), slug: 'Components', imageUrl: '' },
     ];
   }, [remoteCats, allTranslations, locale, tr]);
 
@@ -142,7 +142,7 @@ export function ProductBento({ locale }: { locale: Locale }) {
                       src={item.imageUrl}
                       alt={item.label}
                       fill
-                      className="object-cover transition-transform duration-1000 group-hover:scale-110"
+                      className="object-cover transition-transform duration-[1500ms] ease-[cubic-bezier(0.23,1,0.32,1)] group-hover:scale-110"
                       sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
                     />
                   )}

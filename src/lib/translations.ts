@@ -1,8 +1,15 @@
 
-export type Locale = 'en' | 'zh' | 'id' | 'vi';
+export type Locale = 'en' | 'zh' | 'idn' | 'vi';
 
 export const translations = {
   en: {
+    core_advantages: 'Core Advantages',
+    product_contact_now: 'Contact Now',
+    product_spec_sheet: 'Spec Sheet',
+    product_global_support: 'Global Support',
+    product_sales_consulting: 'Sales Consulting',
+    product_tab_desc: 'Description',
+    product_tab_specs: 'Specifications',
     nav: {
       wholesale: 'Wholesale Products',
       projects: 'Project Solutions',
@@ -172,6 +179,13 @@ export const translations = {
     }
   },
   zh: {
+    core_advantages: '核心优势',
+    product_contact_now: '立即咨询',
+    product_spec_sheet: '规格书',
+    product_global_support: '全球支持',
+    product_sales_consulting: '业务咨询',
+    product_tab_desc: '详细描述',
+    product_tab_specs: '技术规格',
     nav: {
       wholesale: '批发产品',
       projects: '项目产品',
@@ -340,7 +354,14 @@ export const translations = {
       }
     }
   },
-  id: {
+  idn: {
+    core_advantages: 'Keunggulan Utama',
+    product_contact_now: 'Hubungi Sekarang',
+    product_spec_sheet: 'Lembar Spek',
+    product_global_support: 'Dukungan Global',
+    product_sales_consulting: 'Konsultasi Penjualan',
+    product_tab_desc: 'Deskripsi Detail',
+    product_tab_specs: 'Spesifikasi Teknis',
     nav: {
       wholesale: 'Produk Grosir',
       projects: 'Solusi Proyek',
@@ -499,6 +520,13 @@ export const translations = {
     }
   },
   vi: {
+    core_advantages: 'Ưu điểm cốt lõi',
+    product_contact_now: 'Liên hệ ngay',
+    product_spec_sheet: 'Bảng thông số',
+    product_global_support: 'Hỗ trợ toàn cầu',
+    product_sales_consulting: 'Tư vấn bán hàng',
+    product_tab_desc: 'Mô tả chi tiết',
+    product_tab_specs: 'Thông số kỹ thuật',
     nav: {
       wholesale: 'Sản phẩm Bán buôn',
       projects: 'Giải pháp Dự án',

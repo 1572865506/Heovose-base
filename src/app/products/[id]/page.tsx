@@ -18,10 +18,12 @@ import {
   Download, 
   Mail, 
   ChevronRight,
+  Globe,
   Zap,
   Loader2
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { cn } from '@/lib/utils';
 
@@ -36,7 +38,7 @@ interface Product {
     items: { labelId: string, valueId: string }[] 
   }[];
   mainImageUrl: string;
-  productCategoryId: string;
+  categoryId: string;
   galleryImageUrls: string[];
   status?: 'published' | 'draft';
 }
@@ -61,6 +63,7 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
   const [activeImage, setActiveImage] = useState<string | null>(null);
 
   const { data: product, isLoading: isProdLoading } = useLocalDoc<Product>('products', id);
+  const { data: categories } = useLocalCollection<any>('productCategories');
   const { data: translationsData } = useLocalCollection<LocalizedString>('localizedStrings');
   const { data: langSettings } = useLocalDoc<any>('settings', 'languages');
 
@@ -68,11 +71,11 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
   useEffect(() => {
     const detectLocale = () => {
       const langParam = searchParams.get('lang');
-      if (langParam && ['en', 'zh', 'id', 'vi'].includes(langParam)) return langParam as Locale;
+      if (langParam && ['en', 'zh', 'idn', 'vi'].includes(langParam)) return langParam as Locale;
       const saved = localStorage.getItem('heovose-locale') as Locale;
-      if (saved && ['en', 'zh', 'id', 'vi'].includes(saved)) return saved;
+      if (saved && ['en', 'zh', 'idn', 'vi'].includes(saved)) return saved;
       const browserLang = navigator.language.split('-')[0] as Locale;
-      if (['en', 'zh', 'id', 'vi'].includes(browserLang)) return browserLang;
+      if (['en', 'zh', 'idn', 'vi'].includes(browserLang)) return browserLang;
       return (langSettings?.defaultLanguage as Locale) || 'en';
     };
     setLocale(detectLocale());
@@ -86,17 +89,27 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
   };
 
   const productDetails = useMemo(() => {
-    if (!product?.localizedDetails) return getT(product?.descriptionTextId);
-    return product.localizedDetails[locale] || product.localizedDetails['en'] || product.localizedDetails['zh'] || getT(product?.descriptionTextId);
-  }, [product, locale, translationsData]);
+    if (!product?.localizedDetails) return '';
+    const content = product.localizedDetails[locale] || product.localizedDetails['en'] || product.localizedDetails['zh'] || '';
+    // 检查剥离 HTML 后的实际文本内容是否存在
+    const plainText = content.replace(/<[^>]*>?/gm, '').trim();
+    return plainText ? content : '';
+  }, [product, locale]);
+  
+  const categoryName = useMemo(() => {
+    if (!product || !categories) return '';
+    const cat = categories.find((c: any) => c.id === product.categoryId);
+    return cat ? getT(cat.nameTextId) : '';
+  }, [product, categories, translationsData, locale]);
 
   useEffect(() => {
     if (product?.mainImageUrl) setActiveImage(product.mainImageUrl);
   }, [product]);
 
   const advantages = useMemo(() => {
-    if (!product?.advantageTextIds) return [];
-    return product.advantageTextIds.map(id => getT(id)).filter(Boolean);
+    const desc = getT(product?.descriptionTextId);
+    if (!desc) return [];
+    return desc.split('\n').map((line: string) => line.trim()).filter((line: string) => line.length > 0);
   }, [product, translationsData, locale]);
 
   const groupedSpecs = useMemo(() => {
@@ -131,22 +144,27 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
 
       <div className="pt-32 pb-20">
         <div className="container mx-auto px-6">
-          <nav className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest text-muted-foreground mb-12">
-            <Link href="/" className="hover:text-primary">Home</Link>
-            <ChevronRight className="h-3 w-3" />
-            <Link href="/products" className="hover:text-primary">Products</Link>
-            <ChevronRight className="h-3 w-3" />
+          <nav className="flex items-center gap-4 text-[10px] font-bold uppercase tracking-widest mb-12">
+            <Link href="/" className="flex items-center gap-2 text-muted-foreground hover:text-primary transition-all duration-300">
+              <Globe className="h-3 w-3" />
+              Home
+            </Link>
+            <ChevronRight className="h-3 w-3 text-primary/20" />
+            <Link href="/products" className="text-muted-foreground hover:text-primary transition-all duration-300">
+              Products
+            </Link>
+            <ChevronRight className="h-3 w-3 text-primary/20" />
             <span className="text-primary">{getT(product.nameTextId)}</span>
           </nav>
 
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-16">
             <div className="lg:col-span-7 space-y-6">
-              <div className="relative aspect-[4/3] bg-muted/20 rounded-[2.5rem] overflow-hidden border border-border/40 shadow-inner group">
-                <Image src={activeImage || product.mainImageUrl} alt="P" fill className="object-contain p-8 group-hover:scale-105 transition-all" />
+              <div className="relative aspect-[11/9] bg-muted/20 rounded-[2.5rem] overflow-hidden border border-border/40 shadow-inner group">
+                <Image src={activeImage || product.mainImageUrl} alt="P" fill className="object-cover premium-zoom-image" />
               </div>
-              <div className="grid grid-cols-4 gap-4">
+              <div className="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-6 gap-4">
                 {[product.mainImageUrl, ...(product.galleryImageUrls || [])].map((img, idx) => (
-                  <button key={idx} onClick={() => setActiveImage(img)} className={cn("relative aspect-square rounded-2xl overflow-hidden border-2 transition-all bg-muted/10", activeImage === img ? "border-primary" : "border-transparent")}>
+                  <button key={idx} onClick={() => setActiveImage(img)} className={cn("relative aspect-[11/9] rounded-2xl overflow-hidden border-2 bg-muted/10 transition-all duration-500 ease-[cubic-bezier(0.23,1,0.32,1)]", activeImage === img ? "border-primary" : "border-transparent hover:border-primary/40")}>
                     <Image src={img} alt="T" fill className="object-cover" />
                   </button>
                 ))}
@@ -155,15 +173,22 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
 
             <div className="lg:col-span-5 flex flex-col space-y-10">
               <div className="space-y-4">
-                <h1 className="text-4xl md:text-5xl font-headline font-bold leading-tight text-primary">{getT(product.nameTextId)}</h1>
-                <p className="text-xl text-muted-foreground font-light italic">Heovose Advanced Technology Series</p>
+                {categoryName && (
+                  <Badge variant="outline" className="bg-primary/5 border-primary/10 text-primary text-[10px] font-bold uppercase tracking-[0.2em] px-3 py-1 rounded-full">
+                    {categoryName}
+                  </Badge>
+                )}
+                <h1 className="text-4xl font-headline font-bold leading-tight text-primary">{getT(product.nameTextId)}</h1>
               </div>
 
               <div className="space-y-6">
-                <div className="flex items-center gap-2"><ShieldCheck className="h-5 w-5 text-primary" /><span className="text-xs font-bold uppercase tracking-[0.2em]">核心优势</span></div>
+                <div className="flex items-center gap-2">
+                  <ShieldCheck className="h-5 w-5 text-primary" />
+                  <span className="text-xs font-bold uppercase tracking-[0.2em]">{getT('core_advantages')}</span>
+                </div>
                 <div className="grid grid-cols-1 gap-4">
-                   {advantages.map((adv, i) => (
-                     <div key={i} className="flex items-start gap-4 p-5 bg-muted/20 rounded-2xl border border-border/20">
+                   {advantages.map((adv: string, i: number) => (
+                     <div key={i} className="flex items-start gap-4 p-3 bg-muted/20 rounded-2xl border border-border/20">
                         <CheckCircle2 className="h-5 w-5 mt-0.5 shrink-0 text-primary" />
                         <span className="text-sm text-muted-foreground font-medium">{adv}</span>
                      </div>
@@ -172,28 +197,31 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
               </div>
 
               <div className="flex flex-col sm:flex-row gap-4 pt-6">
-                 <Button className="h-16 px-10 rounded-2xl text-base font-bold flex-1 shadow-xl">立即咨询 <ArrowRight className="ml-2 h-5 w-5" /></Button>
-                 <Button variant="outline" className="h-16 px-8 rounded-2xl"><Download className="mr-2 h-5 w-5" />规格书</Button>
+                 <Button className="h-16 px-10 rounded-2xl text-base font-bold flex-1 shadow-xl">{getT('product_contact_now')} <ArrowRight className="ml-2 h-5 w-5" /></Button>
+                 <Button variant="outline" className="h-16 px-8 rounded-2xl"><Download className="mr-2 h-5 w-5" />{getT('product_spec_sheet')}</Button>
               </div>
 
               <div className="pt-8 border-t border-border/40">
                  <div className="grid grid-cols-2 gap-8">
-                    <div className="space-y-2"><span className="text-[10px] font-bold text-muted-foreground uppercase">全球支持</span><div className="flex items-center gap-2 text-sm font-bold text-primary"><Mail className="h-4 w-4 opacity-40" /> sales@heovose.com</div></div>
-                    <div className="space-y-2"><span className="text-[10px] font-bold text-muted-foreground uppercase">业务咨询</span><div className="flex items-center gap-2 text-sm font-bold text-primary"><Zap className="h-4 w-4 opacity-40" /> +86 0755 1234</div></div>
+                    <div className="space-y-2"><span className="text-[10px] font-bold text-muted-foreground uppercase">{getT('product_global_support')}</span><div className="flex items-center gap-2 text-sm font-bold text-primary"><Mail className="h-4 w-4 opacity-40" /> sales@heovose.com</div></div>
+                    <div className="space-y-2"><span className="text-[10px] font-bold text-muted-foreground uppercase">{getT('product_sales_consulting')}</span><div className="flex items-center gap-2 text-sm font-bold text-primary"><Zap className="h-4 w-4 opacity-40" /> +86 0755 1234</div></div>
                  </div>
               </div>
             </div>
           </div>
 
           <div className="mt-32">
-            <Tabs defaultValue="desc" className="w-full">
+            <Tabs defaultValue={productDetails ? "desc" : "specs"} className="w-full">
               <TabsList className="bg-transparent h-auto p-0 border-b border-border/40 w-full justify-start gap-12 rounded-none mb-16">
-                <TabsTrigger value="desc" className="rounded-none px-0 pb-6 text-sm font-bold uppercase">详细描述</TabsTrigger>
-                <TabsTrigger value="specs" className="rounded-none px-0 pb-6 text-sm font-bold uppercase">技术规格</TabsTrigger>
+                {productDetails && <TabsTrigger value="desc" className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent px-0 pb-6 text-sm font-bold text-muted-foreground data-[state=active]:text-primary transition-all uppercase tracking-widest">{getT('product_tab_desc')}</TabsTrigger>}
+                <TabsTrigger value="specs" className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent px-0 pb-6 text-sm font-bold text-muted-foreground data-[state=active]:text-primary transition-all uppercase tracking-widest">{getT('product_tab_specs')}</TabsTrigger>
               </TabsList>
-              <TabsContent value="desc" className="max-w-4xl animate-in fade-in slide-in-from-bottom-4 duration-700">
-                <div className="prose prose-lg dark:prose-invert max-w-none" dangerouslySetInnerHTML={{ __html: productDetails }} />
-              </TabsContent>
+              
+              {productDetails && (
+                <TabsContent value="desc" className="max-w-4xl animate-in fade-in slide-in-from-bottom-4 duration-700">
+                  <div className="prose prose-lg dark:prose-invert max-w-none" dangerouslySetInnerHTML={{ __html: productDetails }} />
+                </TabsContent>
+              )}
               <TabsContent value="specs" className="animate-in fade-in slide-in-from-bottom-4 duration-700">
                  <div className="space-y-16">
                     {groupedSpecs.map((group, gIdx) => (

@@ -11,6 +11,8 @@ model LocalizedString {
   id                String            @id @default(cuid())
   zh                String
   en                String
+  idn               String?
+  vi                String?
   productDescs      Product[]         @relation("ProductDesc")
   productNames      Product[]         @relation("ProductName")
   categoryNames     ProductCategory[] @relation("CategoryName")

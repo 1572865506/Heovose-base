@@ -56,7 +56,7 @@ const SortableImageCard = memo(({ url, idx, onDelete, onMove }: {
       ref={setNodeRef}
       style={style}
       className={cn(
-        "group/card relative aspect-square rounded-[2rem] bg-white border border-slate-100 shadow-sm overflow-hidden transform-gpu",
+        "group/card relative aspect-[11/9] rounded-[2rem] bg-white border border-slate-100 shadow-sm overflow-hidden transform-gpu",
         !isDragging && "transition-[box-shadow,transform,opacity] duration-500",
         isDragging ? "shadow-2xl scale-105 ring-4 ring-primary/20 opacity-90 cursor-grabbing" : "hover:shadow-2xl hover:-translate-y-1"
       )}
@@ -156,7 +156,7 @@ const MediaSection = memo(({
 
             <div
               className={cn(
-                "aspect-square rounded-[2rem] flex flex-col items-center justify-center gap-4 transition-all duration-500",
+                "aspect-[11/9] rounded-[2rem] flex flex-col items-center justify-center gap-4 transition-all duration-500",
                 galleryUrls.length < 10
                   ? "bg-slate-500/5 border-2 border-dashed border-slate-200 cursor-pointer hover:bg-primary/[0.02] hover:border-primary/40 group/add"
                   : "bg-slate-100 border-2 border-slate-200 cursor-not-allowed opacity-60"

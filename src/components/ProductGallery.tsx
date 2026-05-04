@@ -126,7 +126,7 @@ export function ProductGallery({ locale }: { locale: Locale }) {
                           src={product.imageUrl}
                           alt={product.label}
                           fill
-                          className="object-cover group-hover:scale-110 transition-transform duration-700"
+                          className="object-cover group-hover:scale-110 transition-transform duration-[1000ms] ease-[cubic-bezier(0.23,1,0.32,1)]"
                         />
                       )}
                     </div>

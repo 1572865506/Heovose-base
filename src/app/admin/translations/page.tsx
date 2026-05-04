@@ -107,6 +107,7 @@ interface LanguageSettings {
 interface AiConfig {
   isEnabled: boolean;
   model: string;
+  apiKey: string;
 }
 
 export default function TranslationsPage() {
@@ -122,6 +123,8 @@ export default function TranslationsPage() {
   const [translatingId, setTranslatingId] = useState<string | null>(null);
   const [isSyncingLocal, setIsSyncingLocal] = useState(false);
   const [showSyncConfirm, setShowSyncConfirm] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 25;
   
   const [formData, setFormData] = useState<Record<string, string>>({ id: '' });
   const [newLang, setNewLang] = useState({ code: '', label: '' });
@@ -172,20 +175,37 @@ export default function TranslationsPage() {
     if (!translations) return { business: [], system: [] };
     
     return translations.reduce((acc, t) => {
+      let category = 'system';
       const isBusiness = 
         t.id.startsWith('prod_') || 
         t.id.startsWith('spec_') || 
         t.id.startsWith('cat_') || 
         t.id.startsWith('gal_') || 
         t.id.startsWith('adv_') ||
+        t.id.startsWith('psl_') ||
+        t.id.startsWith('psv_') ||
+        t.id.startsWith('psg_') ||
         usedIds.has(t.id);
 
-      if (isBusiness) acc.business.push(t);
-      else acc.system.push(t);
+      if (isBusiness) {
+        acc.business.push(t);
+      } else {
+        acc.system.push(t);
+      }
       
       return acc;
     }, { business: [] as LocalizedString[], system: [] as LocalizedString[] });
   }, [translations, usedIds]);
+
+  const getResourceCategory = (id: string) => {
+    if (id.startsWith('prod_')) return { label: '产品内容', color: 'bg-blue-100 text-blue-700' };
+    if (id.startsWith('psl_') || id.startsWith('psv_') || id.startsWith('psg_') || id.startsWith('spec_')) return { label: '技术规格', color: 'bg-purple-100 text-purple-700' };
+    if (id.startsWith('cat_')) return { label: '类目名称', color: 'bg-emerald-100 text-emerald-700' };
+    if (id.startsWith('gal_')) return { label: '媒体资产', color: 'bg-pink-100 text-pink-700' };
+    if (id.startsWith('adv_')) return { label: '卖点优势', color: 'bg-amber-100 text-amber-700' };
+    if (usedIds.has(id)) return { label: '动态关联', color: 'bg-slate-100 text-slate-700' };
+    return { label: '系统文案', color: 'bg-slate-100 text-slate-400' };
+  };
 
   const semanticDuplicates = useMemo(() => {
     const list = categorizedTranslations.business;
@@ -337,26 +357,44 @@ export default function TranslationsPage() {
       });
 
       const keysArray = Array.from(allKeys);
+      console.log(`Found ${keysArray.length} keys to sync.`);
       
       await Promise.all(keysArray.map(async key => {
         const payload: any = { id: key };
         locales.forEach(l => {
           if (flattenedByLocale[l][key]) payload[l] = flattenedByLocale[l][key];
         });
-        return fetch(`/api/localizedStrings/${key}`, {
+
+        const res = await fetch(`/api/localizedStrings/${key}`, {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(payload),
         });
+
+        if (!res.ok) {
+          const errData = await res.json().catch(() => ({}));
+          console.error(`Failed to sync key ${key}:`, errData);
+          throw new Error(`Failed to sync key ${key}: ${errData.error || 'Unknown error'}`);
+        }
       }));
 
+      toast({
+        title: "同步成功",
+        description: `已成功同步 ${keysArray.length} 条本地文案至数据库`,
+        className: "bg-green-50 border-green-200 text-green-800 rounded-2xl"
+      });
       mutateTrans();
-      toast({ title: "同步成功", description: `已同步 ${keysArray.length} 条多语言资产至本地库。` });
-    } catch (e) {
-      console.error(e);
-      toast({ variant: "destructive", title: "同步失败", description: "由于数据量过大或网络问题，同步未能完成。" });
+    } catch (error: any) {
+      console.error('Sync failed:', error);
+      toast({
+        title: "同步失败",
+        description: error.message || "同步过程中发生未知错误",
+        variant: "destructive",
+        className: "rounded-2xl"
+      });
     } finally {
       setIsSyncingLocal(false);
+      setShowSyncConfirm(false);
     }
   };
 
@@ -372,6 +410,13 @@ export default function TranslationsPage() {
       return ms;
     });
   }, [categorizedTranslations, searchQuery, showOnlyDuplicates, semanticDuplicates, activeTab]);
+
+  const paginatedTranslations = useMemo(() => {
+    const start = (currentPage - 1) * itemsPerPage;
+    return filteredTranslations.slice(start, start + itemsPerPage);
+  }, [filteredTranslations, currentPage]);
+
+  const totalPages = Math.ceil(filteredTranslations.length / itemsPerPage);
 
   const handleSave = async () => {
     if (!formData.id) return;
@@ -569,35 +614,78 @@ export default function TranslationsPage() {
           <Table>
             <TableHeader className="bg-slate-50/50 border-b border-slate-100">
               <TableRow className="hover:bg-transparent">
-                <TableHead className="pl-8 py-5 font-bold uppercase text-[10px] tracking-[0.2em] text-slate-400 w-72">Resource Identifier</TableHead>
+                <TableHead className="pl-6 py-4 font-bold uppercase text-[9px] tracking-[0.2em] text-slate-400 w-72">Resource Identifier</TableHead>
                 {activeLanguages.map(lang => (
-                  <TableHead key={lang.code} className="font-bold uppercase text-[10px] tracking-[0.2em] text-slate-400">{lang.label}</TableHead>
+                  <TableHead key={lang.code} className="font-bold uppercase text-[9px] tracking-[0.2em] text-slate-400">{lang.label}</TableHead>
                 ))}
-                <TableHead className="text-right pr-8 font-bold uppercase text-[10px] tracking-[0.2em] text-slate-400 w-32">Actions</TableHead>
+                <TableHead className="text-right pr-6 font-bold uppercase text-[9px] tracking-[0.2em] text-slate-400 w-32">Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {isLoading ? (
                 <TableRow><TableCell colSpan={10} className="h-40 text-center"><Loader2 className="h-10 w-10 animate-spin mx-auto opacity-20" /></TableCell></TableRow>
-              ) : filteredTranslations.length === 0 ? (
+              ) : paginatedTranslations.length === 0 ? (
                 <TableRow><TableCell colSpan={10} className="h-40 text-center text-[10px] text-muted-foreground italic uppercase">暂无数据</TableCell></TableRow>
-              ) : filteredTranslations.map((t) => {
+              ) : paginatedTranslations.map((t) => {
                 const refs = referenceMap.get(t.id) || [];
                 let semanticIds: string[] = [];
                 if (activeTab === 'business') { semanticDuplicates.forEach((ids) => { if (ids.includes(t.id)) semanticIds = ids; }); }
                 const isDuplicate = semanticIds.length > 1;
 
                 return (
-                  <TableRow key={t.id} className={cn("group transition-all duration-300 border-slate-100", isDuplicate ? "bg-orange-50/40" : "hover:bg-slate-50/80", refs.length > 0 ? "border-l-[6px] border-l-primary" : "border-l-[6px] border-l-transparent")}>
-                    <TableCell className="pl-8 py-6">
-                      <div className="flex flex-col gap-2">
+                  <TableRow key={t.id} className={cn("group transition-all duration-300 border-slate-100", isDuplicate ? "bg-orange-50/40" : "hover:bg-slate-50/80", refs.length > 0 ? "border-l-[4px] border-l-primary" : "border-l-[4px] border-l-transparent")}>
+                    <TableCell className="pl-6 py-3">
+                      <div className="flex flex-col gap-1.5">
                         <div className="flex items-center gap-2">
                           <code className="text-[11px] font-bold text-primary bg-primary/5 px-2.5 py-1 rounded-lg uppercase tracking-tight shadow-sm">{t.id}</code>
+                          <Badge variant="outline" className={cn("text-[8px] h-5 px-2 font-bold uppercase border-transparent", getResourceCategory(t.id).color)}>
+                            {getResourceCategory(t.id).label}
+                          </Badge>
+                        </div>
+                        <div className="flex items-center gap-3">
+                          {refs.length > 0 ? (
+                            <TooltipProvider>
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <div className="flex items-center gap-2 text-primary cursor-help group/ref transition-opacity">
+                                    <ShieldCheck className="h-3.5 w-3.5" />
+                                    <span className="text-[10px] font-bold uppercase tracking-tight border-b border-primary/20 group-hover/ref:border-primary">生效中 ({refs.length} 处应用)</span>
+                                  </div>
+                                </TooltipTrigger>
+                                <TooltipContent className="p-4 rounded-2xl bg-white/95 backdrop-blur-xl shadow-2xl border-primary/10">
+                                  <div className="space-y-4 text-xs">
+                                    <p className="font-bold uppercase text-primary border-b border-slate-100 pb-2 flex items-center gap-2">
+                                      <CheckCircle2 className="h-3.5 w-3.5" /> 数据链路引用轨迹
+                                    </p>
+                                    <div className="max-h-[200px] overflow-y-auto pr-2 space-y-2">
+                                      {refs.map((ref, idx) => (
+                                        <div key={idx} className="flex items-center justify-between gap-6 p-2 rounded-xl hover:bg-slate-50 transition-colors">
+                                          <div className="flex flex-col">
+                                            <span className="text-[9px] text-slate-400 font-bold uppercase">{ref.type}</span>
+                                            <span className="font-bold text-slate-700">{ref.name}</span>
+                                          </div>
+                                          <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full hover:bg-primary/10 hover:text-primary" onClick={() => window.open(ref.type.includes('图库') ? '/admin/gallery' : `/admin/products/editor?id=${ref.id}`, '_blank')}>
+                                            <ExternalLink className="h-4 w-4" />
+                                          </Button>
+                                        </div>
+                                      ))}
+                                    </div>
+                                  </div>
+                                </TooltipContent>
+                              </Tooltip>
+                            </TooltipProvider>
+                          ) : (
+                            <div className="flex items-center gap-2 text-slate-300">
+                              <X className="h-3.5 w-3.5" />
+                              <span className="text-[10px] font-bold uppercase tracking-tight">未检测到外部引用</span>
+                            </div>
+                          )}
+
                           {isDuplicate && (
                             <TooltipProvider>
                               <Tooltip>
                                 <TooltipTrigger asChild>
-                                  <Badge variant="outline" className="text-[8px] bg-orange-100 text-orange-700 border-orange-200 h-5 px-2 cursor-help font-bold uppercase">语义冲突</Badge>
+                                  <Badge variant="outline" className="text-[8px] bg-orange-100 text-orange-700 border-orange-200 h-5 px-2 cursor-help font-bold uppercase shrink-0">语义冲突</Badge>
                                 </TooltipTrigger>
                                 <TooltipContent className="p-4 rounded-2xl max-w-xs bg-white/95 backdrop-blur-xl border-orange-200 shadow-2xl">
                                   <div className="space-y-4 text-xs">
@@ -621,59 +709,22 @@ export default function TranslationsPage() {
                             </TooltipProvider>
                           )}
                         </div>
-                        {refs.length > 0 ? (
-                          <TooltipProvider>
-                            <Tooltip>
-                              <TooltipTrigger asChild>
-                                <div className="flex items-center gap-2 text-primary cursor-help group/ref transition-opacity">
-                                  <ShieldCheck className="h-3.5 w-3.5" />
-                                  <span className="text-[10px] font-bold uppercase tracking-tight border-b border-primary/20 group-hover/ref:border-primary">生效中 ({refs.length} 处应用)</span>
-                                </div>
-                              </TooltipTrigger>
-                              <TooltipContent className="p-4 rounded-2xl bg-white/95 backdrop-blur-xl shadow-2xl border-primary/10">
-                                <div className="space-y-4 text-xs">
-                                  <p className="font-bold uppercase text-primary border-b border-slate-100 pb-2 flex items-center gap-2">
-                                    <CheckCircle2 className="h-3.5 w-3.5" /> 数据链路引用轨迹
-                                  </p>
-                                  <div className="max-h-[200px] overflow-y-auto pr-2 space-y-2">
-                                    {refs.map((ref, idx) => (
-                                      <div key={idx} className="flex items-center justify-between gap-6 p-2 rounded-xl hover:bg-slate-50 transition-colors">
-                                        <div className="flex flex-col">
-                                          <span className="text-[9px] text-slate-400 font-bold uppercase">{ref.type}</span>
-                                          <span className="font-bold text-slate-700">{ref.name}</span>
-                                        </div>
-                                        <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full hover:bg-primary/10 hover:text-primary" onClick={() => window.open(ref.type.includes('图库') ? '/admin/gallery' : `/admin/products/editor?id=${ref.id}`, '_blank')}>
-                                          <ExternalLink className="h-4 w-4" />
-                                        </Button>
-                                      </div>
-                                    ))}
-                                  </div>
-                                </div>
-                              </TooltipContent>
-                            </Tooltip>
-                          </TooltipProvider>
-                        ) : (
-                          <div className="flex items-center gap-2 text-slate-300">
-                            <X className="h-3.5 w-3.5" />
-                            <span className="text-[10px] font-bold uppercase tracking-tight">未检测到外部引用</span>
-                          </div>
-                        )}
                       </div>
                     </TableCell>
                     {activeLanguages.map(lang => (
-                      <TableCell key={lang.code} className="py-6">
+                      <TableCell key={lang.code} className="py-3">
                         {editingId === t.id ? (
                           <Input 
                             value={formData[lang.code] || ''} 
                             onChange={e => setFormData({...formData, [lang.code]: e.target.value})} 
-                            className="h-12 text-sm rounded-xl bg-slate-50 border-none focus-visible:ring-1 focus-visible:ring-primary/20" 
+                            className="h-9 text-xs rounded-lg bg-slate-50 border-none focus-visible:ring-1 focus-visible:ring-primary/20" 
                           />
                         ) : (
-                          <span className="text-sm font-medium text-slate-600 line-clamp-3 leading-relaxed">{t[lang.code] || <span className="opacity-20 italic">Empty Payload</span>}</span>
+                          <span className="text-xs font-medium text-slate-600 line-clamp-2 leading-relaxed">{t[lang.code] || <span className="opacity-20 italic">Empty Payload</span>}</span>
                         )}
                       </TableCell>
                     ))}
-                    <TableCell className="pr-8 text-right py-6">
+                    <TableCell className="pr-6 text-right py-3">
                        {editingId === t.id ? (
                          <div className="flex justify-end gap-2">
                            <Button onClick={handleSave} className="h-10 px-4 rounded-xl bg-green-600 hover:bg-green-700 shadow-lg shadow-green-100">
@@ -712,6 +763,58 @@ export default function TranslationsPage() {
             </TableBody>
           </Table>
         </GlassCard>
+
+        {totalPages > 1 && (
+          <div className="flex items-center justify-between px-2 pt-4">
+            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+              Showing {(currentPage - 1) * itemsPerPage + 1} to {Math.min(currentPage * itemsPerPage, filteredTranslations.length)} of {filteredTranslations.length} entries
+            </p>
+            <div className="flex items-center gap-2">
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))} 
+                disabled={currentPage === 1}
+                className="rounded-xl h-10 px-4 font-bold text-[10px] uppercase tracking-widest border-slate-200"
+              >
+                Previous
+              </Button>
+              <div className="flex items-center gap-1">
+                {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                  let pageNum = currentPage;
+                  if (totalPages <= 5) pageNum = i + 1;
+                  else if (currentPage <= 3) pageNum = i + 1;
+                  else if (currentPage >= totalPages - 2) pageNum = totalPages - 4 + i;
+                  else pageNum = currentPage - 2 + i;
+
+                  return (
+                    <Button
+                      key={pageNum}
+                      variant={currentPage === pageNum ? "default" : "outline"}
+                      size="sm"
+                      onClick={() => setCurrentPage(pageNum)}
+                      className={cn(
+                        "w-10 h-10 rounded-xl font-bold text-[10px] border-slate-200",
+                        currentPage === pageNum ? "shadow-lg shadow-primary/20" : ""
+                      )}
+                    >
+                      {pageNum}
+                    </Button>
+                  );
+                })}
+              </div>
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))} 
+                disabled={currentPage === totalPages}
+                className="rounded-xl h-10 px-4 font-bold text-[10px] uppercase tracking-widest border-slate-200"
+              >
+                Next
+              </Button>
+            </div>
+          </div>
+        )}
       </div>
 
       <Dialog open={isAdding} onOpenChange={setIsAdding}>
