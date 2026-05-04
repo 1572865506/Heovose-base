@@ -36,6 +36,7 @@ import { translateContent } from '@/ai/flows/translate-flow';
 import { cn } from '@/lib/utils';
 import { ShinyButton } from '@/components/ui/shiny-button';
 import { Badge } from '@/components/ui/badge';
+import { MediaLibraryDialog } from '@/components/admin/media-library-dialog';
 import Image from 'next/image';
 
 interface CaseStudy {
@@ -61,7 +62,6 @@ export default function CaseStudiesAdminPage() {
   const [editingCase, setEditingCase] = useState<CaseStudy | null>(null);
   
   const [isPickerOpen, setIsPickerOpen] = useState(false);
-  const [pickerSearch, setPickerSearch] = useState('');
 
   const [form, setForm] = useState<Partial<CaseStudy>>({
     tagZh: '',
@@ -344,49 +344,18 @@ export default function CaseStudiesAdminPage() {
         </DialogContent>
       </Dialog>
 
-      {/* 媒体资产库弹窗 */}
-      <Dialog open={isPickerOpen} onOpenChange={setIsPickerOpen}>
-        <DialogContent className="max-w-5xl p-0 h-[80vh] rounded-3xl overflow-hidden flex flex-col shadow-2xl border-none">
-          <div className="bg-primary p-6 text-white flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <ImageIcon className="h-4 w-4" />
-              <DialogTitle className="text-sm font-bold uppercase tracking-widest">资产库选择器</DialogTitle>
-            </div>
-            <Button variant="ghost" size="icon" onClick={() => setIsPickerOpen(false)} className="text-white hover:bg-white/10 h-8 w-8"><X className="h-4 w-4" /></Button>
-          </div>
-          <div className="px-6 py-3 bg-muted/30 border-b flex gap-6 items-center">
-            <div className="relative flex-1">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 opacity-30" />
-              <Input placeholder="搜索素材标题..." value={pickerSearch} onChange={e => setPickerSearch(e.target.value)} className="pl-9 h-9 border-none bg-white text-xs" />
-            </div>
-          </div>
-          <div className="flex-1 overflow-y-auto p-6 grid grid-cols-2 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-7 gap-4 bg-muted/5">
-            {galleryAssets?.filter((a: any) => (a.title || '').toLowerCase().includes(pickerSearch.toLowerCase())).map((a: any) => (
-              <div 
-                key={a.id} 
-                className={cn(
-                  "group relative aspect-square rounded-xl overflow-hidden border-2 transition-all cursor-pointer shadow-sm bg-white", 
-                  form.imageUrl === a.url ? "border-primary scale-95 shadow-inner" : "border-transparent hover:border-primary/20"
-                )} 
-                onClick={() => {
-                  setForm({ ...form, imageUrl: a.url });
-                  setIsPickerOpen(false);
-                }}
-              >
-                <Image src={a.url} alt={a.title} fill className="object-cover" unoptimized />
-                {form.imageUrl === a.url && (
-                  <div className="absolute inset-0 bg-primary/20 flex items-center justify-center">
-                    <div className="bg-white text-primary rounded-full p-1 shadow-lg"><Check className="h-3.5 w-3.5" /></div>
-                  </div>
-                )}
-              </div>
-            ))}
-          </div>
-          <DialogFooter className="p-4 border-t flex justify-end bg-white">
-            <Button variant="ghost" size="sm" onClick={() => setIsPickerOpen(false)} className="px-8 h-10 rounded-xl text-xs font-bold uppercase tracking-widest">返回编辑器</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      <MediaLibraryDialog 
+        open={isPickerOpen}
+        onOpenChange={setIsPickerOpen}
+        onSelect={(assets) => {
+          if (assets.length > 0) {
+            setForm({ ...form, imageUrl: assets[0].url });
+          }
+        }}
+        selectionMode="single"
+        title="选择案例展示图"
+        subtitle="从素材库中选择一张精美的案例封面图"
+      />
     </div>
   );
 }

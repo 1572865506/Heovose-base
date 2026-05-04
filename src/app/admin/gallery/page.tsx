@@ -29,7 +29,9 @@ import {
   ChevronUp,
   ChevronDown,
   ChevronLeft,
-  ChevronRight
+  ChevronRight,
+  Eraser,
+  Play
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -80,6 +82,9 @@ interface GalleryAsset {
   id: string;
   url: string;
   title: string;
+  type: 'IMAGE' | 'VIDEO';
+  thumbnailUrl?: string;
+  duration?: number;
   categoryId: string;
   fileName: string;
   fileSize?: number;
@@ -259,6 +264,7 @@ export default function GalleryPage() {
   const [isTasksPanelMinimized, setIsTasksPanelMinimized] = useState(false);
 
   const [pendingFiles, setPendingFiles] = useState<File[]>([]);
+  const [isCleaning, setIsCleaning] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
 
   const [selectionBox, setSelectionBox] = useState<{ startX: number, startY: number, currentX: number, currentY: number } | null>(null);
@@ -411,12 +417,17 @@ export default function GalleryPage() {
     const fileArray = Array.from(files);
 
     // 校验文件大小
-    const oversized = fileArray.filter(f => f.size > 700 * 1024);
+    const oversized = fileArray.filter(f => {
+      const isVideo = f.type.startsWith('video/');
+      const limit = isVideo ? 20 * 1024 * 1024 : 700 * 1024; // 视频 20MB, 图片 700KB
+      return f.size > limit;
+    });
+    
     if (oversized.length > 0) {
       toast({
         variant: "destructive",
         title: "文件过大",
-        description: `${oversized.length} 个文件超过了 700KB 限制。`
+        description: `${oversized.length} 个文件超过了限制（图片 700KB / 视频 20MB）。`
       });
       return;
     }
@@ -467,18 +478,50 @@ export default function GalleryPage() {
         if (!uploadRes.ok) throw new Error("Upload failed");
         const { url, fileName } = await uploadRes.json();
 
-        // 在保存到数据库前获取图片分辨率
-        const getImageDimensions = (url: string): Promise<{ w: number, h: number }> => {
-          return new Promise((resolve) => {
-            const img = new window.Image();
-            img.onload = () => resolve({ w: img.naturalWidth, h: img.naturalHeight });
-            img.onerror = () => resolve({ w: 0, h: 0 });
-            img.src = url;
-          });
-        };
+        const isVideo = file.type.startsWith('video/');
+        let w = 0;
+        let h = 0;
+        let duration = 0;
 
-        const { w, h } = await getImageDimensions(url);
+        if (!isVideo) {
+          // 在保存到数据库前获取图片分辨率
+          const getImageDimensions = (url: string): Promise<{ w: number, h: number }> => {
+            return new Promise((resolve) => {
+              const img = new window.Image();
+              img.onload = () => resolve({ w: img.naturalWidth, h: img.naturalHeight });
+              img.onerror = () => resolve({ w: 0, h: 0 });
+              img.src = url;
+            });
+          };
+          const dims = await getImageDimensions(url);
+          w = dims.w;
+          h = dims.h;
+        } else {
+          // 获取视频元数据
+          const getVideoMetadata = (url: string): Promise<{ w: number, h: number, d: number }> => {
+            return new Promise((resolve) => {
+              const video = document.createElement('video');
+              video.preload = 'metadata';
+              video.onloadedmetadata = () => {
+                resolve({ w: video.videoWidth, h: video.videoHeight, d: video.duration });
+              };
+              video.onerror = () => resolve({ w: 0, h: 0, d: 0 });
+              video.src = url;
+            });
+          };
+          const meta = await getVideoMetadata(url);
+          w = meta.w;
+          h = meta.h;
+          duration = meta.d;
+        }
+        
         updateTask(taskId, { progress: 70 });
+
+        const categoryId = targetUploadCategoryId || categoryTree[0]?.id;
+        
+        if (!categoryId) {
+          throw new Error("请先选择一个素材分类再上传。");
+        }
 
         // 使用更安全的 ID 生成方式
         const randomString = Math.random().toString(36).substring(2, 7);
@@ -487,6 +530,8 @@ export default function GalleryPage() {
         const assetData = {
           id: assetId,
           url,
+          type: isVideo ? 'VIDEO' : 'IMAGE',
+          duration: isVideo ? duration : undefined,
           title: file.name.split('.')[0],
           fileName: fileName,
           fileSize: file.size,
@@ -495,16 +540,28 @@ export default function GalleryPage() {
           height: h
         };
 
-        await fetch(`/api/galleryAssets/${assetId}`, {
+        console.log('[Gallery] Saving asset record:', assetData);
+
+        const saveRes = await fetch(`/api/galleryAssets/${assetId}`, {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(assetData),
         });
 
+        if (!saveRes.ok) {
+          const errorData = await saveRes.json().catch(() => ({}));
+          throw new Error(errorData.error || "Failed to save asset record");
+        }
+
         updateTask(taskId, { status: 'completed', progress: 100 });
       } catch (e: any) {
+        console.error('Upload task error:', e);
         updateTask(taskId, { status: 'error', error: e.message });
-        toast({ variant: "destructive", title: "上传中断", description: `文件 ${file.name} 处理失败` });
+        toast({ 
+          variant: "destructive", 
+          title: "上传中断", 
+          description: `${file.name}: ${e.message}` 
+        });
       }
     }
 
@@ -515,6 +572,22 @@ export default function GalleryPage() {
 
   const updateTask = (id: string, updates: Partial<UploadTask>) => {
     setUploadTasks(prev => prev.map(t => t.id === id ? { ...t, ...updates } : t));
+  };
+
+  const handleDeepCleanup = async () => {
+    if (!confirm("此操作将清理无效资产（数据库中未记录但存在于存储桶中的文件），确定执行？")) return;
+    setIsCleaning(true);
+    try {
+      const res = await fetch('/api/admin/gallery/cleanup', { method: 'POST' });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "清理失败");
+      mutateAssets();
+      toast({ title: "存储库清理完成", description: data.message });
+    } catch (e: any) {
+      toast({ variant: "destructive", title: "清理失败", description: e.message });
+    } finally {
+      setIsCleaning(false);
+    }
   };
 
   const toggleSelectAsset = (id: string) => {
@@ -811,6 +884,26 @@ export default function GalleryPage() {
                   </DialogTitle>
                   <DialogDescription className="text-[10px] font-bold text-white/40 uppercase tracking-widest">Global Asset Ingestion Hub</DialogDescription>
                 </DialogHeader>
+                <div className="absolute top-10 right-10">
+                  <Button
+                    variant="outline"
+                    onClick={handleDeepCleanup}
+                    disabled={isCleaning}
+                    className="h-14 rounded-2xl px-6 border-slate-700 bg-white/5 hover:border-primary/40 hover:bg-primary/10 transition-all group shrink-0"
+                  >
+                    {isCleaning ? (
+                      <Loader2 className="h-4 w-4 animate-spin text-primary" />
+                    ) : (
+                      <div className="flex flex-col items-start">
+                        <div className="flex items-center gap-2">
+                          <Eraser className="h-4 w-4 text-slate-400 group-hover:text-primary transition-colors" />
+                          <span className="text-xs font-bold text-white">深度清理</span>
+                        </div>
+                        <span className="text-[8px] font-bold text-slate-400 uppercase tracking-widest mt-0.5">PURGE ORPHANS</span>
+                      </div>
+                    )}
+                  </Button>
+                </div>
               </div>
               <div className="p-10 grid grid-cols-1 md:grid-cols-12 gap-10 bg-white/90 backdrop-blur-2xl">
                 <div className="md:col-span-7">
@@ -830,11 +923,16 @@ export default function GalleryPage() {
                         <div className="h-16 w-16 rounded-2xl bg-slate-50 flex items-center justify-center mb-4 group-hover:scale-110 group-hover:bg-primary/10 transition-all duration-500">
                           <Upload className="h-7 w-7 text-slate-400 group-hover:text-primary" />
                         </div>
-                        <p className="text-sm font-bold text-slate-900">点击或拖拽图片至此处</p>
-                        <p className="text-[10px] text-slate-400 mt-2 uppercase font-bold tracking-widest">DRAG & DROP MEDIA FILES</p>
-                        <div className="mt-6 px-4 py-2 bg-destructive/5 rounded-full flex items-center gap-2">
-                          <AlertTriangle className="h-3 w-3 text-destructive" />
-                          <span className="text-[9px] font-bold text-destructive uppercase">单个文件限制 700KB 以内</span>
+                        <p className="text-sm font-bold text-slate-900">点击或拖拽素材至此处</p>
+                        <p className="text-[10px] text-slate-400 mt-2 uppercase font-bold tracking-widest">DRAG & DROP IMAGE OR VIDEO FILES</p>
+                        <div className="mt-6 px-4 py-2 bg-primary/5 rounded-full flex flex-col items-center gap-1">
+                          <div className="flex items-center gap-2">
+                            <ImageIcon className="h-3 w-3 text-primary" />
+                            <span className="text-[9px] font-bold text-primary uppercase">图片限 700KB</span>
+                            <span className="text-[9px] font-bold text-slate-300">|</span>
+                            <PanelTop className="h-3 w-3 text-primary" />
+                            <span className="text-[9px] font-bold text-primary uppercase">视频限 20MB</span>
+                          </div>
                         </div>
                       </>
                     ) : (
@@ -878,7 +976,7 @@ export default function GalleryPage() {
                         </div>
                       </div>
                     )}
-                    <input type="file" ref={fileInputRef} multiple accept="image/*" className="hidden" onChange={e => handleFileUpload(e.target.files)} />
+                    <input type="file" ref={fileInputRef} multiple accept="image/*,video/*" className="hidden" onChange={e => handleFileUpload(e.target.files)} />
                   </div>
                 </div>
                 <div className="md:col-span-5 space-y-8">
@@ -1019,24 +1117,48 @@ export default function GalleryPage() {
               </div>
 
               <div className="relative aspect-square bg-slate-500/5 overflow-hidden flex items-center justify-center m-2 rounded-[1.5rem]">
-                <Image
-                  src={asset.url}
-                  alt={asset.title}
-                  fill
-                  className="object-cover group-hover:scale-110 transition-transform duration-1000 ease-out"
-                  unoptimized
-                  onLoad={(e) => {
-                    const img = e.currentTarget as HTMLImageElement;
-                    if (img.naturalWidth && !asset.width) {
-                      // 局部状态更新或在此处仅做显示，理想情况是存回数据库
-                      // 这里我们为了演示和即时显示，通过一个本地 Map 来记录列表中已加载的分辨率
-                      window.dispatchEvent(new CustomEvent('asset-loaded', { 
-                        detail: { id: asset.id, w: img.naturalWidth, h: img.naturalHeight } 
-                      }));
-                    }
-                  }}
-                />
-                <div className="absolute inset-0 bg-slate-900/40 opacity-0 group-hover:opacity-100 transition-all duration-500 flex items-center justify-center gap-3 backdrop-blur-[2px]">
+                {asset.type === 'VIDEO' ? (
+                  <div className="w-full h-full flex items-center justify-center bg-slate-900 overflow-hidden">
+                    <video 
+                      src={asset.url} 
+                      className="max-w-full max-h-full object-contain opacity-60"
+                      muted
+                      playsInline
+                    />
+                    {/* 选中状态 */}
+                    {selectedIds.has(asset.id) && (
+                      <div className="absolute inset-0 bg-primary/5 flex items-center justify-center backdrop-blur-[1px] animate-in fade-in duration-300 z-10 rounded-2xl">
+                      </div>
+                    )}
+                    <div className="absolute inset-0 flex items-center justify-center">
+                      <div className="h-12 w-12 rounded-full bg-white/20 backdrop-blur-md flex items-center justify-center text-white border border-white/30 shadow-2xl transition-transform group-hover:scale-110 duration-500">
+                        <Play className="h-6 w-6 fill-white ml-1" />
+                      </div>
+                    </div>
+                    {asset.duration && (
+                      <div className="absolute bottom-2 right-2 px-1.5 py-0.5 rounded bg-black/60 text-[8px] font-mono text-white">
+                        {Math.floor(asset.duration / 60)}:{(asset.duration % 60).toFixed(0).padStart(2, '0')}
+                      </div>
+                    )}
+                  </div>
+                ) : (
+                  <Image
+                    src={asset.url}
+                    alt={asset.title}
+                    fill
+                    className="object-cover group-hover:scale-110 transition-transform duration-1000 ease-out"
+                    unoptimized
+                    onLoad={(e) => {
+                      const img = e.currentTarget as HTMLImageElement;
+                      if (img.naturalWidth && !asset.width) {
+                        window.dispatchEvent(new CustomEvent('asset-loaded', { 
+                          detail: { id: asset.id, w: img.naturalWidth, h: img.naturalHeight } 
+                        }));
+                      }
+                    }}
+                  />
+                )}
+                <div className="absolute inset-0 bg-slate-900/40 opacity-0 group-hover:opacity-100 transition-all duration-500 flex items-center justify-center gap-3 backdrop-blur-[2px] rounded-[1.5rem]">
                   <Button
                     size="icon"
                     variant="secondary"
@@ -1365,18 +1487,34 @@ export default function GalleryPage() {
           >
             {previewAsset && (
               <div className={cn("relative transition-all duration-500", previewZoom === '1:1' ? "w-auto h-auto" : "w-full h-full flex items-center justify-center")}>
-                <img
-                  src={previewAsset.url}
-                  alt={previewAsset.title}
-                  onLoad={(e) => {
-                    const img = e.currentTarget;
-                    setPreviewDimensions({ width: img.naturalWidth, height: img.naturalHeight });
-                  }}
-                  className={cn(
-                    "shadow-2xl rounded-sm transition-all duration-300",
-                    previewZoom === 'fit' ? "max-w-full max-h-full object-contain" : "max-w-none w-auto h-auto"
-                  )}
-                />
+                {previewAsset.type === 'VIDEO' ? (
+                  <video
+                    src={previewAsset.url}
+                    controls
+                    autoPlay
+                    className={cn(
+                      "shadow-2xl rounded-sm transition-all duration-300",
+                      previewZoom === 'fit' ? "max-w-full max-h-full" : "max-w-none w-auto h-auto"
+                    )}
+                    onLoadedMetadata={(e) => {
+                      const vid = e.currentTarget;
+                      setPreviewDimensions({ width: vid.videoWidth, height: vid.videoHeight });
+                    }}
+                  />
+                ) : (
+                  <img
+                    src={previewAsset.url}
+                    alt={previewAsset.title}
+                    onLoad={(e) => {
+                      const img = e.currentTarget;
+                      setPreviewDimensions({ width: img.naturalWidth, height: img.naturalHeight });
+                    }}
+                    className={cn(
+                      "shadow-2xl rounded-sm transition-all duration-300",
+                      previewZoom === 'fit' ? "max-w-full max-h-full object-contain" : "max-w-none w-auto h-auto"
+                    )}
+                  />
+                )}
               </div>
             )}
           </div>

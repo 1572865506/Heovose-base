@@ -34,7 +34,7 @@ import { useToast } from '@/hooks/use-toast';
 import { translateContent } from '@/ai/flows/translate-flow';
 import { cn } from '@/lib/utils';
 import { ShinyButton } from '@/components/ui/shiny-button';
-import { GalleryPicker } from '@/components/admin/GalleryPicker';
+import { MediaLibraryDialog } from '@/components/admin/media-library-dialog';
 import Image from 'next/image';
 
 // AI 极光渐变定义组件
@@ -607,17 +607,22 @@ export default function AdminHomePage() {
         </TabsContent>
       </Tabs>
 
-      <GalleryPicker 
+      <MediaLibraryDialog 
         open={pickerConfig.open}
         onOpenChange={(open) => setPickerConfig({ ...pickerConfig, open })}
-        onSelect={(url) => {
-          if (pickerConfig.slideIndex === -1) {
-            setFormData({ ...formData, videoUrl: url });
-          } else if (pickerConfig.slideIndex !== null) {
-            updateSlide(pickerConfig.slideIndex, { bgImage: url });
+        onSelect={(assets) => {
+          if (assets.length > 0) {
+            const url = assets[0].url;
+            if (pickerConfig.slideIndex === -1) {
+              setFormData({ ...formData, videoUrl: url });
+            } else if (pickerConfig.slideIndex !== null) {
+              updateSlide(pickerConfig.slideIndex, { bgImage: url });
+            }
           }
         }}
-        currentValue={pickerConfig.slideIndex === -1 ? formData.videoUrl : pickerConfig.slideIndex !== null ? formData.heroSlides[pickerConfig.slideIndex]?.bgImage : undefined}
+        selectionMode="single"
+        title="选择首页媒体素材"
+        subtitle="选择一张高质量图片或一段精彩视频作为首页展示"
       />
     </div>
   );

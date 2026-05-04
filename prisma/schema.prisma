@@ -188,16 +188,19 @@ model GalleryCategory {
 }
 
 model GalleryAsset {
-  id         String           @id @default(cuid())
-  title      String
-  url        String
-  categoryId String?
-  createdAt  DateTime         @default(now())
-  fileName   String
-  fileSize   Int?
-  width      Int?
-  height     Int?
-  category   GalleryCategory? @relation(fields: [categoryId], references: [id])
+  id           String           @id @default(cuid())
+  title        String
+  url          String
+  type         String           @default("IMAGE") // IMAGE, VIDEO
+  thumbnailUrl String?          // For video posters
+  duration     Float?           // For video length
+  categoryId   String?
+  createdAt    DateTime         @default(now())
+  fileName     String
+  fileSize     Int?
+  width        Int?
+  height       Int?
+  category     GalleryCategory? @relation(fields: [categoryId], references: [id])
 
   @@index([categoryId])
 }

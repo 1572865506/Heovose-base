@@ -23,7 +23,7 @@ import Image from 'next/image';
 import { cn } from '@/lib/utils';
 import { useLocalDoc } from '@/hooks/use-local-doc';
 import { useToast } from '@/hooks/use-toast';
-import { GalleryPicker } from '@/components/admin/GalleryPicker';
+import { MediaLibraryDialog } from '@/components/admin/media-library-dialog';
 
 export default function NavigationSettingsPage() {
   const { toast } = useToast();
@@ -350,11 +350,17 @@ export default function NavigationSettingsPage() {
         </TabsContent>
       </Tabs>
 
-      <GalleryPicker 
+      <MediaLibraryDialog 
         open={isPickerOpen}
         onOpenChange={setIsPickerOpen}
-        onSelect={(url) => updateSetting('featuredCoverUrl', url)}
-        currentValue={settings.featuredCoverUrl}
+        onSelect={(assets) => {
+          if (assets.length > 0) {
+            updateSetting('featuredCoverUrl', assets[0].url);
+          }
+        }}
+        selectionMode="single"
+        title="选择推荐板块封面"
+        subtitle="选择一张精美的产品画册或推广封面图"
       />
     </div>
   );

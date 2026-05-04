@@ -88,7 +88,7 @@ function ProductEditorContent() {
     id: '', categoryId: '', mainImageUrl: '', galleryUrls: [],
     nameEn: '', nameZh: '', descEn: '', descZh: '',
     localizedDetails: { zh: '', en: '' },
-    specGroups: [], status: 'draft'
+    specGroups: [], status: 'published'
   });
 
   const [activeTab, setActiveTab] = useState('basic');
@@ -147,12 +147,12 @@ function ProductEditorContent() {
         }))
       }));
       setFormData({
-        id: product.id, categoryId: product.productCategoryId, mainImageUrl: product.mainImageUrl,
+        id: product.id, categoryId: product.categoryId, mainImageUrl: product.mainImageUrl,
         galleryUrls: product.galleryImageUrls || [],
         nameEn: getT(product.nameTextId).en, nameZh: getT(product.nameTextId).zh,
         descEn: getT(product.descriptionTextId).en, descZh: getT(product.descriptionTextId).zh,
         localizedDetails: product.localizedDetails || { zh: '', en: '' },
-        specGroups: sGroups, status: product.status || 'draft'
+        specGroups: sGroups, status: product.status || 'published'
       });
     }
   }, [isEditing, product, translations]);
@@ -184,16 +184,21 @@ function ProductEditorContent() {
       toast({ variant: "destructive", title: "无法保存", description: "请检查 ID 或分类是否完整" });
       return;
     }
+    
+    setIsAiProcessing(true); // Re-use processing state for saving feedback
     try {
       const saveL = async (en: any, zh: any, id: string) => {
-        await fetch(`/api/localizedStrings/${id}`, {
+        const res = await fetch(`/api/localizedStrings/${id}`, {
           method: 'PUT', headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ id, en: String(en || '').trim(), zh: String(zh || '').trim() })
         });
+        if (!res.ok) throw new Error(`翻译数据同步失败 (${id})`);
         return id;
       };
+
       const nId = await saveL(formData.nameEn, formData.nameZh, `prod_name_${formData.id}`);
       const dId = await saveL(formData.descEn, formData.descZh, `prod_desc_${formData.id}`);
+      
       const sGroups = await Promise.all(formData.specGroups.map(async (g, gIdx) => ({
         titleId: await saveL(g.titleEn, g.titleZh, `psg_${formData.id}_${gIdx}`),
         items: await Promise.all(g.items.map(async (i, iIdx) => ({
@@ -201,16 +206,32 @@ function ProductEditorContent() {
           valueId: await saveL(i.valueEn, i.valueZh, `psv_${formData.id}_${gIdx}_${iIdx}`)
         })))
       })));
-      await fetch(`/api/products/${formData.id}`, {
+
+      const res = await fetch(`/api/products/${formData.id}`, {
         method: 'PUT', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          ...formData, nameTextId: nId, descriptionTextId: dId, specGroups: sGroups,
-          productCategoryId: formData.categoryId, galleryImageUrls: formData.galleryUrls
+          ...formData, 
+          nameTextId: nId, 
+          descriptionTextId: dId, 
+          specGroups: sGroups,
+          categoryId: formData.categoryId, 
+          galleryImageUrls: formData.galleryUrls
         })
       });
-      toast({ title: "同步成功" });
+
+      if (!res.ok) {
+        const errorData = await res.json();
+        throw new Error(errorData.error || "产品主数据同步失败");
+      }
+
+      toast({ title: "同步成功", description: "产品数据已持久化至云端" });
       router.push('/admin/products');
-    } catch (e: any) { toast({ variant: "destructive", title: "保存失败", description: e.message }); }
+    } catch (e: any) { 
+      console.error("Save Error:", e);
+      toast({ variant: "destructive", title: "保存失败", description: e.message }); 
+    } finally {
+      setIsAiProcessing(false);
+    }
   };
 
   const handleAiTranslateBasic = async () => {
@@ -299,7 +320,7 @@ function ProductEditorContent() {
   return (
     <div className="max-w-full w-full mx-auto space-y-10 pb-32 animate-in fade-in duration-700 relative min-h-screen">
       <AiGradientDef />
-      <EditorHeader isEditing={isEditing} formData={formData} categories={categories || []} translations={translations || []} translationCoverage={translationCoverage} idConflict={idConflict} onUpdateField={(f, v) => { if (f === 'categoryId') handleCategoryChange(v); else handleUpdateField(f, v); }} onSave={handleSave} onIdChange={(id) => handleUpdateField('id', id)} />
+      <EditorHeader isEditing={isEditing} formData={formData} categories={categories || []} translations={translations || []} translationCoverage={translationCoverage} idConflict={idConflict} onUpdateField={(f, v) => { if (f === 'categoryId') handleCategoryChange(v); else handleUpdateField(f, v); }} onSave={handleSave} onIdChange={(id) => handleUpdateField('id', id)} isSaving={isAiProcessing} />
 
       <div className="relative z-10 max-w-7xl mx-auto px-4 md:px-0">
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-10">

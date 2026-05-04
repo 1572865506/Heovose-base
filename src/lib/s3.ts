@@ -37,6 +37,44 @@ export async function ensureBucketExists(bucketName: string) {
           Bucket: bucketName,
           Policy: JSON.stringify(policy),
         }));
+
+        // Set CORS policy for MinIO to allow metadata loading (resolution, duration)
+        const { PutBucketCorsCommand } = await import("@aws-sdk/client-s3");
+        await s3Client.send(new PutBucketCorsCommand({
+          Bucket: bucketName,
+          CORSConfiguration: {
+            CORSRules: [
+              {
+                AllowedHeaders: ["*"],
+                AllowedMethods: ["GET", "PUT", "POST", "DELETE", "HEAD"],
+                AllowedOrigins: ["*"],
+                ExposeHeaders: ["ETag", "Content-Length", "Content-Type"],
+                MaxAgeSeconds: 3000
+              }
+            ]
+          }
+        }));
+      } else {
+        // Even if bucket exists, try to update CORS to be safe
+        const { PutBucketCorsCommand } = await import("@aws-sdk/client-s3");
+        try {
+          await s3Client.send(new PutBucketCorsCommand({
+            Bucket: bucketName,
+            CORSConfiguration: {
+              CORSRules: [
+                {
+                  AllowedHeaders: ["*"],
+                  AllowedMethods: ["GET", "PUT", "POST", "DELETE", "HEAD"],
+                  AllowedOrigins: ["*"],
+                  ExposeHeaders: ["ETag", "Content-Length", "Content-Type"],
+                  MaxAgeSeconds: 3000
+                }
+              ]
+            }
+          }));
+        } catch (corsErr) {
+          console.error("Non-critical: Error updating CORS on existing bucket:", corsErr);
+        }
       }
     }
   } catch (e) {

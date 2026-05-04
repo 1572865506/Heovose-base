@@ -113,13 +113,14 @@ export function Hero({ locale, homeConfig, isLoading, onThemeChange }: HeroProps
     ? homeConfig?.heroProjectDescriptionZh
     : homeConfig?.heroProjectDescriptionEn;
 
-  const wholesaleHref = homeConfig?.heroWholesaleCategoryId && homeConfig.heroWholesaleCategoryId !== 'none'
-    ? `/products?category=${homeConfig.heroWholesaleCategoryId}`
-    : "/products";
+  const getEntryHref = (id: string | undefined, defaultLine: string) => {
+    if (!id || id === 'none') return `/products?line=${defaultLine}`;
+    if (id === 'WHOLESALE' || id === 'PROJECT') return `/products?line=${id.toLowerCase()}`;
+    return `/products?category=${id}`;
+  };
 
-  const projectHref = homeConfig?.heroProjectCategoryId && homeConfig.heroProjectCategoryId !== 'none'
-    ? `/products?category=${homeConfig.heroProjectCategoryId}`
-    : "/products?category=Industrial";
+  const wholesaleHref = getEntryHref(homeConfig?.heroWholesaleCategoryId, 'wholesale');
+  const projectHref = getEntryHref(homeConfig?.heroProjectCategoryId, 'project');
 
   const wholesaleBg = homeConfig?.entryCards?.wholesaleBg || "/image/Wholesale Product.png";
   const projectBg = homeConfig?.entryCards?.projectBg || "/image/Project Product-2.png";

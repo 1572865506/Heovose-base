@@ -10,7 +10,7 @@ import { useLocalDoc } from '@/hooks/use-local-doc';
 import { Locale, translations } from '@/lib/translations';
 import { Navbar } from '@/components/Navbar';
 import { Footer } from '@/components/Footer';
-import { Search, ArrowRight, ChevronRight, Package, LayoutGrid, Loader2, ShoppingBag, Building2 } from 'lucide-react';
+import { Search, ArrowRight, ChevronRight, Package, LayoutGrid, Loader2, ShoppingBag, Building2, ExternalLink } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -22,9 +22,10 @@ interface Product {
   nameTextId: string;
   descriptionTextId: string;
   mainImageUrl: string;
-  productCategoryId: string;
+  categoryId: string;
   tags?: string[];
   status?: 'published' | 'draft';
+  enabledLanguages?: string[];
 }
 
 interface Category {
@@ -94,10 +95,11 @@ function ProductListContent() {
     }
   }, [categoryParam, lineParam, categories]);
 
-  const getT = (id: string) => {
+  const getT = (id: string | null | undefined) => {
+    if (!id) return '';
     const entry = allTranslations?.find(item => item.id === id);
-    if (!entry) return id;
-    return entry[locale] || entry['en'] || entry['zh'] || id;
+    if (!entry) return id || '';
+    return entry[locale] || entry['en'] || entry['zh'] || id || '';
   };
 
   // 3. 计算当前业务线下可选的分类
@@ -128,22 +130,33 @@ function ProductListContent() {
 
     return products.filter(p => {
       if (p.status !== 'published') return false;
+
+      // 语言可见性校验：如果该产品在当前语言下未启用可见性，则不显示
+      const isVisibleInCurrentLocale = (p.enabledLanguages || ['zh', 'en']).includes(locale);
+      if (!isVisibleInCurrentLocale) return false;
       
-      // 首先必须属于当前业务线（直接或间接属于根分类）
-      const belongsToActiveLine = subCategoryIds.includes(p.productCategoryId);
+      // 匹配业务线逻辑：
+      // 1. 如果产品有分类，检查该分类是否属于当前选中的业务线子树
+      // 2. 如果产品没有分类，目前默认在“所有分类”下展示（可选逻辑）
+      const belongsToActiveLine = p.categoryId ? subCategoryIds.includes(p.categoryId) : true;
       if (!belongsToActiveLine) return false;
 
       // 其次匹配选中的具体子分类
-      // 如果没有选中具体分类，则显示该业务线下所有产品
-      const matchesCategory = !selectedCategoryId || p.productCategoryId === selectedCategoryId;
+      const matchesCategory = !selectedCategoryId || p.categoryId === selectedCategoryId;
       
       // 最后匹配搜索
-      const name = getT(p.nameTextId).toLowerCase();
-      const matchesSearch = name.includes(searchQuery.toLowerCase());
+      const nameText = getT(p.nameTextId) || '';
+      const matchesSearch = nameText.toLowerCase().includes(searchQuery.toLowerCase());
       
       return matchesCategory && matchesSearch;
     });
   }, [products, categories, activeLine, selectedCategoryId, searchQuery, allTranslations, locale]);
+
+  const rootCategory = useMemo(() => {
+    if (!categories) return null;
+    const rootId = activeLine === 'wholesale' ? 'WHOLESALE' : 'PROJECT';
+    return categories.find(c => c.id === rootId);
+  }, [categories, activeLine]);
 
   const activeCategoryName = useMemo(() => {
     if (!selectedCategoryId) return tr('products_allCategories');
@@ -160,7 +173,7 @@ function ProductListContent() {
 
   return (
     <main className="relative min-h-screen bg-[#F8F9FA]">
-      <Navbar locale={locale} setLocale={setLocale} />
+      <Navbar locale={locale} setLocale={setLocale} themeLine={activeLine} />
       
       {/* Dynamic Hero Section */}
       <section className={cn(
@@ -168,8 +181,19 @@ function ProductListContent() {
         activeLine === 'wholesale' ? "bg-primary" : "bg-[#F97316]"
       )}>
         {/* Abstract Background Decoration */}
-        <div className="absolute inset-0 opacity-20">
-          <Image src="/image/whiteboard02.png" alt="" fill className="object-cover mix-blend-overlay" />
+        <div className={cn(
+          "absolute inset-0 transition-opacity duration-1000",
+          rootCategory?.thumbnailImageUrl ? "opacity-30" : "opacity-0"
+        )}>
+          {rootCategory?.thumbnailImageUrl && (
+            <Image 
+              src={rootCategory.thumbnailImageUrl} 
+              alt="" 
+              fill 
+              className="object-cover mix-blend-overlay" 
+              unoptimized
+            />
+          )}
         </div>
         
         <div className="container mx-auto px-6 relative z-10">
@@ -188,7 +212,7 @@ function ProductListContent() {
       </section>
 
       {/* Control Bar & Switcher */}
-      <section className="sticky top-24 z-40 bg-white/80 backdrop-blur-md border-b border-border/40 py-4">
+      <section className="sticky top-20 z-40 bg-white/80 backdrop-blur-md border-b border-border/40 py-4">
         <div className="container mx-auto px-6 flex flex-col md:flex-row items-center justify-between gap-6">
           <div className="flex bg-muted/40 p-1 rounded-full border border-border/40 w-full md:w-auto">
             <button 
@@ -251,7 +275,7 @@ function ProductListContent() {
               <h3 className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground flex items-center gap-2">
                 <LayoutGrid className="h-3 w-3" /> {tr('products_categories')}
               </h3>
-              <div className="space-y-1 bg-white p-2 rounded-[1.5rem] shadow-sm border border-border/20">
+              <div className="space-y-1 bg-white p-2 rounded-2xl shadow-sm border border-border/20">
                 <button
                   onClick={() => setSelectedCategoryId(null)}
                   className={cn(
@@ -303,7 +327,10 @@ function ProductListContent() {
           <div className="lg:col-span-9 space-y-8 min-h-[600px]">
             {isLoading ? (
               <div className="py-32 flex flex-col items-center justify-center gap-4 text-muted-foreground">
-                <Loader2 className="h-10 w-10 animate-spin text-primary opacity-20" />
+                <Loader2 className={cn(
+                  "h-10 w-10 animate-spin opacity-20",
+                  activeLine === 'wholesale' ? "text-primary" : "text-[#F97316]"
+                )} />
                 <p className="text-[10px] font-bold uppercase tracking-widest opacity-40">{tr('products_syncing')}</p>
               </div>
             ) : filteredProducts.length > 0 ? (
@@ -312,36 +339,48 @@ function ProductListContent() {
                   <Link 
                     href={`/products/${product.id}`}
                     key={product.id}
-                    className="group bg-white rounded-[2.5rem] border border-border/20 overflow-hidden hover:shadow-2xl hover:-translate-y-2 transition-all duration-500 flex flex-col shadow-sm"
+                    className="group relative bg-white rounded-2xl border border-border/20 overflow-hidden hover:shadow-md hover:-translate-y-2 transition-all duration-500 flex flex-col shadow-sm min-h-[440px]"
                   >
-                    <div className="relative aspect-[4/3] bg-muted/20">
+                    <div className="relative aspect-[11/9] bg-muted/20 overflow-hidden">
                       <Image
                         src={product.mainImageUrl || '/image/product-placeholder.png'}
                         alt={getT(product.nameTextId)}
                         fill
-                        className="object-contain p-6 group-hover:scale-110 transition-transform duration-700"
+                        className="object-cover hover:scale-110 transition-transform duration-700"
                         unoptimized={product.mainImageUrl?.startsWith('data:')}
                       />
                     </div>
-                    <div className="p-8 space-y-4 flex-grow flex flex-col">
+                    <div className="px-8 pt-8 pb-24 space-y-4 flex flex-col">
                       <div className="space-y-1">
-                        <span className="text-[9px] font-bold text-primary/40 uppercase tracking-widest">{activeCategoryName}</span>
-                        <h3 className="text-xl font-headline font-bold text-primary group-hover:text-accent transition-colors leading-tight">
-                          {getT(product.nameTextId)}
+                        <h3 className={cn(
+                          "text-xl font-headline font-bold text-slate-900 transition-colors leading-tight line-clamp-2",
+                          activeLine === 'wholesale' ? "group-hover:text-primary" : "group-hover:text-[#F97316]"
+                        )}>
+                          {(getT(product.nameTextId) || '').length > 22 
+                            ? (getT(product.nameTextId) || '').substring(0, 22) + '...' 
+                            : getT(product.nameTextId)}
                         </h3>
                       </div>
-                      <p className="text-xs text-muted-foreground line-clamp-2 leading-relaxed opacity-60">
+                      <p className="text-xs text-muted-foreground line-clamp-3 leading-relaxed opacity-60 whitespace-pre-line">
                         {getT(product.descriptionTextId)}
                       </p>
-                      <div className="mt-auto pt-6 flex items-center justify-between border-t border-dashed">
-                        <span className={cn(
-                          "text-xs font-bold group-hover:translate-x-1 transition-all flex items-center gap-2",
-                          activeLine === 'wholesale' ? "text-primary" : "text-[#F97316]"
-                        )}>
-                          {tr('products_viewDetails')} <ArrowRight className="h-3.5 w-3.5" />
-                        </span>
-                        <div className="h-8 w-8 rounded-full bg-muted/30 flex items-center justify-center text-primary/20 group-hover:bg-primary group-hover:text-white transition-all">
-                           <Package className="h-4 w-4" />
+                      
+                      <div className="absolute bottom-0 left-0 right-0 px-8 pb-8">
+                        <div className="flex items-center justify-between">
+                          <span className={cn(
+                            "text-xs font-bold group-hover:translate-x-1 transition-all flex items-center gap-2",
+                            activeLine === 'wholesale' ? "text-primary" : "text-[#F97316]"
+                          )}>
+                            {tr('products_viewDetails')} <ArrowRight className="h-3.5 w-3.5" />
+                          </span>
+                          <div className={cn(
+                            "h-8 w-8 rounded-full bg-muted/30 flex items-center justify-center transition-all",
+                            activeLine === 'wholesale' 
+                              ? "text-primary/20 group-hover:bg-primary group-hover:text-white" 
+                              : "text-[#F97316]/20 group-hover:bg-[#F97316] group-hover:text-white"
+                          )}>
+                             <ExternalLink className="h-4 w-4" />
+                          </div>
                         </div>
                       </div>
                     </div>

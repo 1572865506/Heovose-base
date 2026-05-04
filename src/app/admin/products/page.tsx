@@ -26,7 +26,8 @@ import {
   Filter,
   X,
   ExternalLink,
-  Globe
+  Globe,
+  BarChart3
 } from 'lucide-react';
 import { 
   Select,
@@ -47,7 +48,7 @@ interface Product {
   nameTextId: string;
   descriptionTextId: string;
   mainImageUrl: string;
-  productCategoryId: string;
+  categoryId: string;
   galleryImageUrls: string[];
   status?: 'published' | 'draft';
   enabledLanguages?: string[];
@@ -75,6 +76,7 @@ export default function AdminProductsPage() {
   const { toast } = useToast();
   const [searchQuery, setSearchQuery] = useState('');
   const [filterCategory, setFilterCategory] = useState('all');
+  const [sortConfig, setSortConfig] = useState({ key: 'updatedAt', order: 'desc' });
 
   const { data: products, isLoading: isProdsLoading, mutate: mutateProducts } = useLocalCollection<Product>('products');
   const { data: categories } = useLocalCollection<ProductCategory>('productCategories');
@@ -98,17 +100,35 @@ export default function AdminProductsPage() {
 
   const filteredProducts = useMemo(() => {
     if (!products) return [];
-    return products.filter(p => {
+    let result = products.filter(p => {
       const nameZh = getTranslation(p.nameTextId, 'zh').toLowerCase();
       const nameEn = getTranslation(p.nameTextId, 'en').toLowerCase();
       const search = searchQuery.toLowerCase();
       
       const matchesSearch = nameZh.includes(search) || nameEn.includes(search) || p.id.toLowerCase().includes(search);
-      const matchesCategory = filterCategory === 'all' || p.productCategoryId === filterCategory;
+      const matchesCategory = filterCategory === 'all' || p.categoryId === filterCategory;
       
       return matchesSearch && matchesCategory;
     });
-  }, [products, searchQuery, filterCategory, translations]);
+
+    // 排序逻辑
+    result.sort((a, b) => {
+      let valA: any, valB: any;
+      if (sortConfig.key === 'name') {
+        valA = getTranslation(a.nameTextId, 'zh');
+        valB = getTranslation(b.nameTextId, 'zh');
+      } else {
+        valA = a[sortConfig.key as keyof Product] || '';
+        valB = b[sortConfig.key as keyof Product] || '';
+      }
+
+      if (valA < valB) return sortConfig.order === 'asc' ? -1 : 1;
+      if (valA > valB) return sortConfig.order === 'asc' ? 1 : -1;
+      return 0;
+    });
+
+    return result;
+  }, [products, searchQuery, filterCategory, sortConfig, translations]);
 
   const handleDelete = async (p: Product) => {
     if (!confirm('确定要删除此产品吗？')) return;
@@ -124,15 +144,16 @@ export default function AdminProductsPage() {
   const toggleStatus = async (p: Product) => {
     const newStatus = p.status === 'published' ? 'draft' : 'published';
     try {
-      await fetch(`/api/products/${p.id}`, {
+      const res = await fetch(`/api/products/${p.id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ status: newStatus }),
       });
+      if (!res.ok) throw new Error("状态更新失败");
       mutateProducts();
       toast({ title: newStatus === 'published' ? "产品已发布" : "产品已下架" });
-    } catch (e) {
-      toast({ variant: "destructive", title: "状态更新失败" });
+    } catch (e: any) {
+      toast({ variant: "destructive", title: "操作失败", description: e.message });
     }
   };
 
@@ -142,14 +163,15 @@ export default function AdminProductsPage() {
       : [...currentEnabled, langCode];
     
     try {
-      await fetch(`/api/products/${p.id}`, {
+      const res = await fetch(`/api/products/${p.id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ enabledLanguages: newList }),
       });
+      if (!res.ok) throw new Error("语言设置更新失败");
       mutateProducts();
-    } catch (e) {
-      toast({ variant: "destructive", title: "语言设置更新失败" });
+    } catch (e: any) {
+      toast({ variant: "destructive", title: "设置失败", description: e.message });
     }
   };
 
@@ -184,37 +206,60 @@ export default function AdminProductsPage() {
             onChange={e => setSearchQuery(e.target.value)}
           />
         </div>
-        <div className="flex items-center gap-3 w-full lg:w-auto">
-          <div className="h-12 flex items-center gap-3 px-5 bg-slate-500/5 rounded-[1.25rem] border border-transparent focus-within:border-primary/20 transition-all w-full lg:w-64 relative">
-             <Filter className="h-3.5 w-3.5 text-slate-400 shrink-0" />
-             <Select value={filterCategory} onValueChange={setFilterCategory}>
-                <SelectTrigger className="border-none bg-transparent h-full p-0 shadow-none focus:ring-0 text-xs font-bold uppercase tracking-widest text-slate-600">
-                  <SelectValue placeholder="分类筛选" />
-                </SelectTrigger>
-                <SelectContent className="rounded-2xl border-border/40 shadow-2xl">
-                  <SelectItem value="all" className="text-xs font-bold uppercase tracking-widest py-3">全部分类 (ALL)</SelectItem>
-                  {categories?.map(cat => (
-                    <SelectItem key={cat.id} value={cat.id} className="text-xs font-bold uppercase tracking-widest py-3">{getTranslation(cat.nameTextId)}</SelectItem>
-                  ))}
-                </SelectContent>
-             </Select>
+          <div className="flex items-center gap-3 w-full lg:w-auto">
+            {/* 排序选择器 */}
+            <div className="h-12 flex items-center gap-3 px-5 bg-slate-500/5 rounded-[1.25rem] border border-transparent focus-within:border-primary/20 transition-all w-full lg:w-56 relative">
+               <BarChart3 className="h-3.5 w-3.5 text-slate-400 shrink-0" />
+               <Select value={`${sortConfig.key}-${sortConfig.order}`} onValueChange={(v) => {
+                 const [key, order] = v.split('-');
+                 setSortConfig({ key, order: order as any });
+               }}>
+                  <SelectTrigger className="border-none bg-transparent h-full p-0 shadow-none focus:ring-0 text-xs font-bold uppercase tracking-widest text-slate-600">
+                    <SelectValue placeholder="排序方式" />
+                  </SelectTrigger>
+                  <SelectContent className="rounded-2xl border-border/40 shadow-2xl">
+                    <SelectItem value="updatedAt-desc" className="text-xs font-bold uppercase tracking-widest py-3">最近修改 (LATEST EDIT)</SelectItem>
+                    <SelectItem value="updatedAt-asc" className="text-xs font-bold uppercase tracking-widest py-3">最早修改 (OLDEST EDIT)</SelectItem>
+                    <SelectItem value="createdAt-desc" className="text-xs font-bold uppercase tracking-widest py-3">最近发布 (NEWEST)</SelectItem>
+                    <SelectItem value="createdAt-asc" className="text-xs font-bold uppercase tracking-widest py-3">最早发布 (OLDEST)</SelectItem>
+                    <SelectItem value="name-asc" className="text-xs font-bold uppercase tracking-widest py-3">名称 A-Z (NAME A-Z)</SelectItem>
+                    <SelectItem value="name-desc" className="text-xs font-bold uppercase tracking-widest py-3">名称 Z-A (NAME Z-A)</SelectItem>
+                  </SelectContent>
+               </Select>
+            </div>
+
+            {/* 分类筛选器 */}
+            <div className="h-12 flex items-center gap-3 px-5 bg-slate-500/5 rounded-[1.25rem] border border-transparent focus-within:border-primary/20 transition-all w-full lg:w-56 relative">
+               <Filter className="h-3.5 w-3.5 text-slate-400 shrink-0" />
+               <Select value={filterCategory} onValueChange={setFilterCategory}>
+                  <SelectTrigger className="border-none bg-transparent h-full p-0 shadow-none focus:ring-0 text-xs font-bold uppercase tracking-widest text-slate-600">
+                    <SelectValue placeholder="分类筛选" />
+                  </SelectTrigger>
+                  <SelectContent className="rounded-2xl border-border/40 shadow-2xl">
+                    <SelectItem value="all" className="text-xs font-bold uppercase tracking-widest py-3">全部分类 (ALL)</SelectItem>
+                    {categories?.map(cat => (
+                      <SelectItem key={cat.id} value={cat.id} className="text-xs font-bold uppercase tracking-widest py-3">{getTranslation(cat.nameTextId)}</SelectItem>
+                    ))}
+                  </SelectContent>
+               </Select>
+            </div>
+
+            <Button variant="ghost" size="icon" className="h-12 w-12 rounded-[1.25rem] bg-slate-500/5 hover:bg-destructive/5 text-slate-400 hover:text-destructive transition-all" onClick={() => {setSearchQuery(''); setFilterCategory('all'); setSortConfig({ key: 'updatedAt', order: 'desc' });}}>
+               <X className="h-4 w-4" />
+            </Button>
           </div>
-          <Button variant="ghost" size="icon" className="h-12 w-12 rounded-[1.25rem] bg-slate-500/5 hover:bg-destructive/5 text-slate-400 hover:text-destructive transition-all" onClick={() => {setSearchQuery(''); setFilterCategory('all');}}>
-             <X className="h-4 w-4" />
-          </Button>
-        </div>
       </div>
 
       <div className="bg-white/80 backdrop-blur-xl rounded-[2.5rem] border border-white/40 shadow-[0_30px_60px_-15px_rgba(0,0,0,0.05)] overflow-hidden">
         <Table>
           <TableHeader className="bg-slate-500/[0.03] border-b border-border/40">
             <TableRow className="hover:bg-transparent border-none h-14">
-              <TableHead className="w-20 pl-8 text-xs font-bold uppercase tracking-[0.2em] text-slate-400">Preview</TableHead>
-              <TableHead className="text-xs font-bold uppercase tracking-[0.2em] text-slate-400">Identity / Info</TableHead>
-              <TableHead className="text-xs font-bold uppercase tracking-[0.2em] text-slate-400 text-center">Business Category</TableHead>
-              <TableHead className="text-xs font-bold uppercase tracking-[0.2em] text-slate-400 text-center">Global Status</TableHead>
-              <TableHead className="text-xs font-bold uppercase tracking-[0.2em] text-slate-400 text-center">Localization Visibility</TableHead>
-              <TableHead className="text-right pr-8 text-xs font-bold uppercase tracking-[0.2em] text-slate-400">Actions</TableHead>
+              <TableHead className="w-20 pl-8 text-xs font-bold uppercase tracking-[0.2em] text-slate-400">预览 / PREVIEW</TableHead>
+              <TableHead className="text-xs font-bold uppercase tracking-[0.2em] text-slate-400">产品识别 / IDENTITY</TableHead>
+              <TableHead className="text-xs font-bold uppercase tracking-[0.2em] text-slate-400 text-center">业务分类 / CATEGORY</TableHead>
+              <TableHead className="text-xs font-bold uppercase tracking-[0.2em] text-slate-400 text-center">发布状态 / STATUS</TableHead>
+              <TableHead className="text-xs font-bold uppercase tracking-[0.2em] text-slate-400 text-center">语言可见性 / VISIBILITY</TableHead>
+              <TableHead className="text-right pr-8 text-xs font-bold uppercase tracking-[0.2em] text-slate-400">操作 / ACTIONS</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -238,14 +283,22 @@ export default function AdminProductsPage() {
                   <TableCell>
                     <div className="flex flex-col gap-1">
                       <div className="flex items-center gap-3">
-                        <span className="font-headline font-bold text-[14px] text-slate-900 group-hover:text-primary transition-colors">{getTranslation(p.nameTextId, 'zh')}</span>
-                        <span className="text-[9px] font-mono bg-slate-100 text-slate-400 px-1.5 py-0.5 rounded uppercase">{p.id.slice(-6)}</span>
+                        <a 
+                          href={`/products/${p.id}`} 
+                          target="_blank" 
+                          rel="noopener noreferrer"
+                          className="font-headline font-bold text-[14px] text-slate-900 hover:text-primary transition-colors flex items-center gap-2 group/link"
+                        >
+                          {getTranslation(p.nameTextId, 'zh')}
+                          <ExternalLink className="h-3 w-3 opacity-0 group-hover/link:opacity-100 transition-opacity" />
+                        </a>
+                        <span className="text-[9px] font-mono bg-slate-100 text-slate-400 px-1.5 py-0.5 rounded uppercase">{p.id.slice(-9)}</span>
                       </div>
                       <span className="text-xs font-bold text-slate-400 uppercase tracking-widest line-clamp-1">{getTranslation(p.nameTextId, 'en')}</span>
                     </div>
                   </TableCell>
                   <TableCell className="text-center">
-                    <span className="inline-flex items-center h-7 px-3 rounded-full bg-slate-100 text-xs font-bold text-slate-600 uppercase tracking-tighter ring-1 ring-slate-200">{getCategoryName(p.productCategoryId)}</span>
+                    <span className="inline-flex items-center h-7 px-3 rounded-full bg-slate-100 text-xs font-bold text-slate-600 uppercase tracking-tighter ring-1 ring-slate-200">{getCategoryName(p.categoryId)}</span>
                   </TableCell>
                   <TableCell>
                     <div className="flex items-center justify-center gap-4">

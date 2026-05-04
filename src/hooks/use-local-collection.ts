@@ -8,7 +8,7 @@ export function useLocalCollection<T = any>(path: string | null) {
   const fetchData = useCallback(async (currentPath: string) => {
     setIsLoading(true);
     try {
-      const res = await fetch(`/api/${currentPath}`);
+      const res = await fetch(`/api/${currentPath}?_t=${Date.now()}`);
       if (!res.ok) throw new Error(`Failed to fetch collection "${currentPath}": ${res.statusText} (Status: ${res.status})`);
       const json = await res.json();
       setData(json);

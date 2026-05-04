@@ -44,6 +44,7 @@ interface EditorHeaderProps {
   onUpdateField: (field: string, value: any) => void;
   onSave: () => void;
   onIdChange: (id: string) => void;
+  isSaving?: boolean;
 }
 
 const EditorHeader = memo(({
@@ -55,7 +56,8 @@ const EditorHeader = memo(({
   idConflict,
   onUpdateField,
   onSave,
-  onIdChange
+  onIdChange,
+  isSaving
 }: EditorHeaderProps) => {
   const router = useRouter();
 
@@ -177,8 +179,13 @@ const EditorHeader = memo(({
         </div>
       </div>
       <div className="flex gap-3 ml-6 shrink-0 relative z-10">
-        <Button onClick={onSave} className="rounded-2xl h-10 px-8 text-xs font-bold uppercase tracking-widest gap-3 shadow-xl shadow-primary/20 hover:scale-105 active:scale-95 transition-all">
-          <Save className="h-5 w-5" /> 同步至云端
+        <Button 
+          onClick={onSave} 
+          disabled={isSaving}
+          className="rounded-2xl h-10 px-8 text-xs font-bold uppercase tracking-widest gap-3 shadow-xl shadow-primary/20 hover:scale-105 active:scale-95 transition-all"
+        >
+          {isSaving ? <Loader2 className="h-5 w-5 animate-spin" /> : <Save className="h-5 w-5" />}
+          {isSaving ? "正在同步..." : "同步至云端"}
         </Button>
       </div>
     </div>

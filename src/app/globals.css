@@ -150,21 +150,23 @@
   @apply bg-white/70 backdrop-blur-md border border-white/20;
 }
 
-/* Design System Glass Levels */
-.glass-crystal {
-  @apply bg-white/30 backdrop-blur-[4px] border border-white/20;
-}
+@layer components {
+  /* Design System Glass Levels */
+  .glass-crystal {
+    @apply bg-white/30 backdrop-blur-[4px];
+  }
 
-.glass-frosted {
-  @apply bg-white/60 backdrop-blur-[12px] border border-white/20;
-}
+  .glass-frosted {
+    @apply bg-white/60 backdrop-blur-[12px];
+  }
 
-.glass-deep {
-  @apply bg-white/80 backdrop-blur-[40px] border border-white/10 shadow-2xl;
-}
+  .glass-deep {
+    @apply bg-white/80 backdrop-blur-[40px];
+  }
 
-.glass-eclipse {
-  @apply bg-black/40 backdrop-blur-[12px] border border-white/10;
+  .glass-eclipse {
+    @apply bg-black/40 backdrop-blur-[12px];
+  }
 }
 
 /* Aurora Mesh Gradient */

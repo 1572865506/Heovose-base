@@ -3,23 +3,23 @@
 import { useState, useEffect, useRef, useMemo } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { Locale, translations } from "@/lib/translations";
 import { LanguageToggle } from "./LanguageToggle";
-import { 
-  Menu, 
-  X, 
-  ChevronDown, 
-  Monitor, 
-  Cpu, 
-  Tv, 
-  Laptop, 
-  Zap, 
-  HardDrive, 
-  Presentation, 
-  MousePointerClick, 
-  Factory, 
-  Lightbulb, 
+import {
+  Menu,
+  X,
+  ChevronDown,
+  Monitor,
+  Cpu,
+  Tv,
+  Laptop,
+  Zap,
+  HardDrive,
+  Presentation,
+  MousePointerClick,
+  Factory,
+  Lightbulb,
   Store,
   ArrowRight,
   Download
@@ -32,11 +32,11 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
-
 interface NavbarProps {
   locale: Locale;
   setLocale: (locale: Locale) => void;
   headerTheme?: 'light' | 'dark';
+  themeLine?: 'wholesale' | 'project';
 }
 
 import { useLocalDoc } from '@/hooks/use-local-doc';
@@ -45,13 +45,15 @@ import { LayoutGrid } from 'lucide-react';
 
 import { useTranslations } from '@/hooks/use-translations';
 
-export function Navbar({ locale, setLocale, headerTheme = 'dark' }: NavbarProps) {
+export function Navbar({ locale, setLocale, headerTheme = 'dark', themeLine }: NavbarProps) {
   const { t: tr } = useTranslations(locale);
   const pathname = usePathname();
-  
+  const searchParams = useSearchParams();
+  const router = useRouter();
+
   const [isScrolled, setIsScrolled] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  
+
   // Unified state for Mega Menus with debounce
   const [activeMenu, setActiveMenu] = useState<string | null>(null);
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -82,7 +84,7 @@ export function Navbar({ locale, setLocale, headerTheme = 'dark' }: NavbarProps)
 
   // Determine if the page has a dark/colored header area at the top
   const isTransparentHeaderPage = pathname === '/' || pathname === '/products';
-  
+
   // Navbar is "Active" (White Opaque) if:
   // 1. Scrolled down
   // 2. A mega menu is hovered
@@ -93,14 +95,16 @@ export function Navbar({ locale, setLocale, headerTheme = 'dark' }: NavbarProps)
   // 1. Fetch dynamic categories
   const { data: remoteCats } = useLocalCollection<any>('productCategories');
   const { data: allTranslations } = useLocalCollection<any>('localizedStrings');
-  
+
   // 2. Fetch dynamic navigation settings
   const { data: navSettings } = useLocalDoc<any>('settings', 'navigation');
 
-  const getT = (id: string, field: string = locale) => {
+  const getT = (id: string, field: string = locale, isDesc: boolean = false) => {
+    if (!id) return "";
     const entry = allTranslations?.find((item: any) => item.id === id);
-    if (!entry) return id;
-    return entry[field] || entry['en'] || entry['zh'] || id;
+    if (!entry) return isDesc ? "" : id;
+    const val = entry[field] || entry['en'] || entry['zh'];
+    return val || (isDesc ? "" : id);
   };
 
   const getIcon = (id: string) => {
@@ -146,7 +150,7 @@ export function Navbar({ locale, setLocale, headerTheme = 'dark' }: NavbarProps)
       .filter((c: any) => c.parentId === 'WHOLESALE')
       .map((c: any) => ({
         label: getT(c.nameTextId),
-        desc: getT(c.descriptionTextId),
+        desc: getT(c.descriptionTextId, locale, true),
         icon: getIcon(c.id),
         href: `/products?category=${encodeURIComponent(c.slug)}`
       }));
@@ -155,7 +159,7 @@ export function Navbar({ locale, setLocale, headerTheme = 'dark' }: NavbarProps)
       .filter((c: any) => c.parentId === 'PROJECT')
       .map((c: any) => ({
         label: getT(c.nameTextId),
-        desc: getT(c.descriptionTextId),
+        desc: getT(c.descriptionTextId, locale, true),
         icon: getIcon(c.id),
         href: `/products?category=${encodeURIComponent(c.slug)}`
       }));
@@ -163,76 +167,360 @@ export function Navbar({ locale, setLocale, headerTheme = 'dark' }: NavbarProps)
     return { wholesaleItems: wholesale, projectItems: projects };
   }, [remoteCats, allTranslations, locale, tr]);
 
-  const MegaMenuContent = ({ items, onMouseEnter, onMouseLeave }: { items: any[], onMouseEnter: () => void, onMouseLeave: () => void }) => (
-    <div 
+  return (
+    <>
+      {/* 1. Top Scrim & Gradient Blur Layer - The "Advanced Glass" Layer */}
+      {!isNavbarActive && isTransparentHeaderPage && (
+        <div className={cn(
+          "fixed top-0 left-0 right-0 z-[105] h-48 pointer-events-none transition-opacity duration-1000",
+          headerTheme === 'light' ? "opacity-60" : "opacity-80"
+        )}>
+          {/* The Scrim: Suble gradient to ensure contrast */}
+          <div className={cn(
+            "absolute inset-0 bg-gradient-to-b from-black/40 via-black/10 to-transparent",
+            headerTheme === 'light' && "from-white/60 via-white/20"
+          )} />
+
+          {/* The Gradient Blur: Frosted glass that fades out */}
+          <div className="absolute inset-0 backdrop-blur-xl [mask-image:linear-gradient(to_bottom,black_0%,black_30%,transparent_100%)]" />
+        </div>
+      )}
+
+      <nav className={cn(
+        "fixed top-0 left-0 right-0 z-[110] transition-all duration-700 h-20 flex items-center !border-t-0 !border-x-0",
+        isNavbarActive
+          ? cn(
+              navSettings?.navbarMaterial === 'level-03' ? "glass-deep" : "glass-frosted",
+              navSettings?.showBorder ? "border-b border-white/20" : "border-b border-transparent",
+              navSettings?.showShadow ? "shadow-[0_0px_30px_-12px_rgba(0,0,0,0.25)]" : "shadow-none"
+            )
+          : "bg-transparent border-b border-transparent"
+      )}>
+        <div className="container mx-auto px-6 flex items-center w-full h-full">
+          <Link href="/" className="flex items-center shrink-0">
+            <Image
+              src={isNavbarActive || headerTheme === 'light' ? "/image/Heovose-color.svg" : "/image/Heovose.svg"}
+              alt="Heovose Logo"
+              width={160}
+              height={32}
+              className="h-8 w-auto object-contain transition-all duration-500"
+              priority
+            />
+          </Link>
+
+          {/* Desktop Nav */}
+          <div className="hidden lg:flex h-full items-center gap-10 ml-auto">
+            {/* Mega Menus with shared hover container to prevent flicker */}
+            <div className="flex h-full items-center gap-4" onMouseLeave={handleMouseLeave}>
+
+              {/* Wholesale Mega Menu Container */}
+              <div className="h-full relative flex items-center">
+                <DropdownMenu open={activeMenu === 'wholesale'} onOpenChange={(open) => !open && handleMouseLeave()} modal={false}>
+                  <DropdownMenuTrigger asChild>
+                    <button
+                      className={cn(
+                        "flex items-center space-x-1 px-4 py-2 rounded-full transition-all duration-300 font-medium whitespace-nowrap outline-none",
+                        (isNavbarActive || headerTheme === 'light')
+                          ? "text-slate-800 hover:bg-slate-100"
+                          : "text-white hover:bg-white/10"
+                      )}
+                      onMouseEnter={() => handleMouseEnter('wholesale')}
+                    >
+                      <span>{tr('nav_wholesale')}</span>
+                      <ChevronDown className={cn(
+                        "w-4 h-4 transition-transform duration-300",
+                        activeMenu === 'wholesale' ? "rotate-180" : ""
+                      )} />
+                    </button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent
+                    sideOffset={25}
+                    align="start"
+                    className="w-screen max-w-none left-0 right-0 border-none rounded-none shadow-none bg-transparent p-0 overflow-visible"
+                    onMouseEnter={() => handleMouseEnter('wholesale')}
+                    onOpenAutoFocus={(e) => e.preventDefault()}
+                  >
+                    <div className="container mx-auto px-6">
+                      <div className={cn(
+                        "rounded-[2.5rem] shadow-2xl border animate-in fade-in slide-in-from-top-4 duration-500",
+                        navSettings?.navbarMaterial === 'level-03' ? "glass-deep" : "glass-frosted",
+                        navSettings?.showBorder ? "border-white/20" : "border-transparent"
+                      )}>
+                        <MegaMenuContent 
+                        items={wholesaleItems} 
+                        navSettings={navSettings}
+                        locale={locale}
+                        tr={tr}
+                        line="wholesale"
+                        onMouseEnter={() => handleMouseEnter('wholesale')}
+                        onMouseLeave={handleMouseLeave}
+                      />
+                      </div>
+                    </div>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </div>
+
+              {/* Projects Mega Menu Container */}
+              <div className="h-full relative flex items-center">
+                <DropdownMenu open={activeMenu === 'projects'} onOpenChange={(open) => !open && handleMouseLeave()} modal={false}>
+                  <DropdownMenuTrigger asChild>
+                    <button
+                      className={cn(
+                        "flex items-center space-x-1 px-4 py-2 rounded-full transition-all duration-300 font-medium whitespace-nowrap outline-none",
+                        (isNavbarActive || headerTheme === 'light')
+                          ? "text-slate-800 hover:bg-slate-100"
+                          : "text-white hover:bg-white/10"
+                      )}
+                      onMouseEnter={() => handleMouseEnter('projects')}
+                    >
+                      <span>{tr('nav_projects')}</span>
+                      <ChevronDown className={cn(
+                        "w-4 h-4 transition-transform duration-300",
+                        activeMenu === 'projects' ? "rotate-180" : ""
+                      )} />
+                    </button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent
+                    sideOffset={25}
+                    align="start"
+                    className="w-screen max-w-none left-0 right-0 border-none rounded-none shadow-none bg-transparent p-0 overflow-visible"
+                    onMouseEnter={() => handleMouseEnter('projects')}
+                    onOpenAutoFocus={(e) => e.preventDefault()}
+                  >
+                    <div className="container mx-auto px-6">
+                      <div className={cn(
+                        "rounded-[2.5rem] shadow-2xl border animate-in fade-in slide-in-from-top-4 duration-500",
+                        navSettings?.navbarMaterial === 'level-03' ? "glass-deep" : "glass-frosted",
+                        navSettings?.showBorder ? "border-white/20" : "border-transparent"
+                      )}>
+                        <MegaMenuContent 
+                        items={projectItems} 
+                        navSettings={navSettings}
+                        locale={locale}
+                        tr={tr}
+                        line="project"
+                        onMouseEnter={() => handleMouseEnter('projects')}
+                        onMouseLeave={handleMouseLeave}
+                      />
+                      </div>
+                    </div>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </div>
+
+              <Link href="/#cases" className={cn(
+                "px-4 py-2 rounded-full transition-all duration-300 font-medium whitespace-nowrap",
+                (isNavbarActive || headerTheme === 'light')
+                  ? "text-slate-800 hover:bg-slate-100"
+                  : "text-white hover:bg-white/10"
+              )}>
+                {tr('nav_cases')}
+              </Link>
+            </div>
+
+            <div className="flex items-center gap-6 h-full">
+              <LanguageToggle currentLocale={locale} setLocale={setLocale} headerTheme={headerTheme} isNavbarActive={isNavbarActive} />
+              <Link href="/products">
+                <Button 
+                  size="sm" 
+                  className={cn(
+                    "rounded-full px-6 shadow-lg transition-all duration-500",
+                    themeLine === 'project' 
+                      ? "bg-[#F97316] hover:bg-[#F97316]/90" 
+                      : "bg-primary hover:bg-primary/90"
+                  )}
+                >
+                  {tr('nav_contact')}
+                </Button>
+              </Link>
+            </div>
+          </div>
+
+          {/* Mobile Menu Trigger */}
+          <button
+            className={cn(
+              "lg:hidden ml-auto p-2 transition-colors duration-500",
+              isNavbarActive ? "text-primary" : "text-white"
+            )}
+            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+          >
+            {mobileMenuOpen ? <X /> : <Menu />}
+          </button>
+        </div>
+
+        {/* Mobile Nav */}
+        {mobileMenuOpen && (
+          <div className="lg:hidden absolute top-full left-0 right-0 bg-white border-t border-border p-6 shadow-2xl animate-in slide-in-from-top duration-300 h-screen overflow-y-auto">
+            <div className="flex flex-col gap-8 pb-32">
+              <div className="space-y-4">
+                <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">{tr('nav_wholesale')}</p>
+                <div className="grid grid-cols-2 gap-4">
+                  {wholesaleItems.map((item) => (
+                    <Link key={item.label} href={item.href} onClick={() => setMobileMenuOpen(false)} className="flex items-center gap-3">
+                      <item.icon className="h-5 w-5 text-primary" />
+                      <span className="text-lg font-bold text-primary">{item.label}</span>
+                    </Link>
+                  ))}
+                </div>
+              </div>
+              <div className="space-y-4 pt-4 border-t border-dashed">
+                <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">{tr('nav_projects')}</p>
+                <div className="grid grid-cols-2 gap-4">
+                  {projectItems.map((item) => (
+                    <Link key={item.label} href={item.href} onClick={() => setMobileMenuOpen(false)} className="flex items-center gap-3">
+                      <item.icon className="h-5 w-5 text-primary" />
+                      <span className="text-lg font-bold text-primary">{item.label}</span>
+                    </Link>
+                  ))}
+                </div>
+              </div>
+              <Link href="/#cases" onClick={() => setMobileMenuOpen(false)} className="text-lg font-bold text-primary">{tr('nav_cases')}</Link>
+
+              <div className="pt-6 border-t border-slate-100 mt-auto">
+                <Link href="/#contact" onClick={() => setMobileMenuOpen(false)}>
+                  <Button className="w-full rounded-xl bg-primary">{tr('nav_contact')}</Button>
+                </Link>
+              </div>
+            </div>
+          </div>
+        )}
+      </nav>
+    </>
+  );
+}
+
+// Sub-component extracted to prevent unnecessary re-renders and closure issues
+function MegaMenuContent({
+  items,
+  navSettings,
+  locale,
+  tr,
+  line,
+  onMouseEnter,
+  onMouseLeave
+}: {
+  items: any[],
+  navSettings: any,
+  locale: string,
+  tr: any,
+  line: 'wholesale' | 'project',
+  onMouseEnter: () => void,
+  onMouseLeave: () => void
+}) {
+  return (
+    <div
       className="container mx-auto px-6 py-12 flex flex-col lg:flex-row gap-16"
       onMouseEnter={onMouseEnter}
       onMouseLeave={onMouseLeave}
     >
       {/* Left: Product List (8 Columns equivalent) */}
       <div className="flex-1 space-y-8">
-        <div className="flex items-center justify-between border-b border-primary/10 pb-4">
-          <h4 className="text-[10px] font-bold text-primary/40 uppercase tracking-widest font-headline">
+        <div className={cn(
+          "flex items-center justify-between border-b pb-4",
+          line === 'wholesale' ? "border-primary/10" : "border-[#F97316]/10"
+        )}>
+          <h4 className={cn(
+            "text-[10px] font-bold uppercase tracking-widest font-headline",
+            line === 'wholesale' ? "text-primary/40" : "text-[#F97316]/40"
+          )}>
             {locale === 'en' ? 'Product Categories' : '核心产品序列'}
           </h4>
           <Link 
-            href="/products" 
-            className="flex items-center gap-2 text-[9px] font-bold text-primary uppercase tracking-widest cursor-pointer hover:translate-x-1 transition-transform"
+            href={`/products?line=${line}`} 
+            className={cn(
+              "flex items-center gap-2 text-[9px] font-bold uppercase tracking-widest cursor-pointer hover:translate-x-1 transition-transform",
+              line === 'wholesale' ? "text-primary" : "text-[#F97316]"
+            )}
           >
             {locale === 'en' ? 'View All' : '查看全部'} <ArrowRight className="h-3 w-3" />
           </Link>
         </div>
-        
-        <div className={cn(
-          "grid gap-y-10",
-          navSettings?.megaMenuColumns === 1 ? "grid-cols-1" : "grid-cols-1 md:grid-cols-2",
-          navSettings?.megaMenuGap ? `gap-x-${navSettings.megaMenuGap}` : "gap-x-12"
-        )}>
+
+        <div
+          className={cn(
+            "grid gap-y-10 grid-cols-1",
+            navSettings?.megaMenuColumns === 1 ? "md:grid-cols-1" :
+              navSettings?.megaMenuColumns === 3 ? "md:grid-cols-3" :
+                navSettings?.megaMenuColumns === 4 ? "md:grid-cols-4" :
+                  "md:grid-cols-2"
+          )}
+          style={{
+            columnGap: `${navSettings?.megaMenuGap || 48}px`
+          }}
+        >
           {items.map((item) => (
             <DropdownMenuItem key={item.label} asChild className="p-0 bg-transparent hover:bg-transparent focus:bg-transparent transition-all duration-300">
-              <Link 
-                href={item.href} 
-                className="flex gap-5 group cursor-pointer outline-none focus:outline-none"
+              <Link
+                href={item.href}
+                className={cn(
+                  "flex gap-5 group cursor-pointer outline-none focus:outline-none",
+                  !item.desc && "items-center"
+                )}
               >
-                <div className="h-14 w-14 shrink-0 rounded-2xl bg-white shadow-sm border border-primary/5 flex items-center justify-center text-primary group-hover:bg-primary group-hover:text-white transition-all duration-500 group-hover:scale-110 group-hover:rotate-6">
+                <div className={cn(
+                  "h-14 w-14 shrink-0 rounded-2xl bg-white shadow-sm border flex items-center justify-center transition-all duration-500 group-hover:scale-110 group-hover:rotate-6",
+                  line === 'wholesale' 
+                    ? "border-primary/5 text-primary group-hover:bg-primary group-hover:text-white" 
+                    : "border-[#F97316]/5 text-[#F97316] group-hover:bg-[#F97316] group-hover:text-white"
+                )}>
                   <item.icon className="h-7 w-7" />
                 </div>
-                <div className="space-y-1">
+                <div className={cn("space-y-1", !item.desc && "space-y-0")}>
                   <div className="flex items-center gap-2">
-                    <span className="text-sm font-bold text-primary group-hover:text-primary transition-colors font-headline">{item.label}</span>
+                    <span className={cn(
+                      "text-sm font-bold transition-colors font-headline",
+                      line === 'wholesale' ? "text-primary" : "text-[#F97316]"
+                    )}>{item.label}</span>
                     <ChevronDown className="h-3 w-3 opacity-0 group-hover:opacity-40 -rotate-90 transition-all" />
                   </div>
-                  <p className="text-[11px] text-muted-foreground leading-relaxed line-clamp-2">{item.desc}</p>
+                  {item.desc && (
+                    <p className="text-[11px] text-muted-foreground leading-relaxed line-clamp-2">{item.desc}</p>
+                  )}
                 </div>
               </Link>
             </DropdownMenuItem>
           ))}
         </div>
       </div>
-      
+
       {/* Right: Featured Card (4 Columns equivalent) */}
       <div className="lg:w-[380px] shrink-0">
-        <div className="bg-primary/5 rounded-[2.5rem] p-8 border border-primary/5 h-full flex flex-col group/card transition-all duration-500 hover:bg-primary/10 relative overflow-hidden">
-          <div className="absolute top-0 right-0 w-32 h-32 bg-primary/5 rounded-full blur-2xl -mr-16 -mt-16" />
-          
+        <div className={cn(
+          "rounded-[2.5rem] p-8 h-full flex flex-col group/card transition-all duration-500 relative overflow-hidden",
+          line === 'wholesale' 
+            ? "bg-primary/5 border-primary/5 hover:bg-primary/10" 
+            : "bg-[#F97316]/5 border-[#F97316]/5 hover:bg-[#F97316]/10"
+        )}>
+          <div className={cn(
+            "absolute top-0 right-0 w-32 h-32 rounded-full blur-2xl -mr-16 -mt-16",
+            line === 'wholesale' ? "bg-primary/5" : "bg-[#F97316]/5"
+          )} />
+
           <div className="relative z-10 space-y-6 flex flex-col h-full">
             <div className="relative aspect-[4/3] rounded-2xl overflow-hidden border border-white/10 shadow-sm bg-white">
-              <Image 
-                src={navSettings?.featuredCoverUrl || "/image/catalog-placeholder.png"} 
-                alt="Featured Catalog" 
-                fill 
+              <Image
+                src={navSettings?.featuredCoverUrl || "/image/catalog-placeholder.png"}
+                alt="Featured Catalog"
+                fill
                 className="object-contain p-4 transition-transform duration-700 group-hover:scale-110"
+                unoptimized={!!navSettings?.featuredCoverUrl}
               />
               <div className="absolute inset-0 bg-gradient-to-t from-black/20 via-transparent to-transparent pointer-events-none" />
             </div>
-            
+
             <div className="mt-auto">
-              <Button 
+              <Button
                 asChild
-                className="w-full h-11 px-6 rounded-2xl bg-primary/5 text-primary border-none font-bold text-[10px] uppercase gap-3 hover:bg-primary hover:text-white transition-all group/download shadow-none cursor-pointer"
+                className={cn(
+                  "w-full h-11 px-6 rounded-2xl border-none font-bold text-[10px] uppercase gap-3 transition-all group/download shadow-none cursor-pointer",
+                  line === 'wholesale' 
+                    ? "bg-primary/5 text-primary hover:bg-primary hover:text-white" 
+                    : "bg-[#F97316]/5 text-[#F97316] hover:bg-[#F97316] hover:text-white"
+                )}
               >
                 <Link href={navSettings?.featuredDownloadUrl || "#"}>
-                  <Download className="h-3.5 w-3.5 opacity-40 group-hover/download:opacity-100 transition-opacity" /> 
+                  <Download className="h-3.5 w-3.5 opacity-40 group-hover/download:opacity-100 transition-opacity" />
                   <span>{navSettings?.featuredText || tr('nav_sub_download')}</span>
                 </Link>
               </Button>
@@ -241,203 +529,5 @@ export function Navbar({ locale, setLocale, headerTheme = 'dark' }: NavbarProps)
         </div>
       </div>
     </div>
-  );
-
-  return (
-    <>
-    {/* 1. Top Scrim & Gradient Blur Layer - The "Advanced Glass" Layer */}
-    {!isNavbarActive && isTransparentHeaderPage && (
-      <div className={cn(
-        "fixed top-0 left-0 right-0 z-[105] h-48 pointer-events-none transition-opacity duration-1000",
-        headerTheme === 'light' ? "opacity-60" : "opacity-80"
-      )}>
-        {/* The Scrim: Suble gradient to ensure contrast */}
-        <div className={cn(
-          "absolute inset-0 bg-gradient-to-b from-black/40 via-black/10 to-transparent",
-          headerTheme === 'light' && "from-white/60 via-white/20"
-        )} />
-        
-        {/* The Gradient Blur: Frosted glass that fades out */}
-        <div className="absolute inset-0 backdrop-blur-xl [mask-image:linear-gradient(to_bottom,black_0%,black_30%,transparent_100%)]" />
-      </div>
-    )}
-
-    <nav className={cn(
-      "fixed top-0 left-0 right-0 z-[110] transition-all duration-700 border-b h-20 flex items-center !border-t-0 !border-x-0",
-      isNavbarActive 
-        ? cn(
-            navSettings?.navbarMaterial === 'level-03' ? "glass-deep" : "glass-frosted",
-            navSettings?.showBorder ? "border-white/20" : "border-transparent",
-            navSettings?.showShadow ? "shadow-sm" : "shadow-none"
-          )
-        : "bg-transparent border-transparent"
-    )}>
-      <div className="container mx-auto px-6 flex items-center w-full h-full">
-        <Link href="/" className="flex items-center shrink-0">
-          <Image
-            src={isNavbarActive || headerTheme === 'light' ? "/image/Heovose-color.svg" : "/image/Heovose.svg"}
-            alt="Heovose Logo"
-            width={160}
-            height={32}
-            className="h-8 w-auto object-contain transition-all duration-500"
-            priority
-          />
-        </Link>
-
-        {/* Desktop Nav */}
-        <div className="hidden lg:flex h-full items-center gap-10 ml-auto">
-          {/* Mega Menus with shared hover container to prevent flicker */}
-          <div className="flex h-full items-center gap-4" onMouseLeave={handleMouseLeave}>
-            
-            {/* Wholesale Mega Menu Container */}
-            <div className="h-full relative flex items-center">
-              <DropdownMenu open={activeMenu === 'wholesale'} onOpenChange={(open) => !open && handleMouseLeave()} modal={false}>
-                <DropdownMenuTrigger asChild>
-                  <button 
-                    className={cn(
-                      "flex items-center space-x-1 px-4 py-2 rounded-full transition-all duration-300 font-medium whitespace-nowrap outline-none",
-                      (isNavbarActive || headerTheme === 'light')
-                        ? "text-slate-800 hover:bg-slate-100" 
-                        : "text-white hover:bg-white/10"
-                    )}
-                    onMouseEnter={() => handleMouseEnter('wholesale')}
-                  >
-                    <span>{tr('nav_wholesale')}</span>
-                    <ChevronDown className={cn(
-                      "w-4 h-4 transition-transform duration-300",
-                      activeMenu === 'wholesale' ? "rotate-180" : ""
-                    )} />
-                  </button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent 
-                  sideOffset={25}
-                  align="start"
-                  className="w-screen max-w-none left-0 right-0 border-none rounded-none shadow-none bg-transparent p-0 overflow-visible"
-                  onMouseEnter={() => handleMouseEnter('wholesale')}
-                  onOpenAutoFocus={(e) => e.preventDefault()}
-                >
-                  <div className="container mx-auto px-6">
-                    <div className="glass-frosted rounded-[2.5rem] shadow-2xl border border-white/20 animate-in fade-in slide-in-from-top-4 duration-500">
-                      <MegaMenuContent 
-                        items={wholesaleItems} 
-                        onMouseEnter={() => handleMouseEnter('wholesale')}
-                        onMouseLeave={handleMouseLeave}
-                      />
-                    </div>
-                  </div>
-                </DropdownMenuContent>
-              </DropdownMenu>
-            </div>
-
-            {/* Projects Mega Menu Container */}
-            <div className="h-full relative flex items-center">
-              <DropdownMenu open={activeMenu === 'projects'} onOpenChange={(open) => !open && handleMouseLeave()} modal={false}>
-                <DropdownMenuTrigger asChild>
-                  <button 
-                    className={cn(
-                      "flex items-center space-x-1 px-4 py-2 rounded-full transition-all duration-300 font-medium whitespace-nowrap outline-none",
-                      (isNavbarActive || headerTheme === 'light')
-                        ? "text-slate-800 hover:bg-slate-100" 
-                        : "text-white hover:bg-white/10"
-                    )}
-                    onMouseEnter={() => handleMouseEnter('projects')}
-                  >
-                    <span>{tr('nav_projects')}</span>
-                    <ChevronDown className={cn(
-                      "w-4 h-4 transition-transform duration-300",
-                      activeMenu === 'projects' ? "rotate-180" : ""
-                    )} />
-                  </button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent 
-                  sideOffset={25}
-                  align="start"
-                  className="w-screen max-w-none left-0 right-0 border-none rounded-none shadow-none bg-transparent p-0 overflow-visible"
-                  onMouseEnter={() => handleMouseEnter('projects')}
-                  onOpenAutoFocus={(e) => e.preventDefault()}
-                >
-                  <div className="container mx-auto px-6">
-                    <div className="glass-frosted rounded-[2.5rem] shadow-2xl border border-white/20 animate-in fade-in slide-in-from-top-4 duration-500">
-                      <MegaMenuContent 
-                        items={projectItems} 
-                        onMouseEnter={() => handleMouseEnter('projects')}
-                        onMouseLeave={handleMouseLeave}
-                      />
-                    </div>
-                  </div>
-                </DropdownMenuContent>
-              </DropdownMenu>
-            </div>
-
-            <Link href="/#cases" className={cn(
-              "px-4 py-2 rounded-full transition-all duration-300 font-medium whitespace-nowrap",
-              (isNavbarActive || headerTheme === 'light')
-                ? "text-slate-800 hover:bg-slate-100" 
-                : "text-white hover:bg-white/10"
-            )}>
-              {tr('nav_cases')}
-            </Link>
-          </div>
-
-          <div className="flex items-center gap-6 h-full">
-            <LanguageToggle currentLocale={locale} setLocale={setLocale} headerTheme={headerTheme} isNavbarActive={isNavbarActive} />
-            <Link href="/products">
-              <Button size="sm" className="rounded-full px-6 bg-primary hover:bg-primary/90 shadow-lg">
-                {tr('nav_contact')}
-              </Button>
-            </Link>
-          </div>
-        </div>
-
-        {/* Mobile Menu Trigger */}
-        <button 
-          className={cn(
-            "lg:hidden ml-auto p-2 transition-colors duration-500",
-            isNavbarActive ? "text-primary" : "text-white"
-          )} 
-          onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-        >
-          {mobileMenuOpen ? <X /> : <Menu />}
-        </button>
-      </div>
-
-      {/* Mobile Nav */}
-      {mobileMenuOpen && (
-        <div className="lg:hidden absolute top-full left-0 right-0 bg-white border-t border-border p-6 shadow-2xl animate-in slide-in-from-top duration-300 h-screen overflow-y-auto">
-          <div className="flex flex-col gap-8 pb-32">
-            <div className="space-y-4">
-               <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">{tr('nav_wholesale')}</p>
-               <div className="grid grid-cols-2 gap-4">
-                 {wholesaleItems.map((item) => (
-                   <Link key={item.label} href={item.href} onClick={() => setMobileMenuOpen(false)} className="flex items-center gap-3">
-                     <item.icon className="h-5 w-5 text-primary" />
-                     <span className="text-lg font-bold text-primary">{item.label}</span>
-                   </Link>
-                 ))}
-               </div>
-            </div>
-            <div className="space-y-4 pt-4 border-t border-dashed">
-               <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">{tr('nav_projects')}</p>
-               <div className="grid grid-cols-2 gap-4">
-                 {projectItems.map((item) => (
-                   <Link key={item.label} href={item.href} onClick={() => setMobileMenuOpen(false)} className="flex items-center gap-3">
-                     <item.icon className="h-5 w-5 text-primary" />
-                     <span className="text-lg font-bold text-primary">{item.label}</span>
-                   </Link>
-                 ))}
-               </div>
-            </div>
-            <Link href="/#cases" onClick={() => setMobileMenuOpen(false)} className="text-lg font-bold text-primary">{tr('nav_cases')}</Link>
-            
-            <div className="pt-6 border-t border-slate-100 mt-auto">
-              <Link href="/#contact" onClick={() => setMobileMenuOpen(false)}>
-                <Button className="w-full rounded-xl bg-primary">{tr('nav_contact')}</Button>
-              </Link>
-            </div>
-          </div>
-        </div>
-      )}
-    </nav>
-    </>
   );
 }

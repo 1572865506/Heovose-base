@@ -45,6 +45,7 @@ import { cn } from '@/lib/utils';
 import { ShinyButton } from '@/components/ui/shiny-button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
+import { MediaLibraryDialog } from '@/components/admin/media-library-dialog';
 import Image from 'next/image';
 
 // AI 极光渐变定义组件
@@ -90,7 +91,6 @@ export default function GlobalMapAdminPage() {
   
   // 图库选择器状态
   const [isPickerOpen, setIsPickerOpen] = useState(false);
-  const [pickerSearch, setPickerSearch] = useState('');
 
   const [locationForm, setLocationForm] = useState<any>({
     id: '',
@@ -450,56 +450,18 @@ export default function GlobalMapAdminPage() {
         </DialogContent>
       </Dialog>
 
-      {/* 媒体素材选择器 */}
-      <Dialog open={isPickerOpen} onOpenChange={setIsPickerOpen}>
-        <DialogContent className="max-w-5xl p-0 h-[80vh] rounded-2xl overflow-hidden flex flex-col shadow-2xl border-none">
-          <div className="bg-primary p-6 text-white flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <ImageIcon className="h-4 w-4" />
-              <DialogTitle className="text-sm font-bold uppercase tracking-widest">选择网点展示素材</DialogTitle>
-            </div>
-            <Button variant="ghost" size="icon" onClick={() => setIsPickerOpen(false)} className="text-white hover:bg-white/10 h-8 w-8"><X className="h-4 w-4" /></Button>
-          </div>
-          <div className="px-6 py-3 bg-muted/30 border-b flex gap-6 items-center">
-            <div className="relative flex-1">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 opacity-30" />
-              <Input 
-                placeholder="按标题搜索云端素材..." 
-                value={pickerSearch} 
-                onChange={e => setPickerSearch(e.target.value)} 
-                className="pl-9 h-9 border-none bg-white text-xs" 
-              />
-            </div>
-          </div>
-          <div className="flex-1 overflow-y-auto p-6 grid grid-cols-2 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-7 gap-4 bg-muted/5">
-            {galleryAssets?.filter((a: any) => (a.title || '').toLowerCase().includes(pickerSearch.toLowerCase())).map((a: any) => (
-              <div 
-                key={a.id} 
-                className={cn(
-                  "group relative aspect-square rounded-lg overflow-hidden border-2 transition-all cursor-pointer shadow-sm", 
-                  locationForm.imageUrl === a.url ? "border-primary scale-95" : "border-transparent bg-white hover:border-primary/20"
-                )} 
-                onClick={() => {
-                  setLocationForm({ ...locationForm, imageUrl: a.url });
-                  setIsPickerOpen(false);
-                }}
-              >
-                <Image src={a.url} alt={a.title} fill className="object-cover" unoptimized />
-                {locationForm.imageUrl === a.url && (
-                  <div className="absolute inset-0 bg-primary/20 flex items-center justify-center">
-                    <div className="bg-white text-primary rounded-full p-1 shadow-lg">
-                      <Check className="h-3.5 w-3.5" />
-                    </div>
-                  </div>
-                )}
-              </div>
-            ))}
-          </div>
-          <DialogFooter className="p-4 border-t flex justify-end bg-white">
-            <Button variant="outline" size="sm" onClick={() => setIsPickerOpen(false)} className="px-6 h-10 rounded-lg text-xs font-bold uppercase tracking-widest">返回</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      <MediaLibraryDialog 
+        open={isPickerOpen}
+        onOpenChange={setIsPickerOpen}
+        onSelect={(assets) => {
+          if (assets.length > 0) {
+            setLocationForm({ ...locationForm, imageUrl: assets[0].url });
+          }
+        }}
+        selectionMode="single"
+        title="选择网点展示图片"
+        subtitle="从素材库中选择一张高质量的工厂或办事处照片"
+      />
     </div>
   );
 }

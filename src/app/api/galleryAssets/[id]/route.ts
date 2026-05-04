@@ -15,15 +15,20 @@ export async function PUT(
     const data = await request.json();
     const { id: _, updatedAt: __, ...updateData } = data;
 
+    console.log(`[GalleryAPI] Upserting asset ${id}:`, updateData);
     const item = await db.galleryAsset.upsert({
       where: { id },
       update: updateData,
       create: { ...updateData, id },
     });
+    console.log(`[GalleryAPI] Successfully upserted asset ${id}`);
     return NextResponse.json(item);
-  } catch (error) {
+  } catch (error: any) {
     console.error('Failed to update gallery asset:', error);
-    return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
+    return NextResponse.json({ 
+      error: error.message || 'Internal Server Error',
+      details: error.code // Prisma error code
+    }, { status: 500 });
   }
 }
 

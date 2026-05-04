@@ -12,6 +12,7 @@ import {
   ChevronRight,
   FolderOpen,
   LayoutGrid,
+  Play
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -32,6 +33,9 @@ export interface GalleryAsset {
   id: string;
   url: string;
   title: string;
+  type: 'IMAGE' | 'VIDEO';
+  thumbnailUrl?: string;
+  duration?: number;
   categoryId: string;
   fileName: string;
   fileSize?: number;
@@ -73,6 +77,7 @@ export function MediaLibraryDialog({
   const [currentCategoryId, setCurrentCategoryId] = useState<string>('all');
   const [currentPage, setCurrentPage] = useState(1);
   const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set());
+  const [filterType, setFilterType] = useState<'all' | 'image' | 'video'>('all');
   
   const toggleExpand = (id: string, e: React.MouseEvent) => {
     e.stopPropagation();
@@ -95,9 +100,18 @@ export function MediaLibraryDialog({
       const matchSearch = a.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
                          a.fileName.toLowerCase().includes(searchQuery.toLowerCase());
       const matchCategory = currentCategoryId === 'all' || a.categoryId === currentCategoryId;
-      return matchSearch && matchCategory;
+      
+      const fileExt = a.fileName?.toLowerCase().split('.').pop() || '';
+      const isVideoFile = ['mp4', 'webm', 'ogg', 'mov'].includes(fileExt);
+      const actualType = a.type || (isVideoFile ? 'VIDEO' : 'IMAGE');
+
+      const matchType = filterType === 'all' || 
+                        (filterType === 'image' && actualType === 'IMAGE') ||
+                        (filterType === 'video' && actualType === 'VIDEO');
+
+      return matchSearch && matchCategory && matchType;
     });
-  }, [assets, searchQuery, currentCategoryId]);
+  }, [assets, searchQuery, currentCategoryId, filterType]);
 
   // 分页逻辑
   const totalPages = Math.ceil(filteredAssets.length / ITEMS_PER_PAGE);
@@ -267,8 +281,28 @@ export function MediaLibraryDialog({
                 />
               </div>
               <div className="flex items-center gap-4">
-                 <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
-                   共找到 {filteredAssets.length} 项
+                 <div className="flex bg-slate-100 p-1 rounded-xl shrink-0">
+                    <Button 
+                      variant="ghost" 
+                      size="sm" 
+                      onClick={() => setFilterType('all')}
+                      className={cn("h-8 rounded-lg px-4 text-[10px] font-bold transition-all", filterType === 'all' ? "bg-white text-primary shadow-sm" : "text-slate-400")}
+                    >全部</Button>
+                    <Button 
+                      variant="ghost" 
+                      size="sm" 
+                      onClick={() => setFilterType('image')}
+                      className={cn("h-8 rounded-lg px-4 text-[10px] font-bold transition-all", filterType === 'image' ? "bg-white text-primary shadow-sm" : "text-slate-400")}
+                    >图片</Button>
+                    <Button 
+                      variant="ghost" 
+                      size="sm" 
+                      onClick={() => setFilterType('video')}
+                      className={cn("h-8 rounded-lg px-4 text-[10px] font-bold transition-all", filterType === 'video' ? "bg-white text-primary shadow-sm" : "text-slate-400")}
+                    >视频</Button>
+                 </div>
+                 <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest whitespace-nowrap">
+                   共 {filteredAssets.length} 项
                  </p>
               </div>
             </div>
@@ -288,7 +322,9 @@ export function MediaLibraryDialog({
                   </div>
                 ) : (
                   paginatedAssets.map(asset => {
-                    const fileExt = asset.fileName?.split('.').pop()?.toUpperCase() || 'IMG';
+                    const fileExt = asset.fileName?.split('.').pop()?.toLowerCase() || '';
+                    const isActuallyVideo = asset.type === 'VIDEO' || ['mp4', 'webm', 'ogg', 'mov'].includes(fileExt);
+
                     return (
                       <div 
                         key={asset.id} 
@@ -300,17 +336,38 @@ export function MediaLibraryDialog({
                         )} 
                         onClick={() => toggleSelectAsset(asset)}
                       >
-                        {/* 图片主体 */}
-                        <Image 
-                          src={asset.url} 
-                          alt={asset.title} 
-                          fill 
-                          className="object-contain p-4 transition-transform duration-700 group-hover:scale-110" 
-                          unoptimized 
-                        />
+                        {/* 媒体内容 */}
+                        {isActuallyVideo ? (
+                          <div className="w-full h-full flex items-center justify-center bg-slate-900 overflow-hidden">
+                             <video 
+                               src={asset.url} 
+                               className="max-w-full max-h-full object-contain opacity-60"
+                               muted
+                               playsInline
+                             />
+                             <div className="absolute inset-0 flex items-center justify-center">
+                               <div className="h-10 w-10 rounded-full bg-white/20 backdrop-blur-md flex items-center justify-center text-white border border-white/30">
+                                 <Play className="h-5 w-5 fill-white ml-0.5" />
+                               </div>
+                             </div>
+                             {asset.duration && (
+                               <div className="absolute bottom-2 right-2 px-1.5 py-0.5 rounded bg-black/60 text-[8px] font-mono text-white">
+                                 {Math.floor(asset.duration / 60)}:{(asset.duration % 60).toFixed(0).padStart(2, '0')}
+                               </div>
+                             )}
+                          </div>
+                        ) : (
+                          <Image 
+                            src={asset.url} 
+                            alt={asset.title} 
+                            fill 
+                            className="object-contain p-4 transition-transform duration-700 group-hover:scale-110" 
+                            unoptimized 
+                          />
+                        )}
                         
                         {/* 底部动态毛玻璃信息浮层 - 仅悬停可见 */}
-                        <div className="absolute left-[1px] right-[1px] bottom-[1px] py-2.5 px-4 bg-white/70 backdrop-blur-xl border-t border-slate-200/50 transform translate-y-full opacity-0 group-hover:translate-y-0 group-hover:opacity-100 transition-all duration-300 z-20 rounded-b-2xl">
+                        <div className="absolute left-[1px] right-[1px] bottom-[1px] py-2.5 px-4 bg-white/70 backdrop-blur-xl border-t border-slate-200/50 transform translate-y-full opacity-0 group-hover:translate-y-0 group-hover:opacity-100 transition-all duration-300 z-20 rounded-b-2xl rounded-t-[1rem]">
                            <div className="flex flex-col gap-1">
                               <p className="text-xs font-bold text-slate-800 truncate tracking-tight">
                                 {asset.title}
