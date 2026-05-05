@@ -114,18 +114,9 @@ export function Navbar({ locale, setLocale, headerTheme = 'dark', themeLine }: N
 
   // 1. Fetch dynamic categories
   const { data: remoteCats } = useLocalCollection<any>('productCategories');
-  const { data: allTranslations } = useLocalCollection<any>('localizedStrings');
 
   // 2. Fetch dynamic navigation settings
   const { data: navSettings } = useLocalDoc<any>('settings', 'navigation');
-
-  const getT = (id: string, field: string = locale, isDesc: boolean = false) => {
-    if (!id) return "";
-    const entry = allTranslations?.find((item: any) => item.id === id);
-    if (!entry) return isDesc ? "" : id;
-    const val = entry[field] || entry['en'] || entry['zh'];
-    return val || (isDesc ? "" : id);
-  };
 
   const getIcon = (id: string) => {
     const map: Record<string, any> = {
@@ -149,19 +140,19 @@ export function Navbar({ locale, setLocale, headerTheme = 'dark', themeLine }: N
       // Return hardcoded fallbacks if no data yet to avoid empty navbar
       return {
         wholesaleItems: [
-          { label: tr('nav_sub_aio'), desc: tr('nav_sub_aio_desc'), icon: Monitor, href: '/products?category=AIO' },
-          { label: tr('nav_sub_laptop'), desc: tr('nav_sub_laptop_desc'), icon: Laptop, href: '/products?category=Laptop' },
-          { label: tr('nav_sub_minipc'), desc: tr('nav_sub_minipc_desc'), icon: Cpu, href: '/products?category=Mini%20PC' },
-          { label: tr('nav_sub_electromechanical'), desc: tr('nav_sub_electromechanical_desc'), icon: Zap, href: '/products?category=Electromechanical' },
-          { label: tr('nav_sub_monitor'), desc: tr('nav_sub_monitor_desc'), icon: Tv, href: '/products?category=Monitor' },
-          { label: tr('nav_sub_components'), desc: tr('nav_sub_components_desc'), icon: HardDrive, href: '/products?category=Components' },
+          { id: 'aio', label: tr('nav_sub_aio'), desc: tr('nav_sub_aio_desc'), icon: Monitor, href: '/products?category=AIO' },
+          { id: 'laptop', label: tr('nav_sub_laptop'), desc: tr('nav_sub_laptop_desc'), icon: Laptop, href: '/products?category=Laptop' },
+          { id: 'minipc', label: tr('nav_sub_minipc'), desc: tr('nav_sub_minipc_desc'), icon: Cpu, href: '/products?category=Mini%20PC' },
+          { id: 'electromechanical', label: tr('nav_sub_electromechanical'), desc: tr('nav_sub_electromechanical_desc'), icon: Zap, href: '/products?category=Electromechanical' },
+          { id: 'monitor', label: tr('nav_sub_monitor'), desc: tr('nav_sub_monitor_desc'), icon: Tv, href: '/products?category=Monitor' },
+          { id: 'components', label: tr('nav_sub_components'), desc: tr('nav_sub_components_desc'), icon: HardDrive, href: '/products?category=Components' },
         ],
         projectItems: [
-          { label: tr('nav_sub_conference'), desc: tr('nav_sub_conference_desc'), icon: Presentation, href: '/products?category=Conference' },
-          { label: tr('nav_sub_selfservice'), desc: tr('nav_sub_selfservice_desc'), icon: MousePointerClick, href: '/products?category=KIOSK' },
-          { label: tr('nav_sub_industrial'), desc: tr('nav_sub_industrial_desc'), icon: Factory, href: '/products?category=Industrial' },
-          { label: tr('nav_sub_led'), desc: tr('nav_sub_led_desc'), icon: Lightbulb, href: '/products?category=LED' },
-          { label: tr('nav_sub_showroom'), desc: tr('nav_sub_showroom_desc'), icon: Store, href: '/products?category=Showroom' },
+          { id: 'conference', label: tr('nav_sub_conference'), desc: tr('nav_sub_conference_desc'), icon: Presentation, href: '/products?category=Conference' },
+          { id: 'selfservice', label: tr('nav_sub_selfservice'), desc: tr('nav_sub_selfservice_desc'), icon: MousePointerClick, href: '/products?category=KIOSK' },
+          { id: 'industrial', label: tr('nav_sub_industrial'), desc: tr('nav_sub_industrial_desc'), icon: Factory, href: '/products?category=Industrial' },
+          { id: 'led', label: tr('nav_sub_led'), desc: tr('nav_sub_led_desc'), icon: Lightbulb, href: '/products?category=LED' },
+          { id: 'showroom', label: tr('nav_sub_showroom'), desc: tr('nav_sub_showroom_desc'), icon: Store, href: '/products?category=Showroom' },
         ]
       };
     }
@@ -169,8 +160,9 @@ export function Navbar({ locale, setLocale, headerTheme = 'dark', themeLine }: N
     const wholesale = remoteCats
       .filter((c: any) => c.parentId === 'WHOLESALE')
       .map((c: any) => ({
-        label: getT(c.nameTextId),
-        desc: getT(c.descriptionTextId, locale, true),
+        id: c.id,
+        label: tr(c.nameTextId),
+        desc: tr(c.descriptionTextId),
         icon: getIcon(c.id),
         href: `/products?category=${encodeURIComponent(c.slug)}`
       }));
@@ -178,14 +170,15 @@ export function Navbar({ locale, setLocale, headerTheme = 'dark', themeLine }: N
     const projects = remoteCats
       .filter((c: any) => c.parentId === 'PROJECT')
       .map((c: any) => ({
-        label: getT(c.nameTextId),
-        desc: getT(c.descriptionTextId, locale, true),
+        id: c.id,
+        label: tr(c.nameTextId),
+        desc: tr(c.descriptionTextId),
         icon: getIcon(c.id),
         href: `/products?category=${encodeURIComponent(c.slug)}`
       }));
 
     return { wholesaleItems: wholesale, projectItems: projects };
-  }, [remoteCats, allTranslations, locale, tr]);
+  }, [remoteCats, locale, tr]);
 
   return (
     <>
@@ -443,24 +436,15 @@ function MegaMenuContent({
     >
       {/* Left: Product List (8 Columns equivalent) */}
       <div className="flex-1 space-y-8">
-        <div className={cn(
-          "flex items-center justify-between border-b pb-4",
-          line === 'wholesale' ? "border-primary/10" : "border-[#F97316]/10"
-        )}>
-          <h4 className={cn(
-            "text-[10px] font-bold uppercase tracking-widest font-headline",
-            line === 'wholesale' ? "text-primary/40" : "text-[#F97316]/40"
-          )}>
-            {locale === 'en' ? 'Product Categories' : '核心产品序列'}
+        <div className="flex items-center justify-between border-b pb-4 border-primary/10">
+          <h4 className="text-[10px] font-bold uppercase tracking-widest font-headline text-primary/40">
+            {tr('nav_mega_title')}
           </h4>
           <Link 
             href={`/products?line=${line}`} 
-            className={cn(
-              "flex items-center gap-2 text-[9px] font-bold uppercase tracking-widest cursor-pointer hover:translate-x-1 transition-transform",
-              line === 'wholesale' ? "text-primary" : "text-[#F97316]"
-            )}
+            className="flex items-center gap-2 text-[9px] font-bold uppercase tracking-widest cursor-pointer hover:translate-x-1 transition-transform text-primary"
           >
-            {locale === 'en' ? 'View All' : '查看全部'} <ArrowRight className="h-3 w-3" />
+            {tr('nav_mega_view_all')} <ArrowRight className="h-3 w-3" />
           </Link>
         </div>
 
@@ -477,7 +461,7 @@ function MegaMenuContent({
           }}
         >
           {items.map((item) => (
-            <DropdownMenuItem key={item.label} asChild className="p-0 bg-transparent hover:bg-transparent focus:bg-transparent transition-all duration-300">
+            <DropdownMenuItem key={item.id} asChild className="p-0 bg-transparent hover:bg-transparent focus:bg-transparent transition-all duration-300">
               <Link
                 href={item.href}
                 className={cn(
@@ -485,20 +469,12 @@ function MegaMenuContent({
                   !item.desc && "items-center"
                 )}
               >
-                <div className={cn(
-                  "h-14 w-14 shrink-0 rounded-2xl bg-white shadow-sm border flex items-center justify-center transition-all duration-500 group-hover:scale-110 group-hover:rotate-6",
-                  line === 'wholesale' 
-                    ? "border-primary/5 text-primary group-hover:bg-primary group-hover:text-white" 
-                    : "border-[#F97316]/5 text-[#F97316] group-hover:bg-[#F97316] group-hover:text-white"
-                )}>
+                <div className="h-14 w-14 shrink-0 rounded-2xl bg-white shadow-sm border flex items-center justify-center transition-all duration-500 group-hover:scale-110 group-hover:rotate-6 border-primary/5 text-primary group-hover:bg-primary group-hover:text-white">
                   <item.icon className="h-7 w-7" />
                 </div>
                 <div className={cn("space-y-1", !item.desc && "space-y-0")}>
                   <div className="flex items-center gap-2">
-                    <span className={cn(
-                      "text-sm font-bold transition-colors font-headline",
-                      line === 'wholesale' ? "text-primary" : "text-[#F97316]"
-                    )}>{item.label}</span>
+                    <span className="text-sm font-bold transition-colors font-headline text-primary">{item.label}</span>
                     <ChevronDown className="h-3 w-3 opacity-0 group-hover:opacity-40 -rotate-90 transition-all" />
                   </div>
                   {item.desc && (
@@ -513,16 +489,8 @@ function MegaMenuContent({
 
       {/* Right: Featured Card (4 Columns equivalent) */}
       <div className="lg:w-[380px] shrink-0">
-        <div className={cn(
-          "rounded-[2.5rem] p-8 h-full flex flex-col group/card transition-all duration-500 relative overflow-hidden",
-          line === 'wholesale' 
-            ? "bg-primary/5 border-primary/5 hover:bg-primary/10" 
-            : "bg-[#F97316]/5 border-[#F97316]/5 hover:bg-[#F97316]/10"
-        )}>
-          <div className={cn(
-            "absolute top-0 right-0 w-32 h-32 rounded-full blur-2xl -mr-16 -mt-16",
-            line === 'wholesale' ? "bg-primary/5" : "bg-[#F97316]/5"
-          )} />
+          <div className="rounded-[2.5rem] p-8 h-full flex flex-col group/card transition-all duration-500 relative overflow-hidden bg-primary/5 border-primary/5 hover:bg-primary/10">
+          <div className="absolute top-0 right-0 w-32 h-32 rounded-full blur-2xl -mr-16 -mt-16 bg-primary/5" />
 
           <div className="relative z-10 space-y-6 flex flex-col h-full">
             <div className="relative aspect-[4/3] rounded-2xl overflow-hidden border border-white/10 shadow-sm bg-white">
@@ -539,16 +507,11 @@ function MegaMenuContent({
             <div className="mt-auto">
               <Button
                 asChild
-                className={cn(
-                  "w-full h-11 px-6 rounded-2xl border-none font-bold text-[10px] uppercase gap-3 transition-all group/download shadow-none cursor-pointer",
-                  line === 'wholesale' 
-                    ? "bg-primary/5 text-primary hover:bg-primary hover:text-white" 
-                    : "bg-[#F97316]/5 text-[#F97316] hover:bg-[#F97316] hover:text-white"
-                )}
+                className="w-full h-11 px-6 rounded-2xl border-none font-bold text-[10px] uppercase gap-3 transition-all group/download shadow-none cursor-pointer bg-primary/5 text-primary hover:bg-primary hover:text-white"
               >
                 <Link href={navSettings?.featuredDownloadUrl || "#"}>
                   <Download className="h-3.5 w-3.5 opacity-40 group-hover/download:opacity-100 transition-opacity" />
-                  <span>{navSettings?.featuredText || tr('nav_sub_download')}</span>
+                  <span>{tr('nav_sub_download')}</span>
                 </Link>
               </Button>
             </div>

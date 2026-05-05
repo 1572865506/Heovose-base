@@ -2,7 +2,7 @@
 -- PostgreSQL database dump
 --
 
-\restrict VzqciYgVgZQX40jesqN2sHp0L6OHRfMJaDWO1luzTP7tdA8lkOesx0jB7QbCebd
+\restrict ezdnFtvlAc8zif6r5dU9wi5fDfgUPrcckXZIsAYA1jT7OD2ztmGG3rqTuUIigxQ
 
 -- Dumped from database version 16.13
 -- Dumped by pg_dump version 16.13
@@ -158,10 +158,9 @@ ALTER TABLE public."HomepageContent" OWNER TO heovose;
 
 CREATE TABLE public."LocalizedString" (
     id text NOT NULL,
-    zh text NOT NULL,
-    en text NOT NULL,
-    idn text,
-    vi text
+    content jsonb DEFAULT '{}'::jsonb NOT NULL,
+    "createdAt" timestamp(3) without time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    "updatedAt" timestamp(3) without time zone DEFAULT CURRENT_TIMESTAMP NOT NULL
 );
 
 
@@ -401,6 +400,8 @@ asset_1777865674969_e60nw_6	5-2	http://localhost:9000/heovose-assets/uploads/b9f
 asset_1777865675740_6m9gw_7	6-1	http://localhost:9000/heovose-assets/uploads/35094d60-83d1-49de-b715-be94ae2459c4.jpg	cat_1777856782910	2026-05-04 03:34:11.48	uploads/35094d60-83d1-49de-b715-be94ae2459c4.jpg	243513	1200	900	\N	\N	IMAGE
 asset_1777865733016_wzmi7_0	2-1	http://localhost:9000/heovose-assets/uploads/37d8a977-98fc-46ac-8437-cd80d1dfb965.jpg	cat_1777856782910	2026-05-04 03:35:08.707	uploads/37d8a977-98fc-46ac-8437-cd80d1dfb965.jpg	267782	1080	1620	\N	\N	IMAGE
 asset_1777439296324_0	2-1	http://localhost:9000/heovose-assets/uploads/7062814e-9aa1-44bd-950c-0e1fc062cb2f.jpg	cat_1777856782910	2026-04-29 05:08:16.776	uploads/7062814e-9aa1-44bd-950c-0e1fc062cb2f.jpg	267782	\N	\N	\N	\N	IMAGE
+asset_1777967239460_sk87r_0	一体机宣传海报	http://localhost:9000/heovose-assets/uploads/b1b9ef74-fe06-45a0-93ee-f3f7283e8dfd.jpg	cat_1777363045711	2026-05-05 07:46:55.987	uploads/b1b9ef74-fe06-45a0-93ee-f3f7283e8dfd.jpg	279781	1536	2752	\N	\N	IMAGE
+asset_1777968533975_xlq7y_0	Image 3	http://localhost:9000/heovose-assets/uploads/633b89ab-91e2-4047-ab85-750df64c0ed3.jpg	cat_1777363045711	2026-05-05 08:08:29.02	uploads/633b89ab-91e2-4047-ab85-750df64c0ed3.jpg	648935	2143	3840	\N	\N	IMAGE
 \.
 
 
@@ -425,7 +426,7 @@ cat_1777856782910	生产流程	1	cat_1777363045711
 --
 
 COPY public."HomepageContent" (id, "heroHeadlineEn", "heroHeadlineZh", "heroSubheadlineEn", "heroSubheadlineZh", "heroWholesaleButtonEn", "heroWholesaleButtonZh", "heroProjectButtonEn", "heroProjectButtonZh", "heroWholesaleCategoryId", "heroProjectCategoryId", "isVideoEnabled", "videoTitleEn", "videoTitleZh", "videoSubtitleEn", "videoSubtitleZh", "mapTitleEn", "mapTitleZh", "mapSubtitleEn", "mapSubtitleZh", "heroProjectDescriptionEn", "heroProjectDescriptionZh", "heroSlides", "heroWholesaleDescriptionEn", "heroWholesaleDescriptionZh", "videoUrl") FROM stdin;
-hero	Elevate Your Digital Horizon	提升您的数字视野	Next-Generation Hardware Solutions for Global Enterprises	面向全球企业的下一代硬件解决方案	Wholesale Products	批发咨询	Project Products	项目方案	WHOLESALE	PROJECT	t	Our Craftsmanship	我们的工艺	\N	\N	Global Footprint	全球足迹	\N	\N			[{"id": "legacy-default", "bgImage": "/image/hero-bg.png", "priority": 0, "headlineEn": "Elevate Your Digital Horizon", "headlineZh": "提升您的数字视野", "subheadlineEn": "Next-Generation Hardware Solutions for Global Enterprises", "subheadlineZh": "面向全球企业的下一代硬件解决方案"}]			\N
+hero	Elevate Your Digital Horizon	提升您的数字视野	Next-Generation Hardware Solutions for Global Enterprises	面向全球企业的下一代硬件解决方案	Wholesale Products	批发咨询	Project Products	项目方案	WHOLESALE	PROJECT	t	Our Craftsmanship	我们的工艺	\N	\N	Global Footprint	全球足迹	\N	\N			[{"id": "legacy-default", "bgImage": "http://localhost:9000/heovose-assets/uploads/633b89ab-91e2-4047-ab85-750df64c0ed3.jpg", "priority": 0, "headlineEn": "Elevate Your Digital Horizon", "headlineZh": "提升您的数字视野", "subheadlineEn": "Next-Generation Hardware Solutions for Global Enterprises", "subheadlineZh": "面向全球企业的下一代硬件解决方案"}, {"id": "slide_1777967445203", "bgImage": "http://localhost:9000/heovose-assets/uploads/b1b9ef74-fe06-45a0-93ee-f3f7283e8dfd.jpg", "priority": 1, "headlineEn": "F9-S Series All-In-One PC", "headlineZh": "F9-S系列 一体机电脑", "subheadlineEn": "The base supports lifting, rotating, and brightness adjustment, and features a pop-up camera", "subheadlineZh": "底座支撑升降旋转，支持亮度调节，弹出式摄像头"}]			\N
 video	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	t					\N	\N	\N	\N	\N	\N	\N	\N	\N	http://localhost:9000/heovose-assets/uploads/0af8547d-8b02-4615-ba22-59b3af72e7b3.mp4
 \.
 
@@ -434,109 +435,196 @@ video	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	t					\N	\N	\N	\N	\N	\N	\N	\N	\N	http://loca
 -- Data for Name: LocalizedString; Type: TABLE DATA; Schema: public; Owner: heovose
 --
 
-COPY public."LocalizedString" (id, zh, en, idn, vi) FROM stdin;
-cmoibfi2o0001uknuisfb5oa2	高性能迷你主机	High-Performance Mini PC	\N	\N
-cmoibfi2r0002uknurlgkgzym	曲面电竞显示器	Curved Gaming Monitor	\N	\N
-cat_name_WHOLESALE	批发产品	Wholesale Products	\N	\N
-cat_desc_WHOLESALE			\N	\N
-cat_name_AWE	噶而且我	1fwqwe	\N	\N
-cat_desc_AWE			\N	\N
-cat_name_NOTEBOOK	笔记本电脑	Notebook computer	\N	\N
-cat_desc_NOTEBOOK			\N	\N
-cat_name_MINIPC	小主机	MINI PC	\N	\N
-cat_desc_MINIPC			\N	\N
-core_advantages	核心优势	Core Advantages	\N	\N
-cat_name_WHITEBOARD	会议平板	WhiteBoard	\N	\N
-cat_desc_WHITEBOARD			\N	\N
-cat_name_AIO	电脑一体机及半成品	AIO & Semi-finished	\N	\N
-cat_desc_AIO			\N	\N
-cat_name_CORE	核心配件	Core Components	\N	\N
-cat_desc_CORE	主板、内存、CPU、硬盘、显卡	Motherboard, Memory, CPU, Hard Drive, Graphics Card	\N	\N
-cat_name_MONITOR	显示器	Monitor	\N	\N
-cat_desc_MONITOR			\N	\N
-cat_name_ESSENTIALS	装机配件	PC Components	\N	\N
-cat_desc_ESSENTIALS	机箱、电源、散热器	Chassis, Power Supply, Heatsink	\N	\N
-prod_desc_PROD_AIO_0504_0LBT	23.8 英寸可选电容触摸屏；\n可选安装摄像头（位于屏幕下方）；		\N	\N
-cat_name_KIOSK	自助设备	KIOSK / Self-service	\N	\N
-cat_desc_KIOSK			\N	\N
-cat_name_INDUSTRIAL	工业一体机	Industrial All-in-One PC	\N	\N
-cat_desc_INDUSTRIAL	工业一体机、工业触摸显示器	Industrial All-in-One PC, Industrial Touch Display	\N	\N
-cat_name_LED	LED工程	LED Projects	\N	\N
-cat_desc_LED			\N	\N
-cat_name_SHOWROOM	展厅商显工程	Showroom Projects	\N	\N
-cat_desc_SHOWROOM			\N	\N
-cat_name_PROJECT	项目产品	Project Products	\N	\N
-cat_desc_PROJECT			\N	\N
-psl_PROD_AIO_0504_987C_1_0	产品尺寸	Product Dimensions	\N	\N
-prod_desc_cmoibfi320007uknu4dcvlfch			\N	\N
-psl_PROD_AIO_0504_987C_1_1	材质	Material	\N	\N
-psg_PROD_AIO_0504_987C_0	常规参数	General Parameters	\N	\N
-psg_PROD_AIO_0504_987C_1	物理参数	Physical Parameters	\N	\N
-psl_PROD_AIO_0504_987C_1_2	颜色	Color	\N	\N
-psg_PROD_AIO_0504_987C_2	扩展参数	Expansion Parameters	\N	\N
-psg_PROD_AIO_0504_987C_3	连接参数	Connectivity Parameters	\N	\N
-psg_PROD_AIO_0504_987C_4	包装（1台）	Packaging (1 Unit)	\N	\N
-psl_PROD_AIO_0504_987C_0_0	型号	Model	\N	\N
-psl_PROD_AIO_0504_987C_4_0	附件清单	Accessory List	\N	\N
-psl_PROD_AIO_0504_987C_4_2	重量	Weight	\N	\N
-psv_PROD_AIO_0504_987C_0_0	K2	K2	\N	\N
-psv_PROD_AIO_0504_987C_0_1	19英寸、21.5英寸、23.8英寸、27英寸	19-inch, 21.5-inch, 23.8-inch, 27-inch	\N	\N
-psv_PROD_AIO_0504_987C_0_4	英特尔 酷睿 i3、i5、i7\n英特尔 赛扬\n英特尔 奔腾	Intel Core i3, i5, i7\nIntel Celeron\nIntel Pentium	\N	\N
-psv_PROD_AIO_0504_987C_0_3	19英寸：1440×900（16:10）\n19/23.8/27英寸：1920×1080（16:9）	19-inch: 1440×900 (16:10)\n19/23.8/27-inch: 1920×1080 (16:9)	\N	\N
-psv_PROD_AIO_0504_987C_0_6	64GB / 128GB / 256GB / 512GB / 1TB	64GB / 128GB / 256GB / 512GB / 1TB	\N	\N
-psv_PROD_AIO_0504_987C_1_2	黑色 / 白色	Black / White	\N	\N
-psv_PROD_AIO_0504_987C_2_0	300万/500万/800万像素高清(带麦克风)摄像头	3MP/5MP/8MP HD (with microphone) Camera	\N	\N
-psv_PROD_AIO_0504_987C_3_2	默认BT4.2/可选BT5.0	Default BT4.2/Optional BT5.0	\N	\N
-psv_PROD_AIO_0504_987C_3_0	100/1000Mbps自适应有线网卡	100/1000Mbps Adaptive Wired Network Card	\N	\N
-psv_PROD_AIO_0504_987C_3_3	1 × 电源端口\n1 × 高清多媒体接口\n1 × VGA(COM)\n1 × LAN\n4 × USB\n1 × 音频输出\n1 × 麦克风输入	1 × Power Port\n1 × HDMI\n1 × VGA(COM)\n1 × LAN\n4 × USB\n1 × Audio Out\n1 × Microphone In	\N	\N
-prod_name_cmoibfi320007uknu4dcvlfch	高性能迷你主机	High-Performance Mini PC	\N	\N
-prod_name_cmoibfi320008uknuhbf1oyi0	曲面电竞显示器	Curved Gaming Monitor	\N	\N
-prod_desc_cmoibfi320008uknuhbf1oyi0			\N	\N
-psl_PROD_AIO_0504_987C_0_1	屏幕尺寸	Screen Size	\N	\N
-psl_PROD_AIO_0504_987C_0_2	触摸屏	Touchscreen	\N	\N
-psv_PROD_AIO_0504_987C_4_0	电源线，电源适配器，用户手册	Power Cable, Power Adapter, User Manual	\N	\N
-psl_PROD_AIO_0504_987C_0_4	CPU	CPU	\N	\N
-psl_PROD_AIO_0504_987C_0_5	内存	Memory	\N	\N
-psl_PROD_AIO_0504_987C_0_3	分辨率	Resolution	\N	\N
-psl_PROD_AIO_0504_987C_0_6	固态硬盘	SSD	\N	\N
-psl_PROD_AIO_0504_987C_0_7	机械硬盘	HDD	\N	\N
-psl_PROD_AIO_0504_987C_0_8	显卡	Graphics Card	\N	\N
-psl_PROD_AIO_0504_987C_0_10	系统	System	\N	\N
-prod_name_PROD_MONITOR_0504_FIA9	啊多发点范围打法打法打法地方阿道夫阿斯蒂芬阿道夫阿道夫阿斯顿		\N	\N
-prod_desc_PROD_MONITOR_0504_FIA9	发到付阿道夫阿道夫阿道夫阿道夫阿迪斯发的发生的发的发多发点\n打法打法多发点fasdf阿道夫阿道\n阿达发到付阿道夫阿斯蒂芬		\N	\N
-psv_PROD_AIO_0504_987C_4_1	19英寸：495(L)×145(D)×450(H)mm\n21.5英寸：560(L)×145(D)×450(H)mm\n23.8英寸：600(L)×145(D)×450(H)mm\n27英寸：-	19-inch: 495(L)×145(D)×450(H)mm\n21.5-inch: 560(L)×145(D)×450(H)mm\n23.8-inch: 600(L)×145(D)×450(H)mm\n27-inch: -	\N	\N
-psv_PROD_AIO_0504_987C_4_2	19英寸：3.75kg\n21.5英寸：5.4kg\n23.8英寸：5.4kg\n27英寸：-	19-inch: 3.75kg\n21.5-inch: 5.4kg\n23.8-inch: 5.4kg\n27-inch: -	\N	\N
-products_needQuote	需要定制报价？	Need a custom quote?	\N	\N
-products_expertHelp	我们的专家随时准备为您提供大规模部署方案和技术支持。	Our experts are ready to help you with large-scale deployment and technical specs.	\N	\N
-products_wholesaleLine	批发产品线	Wholesale Line	\N	\N
-prod_name_PROD_AIO_0504_987C	轻薄系列 平面K2款 一体机电脑	Slim Series Flat K2 All-in-one PC	\N	\N
-prod_desc_PROD_AIO_0504_987C	23.8 英寸可选\n电容触摸屏；\n可选\n安装摄\n像头（位于\n屏幕下方）；	23.8-inch\n optional \ncapacitive touchscreen; \noptional \ninstallable camera\n (located below the screen);\nSupport brightness adjustment function、Type-C interface、Headphone jack、SD card reader；	\N	\N
-psl_PROD_AIO_0504_987C_0_9	多媒体	Multimedia	\N	\N
-psl_PROD_AIO_0504_987C_2_0	摄像头	Camera	\N	\N
-psl_PROD_AIO_0504_987C_2_1	扩展接口	Expansion Ports	\N	\N
-psl_PROD_AIO_0504_987C_3_0	网卡	Network Card	\N	\N
-psl_PROD_AIO_0504_987C_3_1	WIFI	WIFI	\N	\N
-psl_PROD_AIO_0504_987C_3_2	蓝牙	Bluetooth	\N	\N
-psl_PROD_AIO_0504_987C_3_3	底部接口	Bottom Ports	\N	\N
-psl_PROD_AIO_0504_987C_4_1	包装尺寸	Package Dimensions	\N	\N
-products_contactSales	联系销售	Contact Sales	\N	\N
-products_projectSolutions	项目解决方案	Project Solutions	\N	\N
-products_quickSearch	快速搜索	Quick Search	\N	\N
-products_categories	产品分类	Categories	\N	\N
-products_itemsCount	件产品	Items	\N	\N
-products_resetFilters	重置所有过滤器	Reset All Filters	\N	\N
-products_syncing	正在同步全球库存...	Synchronizing Global Inventory...	\N	\N
-products_noSubCategories	未定义子分类	No sub-categories defined	\N	\N
-psv_PROD_AIO_0504_987C_0_2	23.8英寸可选电容触摸屏	23.8-inch optional capacitive touchscreen	\N	\N
-psv_PROD_AIO_0504_987C_0_5	4GB / 8GB / 16GB / 32GB	4GB / 8GB / 16GB / 32GB	\N	\N
-psv_PROD_AIO_0504_987C_0_7	500GB / 1TB / 2TB	500GB / 1TB / 2TB	\N	\N
-psv_PROD_AIO_0504_987C_0_8	集成核心显卡	Integrated Core Graphics	\N	\N
-psv_PROD_AIO_0504_987C_0_10	兼容Win7/Win10/Win11	Compatible with Win7/Win10/Win11	\N	\N
-psv_PROD_AIO_0504_987C_0_9	高清音频编解码器; 立体声扬声器	HD Audio Codec; Stereo Speakers	\N	\N
-psv_PROD_AIO_0504_987C_1_1	铝合金底座，ABS 塑料外壳	Aluminum alloy base, ABS plastic casing	\N	\N
-psv_PROD_AIO_0504_987C_1_0	19英寸：433(W)× 286(S)× 355(H) mm\n21.5英寸：491(W)× 294(S)× 363(H) mm\n23.8英寸：540(W)× 321(S)× 410(H) mm\n27英寸：-	19-inch: 433(W)× 286(S)× 355(H) mm\n21.5-inch: 491(W)× 294(S)× 363(H) mm\n23.8-inch: 540(W)× 321(S)× 410(H) mm\n27-inch: -	\N	\N
-psv_PROD_AIO_0504_987C_2_1	2 × USB2.0	2 × USB2.0	\N	\N
-psv_PROD_AIO_0504_987C_3_1	150Mbps无线WiFi\n(433Mbps双频WiFi和WiFi 6功能可选)	150Mbps Wireless WiFi\n(433Mbps dual-band WiFi and WiFi 6 optional)	\N	\N
+COPY public."LocalizedString" (id, content, "createdAt", "updatedAt") FROM stdin;
+cat_desc_PROJECT	{}	2026-05-05 02:11:57.117	2026-05-05 02:11:57.117
+psl_PROD_AIO_0504_987C_1_0	{"en": "Product Dimensions", "id": "", "zh": "产品尺寸"}	2026-05-05 02:11:57.117	2026-05-05 03:17:00.967
+prod_desc_cmoibfi320007uknu4dcvlfch	{}	2026-05-05 02:11:57.117	2026-05-05 02:11:57.117
+psg_PROD_AIO_0504_987C_2	{"en": "Expansion Parameters", "id": "Parameter Ekspansi", "zh": "扩展参数"}	2026-05-05 02:11:57.117	2026-05-05 03:26:45.71
+psg_PROD_AIO_0504_987C_1	{"en": "Physical Parameters", "id": "Parameter Fisik", "zh": "物理参数"}	2026-05-05 02:11:57.117	2026-05-05 03:22:34.501
+cmoibfi2o0001uknuisfb5oa2	{"en": "High-Performance Mini PC", "zh": "高性能迷你主机"}	2026-05-05 02:11:57.117	2026-05-05 02:11:57.117
+psl_PROD_AIO_0504_987C_1_1	{"en": "Material", "id": "TEST_ID_VALUE", "zh": "材质"}	2026-05-05 02:11:57.117	2026-05-05 03:24:30.107
+psl_PROD_AIO_0504_987C_1_2	{"en": "Color", "zh": "颜色"}	2026-05-05 02:11:57.117	2026-05-05 02:11:57.117
+psg_PROD_KIOSK_0505_E0XK_1	{"en": "", "zh": "物理参数"}	2026-05-05 05:09:49.855	2026-05-05 05:09:49.855
+psv_PROD_AIO_0504_987C_0_9	{"en": "HD Audio Codec; Stereo Speakers", "zh": "高清音频编解码器; 立体声扬声器"}	2026-05-05 02:11:57.117	2026-05-05 02:11:57.117
+cmoibfi2r0002uknurlgkgzym	{"en": "Curved Gaming Monitor", "zh": "曲面电竞显示器"}	2026-05-05 02:11:57.117	2026-05-05 02:11:57.117
+cat_name_WHOLESALE	{"en": "Wholesale Products", "zh": "批发产品"}	2026-05-05 02:11:57.117	2026-05-05 02:11:57.117
+cat_desc_WHOLESALE	{}	2026-05-05 02:11:57.117	2026-05-05 02:11:57.117
+cat_name_AWE	{"en": "1fwqwe", "zh": "噶而且我"}	2026-05-05 02:11:57.117	2026-05-05 02:11:57.117
+cat_desc_AWE	{}	2026-05-05 02:11:57.117	2026-05-05 02:11:57.117
+cat_name_NOTEBOOK	{"en": "Notebook computer", "zh": "笔记本电脑"}	2026-05-05 02:11:57.117	2026-05-05 02:11:57.117
+cat_desc_NOTEBOOK	{}	2026-05-05 02:11:57.117	2026-05-05 02:11:57.117
+cat_name_MINIPC	{"en": "MINI PC", "zh": "小主机"}	2026-05-05 02:11:57.117	2026-05-05 02:11:57.117
+cat_desc_MINIPC	{}	2026-05-05 02:11:57.117	2026-05-05 02:11:57.117
+core_advantages	{"en": "Core Advantages", "zh": "核心优势"}	2026-05-05 02:11:57.117	2026-05-05 02:11:57.117
+cat_name_WHITEBOARD	{"en": "WhiteBoard", "zh": "会议平板"}	2026-05-05 02:11:57.117	2026-05-05 02:11:57.117
+cat_desc_WHITEBOARD	{}	2026-05-05 02:11:57.117	2026-05-05 02:11:57.117
+cat_name_AIO	{"en": "AIO & Semi-finished", "zh": "电脑一体机及半成品"}	2026-05-05 02:11:57.117	2026-05-05 02:11:57.117
+cat_desc_AIO	{}	2026-05-05 02:11:57.117	2026-05-05 02:11:57.117
+cat_name_CORE	{"en": "Core Components", "zh": "核心配件"}	2026-05-05 02:11:57.117	2026-05-05 02:11:57.117
+cat_desc_CORE	{"en": "Motherboard, Memory, CPU, Hard Drive, Graphics Card", "zh": "主板、内存、CPU、硬盘、显卡"}	2026-05-05 02:11:57.117	2026-05-05 02:11:57.117
+cat_name_MONITOR	{"en": "Monitor", "zh": "显示器"}	2026-05-05 02:11:57.117	2026-05-05 02:11:57.117
+cat_desc_MONITOR	{}	2026-05-05 02:11:57.117	2026-05-05 02:11:57.117
+cat_name_ESSENTIALS	{"en": "PC Components", "zh": "装机配件"}	2026-05-05 02:11:57.117	2026-05-05 02:11:57.117
+cat_desc_ESSENTIALS	{"en": "Chassis, Power Supply, Heatsink", "zh": "机箱、电源、散热器"}	2026-05-05 02:11:57.117	2026-05-05 02:11:57.117
+prod_desc_PROD_AIO_0504_0LBT	{"zh": "23.8 英寸可选电容触摸屏；\\n可选安装摄像头（位于屏幕下方）；"}	2026-05-05 02:11:57.117	2026-05-05 02:11:57.117
+cat_name_KIOSK	{"en": "KIOSK / Self-service", "zh": "自助设备"}	2026-05-05 02:11:57.117	2026-05-05 02:11:57.117
+cat_desc_KIOSK	{}	2026-05-05 02:11:57.117	2026-05-05 02:11:57.117
+cat_name_INDUSTRIAL	{"en": "Industrial All-in-One PC", "zh": "工业一体机"}	2026-05-05 02:11:57.117	2026-05-05 02:11:57.117
+cat_desc_INDUSTRIAL	{"en": "Industrial All-in-One PC, Industrial Touch Display", "zh": "工业一体机、工业触摸显示器"}	2026-05-05 02:11:57.117	2026-05-05 02:11:57.117
+cat_name_LED	{"en": "LED Projects", "zh": "LED工程"}	2026-05-05 02:11:57.117	2026-05-05 02:11:57.117
+cat_desc_LED	{}	2026-05-05 02:11:57.117	2026-05-05 02:11:57.117
+cat_name_SHOWROOM	{"en": "Showroom Projects", "zh": "展厅商显工程"}	2026-05-05 02:11:57.117	2026-05-05 02:11:57.117
+cat_desc_SHOWROOM	{}	2026-05-05 02:11:57.117	2026-05-05 02:11:57.117
+cat_name_PROJECT	{"en": "Project Products", "zh": "项目产品"}	2026-05-05 02:11:57.117	2026-05-05 02:11:57.117
+psg_PROD_AIO_0504_987C_3	{"en": "Connectivity Parameters", "zh": "连接参数"}	2026-05-05 02:11:57.117	2026-05-05 02:11:57.117
+psg_PROD_AIO_0504_987C_4	{"en": "Packaging (1 Unit)", "zh": "包装（1台）"}	2026-05-05 02:11:57.117	2026-05-05 02:11:57.117
+products_noSubCategories	{"en": "No sub-categories defined", "zh": "未定义子分类"}	2026-05-05 02:11:57.117	2026-05-05 02:11:57.117
+psv_PROD_AIO_0504_987C_0_5	{"en": "4GB / 8GB / 16GB / 32GB", "zh": "4GB / 8GB / 16GB / 32GB"}	2026-05-05 02:11:57.117	2026-05-05 02:11:57.117
+psv_PROD_AIO_0504_987C_0_10	{"en": "Compatible with Win7/Win10/Win11", "zh": "兼容Win7/Win10/Win11"}	2026-05-05 02:11:57.117	2026-05-05 02:11:57.117
+psv_PROD_AIO_0504_987C_1_0	{"en": "19-inch: 433(W)× 286(S)× 355(H) mm\\n21.5-inch: 491(W)× 294(S)× 363(H) mm\\n23.8-inch: 540(W)× 321(S)× 410(H) mm\\n27-inch: -", "zh": "19英寸：433(W)× 286(S)× 355(H) mm\\n21.5英寸：491(W)× 294(S)× 363(H) mm\\n23.8英寸：540(W)× 321(S)× 410(H) mm\\n27英寸：-"}	2026-05-05 02:11:57.117	2026-05-05 02:11:57.117
+psg_PROD_AIO_0504_987C_0	{"en": "General Parameters", "id": "Parameter Umum", "zh": "常规参数"}	2026-05-05 02:11:57.117	2026-05-05 02:11:57.117
+psg_PROD_KIOSK_0505_E0XK_2	{"en": "", "zh": "扩展参数"}	2026-05-05 05:09:49.864	2026-05-05 05:09:49.864
+psg_PROD_KIOSK_0505_E0XK_4	{"en": "", "zh": "包装（1台）"}	2026-05-05 05:09:49.868	2026-05-05 05:09:49.868
+psl_PROD_KIOSK_0505_E0XK_0_0	{"en": "", "zh": "型号"}	2026-05-05 05:09:50.664	2026-05-05 05:09:50.664
+psl_PROD_KIOSK_0505_E0XK_0_4	{"en": "", "zh": "CPU"}	2026-05-05 05:09:50.667	2026-05-05 05:09:50.667
+psl_PROD_KIOSK_0505_E0XK_0_3	{"en": "", "zh": "分辨率"}	2026-05-05 05:09:50.668	2026-05-05 05:09:50.668
+psl_PROD_KIOSK_0505_E0XK_0_6	{"en": "", "zh": "固态硬盘"}	2026-05-05 05:09:51.337	2026-05-05 05:09:51.337
+psl_PROD_KIOSK_0505_E0XK_0_8	{"en": "", "zh": "显卡"}	2026-05-05 05:09:51.351	2026-05-05 05:09:51.351
+psl_PROD_KIOSK_0505_E0XK_0_9	{"en": "", "zh": "多媒体"}	2026-05-05 05:09:51.352	2026-05-05 05:09:51.352
+psl_PROD_KIOSK_0505_E0XK_2_0	{"en": "", "zh": "摄像头"}	2026-05-05 05:09:52.221	2026-05-05 05:09:52.221
+psl_PROD_KIOSK_0505_E0XK_3_1	{"en": "", "zh": "WIFI"}	2026-05-05 05:09:52.222	2026-05-05 05:09:52.222
+psl_PROD_KIOSK_0505_E0XK_3_2	{"en": "", "zh": "蓝牙"}	2026-05-05 05:09:53.058	2026-05-05 05:09:53.058
+psl_PROD_KIOSK_0505_E0XK_3_3	{"en": "", "zh": "底部接口"}	2026-05-05 05:09:53.073	2026-05-05 05:09:53.073
+psl_PROD_KIOSK_0505_E0XK_4_0	{"en": "", "zh": "附件清单"}	2026-05-05 05:09:53.076	2026-05-05 05:09:53.076
+psl_PROD_KIOSK_0505_E0XK_4_1	{"en": "", "zh": "包装尺寸"}	2026-05-05 05:09:53.077	2026-05-05 05:09:53.077
+psl_PROD_KIOSK_0505_E0XK_4_2	{"en": "", "zh": "重量"}	2026-05-05 05:09:53.077	2026-05-05 05:09:53.077
+psv_PROD_KIOSK_0505_E0XK_0_0	{"en": "", "zh": "K2"}	2026-05-05 05:09:53.121	2026-05-05 05:09:53.121
+psv_PROD_KIOSK_0505_E0XK_0_2	{"en": "", "zh": "23.8英寸可选电容触摸屏"}	2026-05-05 05:09:54.105	2026-05-05 05:09:54.105
+psv_PROD_KIOSK_0505_E0XK_0_4	{"en": "", "zh": "英特尔 酷睿 i3、i5、i7\\n英特尔 赛扬\\n英特尔 奔腾"}	2026-05-05 05:09:54.108	2026-05-05 05:09:54.108
+psv_PROD_KIOSK_0505_E0XK_0_1	{"en": "", "zh": "19英寸、21.5英寸、23.8英寸、27英寸"}	2026-05-05 05:09:54.109	2026-05-05 05:09:54.109
+psv_PROD_KIOSK_0505_E0XK_0_3	{"en": "", "zh": "19英寸：1440×900（16:10）\\n19/23.8/27英寸：1920×1080（16:9）"}	2026-05-05 05:09:54.11	2026-05-05 05:09:54.11
+psv_PROD_KIOSK_0505_E0XK_0_5	{"en": "", "zh": "4GB / 8GB / 16GB / 32GB"}	2026-05-05 05:09:54.11	2026-05-05 05:09:54.11
+psv_PROD_KIOSK_0505_E0XK_0_6	{"en": "", "zh": "64GB / 128GB / 256GB / 512GB / 1TB"}	2026-05-05 05:09:54.115	2026-05-05 05:09:54.115
+psv_PROD_KIOSK_0505_E0XK_0_7	{"en": "", "zh": "500GB / 1TB / 2TB"}	2026-05-05 05:09:54.765	2026-05-05 05:09:54.765
+psl_PROD_AIO_0504_987C_0_0	{"en": "Model", "zh": "型号"}	2026-05-05 02:11:57.117	2026-05-05 02:11:57.117
+psl_PROD_AIO_0504_987C_4_0	{"en": "Accessory List", "zh": "附件清单"}	2026-05-05 02:11:57.117	2026-05-05 02:11:57.117
+psl_PROD_AIO_0504_987C_4_2	{"en": "Weight", "zh": "重量"}	2026-05-05 02:11:57.117	2026-05-05 02:11:57.117
+psv_PROD_AIO_0504_987C_0_0	{"en": "K2", "zh": "K2"}	2026-05-05 02:11:57.117	2026-05-05 02:11:57.117
+psv_PROD_AIO_0504_987C_0_1	{"en": "19-inch, 21.5-inch, 23.8-inch, 27-inch", "zh": "19英寸、21.5英寸、23.8英寸、27英寸"}	2026-05-05 02:11:57.117	2026-05-05 02:11:57.117
+psv_PROD_AIO_0504_987C_0_4	{"en": "Intel Core i3, i5, i7\\nIntel Celeron\\nIntel Pentium", "zh": "英特尔 酷睿 i3、i5、i7\\n英特尔 赛扬\\n英特尔 奔腾"}	2026-05-05 02:11:57.117	2026-05-05 02:11:57.117
+psv_PROD_AIO_0504_987C_0_3	{"en": "19-inch: 1440×900 (16:10)\\n19/23.8/27-inch: 1920×1080 (16:9)", "zh": "19英寸：1440×900（16:10）\\n19/23.8/27英寸：1920×1080（16:9）"}	2026-05-05 02:11:57.117	2026-05-05 02:11:57.117
+psv_PROD_AIO_0504_987C_0_6	{"en": "64GB / 128GB / 256GB / 512GB / 1TB", "zh": "64GB / 128GB / 256GB / 512GB / 1TB"}	2026-05-05 02:11:57.117	2026-05-05 02:11:57.117
+psv_PROD_AIO_0504_987C_1_2	{"en": "Black / White", "zh": "黑色 / 白色"}	2026-05-05 02:11:57.117	2026-05-05 02:11:57.117
+psv_PROD_AIO_0504_987C_2_0	{"en": "3MP/5MP/8MP HD (with microphone) Camera", "zh": "300万/500万/800万像素高清(带麦克风)摄像头"}	2026-05-05 02:11:57.117	2026-05-05 02:11:57.117
+psv_PROD_AIO_0504_987C_3_2	{"en": "Default BT4.2/Optional BT5.0", "zh": "默认BT4.2/可选BT5.0"}	2026-05-05 02:11:57.117	2026-05-05 02:11:57.117
+psv_PROD_AIO_0504_987C_3_0	{"en": "100/1000Mbps Adaptive Wired Network Card", "zh": "100/1000Mbps自适应有线网卡"}	2026-05-05 02:11:57.117	2026-05-05 02:11:57.117
+psv_PROD_AIO_0504_987C_3_3	{"en": "1 × Power Port\\n1 × HDMI\\n1 × VGA(COM)\\n1 × LAN\\n4 × USB\\n1 × Audio Out\\n1 × Microphone In", "zh": "1 × 电源端口\\n1 × 高清多媒体接口\\n1 × VGA(COM)\\n1 × LAN\\n4 × USB\\n1 × 音频输出\\n1 × 麦克风输入"}	2026-05-05 02:11:57.117	2026-05-05 02:11:57.117
+psv_PROD_KIOSK_0505_E0XK_0_8	{"en": "", "zh": "集成核心显卡"}	2026-05-05 05:09:54.77	2026-05-05 05:09:54.77
+prod_desc_PROD_AIO_0504_987C	{"en": "23.8-inch\\n optional \\ncapacitive touchscreen; \\noptional \\ninstallable camera\\n (located below the screen);\\nSupport brightness adjustment function、Type-C interface、Headphone jack、SD card reader；", "id": "layar sentuh kapasitif 23,8 inci opsional;\\nkamera opsional yang dapat dipasang\\n(terletak di bawah layar);\\nMendukung fungsi penyesuaian kecerahan, antarmuka Tipe-C, jack headphone, pembaca kartu SD;", "zh": "23.8 英寸可选\\n电容触摸屏；\\n可选\\n安装摄\\n像头（位于\\n屏幕下方）；"}	2026-05-05 02:11:57.117	2026-05-05 03:32:27.128
+psg_PROD_KIOSK_0505_E0XK_3	{"en": "", "zh": "连接参数"}	2026-05-05 05:09:49.865	2026-05-05 05:09:49.865
+psl_PROD_KIOSK_0505_E0XK_0_2	{"en": "", "zh": "触摸屏"}	2026-05-05 05:09:50.664	2026-05-05 05:09:50.664
+psl_PROD_KIOSK_0505_E0XK_0_1	{"en": "", "zh": "屏幕尺寸"}	2026-05-05 05:09:50.67	2026-05-05 05:09:50.67
+psl_PROD_KIOSK_0505_E0XK_0_5	{"en": "", "zh": "内存"}	2026-05-05 05:09:50.676	2026-05-05 05:09:50.676
+psl_PROD_KIOSK_0505_E0XK_0_7	{"en": "", "zh": "机械硬盘"}	2026-05-05 05:09:51.35	2026-05-05 05:09:51.35
+psl_PROD_KIOSK_0505_E0XK_1_0	{"en": "", "zh": "产品尺寸"}	2026-05-05 05:09:51.353	2026-05-05 05:09:51.353
+psl_PROD_KIOSK_0505_E0XK_0_10	{"en": "", "zh": "系统"}	2026-05-05 05:09:51.353	2026-05-05 05:09:51.353
+psl_PROD_KIOSK_0505_E0XK_1_1	{"en": "", "zh": "材质"}	2026-05-05 05:09:52.219	2026-05-05 05:09:52.219
+psl_PROD_KIOSK_0505_E0XK_1_2	{"en": "", "zh": "颜色"}	2026-05-05 05:09:52.22	2026-05-05 05:09:52.22
+psl_PROD_KIOSK_0505_E0XK_3_0	{"en": "", "zh": "网卡"}	2026-05-05 05:09:52.235	2026-05-05 05:09:52.235
+psl_PROD_KIOSK_0505_E0XK_2_1	{"en": "", "zh": "扩展接口"}	2026-05-05 05:09:52.224	2026-05-05 05:09:52.224
+psv_PROD_KIOSK_0505_E0XK_0_9	{"en": "", "zh": "高清音频编解码器; 立体声扬声器"}	2026-05-05 05:09:54.777	2026-05-05 05:09:54.777
+psv_PROD_KIOSK_0505_E0XK_0_10	{"en": "", "zh": "兼容Win7/Win10/Win11"}	2026-05-05 05:09:54.778	2026-05-05 05:09:54.778
+psv_PROD_KIOSK_0505_E0XK_1_0	{"en": "", "zh": "19英寸：433(W)× 286(S)× 355(H) mm\\n21.5英寸：491(W)× 294(S)× 363(H) mm\\n23.8英寸：540(W)× 321(S)× 410(H) mm\\n27英寸：-"}	2026-05-05 05:09:54.781	2026-05-05 05:09:54.781
+psv_PROD_KIOSK_0505_E0XK_1_1	{"en": "", "zh": "铝合金底座，ABS 塑料外壳"}	2026-05-05 05:09:54.782	2026-05-05 05:09:54.782
+psv_PROD_KIOSK_0505_E0XK_1_2	{"en": "", "zh": "黑色 / 白色"}	2026-05-05 05:09:55.552	2026-05-05 05:09:55.552
+psv_PROD_KIOSK_0505_E0XK_2_0	{"en": "", "zh": "300万/500万/800万像素高清(带麦克风)摄像头"}	2026-05-05 05:09:55.56	2026-05-05 05:09:55.56
+psv_PROD_KIOSK_0505_E0XK_3_1	{"en": "", "zh": "150Mbps无线WiFi\\n(433Mbps双频WiFi和WiFi 6功能可选)"}	2026-05-05 05:09:55.564	2026-05-05 05:09:55.564
+psv_PROD_KIOSK_0505_E0XK_3_0	{"en": "", "zh": "100/1000Mbps自适应有线网卡"}	2026-05-05 05:09:55.565	2026-05-05 05:09:55.565
+psv_PROD_KIOSK_0505_E0XK_2_1	{"en": "", "zh": "2 × USB2.0"}	2026-05-05 05:09:55.565	2026-05-05 05:09:55.565
+psv_PROD_KIOSK_0505_E0XK_3_2	{"en": "", "zh": "默认BT4.2/可选BT5.0"}	2026-05-05 05:09:55.566	2026-05-05 05:09:55.566
+prod_name_PROD_KIOSK_0505_95WB	{"en": "", "zh": "mini PC"}	2026-05-05 05:20:15.14	2026-05-05 05:20:15.14
+psl_PROD_AIO_0504_987C_0_2	{"en": "Touchscreen", "zh": "触摸屏"}	2026-05-05 02:11:57.117	2026-05-05 02:11:57.117
+prod_desc_PROD_MONITOR_0504_FIA9	{"zh": "发到付阿道夫阿道夫阿道夫阿道夫阿迪斯发的发生的发的发多发点\\n打法打法多发点fasdf阿道夫阿道\\n阿达发到付阿道夫阿斯蒂芬"}	2026-05-05 02:11:57.117	2026-05-05 02:11:57.117
+psv_PROD_AIO_0504_987C_4_1	{"en": "19-inch: 495(L)×145(D)×450(H)mm\\n21.5-inch: 560(L)×145(D)×450(H)mm\\n23.8-inch: 600(L)×145(D)×450(H)mm\\n27-inch: -", "zh": "19英寸：495(L)×145(D)×450(H)mm\\n21.5英寸：560(L)×145(D)×450(H)mm\\n23.8英寸：600(L)×145(D)×450(H)mm\\n27英寸：-"}	2026-05-05 02:11:57.117	2026-05-05 02:11:57.117
+psv_PROD_AIO_0504_987C_4_2	{"en": "19-inch: 3.75kg\\n21.5-inch: 5.4kg\\n23.8-inch: 5.4kg\\n27-inch: -", "zh": "19英寸：3.75kg\\n21.5英寸：5.4kg\\n23.8英寸：5.4kg\\n27英寸：-"}	2026-05-05 02:11:57.117	2026-05-05 02:11:57.117
+products_needQuote	{"en": "Need a custom quote?", "zh": "需要定制报价？"}	2026-05-05 02:11:57.117	2026-05-05 02:11:57.117
+products_expertHelp	{"en": "Our experts are ready to help you with large-scale deployment and technical specs.", "zh": "我们的专家随时准备为您提供大规模部署方案和技术支持。"}	2026-05-05 02:11:57.117	2026-05-05 02:11:57.117
+products_wholesaleLine	{"en": "Wholesale Line", "zh": "批发产品线"}	2026-05-05 02:11:57.117	2026-05-05 02:11:57.117
+prod_name_PROD_AIO_0504_987C	{"en": "Slim Series Flat K2 All-in-one PC", "zh": "轻薄系列 平面K2款 一体机电脑"}	2026-05-05 02:11:57.117	2026-05-05 02:11:57.117
+psl_PROD_AIO_0504_987C_0_9	{"en": "Multimedia", "zh": "多媒体"}	2026-05-05 02:11:57.117	2026-05-05 02:11:57.117
+psl_PROD_AIO_0504_987C_2_0	{"en": "Camera", "zh": "摄像头"}	2026-05-05 02:11:57.117	2026-05-05 02:11:57.117
+psl_PROD_AIO_0504_987C_2_1	{"en": "Expansion Ports", "zh": "扩展接口"}	2026-05-05 02:11:57.117	2026-05-05 02:11:57.117
+psl_PROD_AIO_0504_987C_3_0	{"en": "Network Card", "zh": "网卡"}	2026-05-05 02:11:57.117	2026-05-05 02:11:57.117
+psl_PROD_AIO_0504_987C_3_1	{"en": "WIFI", "zh": "WIFI"}	2026-05-05 02:11:57.117	2026-05-05 02:11:57.117
+psl_PROD_AIO_0504_987C_3_2	{"en": "Bluetooth", "zh": "蓝牙"}	2026-05-05 02:11:57.117	2026-05-05 02:11:57.117
+psl_PROD_AIO_0504_987C_3_3	{"en": "Bottom Ports", "zh": "底部接口"}	2026-05-05 02:11:57.117	2026-05-05 02:11:57.117
+psl_PROD_AIO_0504_987C_4_1	{"en": "Package Dimensions", "zh": "包装尺寸"}	2026-05-05 02:11:57.117	2026-05-05 02:11:57.117
+products_contactSales	{"en": "Contact Sales", "zh": "联系销售"}	2026-05-05 02:11:57.117	2026-05-05 02:11:57.117
+products_projectSolutions	{"en": "Project Solutions", "zh": "项目解决方案"}	2026-05-05 02:11:57.117	2026-05-05 02:11:57.117
+products_quickSearch	{"en": "Quick Search", "zh": "快速搜索"}	2026-05-05 02:11:57.117	2026-05-05 02:11:57.117
+products_categories	{"en": "Categories", "zh": "产品分类"}	2026-05-05 02:11:57.117	2026-05-05 02:11:57.117
+products_itemsCount	{"en": "Items", "zh": "件产品"}	2026-05-05 02:11:57.117	2026-05-05 02:11:57.117
+products_resetFilters	{"en": "Reset All Filters", "zh": "重置所有过滤器"}	2026-05-05 02:11:57.117	2026-05-05 02:11:57.117
+products_syncing	{"en": "Synchronizing Global Inventory...", "zh": "正在同步全球库存..."}	2026-05-05 02:11:57.117	2026-05-05 02:11:57.117
+psv_PROD_AIO_0504_987C_0_2	{"en": "23.8-inch optional capacitive touchscreen", "zh": "23.8英寸可选电容触摸屏"}	2026-05-05 02:11:57.117	2026-05-05 02:11:57.117
+psv_PROD_AIO_0504_987C_0_7	{"en": "500GB / 1TB / 2TB", "zh": "500GB / 1TB / 2TB"}	2026-05-05 02:11:57.117	2026-05-05 02:11:57.117
+psv_PROD_AIO_0504_987C_0_8	{"en": "Integrated Core Graphics", "zh": "集成核心显卡"}	2026-05-05 02:11:57.117	2026-05-05 02:11:57.117
+psv_PROD_AIO_0504_987C_1_1	{"en": "Aluminum alloy base, ABS plastic casing", "zh": "铝合金底座，ABS 塑料外壳"}	2026-05-05 02:11:57.117	2026-05-05 02:11:57.117
+psv_PROD_AIO_0504_987C_2_1	{"en": "2 × USB2.0", "zh": "2 × USB2.0"}	2026-05-05 02:11:57.117	2026-05-05 02:11:57.117
+psv_PROD_AIO_0504_987C_3_1	{"en": "150Mbps Wireless WiFi\\n(433Mbps dual-band WiFi and WiFi 6 optional)", "zh": "150Mbps无线WiFi\\n(433Mbps双频WiFi和WiFi 6功能可选)"}	2026-05-05 02:11:57.117	2026-05-05 02:11:57.117
+prod_name_PROD_KIOSK_0505_E0XK	{"en": "", "zh": "笔记本电脑"}	2026-05-05 05:09:48.891	2026-05-05 05:09:48.891
+prod_desc_PROD_KIOSK_0505_E0XK	{"en": "", "zh": ""}	2026-05-05 05:09:49.234	2026-05-05 05:09:49.234
+psg_PROD_KIOSK_0505_E0XK_0	{"en": "", "zh": "常规参数"}	2026-05-05 05:09:49.852	2026-05-05 05:09:49.852
+prod_name_cmoibfi320007uknu4dcvlfch	{"en": "High-Performance Mini PC", "zh": "高性能迷你主机"}	2026-05-05 02:11:57.117	2026-05-05 02:11:57.117
+prod_name_cmoibfi320008uknuhbf1oyi0	{"en": "Curved Gaming Monitor", "zh": "曲面电竞显示器"}	2026-05-05 02:11:57.117	2026-05-05 02:11:57.117
+prod_desc_cmoibfi320008uknuhbf1oyi0	{}	2026-05-05 02:11:57.117	2026-05-05 02:11:57.117
+psl_PROD_AIO_0504_987C_0_1	{"en": "Screen Size", "zh": "屏幕尺寸"}	2026-05-05 02:11:57.117	2026-05-05 02:11:57.117
+psv_PROD_AIO_0504_987C_4_0	{"en": "Power Cable, Power Adapter, User Manual", "zh": "电源线，电源适配器，用户手册"}	2026-05-05 02:11:57.117	2026-05-05 02:11:57.117
+psl_PROD_AIO_0504_987C_0_4	{"en": "CPU", "zh": "CPU"}	2026-05-05 02:11:57.117	2026-05-05 02:11:57.117
+psl_PROD_AIO_0504_987C_0_5	{"en": "Memory", "zh": "内存"}	2026-05-05 02:11:57.117	2026-05-05 02:11:57.117
+psl_PROD_AIO_0504_987C_0_3	{"en": "Resolution", "zh": "分辨率"}	2026-05-05 02:11:57.117	2026-05-05 02:11:57.117
+psl_PROD_AIO_0504_987C_0_6	{"en": "SSD", "zh": "固态硬盘"}	2026-05-05 02:11:57.117	2026-05-05 02:11:57.117
+psl_PROD_AIO_0504_987C_0_7	{"en": "HDD", "zh": "机械硬盘"}	2026-05-05 02:11:57.117	2026-05-05 02:11:57.117
+psl_PROD_AIO_0504_987C_0_8	{"en": "Graphics Card", "zh": "显卡"}	2026-05-05 02:11:57.117	2026-05-05 02:11:57.117
+psl_PROD_AIO_0504_987C_0_10	{"en": "System", "zh": "系统"}	2026-05-05 02:11:57.117	2026-05-05 02:11:57.117
+prod_name_PROD_MONITOR_0504_FIA9	{"zh": "啊多发点范围打法打法打法地方阿道夫阿斯蒂芬阿道夫阿道夫阿斯顿"}	2026-05-05 02:11:57.117	2026-05-05 02:11:57.117
+psv_PROD_KIOSK_0505_E0XK_3_3	{"en": "", "zh": "1 × 电源端口\\n1 × 高清多媒体接口\\n1 × VGA(COM)\\n1 × LAN\\n4 × USB\\n1 × 音频输出\\n1 × 麦克风输入"}	2026-05-05 05:09:56.118	2026-05-05 05:09:56.118
+psv_PROD_KIOSK_0505_E0XK_4_0	{"en": "", "zh": "电源线，电源适配器，用户手册"}	2026-05-05 05:09:56.124	2026-05-05 05:09:56.124
+psv_PROD_KIOSK_0505_E0XK_4_1	{"en": "", "zh": "19英寸：495(L)×145(D)×450(H)mm\\n21.5英寸：560(L)×145(D)×450(H)mm\\n23.8英寸：600(L)×145(D)×450(H)mm\\n27英寸：-"}	2026-05-05 05:09:56.122	2026-05-05 05:09:56.122
+psv_PROD_KIOSK_0505_E0XK_4_2	{"en": "", "zh": "19英寸：3.75kg\\n21.5英寸：5.4kg\\n23.8英寸：5.4kg\\n27英寸：-"}	2026-05-05 05:09:56.123	2026-05-05 05:09:56.123
+prod_desc_PROD_KIOSK_0505_95WB	{"en": "", "zh": ""}	2026-05-05 05:20:15.478	2026-05-05 05:20:15.478
+psg_PROD_KIOSK_0505_95WB_1	{"en": "231", "zh": "1231"}	2026-05-05 05:20:15.877	2026-05-05 05:20:15.877
+psg_PROD_KIOSK_0505_95WB_0	{"en": "2312313", "zh": "51231"}	2026-05-05 05:20:15.876	2026-05-05 05:20:15.876
+psl_PROD_KIOSK_0505_95WB_1_0	{"en": "123", "zh": "123"}	2026-05-05 05:20:17.154	2026-05-05 05:20:17.154
+psl_PROD_KIOSK_0505_95WB_1_1	{"en": "", "zh": ""}	2026-05-05 05:20:17.155	2026-05-05 05:20:17.155
+psl_PROD_KIOSK_0505_95WB_0_0	{"en": "12312", "zh": "31231"}	2026-05-05 05:20:17.156	2026-05-05 05:20:17.156
+psl_PROD_KIOSK_0505_95WB_0_3	{"en": "", "zh": ""}	2026-05-05 05:20:17.169	2026-05-05 05:20:17.169
+psl_PROD_KIOSK_0505_95WB_0_1	{"en": "", "zh": "3123123"}	2026-05-05 05:20:17.157	2026-05-05 05:20:17.157
+psl_PROD_KIOSK_0505_95WB_0_2	{"en": "12", "zh": "312312"}	2026-05-05 05:20:17.16	2026-05-05 05:20:17.16
+psl_PROD_KIOSK_0505_95WB_0_4	{"en": "", "zh": ""}	2026-05-05 05:20:17.834	2026-05-05 05:20:17.834
+psl_PROD_KIOSK_0505_95WB_0_5	{"en": "", "zh": ""}	2026-05-05 05:20:17.847	2026-05-05 05:20:17.847
+psv_PROD_KIOSK_0505_95WB_1_0	{"en": "", "zh": ""}	2026-05-05 05:20:17.848	2026-05-05 05:20:17.848
+psv_PROD_KIOSK_0505_95WB_1_1	{"en": "", "zh": ""}	2026-05-05 05:20:17.852	2026-05-05 05:20:17.852
+psv_PROD_KIOSK_0505_95WB_0_0	{"en": "", "zh": "1\\n23\\n12\\n3\\n123\\n1\\n23"}	2026-05-05 05:20:17.858	2026-05-05 05:20:17.858
+psv_PROD_KIOSK_0505_95WB_0_3	{"en": "123123123", "zh": ""}	2026-05-05 05:20:17.859	2026-05-05 05:20:17.859
+psv_PROD_KIOSK_0505_95WB_0_2	{"en": "", "zh": ""}	2026-05-05 05:20:18.499	2026-05-05 05:20:18.499
+psv_PROD_KIOSK_0505_95WB_0_1	{"en": "", "zh": ""}	2026-05-05 05:20:18.5	2026-05-05 05:20:18.5
+psv_PROD_KIOSK_0505_95WB_0_4	{"en": "", "zh": ""}	2026-05-05 05:20:18.501	2026-05-05 05:20:18.501
+psv_PROD_KIOSK_0505_95WB_0_5	{"en": "", "zh": ""}	2026-05-05 05:20:18.502	2026-05-05 05:20:18.502
+nav_mega_title	{"en": "Product Category", "id": "Kategori Produk", "zh": "产品分类"}	2026-05-05 08:28:05.096	2026-05-05 08:28:05.096
+nav_mega_view_all	{"en": "View All", "id": "Lihat semua", "zh": "查看全部产品"}	2026-05-05 08:29:10.294	2026-05-05 08:29:10.294
+nav_sub_download	{"en": "Download Product Manual", "id": "Unduh manual produk", "vi": "TẢI DANH MỤC", "zh": "下载产品手册"}	2026-05-05 08:30:55.969	2026-05-05 08:42:26.743
+nav_wholesale	{"en": "Wholesale Products", "id": "Produk Grosir", "zh": "批发产品"}	2026-05-05 09:03:53.066	2026-05-05 09:03:53.066
+nav_projects	{"en": "Project Products", "id": "Produk Proyek", "zh": "项目产品"}	2026-05-05 09:03:53.077	2026-05-05 09:03:53.077
+nav_cases	{"en": "Cases", "id": "Kasus", "zh": "案例"}	2026-05-05 09:03:53.081	2026-05-05 09:03:53.081
+nav_contact	{"en": "Contact Us", "id": "Hubungi Kami", "zh": "联系我们"}	2026-05-05 09:03:53.085	2026-05-05 09:03:53.085
+hero_headline	{"en": "All In One Computer", "id": "Komputer All In One", "zh": "一体化电脑"}	2026-05-05 09:10:12.623	2026-05-05 09:10:12.623
+hero_subheadline	{"en": "Professional Manufacturer", "id": "Produsen Profesional", "zh": "专业级制造商"}	2026-05-05 09:10:12.633	2026-05-05 09:10:12.633
+hero_cta	{"en": "Explore Solutions", "id": "Jelajahi Solusi", "zh": "探索方案"}	2026-05-05 09:10:12.638	2026-05-05 09:10:12.638
+hero_wholesale_title	{"en": "Wholesale Products", "id": "Produk Grosir", "zh": "批发产品"}	2026-05-05 09:10:12.642	2026-05-05 09:10:12.642
+hero_wholesale_desc	{"en": "AIO PCs and professional barebones kits", "id": "PC All-in-One dan kit barebone profesional", "zh": "全系列一体机及专业准系统方案"}	2026-05-05 09:10:12.646	2026-05-05 09:10:12.646
+hero_project_title	{"en": "Project Products", "id": "Solusi Proyek", "zh": "项目产品"}	2026-05-05 09:10:12.649	2026-05-05 09:10:12.649
+hero_project_desc	{"en": "Large-scale LED engineering and industry solutions", "id": "Teknik LED skala besar dan solusi industri", "zh": "大型 LED 工程及行业解决方案"}	2026-05-05 09:10:12.653	2026-05-05 09:10:12.653
 \.
 
 
@@ -555,10 +643,12 @@ cmoibfi39000auknuamax4sia	Factory	印尼工厂	Indonesia Factory	印度尼西亚
 --
 
 COPY public."Product" (id, status, "nameTextId", "categoryId", "advantageTextIds", "createdAt", "descriptionTextId", "enabledLanguages", "galleryImageUrls", "localizedDetails", "mainImageUrl", "specGroups", "updatedAt") FROM stdin;
-cmoibfi320007uknu4dcvlfch	published	prod_name_cmoibfi320007uknu4dcvlfch	MINIPC	\N	2026-04-28 07:39:36.398	prod_desc_cmoibfi320007uknu4dcvlfch	{zh,en}	{}	{"en": "", "zh": ""}	http://localhost:9000/heovose-assets/uploads/2e2479d4-e456-4444-b3f9-7f47c1d1c877.jpg	[]	2026-05-04 07:05:14.48
-cmoibfi320008uknuhbf1oyi0	published	prod_name_cmoibfi320008uknuhbf1oyi0	NOTEBOOK	\N	2026-04-28 07:39:36.398	prod_desc_cmoibfi320008uknuhbf1oyi0	{zh}	{}	{"en": "", "zh": ""}	http://localhost:9000/heovose-assets/uploads/a91c1517-9c44-45f5-9aad-73c33f2be500.jpg	[]	2026-05-04 07:06:59.094
-PROD_MONITOR_0504_FIA9	published	prod_name_PROD_MONITOR_0504_FIA9	LED	\N	2026-05-04 07:15:13.105	prod_desc_PROD_MONITOR_0504_FIA9	{zh,en}	{}	{"en": "", "zh": ""}	http://localhost:9000/heovose-assets/uploads/37d8a977-98fc-46ac-8437-cd80d1dfb965.jpg	[]	2026-05-04 07:51:40.352
-PROD_AIO_0504_987C	published	prod_name_PROD_AIO_0504_987C	AIO	\N	2026-05-04 06:23:07.527	prod_desc_PROD_AIO_0504_987C	{zh,en}	{http://localhost:9000/heovose-assets/uploads/7dd3944b-9973-4e65-9649-353579cf4661.jpg,http://localhost:9000/heovose-assets/uploads/139f91d7-1cd2-448f-8461-d1b3d6251774.jpg,http://localhost:9000/heovose-assets/uploads/3eb25a8d-676e-404e-beea-6fbf69428e08.jpg,http://localhost:9000/heovose-assets/uploads/d967accc-5a8f-4b93-9976-bec5e24060f8.jpg,http://localhost:9000/heovose-assets/uploads/ba19c0be-1667-47cb-a031-e5e4e8751118.jpg,http://localhost:9000/heovose-assets/uploads/4eb0f28d-4c9a-4c38-a03c-7bef304908cf.jpg,http://localhost:9000/heovose-assets/uploads/15229520-358f-44a7-a5b7-d28cc552a89b.jpg}	{"en": "", "zh": ""}	http://localhost:9000/heovose-assets/uploads/1d5e2af2-ef38-43a7-8d69-19644b36c16d.jpg	[{"items": [{"labelId": "psl_PROD_AIO_0504_987C_0_0", "valueId": "psv_PROD_AIO_0504_987C_0_0"}, {"labelId": "psl_PROD_AIO_0504_987C_0_1", "valueId": "psv_PROD_AIO_0504_987C_0_1"}, {"labelId": "psl_PROD_AIO_0504_987C_0_2", "valueId": "psv_PROD_AIO_0504_987C_0_2"}, {"labelId": "psl_PROD_AIO_0504_987C_0_3", "valueId": "psv_PROD_AIO_0504_987C_0_3"}, {"labelId": "psl_PROD_AIO_0504_987C_0_4", "valueId": "psv_PROD_AIO_0504_987C_0_4"}, {"labelId": "psl_PROD_AIO_0504_987C_0_5", "valueId": "psv_PROD_AIO_0504_987C_0_5"}, {"labelId": "psl_PROD_AIO_0504_987C_0_6", "valueId": "psv_PROD_AIO_0504_987C_0_6"}, {"labelId": "psl_PROD_AIO_0504_987C_0_7", "valueId": "psv_PROD_AIO_0504_987C_0_7"}, {"labelId": "psl_PROD_AIO_0504_987C_0_8", "valueId": "psv_PROD_AIO_0504_987C_0_8"}, {"labelId": "psl_PROD_AIO_0504_987C_0_9", "valueId": "psv_PROD_AIO_0504_987C_0_9"}, {"labelId": "psl_PROD_AIO_0504_987C_0_10", "valueId": "psv_PROD_AIO_0504_987C_0_10"}], "titleId": "psg_PROD_AIO_0504_987C_0"}, {"items": [{"labelId": "psl_PROD_AIO_0504_987C_1_0", "valueId": "psv_PROD_AIO_0504_987C_1_0"}, {"labelId": "psl_PROD_AIO_0504_987C_1_1", "valueId": "psv_PROD_AIO_0504_987C_1_1"}, {"labelId": "psl_PROD_AIO_0504_987C_1_2", "valueId": "psv_PROD_AIO_0504_987C_1_2"}], "titleId": "psg_PROD_AIO_0504_987C_1"}, {"items": [{"labelId": "psl_PROD_AIO_0504_987C_2_0", "valueId": "psv_PROD_AIO_0504_987C_2_0"}, {"labelId": "psl_PROD_AIO_0504_987C_2_1", "valueId": "psv_PROD_AIO_0504_987C_2_1"}], "titleId": "psg_PROD_AIO_0504_987C_2"}, {"items": [{"labelId": "psl_PROD_AIO_0504_987C_3_0", "valueId": "psv_PROD_AIO_0504_987C_3_0"}, {"labelId": "psl_PROD_AIO_0504_987C_3_1", "valueId": "psv_PROD_AIO_0504_987C_3_1"}, {"labelId": "psl_PROD_AIO_0504_987C_3_2", "valueId": "psv_PROD_AIO_0504_987C_3_2"}, {"labelId": "psl_PROD_AIO_0504_987C_3_3", "valueId": "psv_PROD_AIO_0504_987C_3_3"}], "titleId": "psg_PROD_AIO_0504_987C_3"}, {"items": [{"labelId": "psl_PROD_AIO_0504_987C_4_0", "valueId": "psv_PROD_AIO_0504_987C_4_0"}, {"labelId": "psl_PROD_AIO_0504_987C_4_1", "valueId": "psv_PROD_AIO_0504_987C_4_1"}, {"labelId": "psl_PROD_AIO_0504_987C_4_2", "valueId": "psv_PROD_AIO_0504_987C_4_2"}], "titleId": "psg_PROD_AIO_0504_987C_4"}]	2026-05-04 08:39:00.318
+PROD_MONITOR_0504_FIA9	published	prod_name_PROD_MONITOR_0504_FIA9	LED	\N	2026-05-04 07:15:13.105	prod_desc_PROD_MONITOR_0504_FIA9	{zh,en,id}	{}	{"en": "", "zh": ""}	http://localhost:9000/heovose-assets/uploads/37d8a977-98fc-46ac-8437-cd80d1dfb965.jpg	[]	2026-05-05 05:20:33.425
+cmoibfi320008uknuhbf1oyi0	published	prod_name_cmoibfi320008uknuhbf1oyi0	NOTEBOOK	\N	2026-04-28 07:39:36.398	prod_desc_cmoibfi320008uknuhbf1oyi0	{zh,id,en}	{}	{"en": "", "zh": ""}	http://localhost:9000/heovose-assets/uploads/a91c1517-9c44-45f5-9aad-73c33f2be500.jpg	[]	2026-05-05 05:20:37.987
+cmoibfi320007uknu4dcvlfch	published	prod_name_cmoibfi320007uknu4dcvlfch	MINIPC	\N	2026-04-28 07:39:36.398	prod_desc_cmoibfi320007uknu4dcvlfch	{zh,en,id}	{}	{"en": "", "zh": ""}	http://localhost:9000/heovose-assets/uploads/2e2479d4-e456-4444-b3f9-7f47c1d1c877.jpg	[]	2026-05-05 05:20:39.905
+PROD_AIO_0504_987C	published	prod_name_PROD_AIO_0504_987C	AIO	\N	2026-05-04 06:23:07.527	prod_desc_PROD_AIO_0504_987C	{zh,en,id}	{http://localhost:9000/heovose-assets/uploads/7dd3944b-9973-4e65-9649-353579cf4661.jpg,http://localhost:9000/heovose-assets/uploads/139f91d7-1cd2-448f-8461-d1b3d6251774.jpg,http://localhost:9000/heovose-assets/uploads/3eb25a8d-676e-404e-beea-6fbf69428e08.jpg,http://localhost:9000/heovose-assets/uploads/d967accc-5a8f-4b93-9976-bec5e24060f8.jpg,http://localhost:9000/heovose-assets/uploads/ba19c0be-1667-47cb-a031-e5e4e8751118.jpg,http://localhost:9000/heovose-assets/uploads/4eb0f28d-4c9a-4c38-a03c-7bef304908cf.jpg,http://localhost:9000/heovose-assets/uploads/15229520-358f-44a7-a5b7-d28cc552a89b.jpg}	{"en": "", "zh": ""}	http://localhost:9000/heovose-assets/uploads/1d5e2af2-ef38-43a7-8d69-19644b36c16d.jpg	[{"items": [{"labelId": "psl_PROD_AIO_0504_987C_0_0", "valueId": "psv_PROD_AIO_0504_987C_0_0"}, {"labelId": "psl_PROD_AIO_0504_987C_0_1", "valueId": "psv_PROD_AIO_0504_987C_0_1"}, {"labelId": "psl_PROD_AIO_0504_987C_0_2", "valueId": "psv_PROD_AIO_0504_987C_0_2"}, {"labelId": "psl_PROD_AIO_0504_987C_0_3", "valueId": "psv_PROD_AIO_0504_987C_0_3"}, {"labelId": "psl_PROD_AIO_0504_987C_0_4", "valueId": "psv_PROD_AIO_0504_987C_0_4"}, {"labelId": "psl_PROD_AIO_0504_987C_0_5", "valueId": "psv_PROD_AIO_0504_987C_0_5"}, {"labelId": "psl_PROD_AIO_0504_987C_0_6", "valueId": "psv_PROD_AIO_0504_987C_0_6"}, {"labelId": "psl_PROD_AIO_0504_987C_0_7", "valueId": "psv_PROD_AIO_0504_987C_0_7"}, {"labelId": "psl_PROD_AIO_0504_987C_0_8", "valueId": "psv_PROD_AIO_0504_987C_0_8"}, {"labelId": "psl_PROD_AIO_0504_987C_0_9", "valueId": "psv_PROD_AIO_0504_987C_0_9"}, {"labelId": "psl_PROD_AIO_0504_987C_0_10", "valueId": "psv_PROD_AIO_0504_987C_0_10"}], "titleId": "psg_PROD_AIO_0504_987C_0"}, {"items": [{"labelId": "psl_PROD_AIO_0504_987C_1_0", "valueId": "psv_PROD_AIO_0504_987C_1_0"}, {"labelId": "psl_PROD_AIO_0504_987C_1_1", "valueId": "psv_PROD_AIO_0504_987C_1_1"}, {"labelId": "psl_PROD_AIO_0504_987C_1_2", "valueId": "psv_PROD_AIO_0504_987C_1_2"}], "titleId": "psg_PROD_AIO_0504_987C_1"}, {"items": [{"labelId": "psl_PROD_AIO_0504_987C_2_0", "valueId": "psv_PROD_AIO_0504_987C_2_0"}, {"labelId": "psl_PROD_AIO_0504_987C_2_1", "valueId": "psv_PROD_AIO_0504_987C_2_1"}], "titleId": "psg_PROD_AIO_0504_987C_2"}, {"items": [{"labelId": "psl_PROD_AIO_0504_987C_3_0", "valueId": "psv_PROD_AIO_0504_987C_3_0"}, {"labelId": "psl_PROD_AIO_0504_987C_3_1", "valueId": "psv_PROD_AIO_0504_987C_3_1"}, {"labelId": "psl_PROD_AIO_0504_987C_3_2", "valueId": "psv_PROD_AIO_0504_987C_3_2"}, {"labelId": "psl_PROD_AIO_0504_987C_3_3", "valueId": "psv_PROD_AIO_0504_987C_3_3"}], "titleId": "psg_PROD_AIO_0504_987C_3"}, {"items": [{"labelId": "psl_PROD_AIO_0504_987C_4_0", "valueId": "psv_PROD_AIO_0504_987C_4_0"}, {"labelId": "psl_PROD_AIO_0504_987C_4_1", "valueId": "psv_PROD_AIO_0504_987C_4_1"}, {"labelId": "psl_PROD_AIO_0504_987C_4_2", "valueId": "psv_PROD_AIO_0504_987C_4_2"}], "titleId": "psg_PROD_AIO_0504_987C_4"}]	2026-05-05 03:33:43.895
+PROD_KIOSK_0505_E0XK	published	prod_name_PROD_KIOSK_0505_E0XK	KIOSK	\N	2026-05-05 05:09:56.611	prod_desc_PROD_KIOSK_0505_E0XK	{zh,en,id}	{http://localhost:9000/heovose-assets/uploads/35094d60-83d1-49de-b715-be94ae2459c4.jpg,http://localhost:9000/heovose-assets/uploads/b9f5d5c4-7465-4e9f-90df-27b326f1f3f3.jpg,http://localhost:9000/heovose-assets/uploads/a74635cb-af32-457a-b8c9-3fa19e8ffa07.jpg,http://localhost:9000/heovose-assets/uploads/22811330-25ce-4b07-b7c6-f8e9554668d1.jpg}	{"en": "<p class=\\"mb-4 text-[12px] leading-relaxed text-slate-600 font-body\\"><span style=\\"white-space: pre-wrap;\\">Tutoring fee</span><b><strong class=\\"font-bold\\" style=\\"white-space: pre-wrap;\\">Tutoring fee Adolf</strong></b></p><p class=\\"mb-4 text-[12px] leading-relaxed text-slate-600 font-body\\"><span style=\\"white-space: pre-wrap;\\">fa place is short hair short hair</span></p><p class=\\"mb-4 text-[12px] leading-relaxed text-slate-600 font-body\\"><img src=\\"http://localhost:9000/heovose-assets/uploads/614a66c7-acd1-48db-a0d9-c764f2f35617.jpg\\" alt=\\"Product image\\" width=\\"auto\\" height=\\"auto\\"></p><p class=\\"mb-4 text-[12px] leading-relaxed text-slate-600 font-body\\"><span style=\\"white-space: pre-wrap;\\">I</span></p>", "zh": "<p class=\\"mb-4 text-[12px] leading-relaxed text-slate-600 font-body\\"><span style=\\"white-space: pre-wrap;\\">辅导费</span><b><strong class=\\"font-bold\\" style=\\"white-space: pre-wrap;\\">辅导费阿道夫</strong></b></p><p class=\\"mb-4 text-[12px] leading-relaxed text-slate-600 font-body\\"><span style=\\"white-space: pre-wrap;\\">fa地方是短发短发</span></p><p class=\\"mb-4 text-[12px] leading-relaxed text-slate-600 font-body\\"><img src=\\"http://localhost:9000/heovose-assets/uploads/614a66c7-acd1-48db-a0d9-c764f2f35617.jpg\\" alt=\\"Product image\\" width=\\"auto\\" height=\\"auto\\"></p><p class=\\"mb-4 text-[12px] leading-relaxed text-slate-600 font-body\\"><span style=\\"white-space: pre-wrap;\\">我</span></p>"}	http://localhost:9000/heovose-assets/uploads/a91c1517-9c44-45f5-9aad-73c33f2be500.jpg	[{"items": [{"labelId": "psl_PROD_KIOSK_0505_E0XK_0_0", "valueId": "psv_PROD_KIOSK_0505_E0XK_0_0"}, {"labelId": "psl_PROD_KIOSK_0505_E0XK_0_1", "valueId": "psv_PROD_KIOSK_0505_E0XK_0_1"}, {"labelId": "psl_PROD_KIOSK_0505_E0XK_0_2", "valueId": "psv_PROD_KIOSK_0505_E0XK_0_2"}, {"labelId": "psl_PROD_KIOSK_0505_E0XK_0_3", "valueId": "psv_PROD_KIOSK_0505_E0XK_0_3"}, {"labelId": "psl_PROD_KIOSK_0505_E0XK_0_4", "valueId": "psv_PROD_KIOSK_0505_E0XK_0_4"}, {"labelId": "psl_PROD_KIOSK_0505_E0XK_0_5", "valueId": "psv_PROD_KIOSK_0505_E0XK_0_5"}, {"labelId": "psl_PROD_KIOSK_0505_E0XK_0_6", "valueId": "psv_PROD_KIOSK_0505_E0XK_0_6"}, {"labelId": "psl_PROD_KIOSK_0505_E0XK_0_7", "valueId": "psv_PROD_KIOSK_0505_E0XK_0_7"}, {"labelId": "psl_PROD_KIOSK_0505_E0XK_0_8", "valueId": "psv_PROD_KIOSK_0505_E0XK_0_8"}, {"labelId": "psl_PROD_KIOSK_0505_E0XK_0_9", "valueId": "psv_PROD_KIOSK_0505_E0XK_0_9"}, {"labelId": "psl_PROD_KIOSK_0505_E0XK_0_10", "valueId": "psv_PROD_KIOSK_0505_E0XK_0_10"}], "titleId": "psg_PROD_KIOSK_0505_E0XK_0"}, {"items": [{"labelId": "psl_PROD_KIOSK_0505_E0XK_1_0", "valueId": "psv_PROD_KIOSK_0505_E0XK_1_0"}, {"labelId": "psl_PROD_KIOSK_0505_E0XK_1_1", "valueId": "psv_PROD_KIOSK_0505_E0XK_1_1"}, {"labelId": "psl_PROD_KIOSK_0505_E0XK_1_2", "valueId": "psv_PROD_KIOSK_0505_E0XK_1_2"}], "titleId": "psg_PROD_KIOSK_0505_E0XK_1"}, {"items": [{"labelId": "psl_PROD_KIOSK_0505_E0XK_2_0", "valueId": "psv_PROD_KIOSK_0505_E0XK_2_0"}, {"labelId": "psl_PROD_KIOSK_0505_E0XK_2_1", "valueId": "psv_PROD_KIOSK_0505_E0XK_2_1"}], "titleId": "psg_PROD_KIOSK_0505_E0XK_2"}, {"items": [{"labelId": "psl_PROD_KIOSK_0505_E0XK_3_0", "valueId": "psv_PROD_KIOSK_0505_E0XK_3_0"}, {"labelId": "psl_PROD_KIOSK_0505_E0XK_3_1", "valueId": "psv_PROD_KIOSK_0505_E0XK_3_1"}, {"labelId": "psl_PROD_KIOSK_0505_E0XK_3_2", "valueId": "psv_PROD_KIOSK_0505_E0XK_3_2"}, {"labelId": "psl_PROD_KIOSK_0505_E0XK_3_3", "valueId": "psv_PROD_KIOSK_0505_E0XK_3_3"}], "titleId": "psg_PROD_KIOSK_0505_E0XK_3"}, {"items": [{"labelId": "psl_PROD_KIOSK_0505_E0XK_4_0", "valueId": "psv_PROD_KIOSK_0505_E0XK_4_0"}, {"labelId": "psl_PROD_KIOSK_0505_E0XK_4_1", "valueId": "psv_PROD_KIOSK_0505_E0XK_4_1"}, {"labelId": "psl_PROD_KIOSK_0505_E0XK_4_2", "valueId": "psv_PROD_KIOSK_0505_E0XK_4_2"}], "titleId": "psg_PROD_KIOSK_0505_E0XK_4"}]	2026-05-05 05:11:10.678
+PROD_KIOSK_0505_95WB	published	prod_name_PROD_KIOSK_0505_95WB	KIOSK	\N	2026-05-05 05:20:19.018	prod_desc_PROD_KIOSK_0505_95WB	{zh,en,id}	{http://localhost:9000/heovose-assets/uploads/be56ed65-5e25-443a-8775-b54b59ecebae.jpg,http://localhost:9000/heovose-assets/uploads/c8eb3f01-a1ab-484f-b7f6-c2036c568fe3.jpg,http://localhost:9000/heovose-assets/uploads/85d4b221-af4a-4f81-8e4b-fcc73c3eb6a2.jpg,http://localhost:9000/heovose-assets/uploads/e30c9cfe-d6c1-41d3-a81c-7a84b96849d6.jpg,http://localhost:9000/heovose-assets/uploads/7986eb81-e9f3-4887-a764-169dcfe6eedd.jpg}	{"en": "<p class=\\"mb-4 text-[12px] leading-relaxed text-slate-600 font-body\\"><br></p>", "zh": ""}	http://localhost:9000/heovose-assets/uploads/4a74aae7-85aa-41e9-82f2-f8765d69719c.jpg	[{"items": [{"labelId": "psl_PROD_KIOSK_0505_95WB_0_0", "valueId": "psv_PROD_KIOSK_0505_95WB_0_0"}, {"labelId": "psl_PROD_KIOSK_0505_95WB_0_1", "valueId": "psv_PROD_KIOSK_0505_95WB_0_1"}, {"labelId": "psl_PROD_KIOSK_0505_95WB_0_2", "valueId": "psv_PROD_KIOSK_0505_95WB_0_2"}, {"labelId": "psl_PROD_KIOSK_0505_95WB_0_3", "valueId": "psv_PROD_KIOSK_0505_95WB_0_3"}, {"labelId": "psl_PROD_KIOSK_0505_95WB_0_4", "valueId": "psv_PROD_KIOSK_0505_95WB_0_4"}, {"labelId": "psl_PROD_KIOSK_0505_95WB_0_5", "valueId": "psv_PROD_KIOSK_0505_95WB_0_5"}], "titleId": "psg_PROD_KIOSK_0505_95WB_0"}, {"items": [{"labelId": "psl_PROD_KIOSK_0505_95WB_1_0", "valueId": "psv_PROD_KIOSK_0505_95WB_1_0"}, {"labelId": "psl_PROD_KIOSK_0505_95WB_1_1", "valueId": "psv_PROD_KIOSK_0505_95WB_1_1"}], "titleId": "psg_PROD_KIOSK_0505_95WB_1"}]	2026-05-05 05:20:30.187
 \.
 
 
@@ -607,6 +697,7 @@ COPY public."Session" ("sessionToken", "userId", expires, "createdAt", "updatedA
 COPY public."Setting" (id, value) FROM stdin;
 ai	{"apiKey":"AIzaSyCdor09jDPt3aKX-zE5FSSF4ZLblTvkcJ8","isEnabled":true,"temperature":0.7,"systemInstruction":"你是一位专业的工业硬件制造专家，擅长将复杂的计算机硬件规格（如一体机、迷你电脑、工业显示器）翻译成地道、专业的商务语言。请保持术语的准确性，并统一单位。","model":"googleai/gemini-2.5-flash","lastDiagnosis":{"status":"success","message":"连接成功：模型响应正常，鉴权通过。","latency":-17869,"modelUsed":"googleai/gemini-2.5-flash","keySource":"手动输入 (Manual)","timestamp":"2026-04-28T07:55:36.556Z"}}
 navigation	{"navbarMaterial":"level-03","showBorder":true,"showShadow":true,"megaMenuColumns":3,"megaMenuGap":12,"featuredText":"立即下载手册","featuredDownloadUrl":"/files/catalog_2026.pdf","featuredCoverUrl":"/image/catalog-placeholder.png"}
+languages	{"supportedLanguages":[{"code":"zh","label":"中文"},{"code":"en","label":"English"},{"code":"id","label":"Indonesian"}]}
 \.
 
 
@@ -940,5 +1031,5 @@ REVOKE USAGE ON SCHEMA public FROM PUBLIC;
 -- PostgreSQL database dump complete
 --
 
-\unrestrict VzqciYgVgZQX40jesqN2sHp0L6OHRfMJaDWO1luzTP7tdA8lkOesx0jB7QbCebd
+\unrestrict ezdnFtvlAc8zif6r5dU9wi5fDfgUPrcckXZIsAYA1jT7OD2ztmGG3rqTuUIigxQ
 

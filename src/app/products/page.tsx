@@ -3,7 +3,7 @@
 
 export const dynamic = "force-dynamic";
 
-import React, { useState, useMemo, useEffect, Suspense, use } from 'react';
+import React, { useState, useMemo, useEffect, Suspense, use, useRef } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { useSearchParams, useRouter } from 'next/navigation';
@@ -60,6 +60,24 @@ function ProductListContent() {
   const [activeLine, setActiveLine] = useState<BusinessLine>('wholesale');
   const [selectedCategoryId, setSelectedCategoryId] = useState<string | null>(null);
   
+  // Navigation visibility tracking for sticky alignment
+  const [isNavVisible, setIsNavVisible] = useState(true);
+  const lastScrollY = useRef(0);
+
+  useEffect(() => {
+    const handleScroll = () => {
+      const currentScrollY = window.scrollY;
+      if (currentScrollY > lastScrollY.current && currentScrollY > 100) {
+        setIsNavVisible(false);
+      } else {
+        setIsNavVisible(true);
+      }
+      lastScrollY.current = currentScrollY;
+    };
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
+  
   const categoryParam = searchParams.get('category');
   const lineParam = searchParams.get('line') as BusinessLine;
 
@@ -86,10 +104,6 @@ function ProductListContent() {
     setLocale(detectLocale());
     setIsLocaleReady(true);
   }, [searchParams, langSettings]);
-
-  if (isProdsLoading || isCatsLoading || isTrLoading || !isLocaleReady) {
-    return <div className="min-h-screen flex items-center justify-center bg-background"><Loader2 className="h-10 w-10 animate-spin opacity-20 text-primary" /></div>;
-  }
 
   // 2. 初始化业务线与分类
   useEffect(() => {
@@ -119,7 +133,7 @@ function ProductListContent() {
 
   // 4. 过滤产品逻辑
   const filteredProducts = useMemo(() => {
-    if (!products || !categories) return [];
+    if (!products || !categories || !isLocaleReady) return [];
     
     // 递归获取所有子分类 ID
     const getAllDescendantIds = (parentId: string): string[] => {
@@ -143,8 +157,6 @@ function ProductListContent() {
       if (!isVisibleInCurrentLocale) return false;
       
       // 匹配业务线逻辑：
-      // 1. 如果产品有分类，检查该分类是否属于当前选中的业务线子树
-      // 2. 如果产品没有分类，目前默认在“所有分类”下展示（可选逻辑）
       const belongsToActiveLine = p.categoryId ? subCategoryIds.includes(p.categoryId) : true;
       if (!belongsToActiveLine) return false;
 
@@ -156,7 +168,7 @@ function ProductListContent() {
       
       return matchesCategory && matchSearch;
     });
-  }, [products, categories, activeLine, selectedCategoryId, searchQuery, locale]);
+  }, [products, categories, activeLine, selectedCategoryId, searchQuery, locale, isLocaleReady]);
 
   const rootCategory = useMemo(() => {
     if (!categories) return null;
@@ -169,6 +181,10 @@ function ProductListContent() {
     const cat = categories?.find(c => c.id === selectedCategoryId);
     return cat ? getT(cat.nameTextId) : tr('products_allCategories');
   }, [selectedCategoryId, categories, locale, tr]);
+
+  if (isProdsLoading || isCatsLoading || isTrLoading || !isLocaleReady) {
+    return <div className="min-h-screen flex items-center justify-center bg-background"><Loader2 className="h-10 w-10 animate-spin opacity-20 text-primary" /></div>;
+  }
 
   const handleLineSwitch = (line: BusinessLine) => {
     setActiveLine(line);
@@ -218,7 +234,10 @@ function ProductListContent() {
       </section>
 
       {/* Control Bar & Switcher */}
-      <section className="sticky top-20 z-40 bg-white/80 backdrop-blur-md border-b border-border/40 py-4">
+      <section className={cn(
+        "sticky z-40 bg-white/80 backdrop-blur-md border-b border-border/40 py-4 transition-all duration-700 ease-in-out",
+        isNavVisible ? "top-20" : "top-0"
+      )}>
         <div className="container mx-auto px-6 flex flex-col md:flex-row items-center justify-between gap-6">
           <div className="flex bg-muted/40 p-1 rounded-full border border-border/40 w-full md:w-auto">
             <button 

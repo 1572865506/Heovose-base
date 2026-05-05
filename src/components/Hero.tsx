@@ -97,21 +97,24 @@ export function Hero({ locale, homeConfig, isLoading, onThemeChange }: HeroProps
   const scrollNext = useCallback(() => emblaApi && emblaApi.scrollNext(), [emblaApi]);
 
   // 3. Entry Cards Config
-  const displayWholesaleButton = locale === 'zh'
-    ? homeConfig?.heroWholesaleButtonZh
-    : homeConfig?.heroWholesaleButtonEn;
+  // --- 4. 最终显示文案判定 (优先使用翻译钩子，如果没有则回退到配置) ---
+  const displayWholesaleButton = tr('hero_wholesale_title') || (locale === 'zh'
+    ? (homeConfig?.heroWholesaleButtonZh || '批发产品')
+    : (homeConfig?.heroWholesaleButtonEn || 'Wholesale Products'));
 
-  const displayProjectButton = locale === 'zh'
-    ? homeConfig?.heroProjectButtonZh
-    : homeConfig?.heroProjectButtonEn;
+  const displayWholesaleDesc = tr('hero_wholesale_desc') || (locale === 'zh'
+    ? (homeConfig?.heroWholesaleDescriptionZh || homeConfig?.heroWholesaleDescZh || '全系列一体机及专业准系统方案')
+    : (homeConfig?.heroWholesaleDescriptionEn || homeConfig?.heroWholesaleDescEn || 'Full range of AIO PCs and professional barebones kits'));
 
-  const displayWholesaleDesc = locale === 'zh'
-    ? homeConfig?.heroWholesaleDescriptionZh
-    : homeConfig?.heroWholesaleDescriptionEn;
+  const displayProjectButton = tr('hero_project_title') || (locale === 'zh'
+    ? (homeConfig?.heroProjectButtonZh || '项目产品')
+    : (homeConfig?.heroProjectButtonEn || 'Project Products'));
 
-  const displayProjectDesc = locale === 'zh'
-    ? homeConfig?.heroProjectDescriptionZh
-    : homeConfig?.heroProjectDescriptionEn;
+  const displayProjectDesc = tr('hero_project_desc') || (locale === 'zh'
+    ? (homeConfig?.heroProjectDescriptionZh || homeConfig?.heroProjectDescZh || '大型 LED 工程及行业解决方案')
+    : (homeConfig?.heroProjectDescriptionEn || homeConfig?.heroProjectDescEn || 'Large-scale LED engineering and industry solutions'));
+
+  const displayExploreCTA = tr('hero_cta') || (locale === 'zh' ? '探索方案' : 'Explore Solutions');
 
   const getEntryHref = (id: string | undefined, defaultLine: string) => {
     if (!id || id === 'none') return `/products?line=${defaultLine}`;
@@ -168,6 +171,7 @@ export function Hero({ locale, homeConfig, isLoading, onThemeChange }: HeroProps
                     fill
                     className="object-cover object-[66%_center] md:object-center"
                     priority={index === 0 || slide.id === 'legacy-default'}
+                    quality={100}
                     sizes="100vw"
                   />
 
@@ -179,7 +183,7 @@ export function Hero({ locale, homeConfig, isLoading, onThemeChange }: HeroProps
                 <div className="max-w-[50rem] flex flex-col gap-4 md:gap-6 animate-fade-in text-center md:text-left mx-auto md:mx-0 mt-20 md:mt-32">
                   <SplitText
                     key={`headline-${slide.id}-${selectedIndex === index}-v1.1`}
-                    text={locale === 'zh' ? slide.headlineZh : slide.headlineEn}
+                    text={tr(`hero_slide_${slide.id}_headline`) || (locale === 'zh' ? slide.headlineZh : slide.headlineEn)}
                     className={cn(
                       "text-4xl md:text-5xl lg:text-[4rem] font-headline font-black leading-[1.1] tracking-tight drop-shadow-[0_4px_30px_rgba(0,0,0,0.5)] gpu-accelerated overflow-visible",
                       currentTheme === 'light' ? "text-slate-900" : "text-white"
@@ -206,7 +210,7 @@ export function Hero({ locale, homeConfig, isLoading, onThemeChange }: HeroProps
                     `}} />
                     <SplitText
                       key={`subheadline-${slide.id}-${selectedIndex === index}-${locale}-v1.35`}
-                      text={locale === 'zh' ? slide.subheadlineZh : slide.subheadlineEn}
+                      text={tr(`hero_slide_${slide.id}_subheadline`) || (locale === 'zh' ? slide.subheadlineZh : slide.subheadlineEn)}
                       className={cn(
                         "hero-subheadline text-xl md:text-2xl lg:text-[3rem] font-body max-w-full leading-[1.35] tracking-tight drop-shadow-[0_2px_15px_rgba(0,0,0,0.4)] block mx-auto md:mx-0 gpu-accelerated overflow-visible",
                         currentTheme === 'light' ? "text-slate-800/80" : "text-white/90"
@@ -264,14 +268,14 @@ export function Hero({ locale, homeConfig, isLoading, onThemeChange }: HeroProps
                   <div className="relative z-20 h-full p-6 md:p-8 flex flex-col justify-end">
                     <div className="flex items-end justify-between">
                       <div className="space-y-1 transform transition-transform duration-500 group-hover:-translate-y-1">
-                        <h3 className="text-xl md:text-2xl font-headline font-bold text-white leading-tight tracking-tight group-hover:text-primary-foreground transition-colors">
+                        <h3 className="text-xl md:text-2xl font-headline font-bold text-white leading-tight tracking-tight">
                           {displayWholesaleButton}
                         </h3>
                         <p className="text-white/50 text-[8px] md:text-[10px] uppercase tracking-[0.2em] font-bold group-hover:text-white transition-colors">
                           {displayWholesaleDesc}
                         </p>
                       </div>
-                      <div className="w-10 h-10 md:w-12 md:h-12 rounded-full glass-frosted flex items-center justify-center text-white border border-white/20 group-hover:bg-primary group-hover:text-white group-hover:border-transparent transition-all duration-500 shadow-xl group-hover:scale-110 group-hover:rotate-45">
+                      <div className="w-10 h-10 md:w-12 md:h-12 rounded-full glass-frosted flex items-center justify-center text-white border border-white/20 group-hover:bg-primary group-hover:text-white group-hover:border-transparent transition-all duration-500 shadow-xl group-hover:scale-110 group-hover:rotate-45 shrink-0 aspect-square">
                         <ArrowUpRight className="h-5 w-5 md:h-6 md:w-6" />
                       </div>
                     </div>
@@ -303,14 +307,14 @@ export function Hero({ locale, homeConfig, isLoading, onThemeChange }: HeroProps
                   <div className="relative z-20 h-full p-6 md:p-8 flex flex-col justify-end">
                     <div className="flex items-end justify-between">
                       <div className="space-y-1 transform transition-transform duration-500 group-hover:-translate-y-1">
-                        <h3 className="text-xl md:text-2xl font-headline font-bold text-white leading-tight tracking-tight group-hover:text-accent-foreground transition-colors">
+                        <h3 className="text-xl md:text-2xl font-headline font-bold text-white leading-tight tracking-tight">
                           {displayProjectButton}
                         </h3>
                         <p className="text-white/50 text-[8px] md:text-[10px] uppercase tracking-[0.2em] font-bold group-hover:text-white transition-colors">
                           {displayProjectDesc}
                         </p>
                       </div>
-                      <div className="w-10 h-10 md:w-12 md:h-12 rounded-full glass-frosted flex items-center justify-center text-white border border-white/20 group-hover:bg-accent group-hover:text-white group-hover:border-transparent transition-all duration-500 shadow-xl group-hover:scale-110 group-hover:rotate-45">
+                      <div className="w-10 h-10 md:w-12 md:h-12 rounded-full glass-frosted flex items-center justify-center text-white border border-white/20 group-hover:bg-accent group-hover:text-white group-hover:border-transparent transition-all duration-500 shadow-xl group-hover:scale-110 group-hover:rotate-45 shrink-0 aspect-square">
                         <ArrowUpRight className="h-5 w-5 md:h-6 md:w-6" />
                       </div>
                     </div>

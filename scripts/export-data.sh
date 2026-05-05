@@ -5,7 +5,7 @@ BACKUP_DIR="./backups"
 DB_CONTAINER="heovose-db"
 DB_NAME="heovose_elevate"
 DB_USER="heovose"
-MINIO_VOLUME="heovose-web-09_minio_data"
+MINIO_VOLUME="heovose-base_minio_data"
 
 mkdir -p $BACKUP_DIR
 

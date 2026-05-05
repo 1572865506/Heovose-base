@@ -92,10 +92,7 @@ export function LanguageToggle({ currentLocale, setLocale, headerTheme = 'dark',
             `}
             onClick={() => handleLocaleChange(lang.code)}
           >
-            <div className="flex flex-col">
-              <span className="text-xs">{lang.label}</span>
-              <span className="text-[8px] opacity-40 font-mono uppercase">{lang.code}</span>
-            </div>
+            <span className="text-xs">{lang.label}</span>
             {currentLocale === lang.code && (
               <div className="w-1.5 h-1.5 bg-primary rounded-full shadow-[0_0_8px_rgba(0,91,153,0.4)]" />
             )}

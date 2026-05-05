@@ -129,7 +129,15 @@ export default function TranslationsPage() {
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 25;
   
-  const [formData, setFormData] = useState<Record<string, string>>({ id: '' });
+  interface TranslationForm {
+    id: string;
+    translations: Record<string, string>;
+  }
+  
+  const [formData, setFormData] = useState<TranslationForm>({ 
+    id: '', 
+    translations: {} 
+  });
   const [newLang, setNewLang] = useState({ code: '', label: '' });
 
   const { data: langSettings, mutate: mutateLangs } = useLocalDoc<LanguageSettings>('settings', 'languages');
@@ -497,21 +505,18 @@ export default function TranslationsPage() {
   const totalPages = Math.ceil(filteredTranslations.length / itemsPerPage);
 
   const handleSave = async () => {
-    const entryId = editingId || formData.id || (formData as any).__key;
+    const entryId = editingId || formData.id;
     if (!entryId) return;
     
-    const contentPayload: Record<string, string> = {};
-    activeLanguages.forEach(l => {
-      contentPayload[l.code] = formData[l.code] || '';
-    });
-
     try {
       await fetch(`/api/localizedStrings/${encodeURIComponent(entryId)}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ id: entryId, content: contentPayload }),
+        body: JSON.stringify({ id: entryId, content: formData.translations }),
       });
-      setIsAdding(false); setEditingId(null); setFormData({ id: '' });
+      setIsAdding(false); 
+      setEditingId(null); 
+      setFormData({ id: '', translations: {} });
       mutateTrans();
       toast({ title: "词条已保存" });
     } catch (e) {
@@ -697,7 +702,7 @@ export default function TranslationsPage() {
             </DialogContent>
           </Dialog>
 
-          <Button onClick={() => { setIsAdding(true); setFormData({id:''}); }} className="rounded-full h-12 px-8 font-bold uppercase tracking-widest text-xs gap-2 shadow-xl shadow-primary/20">
+          <Button onClick={() => { setIsAdding(true); setFormData({ id: '', translations: {} }); }} className="rounded-full h-12 px-8 font-bold uppercase tracking-widest text-xs gap-2 shadow-xl shadow-primary/20">
             <Plus className="h-5 w-5" /> 新增词条
           </Button>
         </div>
@@ -867,8 +872,11 @@ export default function TranslationsPage() {
                       <TableCell key={lang.code} className="py-3">
                         {editingId === t.id ? (
                           <Textarea 
-                            value={formData[lang.code] || ''} 
-                            onChange={e => setFormData({...formData, [lang.code]: e.target.value})} 
+                            value={formData.translations[lang.code] || ''} 
+                            onChange={e => setFormData({
+                              ...formData, 
+                              translations: { ...formData.translations, [lang.code]: e.target.value }
+                            })} 
                             className="min-h-[40px] text-xs rounded-lg bg-slate-50 border-none focus-visible:ring-1 focus-visible:ring-primary/20 py-2" 
                           />
                         ) : (
@@ -1026,9 +1034,9 @@ export default function TranslationsPage() {
       </div>
 
       <Dialog open={isAdding} onOpenChange={setIsAdding}>
-        <DialogContent className="rounded-[2.5rem] max-w-lg p-0 overflow-hidden shadow-[0_32px_64px_-12px_rgba(0,0,0,0.14)] border-none bg-white/90 backdrop-blur-2xl">
-          <div className="bg-primary p-10 text-white relative overflow-hidden">
-            <div className="absolute top-0 right-0 w-40 h-40 bg-white/10 blur-3xl rounded-full translate-x-20 -translate-y-20" />
+        <DialogContent className="rounded-[var(--radius-brand)] max-w-xl p-0 overflow-hidden shadow-2xl border border-white/20 glass-deep">
+          <div className="bg-primary/95 p-10 text-white relative overflow-hidden">
+            <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 blur-[80px] rounded-full translate-x-20 -translate-y-20 animate-pulse" />
             <DialogHeader className="relative z-10">
               <DialogTitle className="text-2xl font-headline font-bold uppercase tracking-wider">创建词条资产</DialogTitle>
               <DialogDescription className="text-white/60 text-xs font-medium uppercase tracking-[0.1em] mt-1">Definition of a new localized data point.</DialogDescription>
@@ -1036,32 +1044,82 @@ export default function TranslationsPage() {
           </div>
           <div className="p-10 space-y-8 bg-transparent">
             <div className="space-y-3">
-              <Label className="text-[10px] font-bold uppercase tracking-[0.2em] text-primary pl-1">Unique Resource ID</Label>
+              <Label className="text-[10px] font-bold uppercase tracking-[0.2em] text-primary/60 pl-1">Unique Resource ID</Label>
               <Input 
                 placeholder="建议前缀: ui_ (界面), prod_ (产品), spec_ (规格)" 
                 value={formData.id} 
                 onChange={e => setFormData({...formData, id: e.target.value})} 
-                className="h-14 rounded-2xl bg-slate-100/50 border-none font-mono text-sm focus-visible:ring-2 focus-visible:ring-primary/20 shadow-inner" 
+                disabled={!!editingId}
+                className={cn(
+                  "h-12 rounded-lg bg-slate-200/20 border-slate-200/30 font-mono text-xs focus-visible:ring-4 focus-visible:ring-primary/5 shadow-sm transition-all",
+                  !!editingId && "opacity-50 cursor-not-allowed"
+                )} 
               />
-              <p className="text-[10px] text-slate-400 italic">ID 必须全局唯一。保存后不可更改。</p>
+              <p className="text-[10px] text-slate-400 italic font-medium">ID 必须全局唯一。保存后不可更改。</p>
             </div>
             
             <div className="space-y-6">
               {activeLanguages.map(lang => (
                 <div key={lang.code} className="space-y-3">
-                  <Label className="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-400 pl-1">{lang.label} 内容</Label>
+                  <div className="flex items-center justify-between pl-1">
+                    <Label className="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-400">{lang.label} 内容</Label>
+                    {(lang.code !== 'zh' && lang.code !== 'en') && (
+                      <ShinyButton 
+                        disabled={translatingId === `new-${lang.code}`}
+                        onClick={async () => {
+                          const sourceText = formData.translations['en'] || formData.translations['zh'];
+                          if (!sourceText) {
+                            toast({ variant: "destructive", title: "缺少源语言", description: "请先输入中文或英文内容" });
+                            return;
+                          }
+                          setTranslatingId(`new-${lang.code}`);
+                          try {
+                            const res = await translateContent({ 
+                              text: sourceText, 
+                              sourceLang: formData.translations['en'] ? 'en' : 'zh', 
+                              targetLangs: [lang.code],
+                              model: aiConfig?.model || 'gemini-2.0-flash-exp',
+                              apiKey: aiConfig?.apiKey || ''
+                            });
+                            if (res && res[lang.code]) {
+                              setFormData({
+                                ...formData,
+                                translations: { ...formData.translations, [lang.code]: res[lang.code] }
+                              });
+                              toast({ title: "AI 智译成功" });
+                            }
+                          } catch (e) {
+                            toast({ variant: "destructive", title: "AI 翻译失败" });
+                          } finally {
+                            setTranslatingId(null);
+                          }
+                        }}
+                        className="h-7"
+                      >
+                        <Sparkles />
+                        智译
+                      </ShinyButton>
+                    )}
+                  </div>
                   <Textarea 
-                    value={formData[lang.code] || ''} 
-                    onChange={e => setFormData({...formData, [lang.code]: e.target.value})} 
-                    className="rounded-2xl min-h-[80px] text-sm bg-slate-50 border-slate-100 focus-visible:ring-2 focus-visible:ring-primary/10 transition-all py-4" 
+                    value={formData.translations[lang.code] || ''} 
+                    onChange={e => setFormData({
+                      ...formData, 
+                      translations: { ...formData.translations, [lang.code]: e.target.value }
+                    })} 
+                    className={cn(
+                      "rounded-lg min-h-[100px] text-xs bg-slate-200/20 border-slate-200/30 focus-visible:ring-4 focus-visible:ring-primary/5 transition-all py-3 shadow-sm",
+                      translatingId === `new-${lang.code}` && "animate-pulse border-primary/30 ring-2 ring-primary/10"
+                    )} 
+                    readOnly={translatingId === `new-${lang.code}`}
                   />
                 </div>
               ))}
             </div>
           </div>
-          <DialogFooter className="bg-slate-50/50 p-8 border-t border-slate-100 gap-4">
-            <Button variant="ghost" onClick={() => setIsAdding(false)} className="h-14 rounded-2xl flex-1 font-bold uppercase tracking-widest text-xs text-slate-400">取消操作</Button>
-            <Button onClick={handleSave} className="h-14 rounded-2xl flex-1 font-bold uppercase tracking-widest text-xs shadow-xl shadow-primary/20">签署并同步</Button>
+          <DialogFooter className="bg-slate-50/80 p-8 border-t border-slate-100/50 gap-4">
+            <Button variant="ghost" onClick={() => setIsAdding(false)} className="h-12 rounded-xl flex-1 font-bold uppercase tracking-widest text-[10px] text-slate-400 hover:bg-slate-100 transition-colors">取消操作</Button>
+            <Button onClick={handleSave} className="h-12 rounded-xl flex-1 font-bold uppercase tracking-widest text-[10px] shadow-xl shadow-primary/20 bg-primary hover:bg-primary/90 text-white transition-all">签署并同步</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

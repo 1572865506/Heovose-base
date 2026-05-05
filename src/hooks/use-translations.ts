@@ -62,7 +62,7 @@ export function useTranslations(locale: Locale) {
       }
 
       // Final safeguard: If it still looks like a raw database ID, return empty string
-      const isRawId = /^(psl|psg|psv|prod|cat|nav)_/i.test(result);
+      const isRawId = /^(psl|psg|psv|prod|cat)_/i.test(result);
       if (isRawId) return '';
 
       return result;

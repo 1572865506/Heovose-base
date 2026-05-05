@@ -9,10 +9,10 @@ datasource db {
 
 model LocalizedString {
   id                String            @id @default(cuid())
-  zh                String
-  en                String
-  idn               String?
-  vi                String?
+  content           Json              @default("{}")
+  createdAt         DateTime          @default(now())
+  updatedAt         DateTime          @default(now()) @updatedAt
+  
   productDescs      Product[]         @relation("ProductDesc")
   productNames      Product[]         @relation("ProductName")
   categoryNames     ProductCategory[] @relation("CategoryName")
