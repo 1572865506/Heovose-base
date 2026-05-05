@@ -90,7 +90,9 @@ export default function AdminProductsPage() {
 
   const getTranslation = (id: string, lang: 'zh' | 'en' = 'zh') => {
     const t = translations?.find(t => t.id === id);
-    return t ? t[lang] : id;
+    if (!t) return id;
+    const content = (t.content as any) || {};
+    return content[lang] || (t as any)[lang] || id;
   };
 
   const getCategoryName = (id: string) => {

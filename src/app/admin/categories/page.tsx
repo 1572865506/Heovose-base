@@ -185,14 +185,18 @@ export default function CategoriesPage() {
   const handleStartEdit = (cat: ProductCategory) => {
     const nt = translations?.find(t => t.id === cat.nameTextId);
     const dt = translations?.find(t => t.id === cat.descriptionTextId);
+    
+    const ntContent = (nt?.content as any) || {};
+    const dtContent = (dt?.content as any) || {};
+
     setFormData({
       id: cat.id,
       slug: cat.slug,
       thumbnailImageUrl: cat.thumbnailImageUrl || '',
-      nameEn: nt?.en || '',
-      nameZh: nt?.zh || '',
-      descEn: dt?.en || '',
-      descZh: dt?.zh || '',
+      nameEn: ntContent.en || (nt as any)?.en || '',
+      nameZh: ntContent.zh || (nt as any)?.zh || '',
+      descEn: dtContent.en || (dt as any)?.en || '',
+      descZh: dtContent.zh || (dt as any)?.zh || '',
       parentId: cat.parentId || 'none'
     });
     setEditingCategory(cat);
@@ -366,7 +370,9 @@ export default function CategoriesPage() {
 
   const getT = (id: string) => {
     const t = translations?.find(tr => tr.id === id);
-    return t ? t.zh : id;
+    if (!t) return id;
+    const content = (t.content as any) || {};
+    return content.zh || (t as any).zh || id;
   };
 
   return (
@@ -590,25 +596,27 @@ export default function CategoriesPage() {
                             </div>
                           )}
                           <div className="flex flex-col space-y-0.5">
-                             <div className="flex items-center gap-3">
-                               <span className={cn(
-                                 "font-headline font-bold text-sm tracking-tight transition-colors", 
-                                 isTopLevel ? "text-slate-900" : "text-slate-500 group-hover:text-slate-900"
-                               )}>
-                                 {t?.zh || cat.id}
-                               </span>
-                               {isTopLevel && (
-                                 <Badge className={cn(
-                                   "text-[8px] h-4 px-2 uppercase font-bold tracking-widest border-none",
-                                   isSystemPreset ? "bg-primary text-white shadow-lg shadow-primary/20" : "bg-slate-100 text-slate-500"
-                                 )}>
-                                   {isSystemPreset ? 'CORE PRESET' : 'TOP TIER'}
-                                 </Badge>
-                               )}
-                             </div>
-                             <span className="text-[10px] text-slate-400 font-bold uppercase tracking-widest opacity-60">{t?.en || 'UNTRANSLATED'}</span>
+                            <div className="flex items-center gap-3">
+                              <span className={cn(
+                                "font-headline font-bold text-sm tracking-tight transition-colors", 
+                                isTopLevel ? "text-slate-900" : "text-slate-500 group-hover:text-slate-900"
+                              )}>
+                                {(t?.content as any)?.zh || (t as any)?.zh || cat.id}
+                              </span>
+                              {isTopLevel && (
+                                <Badge className={cn(
+                                  "text-[8px] h-4 px-2 uppercase font-bold tracking-widest border-none",
+                                  isSystemPreset ? "bg-primary text-white shadow-lg shadow-primary/20" : "bg-slate-100 text-slate-500"
+                                )}>
+                                  {isSystemPreset ? 'CORE PRESET' : 'TOP TIER'}
+                                </Badge>
+                              )}
+                            </div>
+                            <span className="text-[10px] text-slate-400 font-bold uppercase tracking-widest opacity-60">
+                              {(t?.content as any)?.en || (t as any)?.en || 'UNTRANSLATED'}
+                            </span>
                           </div>
-                       </div>
+                        </div>
                     </TableCell>
                     <TableCell>
                       <div className="flex flex-col space-y-1">

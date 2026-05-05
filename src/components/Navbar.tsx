@@ -10,6 +10,7 @@ import {
   Menu,
   X,
   ChevronDown,
+  MessageSquare,
   Monitor,
   Cpu,
   Tv,
@@ -52,7 +53,9 @@ export function Navbar({ locale, setLocale, headerTheme = 'dark', themeLine }: N
   const router = useRouter();
 
   const [isScrolled, setIsScrolled] = useState(false);
+  const [isVisible, setIsVisible] = useState(true);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const lastScrollY = useRef(0);
 
   // Unified state for Mega Menus with debounce
   const [activeMenu, setActiveMenu] = useState<string | null>(null);
@@ -74,13 +77,30 @@ export function Navbar({ locale, setLocale, headerTheme = 'dark', themeLine }: N
   };
 
   useEffect(() => {
-    const handleScroll = () => setIsScrolled(window.scrollY > 100);
-    window.addEventListener('scroll', handleScroll);
+    const handleScroll = () => {
+      const currentScrollY = window.scrollY;
+      
+      // Update isScrolled for background opacity
+      setIsScrolled(currentScrollY > 100);
+
+      // Smart Show/Hide Logic
+      if (currentScrollY > lastScrollY.current && currentScrollY > 100 && !mobileMenuOpen && !activeMenu) {
+        // Scrolling Down & past header -> Hide
+        setIsVisible(false);
+      } else {
+        // Scrolling Up or at the top -> Show
+        setIsVisible(true);
+      }
+
+      lastScrollY.current = currentScrollY;
+    };
+
+    window.addEventListener('scroll', handleScroll, { passive: true });
     return () => {
       window.removeEventListener('scroll', handleScroll);
       if (timeoutRef.current) clearTimeout(timeoutRef.current);
     };
-  }, []);
+  }, [mobileMenuOpen, activeMenu]);
 
   // Determine if the page has a dark/colored header area at the top
   const isTransparentHeaderPage = pathname === '/' || pathname === '/products';
@@ -172,8 +192,9 @@ export function Navbar({ locale, setLocale, headerTheme = 'dark', themeLine }: N
       {/* 1. Top Scrim & Gradient Blur Layer - The "Advanced Glass" Layer */}
       {!isNavbarActive && isTransparentHeaderPage && (
         <div className={cn(
-          "fixed top-0 left-0 right-0 z-[105] h-48 pointer-events-none transition-opacity duration-1000",
-          headerTheme === 'light' ? "opacity-60" : "opacity-80"
+          "fixed top-0 left-0 right-0 z-[105] h-48 pointer-events-none transition-all duration-700",
+          headerTheme === 'light' ? "opacity-60" : "opacity-80",
+          !isVisible && "opacity-0 -translate-y-full"
         )}>
           {/* The Scrim: Suble gradient to ensure contrast */}
           <div className={cn(
@@ -186,7 +207,9 @@ export function Navbar({ locale, setLocale, headerTheme = 'dark', themeLine }: N
         </div>
       )}
 
-      <nav className={cn(
+      <nav 
+        style={{ transform: isVisible ? 'translateY(0)' : 'translateY(-100%)' }}
+        className={cn(
         "fixed top-0 left-0 right-0 z-[110] transition-all duration-700 h-20 flex items-center !border-t-0 !border-x-0",
         isNavbarActive
           ? cn(
@@ -219,7 +242,7 @@ export function Navbar({ locale, setLocale, headerTheme = 'dark', themeLine }: N
                   <DropdownMenuTrigger asChild>
                     <button
                       className={cn(
-                        "flex items-center space-x-1 px-4 py-2 rounded-full transition-all duration-300 font-medium whitespace-nowrap outline-none",
+                        "flex items-center space-x-1 px-4 py-2 rounded-full transition-all duration-300 text-sm font-medium whitespace-nowrap outline-none",
                         (isNavbarActive || headerTheme === 'light')
                           ? "text-slate-800 hover:bg-slate-100"
                           : "text-white hover:bg-white/10"
@@ -238,7 +261,6 @@ export function Navbar({ locale, setLocale, headerTheme = 'dark', themeLine }: N
                     align="start"
                     className="w-screen max-w-none left-0 right-0 border-none rounded-none shadow-none bg-transparent p-0 overflow-visible"
                     onMouseEnter={() => handleMouseEnter('wholesale')}
-                    onOpenAutoFocus={(e) => e.preventDefault()}
                   >
                     <div className="container mx-auto px-6">
                       <div className={cn(
@@ -267,7 +289,7 @@ export function Navbar({ locale, setLocale, headerTheme = 'dark', themeLine }: N
                   <DropdownMenuTrigger asChild>
                     <button
                       className={cn(
-                        "flex items-center space-x-1 px-4 py-2 rounded-full transition-all duration-300 font-medium whitespace-nowrap outline-none",
+                        "flex items-center space-x-1 px-4 py-2 rounded-full transition-all duration-300 text-sm font-medium whitespace-nowrap outline-none",
                         (isNavbarActive || headerTheme === 'light')
                           ? "text-slate-800 hover:bg-slate-100"
                           : "text-white hover:bg-white/10"
@@ -286,7 +308,6 @@ export function Navbar({ locale, setLocale, headerTheme = 'dark', themeLine }: N
                     align="start"
                     className="w-screen max-w-none left-0 right-0 border-none rounded-none shadow-none bg-transparent p-0 overflow-visible"
                     onMouseEnter={() => handleMouseEnter('projects')}
-                    onOpenAutoFocus={(e) => e.preventDefault()}
                   >
                     <div className="container mx-auto px-6">
                       <div className={cn(
@@ -310,7 +331,7 @@ export function Navbar({ locale, setLocale, headerTheme = 'dark', themeLine }: N
               </div>
 
               <Link href="/#cases" className={cn(
-                "px-4 py-2 rounded-full transition-all duration-300 font-medium whitespace-nowrap",
+                "px-4 py-2 rounded-full transition-all duration-300 text-sm font-medium whitespace-nowrap",
                 (isNavbarActive || headerTheme === 'light')
                   ? "text-slate-800 hover:bg-slate-100"
                   : "text-white hover:bg-white/10"
@@ -325,13 +346,16 @@ export function Navbar({ locale, setLocale, headerTheme = 'dark', themeLine }: N
                 <Button 
                   size="sm" 
                   className={cn(
-                    "rounded-full px-6 shadow-lg transition-all duration-500",
+                    "rounded-full px-6 shadow-lg transition-all duration-500 text-sm font-medium",
                     themeLine === 'project' 
                       ? "bg-[#F97316] hover:bg-[#F97316]/90" 
                       : "bg-primary hover:bg-primary/90"
                   )}
                 >
-                  {tr('nav_contact')}
+                  <span className="flex items-center gap-2">
+                    <MessageSquare className="h-4 w-4" />
+                    {tr('nav_contact')}
+                  </span>
                 </Button>
               </Link>
             </div>
@@ -378,8 +402,11 @@ export function Navbar({ locale, setLocale, headerTheme = 'dark', themeLine }: N
               <Link href="/#cases" onClick={() => setMobileMenuOpen(false)} className="text-lg font-bold text-primary">{tr('nav_cases')}</Link>
 
               <div className="pt-6 border-t border-slate-100 mt-auto">
-                <Link href="/#contact" onClick={() => setMobileMenuOpen(false)}>
-                  <Button className="w-full rounded-xl bg-primary">{tr('nav_contact')}</Button>
+                <Link href="/#contact" onClick={() => setMobileMenuOpen(false)} className="block w-full">
+                  <Button className="w-full rounded-xl bg-primary flex items-center justify-center gap-2">
+                    <MessageSquare className="h-4 w-4" />
+                    {tr('nav_contact')}
+                  </Button>
                 </Link>
               </div>
             </div>

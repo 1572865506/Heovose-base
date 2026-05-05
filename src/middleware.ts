@@ -2,7 +2,7 @@ import { auth } from "@/auth";
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 
-const locales = ['en', 'zh', 'idn', 'vi'];
+const locales = ['en', 'zh', 'id', 'vi'];
 
 export default auth((request) => {
   const { nextUrl } = request;

@@ -136,7 +136,15 @@ function ProductEditorContent() {
 
   useEffect(() => {
     if (isEditing && product && translations) {
-      const getT = (id?: string) => translations.find((t: any) => t.id === id) || { en: '', zh: '' };
+      const getT = (id?: string) => {
+        if (!id) return { zh: '', en: '' };
+        const t = translations?.find((tr: any) => tr.id === id);
+        const content = (t?.content as any) || {};
+        return { 
+          zh: content.zh || (t as any)?.zh || '', 
+          en: content.en || (t as any)?.en || '' 
+        };
+      };
       const sGroups = (product.specGroups || []).map((g: any, gIdx: number) => ({
         uid: `sg_${gIdx}_${Date.now()}`,
         titleEn: getT(g.titleId).en, titleZh: getT(g.titleId).zh,
@@ -188,9 +196,9 @@ function ProductEditorContent() {
     setIsAiProcessing(true); // Re-use processing state for saving feedback
     try {
       const saveL = async (en: any, zh: any, id: string) => {
-        const res = await fetch(`/api/localizedStrings/${id}`, {
+        const res = await fetch(`/api/localizedStrings/${encodeURIComponent(id)}`, {
           method: 'PUT', headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ id, en: String(en || '').trim(), zh: String(zh || '').trim() })
+          body: JSON.stringify({ id, content: { en: String(en || '').trim(), zh: String(zh || '').trim() } })
         });
         if (!res.ok) throw new Error(`翻译数据同步失败 (${id})`);
         return id;

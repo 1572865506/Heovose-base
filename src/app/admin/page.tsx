@@ -143,7 +143,7 @@ export default function AdminPage() {
                       )}
                     </div>
                     <div className="flex-1 min-w-0">
-                       <p className="font-bold text-sm text-slate-900 group-hover:text-primary transition-colors truncate">{p.nameText?.zh || p.id}</p>
+                       <p className="font-bold text-sm text-slate-900 group-hover:text-primary transition-colors truncate">{(p.nameText?.content as any)?.zh || (p.nameText as any)?.zh || p.id}</p>
                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest truncate">{p.category?.id || '未分类'}</p>
                     </div>
                     <div className="text-right shrink-0">

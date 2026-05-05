@@ -10,19 +10,44 @@ export async function PUT(
   if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
   try {
-    const { id } = await params;
+    const p = await params;
+    const id = p.id;
+    if (!id) return NextResponse.json({ error: 'Missing ID' }, { status: 400 });
+
     const data = await request.json();
-    const { id: _, updatedAt: __, ...updateData } = data;
+    
+    // 获取现有内容以备合并
+    const existingEntry = await db.localizedString.findUnique({ where: { id } });
+    const existingContent = (existingEntry?.content as any) || {};
+    
+    const incomingContent = data.content || (() => {
+      const { id: _, ...rest } = data;
+      return rest;
+    })();
+
+    const contentToSave = {
+      ...existingContent,
+      ...incomingContent
+    };
 
     const item = await db.localizedString.upsert({
       where: { id },
-      update: updateData,
-      create: { ...updateData, id },
+      update: {
+        content: contentToSave
+      },
+      create: {
+        id,
+        content: contentToSave
+      },
     });
-    return NextResponse.json(item);
-  } catch (error) {
-    console.error('Failed to update localized string:', error);
-    return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
+    
+    return NextResponse.json({ success: true, item });
+  } catch (error: any) {
+    console.error('[API Error] LocalizedString PUT:', error);
+    return NextResponse.json({ 
+      error: 'CRITICAL_DATABASE_ERROR', 
+      message: error.message || 'Unknown database error'
+    }, { status: 500 });
   }
 }
 

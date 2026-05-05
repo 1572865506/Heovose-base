@@ -176,12 +176,12 @@ export function Hero({ locale, homeConfig, isLoading, onThemeChange }: HeroProps
 
               {/* Slide Content */}
               <div className="max-w-[1600px] mx-auto px-6 relative z-30 h-[calc(100vh-160px)] min-h-[600px] flex items-center">
-                <div className="max-w-6xl flex flex-col gap-4 md:gap-6 animate-fade-in text-center md:text-left mx-auto md:mx-0 mt-20 md:mt-32">
+                <div className="max-w-[50rem] flex flex-col gap-4 md:gap-6 animate-fade-in text-center md:text-left mx-auto md:mx-0 mt-20 md:mt-32">
                   <SplitText
-                    key={`headline-${slide.id}-${selectedIndex === index}`}
+                    key={`headline-${slide.id}-${selectedIndex === index}-v1.1`}
                     text={locale === 'zh' ? slide.headlineZh : slide.headlineEn}
                     className={cn(
-                      "text-4xl md:text-7xl lg:text-[96px] font-headline font-black leading-[1.1] tracking-tight drop-shadow-[0_4px_30px_rgba(0,0,0,0.5)] gpu-accelerated overflow-visible",
+                      "text-4xl md:text-5xl lg:text-[4rem] font-headline font-black leading-[1.1] tracking-tight drop-shadow-[0_4px_30px_rgba(0,0,0,0.5)] gpu-accelerated overflow-visible",
                       currentTheme === 'light' ? "text-slate-900" : "text-white"
                     )}
                     tag="h1"
@@ -196,24 +196,33 @@ export function Hero({ locale, homeConfig, isLoading, onThemeChange }: HeroProps
                     splitType="chars"
                   />
 
-                  <SplitText
-                    key={`subheadline-${slide.id}-${selectedIndex === index}`}
-                    text={locale === 'zh' ? slide.subheadlineZh : slide.subheadlineEn}
-                    className={cn(
-                      "text-[clamp(20px,4vw,64px)] font-body max-w-full leading-[1.2] drop-shadow-[0_2px_15px_rgba(0,0,0,0.4)] block mx-auto md:mx-0 gpu-accelerated overflow-visible",
-                      currentTheme === 'light' ? "text-slate-800/80" : "text-white/90"
-                    )}
-                    tag="h2"
-                    delay={20}
-                    duration={1}
-                    ease="power3.out"
-                    from={subheadlineAnimateFrom}
-                    to={subheadlineAnimateTo}
-                    textAlign="left"
-                    threshold={0.1}
-                    rootMargin="0px"
-                    splitType="lines,words"
-                  />
+                  <div className="relative">
+                    <style dangerouslySetInnerHTML={{ __html: `
+                      .hero-subheadline .split-line {
+                        line-height: 1.35 !important;
+                        height: auto !important;
+                        padding-bottom: 0.1em;
+                      }
+                    `}} />
+                    <SplitText
+                      key={`subheadline-${slide.id}-${selectedIndex === index}-${locale}-v1.35`}
+                      text={locale === 'zh' ? slide.subheadlineZh : slide.subheadlineEn}
+                      className={cn(
+                        "hero-subheadline text-xl md:text-2xl lg:text-[3rem] font-body max-w-full leading-[1.35] tracking-tight drop-shadow-[0_2px_15px_rgba(0,0,0,0.4)] block mx-auto md:mx-0 gpu-accelerated overflow-visible",
+                        currentTheme === 'light' ? "text-slate-800/80" : "text-white/90"
+                      )}
+                      tag="h2"
+                      delay={20}
+                      duration={1}
+                      ease="power3.out"
+                      from={subheadlineAnimateFrom}
+                      to={subheadlineAnimateTo}
+                      textAlign="left"
+                      threshold={0.1}
+                      rootMargin="0px"
+                      splitType="lines"
+                    />
+                  </div>
                 </div>
               </div>
             </div>

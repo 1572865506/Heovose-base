@@ -13,6 +13,7 @@ import {
 } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
 import { 
   Dialog, 
   DialogContent, 
@@ -36,7 +37,10 @@ import {
   Settings2,
   Globe,
   Info,
+  BookOpen,
   ShieldCheck,
+  Layers,
+  FileText,
   Copy,
   ExternalLink,
   CheckCircle2,
@@ -45,7 +49,6 @@ import {
   GitMerge,
   Bot,
   LayoutGrid,
-  FileText
 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Label } from '@/components/ui/label';
@@ -136,17 +139,27 @@ export default function TranslationsPage() {
   const { data: categories, mutate: mutateCategories } = useLocalCollection<any>('productCategories');
   const { data: galleryCategories, mutate: mutateGalleryCats } = useLocalCollection<any>('galleryCategories');
 
+  const [sortConfig, setSortConfig] = useState<{ key: string, direction: 'asc' | 'desc' }>({ key: 'updatedAt', direction: 'desc' });
+
   const activeLanguages = useMemo(() => langSettings?.supportedLanguages || [
     { code: 'zh', label: '中文' }, 
     { code: 'en', label: 'English' }
   ], [langSettings]);
 
   const referenceMap = useMemo(() => {
-    const map = new Map<string, { type: string, name: string, id: string }[]>();
-    const addRef = (textId: string, type: string, name: string, id: string) => {
+    const map = new Map<string, { type: string, name: string, id: string, linkable: boolean }[]>();
+    const getT = (id: string, field: string = 'en', isDesc: boolean = false) => {
+      if (!id) return "";
+      const entry = translations?.find((item: any) => item.id === id);
+      if (!entry) return isDesc ? "" : id;
+      const content = (entry.content as any) || {};
+      const val = content[field] || entry[field] || content['en'] || entry['en'] || content['zh'] || entry['zh'];
+      return val || (isDesc ? "" : id);
+    };
+    const addRef = (textId: string, type: string, name: string, id: string, linkable: boolean = true) => {
       if (!textId) return;
       if (!map.has(textId)) map.set(textId, []);
-      map.get(textId)!.push({ type, name, id });
+      map.get(textId)!.push({ type, name, id, linkable });
     };
     products?.forEach(p => {
       const pName = p.id;
@@ -164,8 +177,14 @@ export default function TranslationsPage() {
         });
       });
     });
-    categories?.forEach(c => addRef(c.nameTextId, '产品分类', c.id, c.id));
-    galleryCategories?.forEach(gc => addRef(gc.nameTextId, '图库分类', gc.id, gc.id));
+    categories?.forEach(c => {
+      addRef(c.nameTextId, '产品分类', c.id, c.id, false);
+      addRef(c.descriptionTextId, '分类简介', c.id, c.id, false);
+    });
+    galleryCategories?.forEach(gc => {
+      addRef(gc.nameTextId, '图库分类', gc.id, gc.id, false);
+      addRef(gc.descriptionTextId, '图库简介', gc.id, gc.id, false);
+    });
     return map;
   }, [products, categories, galleryCategories]);
 
@@ -179,13 +198,10 @@ export default function TranslationsPage() {
       const isBusiness = 
         t.id.startsWith('prod_') || 
         t.id.startsWith('spec_') || 
-        t.id.startsWith('cat_') || 
-        t.id.startsWith('gal_') || 
         t.id.startsWith('adv_') ||
         t.id.startsWith('psl_') ||
         t.id.startsWith('psv_') ||
-        t.id.startsWith('psg_') ||
-        usedIds.has(t.id);
+        t.id.startsWith('psg_');
 
       if (isBusiness) {
         acc.business.push(t);
@@ -310,24 +326,62 @@ export default function TranslationsPage() {
 
   const handleAiTranslate = async (t: LocalizedString) => {
     if (!aiConfig?.isEnabled) { toast({ variant: "destructive", title: "AI 未启用" }); return; }
-    const st = t.en || t.zh; const sc = t.en ? 'en' : 'zh';
+    const content = (t.content as any) || {};
+    const st = content.en || t.en || content.zh || t.zh; 
+    const sc = (content.en || t.en) ? 'en' : 'zh';
     if (!st) return;
-    const ml = activeLanguages.filter(l => !t[l.code]).map(l => l.code);
-    if (ml.length === 0) return;
+    
+    // 过滤出当前条目缺失的语种 (排除源语言，且识别空白或占位符)
+    const ml = activeLanguages
+      .filter(l => l.code !== sc)
+      .filter(l => {
+        const val = content[l.code] || (t as any)[l.code];
+        return !val || val === t.id;
+      }).map(l => l.code);
+    if (ml.length === 0) {
+      toast({ title: "无需翻译", description: "该条目已拥有所有激活语种的内容" });
+      return;
+    }
+    
     setTranslatingId(t.id);
     try {
+      console.log('--- AI Translation Debug ---');
+      console.log('Source Text:', st);
+      console.log('Source Lang:', sc);
+      console.log('Target Langs:', ml);
+
       const res = await translateContent({ text: st, sourceLang: sc, targetLangs: ml, model: aiConfig.model, apiKey: aiConfig.apiKey });
+      
+      console.log('AI Response:', res);
+
       if (res) {
-        await fetch(`/api/localizedStrings/${t.id}`, {
+        const existingContent = (t.content as any) || {};
+        const newContent = { ...existingContent, ...res };
+        
+        console.log('Merging Content...', newContent);
+
+        const putRes = await fetch(`/api/localizedStrings/${encodeURIComponent(t.id)}`, {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ ...t, ...res }),
+          body: JSON.stringify({ 
+            id: t.id, 
+            content: newContent 
+          }),
         });
+
+        if (!putRes.ok) {
+          const err = await putRes.json();
+          console.error('Save failed:', err);
+          throw new Error('Save to database failed');
+        }
+
         mutateTrans();
         toast({ title: "AI 智译成功" });
       }
-    } catch (e) { toast({ variant: "destructive", title: "AI 翻译失败" }); }
-    finally { setTranslatingId(null); }
+    } catch (e: any) { 
+      console.error('AI Translation Full Error:', e);
+      toast({ variant: "destructive", title: "AI 翻译失败", description: e.message }); 
+    } finally { setTranslatingId(null); }
   };
 
   const handleSyncFromLocal = async () => {
@@ -365,7 +419,7 @@ export default function TranslationsPage() {
           if (flattenedByLocale[l][key]) payload[l] = flattenedByLocale[l][key];
         });
 
-        const res = await fetch(`/api/localizedStrings/${key}`, {
+        const res = await fetch(`/api/localizedStrings/${encodeURIComponent(key)}`, {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(payload),
@@ -400,16 +454,40 @@ export default function TranslationsPage() {
 
   const filteredTranslations = useMemo(() => {
     const list = activeTab === 'business' ? categorizedTranslations.business : categorizedTranslations.system;
-    return list.filter(t => {
+    
+    // 1. 过滤
+    const filtered = list.filter(t => {
       const search = searchQuery.toLowerCase();
-      const ms = t.id.toLowerCase().includes(search) || Object.values(t).some(v => typeof v === 'string' && v.toLowerCase().includes(search));
+      const contentValues = Object.values((t.content as any) || {});
+      const ms = t.id.toLowerCase().includes(search) || 
+                 Object.values(t).some(v => typeof v === 'string' && v.toLowerCase().includes(search)) ||
+                 contentValues.some(v => typeof v === 'string' && v.toLowerCase().includes(search));
       if (showOnlyDuplicates && activeTab === 'business') {
         let hasM = false; semanticDuplicates.forEach(ids => { if (ids.includes(t.id)) hasM = true; });
         return ms && hasM;
       }
       return ms;
     });
-  }, [categorizedTranslations, searchQuery, showOnlyDuplicates, semanticDuplicates, activeTab]);
+
+    // 2. 排序
+    return [...filtered].sort((a, b) => {
+      const { key, direction } = sortConfig;
+      let valA: any = (a as any)[key] || '';
+      let valB: any = (b as any)[key] || '';
+
+      if (key === 'updatedAt' || key === 'createdAt') {
+        valA = new Date(valA).getTime();
+        valB = new Date(valB).getTime();
+      } else {
+        valA = String(valA).toLowerCase();
+        valB = String(valB).toLowerCase();
+      }
+
+      if (valA < valB) return direction === 'asc' ? -1 : 1;
+      if (valA > valB) return direction === 'asc' ? 1 : -1;
+      return 0;
+    });
+  }, [categorizedTranslations, searchQuery, showOnlyDuplicates, semanticDuplicates, activeTab, sortConfig]);
 
   const paginatedTranslations = useMemo(() => {
     const start = (currentPage - 1) * itemsPerPage;
@@ -419,12 +497,19 @@ export default function TranslationsPage() {
   const totalPages = Math.ceil(filteredTranslations.length / itemsPerPage);
 
   const handleSave = async () => {
-    if (!formData.id) return;
+    const entryId = editingId || formData.id || (formData as any).__key;
+    if (!entryId) return;
+    
+    const contentPayload: Record<string, string> = {};
+    activeLanguages.forEach(l => {
+      contentPayload[l.code] = formData[l.code] || '';
+    });
+
     try {
-      await fetch(`/api/localizedStrings/${formData.id}`, {
+      await fetch(`/api/localizedStrings/${encodeURIComponent(entryId)}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(formData),
+        body: JSON.stringify({ id: entryId, content: contentPayload }),
       });
       setIsAdding(false); setEditingId(null); setFormData({ id: '' });
       mutateTrans();
@@ -487,7 +572,40 @@ export default function TranslationsPage() {
                          <span className="font-bold text-slate-900">{l.label}</span>
                          <span className="text-[10px] text-slate-400 font-mono uppercase">System Code: {l.code}</span>
                        </div>
-                       <Badge variant="secondary" className="bg-white border-slate-200 text-slate-500 font-bold px-3">ACTIVE</Badge>
+                        <div className="flex items-center gap-3">
+                          <Badge className="bg-emerald-500/10 hover:bg-emerald-500/15 text-emerald-600 border-emerald-500/20 font-bold px-3 py-1 rounded-full text-[10px] tracking-widest shadow-[0_0_15px_-3px_rgba(16,185,129,0.2)] transition-all">
+                            <span className="relative flex h-1.5 w-1.5 mr-2">
+                              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                              <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-emerald-500"></span>
+                            </span>
+                            ACTIVE
+                          </Badge>
+                          {l.code !== 'zh' && l.code !== 'en' && (
+                            <Button 
+                              variant="ghost" 
+                              size="icon" 
+                              onClick={async () => {
+                                if (!confirm(`确定要移除 ${l.label} 吗？\n移除后全站将不再显示该语种，但已有的翻译数据会保留在数据库中。`)) return;
+                                const updated = activeLanguages.filter(lang => lang.code !== l.code);
+                                try {
+                                  const res = await fetch('/api/settings/languages', {
+                                    method: 'PUT',
+                                    headers: { 'Content-Type': 'application/json' },
+                                    body: JSON.stringify({ supportedLanguages: updated }),
+                                  });
+                                  if (!res.ok) throw new Error();
+                                  mutateLangs();
+                                  toast({ title: "语种已移除" });
+                                } catch (e) {
+                                  toast({ variant: "destructive", title: "移除失败" });
+                                }
+                              }}
+                              className="h-9 w-9 rounded-xl text-slate-300 hover:text-red-500 hover:bg-red-50 transition-all"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          )}
+                        </div>
                      </div>
                    ))}
                  </div>
@@ -497,22 +615,38 @@ export default function TranslationsPage() {
                      <Input placeholder="代码 (如: jp)" value={newLang.code} onChange={e => setNewLang({...newLang, code: e.target.value.toLowerCase()})} className="h-12 rounded-xl text-xs bg-slate-50 border-none" />
                      <Input placeholder="名称 (如: 日语)" value={newLang.label} onChange={e => setNewLang({...newLang, label: e.target.value})} className="h-12 rounded-xl text-xs bg-slate-50 border-none" />
                    </div>
-                   <Button onClick={async () => { 
-                     if(!newLang.code) return; 
-                     const updated = [...activeLanguages, newLang]; 
-                     try {
-                       await fetch('/api/settings/languages', {
-                         method: 'PUT',
-                         headers: { 'Content-Type': 'application/json' },
-                         body: JSON.stringify({ supportedLanguages: updated }),
-                       });
-                       mutateLangs();
-                       setNewLang({ code: '', label: '' });
-                       toast({ title: "语种已添加" });
-                     } catch (e) {
-                       toast({ variant: "destructive", title: "添加失败" });
-                     }
-                   }} className="w-full h-12 rounded-xl text-xs font-bold uppercase tracking-widest shadow-lg">确认添加新语种</Button>
+                    <Button onClick={async () => { 
+                      if(!newLang.code || !newLang.label) {
+                        toast({ variant: "destructive", title: "请填写完整信息" });
+                        return;
+                      }
+                      
+                      if (activeLanguages.some(l => l.code === newLang.code)) {
+                        toast({ variant: "destructive", title: "该语种已存在" });
+                        return;
+                      }
+
+                      const updated = [...activeLanguages, newLang]; 
+                      try {
+                        const res = await fetch('/api/settings/languages', {
+                          method: 'PUT',
+                          headers: { 'Content-Type': 'application/json' },
+                          body: JSON.stringify({ supportedLanguages: updated }),
+                        });
+                        
+                        if (!res.ok) throw new Error('API request failed');
+                        
+                        mutateLangs();
+                        setNewLang({ code: '', label: '' });
+                        toast({ 
+                          title: "语种已激活", 
+                          description: `成功添加 ${newLang.label}，请刷新页面以确保全站同步。`,
+                        });
+                      } catch (e) {
+                        console.error('Add Language Error:', e);
+                        toast({ variant: "destructive", title: "添加失败", description: "无法连接到设置服务器" });
+                      }
+                    }} className="w-full h-12 rounded-xl text-xs font-bold uppercase tracking-widest shadow-lg">确认添加新语种</Button>
                  </div>
                </div>
             </DialogContent>
@@ -614,11 +748,27 @@ export default function TranslationsPage() {
           <Table>
             <TableHeader className="bg-slate-50/50 border-b border-slate-100">
               <TableRow className="hover:bg-transparent">
-                <TableHead className="pl-6 py-4 font-bold uppercase text-[9px] tracking-[0.2em] text-slate-400 w-72">Resource Identifier</TableHead>
+                <TableHead 
+                  className="pl-6 py-4 font-bold uppercase text-[9px] tracking-[0.2em] text-slate-400 w-72 cursor-pointer hover:text-primary transition-colors select-none"
+                  onClick={() => setSortConfig({
+                    key: 'id',
+                    direction: sortConfig.key === 'id' && sortConfig.direction === 'asc' ? 'desc' : 'asc'
+                  })}
+                >
+                  Resource Identifier {sortConfig.key === 'id' && (sortConfig.direction === 'asc' ? '↑' : '↓')}
+                </TableHead>
                 {activeLanguages.map(lang => (
                   <TableHead key={lang.code} className="font-bold uppercase text-[9px] tracking-[0.2em] text-slate-400">{lang.label}</TableHead>
                 ))}
-                <TableHead className="text-right pr-6 font-bold uppercase text-[9px] tracking-[0.2em] text-slate-400 w-32">Actions</TableHead>
+                <TableHead 
+                  className="text-right pr-6 font-bold uppercase text-[9px] tracking-[0.2em] text-slate-400 w-48 cursor-pointer hover:text-primary transition-colors select-none"
+                  onClick={() => setSortConfig({
+                    key: 'updatedAt',
+                    direction: sortConfig.key === 'updatedAt' && sortConfig.direction === 'desc' ? 'asc' : 'desc'
+                  })}
+                >
+                  Actions / Updated {sortConfig.key === 'updatedAt' && (sortConfig.direction === 'asc' ? '↑' : '↓')}
+                </TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -658,15 +808,17 @@ export default function TranslationsPage() {
                                       <CheckCircle2 className="h-3.5 w-3.5" /> 数据链路引用轨迹
                                     </p>
                                     <div className="max-h-[200px] overflow-y-auto pr-2 space-y-2">
-                                      {refs.map((ref, idx) => (
+                                      {refs.map((ref: any, idx: number) => (
                                         <div key={idx} className="flex items-center justify-between gap-6 p-2 rounded-xl hover:bg-slate-50 transition-colors">
                                           <div className="flex flex-col">
                                             <span className="text-[9px] text-slate-400 font-bold uppercase">{ref.type}</span>
                                             <span className="font-bold text-slate-700">{ref.name}</span>
                                           </div>
-                                          <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full hover:bg-primary/10 hover:text-primary" onClick={() => window.open(ref.type.includes('图库') ? '/admin/gallery' : `/admin/products/editor?id=${ref.id}`, '_blank')}>
-                                            <ExternalLink className="h-4 w-4" />
-                                          </Button>
+                                          {ref.linkable && (
+                                            <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full hover:bg-primary/10 hover:text-primary" onClick={() => window.open(`/admin/products/editor?id=${ref.id}`, '_blank')}>
+                                              <ExternalLink className="h-4 w-4" />
+                                            </Button>
+                                          )}
                                         </div>
                                       ))}
                                     </div>
@@ -714,13 +866,15 @@ export default function TranslationsPage() {
                     {activeLanguages.map(lang => (
                       <TableCell key={lang.code} className="py-3">
                         {editingId === t.id ? (
-                          <Input 
+                          <Textarea 
                             value={formData[lang.code] || ''} 
                             onChange={e => setFormData({...formData, [lang.code]: e.target.value})} 
-                            className="h-9 text-xs rounded-lg bg-slate-50 border-none focus-visible:ring-1 focus-visible:ring-primary/20" 
+                            className="min-h-[40px] text-xs rounded-lg bg-slate-50 border-none focus-visible:ring-1 focus-visible:ring-primary/20 py-2" 
                           />
                         ) : (
-                          <span className="text-xs font-medium text-slate-600 line-clamp-2 leading-relaxed">{t[lang.code] || <span className="opacity-20 italic">Empty Payload</span>}</span>
+                          <span className="text-xs font-medium text-slate-600 line-clamp-2 leading-relaxed">
+                            {((t.content as any)?.[lang.code] || (['zh', 'en', 'idn', 'vi'].includes(lang.code) ? (t as any)[lang.code] : null)) || <span className="opacity-20 italic">Empty Payload</span>}
+                          </span>
                         )}
                       </TableCell>
                     ))}
@@ -746,7 +900,14 @@ export default function TranslationsPage() {
                                {translatingId === t.id ? <Loader2 className="h-4 w-4 animate-spin text-white" /> : <Sparkles className="h-4 w-4 text-white" />}
                              </ShinyButton>
                            )}
-                           <Button variant="ghost" size="icon" onClick={() => { setFormData(t); setEditingId(t.id); }} className="h-10 w-10 rounded-xl opacity-0 group-hover:opacity-100 transition-all hover:bg-primary/5 hover:text-primary">
+                           <Button variant="ghost" size="icon" onClick={() => { 
+                             const initialData: any = { __key: t.id };
+                             activeLanguages.forEach(l => {
+                               initialData[l.code] = (t.content as any)?.[l.code] || (['zh', 'en', 'idn', 'vi'].includes(l.code) ? (t as any)[l.code] : '');
+                             });
+                             setFormData(initialData); 
+                             setEditingId(t.id); 
+                           }} className="h-10 w-10 rounded-xl opacity-0 group-hover:opacity-100 transition-all hover:bg-primary/5 hover:text-primary">
                              <Edit2 className="h-4 w-4" />
                            </Button>
                             {refs.length === 0 && (
@@ -815,6 +976,53 @@ export default function TranslationsPage() {
             </div>
           </div>
         )}
+
+        {/* 翻译资产维护指南 */}
+        <div className="mt-16 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          <div className="bg-white/40 backdrop-blur-xl p-6 rounded-[2rem] border border-white/60 shadow-sm group hover:shadow-xl hover:shadow-primary/5 transition-all duration-500">
+            <div className="h-12 w-12 rounded-2xl bg-primary/10 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+              <Layers className="h-5 w-5 text-primary" />
+            </div>
+            <h4 className="text-[11px] font-bold uppercase tracking-widest text-primary mb-2">词条归属划分</h4>
+            <ul className="space-y-2 text-[10px] text-slate-500 leading-relaxed font-medium">
+              <li>• <span className="text-slate-900">业务库</span>：包含产品详情、规格、核心优势等动态内容。</li>
+              <li>• <span className="text-slate-900">系统库</span>：包含导航、按钮、类目名称、站点基础设施。</li>
+            </ul>
+          </div>
+
+          <div className="bg-white/40 backdrop-blur-xl p-6 rounded-[2rem] border border-white/60 shadow-sm group hover:shadow-xl hover:shadow-primary/5 transition-all duration-500">
+            <div className="h-12 w-12 rounded-2xl bg-emerald-100/50 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+              <BookOpen className="h-5 w-5 text-emerald-600" />
+            </div>
+            <h4 className="text-[11px] font-bold uppercase tracking-widest text-emerald-600 mb-2">内容录入规范</h4>
+            <ul className="space-y-2 text-[10px] text-slate-500 leading-relaxed font-medium">
+              <li>• <span className="text-slate-900">HTML 支持</span>：支持基础标签（如 b, i, table），AI 会自动保留。</li>
+              <li>• <span className="text-slate-900">占位符</span>：请勿修改 %s 或 {} 等动态占位符，以免程序报错。</li>
+            </ul>
+          </div>
+
+          <div className="bg-white/40 backdrop-blur-xl p-6 rounded-[2rem] border border-white/60 shadow-sm group hover:shadow-xl hover:shadow-primary/5 transition-all duration-500">
+            <div className="h-12 w-12 rounded-2xl bg-blue-100/50 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+              <ShieldCheck className="h-5 w-5 text-blue-600" />
+            </div>
+            <h4 className="text-[11px] font-bold uppercase tracking-widest text-blue-600 mb-2">词条状态说明</h4>
+            <ul className="space-y-2 text-[10px] text-slate-500 leading-relaxed font-medium">
+              <li>• <span className="text-slate-900">ACTIVE</span>：语种已在前端激活，内容会实时同步至全站。</li>
+              <li>• <span className="text-slate-900">EMPTY</span>：内容为空或等于 ID，AI 智译会自动扫描填充。</li>
+            </ul>
+          </div>
+
+          <div className="bg-white/40 backdrop-blur-xl p-6 rounded-[2rem] border border-white/60 shadow-sm group hover:shadow-xl hover:shadow-primary/5 transition-all duration-500">
+            <div className="h-12 w-12 rounded-2xl bg-purple-100/50 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+              <Info className="h-5 w-5 text-purple-600" />
+            </div>
+            <h4 className="text-[11px] font-bold uppercase tracking-widest text-purple-600 mb-2">命名空间前缀</h4>
+            <ul className="space-y-2 text-[10px] text-slate-500 leading-relaxed font-medium">
+              <li>• <span className="text-slate-900">prod_</span>：产品；<span className="text-slate-900">spec_</span>：规格参数。</li>
+              <li>• <span className="text-slate-900">ui_</span>：界面；<span className="text-slate-900">nav_</span>：导航；<span className="text-slate-900">cat_</span>：类目。</li>
+            </ul>
+          </div>
+        </div>
       </div>
 
       <Dialog open={isAdding} onOpenChange={setIsAdding}>
@@ -842,10 +1050,10 @@ export default function TranslationsPage() {
               {activeLanguages.map(lang => (
                 <div key={lang.code} className="space-y-3">
                   <Label className="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-400 pl-1">{lang.label} 内容</Label>
-                  <Input 
+                  <Textarea 
                     value={formData[lang.code] || ''} 
                     onChange={e => setFormData({...formData, [lang.code]: e.target.value})} 
-                    className="rounded-2xl h-14 text-sm bg-slate-50 border-slate-100 focus-visible:ring-2 focus-visible:ring-primary/10 transition-all" 
+                    className="rounded-2xl min-h-[80px] text-sm bg-slate-50 border-slate-100 focus-visible:ring-2 focus-visible:ring-primary/10 transition-all py-4" 
                   />
                 </div>
               ))}

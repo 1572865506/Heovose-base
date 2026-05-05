@@ -1,5 +1,5 @@
 
-export type Locale = 'en' | 'zh' | 'idn' | 'vi';
+export type Locale = 'en' | 'zh' | 'id' | 'vi';
 
 export const translations = {
   en: {
@@ -354,7 +354,7 @@ export const translations = {
       }
     }
   },
-  idn: {
+  id: {
     core_advantages: 'Keunggulan Utama',
     product_contact_now: 'Hubungi Sekarang',
     product_spec_sheet: 'Lembar Spek',

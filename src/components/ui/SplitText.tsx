@@ -118,6 +118,10 @@ const SplitText = ({
         reduceWhiteSpace: false,
         onSplit: (self: any) => {
           assignTargets(self);
+          // Force lines to inherit line-height
+          if (self.lines && self.lines.length) {
+            gsap.set(self.lines, { lineHeight: 'inherit' });
+          }
           const tween = gsap.fromTo(
             targets,
             { ...from },
@@ -170,7 +174,8 @@ const SplitText = ({
         JSON.stringify(to),
         threshold,
         rootMargin,
-        fontsLoaded
+        fontsLoaded,
+        className
       ],
       scope: ref
     }
@@ -182,7 +187,8 @@ const SplitText = ({
     display: 'block',
     whiteSpace: 'normal',
     wordWrap: 'break-word',
-    willChange: 'transform, opacity'
+    willChange: 'transform, opacity',
+    lineHeight: 'inherit'
   };
   const classes = `split-parent ${className}`;
   const Tag = tag || 'p';

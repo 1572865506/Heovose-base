@@ -1,6 +1,8 @@
 
 "use client";
 
+export const dynamic = "force-dynamic";
+
 import React, { useState, useMemo, useEffect, Suspense, use } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
@@ -52,33 +54,42 @@ function ProductListContent() {
   const router = useRouter();
   
   const [locale, setLocale] = useState<Locale>('en');
-  const { t: tr } = useTranslations(locale);
+  const [isLocaleReady, setIsLocaleReady] = useState(false);
+  
   const [searchQuery, setSearchQuery] = useState('');
   const [activeLine, setActiveLine] = useState<BusinessLine>('wholesale');
   const [selectedCategoryId, setSelectedCategoryId] = useState<string | null>(null);
   
   const categoryParam = searchParams.get('category');
   const lineParam = searchParams.get('line') as BusinessLine;
-  const t = translations[locale].products;
 
   const { data: products, isLoading: isProdsLoading } = useLocalCollection<Product>('products');
   const { data: categories, isLoading: isCatsLoading } = useLocalCollection<Category>('productCategories');
-  const { data: allTranslations } = useLocalCollection<LocalizedString>('localizedStrings');
   const { data: langSettings } = useLocalDoc<any>('settings', 'languages');
+  const { t: tr, isLoading: isTrLoading } = useTranslations(locale);
 
   // 1. 智能判定语种
   useEffect(() => {
     const detectLocale = () => {
       const langParam = searchParams.get('lang');
-      if (langParam && ['en', 'zh', 'idn', 'vi'].includes(langParam)) return langParam as Locale;
-      const saved = localStorage.getItem('heovose-locale') as Locale;
-      if (saved && ['en', 'zh', 'idn', 'vi'].includes(saved)) return saved;
-      const browserLang = navigator.language.split('-')[0] as Locale;
-      if (['en', 'zh', 'idn', 'vi'].includes(browserLang)) return browserLang;
+      if (langParam && ['en', 'zh', 'id', 'vi'].includes(langParam)) return langParam as Locale;
+      
+      const saved = typeof window !== 'undefined' ? localStorage.getItem('heovose-locale') as Locale : null;
+      if (saved && ['en', 'zh', 'id', 'vi'].includes(saved)) return saved;
+      
+      const browserLang = typeof navigator !== 'undefined' ? navigator.language.split('-')[0] as Locale : 'en';
+      if (['en', 'zh', 'id', 'vi'].includes(browserLang)) return browserLang;
+      
       return (langSettings?.defaultLanguage as Locale) || 'en';
     };
+    
     setLocale(detectLocale());
+    setIsLocaleReady(true);
   }, [searchParams, langSettings]);
+
+  if (isProdsLoading || isCatsLoading || isTrLoading || !isLocaleReady) {
+    return <div className="min-h-screen flex items-center justify-center bg-background"><Loader2 className="h-10 w-10 animate-spin opacity-20 text-primary" /></div>;
+  }
 
   // 2. 初始化业务线与分类
   useEffect(() => {
@@ -95,12 +106,8 @@ function ProductListContent() {
     }
   }, [categoryParam, lineParam, categories]);
 
-  const getT = (id: string | null | undefined) => {
-    if (!id) return '';
-    const entry = allTranslations?.find(item => item.id === id);
-    if (!entry) return id || '';
-    return entry[locale] || entry['en'] || entry['zh'] || id || '';
-  };
+  // Use standard translation hook
+  const getT = tr;
 
   // 3. 计算当前业务线下可选的分类
   const filteredCategories = useMemo(() => {
@@ -145,12 +152,11 @@ function ProductListContent() {
       const matchesCategory = !selectedCategoryId || p.categoryId === selectedCategoryId;
       
       // 最后匹配搜索
-      const nameText = getT(p.nameTextId) || '';
-      const matchesSearch = nameText.toLowerCase().includes(searchQuery.toLowerCase());
+      const matchSearch = getT(p.nameTextId).toLowerCase().includes(searchQuery.toLowerCase());
       
-      return matchesCategory && matchesSearch;
+      return matchesCategory && matchSearch;
     });
-  }, [products, categories, activeLine, selectedCategoryId, searchQuery, allTranslations, locale]);
+  }, [products, categories, activeLine, selectedCategoryId, searchQuery, locale]);
 
   const rootCategory = useMemo(() => {
     if (!categories) return null;
@@ -162,14 +168,14 @@ function ProductListContent() {
     if (!selectedCategoryId) return tr('products_allCategories');
     const cat = categories?.find(c => c.id === selectedCategoryId);
     return cat ? getT(cat.nameTextId) : tr('products_allCategories');
-  }, [selectedCategoryId, categories, allTranslations, locale, tr]);
+  }, [selectedCategoryId, categories, locale, tr]);
 
   const handleLineSwitch = (line: BusinessLine) => {
     setActiveLine(line);
     setSelectedCategoryId(null); // 切换大类时重置具体分类
   };
 
-  const isLoading = isProdsLoading || isCatsLoading;
+  const isLoading = isProdsLoading || isCatsLoading || isTrLoading;
 
   return (
     <main className="relative min-h-screen bg-[#F8F9FA]">

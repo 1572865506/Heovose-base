@@ -11,10 +11,13 @@ export function useLocalCollection<T = any>(path: string | null) {
       const res = await fetch(`/api/${currentPath}?_t=${Date.now()}`);
       if (!res.ok) throw new Error(`Failed to fetch collection "${currentPath}": ${res.statusText} (Status: ${res.status})`);
       const json = await res.json();
+      if (!Array.isArray(json)) {
+        throw new Error(`Collection "${currentPath}" returned invalid data (not an array)`);
+      }
       setData(json);
       setError(null);
     } catch (err: any) {
-      console.error(`Error fetching local collection "${currentPath}" from /api/${currentPath}:`, err);
+      console.error(`CRITICAL: Failed to fetch "${currentPath}":`, err);
       setError(err);
     } finally {
       setIsLoading(false);

@@ -282,7 +282,9 @@ export default function AdminHomePage() {
     const cat = categories?.find((c: any) => c.id === id);
     if (!cat) return id;
     const trans = translations?.find((t: any) => t.id === cat.nameTextId);
-    return trans?.zh || id;
+    if (!trans) return id;
+    const content = (trans.content as any) || {};
+    return content.zh || (trans as any).zh || id;
   };
 
   if (isLoading) {
