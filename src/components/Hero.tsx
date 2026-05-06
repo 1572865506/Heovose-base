@@ -34,7 +34,7 @@ import { analyzeImageBrightness } from '@/lib/image-analysis';
 import { useTranslations } from '@/hooks/use-translations';
 
 export function Hero({ locale, homeConfig, isLoading, onThemeChange }: HeroProps) {
-  const { t: tr } = useTranslations(locale);
+  const { t: tr, defaultLanguage } = useTranslations(locale);
 
   // 1. Prepare Slides Data
   const slides: HeroSlide[] = React.useMemo(() => {
@@ -45,11 +45,11 @@ export function Hero({ locale, homeConfig, isLoading, onThemeChange }: HeroProps
     // Legacy Fallback
     return [{
       id: 'legacy-default',
-      headlineZh: homeConfig?.heroHeadlineZh || tr('hero_headline'),
-      headlineEn: homeConfig?.heroHeadlineEn || tr('hero_headline'),
-      subheadlineZh: homeConfig?.heroSubheadlineZh || tr('hero_subheadline'),
-      subheadlineEn: homeConfig?.heroSubheadlineEn || tr('hero_subheadline'),
-      bgImage: "/image/hero-bg.png",
+      headlineZh: homeConfig?.heroHeadlineZh || '',
+      headlineEn: homeConfig?.heroHeadlineEn || '',
+      subheadlineZh: homeConfig?.heroSubheadlineZh || '',
+      subheadlineEn: homeConfig?.heroSubheadlineEn || '',
+      bgImage: homeConfig?.heroBgImage || "",
     }];
   }, [homeConfig, tr]);
 
@@ -96,25 +96,38 @@ export function Hero({ locale, homeConfig, isLoading, onThemeChange }: HeroProps
   const scrollPrev = useCallback(() => emblaApi && emblaApi.scrollPrev(), [emblaApi]);
   const scrollNext = useCallback(() => emblaApi && emblaApi.scrollNext(), [emblaApi]);
 
-  // 3. Entry Cards Config
-  // --- 4. 最终显示文案判定 (优先使用翻译钩子，如果没有则回退到配置) ---
-  const displayWholesaleButton = tr('hero_wholesale_title') || (locale === 'zh'
-    ? (homeConfig?.heroWholesaleButtonZh || '批发产品')
-    : (homeConfig?.heroWholesaleButtonEn || 'Wholesale Products'));
+  // 3. Prepare Entry Card Data
+  const isKey = (s: string) => /^(HERO_|hero_|slide_|SLIDE_)/i.test(s) || s.includes('_177');
 
-  const displayWholesaleDesc = tr('hero_wholesale_desc') || (locale === 'zh'
-    ? (homeConfig?.heroWholesaleDescriptionZh || homeConfig?.heroWholesaleDescZh || '全系列一体机及专业准系统方案')
-    : (homeConfig?.heroWholesaleDescriptionEn || homeConfig?.heroWholesaleDescEn || 'Full range of AIO PCs and professional barebones kits'));
+  const getFallback = (zh: string | undefined | null, en: string | undefined | null) => {
+    if (locale === 'zh' && zh) return zh;
+    if (locale === 'en' && en) return en;
+    // Follow background default setting
+    if (defaultLanguage === 'en') return en || zh || '';
+    return zh || en || '';
+  };
 
-  const displayProjectButton = tr('hero_project_title') || (locale === 'zh'
-    ? (homeConfig?.heroProjectButtonZh || '项目产品')
-    : (homeConfig?.heroProjectButtonEn || 'Project Products'));
+  const rawWholesaleTitle = tr('hero_wholesale_title');
+  const displayWholesaleButton = (!rawWholesaleTitle || isKey(rawWholesaleTitle))
+    ? getFallback(homeConfig?.heroWholesaleButtonZh, homeConfig?.heroWholesaleButtonEn)
+    : rawWholesaleTitle;
 
-  const displayProjectDesc = tr('hero_project_desc') || (locale === 'zh'
-    ? (homeConfig?.heroProjectDescriptionZh || homeConfig?.heroProjectDescZh || '大型 LED 工程及行业解决方案')
-    : (homeConfig?.heroProjectDescriptionEn || homeConfig?.heroProjectDescEn || 'Large-scale LED engineering and industry solutions'));
+  const rawWholesaleDesc = tr('hero_wholesale_desc');
+  const displayWholesaleDesc = (!rawWholesaleDesc || isKey(rawWholesaleDesc))
+    ? getFallback(homeConfig?.heroWholesaleDescriptionZh, homeConfig?.heroWholesaleDescriptionEn)
+    : rawWholesaleDesc;
 
-  const displayExploreCTA = tr('hero_cta') || (locale === 'zh' ? '探索方案' : 'Explore Solutions');
+  const rawProjectTitle = tr('hero_project_title');
+  const displayProjectButton = (!rawProjectTitle || isKey(rawProjectTitle))
+    ? getFallback(homeConfig?.heroProjectButtonZh, homeConfig?.heroProjectButtonEn)
+    : rawProjectTitle;
+
+  const rawProjectDesc = tr('hero_project_desc');
+  const displayProjectDesc = (!rawProjectDesc || isKey(rawProjectDesc))
+    ? getFallback(homeConfig?.heroProjectDescriptionZh, homeConfig?.heroProjectDescriptionEn)
+    : rawProjectDesc;
+
+  const displayExploreCTA = ''; // Removed redundant global CTA
 
   const getEntryHref = (id: string | undefined, defaultLine: string) => {
     if (!id || id === 'none') return `/products?line=${defaultLine}`;
@@ -125,8 +138,8 @@ export function Hero({ locale, homeConfig, isLoading, onThemeChange }: HeroProps
   const wholesaleHref = getEntryHref(homeConfig?.heroWholesaleCategoryId, 'wholesale');
   const projectHref = getEntryHref(homeConfig?.heroProjectCategoryId, 'project');
 
-  const wholesaleBg = homeConfig?.entryCards?.wholesaleBg || "/image/Wholesale Product.png";
-  const projectBg = homeConfig?.entryCards?.projectBg || "/image/Project Product-2.png";
+  const wholesaleBg = homeConfig?.heroWholesaleBg || "";
+  const projectBg = homeConfig?.heroProjectBg || "";
 
   const hasWholesaleConfig = !!(homeConfig?.heroWholesaleButtonZh?.trim() || homeConfig?.heroWholesaleButtonEn?.trim());
   const hasProjectConfig = !!(homeConfig?.heroProjectButtonZh?.trim() || homeConfig?.heroProjectButtonEn?.trim());
@@ -167,7 +180,7 @@ export function Hero({ locale, homeConfig, isLoading, onThemeChange }: HeroProps
               <div className="absolute inset-0">
                   <Image
                     src={slide.bgImage}
-                    alt={locale === 'zh' ? slide.headlineZh : slide.headlineEn}
+                    alt={getFallback(slide.headlineZh, slide.headlineEn)}
                     fill
                     className="object-cover object-[66%_center] md:object-center"
                     priority={index === 0 || slide.id === 'legacy-default'}
@@ -183,7 +196,7 @@ export function Hero({ locale, homeConfig, isLoading, onThemeChange }: HeroProps
                 <div className="max-w-[50rem] flex flex-col gap-4 md:gap-6 animate-fade-in text-center md:text-left mx-auto md:mx-0 mt-20 md:mt-32">
                   <SplitText
                     key={`headline-${slide.id}-${selectedIndex === index}-v1.1`}
-                    text={tr(`hero_slide_${slide.id}_headline`) || (locale === 'zh' ? slide.headlineZh : slide.headlineEn)}
+                    text={tr(`hero_slide_${slide.id.replace(/^slide_/, '')}_headline`) || getFallback(slide.headlineZh, slide.headlineEn)}
                     className={cn(
                       "text-4xl md:text-5xl lg:text-[4rem] font-headline font-black leading-[1.1] tracking-tight drop-shadow-[0_4px_30px_rgba(0,0,0,0.5)] gpu-accelerated overflow-visible",
                       currentTheme === 'light' ? "text-slate-900" : "text-white"
@@ -210,7 +223,7 @@ export function Hero({ locale, homeConfig, isLoading, onThemeChange }: HeroProps
                     `}} />
                     <SplitText
                       key={`subheadline-${slide.id}-${selectedIndex === index}-${locale}-v1.35`}
-                      text={tr(`hero_slide_${slide.id}_subheadline`) || (locale === 'zh' ? slide.subheadlineZh : slide.subheadlineEn)}
+                      text={tr(`hero_slide_${slide.id.replace(/^slide_/, '')}_subheadline`) || getFallback(slide.subheadlineZh, slide.subheadlineEn)}
                       className={cn(
                         "hero-subheadline text-xl md:text-2xl lg:text-[3rem] font-body max-w-full leading-[1.35] tracking-tight drop-shadow-[0_2px_15px_rgba(0,0,0,0.4)] block mx-auto md:mx-0 gpu-accelerated overflow-visible",
                         currentTheme === 'light' ? "text-slate-800/80" : "text-white/90"
@@ -255,15 +268,21 @@ export function Hero({ locale, homeConfig, isLoading, onThemeChange }: HeroProps
                     (!hasProjectConfig) && "sm:max-w-[calc(50%-1rem)]"
                   )}
                 >
-                  <div className="absolute inset-0 z-0">
-                    <Image
-                      src={wholesaleBg}
-                      alt="Wholesale"
-                      fill
-                      className="object-cover transition-transform duration-1000 ease-out group-hover:scale-110"
-                      sizes="(max-width: 768px) 100vw, 50vw"
-                    />
-                    <div className="absolute inset-0 group-hover:bg-primary/10 transition-colors duration-700" />
+                  <div className={cn("absolute inset-0 z-0", !wholesaleBg && "bg-primary")}>
+                    {wholesaleBg ? (
+                      <>
+                        <Image
+                          src={wholesaleBg}
+                          alt="Wholesale"
+                          fill
+                          className="object-cover transition-transform duration-1000 ease-out group-hover:scale-110"
+                          sizes="(max-width: 768px) 100vw, 50vw"
+                        />
+                        <div className="absolute inset-0 group-hover:bg-primary/10 transition-colors duration-700" />
+                      </>
+                    ) : (
+                      <div className="absolute inset-0 bg-gradient-to-br from-primary via-primary/80 to-primary/60" />
+                    )}
                   </div>
                   <div className="relative z-20 h-full p-6 md:p-8 flex flex-col justify-end">
                     <div className="flex items-end justify-between">
@@ -294,15 +313,21 @@ export function Hero({ locale, homeConfig, isLoading, onThemeChange }: HeroProps
                     (!hasWholesaleConfig) && "sm:max-w-[calc(50%-1rem)]"
                   )}
                 >
-                  <div className="absolute inset-0 z-0">
-                    <Image
-                      src={projectBg}
-                      alt="Projects"
-                      fill
-                      className="object-cover transition-transform duration-1000 ease-out group-hover:scale-110"
-                      sizes="(max-width: 768px) 100vw, 50vw"
-                    />
-                    <div className="absolute inset-0 group-hover:bg-accent/10 transition-colors duration-700" />
+                  <div className={cn("absolute inset-0 z-0", !projectBg && "bg-accent")}>
+                    {projectBg ? (
+                      <>
+                        <Image
+                          src={projectBg}
+                          alt="Projects"
+                          fill
+                          className="object-cover transition-transform duration-1000 ease-out group-hover:scale-110"
+                          sizes="(max-width: 768px) 100vw, 50vw"
+                        />
+                        <div className="absolute inset-0 group-hover:bg-accent/10 transition-colors duration-700" />
+                      </>
+                    ) : (
+                      <div className="absolute inset-0 bg-gradient-to-br from-accent via-accent/80 to-accent/60" />
+                    )}
                   </div>
                   <div className="relative z-20 h-full p-6 md:p-8 flex flex-col justify-end">
                     <div className="flex items-end justify-between">

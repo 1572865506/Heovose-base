@@ -28,8 +28,32 @@ import {
   Trash2,
   ArrowUp,
   ArrowDown,
-  Layers
+  Layers,
+  LayoutGrid,
+  Edit3,
+  Info,
+  GripVertical,
+  RectangleHorizontal,
+  RectangleVertical,
+  Square
 } from 'lucide-react';
+import {
+  DndContext, 
+  closestCenter,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  DragEndEvent
+} from '@dnd-kit/core';
+import {
+  arrayMove,
+  SortableContext,
+  sortableKeyboardCoordinates,
+  rectSortingStrategy,
+  useSortable
+} from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
 import { useToast } from '@/hooks/use-toast';
 import { translateContent } from '@/ai/flows/translate-flow';
 import { cn } from '@/lib/utils';
@@ -59,13 +83,141 @@ const AiGradientDef = () => (
   </svg>
 );
 
+// Sortable Item Component for Bento Grid
+function SortableBentoItem({ item, onEdit, onDelete }: { item: any, onEdit: () => void, onDelete: () => void }) {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging
+  } = useSortable({ id: item.id });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    zIndex: isDragging ? 50 : 1,
+    opacity: isDragging ? 0.6 : 1,
+  };
+
+  return (
+    <div 
+      ref={setNodeRef} 
+      style={style}
+      className={cn(
+        "group relative bg-white/70 backdrop-blur-md rounded-[2rem] border border-slate-200/60 p-3 hover:border-primary/40 hover:bg-white transition-all duration-500 shadow-sm",
+        isDragging && "shadow-2xl ring-2 ring-primary/20 scale-105"
+      )}
+    >
+      <div className="relative aspect-square rounded-2xl overflow-hidden mb-3 shadow-inner bg-slate-50">
+        {item.imageUrl ? (
+          <Image src={item.imageUrl} alt={item.titleZh} fill className="object-cover transition-transform group-hover:scale-105" />
+        ) : (
+          <div className="absolute inset-0 flex items-center justify-center text-slate-300">
+            <ImageIcon className="h-8 w-8 opacity-20" />
+          </div>
+        )}
+        
+        {/* Drag Handle Overlay */}
+        <div 
+          {...attributes} 
+          {...listeners}
+          className="absolute inset-0 flex items-center justify-center bg-black/0 hover:bg-black/5 opacity-0 group-hover:opacity-100 transition-all cursor-grab active:cursor-grabbing z-20"
+        >
+          <div className="bg-white/90 p-2 rounded-full shadow-lg border border-slate-200 transform translate-y-4 group-hover:translate-y-0 transition-transform">
+            <GripVertical className="h-4 w-4 text-slate-400" />
+          </div>
+        </div>
+
+        {/* Order Badge */}
+        <div className="absolute top-2 left-2 w-6 h-6 rounded-full bg-white/95 backdrop-blur-md border border-slate-200 flex items-center justify-center text-[9px] font-bold text-primary shadow-sm z-10">
+          {item.order}
+        </div>
+        
+        {/* Size Badge */}
+        <div className="absolute top-2 right-2 bg-slate-900/90 backdrop-blur-sm text-white text-[8px] font-black px-2 py-1 rounded-lg shadow-lg z-10 flex items-center gap-1.5 border border-white/10 uppercase tracking-tighter">
+          {item.gridSize === 'wide' ? (
+            <><RectangleHorizontal className="h-2.5 w-2.5 text-primary-foreground/70" /> 2×1</>
+          ) : item.gridSize === 'tall' ? (
+            <><RectangleVertical className="h-2.5 w-2.5 text-primary-foreground/70" /> 1×2</>
+          ) : item.gridSize === 'large' ? (
+            <><Square className="h-2.5 w-2.5 text-primary-foreground/70" /> 2×2</>
+          ) : (
+            <><Square className="h-2 w-2 text-primary-foreground/70 opacity-60" /> 1×1</>
+          )}
+        </div>
+      </div>
+      
+      <div className="space-y-1.5 px-1">
+        <div className="flex items-center justify-between">
+          <p className="text-[9px] font-bold text-primary/60 uppercase tracking-widest truncate flex-1">{item.tagZh || '无标签'}</p>
+          <div className="flex gap-0.5">
+            <Button variant="ghost" size="icon" className="h-7 w-7 rounded-full hover:bg-primary/10 hover:text-primary" onClick={(e) => { e.stopPropagation(); onEdit(); }}>
+              <Edit3 className="h-3 w-3" />
+            </Button>
+            <Button variant="ghost" size="icon" className="h-7 w-7 rounded-full hover:bg-destructive/10 hover:text-destructive" onClick={(e) => { e.stopPropagation(); onDelete(); }}>
+              <Trash2 className="h-3 w-3" />
+            </Button>
+          </div>
+        </div>
+        <h4 className="text-xs font-bold text-slate-800 line-clamp-1">{item.titleZh}</h4>
+      </div>
+    </div>
+  );
+}
+
 export default function AdminHomePage() {
   const { toast } = useToast();
   const { data: heroData, isLoading: isHeroLoading, mutate: mutateHero } = useLocalDoc<any>('homepageContent', 'hero');
   const { data: videoData, isLoading: isVideoLoading, mutate: mutateVideo } = useLocalDoc<any>('homepageContent', 'video');
+  const { data: bentoData, isLoading: isBentoLoading, mutate: mutateBento } = useLocalDoc<any>('homepageContent', 'bento');
+  const { data: bentoItems, mutate: mutateBentoItems } = useLocalCollection<any>('bentoItems');
   const { data: aiConfig } = useLocalDoc<any>('settings', 'ai');
   const { data: categories } = useLocalCollection<any>('productCategories');
-  const { data: translations } = useLocalCollection<any>('localizedStrings');
+  const { data: translations, mutate: mutateTrans } = useLocalCollection<any>('localizedStrings');
+
+  // DnD Sensors for Grid Sorting
+  const sensors = useSensors(
+    useSensor(PointerSensor, {
+      activationConstraint: {
+        distance: 8,
+      },
+    }),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    })
+  );
+
+  const handleDragEnd = async (event: DragEndEvent) => {
+    const { active, over } = event;
+    if (!over || active.id === over.id) return;
+
+    const oldIndex = bentoItems.findIndex((item: any) => item.id === active.id);
+    const newIndex = bentoItems.findIndex((item: any) => item.id === over.id);
+
+    const newOrder = arrayMove(bentoItems, oldIndex, newIndex);
+    
+    // Optimistically update local state
+    mutateBentoItems(newOrder, false);
+
+    // Sync with backend using the new batch reorder API
+    try {
+      const res = await fetch('/api/bentoItems/reorder', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          ids: newOrder.map((item: any) => item.id)
+        })
+      });
+      if (!res.ok) throw new Error('Sync failed');
+      mutateBentoItems();
+      toast({ title: "排序同步成功" });
+    } catch (error) {
+      toast({ variant: "destructive", title: "排序同步失败", description: "由于网络原因，排序可能未保存" });
+      mutateBentoItems(); // Revert to server state
+    }
+  };
 
   const isLoading = isHeroLoading || isVideoLoading;
 
@@ -84,21 +236,34 @@ export default function AdminHomePage() {
     heroProjectDescriptionEn: '',
     heroWholesaleCategoryId: '',
     heroProjectCategoryId: '',
+    heroWholesaleBg: '',
+    heroProjectBg: '',
     heroSlides: [],
     isVideoEnabled: true,
     videoTitleZh: '',
     videoTitleEn: '',
     videoSubtitleZh: '',
     videoSubtitleEn: '',
-    videoUrl: ''
+    videoUrl: '',
+    bentoTitleZh: '',
+    bentoTitleEn: '',
+    bentoSubtitleZh: '',
+    bentoSubtitleEn: ''
   });
 
   const [isSaving, setIsSaving] = useState(false);
   const [isAiProcessing, setIsAiProcessing] = useState(false);
-  const [pickerConfig, setPickerConfig] = useState<{ open: boolean, slideIndex: number | null }>({ open: false, slideIndex: null });
+  const [pickerConfig, setPickerConfig] = useState<{ open: boolean, type: 'slide' | 'video' | 'wholesale' | 'project' | 'bento', slideIndex: number | null, bentoId?: string }>({ open: false, type: 'slide', slideIndex: null });
+  const [bentoDialog, setBentoDialog] = useState<{ open: boolean, item: any | null }>({ open: false, item: null });
 
   useEffect(() => {
-    if (heroData || videoData) {
+    if ((heroData || videoData) && translations) {
+      // 尝试从翻译词条中获取内容以实现联动 (系统文案 Key)
+      const getTrans = (id: string, lang: 'zh' | 'en') => {
+        const entry = translations.find((t: any) => t.id === id);
+        return entry?.content?.[lang] || '';
+      };
+
       const existingSlides = heroData?.heroSlides || [];
       const initialSlides = existingSlides.length > 0 
         ? existingSlides 
@@ -112,85 +277,156 @@ export default function AdminHomePage() {
             priority: 0
           }];
 
-      setFormData({ 
-        ...formData, 
+      setFormData((prev: any) => ({ 
+        ...prev, 
         heroHeadlineZh: heroData?.heroHeadlineZh || '',
         heroHeadlineEn: heroData?.heroHeadlineEn || '',
         heroSubheadlineZh: heroData?.heroSubheadlineZh || '',
         heroSubheadlineEn: heroData?.heroSubheadlineEn || '',
-        heroWholesaleButtonZh: heroData?.heroWholesaleButtonZh || '',
-        heroWholesaleButtonEn: heroData?.heroWholesaleButtonEn || '',
-        heroWholesaleDescriptionZh: heroData?.heroWholesaleDescriptionZh || '',
-        heroWholesaleDescriptionEn: heroData?.heroWholesaleDescriptionEn || '',
-        heroProjectButtonZh: heroData?.heroProjectButtonZh || '',
-        heroProjectButtonEn: heroData?.heroProjectButtonEn || '',
-        heroProjectDescriptionZh: heroData?.heroProjectDescriptionZh || '',
-        heroProjectDescriptionEn: heroData?.heroProjectDescriptionEn || '',
+        heroWholesaleButtonZh: getTrans('hero_wholesale_title', 'zh') || heroData?.heroWholesaleButtonZh || '',
+        heroWholesaleButtonEn: getTrans('hero_wholesale_title', 'en') || heroData?.heroWholesaleButtonEn || '',
+        heroWholesaleDescriptionZh: getTrans('hero_wholesale_desc', 'zh') || heroData?.heroWholesaleDescriptionZh || '',
+        heroWholesaleDescriptionEn: getTrans('hero_wholesale_desc', 'en') || heroData?.heroWholesaleDescriptionEn || '',
+        heroProjectButtonZh: getTrans('hero_project_title', 'zh') || heroData?.heroProjectButtonZh || '',
+        heroProjectButtonEn: getTrans('hero_project_title', 'en') || heroData?.heroProjectButtonEn || '',
+        heroProjectDescriptionZh: getTrans('hero_project_desc', 'zh') || heroData?.heroProjectDescriptionZh || '',
+        heroProjectDescriptionEn: getTrans('hero_project_desc', 'en') || heroData?.heroProjectDescriptionEn || '',
         heroWholesaleCategoryId: heroData?.heroWholesaleCategoryId || '',
         heroProjectCategoryId: heroData?.heroProjectCategoryId || '',
-        heroSlides: initialSlides,
+        heroWholesaleBg: heroData?.heroWholesaleBg || '',
+        heroProjectBg: heroData?.heroProjectBg || '',
+        heroSlides: initialSlides.map((slide: any) => {
+          const sId = slide.id.replace(/^slide_/, '');
+          return {
+            ...slide,
+            headlineZh: getTrans(`hero_slide_${sId}_headline`, 'zh') || slide.headlineZh,
+            headlineEn: getTrans(`hero_slide_${sId}_headline`, 'en') || slide.headlineEn,
+            subheadlineZh: getTrans(`hero_slide_${sId}_subheadline`, 'zh') || slide.subheadlineZh,
+            subheadlineEn: getTrans(`hero_slide_${sId}_subheadline`, 'en') || slide.subheadlineEn,
+          };
+        }),
         isVideoEnabled: videoData?.isVideoEnabled ?? true,
         videoTitleZh: videoData?.videoTitleZh || '',
         videoTitleEn: videoData?.videoTitleEn || '',
         videoSubtitleZh: videoData?.videoSubtitleZh || '',
         videoSubtitleEn: videoData?.videoSubtitleEn || '',
-        videoUrl: videoData?.videoUrl || '/video/alibaba2023_x264.mp4'
-      });
+        videoUrl: videoData?.videoUrl || '/video/alibaba2023_x264.mp4',
+        bentoTitleZh: bentoData?.bentoTitleZh || '',
+        bentoTitleEn: bentoData?.bentoTitleEn || '',
+        bentoSubtitleZh: bentoData?.bentoSubtitleZh || '',
+        bentoSubtitleEn: bentoData?.bentoSubtitleEn || ''
+      }));
     }
-  }, [heroData, videoData]);
+  }, [heroData, videoData, bentoData, translations]);
 
   const handleSave = async () => {
     setIsSaving(true);
     
     try {
-      // Split the data back into hero and video documents
-      const heroPayload = {
-        heroSlides: formData.heroSlides,
-        heroHeadlineZh: formData.heroHeadlineZh,
-        heroHeadlineEn: formData.heroHeadlineEn,
-        heroSubheadlineZh: formData.heroSubheadlineZh,
-        heroSubheadlineEn: formData.heroSubheadlineEn,
-        heroWholesaleButtonZh: formData.heroWholesaleButtonZh,
-        heroWholesaleButtonEn: formData.heroWholesaleButtonEn,
-        heroWholesaleDescriptionZh: formData.heroWholesaleDescriptionZh,
-        heroWholesaleDescriptionEn: formData.heroWholesaleDescriptionEn,
-        heroProjectButtonZh: formData.heroProjectButtonZh,
-        heroProjectButtonEn: formData.heroProjectButtonEn,
-        heroProjectDescriptionZh: formData.heroProjectDescriptionZh,
-        heroProjectDescriptionEn: formData.heroProjectDescriptionEn,
-        heroWholesaleCategoryId: formData.heroWholesaleCategoryId,
-        heroProjectCategoryId: formData.heroProjectCategoryId,
-      };
-
-      const videoPayload = {
-        isVideoEnabled: formData.isVideoEnabled,
-        videoTitleZh: formData.videoTitleZh,
-        videoTitleEn: formData.videoTitleEn,
-        videoSubtitleZh: formData.videoSubtitleZh,
-        videoSubtitleEn: formData.videoSubtitleEn,
-        videoUrl: formData.videoUrl,
-      };
-
-      await Promise.all([
-        fetch('/api/homepageContent/hero', {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(heroPayload),
+      // 1. Prepare sequential save requests
+      const heroRes = await fetch('/api/homepageContent/hero', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          heroHeadlineZh: formData.heroHeadlineZh,
+          heroHeadlineEn: formData.heroHeadlineEn,
+          heroSubheadlineZh: formData.heroSubheadlineZh,
+          heroSubheadlineEn: formData.heroSubheadlineEn,
+          heroWholesaleCategoryId: formData.heroWholesaleCategoryId,
+          heroProjectCategoryId: formData.heroProjectCategoryId,
+          heroWholesaleBg: formData.heroWholesaleBg,
+          heroProjectBg: formData.heroProjectBg,
+          heroSlides: formData.heroSlides
         }),
-        fetch('/api/homepageContent/video', {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(videoPayload),
-        })
-      ]);
+      });
+
+      const videoRes = await fetch('/api/homepageContent/video', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          isVideoEnabled: formData.isVideoEnabled,
+          videoTitleZh: formData.videoTitleZh,
+          videoTitleEn: formData.videoTitleEn,
+          videoSubtitleZh: formData.videoSubtitleZh,
+          videoSubtitleEn: formData.videoSubtitleEn,
+          videoUrl: formData.videoUrl,
+        }),
+      });
+
+      const bentoRes = await fetch('/api/homepageContent/bento', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          bentoTitleZh: formData.bentoTitleZh,
+          bentoTitleEn: formData.bentoTitleEn,
+          bentoSubtitleZh: formData.bentoSubtitleZh,
+          bentoSubtitleEn: formData.bentoSubtitleEn,
+        }),
+      });
+
+      // 2. Prepare translation asset updates
+      const translationUpdates = [
+        { id: 'hero_wholesale_title', content: { zh: formData.heroWholesaleButtonZh, en: formData.heroWholesaleButtonEn } },
+        { id: 'hero_wholesale_desc', content: { zh: formData.heroWholesaleDescriptionZh, en: formData.heroWholesaleDescriptionEn } },
+        { id: 'hero_project_title', content: { zh: formData.heroProjectButtonZh, en: formData.heroProjectButtonEn } },
+        { id: 'hero_project_desc', content: { zh: formData.heroProjectDescriptionZh, en: formData.heroProjectDescriptionEn } },
+        { id: 'products_title', content: { zh: formData.bentoTitleZh, en: formData.bentoTitleEn } },
+        { id: 'products_subtitle', content: { zh: formData.bentoSubtitleZh, en: formData.bentoSubtitleEn } },
+        ...formData.heroSlides.map((slide: any) => {
+          const sId = slide.id.replace(/^slide_/, '');
+          return [
+            { id: `hero_slide_${sId}_headline`, content: { zh: slide.headlineZh, en: slide.headlineEn } },
+            { id: `hero_slide_${sId}_subheadline`, content: { zh: slide.subheadlineZh, en: slide.subheadlineEn } }
+          ];
+        }).flat()
+      ];
+
+      const transResults = await Promise.all(
+        translationUpdates.map(update => 
+          fetch(`/api/localizedStrings/${encodeURIComponent(update.id)}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ content: update.content }),
+          }).then(r => ({ id: update.id, ok: r.ok }))
+        )
+      );
+
+      const transFailed = transResults.filter(r => !r.ok);
+
+      // Check results
+      if (!heroRes.ok) {
+        const errorData = await heroRes.json().catch(() => ({}));
+        throw new Error(`核心配置 (Hero) 保存失败: ${errorData.details || heroRes.statusText}`);
+      }
 
       mutateHero();
       mutateVideo();
+      mutateBento();
+      mutateTrans();
+
+      if (!videoRes.ok || !bentoRes.ok || transFailed.length > 0) {
+        toast({ 
+          title: "部分保存成功", 
+          description: `核心配置已更新${!videoRes.ok ? "，但视频配置失败" : ""}${!bentoRes.ok ? "，但布局配置失败" : ""}${transFailed.length > 0 ? `，${transFailed.length} 个翻译词条同步失败` : ""}`,
+          className: "bg-amber-50 border-amber-200 text-amber-800 rounded-2xl"
+        });
+      } else {
+        toast({ 
+          title: "发布成功", 
+          description: "首页配置与翻译资产已全量同步",
+          className: "bg-green-50 border-green-200 text-green-800 rounded-2xl"
+        });
+      }
+    } catch (error: any) {
+      console.error('Save error:', error);
+      toast({ 
+        variant: "destructive", 
+        title: "保存失败", 
+        description: error.message || "无法连接到服务器",
+        className: "rounded-2xl"
+      });
+    } finally {
       setIsSaving(false);
-      toast({ title: "首页配置已保存" });
-    } catch (e) {
-      setIsSaving(false);
-      toast({ variant: "destructive", title: "保存失败" });
     }
   };
 
@@ -325,6 +561,9 @@ export default function AdminHomePage() {
           <TabsTrigger value="video" className="rounded-xl px-8 text-xs font-bold uppercase tracking-wider gap-2">
             <Film className="h-4 w-4" /> 品牌故事 (Video)
           </TabsTrigger>
+          <TabsTrigger value="bento" className="rounded-xl px-8 text-xs font-bold uppercase tracking-wider gap-2">
+            <LayoutGrid className="h-4 w-4" /> 产品布局 (Bento)
+          </TabsTrigger>
         </TabsList>
 
         <TabsContent value="hero" className="space-y-6">
@@ -343,13 +582,39 @@ export default function AdminHomePage() {
                   <Input value={formData.heroWholesaleDescriptionZh} onChange={e => setFormData({...formData, heroWholesaleDescriptionZh: e.target.value})} placeholder="描述中文" className="h-10 rounded-xl" />
                   <Input value={formData.heroWholesaleDescriptionEn} onChange={e => setFormData({...formData, heroWholesaleDescriptionEn: e.target.value})} placeholder="Desc English" className="h-10 rounded-xl border-dashed" />
                 </div>
-                <Select value={formData.heroWholesaleCategoryId} onValueChange={v => setFormData({...formData, heroWholesaleCategoryId: v})}>
-                  <SelectTrigger className="h-10 rounded-xl"><SelectValue placeholder="选择跳转分类" /></SelectTrigger>
-                  <SelectContent className="rounded-xl">
-                    <SelectItem value="none">全部分类</SelectItem>
-                    {categories?.map((cat: any) => <SelectItem key={cat.id} value={cat.id} className="text-xs">{getCategoryName(cat.id)}</SelectItem>)}
-                  </SelectContent>
-                </Select>
+                <div className="flex gap-4">
+                  <div className="flex-1 space-y-4">
+                    <Select value={formData.heroWholesaleCategoryId} onValueChange={v => setFormData({...formData, heroWholesaleCategoryId: v})}>
+                      <SelectTrigger className="h-10 rounded-xl"><SelectValue placeholder="选择跳转分类" /></SelectTrigger>
+                      <SelectContent className="rounded-xl">
+                        <SelectItem value="none">全部分类</SelectItem>
+                        {categories?.map((cat: any) => <SelectItem key={cat.id} value={cat.id} className="text-xs">{getCategoryName(cat.id)}</SelectItem>)}
+                      </SelectContent>
+                    </Select>
+                    <Input 
+                      value={formData.heroWholesaleBg} 
+                      onChange={e => setFormData({...formData, heroWholesaleBg: e.target.value})} 
+                      placeholder="背景图 URL" 
+                      className="h-10 rounded-xl text-xs font-mono" 
+                    />
+                  </div>
+                  <div 
+                    className="w-24 h-24 rounded-xl bg-muted/20 border-2 border-dashed border-primary/20 flex flex-col items-center justify-center gap-1 cursor-pointer hover:bg-primary/5 hover:border-primary transition-all overflow-hidden relative group/btn"
+                    onClick={() => setPickerConfig({ open: true, type: 'wholesale', slideIndex: null })}
+                  >
+                    {formData.heroWholesaleBg ? (
+                      <Image src={formData.heroWholesaleBg} alt="W" fill className="object-cover" />
+                    ) : (
+                      <>
+                        <Plus className="h-4 w-4 text-primary" />
+                        <span className="text-[8px] font-bold text-primary">设置背景</span>
+                      </>
+                    )}
+                    <div className="absolute inset-0 bg-black/40 opacity-0 group-hover/btn:opacity-100 flex items-center justify-center transition-opacity">
+                      <ImageIcon className="text-white h-5 w-5" />
+                    </div>
+                  </div>
+                </div>
               </div>
               <div className="p-5 rounded-2xl bg-muted/5 border border-dashed space-y-4">
                 <span className="text-[10px] font-bold uppercase text-primary">项目入口按钮及描述 (ZH / EN)</span>
@@ -361,12 +626,38 @@ export default function AdminHomePage() {
                   <Input value={formData.heroProjectDescriptionZh} onChange={e => setFormData({...formData, heroProjectDescriptionZh: e.target.value})} placeholder="描述中文" className="h-10 rounded-xl" />
                   <Input value={formData.heroProjectDescriptionEn} onChange={e => setFormData({...formData, heroProjectDescriptionEn: e.target.value})} placeholder="Desc English" className="h-10 rounded-xl border-dashed" />
                 </div>
-                <Select value={formData.heroProjectCategoryId} onValueChange={v => setFormData({...formData, heroProjectCategoryId: v})}>
-                  <SelectTrigger className="h-10 rounded-xl"><SelectValue placeholder="选择跳转分类" /></SelectTrigger>
-                  <SelectContent className="rounded-xl">
-                    {categories?.map((cat: any) => <SelectItem key={cat.id} value={cat.id} className="text-xs">{getCategoryName(cat.id)}</SelectItem>)}
-                  </SelectContent>
-                </Select>
+                <div className="flex gap-4">
+                  <div className="flex-1 space-y-4">
+                    <Select value={formData.heroProjectCategoryId} onValueChange={v => setFormData({...formData, heroProjectCategoryId: v})}>
+                      <SelectTrigger className="h-10 rounded-xl"><SelectValue placeholder="选择跳转分类" /></SelectTrigger>
+                      <SelectContent className="rounded-xl">
+                        {categories?.map((cat: any) => <SelectItem key={cat.id} value={cat.id} className="text-xs">{getCategoryName(cat.id)}</SelectItem>)}
+                      </SelectContent>
+                    </Select>
+                    <Input 
+                      value={formData.heroProjectBg} 
+                      onChange={e => setFormData({...formData, heroProjectBg: e.target.value})} 
+                      placeholder="背景图 URL" 
+                      className="h-10 rounded-xl text-xs font-mono" 
+                    />
+                  </div>
+                  <div 
+                    className="w-24 h-24 rounded-xl bg-muted/20 border-2 border-dashed border-primary/20 flex flex-col items-center justify-center gap-1 cursor-pointer hover:bg-primary/5 hover:border-primary transition-all overflow-hidden relative group/btn"
+                    onClick={() => setPickerConfig({ open: true, type: 'project', slideIndex: null })}
+                  >
+                    {formData.heroProjectBg ? (
+                      <Image src={formData.heroProjectBg} alt="P" fill className="object-cover" />
+                    ) : (
+                      <>
+                        <Plus className="h-4 w-4 text-primary" />
+                        <span className="text-[8px] font-bold text-primary">设置背景</span>
+                      </>
+                    )}
+                    <div className="absolute inset-0 bg-black/40 opacity-0 group-hover/btn:opacity-100 flex items-center justify-center transition-opacity">
+                      <ImageIcon className="text-white h-5 w-5" />
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
@@ -415,7 +706,7 @@ export default function AdminHomePage() {
                       <Label className="text-[10px] font-bold uppercase opacity-40">背景图片</Label>
                       <div 
                         className="relative aspect-[16/9] rounded-2xl overflow-hidden cursor-pointer group/img border-2 border-transparent hover:border-primary transition-all shadow-lg"
-                        onClick={() => setPickerConfig({ open: true, slideIndex: index })}
+                        onClick={() => setPickerConfig({ open: true, type: 'slide', slideIndex: index })}
                       >
                         <Image src={slide.bgImage} alt="Preview" fill className="object-cover" unoptimized />
                         <div className="absolute inset-0 bg-black/40 opacity-0 group-hover/img:opacity-100 flex items-center justify-center transition-opacity">
@@ -426,7 +717,7 @@ export default function AdminHomePage() {
                         variant="outline" 
                         size="sm" 
                         className="w-full rounded-xl h-9 text-[10px] font-bold"
-                        onClick={() => setPickerConfig({ open: true, slideIndex: index })}
+                        onClick={() => setPickerConfig({ open: true, type: 'slide', slideIndex: index })}
                       >
                         更改背景
                       </Button>
@@ -579,7 +870,7 @@ export default function AdminHomePage() {
                       variant="ghost" 
                       size="sm" 
                       className="h-8 px-3 rounded-xl text-[10px] font-bold uppercase text-primary hover:bg-primary/5"
-                      onClick={() => setPickerConfig({ open: true, slideIndex: -1 })}
+                      onClick={() => setPickerConfig({ open: true, type: 'video', slideIndex: null })}
                     >
                       <ImageIcon className="h-3.5 w-3.5 mr-2" /> 从素材库选择
                     </Button>
@@ -607,6 +898,166 @@ export default function AdminHomePage() {
             )}
           </div>
         </TabsContent>
+        <TabsContent value="bento" className="space-y-6">
+          <div className="bg-white p-8 rounded-3xl border shadow-sm space-y-8">
+            <div className="flex items-center justify-between border-b pb-6">
+              <div className="space-y-1">
+                <h3 className="text-sm font-bold text-primary uppercase tracking-widest flex items-center gap-2">
+                  <LayoutGrid className="h-4 w-4" /> 产品推荐板块配置
+                </h3>
+                <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Configure titles for the Bento grid section</p>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
+              <div className="space-y-6">
+                <div className="space-y-3">
+                  <Label className="text-[10px] font-bold uppercase tracking-widest text-slate-400">板块主标题 (Main Title)</Label>
+                  <div className="grid grid-cols-1 gap-3">
+                    <Input 
+                      value={formData.bentoTitleZh} 
+                      onChange={e => setFormData({...formData, bentoTitleZh: e.target.value})} 
+                      placeholder="例如：产品中心" 
+                      className="h-12 rounded-2xl bg-slate-50/50 border-slate-200"
+                    />
+                    <div className="relative group/input">
+                      <Input 
+                        value={formData.bentoTitleEn} 
+                        onChange={e => setFormData({...formData, bentoTitleEn: e.target.value})} 
+                        placeholder="e.g. OUR PORTFOLIO" 
+                        className="h-12 rounded-2xl border-dashed bg-slate-50/20 pr-12"
+                      />
+                      {aiConfig?.isEnabled && (
+                        <div className="absolute right-1.5 top-1/2 -translate-y-1/2">
+                          <ShinyButton 
+                            onClick={async () => {
+                              const res = await translateContent({
+                                text: formData.bentoTitleZh,
+                                targetLangs: ['en'],
+                                apiKey: aiConfig.apiKey
+                              });
+                              if (res.en) setFormData({ ...formData, bentoTitleEn: res.en });
+                            }}
+                            disabled={isAiProcessing}
+                            className="w-9 h-9 p-0 flex items-center justify-center shadow-lg shadow-primary/5"
+                            shape="capsule"
+                          >
+                            {isAiProcessing ? (
+                              <Loader2 className="h-4 w-4 animate-spin" />
+                            ) : (
+                              <Sparkles className="h-4.5 w-4.5" />
+                            )}
+                          </ShinyButton>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="space-y-6">
+                <div className="space-y-3">
+                  <Label className="text-[10px] font-bold uppercase tracking-widest text-slate-400">板块副标题 (Subtitle)</Label>
+                  <div className="grid grid-cols-1 gap-3">
+                    <Input 
+                      value={formData.bentoSubtitleZh} 
+                      onChange={e => setFormData({...formData, bentoSubtitleZh: e.target.value})} 
+                      placeholder="例如：为性能与可靠性而生" 
+                      className="h-12 rounded-2xl bg-slate-50/50 border-slate-200"
+                    />
+                    <div className="relative group/input">
+                      <Input 
+                        value={formData.bentoSubtitleEn} 
+                        onChange={e => setFormData({...formData, bentoSubtitleEn: e.target.value})} 
+                        placeholder="e.g. Engineered for Performance" 
+                        className="h-12 rounded-2xl border-dashed bg-slate-50/20 pr-12"
+                      />
+                      {aiConfig?.isEnabled && (
+                        <div className="absolute right-1.5 top-1/2 -translate-y-1/2">
+                          <ShinyButton 
+                            onClick={async () => {
+                              const res = await translateContent({
+                                text: formData.bentoSubtitleZh,
+                                targetLangs: ['en'],
+                                apiKey: aiConfig.apiKey
+                              });
+                              if (res.en) setFormData({ ...formData, bentoSubtitleEn: res.en });
+                            }}
+                            disabled={isAiProcessing}
+                            className="w-9 h-9 p-0 flex items-center justify-center shadow-lg shadow-primary/5"
+                            shape="capsule"
+                          >
+                            {isAiProcessing ? (
+                              <Loader2 className="h-4 w-4 animate-spin" />
+                            ) : (
+                              <Sparkles className="h-4.5 w-4.5" />
+                            )}
+                          </ShinyButton>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="flex items-center justify-between">
+              <h3 className="text-xs font-bold text-primary uppercase tracking-widest flex items-center gap-2">
+                <LayoutGrid className="h-4 w-4" /> 首页格位内容管理 (Grid Items)
+              </h3>
+              <Button 
+                onClick={() => setBentoDialog({ open: true, item: { titleZh: '', titleEn: '', tagZh: '', tagEn: '', imageUrl: '', linkUrl: '', gridSize: 'small', order: (bentoItems?.length || 0) + 1 } })} 
+                size="sm" 
+                className="rounded-xl h-9 px-4 gap-2 text-[10px] font-bold uppercase tracking-wider shadow-md"
+              >
+                <Plus className="h-3.5 w-3.5" /> 添加新格位
+              </Button>
+            </div>
+
+            <DndContext 
+              sensors={sensors}
+              collisionDetection={closestCenter}
+              onDragEnd={handleDragEnd}
+            >
+              <SortableContext 
+                items={bentoItems?.map((i: any) => i.id) || []}
+                strategy={rectSortingStrategy}
+              >
+                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
+                  {bentoItems?.map((item: any) => (
+                    <SortableBentoItem 
+                      key={item.id} 
+                      item={item} 
+                      onEdit={() => setBentoDialog({ open: true, item })}
+                      onDelete={async () => {
+                        if(confirm('确定删除此格位吗？')) {
+                          await fetch(`/api/bentoItems/${item.id}`, { method: 'DELETE' });
+                          mutateBentoItems();
+                          toast({ title: "已删除格位" });
+                        }
+                      }}
+                    />
+                  ))}
+
+                  {(!bentoItems || bentoItems.length === 0) && (
+                    <div className="col-span-full py-20 text-center bg-muted/5 border-2 border-dashed rounded-[2.5rem]">
+                      <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest opacity-40">暂无独立格位，请点击右上方添加</p>
+                    </div>
+                  )}
+                </div>
+              </SortableContext>
+            </DndContext>
+            <div className="p-6 rounded-[2.5rem] bg-amber-50/50 border border-amber-100/50 flex gap-4 items-start">
+              <Info className="h-5 w-5 text-amber-600 mt-1" />
+              <div className="space-y-1">
+                <p className="text-xs font-bold text-amber-900 uppercase tracking-tight">提示</p>
+                <p className="text-[11px] text-amber-700 leading-relaxed">
+                  Bento 布局现已切换为独立管理模式。您在这里添加的格位将直接决定首页“产品中心”板块的展示内容。建议保持 6-11 个格位以获得最佳视觉效果。
+                </p>
+              </div>
+            </div>
+          </div>
+        </TabsContent>
       </Tabs>
 
       <MediaLibraryDialog 
@@ -615,10 +1066,16 @@ export default function AdminHomePage() {
         onSelect={(assets) => {
           if (assets.length > 0) {
             const url = assets[0].url;
-            if (pickerConfig.slideIndex === -1) {
+            if (pickerConfig.type === 'video') {
               setFormData({ ...formData, videoUrl: url });
-            } else if (pickerConfig.slideIndex !== null) {
+            } else if (pickerConfig.type === 'wholesale') {
+              setFormData({ ...formData, heroWholesaleBg: url });
+            } else if (pickerConfig.type === 'project') {
+              setFormData({ ...formData, heroProjectBg: url });
+            } else if (pickerConfig.type === 'slide' && pickerConfig.slideIndex !== null) {
               updateSlide(pickerConfig.slideIndex, { bgImage: url });
+            } else if (pickerConfig.type === 'bento' && bentoDialog.open) {
+              setBentoDialog({ ...bentoDialog, item: { ...bentoDialog.item, imageUrl: url } });
             }
           }
         }}
@@ -626,6 +1083,251 @@ export default function AdminHomePage() {
         title="选择首页媒体素材"
         subtitle="选择一张高质量图片或一段精彩视频作为首页展示"
       />
+
+      <BentoItemDialog 
+        open={bentoDialog.open}
+        onOpenChange={(open) => setBentoDialog({ ...bentoDialog, open })}
+        item={bentoDialog.item}
+        onSave={async (item) => {
+          const method = item.id ? 'PUT' : 'POST';
+          const url = item.id ? `/api/bentoItems/${item.id}` : '/api/bentoItems';
+          const res = await fetch(url, {
+            method,
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(item),
+          });
+          if (res.ok) {
+            mutateBentoItems();
+            setBentoDialog({ open: false, item: null });
+            toast({ title: "格位已保存" });
+          }
+        }}
+        onTranslate={async (text) => {
+          const res = await translateContent({
+            text,
+            targetLangs: ['en'],
+            apiKey: aiConfig?.apiKey
+          });
+          return res.en || '';
+        }}
+        onImageSelect={() => setPickerConfig({ open: true, type: 'bento', slideIndex: null })}
+        categories={categories || []}
+        translations={translations || []}
+      />
     </div>
+  );
+}
+
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
+
+function BentoItemDialog({ open, onOpenChange, item, onSave, onTranslate, onImageSelect, categories, translations }: { 
+  open: boolean, 
+  onOpenChange: (open: boolean) => void, 
+  item: any, 
+  onSave: (item: any) => void, 
+  onTranslate: (text: string) => Promise<string>,
+  onImageSelect: () => void,
+  categories: any[],
+  translations: any[]
+}) {
+  const [localItem, setLocalItem] = useState<any>(null);
+  const [isTranslating, setIsTranslating] = useState(false);
+
+  useEffect(() => {
+    if (item) setLocalItem(item);
+  }, [item]);
+
+  if (!localItem) return null;
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-2xl rounded-[2.5rem] p-0 overflow-hidden border-none shadow-2xl">
+        <DialogHeader className="bg-slate-900 text-white p-8">
+          <DialogTitle className="text-xl font-headline font-bold flex items-center gap-3">
+            <LayoutGrid className="h-5 w-5 text-primary" />
+            {localItem.id ? '编辑格位' : '新增格位'}
+          </DialogTitle>
+        </DialogHeader>
+        
+        <div className="p-8 space-y-6 max-h-[70vh] overflow-y-auto text-slate-800">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+            <div className="space-y-4">
+              <Label className="text-[10px] font-bold uppercase tracking-widest text-slate-400">背景图片</Label>
+              <div 
+                className="relative aspect-video rounded-3xl overflow-hidden cursor-pointer group border-2 border-dashed border-slate-200 hover:border-primary transition-all bg-slate-50"
+                onClick={onImageSelect}
+              >
+                {localItem.imageUrl ? (
+                  <Image src={localItem.imageUrl} alt="P" fill className="object-cover" />
+                ) : (
+                  <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 text-slate-400">
+                    <ImageIcon className="h-8 w-8" />
+                    <span className="text-[10px] font-bold uppercase">点击上传图片</span>
+                  </div>
+                )}
+              </div>
+              <Input 
+                value={localItem.imageUrl} 
+                onChange={e => setLocalItem({ ...localItem, imageUrl: e.target.value })}
+                placeholder="图片 URL"
+                className="h-10 rounded-xl text-xs font-mono"
+              />
+            </div>
+
+            <div className="space-y-6">
+              <div className="space-y-3">
+                <Label className="text-[10px] font-bold uppercase tracking-widest text-slate-400">格位尺寸 (Grid Size)</Label>
+                <Select value={localItem.gridSize} onValueChange={v => setLocalItem({ ...localItem, gridSize: v })}>
+                  <SelectTrigger className="h-12 rounded-2xl border-slate-200">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent className="rounded-2xl">
+                    <SelectItem value="small">
+                      <div className="flex items-center gap-2">
+                        <Square className="h-3.5 w-3.5 opacity-40" />
+                        <span>标准 (1×1)</span>
+                      </div>
+                    </SelectItem>
+                    <SelectItem value="wide">
+                      <div className="flex items-center gap-2">
+                        <RectangleHorizontal className="h-3.5 w-3.5 text-primary" />
+                        <span>横向 (2×1)</span>
+                      </div>
+                    </SelectItem>
+                    <SelectItem value="tall">
+                      <div className="flex items-center gap-2">
+                        <RectangleVertical className="h-3.5 w-3.5 text-primary" />
+                        <span>纵向 (1×2)</span>
+                      </div>
+                    </SelectItem>
+                    <SelectItem value="large">
+                      <div className="flex items-center gap-2">
+                        <Square className="h-4 w-4 text-primary" />
+                        <span className="font-bold">大方块 (2×2)</span>
+                      </div>
+                    </SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-3">
+                <Label className="text-[10px] font-bold uppercase tracking-widest text-slate-400">显示顺序</Label>
+                <Input 
+                  type="number"
+                  value={localItem.order} 
+                  onChange={e => setLocalItem({ ...localItem, order: parseInt(e.target.value) })}
+                  className="h-12 rounded-2xl border-slate-200"
+                />
+              </div>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 border-t pt-8">
+            <div className="space-y-4">
+              <Label className="text-[10px] font-bold uppercase tracking-widest text-slate-400">中文内容 (ZH)</Label>
+              <Input value={localItem.titleZh} onChange={e => setLocalItem({ ...localItem, titleZh: e.target.value })} placeholder="主标题" className="h-11 rounded-xl border-slate-200" />
+              <Input value={localItem.tagZh} onChange={e => setLocalItem({ ...localItem, tagZh: e.target.value })} placeholder="小标签 (如：批发业务)" className="h-11 rounded-xl border-slate-200" />
+              
+              <div className="pt-4 border-t border-dashed space-y-3">
+                <Label className="text-[10px] font-bold uppercase tracking-widest text-slate-400">跳转逻辑 (Navigation)</Label>
+                <Select 
+                  onValueChange={v => {
+                    if (v === 'custom') return;
+                    const cat = categories.find(c => c.id === v);
+                    if (cat) {
+                      setLocalItem({ ...localItem, linkUrl: `products?category=${encodeURIComponent(cat.slug || cat.id)}` });
+                    }
+                  }}
+                >
+                  <SelectTrigger className="h-10 rounded-xl border-slate-200 text-xs">
+                    <SelectValue placeholder="快速关联产品分类" />
+                  </SelectTrigger>
+                  <SelectContent className="rounded-xl">
+                    <SelectItem value="custom" className="text-xs font-bold text-primary">手动输入自定义链接</SelectItem>
+                    {categories?.map((cat: any) => {
+                      const trans = translations?.find((t: any) => t.id === cat.nameTextId);
+                      const name = trans?.content?.zh || trans?.zh || cat.id;
+                      return <SelectItem key={cat.id} value={cat.id} className="text-xs">{name}</SelectItem>;
+                    })}
+                  </SelectContent>
+                </Select>
+                <Input value={localItem.linkUrl} onChange={e => setLocalItem({ ...localItem, linkUrl: e.target.value })} placeholder="跳转链接 (如：products?category=...)" className="h-11 rounded-xl border-slate-200 font-mono text-[11px]" />
+              </div>
+            </div>
+
+            <div className="space-y-4 border-l pl-8 border-dashed border-slate-200">
+              <div className="flex items-center justify-between">
+                <Label className="text-[10px] font-bold uppercase tracking-widest text-slate-400">ENGLISH CONTENT (EN)</Label>
+              </div>
+              <div className="relative group/input">
+                <Input 
+                  value={localItem.titleEn} 
+                  onChange={e => setLocalItem({ ...localItem, titleEn: e.target.value })} 
+                  placeholder="Main Title" 
+                  className="h-11 rounded-xl border-dashed border-slate-300 pr-12" 
+                />
+                <div className="absolute right-1 top-1/2 -translate-y-1/2">
+                  <ShinyButton 
+                    onClick={async () => {
+                      setIsTranslating(true);
+                      try {
+                        const t = await onTranslate(localItem.titleZh);
+                        setLocalItem({ ...localItem, titleEn: t });
+                      } finally {
+                        setIsTranslating(false);
+                      }
+                    }}
+                    disabled={isTranslating}
+                    className="w-8 h-8 p-0 flex items-center justify-center shadow-lg shadow-primary/5"
+                    shape="capsule"
+                  >
+                    {isTranslating ? (
+                      <Loader2 className="h-3 w-3 animate-spin" />
+                    ) : (
+                      <Sparkles className="h-3.5 w-3.5" />
+                    )}
+                  </ShinyButton>
+                </div>
+              </div>
+              
+              <div className="relative group/input">
+                <Input 
+                  value={localItem.tagEn} 
+                  onChange={e => setLocalItem({ ...localItem, tagEn: e.target.value })} 
+                  placeholder="Small Tag (e.g. Wholesale)" 
+                  className="h-11 rounded-xl border-dashed border-slate-300 pr-12" 
+                />
+                <div className="absolute right-1 top-1/2 -translate-y-1/2">
+                  <ShinyButton 
+                    onClick={async () => {
+                      setIsTranslating(true);
+                      try {
+                        const t = await onTranslate(localItem.tagZh || '');
+                        setLocalItem({ ...localItem, tagEn: t });
+                      } finally {
+                        setIsTranslating(false);
+                      }
+                    }}
+                    disabled={isTranslating}
+                    className="w-8 h-8 p-0 flex items-center justify-center shadow-lg shadow-primary/5"
+                    shape="capsule"
+                  >
+                    {isTranslating ? (
+                      <Loader2 className="h-3 w-3 animate-spin" />
+                    ) : (
+                      <Sparkles className="h-3.5 w-3.5" />
+                    )}
+                  </ShinyButton>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <DialogFooter className="bg-slate-50 p-6 flex justify-end gap-3 border-t">
+          <Button variant="ghost" onClick={() => onOpenChange(false)} className="rounded-xl">取消</Button>
+          <Button onClick={() => onSave(localItem)} className="rounded-xl px-8 shadow-lg shadow-primary/20 bg-primary text-white hover:bg-primary/90">保存格位</Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 }

@@ -2,7 +2,7 @@
 -- PostgreSQL database dump
 --
 
-\restrict ezdnFtvlAc8zif6r5dU9wi5fDfgUPrcckXZIsAYA1jT7OD2ztmGG3rqTuUIigxQ
+\restrict FXPbbuPme60TmqQVN2leeQ7cF5G4ijSyNm0J2iTqpYnntt8JEUZwA2gneGkjUzT
 
 -- Dumped from database version 16.13
 -- Dumped by pg_dump version 16.13
@@ -697,7 +697,7 @@ COPY public."Session" ("sessionToken", "userId", expires, "createdAt", "updatedA
 COPY public."Setting" (id, value) FROM stdin;
 ai	{"apiKey":"AIzaSyCdor09jDPt3aKX-zE5FSSF4ZLblTvkcJ8","isEnabled":true,"temperature":0.7,"systemInstruction":"你是一位专业的工业硬件制造专家，擅长将复杂的计算机硬件规格（如一体机、迷你电脑、工业显示器）翻译成地道、专业的商务语言。请保持术语的准确性，并统一单位。","model":"googleai/gemini-2.5-flash","lastDiagnosis":{"status":"success","message":"连接成功：模型响应正常，鉴权通过。","latency":-17869,"modelUsed":"googleai/gemini-2.5-flash","keySource":"手动输入 (Manual)","timestamp":"2026-04-28T07:55:36.556Z"}}
 navigation	{"navbarMaterial":"level-03","showBorder":true,"showShadow":true,"megaMenuColumns":3,"megaMenuGap":12,"featuredText":"立即下载手册","featuredDownloadUrl":"/files/catalog_2026.pdf","featuredCoverUrl":"/image/catalog-placeholder.png"}
-languages	{"supportedLanguages":[{"code":"zh","label":"中文"},{"code":"en","label":"English"},{"code":"id","label":"Indonesian"}]}
+languages	{"supportedLanguages":[{"code":"zh","label":"中文"},{"code":"en","label":"English"},{"code":"id","label":"Indonesian"}],"defaultLanguage":"en"}
 \.
 
 
@@ -1031,5 +1031,5 @@ REVOKE USAGE ON SCHEMA public FROM PUBLIC;
 -- PostgreSQL database dump complete
 --
 
-\unrestrict ezdnFtvlAc8zif6r5dU9wi5fDfgUPrcckXZIsAYA1jT7OD2ztmGG3rqTuUIigxQ
+\unrestrict FXPbbuPme60TmqQVN2leeQ7cF5G4ijSyNm0J2iTqpYnntt8JEUZwA2gneGkjUzT
 

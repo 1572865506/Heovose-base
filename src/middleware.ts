@@ -26,7 +26,8 @@ export default auth((request) => {
     const locale = segments[1];
     const remainingPath = segments.slice(2).join('/') || '';
 
-    const url = new URL(`/${remainingPath}`, nextUrl);
+    const url = nextUrl.clone();
+    url.pathname = `/${remainingPath}`;
     url.searchParams.set('lang', locale);
     
     return NextResponse.redirect(url);

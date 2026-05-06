@@ -10,64 +10,73 @@ import { SectionHeading } from "./SectionHeading";
 import { cn } from "@/lib/utils";
 import { ArrowUpRight } from "lucide-react";
 import { useLocalCollection } from '@/hooks/use-local-collection';
+import { useLocalDoc } from '@/hooks/use-local-doc';
 
 import { useTranslations } from '@/hooks/use-translations';
 
 export function ProductBento({ locale }: { locale: Locale }) {
   const { t: tr } = useTranslations(locale);
+  const { data: bentoConfig } = useLocalDoc<any>('homepageContent', 'bento');
+  const { data: langSettings } = useLocalDoc<any>('settings', 'languages');
 
-  // Fetch dynamic categories
-  const { data: remoteCats, isLoading } = useLocalCollection<any>('productCategories');
-  const { data: allTranslations } = useLocalCollection<any>('localizedStrings');
+  // Fetch independent bento items
+  const { data: bentoItems, isLoading } = useLocalCollection<any>('bentoItems');
 
-  const getT = (id: string) => {
-    const entry = allTranslations?.find((item: any) => item.id === id);
-    if (!entry) return id;
-    return entry[locale] || entry['en'] || entry['zh'] || id;
-  };
 
   const items = useMemo(() => {
-    if (remoteCats && remoteCats.length > 0) {
-      // Map remote categories to bento layout
-      const layouts = [
-        'lg:col-span-2 lg:row-span-2',
-        'lg:col-span-1 lg:row-span-2',
-        'lg:col-span-1 lg:row-span-1',
-        'lg:col-span-1 lg:row-span-1',
-        'lg:col-span-1 lg:row-span-2',
-        'lg:col-span-2 lg:row-span-2',
-        'lg:col-span-1 lg:row-span-1',
-        'lg:col-span-1 lg:row-span-1',
-        'lg:col-span-1 lg:row-span-2',
-        'lg:col-span-2 lg:row-span-2',
-        'lg:col-span-2 lg:row-span-1',
-      ];
+    if (bentoItems && bentoItems.length > 0) {
+      return bentoItems.map((item: any) => {
+        let grid = 'lg:col-span-1 lg:row-span-1';
+        if (item.gridSize === 'wide') grid = 'lg:col-span-2 lg:row-span-1';
+        if (item.gridSize === 'tall') grid = 'lg:col-span-1 lg:row-span-2';
+        if (item.gridSize === 'large') grid = 'lg:col-span-2 lg:row-span-2';
 
-      return remoteCats.slice(0, layouts.length).map((cat: any, index: number) => ({
-        label: getT(cat.nameTextId),
-        id: cat.id,
-        grid: layouts[index % layouts.length],
-        category: cat.parentId === 'PROJECT' ? tr('nav_projects') : tr('nav_wholesale'),
-        slug: cat.slug || cat.id,
-        imageUrl: cat.thumbnailImageUrl || cat.imageUrl || PlaceHolderImages[index % PlaceHolderImages.length].imageUrl
-      }));
+        // Dynamic helper to get localized field with fallback respecting settings
+        const getLocalized = (prefix: string) => {
+          const defaultLang = langSettings?.defaultLanguage || 'en';
+          const allLocales: Locale[] = ['en', 'zh', 'id', 'vi'];
+          
+          const getVal = (l: string) => {
+            const suffix = l.charAt(0).toUpperCase() + l.slice(1);
+            return item[`${prefix}${suffix}`];
+          };
+
+          // 1. Current Locale
+          const currentVal = getVal(locale);
+          if (currentVal) return currentVal;
+          
+          // 2. Global Default Locale
+          const defaultVal = getVal(defaultLang);
+          if (defaultVal) return defaultVal;
+          
+          // 3. Any other available locale
+          for (const l of allLocales) {
+            if (l === locale || l === defaultLang) continue;
+            const val = getVal(l);
+            if (val) return val;
+          }
+          return '';
+        };
+
+        return {
+          id: item.id,
+          label: getLocalized('title'),
+          category: getLocalized('tag'),
+          slug: item.linkUrl || '#',
+          imageUrl: item.imageUrl || PlaceHolderImages[0].imageUrl,
+          grid
+        };
+      });
     }
 
-    // Static fallback if no categories yet
+    // Static fallback if no items in DB yet
     return [
-      { label: tr('nav_sub_aio'), id: 'product-aio', grid: 'lg:col-span-2 lg:row-span-2', category: tr('nav_wholesale'), slug: 'AIO', imageUrl: '' },
-      { label: tr('nav_sub_minipc'), id: 'product-minipc', grid: 'lg:col-span-1 lg:row-span-2', category: tr('nav_wholesale'), slug: 'Mini PC', imageUrl: '' },
-      { label: tr('nav_sub_monitor'), id: 'product-monitor', grid: 'lg:col-span-1 lg:row-span-1', category: tr('nav_wholesale'), slug: 'Monitor', imageUrl: '' },
-      { label: tr('nav_sub_laptop'), id: 'product-laptop', grid: 'lg:col-span-1 lg:row-span-1', category: tr('nav_wholesale'), slug: 'Laptop', imageUrl: '' },
-      { label: tr('nav_sub_conference'), id: 'case-office', grid: 'lg:col-span-1 lg:row-span-2', category: tr('nav_projects'), slug: 'Conference', imageUrl: '' },
-      { label: tr('nav_sub_selfservice'), id: 'product-kiosk', grid: 'lg:col-span-2 lg:row-span-2', category: tr('nav_projects'), slug: 'KIOSK', imageUrl: '' },
-      { label: tr('nav_sub_industrial'), id: 'case-factory', grid: 'lg:col-span-1 lg:row-span-1', category: tr('nav_projects'), slug: 'Industrial', imageUrl: '' },
-      { label: tr('nav_sub_led'), id: 'case-transport', grid: 'lg:col-span-1 lg:row-span-1', category: tr('nav_projects'), slug: 'LED', imageUrl: '' },
-      { label: tr('nav_sub_showroom'), id: 'case-retail', grid: 'lg:col-span-1 lg:row-span-2', category: tr('nav_projects'), slug: 'Showroom', imageUrl: '' },
-      { label: tr('nav_sub_electromechanical'), id: 'product-minipc', grid: 'lg:col-span-2 lg:row-span-2', category: tr('nav_wholesale'), slug: 'Electromechanical', imageUrl: '' },
-      { label: tr('nav_sub_components'), id: 'factory-china', grid: 'lg:col-span-2 lg:row-span-1', category: tr('nav_wholesale'), slug: 'Components', imageUrl: '' },
+      { label: tr('nav_sub_aio'), id: 'product-aio', grid: 'lg:col-span-2 lg:row-span-2', category: tr('nav_wholesale'), slug: `/${locale}/products?category=AIO`, imageUrl: PlaceHolderImages[0].imageUrl },
+      { label: tr('nav_sub_minipc'), id: 'product-minipc', grid: 'lg:col-span-1 lg:row-span-2', category: tr('nav_wholesale'), slug: `/${locale}/products?category=Mini%20PC`, imageUrl: PlaceHolderImages[1].imageUrl },
+      { label: tr('nav_sub_monitor'), id: 'product-monitor', grid: 'lg:col-span-1 lg:row-span-1', category: tr('nav_wholesale'), slug: `/${locale}/products?category=Monitor`, imageUrl: PlaceHolderImages[2].imageUrl },
+      { label: tr('nav_sub_laptop'), id: 'product-laptop', grid: 'lg:col-span-1 lg:row-span-1', category: tr('nav_wholesale'), slug: `/${locale}/products?category=Laptop`, imageUrl: PlaceHolderImages[3].imageUrl },
     ];
-  }, [remoteCats, allTranslations, locale, tr]);
+  }, [bentoItems, locale, tr, langSettings]);
 
   const [isVisible, setIsVisible] = useState(false);
   const sectionRef = useRef<HTMLElement>(null);
@@ -98,8 +107,16 @@ export function ProductBento({ locale }: { locale: Locale }) {
     >
       <div className="container mx-auto px-6">
         <SectionHeading 
-          title={tr('products_title')} 
-          subtitle={tr('products_subtitle')}
+          title={
+            locale === 'zh' 
+              ? bentoConfig?.bentoTitleZh || tr('products_title')
+              : bentoConfig?.bentoTitleEn || tr('products_title')
+          } 
+          subtitle={
+            locale === 'zh' 
+              ? bentoConfig?.bentoSubtitleZh || tr('products_subtitle')
+              : bentoConfig?.bentoSubtitleEn || tr('products_subtitle')
+          }
         />
         
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 auto-rows-[180px] lg:auto-rows-[220px]">
@@ -126,9 +143,9 @@ export function ProductBento({ locale }: { locale: Locale }) {
               return (
                 <Link
                   key={index}
-                  href={`/products?category=${encodeURIComponent(item.slug)}`}
+                  href={item.slug.startsWith('http') ? item.slug : (item.slug.startsWith('/') ? item.slug : `/${locale}/${item.slug}`)}
                   className={cn(
-                    "group relative rounded-[2.5rem] overflow-hidden border border-border/40 bg-muted/5 transition-all duration-700 hover:shadow-2xl hover:border-primary/20",
+                    "group relative rounded-[2.5rem] overflow-hidden border border-border/40 bg-muted/5 transition-all duration-700 transform-gpu translate-z-0",
                     "opacity-0 translate-y-12",
                     isVisible && "opacity-100 translate-y-0",
                     item.grid
@@ -142,33 +159,36 @@ export function ProductBento({ locale }: { locale: Locale }) {
                       src={item.imageUrl}
                       alt={item.label}
                       fill
-                      className="object-cover transition-transform duration-[1500ms] ease-[cubic-bezier(0.23,1,0.32,1)] group-hover:scale-110"
+                      className="object-cover"
                       sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
                     />
                   )}
                   
-                  {/* Overlay with glass effect */}
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/20 to-transparent opacity-70 group-hover:opacity-100 transition-opacity duration-500" />
-                  
-                  {/* Content Area */}
-                  <div className="absolute inset-0 p-8 flex flex-col justify-end">
-                    <div className="space-y-3 transform translate-y-4 group-hover:translate-y-0 transition-transform duration-500">
-                      <span className="inline-block px-3 py-1 glass-crystal text-accent text-[10px] font-bold tracking-[0.2em] uppercase rounded-full border border-white/10">
-                        {item.category}
-                      </span>
+                  {/* Bottom Premium Neutral-Frosted Gradient Overlay - 40px Vibrancy */}
+                  <div className={cn(
+                    "absolute inset-x-0 bottom-0 bg-white/10 backdrop-blur-[40px] [mask-image:linear-gradient(to_top,black,transparent)] pointer-events-none transition-all duration-500 will-change-[backdrop-filter] transform-gpu translate-z-0",
+                    item.category ? "h-[38%]" : "h-[25%]"
+                  )} />
+
+                  {/* Content Area - Minimal Style */}
+                  <div className="absolute inset-0 p-5 pb-5 flex flex-col justify-end transition-transform duration-500 group-hover:-translate-y-1">
+                    <div className="space-y-3">
+                      {item.category && (
+                        <span className="inline-block px-3 py-1 bg-white/80 backdrop-blur-md text-slate-800 text-[10px] font-bold tracking-[0.2em] uppercase rounded-full border border-slate-200/50 shadow-sm">
+                          {item.category}
+                        </span>
+                      )}
                       <div className="flex items-center justify-between gap-4">
-                        <h3 className="text-xl md:text-2xl font-headline font-bold text-white leading-tight tracking-tight">
+                        <h3 className="text-xl md:text-2xl font-headline font-bold text-black leading-tight tracking-tight">
                           {item.label}
                         </h3>
-                        <div className="h-10 w-10 rounded-full glass-frosted flex items-center justify-center text-white opacity-0 group-hover:opacity-100 transition-all duration-500 hover:bg-primary hover:text-white hover:scale-110">
+                        <div className="h-10 w-10 aspect-square rounded-full bg-[#DADADA]/50 backdrop-blur-sm flex items-center justify-center text-black opacity-0 group-hover:opacity-100 transition-all duration-500 hover:scale-110">
                           <ArrowUpRight className="h-5 w-5" />
                         </div>
                       </div>
                     </div>
                   </div>
                   
-                  {/* Hover Glow Effect */}
-                  <div className="absolute inset-0 bg-gradient-to-br from-white/10 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none" />
                 </Link>
               );
             })

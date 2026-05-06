@@ -18,10 +18,11 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Button } from '@/components/ui/button';
-import { Settings2, Save, Globe, ShieldCheck, Loader2, Cloud, Database, Cpu, Info } from 'lucide-react';
+import { useToast } from '@/hooks/use-toast';
+import { History, RotateCcw, Terminal, Download, Database, Cpu, Info, ShieldCheck, Globe, Save, Settings2, Loader2, Cloud, FileText, PlayCircle } from 'lucide-react';
+import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
-import { useToast } from '@/hooks/use-toast';
 
 interface LanguageOption {
   code: string;
@@ -42,6 +43,14 @@ const GlassCard = ({ children, className }: { children: React.ReactNode, classNa
 export default function AdminSettingsPage() {
   const { toast } = useToast();
   const [isSaving, setIsSaving] = useState(false);
+  const [isBackingUp, setIsBackingUp] = useState(false);
+  const [isUpdating, setIsUpdating] = useState(false);
+  const [isChecking, setIsChecking] = useState(false);
+  const [isRestoring, setIsRestoring] = useState(false);
+  const [updateInfo, setUpdateInfo] = useState<any>(null);
+  const [sysStatus, setSysStatus] = useState<any>(null);
+  const [backups, setBackups] = useState<any[]>([]);
+
   const { data: langSettings, isLoading: isLangLoading, mutate: mutateLangs } = useLocalDoc<AppConfig>('settings', 'languages');
   
   const [formData, setFormData] = useState<AppConfig>({
@@ -56,7 +65,29 @@ export default function AdminSettingsPage() {
         defaultLanguage: langSettings.defaultLanguage || 'zh'
       });
     }
+    fetchStatus();
+    fetchBackups();
   }, [langSettings]);
+
+  const fetchStatus = async () => {
+    try {
+      const res = await fetch('/api/admin/system/status');
+      const data = await res.json();
+      setSysStatus(data);
+    } catch (e) {
+      console.error("Failed to fetch status");
+    }
+  };
+
+  const fetchBackups = async () => {
+    try {
+      const res = await fetch('/api/admin/system/backups');
+      const data = await res.json();
+      if (data.backups) setBackups(data.backups);
+    } catch (e) {
+      console.error("Failed to fetch backups");
+    }
+  };
 
   const handleSave = async () => {
     setIsSaving(true);
@@ -72,6 +103,113 @@ export default function AdminSettingsPage() {
     } catch (e) {
       setIsSaving(false);
       toast({ variant: "destructive", title: "保存失败" });
+    }
+  };
+
+  const handleBackup = async () => {
+    setIsBackingUp(true);
+    try {
+      const res = await fetch('/api/admin/system/backup', { method: 'POST' });
+      const data = await res.json();
+      if (data.success) {
+        toast({ title: "备份成功", description: `已生成: ${data.output}` });
+        fetchStatus();
+        fetchBackups();
+      } else {
+        throw new Error(data.error);
+      }
+    } catch (e: any) {
+      toast({ variant: "destructive", title: "备份失败", description: e.message });
+    } finally {
+      setIsBackingUp(false);
+    }
+  };
+
+  const handleDownload = (filename: string) => {
+    window.open(`/api/admin/system/backups/${filename}`, '_blank');
+  };
+
+  const handleRestore = async (sqlFile: string) => {
+    const timestamp = sqlFile.match(/\d{8}_\d{6}/)?.[0];
+    if (!timestamp) {
+      toast({ variant: "destructive", title: "无效的备份文件", description: "无法识别时间戳" });
+      return;
+    }
+
+    const minioFile = backups.find(b => b.filename.includes(timestamp) && b.type === "STORAGE")?.filename;
+    if (!minioFile) {
+      toast({ variant: "destructive", title: "缺少匹配的存储备份", description: "无法找到对应的 MinIO 备份文件" });
+      return;
+    }
+
+    const confirmText = prompt(`⚠️ 危险操作：您正在尝试将数据库和存储还原到 ${timestamp} 的状态。\n当前所有数据将被覆盖且不可撤销！\n\n请输入 "CONFIRM" 以继续：`);
+    
+    if (confirmText !== "CONFIRM") {
+      toast({ title: "还原已取消" });
+      return;
+    }
+
+    setIsRestoring(true);
+    try {
+      const res = await fetch('/api/admin/system/restore', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ sqlFile, minioFile })
+      });
+      const data = await res.json();
+      if (data.success) {
+        toast({ title: "还原成功", description: "系统数据已恢复，建议手动刷新页面。" });
+        window.location.reload();
+      } else {
+        throw new Error(data.error);
+      }
+    } catch (e: any) {
+      toast({ variant: "destructive", title: "还原失败", description: e.message });
+    } finally {
+      setIsRestoring(false);
+    }
+  };
+
+  const handleCheckUpdate = async () => {
+    setIsChecking(true);
+    setUpdateInfo(null);
+    try {
+      const res = await fetch('/api/admin/system/check', { method: 'POST' });
+      const data = await res.json();
+      if (data.hasUpdate) {
+        setUpdateInfo(data);
+        toast({ title: "发现新更新", description: `共有 ${data.count} 个新的提交记录` });
+      } else {
+        toast({ title: "已是最新版本", description: "当前代码与远程仓库一致" });
+      }
+    } catch (e: any) {
+      toast({ variant: "destructive", title: "检查失败", description: e.message });
+    } finally {
+      setIsChecking(false);
+    }
+  };
+
+  const handleUpdate = async () => {
+    if (!confirm("确定要启动系统更新吗？这将拉取最新代码并重新构建项目，期间网站可能会有短暂延迟。更新前会自动执行备份。")) return;
+    
+    setIsUpdating(true);
+    setUpdateInfo(null);
+    try {
+      const res = await fetch('/api/admin/system/update', { method: 'POST' });
+      const data = await res.json();
+      if (data.success) {
+        toast({ title: "更新已启动", description: data.message });
+        const interval = setInterval(async () => {
+          await fetchStatus();
+        }, 5000);
+        setTimeout(() => clearInterval(interval), 120000);
+      } else {
+        throw new Error(data.error);
+      }
+    } catch (e: any) {
+      toast({ variant: "destructive", title: "更新启动失败", description: e.message });
+    } finally {
+      setIsUpdating(false);
     }
   };
 
@@ -102,6 +240,7 @@ export default function AdminSettingsPage() {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-10">
+        {/* Main Content Area (Left) */}
         <div className="lg:col-span-8 space-y-10">
           <GlassCard className="border-none shadow-[0_32px_64px_-12px_rgba(0,0,0,0.12)]">
             <div className="bg-slate-900 p-8 text-white relative overflow-hidden">
@@ -165,66 +304,206 @@ export default function AdminSettingsPage() {
             </CardContent>
           </GlassCard>
 
-          <GlassCard className="border-none shadow-xl">
-            <CardHeader className="p-8 border-b border-slate-50">
-              <div className="flex items-center gap-4">
-                <div className="h-12 w-12 rounded-2xl bg-accent/10 text-accent flex items-center justify-center shadow-inner">
-                  <Cloud className="h-6 w-6" />
-                </div>
-                <div>
-                  <CardTitle className="text-lg font-headline font-bold text-slate-900">基础设施架构 (Cloud Infra)</CardTitle>
-                  <CardDescription className="text-[10px] uppercase font-bold text-slate-400 tracking-widest mt-1">System Core Technical Stack</CardDescription>
-                </div>
-              </div>
-            </CardHeader>
-            <CardContent className="p-10 space-y-12">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-16">
-                <div className="space-y-6">
-                  <div className="flex items-center gap-3 text-primary">
-                    <Database className="h-4 w-4" />
-                    <span className="text-[11px] font-bold uppercase tracking-[0.2em]">云端数据网关</span>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
+            <GlassCard className="border-none shadow-xl">
+              <CardHeader className="p-8 border-b border-slate-50">
+                <div className="flex items-center gap-4">
+                  <div className="h-12 w-12 rounded-2xl bg-accent/10 text-accent flex items-center justify-center shadow-inner">
+                    <Cloud className="h-6 w-6" />
                   </div>
-                  <div className="space-y-4">
-                    <div className="flex justify-between items-center pb-3 border-b border-slate-100">
-                      <span className="text-xs font-bold text-slate-400 uppercase">Database</span>
-                      <code className="text-sm font-mono font-bold text-slate-900">PostgreSQL (Prisma)</code>
-                    </div>
-                    <div className="flex justify-between items-center pb-3 border-b border-slate-100">
-                      <span className="text-xs font-bold text-slate-400 uppercase">Object Storage</span>
-                      <span className="text-sm font-mono font-bold text-slate-900">MinIO (S3-Compatible)</span>
-                    </div>
-                    <div className="flex justify-between items-center">
-                      <span className="text-xs font-bold text-slate-400 uppercase">Auth Provider</span>
-                      <Badge variant="outline" className="text-[9px] font-bold uppercase border-primary/20 text-primary bg-primary/5 h-6 rounded-full px-3">Auth.js v5</Badge>
-                    </div>
+                  <div>
+                    <CardTitle className="text-lg font-headline font-bold text-slate-900">基础设施架构</CardTitle>
+                    <CardDescription className="text-[10px] uppercase font-bold text-slate-400 tracking-widest mt-1">Cloud Infra</CardDescription>
                   </div>
                 </div>
+              </CardHeader>
+              <CardContent className="p-8 space-y-6">
+                <div className="space-y-4">
+                  <div className="flex justify-between items-center pb-3 border-b border-slate-100">
+                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Database</span>
+                    <code className="text-xs font-mono font-bold text-slate-900">PostgreSQL</code>
+                  </div>
+                  <div className="flex justify-between items-center pb-3 border-b border-slate-100">
+                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Storage</span>
+                    <span className="text-xs font-mono font-bold text-slate-900">MinIO S3</span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Runtime</span>
+                    <span className="text-xs font-bold text-slate-900">Next.js 15.x</span>
+                  </div>
+                </div>
+              </CardContent>
+            </GlassCard>
 
-                <div className="space-y-6">
-                  <div className="flex items-center gap-3 text-primary">
-                    <Cpu className="h-4 w-4" />
-                    <span className="text-[11px] font-bold uppercase tracking-[0.2em]">软件执行环境</span>
+            <GlassCard className="border-none shadow-xl border-t-4 border-t-primary">
+              <CardHeader className="p-8 border-b border-slate-50">
+                <div className="flex items-center gap-4">
+                  <div className="h-12 w-12 rounded-2xl bg-primary/10 text-primary flex items-center justify-center shadow-inner">
+                    <ShieldCheck className="h-6 w-6" />
                   </div>
-                  <div className="space-y-4">
-                    <div className="flex justify-between items-center pb-3 border-b border-slate-100">
-                      <span className="text-xs font-bold text-slate-400 uppercase">Runtime</span>
-                      <span className="text-sm font-bold text-slate-900">Next.js 15.x</span>
-                    </div>
-                    <div className="flex justify-between items-center pb-3 border-b border-slate-100">
-                      <span className="text-xs font-bold text-slate-400 uppercase">Core Engine</span>
-                      <span className="text-sm font-bold text-slate-900">Genkit 1.28 + Gemini</span>
-                    </div>
-                    <div className="flex justify-between items-center">
-                      <span className="text-xs font-bold text-slate-400 uppercase">Visual Layer</span>
-                      <span className="text-sm font-bold text-slate-900">ShadCN + Tailwind</span>
-                    </div>
+                  <div>
+                    <CardTitle className="text-lg font-headline font-bold text-slate-900">维护与安全中心</CardTitle>
+                    <CardDescription className="text-[10px] uppercase font-bold text-slate-400 tracking-widest mt-1">Maintenance & Security</CardDescription>
                   </div>
                 </div>
-              </div>
-            </CardContent>
+              </CardHeader>
+              <CardContent className="p-8 space-y-6">
+                <div className="flex flex-col gap-4">
+                  <div className="space-y-2">
+                    <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">状态摘要</p>
+                    <p className="text-xs font-medium text-slate-700">
+                      {sysStatus?.lastBackup ? `最近备份: ${new Date(sysStatus.lastBackup.time).toLocaleString()}` : '暂无备份记录'}
+                    </p>
+                  </div>
+                  
+                  <div className="grid grid-cols-2 gap-3">
+                    <Button 
+                      variant="outline" 
+                      onClick={handleBackup}
+                      disabled={isBackingUp}
+                      className="rounded-xl h-12 border-slate-200 text-xs font-bold hover:bg-slate-50 gap-2"
+                    >
+                      {isBackingUp ? <Loader2 className="h-4 w-4 animate-spin" /> : <Database className="h-4 w-4" />}
+                      立即备份
+                    </Button>
+                    {updateInfo ? (
+                      <Button 
+                        variant="default"
+                        onClick={handleUpdate}
+                        disabled={isUpdating}
+                        className="rounded-xl h-12 bg-primary text-white text-xs font-bold shadow-lg shadow-primary/20 gap-2 animate-bounce"
+                      >
+                        {isUpdating ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}
+                        立即安装 ({updateInfo.count})
+                      </Button>
+                    ) : (
+                      <Button 
+                        variant="outline"
+                        onClick={handleCheckUpdate}
+                        disabled={isChecking}
+                        className="rounded-xl h-12 border-primary/20 text-primary text-xs font-bold hover:bg-primary/5 gap-2"
+                      >
+                        {isChecking ? <Loader2 className="h-4 w-4 animate-spin" /> : <Cpu className="h-4 w-4" />}
+                        检查更新
+                      </Button>
+                    )}
+                  </div>
+                  
+                  {updateInfo && (
+                    <div className="p-4 bg-primary/5 rounded-xl border border-primary/10">
+                      <p className="text-[10px] text-primary font-bold uppercase tracking-widest mb-2 flex items-center gap-2">
+                        <History className="h-3 w-3" /> 待更新内容
+                      </p>
+                      <div className="space-y-1">
+                        {updateInfo.logs.map((log: string, idx: number) => (
+                          <p key={idx} className="text-[10px] text-slate-600 font-mono truncate">{log}</p>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {sysStatus?.updateLog && (
+                    <div className="p-4 bg-slate-900 rounded-xl overflow-hidden">
+                      <p className="text-[9px] text-primary font-bold uppercase tracking-widest mb-2 flex items-center gap-2">
+                        <Terminal className="h-3 w-3" /> 维护日志摘要
+                      </p>
+                      <pre className="text-[9px] text-white/60 font-mono leading-relaxed whitespace-pre-wrap max-h-24 overflow-y-auto">
+                        {sysStatus.updateLog}
+                      </pre>
+                    </div>
+                  )}
+                </div>
+              </CardContent>
+            </GlassCard>
+          </div>
+
+          {/* Backup History Table */}
+          <GlassCard className="border-none shadow-xl">
+             <CardHeader className="p-8 border-b border-slate-50 flex flex-row items-center justify-between">
+                <div className="flex items-center gap-4">
+                  <div className="h-12 w-12 rounded-2xl bg-slate-100 text-slate-500 flex items-center justify-center shadow-inner">
+                    <History className="h-6 w-6" />
+                  </div>
+                  <div>
+                    <CardTitle className="text-lg font-headline font-bold text-slate-900">备份档案库</CardTitle>
+                    <CardDescription className="text-[10px] uppercase font-bold text-slate-400 tracking-widest mt-1">Backup History & Recovery</CardDescription>
+                  </div>
+                </div>
+                <Button variant="ghost" size="sm" onClick={fetchBackups} className="text-[10px] font-bold uppercase tracking-widest text-primary hover:bg-primary/5">刷新列表</Button>
+             </CardHeader>
+             <CardContent className="p-0">
+                <div className="overflow-x-auto">
+                   <table className="w-full text-left">
+                      <thead className="bg-slate-50/50">
+                         <tr>
+                            <th className="px-8 py-4 text-[10px] font-bold uppercase text-slate-400 tracking-widest">文件名称</th>
+                            <th className="px-8 py-4 text-[10px] font-bold uppercase text-slate-400 tracking-widest text-center">类型</th>
+                            <th className="px-8 py-4 text-[10px] font-bold uppercase text-slate-400 tracking-widest text-center">大小</th>
+                            <th className="px-8 py-4 text-[10px] font-bold uppercase text-slate-400 tracking-widest text-right">操作</th>
+                         </tr>
+                      </thead>
+                      <tbody className="divide-y divide-slate-50">
+                         {backups.filter(b => b.type === "DATABASE").length > 0 ? (
+                           backups.filter(b => b.type === "DATABASE").map((backup, idx) => (
+                              <tr key={idx} className="group hover:bg-slate-50/50 transition-colors">
+                                 <td className="px-8 py-6">
+                                    <div className="flex items-center gap-3">
+                                       <FileText className="h-4 w-4 text-slate-300" />
+                                       <div>
+                                          <p className="text-xs font-bold text-slate-700">{backup.filename}</p>
+                                          <p className="text-[10px] text-slate-400 mt-0.5">{new Date(backup.time).toLocaleString()}</p>
+                                       </div>
+                                    </div>
+                                 </td>
+                                 <td className="px-8 py-6 text-center">
+                                    <Badge variant="outline" className="text-[9px] font-bold uppercase bg-blue-50 text-blue-600 border-blue-100">SQL DATA</Badge>
+                                 </td>
+                                 <td className="px-8 py-6 text-center text-[10px] font-bold text-slate-500">
+                                    {(backup.size / 1024 / 1024).toFixed(2)} MB
+                                 </td>
+                                 <td className="px-8 py-6 text-right">
+                                    <div className="flex justify-end gap-2">
+                                       <Button 
+                                         variant="ghost" 
+                                         size="sm" 
+                                         onClick={() => handleDownload(backup.filename)}
+                                         title="下载备份"
+                                         className="h-8 w-8 p-0 rounded-lg text-slate-400 hover:text-primary hover:bg-primary/5"
+                                       >
+                                          <Download className="h-4 w-4" />
+                                       </Button>
+                                       <Button 
+                                         variant="ghost" 
+                                         size="sm" 
+                                         disabled={isRestoring}
+                                         onClick={() => handleRestore(backup.filename)}
+                                         title="还原此版本"
+                                         className="h-8 w-8 p-0 rounded-lg text-slate-400 hover:text-red-500 hover:bg-red-50"
+                                       >
+                                          {isRestoring ? <Loader2 className="h-4 w-4 animate-spin" /> : <RotateCcw className="h-4 w-4" />}
+                                       </Button>
+                                    </div>
+                                 </td>
+                              </tr>
+                           ))
+                         ) : (
+                           <tr>
+                             <td colSpan={4} className="px-8 py-12 text-center">
+                               <div className="flex flex-col items-center gap-2 opacity-30">
+                                 <Database className="h-8 w-8" />
+                                 <p className="text-xs font-bold uppercase tracking-widest">暂无备份档案</p>
+                               </div>
+                             </td>
+                           </tr>
+                         )}
+                      </tbody>
+                   </table>
+                </div>
+             </CardContent>
           </GlassCard>
         </div>
 
+        {/* Sidebar (Right) */}
         <div className="lg:col-span-4 space-y-8">
           <GlassCard className="border-none bg-slate-900 text-white shadow-2xl">
             <CardHeader className="p-8 border-b border-white/5">
@@ -250,7 +529,9 @@ export default function AdminSettingsPage() {
                </div>
 
                <div className="p-6 bg-white/5 rounded-[2rem] border border-white/5 flex gap-4">
-                  <Info className="h-5 w-5 text-primary shrink-0 mt-0.5" />
+                  <div className="mt-1">
+                    <Info className="h-5 w-5 text-primary shrink-0" />
+                  </div>
                   <p className="text-[10px] text-white/40 leading-relaxed font-medium italic">
                     <b>节点提示：</b>此面板展示当前容器的硬件拓扑与连接池状态。若出现离线报警，请检查 GCP 密钥存续期。
                   </p>
@@ -272,8 +553,4 @@ export default function AdminSettingsPage() {
       </div>
     </div>
   );
-}
-
-function Label({ children, className }: { children: React.ReactNode, className?: string }) {
-  return <label className={cn("block", className)}>{children}</label>;
 }

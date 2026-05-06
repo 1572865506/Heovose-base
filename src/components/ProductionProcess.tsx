@@ -42,15 +42,7 @@ export function ProductionProcess({ locale }: { locale: Locale }) {
       }));
     }
     
-    // 兜底默认数据
-    const t = translations[locale].process;
-    return [
-      { label: t.pmc, tag: '01', images: ['https://picsum.photos/seed/p1/1200/800'], desc: t.pmc_desc },
-      { label: t.procurement, tag: '02', images: ['https://picsum.photos/seed/p1/1200/800'], desc: t.procurement_desc },
-      { label: t.inspection, tag: '05', images: ['https://picsum.photos/seed/p2/1200/800'], desc: t.inspection_desc },
-      { label: t.manufacturing, tag: '08', images: ['https://picsum.photos/seed/p3/1200/800'], desc: t.manufacturing_desc },
-      { label: t.shipment, tag: '11', images: ['https://picsum.photos/seed/p4/1200/800'], desc: t.shipment_desc },
-    ];
+    return [];
   }, [remoteSteps, locale]);
 
   // 3. 动态生成视觉分段逻辑：防止相邻步骤图片完全相同时产生闪烁切换
@@ -126,13 +118,16 @@ export function ProductionProcess({ locale }: { locale: Locale }) {
     setProgress(0);
   }, [activeStep]);
 
-  if (isLoading) {
-    return (
-      <div className="py-40 flex flex-col items-center justify-center gap-4 bg-white">
-        <Loader2 className="h-10 w-10 animate-spin text-primary opacity-20" />
-        <p className="text-[10px] font-bold uppercase tracking-widest opacity-40">同步精密制造流程中...</p>
-      </div>
-    );
+  if (isLoading || steps.length === 0) {
+    if (isLoading) {
+      return (
+        <div className="py-40 flex flex-col items-center justify-center gap-4 bg-white">
+          <Loader2 className="h-10 w-10 animate-spin text-primary opacity-20" />
+          <p className="text-[10px] font-bold uppercase tracking-widest opacity-40">同步精密制造流程中...</p>
+        </div>
+      );
+    }
+    return null;
   }
 
   return (

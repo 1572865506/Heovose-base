@@ -58,7 +58,7 @@ export function GlobalMap({ locale, homeConfig, isLoading }: GlobalMapProps) {
     ? (homeConfig?.mapSubtitleZh || t.subtitle)
     : (homeConfig?.mapSubtitleEn || t.subtitle);
 
-  // 优先使用后台配置的 locations，如果没有则回退到本地默认数据
+  // 优先使用后台配置的 locations
   const pins = useMemo(() => {
     if (homeConfig?.locations && homeConfig.locations.length > 0) {
       return homeConfig.locations.map((loc: any) => ({
@@ -73,36 +73,10 @@ export function GlobalMap({ locale, homeConfig, isLoading }: GlobalMapProps) {
       }));
     }
 
-    // 默认回退数据（保持原有展示一致性）
-    const locs = t.locations;
-    return [
-      { key: 'panyu', style: { top: '40%', left: '75%' }, title: locs.panyu.title, address: locs.panyu.address, desc: locs.panyu.desc, type: 'HQ', icon: Building2 },
-      { key: 'shunde', style: { top: '43%', left: '76.5%' }, title: locs.shunde.title, address: locs.shunde.address, desc: locs.shunde.desc, type: 'R&D', icon: Microscope },
-      { key: 'beijiao', style: { top: '46%', left: '74.5%' }, title: locs.beijiao.title, address: locs.beijiao.address, desc: locs.beijiao.desc, type: 'Factory', icon: Factory },
-      { key: 'jakarta', style: { top: '65%', left: '72.5%' }, title: locs.jakarta.title, address: locs.jakarta.address, desc: locs.jakarta.desc, type: 'Factory', icon: Factory },
-    ];
-  }, [homeConfig, locale, t]);
+    return [];
+  }, [homeConfig, locale]);
 
-  if (isLoading) {
-    return (
-      <section className="py-24 bg-white overflow-hidden relative">
-        <div className="container mx-auto px-6">
-          <div className="space-y-4 mb-16">
-            <div className="h-4 w-32 bg-muted rounded-full animate-pulse mx-auto" />
-            <div className="h-10 w-64 bg-muted rounded-lg animate-pulse mx-auto" />
-          </div>
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-12">
-            <div className="lg:col-span-4 space-y-4">
-              {Array.from({ length: 3 }).map((_, i) => (
-                <div key={i} className="h-32 rounded-3xl bg-muted/20 animate-pulse border border-border/20" />
-              ))}
-            </div>
-            <div className="lg:col-span-8 aspect-[16/9] bg-muted/20 rounded-[3rem] animate-pulse border border-border/20" />
-          </div>
-        </div>
-      </section>
-    );
-  }
+  if (isLoading || pins.length === 0) return null;
 
   return (
     <section id="global" ref={sectionRef} className="py-24 bg-white overflow-hidden relative">

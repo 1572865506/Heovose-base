@@ -228,7 +228,7 @@ export default function TranslationsPage() {
     if (id.startsWith('gal_')) return { label: '媒体资产', color: 'bg-pink-100 text-pink-700' };
     if (id.startsWith('adv_')) return { label: '卖点优势', color: 'bg-amber-100 text-amber-700' };
     if (usedIds.has(id)) return { label: '动态关联', color: 'bg-slate-100 text-slate-700' };
-    return { label: '系统文案', color: 'bg-slate-100 text-slate-400' };
+    return { label: '系统文案', color: 'bg-rose-50 text-rose-600 border-rose-100' };
   };
 
   const semanticDuplicates = useMemo(() => {
@@ -749,33 +749,34 @@ export default function TranslationsPage() {
           </div>
         </div>
 
-        <GlassCard>
-          <Table>
-            <TableHeader className="bg-slate-50/50 border-b border-slate-100">
-              <TableRow className="hover:bg-transparent">
-                <TableHead 
-                  className="pl-6 py-4 font-bold uppercase text-[9px] tracking-[0.2em] text-slate-400 w-72 cursor-pointer hover:text-primary transition-colors select-none"
-                  onClick={() => setSortConfig({
-                    key: 'id',
-                    direction: sortConfig.key === 'id' && sortConfig.direction === 'asc' ? 'desc' : 'asc'
-                  })}
-                >
-                  Resource Identifier {sortConfig.key === 'id' && (sortConfig.direction === 'asc' ? '↑' : '↓')}
-                </TableHead>
-                {activeLanguages.map(lang => (
-                  <TableHead key={lang.code} className="font-bold uppercase text-[9px] tracking-[0.2em] text-slate-400">{lang.label}</TableHead>
-                ))}
-                <TableHead 
-                  className="text-right pr-6 font-bold uppercase text-[9px] tracking-[0.2em] text-slate-400 w-48 cursor-pointer hover:text-primary transition-colors select-none"
-                  onClick={() => setSortConfig({
-                    key: 'updatedAt',
-                    direction: sortConfig.key === 'updatedAt' && sortConfig.direction === 'desc' ? 'asc' : 'desc'
-                  })}
-                >
-                  Actions / Updated {sortConfig.key === 'updatedAt' && (sortConfig.direction === 'asc' ? '↑' : '↓')}
-                </TableHead>
-              </TableRow>
-            </TableHeader>
+        <GlassCard className="p-0 overflow-hidden border-none shadow-2xl">
+          <div className="overflow-x-auto scrollbar-thin scrollbar-thumb-slate-200 scrollbar-track-transparent">
+            <Table className="min-w-[1200px] border-collapse">
+              <TableHeader className="bg-slate-50/80 backdrop-blur-md sticky top-0 z-40 border-b border-slate-100">
+                <TableRow className="hover:bg-transparent">
+                  <TableHead 
+                    className="pl-6 py-4 font-bold uppercase text-[9px] tracking-[0.2em] text-slate-400 w-80 cursor-pointer hover:text-primary transition-colors select-none sticky left-0 z-50 bg-slate-50/95 backdrop-blur-sm border-r border-slate-100/50 shadow-[4px_0_10px_-4px_rgba(0,0,0,0.05)]"
+                    onClick={() => setSortConfig({
+                      key: 'id',
+                      direction: sortConfig.key === 'id' && sortConfig.direction === 'asc' ? 'desc' : 'asc'
+                    })}
+                  >
+                    Resource Identifier {sortConfig.key === 'id' && (sortConfig.direction === 'asc' ? '↑' : '↓')}
+                  </TableHead>
+                  {activeLanguages.map(lang => (
+                    <TableHead key={lang.code} className="font-bold uppercase text-[9px] tracking-[0.2em] text-slate-400 px-6 min-w-[300px]">{lang.label}</TableHead>
+                  ))}
+                  <TableHead 
+                    className="text-right pr-6 font-bold uppercase text-[9px] tracking-[0.2em] text-slate-400 w-48 cursor-pointer hover:text-primary transition-colors select-none sticky right-0 z-50 bg-slate-50/95 backdrop-blur-sm border-l border-slate-100/50 shadow-[-4px_0_10px_-4px_rgba(0,0,0,0.05)]"
+                    onClick={() => setSortConfig({
+                      key: 'updatedAt',
+                      direction: sortConfig.key === 'updatedAt' && sortConfig.direction === 'desc' ? 'asc' : 'desc'
+                    })}
+                  >
+                    Actions / Updated {sortConfig.key === 'updatedAt' && (sortConfig.direction === 'asc' ? '↑' : '↓')}
+                  </TableHead>
+                </TableRow>
+              </TableHeader>
             <TableBody>
               {isLoading ? (
                 <TableRow><TableCell colSpan={10} className="h-40 text-center"><Loader2 className="h-10 w-10 animate-spin mx-auto opacity-20" /></TableCell></TableRow>
@@ -788,12 +789,15 @@ export default function TranslationsPage() {
                 const isDuplicate = semanticIds.length > 1;
 
                 return (
-                  <TableRow key={t.id} className={cn("group transition-all duration-300 border-slate-100", isDuplicate ? "bg-orange-50/40" : "hover:bg-slate-50/80", refs.length > 0 ? "border-l-[4px] border-l-primary" : "border-l-[4px] border-l-transparent")}>
-                    <TableCell className="pl-6 py-3">
+                  <TableRow key={t.id} className={cn("group transition-all duration-300 border-slate-100", isDuplicate ? "bg-orange-50/40" : "hover:bg-slate-50/80")}>
+                    <TableCell className="pl-6 py-3 sticky left-0 z-30 bg-white group-hover:bg-slate-50 transition-colors border-r border-slate-100/50 shadow-[4px_0_10px_-4px_rgba(0,0,0,0.05)] overflow-hidden">
+                      {refs.length > 0 && (
+                        <div className="absolute left-0 top-0 bottom-0 w-[4px] bg-primary shadow-[2px_0_10px_rgba(37,99,235,0.2)]" />
+                      )}
                       <div className="flex flex-col gap-1.5">
-                        <div className="flex items-center gap-2">
-                          <code className="text-[11px] font-bold text-primary bg-primary/5 px-2.5 py-1 rounded-lg uppercase tracking-tight shadow-sm">{t.id}</code>
-                          <Badge variant="outline" className={cn("text-[8px] h-5 px-2 font-bold uppercase border-transparent", getResourceCategory(t.id).color)}>
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <code className="text-[11px] font-bold text-primary bg-primary/5 px-2.5 py-1 rounded-lg uppercase tracking-tight shadow-sm shrink-0">{t.id}</code>
+                          <Badge variant="outline" className={cn("text-[8px] h-5 px-2 font-bold uppercase border-transparent whitespace-nowrap shrink-0", getResourceCategory(t.id).color)}>
                             {getResourceCategory(t.id).label}
                           </Badge>
                         </div>
@@ -872,7 +876,7 @@ export default function TranslationsPage() {
                       <TableCell key={lang.code} className="py-3">
                         {editingId === t.id ? (
                           <Textarea 
-                            value={formData.translations[lang.code] || ''} 
+                            value={formData.translations?.[lang.code] || ''} 
                             onChange={e => setFormData({
                               ...formData, 
                               translations: { ...formData.translations, [lang.code]: e.target.value }
@@ -886,7 +890,7 @@ export default function TranslationsPage() {
                         )}
                       </TableCell>
                     ))}
-                    <TableCell className="pr-6 text-right py-3">
+                    <TableCell className="pr-6 text-right py-3 sticky right-0 z-30 bg-white group-hover:bg-slate-50 transition-colors border-l border-slate-100/50 shadow-[-4px_0_10px_-4px_rgba(0,0,0,0.05)]">
                        {editingId === t.id ? (
                          <div className="flex justify-end gap-2">
                            <Button onClick={handleSave} className="h-10 px-4 rounded-xl bg-green-600 hover:bg-green-700 shadow-lg shadow-green-100">
@@ -909,11 +913,14 @@ export default function TranslationsPage() {
                              </ShinyButton>
                            )}
                            <Button variant="ghost" size="icon" onClick={() => { 
-                             const initialData: any = { __key: t.id };
-                             activeLanguages.forEach(l => {
-                               initialData[l.code] = (t.content as any)?.[l.code] || (['zh', 'en', 'idn', 'vi'].includes(l.code) ? (t as any)[l.code] : '');
-                             });
-                             setFormData(initialData); 
+                              const initialTranslations: any = {};
+                              activeLanguages.forEach(l => {
+                                initialTranslations[l.code] = (t.content as any)?.[l.code] || (["zh", "en", "idn", "vi"].includes(l.code) ? (t as any)[l.code] : "");
+                              });
+                              setFormData({
+                                id: t.id,
+                                translations: initialTranslations
+                              });
                              setEditingId(t.id); 
                            }} className="h-10 w-10 rounded-xl opacity-0 group-hover:opacity-100 transition-all hover:bg-primary/5 hover:text-primary">
                              <Edit2 className="h-4 w-4" />
@@ -931,7 +938,8 @@ export default function TranslationsPage() {
               })}
             </TableBody>
           </Table>
-        </GlassCard>
+        </div>
+      </GlassCard>
 
         {totalPages > 1 && (
           <div className="flex items-center justify-between px-2 pt-4">

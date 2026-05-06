@@ -3,9 +3,14 @@
 import { useMemo } from 'react';
 import { Locale, translations as fallbackLibrary } from '@/lib/translations';
 import { useLocalCollection } from '@/hooks/use-local-collection';
+import { useLocalDoc } from '@/hooks/use-local-doc';
 
 export function useTranslations(locale: Locale) {
-  const { data: remoteTranslations, isLoading } = useLocalCollection<any>('localizedStrings');
+  const { data: remoteTranslations, isLoading: isTranslationsLoading } = useLocalCollection<any>('localizedStrings');
+  const { data: langSettings, isLoading: isSettingsLoading } = useLocalDoc<any>('settings', 'languages');
+
+  const defaultLanguage = langSettings?.defaultLanguage || 'zh';
+  const isLoading = isTranslationsLoading || isSettingsLoading;
 
   const t = useMemo(() => {
     // Helper to get nested value from the fallback library
@@ -29,7 +34,7 @@ export function useTranslations(locale: Locale) {
       
       if (remote) {
         const content = (remote.content as any) || {};
-        const val = content[locale] || content['en'] || content['zh'];
+        const val = content[locale] || content[defaultLanguage] || content['en'] || content['zh'];
         
         if (val && typeof val === 'string' && val.trim() !== '') {
           result = val;
@@ -49,7 +54,7 @@ export function useTranslations(locale: Locale) {
 
       // 2. Fallback to local hardcoded library (if still looks like a key)
       if (result === key) {
-        const library = (fallbackLibrary as any)[locale] || (fallbackLibrary as any)['en'];
+        const library = (fallbackLibrary as any)[locale] || (fallbackLibrary as any)[defaultLanguage] || (fallbackLibrary as any)['en'];
         if (library[key] && typeof library[key] === 'string') {
           result = library[key];
         } else {
@@ -61,13 +66,13 @@ export function useTranslations(locale: Locale) {
         }
       }
 
-      // Final safeguard: If it still looks like a raw database ID, return empty string
-      const isRawId = /^(psl|psg|psv|prod|cat)_/i.test(result);
+      // Final safeguard: If it still looks like a raw database ID (starts with common prefixes or contains long numeric IDs), return empty string
+      const isRawId = /^(psl|psg|psv|prod|cat|hero|slide)_/i.test(result) || /_[0-9]{10,}/.test(result);
       if (isRawId) return '';
 
       return result;
     };
-  }, [remoteTranslations, locale]);
+  }, [remoteTranslations, locale, defaultLanguage]);
 
-  return { t, isLoading, count: Array.isArray(remoteTranslations) ? remoteTranslations.length : 0 };
+  return { t, isLoading, defaultLanguage, count: Array.isArray(remoteTranslations) ? remoteTranslations.length : 0 };
 }
