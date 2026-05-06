@@ -172,6 +172,7 @@ export default function AdminHomePage() {
   const { data: heroData, isLoading: isHeroLoading, mutate: mutateHero } = useLocalDoc<any>('homepageContent', 'hero');
   const { data: videoData, isLoading: isVideoLoading, mutate: mutateVideo } = useLocalDoc<any>('homepageContent', 'video');
   const { data: bentoData, isLoading: isBentoLoading, mutate: mutateBento } = useLocalDoc<any>('homepageContent', 'bento');
+  const { data: galleryData, isLoading: isGalleryLoading, mutate: mutateGallery } = useLocalDoc<any>('homepageContent', 'gallery');
   const { data: bentoItems, mutate: mutateBentoItems } = useLocalCollection<any>('bentoItems');
   const { data: aiConfig } = useLocalDoc<any>('settings', 'ai');
   const { data: categories } = useLocalCollection<any>('productCategories');
@@ -193,13 +194,14 @@ export default function AdminHomePage() {
     const { active, over } = event;
     if (!over || active.id === over.id) return;
 
+    if (!bentoItems) return;
     const oldIndex = bentoItems.findIndex((item: any) => item.id === active.id);
     const newIndex = bentoItems.findIndex((item: any) => item.id === over.id);
 
     const newOrder = arrayMove(bentoItems, oldIndex, newIndex);
     
     // Optimistically update local state
-    mutateBentoItems(newOrder, false);
+    mutateBentoItems(newOrder, { revalidate: false });
 
     // Sync with backend using the new batch reorder API
     try {
@@ -248,7 +250,11 @@ export default function AdminHomePage() {
     bentoTitleZh: '',
     bentoTitleEn: '',
     bentoSubtitleZh: '',
-    bentoSubtitleEn: ''
+    bentoSubtitleEn: '',
+    galleryTitleZh: '',
+    galleryTitleEn: '',
+    gallerySubtitleZh: '',
+    gallerySubtitleEn: ''
   });
 
   const [isSaving, setIsSaving] = useState(false);
@@ -314,7 +320,11 @@ export default function AdminHomePage() {
         bentoTitleZh: bentoData?.bentoTitleZh || '',
         bentoTitleEn: bentoData?.bentoTitleEn || '',
         bentoSubtitleZh: bentoData?.bentoSubtitleZh || '',
-        bentoSubtitleEn: bentoData?.bentoSubtitleEn || ''
+        bentoSubtitleEn: bentoData?.bentoSubtitleEn || '',
+        galleryTitleZh: galleryData?.galleryTitleZh || '',
+        galleryTitleEn: galleryData?.galleryTitleEn || '',
+        gallerySubtitleZh: galleryData?.gallerySubtitleZh || '',
+        gallerySubtitleEn: galleryData?.gallerySubtitleEn || ''
       }));
     }
   }, [heroData, videoData, bentoData, translations]);
@@ -363,15 +373,29 @@ export default function AdminHomePage() {
           bentoSubtitleEn: formData.bentoSubtitleEn,
         }),
       });
+      
+      const galleryRes = await fetch('/api/homepageContent/gallery', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          galleryTitleZh: formData.galleryTitleZh,
+          galleryTitleEn: formData.galleryTitleEn,
+          gallerySubtitleZh: formData.gallerySubtitleZh,
+          gallerySubtitleEn: formData.gallerySubtitleEn,
+        }),
+      });
 
+      // 2. Prepare translation asset updates
       // 2. Prepare translation asset updates
       const translationUpdates = [
         { id: 'hero_wholesale_title', content: { zh: formData.heroWholesaleButtonZh, en: formData.heroWholesaleButtonEn } },
         { id: 'hero_wholesale_desc', content: { zh: formData.heroWholesaleDescriptionZh, en: formData.heroWholesaleDescriptionEn } },
         { id: 'hero_project_title', content: { zh: formData.heroProjectButtonZh, en: formData.heroProjectButtonEn } },
         { id: 'hero_project_desc', content: { zh: formData.heroProjectDescriptionZh, en: formData.heroProjectDescriptionEn } },
-        { id: 'products_title', content: { zh: formData.bentoTitleZh, en: formData.bentoTitleEn } },
-        { id: 'products_subtitle', content: { zh: formData.bentoSubtitleZh, en: formData.bentoSubtitleEn } },
+        { id: 'PRODUCTS_TITLE', content: { zh: formData.bentoTitleZh, en: formData.bentoTitleEn } },
+        { id: 'PRODUCTS_SUBTITLE', content: { zh: formData.bentoSubtitleZh, en: formData.bentoSubtitleEn } },
+        { id: 'GALLERY_TITLE', content: { zh: formData.galleryTitleZh, en: formData.galleryTitleEn } },
+        { id: 'GALLERY_SUBTITLE', content: { zh: formData.gallerySubtitleZh, en: formData.gallerySubtitleEn } },
         ...formData.heroSlides.map((slide: any) => {
           const sId = slide.id.replace(/^slide_/, '');
           return [
@@ -384,7 +408,7 @@ export default function AdminHomePage() {
       const transResults = await Promise.all(
         translationUpdates.map(update => 
           fetch(`/api/localizedStrings/${encodeURIComponent(update.id)}`, {
-            method: 'PUT',
+            method: 'PUT', // The API handles upsert internally, but let's be safe
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ content: update.content }),
           }).then(r => ({ id: update.id, ok: r.ok }))
@@ -393,21 +417,25 @@ export default function AdminHomePage() {
 
       const transFailed = transResults.filter(r => !r.ok);
 
-      // Check results
-      if (!heroRes.ok) {
-        const errorData = await heroRes.json().catch(() => ({}));
-        throw new Error(`核心配置 (Hero) 保存失败: ${errorData.details || heroRes.statusText}`);
+      // Check core results
+      if (!heroRes.ok) throw new Error('英雄视觉 (Hero) 保存失败');
+      if (!videoRes.ok) throw new Error('视频模块保存失败');
+      if (!bentoRes.ok) throw new Error('Bento 布局文案保存失败');
+      if (!galleryRes.ok) {
+        const err = await galleryRes.json().catch(() => ({}));
+        throw new Error(`轮播板块配置保存失败: ${err.details || galleryRes.statusText}`);
       }
 
       mutateHero();
       mutateVideo();
       mutateBento();
+      mutateGallery();
       mutateTrans();
 
-      if (!videoRes.ok || !bentoRes.ok || transFailed.length > 0) {
+      if (transFailed.length > 0) {
         toast({ 
-          title: "部分保存成功", 
-          description: `核心配置已更新${!videoRes.ok ? "，但视频配置失败" : ""}${!bentoRes.ok ? "，但布局配置失败" : ""}${transFailed.length > 0 ? `，${transFailed.length} 个翻译词条同步失败` : ""}`,
+          title: "配置已发布", 
+          description: `核心配置已更新，但有 ${transFailed.length} 个翻译词条未能同步`,
           className: "bg-amber-50 border-amber-200 text-amber-800 rounded-2xl"
         });
       } else {
@@ -421,7 +449,7 @@ export default function AdminHomePage() {
       console.error('Save error:', error);
       toast({ 
         variant: "destructive", 
-        title: "保存失败", 
+        title: "发布失败", 
         description: error.message || "无法连接到服务器",
         className: "rounded-2xl"
       });
@@ -563,6 +591,9 @@ export default function AdminHomePage() {
           </TabsTrigger>
           <TabsTrigger value="bento" className="rounded-xl px-8 text-xs font-bold uppercase tracking-wider gap-2">
             <LayoutGrid className="h-4 w-4" /> 产品布局 (Bento)
+          </TabsTrigger>
+          <TabsTrigger value="gallery" className="rounded-xl px-8 text-xs font-bold uppercase tracking-wider gap-2">
+            <Layers className="h-4 w-4" /> 产品轮播 (Gallery)
           </TabsTrigger>
         </TabsList>
 
@@ -1053,6 +1084,121 @@ export default function AdminHomePage() {
                 <p className="text-xs font-bold text-amber-900 uppercase tracking-tight">提示</p>
                 <p className="text-[11px] text-amber-700 leading-relaxed">
                   Bento 布局现已切换为独立管理模式。您在这里添加的格位将直接决定首页“产品中心”板块的展示内容。建议保持 6-11 个格位以获得最佳视觉效果。
+                </p>
+              </div>
+            </div>
+          </div>
+        </TabsContent>
+
+        <TabsContent value="gallery" className="space-y-6">
+          <div className="bg-white p-8 rounded-3xl border shadow-sm space-y-8">
+            <div className="flex items-center justify-between border-b pb-6">
+              <div className="space-y-1">
+                <h3 className="text-sm font-bold text-primary uppercase tracking-widest flex items-center gap-2">
+                  <Layers className="h-4 w-4" /> 产品轮播板块 (Gallery Carousel) 配置
+                </h3>
+                <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Configure titles for the smooth product carousel section</p>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
+              <div className="space-y-6">
+                <div className="space-y-3">
+                  <Label className="text-[10px] font-bold uppercase tracking-widest text-slate-400">板块主标题 (Main Title)</Label>
+                  <div className="grid grid-cols-1 gap-3">
+                    <Input 
+                      value={formData.galleryTitleZh} 
+                      onChange={e => setFormData({...formData, galleryTitleZh: e.target.value})} 
+                      placeholder="例如：精选产品" 
+                      className="h-12 rounded-2xl bg-slate-50/50 border-slate-200"
+                    />
+                    <div className="relative group/input">
+                      <Input 
+                        value={formData.galleryTitleEn} 
+                        onChange={e => setFormData({...formData, galleryTitleEn: e.target.value})} 
+                        placeholder="e.g. FEATURED PRODUCTS" 
+                        className="h-12 rounded-2xl border-dashed bg-slate-50/20 pr-12"
+                      />
+                      {aiConfig?.isEnabled && (
+                        <div className="absolute right-1.5 top-1/2 -translate-y-1/2">
+                          <ShinyButton 
+                            onClick={async () => {
+                              const res = await translateContent({
+                                text: formData.galleryTitleZh,
+                                targetLangs: ['en'],
+                                apiKey: aiConfig.apiKey
+                              });
+                              if (res.en) setFormData({ ...formData, galleryTitleEn: res.en });
+                            }}
+                            disabled={isAiProcessing}
+                            className="w-9 h-9 p-0 flex items-center justify-center shadow-lg shadow-primary/5"
+                            shape="capsule"
+                          >
+                            {isAiProcessing ? (
+                              <Loader2 className="h-4 w-4 animate-spin" />
+                            ) : (
+                              <Sparkles className="h-4.5 w-4.5" />
+                            )}
+                          </ShinyButton>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="space-y-6">
+                <div className="space-y-3">
+                  <Label className="text-[10px] font-bold uppercase tracking-widest text-slate-400">板块副标题 (Subtitle)</Label>
+                  <div className="grid grid-cols-1 gap-3">
+                    <Input 
+                      value={formData.gallerySubtitleZh} 
+                      onChange={e => setFormData({...formData, gallerySubtitleZh: e.target.value})} 
+                      placeholder="例如：于细节处见创新与精密" 
+                      className="h-12 rounded-2xl bg-slate-50/50 border-slate-200"
+                    />
+                    <div className="relative group/input">
+                      <Input 
+                        value={formData.gallerySubtitleEn} 
+                        onChange={e => setFormData({...formData, gallerySubtitleEn: e.target.value})} 
+                        placeholder="e.g. Innovation in every detail" 
+                        className="h-12 rounded-2xl border-dashed bg-slate-50/20 pr-12"
+                      />
+                      {aiConfig?.isEnabled && (
+                        <div className="absolute right-1.5 top-1/2 -translate-y-1/2">
+                          <ShinyButton 
+                            onClick={async () => {
+                              const res = await translateContent({
+                                text: formData.gallerySubtitleZh,
+                                targetLangs: ['en'],
+                                apiKey: aiConfig.apiKey
+                              });
+                              if (res.en) setFormData({ ...formData, gallerySubtitleEn: res.en });
+                            }}
+                            disabled={isAiProcessing}
+                            className="w-9 h-9 p-0 flex items-center justify-center shadow-lg shadow-primary/5"
+                            shape="capsule"
+                          >
+                            {isAiProcessing ? (
+                              <Loader2 className="h-4 w-4 animate-spin" />
+                            ) : (
+                              <Sparkles className="h-4.5 w-4.5" />
+                            )}
+                          </ShinyButton>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="p-6 rounded-[2.5rem] bg-indigo-50/50 border border-indigo-100/50 flex gap-4 items-start">
+              <Info className="h-5 w-5 text-indigo-600 mt-1" />
+              <div className="space-y-1">
+                <p className="text-xs font-bold text-indigo-900 uppercase tracking-tight">关于产品轮播</p>
+                <p className="text-[11px] text-indigo-700 leading-relaxed">
+                  此板块会自动拉取已发布的最新产品。您可以在此配置板块的整体标题和设计感。建议使用简洁有力的文案以提升品牌感。
                 </p>
               </div>
             </div>

@@ -9,8 +9,7 @@ declare global {
 }
 
 const db = globalThis.prisma ?? prismaClientSingleton();
-// console.log('Prisma instance refreshed');
-
+// Prisma Schema Updated: 2026-05-06 16:32
 export default db;
 
 if (process.env.NODE_ENV !== 'production') globalThis.prisma = db;

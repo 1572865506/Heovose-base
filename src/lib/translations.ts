@@ -92,6 +92,10 @@ export const translations = {
       syncing: 'Synchronizing Global Inventory...',
       noSubCategories: 'No sub-categories defined',
     },
+    gallery: {
+      title: 'Featured Products',
+      subtitle: 'Innovation and Precision in Every Detail',
+    },
     cases: {
       title: 'Success Stories',
       subtitle: 'Real-world impact of Heovose hardware solutions.',
@@ -268,6 +272,10 @@ export const translations = {
       syncing: '正在同步全球库存...',
       noSubCategories: '未定义子分类',
     },
+    gallery: {
+      title: '精选产品',
+      subtitle: '于细节处见创新与精密',
+    },
     cases: {
       title: '案例展示',
       subtitle: 'Heovose 硬件方案在全球的真实应用。',
@@ -433,6 +441,10 @@ export const translations = {
       viewDetails: 'Lihat Detail',
       specSheet: 'Lembar Spek',
     },
+    gallery: {
+      title: 'Produk Unggulan',
+      subtitle: 'Inovasi dan Presisi dalam Setiap Detail',
+    },
     cases: {
       title: 'Kisah Sukses',
       subtitle: 'Dampak dunia nyata dari solusi perangkat keras Heovose.',
@@ -597,6 +609,10 @@ export const translations = {
       noResults: 'Không tìm thấy sản phẩm.',
       viewDetails: 'Xem chi tiết',
       specSheet: 'Bảng thông số',
+    },
+    gallery: {
+      title: 'Sản phẩm Nổi bật',
+      subtitle: 'Đổi mới và Chính xác trong từng Chi tiết',
     },
     cases: {
       title: 'Câu chuyện thành công',

@@ -26,6 +26,7 @@ export async function PUT(
   const session = await auth();
   if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
+  let filteredData: any = {};
   try {
     const { id } = await params;
     const data = await request.json();
@@ -85,10 +86,11 @@ export async function PUT(
       'heroWholesaleBg', 'heroProjectBg', 'isVideoEnabled',
       'videoTitleEn', 'videoTitleZh', 'videoSubtitleEn', 'videoSubtitleZh', 'videoUrl',
       'bentoTitleEn', 'bentoTitleZh', 'bentoSubtitleEn', 'bentoSubtitleZh',
+      'galleryTitleEn', 'galleryTitleZh', 'gallerySubtitleEn', 'gallerySubtitleZh',
       'mapTitleEn', 'mapTitleZh', 'mapSubtitleEn', 'mapSubtitleZh'
     ];
 
-    const filteredData: any = {};
+    filteredData = {};
     allowedFields.forEach(field => {
       const val = updateData[field];
       if (val !== undefined) {
@@ -107,6 +109,9 @@ export async function PUT(
       }
     });
 
+    // 调试日志：查看即将进入数据库的数据
+    // console.log(`[DEBUG] Upserting to ${id}:`, JSON.stringify(filteredData, null, 2));
+
     const item = await db.homepageContent.upsert({
       where: { id },
       update: filteredData,
@@ -115,9 +120,13 @@ export async function PUT(
     return NextResponse.json(item);
   } catch (error: any) {
     console.error('CRITICAL ERROR: Failed to update homepage content:', error);
+    // 返回更详尽的错误信息到前端，方便排查
     return NextResponse.json({ 
-      error: 'Internal Server Error', 
-      details: error.message 
+      error: 'DATABASE_UPSERT_FAILED', 
+      details: error.message,
+      code: error.code,
+      meta: error.meta,
+      targetFields: Object.keys(filteredData)
     }, { status: 500 });
   }
 }

@@ -8,15 +8,14 @@ datasource db {
 }
 
 model LocalizedString {
-  id                String            @id @default(cuid())
-  content           Json              @default("{}")
-  createdAt         DateTime          @default(now())
-  updatedAt         DateTime          @default(now()) @updatedAt
-  
-  productDescs      Product[]         @relation("ProductDesc")
-  productNames      Product[]         @relation("ProductName")
-  categoryNames     ProductCategory[] @relation("CategoryName")
-  categoryDescs     ProductCategory[] @relation("CategoryDesc")
+  id            String            @id @default(cuid())
+  content       Json              @default("{}")
+  createdAt     DateTime          @default(now())
+  updatedAt     DateTime          @default(now()) @updatedAt
+  productDescs  Product[]         @relation("ProductDesc")
+  productNames  Product[]         @relation("ProductName")
+  categoryDescs ProductCategory[] @relation("CategoryDesc")
+  categoryNames ProductCategory[] @relation("CategoryName")
 }
 
 model HomepageContent {
@@ -45,17 +44,21 @@ model HomepageContent {
   heroSlides                 Json?
   heroWholesaleDescriptionEn String?
   heroWholesaleDescriptionZh String?
-  heroWholesaleBg            String?
-  heroProjectBg              String?
   videoUrl                   String?
-  bentoTitleEn               String?
-  bentoTitleZh               String?
+  heroProjectBg              String?
+  heroWholesaleBg            String?
   bentoSubtitleEn            String?
   bentoSubtitleZh            String?
-  processTitleEn             String?
-  processTitleZh             String?
+  bentoTitleEn               String?
+  bentoTitleZh               String?
   processSubtitleEn          String?
   processSubtitleZh          String?
+  processTitleEn             String?
+  processTitleZh             String?
+  gallerySubtitleEn          String?
+  gallerySubtitleZh          String?
+  galleryTitleEn             String?
+  galleryTitleZh             String?
   locations                  MapLocation[]
 }
 
@@ -68,7 +71,7 @@ model HomepageBentoItem {
   tagEn     String?
   imageUrl  String
   linkUrl   String?
-  gridSize  String   @default("small") // small (1x1), wide (2x1), tall (1x2), large (2x2)
+  gridSize  String   @default("small")
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
@@ -143,8 +146,8 @@ model ProductCategory {
   descriptionTextId String?
   order             Int               @default(0)
   products          Product[]
-  nameText          LocalizedString   @relation("CategoryName", fields: [nameTextId], references: [id], onDelete: Cascade)
   descriptionText   LocalizedString?  @relation("CategoryDesc", fields: [descriptionTextId], references: [id], onDelete: Cascade)
+  nameText          LocalizedString   @relation("CategoryName", fields: [nameTextId], references: [id], onDelete: Cascade)
   parent            ProductCategory?  @relation("CategoryToCategory", fields: [parentId], references: [id])
   children          ProductCategory[] @relation("CategoryToCategory")
 
@@ -217,15 +220,15 @@ model GalleryAsset {
   id           String           @id @default(cuid())
   title        String
   url          String
-  type         String           @default("IMAGE") // IMAGE, VIDEO
-  thumbnailUrl String?          // For video posters
-  duration     Float?           // For video length
   categoryId   String?
   createdAt    DateTime         @default(now())
   fileName     String
   fileSize     Int?
-  width        Int?
   height       Int?
+  width        Int?
+  duration     Float?
+  thumbnailUrl String?
+  type         String           @default("IMAGE")
   category     GalleryCategory? @relation(fields: [categoryId], references: [id])
 
   @@index([categoryId])
