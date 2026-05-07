@@ -85,9 +85,7 @@ export function ProductBento({ locale }: { locale: Locale }) {
   const { data: bentoConfig, mutate: mutateBento } = useLocalDoc<any>('homepageContent', 'bento');
   const { data: langSettings } = useLocalDoc<any>('settings', 'languages');
 
-  useEffect(() => {
-    mutateBento();
-  }, [mutateBento, bentoConfig]);
+
 
   // Fetch independent bento items
   const { data: bentoItems, isLoading } = useLocalCollection<any>('bentoItems');

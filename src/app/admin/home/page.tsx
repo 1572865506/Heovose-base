@@ -174,11 +174,17 @@ export default function AdminHomePage() {
   const { data: bentoData, isLoading: isBentoLoading, mutate: mutateBento } = useLocalDoc<any>('homepageContent', 'bento');
   const { data: galleryData, isLoading: isGalleryLoading, mutate: mutateGallery } = useLocalDoc<any>('homepageContent', 'gallery');
   const { data: bentoItems, mutate: mutateBentoItems } = useLocalCollection<any>('bentoItems');
-  const { data: aiConfig } = useLocalDoc<any>('settings', 'ai');
-  const { data: categories } = useLocalCollection<any>('productCategories');
-  const { data: translations, mutate: mutateTrans } = useLocalCollection<any>('localizedStrings');
+  const { data: aiConfig, isLoading: isAiLoading } = useLocalDoc<any>('settings', 'ai');
+  const { data: categories, isLoading: isCatLoading } = useLocalCollection<any>('productCategories');
+  const { data: translations, isLoading: isTransLoading, mutate: mutateTrans } = useLocalCollection<any>('localizedStrings?full=true');
+
+  const [isInitialized, setIsInitialized] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+  const [isAiProcessing, setIsAiProcessing] = useState(false);
+  const [pickerConfig, setPickerConfig] = useState<{ open: boolean, type: 'slide' | 'video' | 'wholesale' | 'project' | 'bento' | 'gallery', slideIndex: number | null, bentoId?: string }>({ open: false, type: 'slide', slideIndex: null });
 
   // DnD Sensors for Grid Sorting
+
   const sensors = useSensors(
     useSensor(PointerSensor, {
       activationConstraint: {
@@ -218,9 +224,13 @@ export default function AdminHomePage() {
     }
   };
 
-  const isLoading = isHeroLoading || isVideoLoading;
+  // 统一加载状态管理，避免过度闪烁
+  const isCoreLoading = isHeroLoading || isVideoLoading || isBentoLoading || isGalleryLoading;
+  const isSecondaryLoading = isTransLoading || isCatLoading || isAiLoading;
+  const isLoading = isCoreLoading && !isInitialized; // 仅在初始未同步前显示全屏加载
 
   const [formData, setFormData] = useState<any>({
+
     heroHeadlineZh: '',
     heroHeadlineEn: '',
     heroSubheadlineZh: '',
@@ -257,79 +267,98 @@ export default function AdminHomePage() {
 
   const { data: allProducts } = useLocalCollection<any>('products');
 
-  const [isSaving, setIsSaving] = useState(false);
-  const [isAiProcessing, setIsAiProcessing] = useState(false);
-  const [pickerConfig, setPickerConfig] = useState<{ open: boolean, type: 'slide' | 'video' | 'wholesale' | 'project' | 'bento' | 'gallery', slideIndex: number | null, bentoId?: string }>({ open: false, type: 'slide', slideIndex: null });
+
+
   const [productPickerOpen, setProductPickerOpen] = useState(false);
   const [bentoDialog, setBentoDialog] = useState<{ open: boolean, item: any | null }>({ open: false, item: null });
 
+  // 核心数据同步逻辑 - 增加稳定性保护
   useEffect(() => {
-    if ((heroData || videoData || galleryData) && translations) {
-      // 尝试从翻译词条中获取内容以实现联动 (系统文案 Key)
-      const getTrans = (id: string, lang: 'zh' | 'en') => {
-        const entry = translations.find((t: any) => t.id === id);
-        return entry?.content?.[lang] || '';
-      };
+    if (!translations || isInitialized) return;
+    
+    // 只有当所有核心数据都尝试加载过（无论成功与否）才开始同步
+    const coreDataLoaded = (heroData !== null || isHeroLoading === false) && 
+                           (videoData !== null || isVideoLoading === false) &&
+                           (bentoData !== null || isBentoLoading === false) &&
+                           (galleryData !== null || isGalleryLoading === false);
+    
+    if (!coreDataLoaded) return;
 
-      const existingSlides = heroData?.heroSlides || [];
-      const initialSlides = existingSlides.length > 0 
-        ? existingSlides 
-        : [{
-            id: 'legacy-default',
-            headlineZh: heroData?.heroHeadlineZh || '',
-            headlineEn: heroData?.heroHeadlineEn || '',
-            subheadlineZh: heroData?.heroSubheadlineZh || '',
-            subheadlineEn: heroData?.heroSubheadlineEn || '',
-            bgImage: "/image/hero-bg.png",
-            priority: 0
-          }];
+    const getTrans = (id: string, lang: string) => {
+      if (!Array.isArray(translations)) return '';
+      const entry = translations.find((t: any) => t.id === id);
+      const content = (entry?.content as any) || {};
+      return content[lang] || entry?.[lang] || '';
+    };
 
-      setFormData((prev: any) => ({ 
-        ...prev, 
-        heroHeadlineZh: heroData?.heroHeadlineZh || '',
-        heroHeadlineEn: heroData?.heroHeadlineEn || '',
-        heroSubheadlineZh: heroData?.heroSubheadlineZh || '',
-        heroSubheadlineEn: heroData?.heroSubheadlineEn || '',
-        heroWholesaleButtonZh: getTrans('hero_wholesale_title', 'zh') || heroData?.heroWholesaleButtonZh || '',
-        heroWholesaleButtonEn: getTrans('hero_wholesale_title', 'en') || heroData?.heroWholesaleButtonEn || '',
-        heroWholesaleDescriptionZh: getTrans('hero_wholesale_desc', 'zh') || heroData?.heroWholesaleDescriptionZh || '',
-        heroWholesaleDescriptionEn: getTrans('hero_wholesale_desc', 'en') || heroData?.heroWholesaleDescriptionEn || '',
-        heroProjectButtonZh: getTrans('hero_project_title', 'zh') || heroData?.heroProjectButtonZh || '',
-        heroProjectButtonEn: getTrans('hero_project_title', 'en') || heroData?.heroProjectButtonEn || '',
-        heroProjectDescriptionZh: getTrans('hero_project_desc', 'zh') || heroData?.heroProjectDescriptionZh || '',
-        heroProjectDescriptionEn: getTrans('hero_project_desc', 'en') || heroData?.heroProjectDescriptionEn || '',
-        heroWholesaleCategoryId: heroData?.heroWholesaleCategoryId || '',
-        heroProjectCategoryId: heroData?.heroProjectCategoryId || '',
-        heroWholesaleBg: heroData?.heroWholesaleBg || '',
-        heroProjectBg: heroData?.heroProjectBg || '',
-        heroSlides: initialSlides.map((slide: any) => {
-          const sId = slide.id.replace(/^slide_/, '');
-          return {
-            ...slide,
-            headlineZh: getTrans(`hero_slide_${sId}_headline`, 'zh') || slide.headlineZh,
-            headlineEn: getTrans(`hero_slide_${sId}_headline`, 'en') || slide.headlineEn,
-            subheadlineZh: getTrans(`hero_slide_${sId}_subheadline`, 'zh') || slide.subheadlineZh,
-            subheadlineEn: getTrans(`hero_slide_${sId}_subheadline`, 'en') || slide.subheadlineEn,
-          };
-        }),
-        isVideoEnabled: videoData?.isVideoEnabled ?? true,
-        videoTitleZh: videoData?.videoTitleZh || '',
-        videoTitleEn: videoData?.videoTitleEn || '',
-        videoSubtitleZh: videoData?.videoSubtitleZh || '',
-        videoSubtitleEn: videoData?.videoSubtitleEn || '',
-        videoUrl: videoData?.videoUrl || '/video/alibaba2023_x264.mp4',
-        bentoTitleZh: bentoData?.bentoTitleZh || '',
-        bentoTitleEn: bentoData?.bentoTitleEn || '',
-        bentoSubtitleZh: bentoData?.bentoSubtitleZh || '',
-        bentoSubtitleEn: bentoData?.bentoSubtitleEn || '',
-        galleryTitleZh: galleryData?.galleryTitleZh || '',
-        galleryTitleEn: galleryData?.galleryTitleEn || '',
-        gallerySubtitleZh: galleryData?.gallerySubtitleZh || '',
-        gallerySubtitleEn: galleryData?.gallerySubtitleEn || '',
-        galleryItems: galleryData?.galleryItems || []
-      }));
-    }
-  }, [heroData, videoData, bentoData, galleryData, translations]);
+    setFormData((prev: any) => {
+      const updates = { ...prev };
+      
+      // 1. Hero Sync
+      if (heroData) {
+        updates.heroHeadlineZh = getTrans('hero_slide_default_headline', 'zh') || heroData.heroHeadlineZh || '';
+        updates.heroHeadlineEn = getTrans('hero_slide_default_headline', 'en') || heroData.heroHeadlineEn || '';
+        updates.heroSubheadlineZh = getTrans('hero_slide_default_subheadline', 'zh') || heroData.heroSubheadlineZh || '';
+        updates.heroSubheadlineEn = getTrans('hero_slide_default_subheadline', 'en') || heroData.heroSubheadlineEn || '';
+        updates.heroWholesaleButtonZh = getTrans('hero_wholesale_title', 'zh') || heroData.heroWholesaleButtonZh || '';
+        updates.heroWholesaleButtonEn = getTrans('hero_wholesale_title', 'en') || heroData.heroWholesaleButtonEn || '';
+        updates.heroWholesaleDescriptionZh = getTrans('hero_wholesale_desc', 'zh') || heroData.heroWholesaleDescriptionZh || '';
+        updates.heroWholesaleDescriptionEn = getTrans('hero_wholesale_desc', 'en') || heroData.heroWholesaleDescriptionEn || '';
+        updates.heroProjectButtonZh = getTrans('hero_project_title', 'zh') || heroData.heroProjectButtonZh || '';
+        updates.heroProjectButtonEn = getTrans('hero_project_title', 'en') || heroData.heroProjectButtonEn || '';
+        updates.heroProjectDescriptionZh = getTrans('hero_project_desc', 'zh') || heroData.heroProjectDescriptionZh || '';
+        updates.heroProjectDescriptionEn = getTrans('hero_project_desc', 'en') || heroData.heroProjectDescriptionEn || '';
+        updates.heroWholesaleCategoryId = heroData.heroWholesaleCategoryId || '';
+        updates.heroProjectCategoryId = heroData.heroProjectCategoryId || '';
+        updates.heroWholesaleBg = heroData.heroWholesaleBg || '';
+        updates.heroProjectBg = heroData.heroProjectBg || '';
+        
+        if (Array.isArray(heroData.heroSlides)) {
+          updates.heroSlides = heroData.heroSlides.map((slide: any) => {
+            const sId = slide.id.replace(/^slide_/, '');
+            return {
+              ...slide,
+              headlineZh: getTrans(`hero_slide_${sId}_headline`, 'zh') || slide.headlineZh,
+              headlineEn: getTrans(`hero_slide_${sId}_headline`, 'en') || slide.headlineEn,
+              subheadlineZh: getTrans(`hero_slide_${sId}_subheadline`, 'zh') || slide.subheadlineZh,
+              subheadlineEn: getTrans(`hero_slide_${sId}_subheadline`, 'en') || slide.subheadlineEn,
+            };
+          });
+        }
+      }
+
+      // 2. Video Sync
+      if (videoData) {
+        updates.isVideoEnabled = videoData.isVideoEnabled ?? true;
+        updates.videoUrl = videoData.videoUrl || '';
+        updates.videoTitleZh = getTrans('VIDEO_TITLE_1', 'zh') || videoData.videoTitleZh || '';
+        updates.videoTitleEn = getTrans('VIDEO_TITLE_1', 'en') || videoData.videoTitleEn || '';
+        updates.videoSubtitleZh = getTrans('VIDEO_TITLE_2', 'zh') || videoData.videoSubtitleZh || '';
+        updates.videoSubtitleEn = getTrans('VIDEO_TITLE_2', 'en') || videoData.videoSubtitleEn || '';
+      }
+
+      // 3. Bento Sync
+      if (bentoData) {
+        updates.bentoTitleZh = getTrans('BENTO_TITLE', 'zh') || bentoData.bentoTitleZh || '';
+        updates.bentoTitleEn = getTrans('BENTO_TITLE', 'en') || bentoData.bentoTitleEn || '';
+        updates.bentoSubtitleZh = getTrans('BENTO_SUBTITLE', 'zh') || bentoData.bentoSubtitleZh || '';
+        updates.bentoSubtitleEn = getTrans('BENTO_SUBTITLE', 'en') || bentoData.bentoSubtitleEn || '';
+      }
+
+      // 4. Gallery Sync
+      if (galleryData) {
+        updates.galleryTitleZh = getTrans('GALLERY_TITLE', 'zh') || galleryData.galleryTitleZh || '';
+        updates.galleryTitleEn = getTrans('GALLERY_TITLE', 'en') || galleryData.galleryTitleEn || '';
+        updates.gallerySubtitleZh = getTrans('GALLERY_SUBTITLE', 'zh') || galleryData.gallerySubtitleZh || '';
+        updates.gallerySubtitleEn = getTrans('GALLERY_SUBTITLE', 'en') || galleryData.gallerySubtitleEn || '';
+      }
+
+      return updates;
+    });
+
+    setIsInitialized(true);
+  }, [heroData, videoData, bentoData, galleryData, translations, isInitialized, isHeroLoading, isVideoLoading, isBentoLoading, isGalleryLoading]);
+
 
   const handleSave = async () => {
     setIsSaving(true);

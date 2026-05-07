@@ -42,7 +42,7 @@ export default function GalleryCategoriesPage() {
   });
 
   const { data: categories, isLoading: isCatsLoading, mutate: mutateCats } = useLocalCollection<GalleryCategory>('galleryCategories');
-  const { data: translations, mutate: mutateTrans } = useLocalCollection<LocalizedString>('localizedStrings');
+  const { data: translations, mutate: mutateTrans } = useLocalCollection<LocalizedString>('localizedStrings?full=true');
 
   const handleAdd = async () => {
     if (!formData.zh.trim()) {

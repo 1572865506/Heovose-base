@@ -6,7 +6,7 @@ import { useLocalCollection } from '@/hooks/use-local-collection';
 import { useLocalDoc } from '@/hooks/use-local-doc';
 
 export function useTranslations(locale: Locale) {
-  const { data: remoteTranslations, isLoading: isTranslationsLoading } = useLocalCollection<any>('localizedStrings');
+  const { data: remoteTranslations, isLoading: isTranslationsLoading } = useLocalCollection<any>(`localizedStrings?lang=${locale}`);
   const { data: langSettings, isLoading: isSettingsLoading } = useLocalDoc<any>('settings', 'languages');
 
   const defaultLanguage = langSettings?.defaultLanguage || 'zh';

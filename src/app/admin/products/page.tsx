@@ -80,7 +80,7 @@ export default function AdminProductsPage() {
 
   const { data: products, isLoading: isProdsLoading, mutate: mutateProducts } = useLocalCollection<Product>('products');
   const { data: categories } = useLocalCollection<ProductCategory>('productCategories');
-  const { data: translations } = useLocalCollection<LocalizedString>('localizedStrings');
+  const { data: translations } = useLocalCollection<LocalizedString>('localizedStrings?full=true');
   const { data: langSettings } = useLocalDoc<LanguageSettings>('settings', 'languages');
 
   const activeLanguages = useMemo(() => langSettings?.supportedLanguages || [

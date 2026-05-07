@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useMemo } from "react";
@@ -39,6 +38,7 @@ export function LanguageToggle({ currentLocale, setLocale, headerTheme = 'dark',
     if (langSettings?.supportedLanguages && langSettings.supportedLanguages.length > 0) {
       return langSettings.supportedLanguages;
     }
+    // 默认保底语种
     return [
       { code: 'zh', label: '中文' },
       { code: 'en', label: 'English' },
@@ -50,6 +50,13 @@ export function LanguageToggle({ currentLocale, setLocale, headerTheme = 'dark',
     localStorage.setItem('heovose-locale', code);
     setLocale(code as Locale);
   };
+
+  // 确保当前显示的 locale 也是合规的
+  const displayLocale = useMemo(() => {
+    const activeCodes = availableLanguages.map(l => l.code);
+    if (activeCodes.includes(currentLocale)) return currentLocale;
+    return (activeCodes[0] || 'en') as Locale;
+  }, [currentLocale, availableLanguages]);
 
   return (
     <DropdownMenu modal={false}>
@@ -70,7 +77,7 @@ export function LanguageToggle({ currentLocale, setLocale, headerTheme = 'dark',
             <Languages className="h-4 w-4 text-primary/60 group-hover:text-primary transition-colors" />
           )}
           <span className="text-[11px] font-bold tracking-widest uppercase min-w-[20px] text-center">
-            {currentLocale === 'zh' ? 'ZH' : currentLocale.toUpperCase()}
+            {displayLocale === 'zh' ? 'ZH' : displayLocale.toUpperCase()}
           </span>
           <ChevronDown className="h-3 w-3 opacity-40 group-hover:opacity-100 transition-opacity" />
         </Button>
@@ -88,12 +95,12 @@ export function LanguageToggle({ currentLocale, setLocale, headerTheme = 'dark',
             key={lang.code}
             className={`
               flex items-center justify-between px-3 py-2.5 rounded-lg cursor-pointer transition-colors mb-0.5 last:mb-0
-              ${currentLocale === lang.code ? 'bg-primary/5 text-primary font-bold' : 'hover:bg-muted text-muted-foreground'}
+              ${displayLocale === lang.code ? 'bg-primary/5 text-primary font-bold' : 'hover:bg-muted text-muted-foreground'}
             `}
             onClick={() => handleLocaleChange(lang.code)}
           >
             <span className="text-xs">{lang.label}</span>
-            {currentLocale === lang.code && (
+            {displayLocale === lang.code && (
               <div className="w-1.5 h-1.5 bg-primary rounded-full shadow-[0_0_8px_rgba(0,91,153,0.4)]" />
             )}
           </DropdownMenuItem>

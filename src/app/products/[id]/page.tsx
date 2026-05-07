@@ -56,6 +56,16 @@ interface LocalizedString {
   [key: string]: any;
 }
 
+interface LanguageOption {
+  code: string;
+  label: string;
+}
+
+interface LanguageSettings {
+  supportedLanguages: LanguageOption[];
+  defaultLanguage?: string;
+}
+
 export default function ProductDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const resolvedParams = use(params);
   const id = resolvedParams.id;
@@ -69,22 +79,25 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
 
   const { data: product, isLoading: isProdLoading } = useLocalDoc<Product>('products', id);
   const { data: categories } = useLocalCollection<any>('productCategories');
-  const { data: langSettings } = useLocalDoc<any>('settings', 'languages');
+  const { data: langSettings } = useLocalDoc<LanguageSettings>('settings', 'languages');
   const { t: tr, isLoading: isTransLoading } = useTranslations(locale);
 
   // 智能判定语种
   useEffect(() => {
     const detectLocale = () => {
+      const activeLangs = langSettings?.supportedLanguages?.map(l => l.code) || ['en', 'zh', 'id', 'vi'];
+      const defaultLang = (langSettings?.defaultLanguage as Locale) || 'en';
+
       const langParam = searchParams.get('lang');
-      if (langParam && ['en', 'zh', 'id', 'vi'].includes(langParam)) return langParam as Locale;
+      if (langParam && activeLangs.includes(langParam)) return langParam as Locale;
       
       const saved = typeof window !== 'undefined' ? localStorage.getItem('heovose-locale') as Locale : null;
-      if (saved && ['en', 'zh', 'id', 'vi'].includes(saved)) return saved;
+      if (saved && activeLangs.includes(saved)) return saved;
       
       const browserLang = typeof navigator !== 'undefined' ? navigator.language.split('-')[0] as Locale : 'en';
-      if (['en', 'zh', 'id', 'vi'].includes(browserLang)) return browserLang;
+      if (activeLangs.includes(browserLang)) return browserLang;
       
-      return (langSettings?.defaultLanguage as Locale) || 'en';
+      return defaultLang;
     };
     
     setLocale(detectLocale());

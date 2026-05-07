@@ -93,14 +93,12 @@ export function ProductGallery({ locale }: { locale: Locale }) {
 
   // 1. Fetch dynamic data
   const { data: remoteProducts, isLoading } = useLocalCollection<any>('products?status=published&limit=8');
-  const { data: allTranslations } = useLocalCollection<any>('localizedStrings');
+  const { data: allTranslations } = useLocalCollection<any>(`localizedStrings?lang=${locale}`);
   const { data: langSettings } = useLocalDoc<any>('settings', 'languages');
   
   const { data: galleryConfig, mutate: mutateGallery } = useLocalDoc<any>('homepageContent', 'gallery');
   
-  useEffect(() => {
-    mutateGallery();
-  }, [mutateGallery]);
+
 
   // Unified translation helper with multi-level fallback
   const getT = useCallback((id: string) => {

@@ -101,7 +101,7 @@ function ProductEditorContent() {
 
   const { data: product, isLoading: isProdLoading } = useLocalDoc<any>('products', productId || 'new');
   const { data: categories } = useLocalCollection<any>('productCategories');
-  const { data: translations } = useLocalCollection<any>('localizedStrings');
+  const { data: translations } = useLocalCollection<any>('localizedStrings?full=true');
   const { data: allProducts } = useLocalCollection<any>('products');
   const { data: aiConfig } = useLocalDoc<any>('settings', 'ai');
   const { data: langConfig } = useLocalDoc<any>('settings', 'languages');

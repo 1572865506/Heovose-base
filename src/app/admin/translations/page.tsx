@@ -142,7 +142,7 @@ export default function TranslationsPage() {
 
   const { data: langSettings, mutate: mutateLangs } = useLocalDoc<LanguageSettings>('settings', 'languages');
   const { data: aiConfig } = useLocalDoc<AiConfig>('settings', 'ai');
-  const { data: translations, isLoading, mutate: mutateTrans } = useLocalCollection<LocalizedString>('localizedStrings');
+  const { data: translations, isLoading, mutate: mutateTrans } = useLocalCollection<LocalizedString>('localizedStrings?full=true');
   const { data: products, mutate: mutateProducts } = useLocalCollection<any>('products');
   const { data: categories, mutate: mutateCategories } = useLocalCollection<any>('productCategories');
   const { data: galleryCategories, mutate: mutateGalleryCats } = useLocalCollection<any>('galleryCategories');

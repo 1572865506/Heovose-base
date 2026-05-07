@@ -144,7 +144,7 @@ export default function CategoriesPage() {
 
   const [isTranslating, setIsTranslating] = useState(false);
   const { data: categories, isLoading: isCatsLoading, mutate: mutateCats } = useLocalCollection<ProductCategory>('productCategories');
-  const { data: translations, mutate: mutateTrans } = useLocalCollection<LocalizedString>('localizedStrings');
+  const { data: translations, mutate: mutateTrans } = useLocalCollection<LocalizedString>('localizedStrings?full=true');
   const { data: galleryAssets } = useLocalCollection<any>('galleryAssets');
 
   // 计算树状结构用于展示和选择

@@ -47,6 +47,16 @@ interface LocalizedString {
   [key: string]: any;
 }
 
+interface LanguageOption {
+  code: string;
+  label: string;
+}
+
+interface LanguageSettings {
+  supportedLanguages: LanguageOption[];
+  defaultLanguage?: string;
+}
+
 type BusinessLine = 'wholesale' | 'project';
 
 function ProductListContent() {
@@ -83,22 +93,25 @@ function ProductListContent() {
 
   const { data: products, isLoading: isProdsLoading } = useLocalCollection<Product>('products');
   const { data: categories, isLoading: isCatsLoading } = useLocalCollection<Category>('productCategories');
-  const { data: langSettings } = useLocalDoc<any>('settings', 'languages');
+  const { data: langSettings } = useLocalDoc<LanguageSettings>('settings', 'languages');
   const { t: tr, isLoading: isTrLoading } = useTranslations(locale);
 
   // 1. 智能判定语种
   useEffect(() => {
     const detectLocale = () => {
+      const activeLangs = langSettings?.supportedLanguages?.map(l => l.code) || ['en', 'zh', 'id', 'vi'];
+      const defaultLang = (langSettings?.defaultLanguage as Locale) || 'en';
+
       const langParam = searchParams.get('lang');
-      if (langParam && ['en', 'zh', 'id', 'vi'].includes(langParam)) return langParam as Locale;
+      if (langParam && activeLangs.includes(langParam)) return langParam as Locale;
       
       const saved = typeof window !== 'undefined' ? localStorage.getItem('heovose-locale') as Locale : null;
-      if (saved && ['en', 'zh', 'id', 'vi'].includes(saved)) return saved;
+      if (saved && activeLangs.includes(saved)) return saved;
       
       const browserLang = typeof navigator !== 'undefined' ? navigator.language.split('-')[0] as Locale : 'en';
-      if (['en', 'zh', 'id', 'vi'].includes(browserLang)) return browserLang;
+      if (activeLangs.includes(browserLang)) return browserLang;
       
-      return (langSettings?.defaultLanguage as Locale) || 'en';
+      return defaultLang;
     };
     
     setLocale(detectLocale());

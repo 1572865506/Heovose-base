@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { getFileUrl } from "@/lib/storage";
+import { getFileUrl } from "@/lib/s3";
 
 export async function GET(
   request: Request,

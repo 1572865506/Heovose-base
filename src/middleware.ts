@@ -7,30 +7,39 @@ const locales = ['en', 'zh', 'id', 'vi'];
 export default auth((request) => {
   const { nextUrl } = request;
   const pathname = nextUrl.pathname;
+
+  // Skip for API and static files
+  if (pathname.startsWith('/api') || pathname.includes('.')) {
+    return NextResponse.next();
+  }
+
   const isLoggedIn = !!request.auth;
 
-  // 1. Protect Admin routes
+  // 1. Admin protection
   if (pathname.startsWith("/admin")) {
     if (!isLoggedIn) {
       return NextResponse.redirect(new URL("/auth/login", nextUrl));
     }
+    return NextResponse.next();
   }
 
-  // 2. Locale Redirection logic (existing)
-  const pathnameIsMissingLocale = locales.every(
-    (locale) => !pathname.startsWith(`/${locale}/`) && pathname !== `/${locale}`
-  );
-
-  if (!pathnameIsMissingLocale) {
-    const segments = pathname.split('/');
-    const locale = segments[1];
-    const remainingPath = segments.slice(2).join('/') || '';
+  // 2. Language resolution
+  const urlLocale = nextUrl.searchParams.get('lang');
+  if (!urlLocale) {
+    const cookieLocale = request.cookies.get('NEXT_LOCALE')?.value;
+    const acceptLang = request.headers.get('accept-language')?.split(',')[0].split('-')[0].toLowerCase();
+    const locales = ['en', 'zh', 'id', 'vi'];
+    
+    let resolved = 'en';
+    if (cookieLocale && locales.includes(cookieLocale)) {
+      resolved = cookieLocale;
+    } else if (acceptLang && locales.includes(acceptLang)) {
+      resolved = acceptLang;
+    }
 
     const url = nextUrl.clone();
-    url.pathname = `/${remainingPath}`;
-    url.searchParams.set('lang', locale);
-    
-    return NextResponse.redirect(url);
+    url.searchParams.set('lang', resolved);
+    return NextResponse.rewrite(url);
   }
 
   return NextResponse.next();
@@ -38,6 +47,6 @@ export default auth((request) => {
 
 export const config = {
   matcher: [
-    '/((?!api|_next/static|_next/image|favicon.ico|image|video).*)',
+    '/((?!api|_next/static|_next/image|favicon.ico).*)',
   ],
 };
