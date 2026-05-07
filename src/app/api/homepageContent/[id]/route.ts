@@ -86,7 +86,7 @@ export async function PUT(
       'heroWholesaleBg', 'heroProjectBg', 'isVideoEnabled',
       'videoTitleEn', 'videoTitleZh', 'videoSubtitleEn', 'videoSubtitleZh', 'videoUrl',
       'bentoTitleEn', 'bentoTitleZh', 'bentoSubtitleEn', 'bentoSubtitleZh',
-      'galleryTitleEn', 'galleryTitleZh', 'gallerySubtitleEn', 'gallerySubtitleZh',
+      'galleryTitleEn', 'galleryTitleZh', 'gallerySubtitleEn', 'gallerySubtitleZh', 'galleryItems',
       'mapTitleEn', 'mapTitleZh', 'mapSubtitleEn', 'mapSubtitleZh'
     ];
 
@@ -97,7 +97,7 @@ export async function PUT(
         // 类型清洗逻辑
         if (field === 'isVideoEnabled') {
           filteredData[field] = Boolean(val);
-        } else if (field === 'heroSlides') {
+        } else if (field === 'heroSlides' || field === 'galleryItems') {
           // 确保是数组且不为 null
           filteredData[field] = Array.isArray(val) ? val : [];
         } else if (typeof val === 'string' && val.trim() === '') {

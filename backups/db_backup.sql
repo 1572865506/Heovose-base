@@ -2,7 +2,7 @@
 -- PostgreSQL database dump
 --
 
-\restrict FXPbbuPme60TmqQVN2leeQ7cF5G4ijSyNm0J2iTqpYnntt8JEUZwA2gneGkjUzT
+\restrict zvokvdoTfLbZ2mNb6mFip2g4dhvR97ibZMxEjU0deDEmNJ0WrRRmv0PI3Yegcr0
 
 -- Dumped from database version 16.13
 -- Dumped by pg_dump version 16.13
@@ -117,6 +117,27 @@ CREATE TABLE public."GalleryCategory" (
 ALTER TABLE public."GalleryCategory" OWNER TO heovose;
 
 --
+-- Name: HomepageBentoItem; Type: TABLE; Schema: public; Owner: heovose
+--
+
+CREATE TABLE public."HomepageBentoItem" (
+    id text NOT NULL,
+    "order" integer DEFAULT 0 NOT NULL,
+    "titleZh" text NOT NULL,
+    "titleEn" text NOT NULL,
+    "tagZh" text,
+    "tagEn" text,
+    "imageUrl" text NOT NULL,
+    "linkUrl" text,
+    "gridSize" text DEFAULT 'small'::text NOT NULL,
+    "createdAt" timestamp(3) without time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    "updatedAt" timestamp(3) without time zone NOT NULL
+);
+
+
+ALTER TABLE public."HomepageBentoItem" OWNER TO heovose;
+
+--
 -- Name: HomepageContent; Type: TABLE; Schema: public; Owner: heovose
 --
 
@@ -146,7 +167,21 @@ CREATE TABLE public."HomepageContent" (
     "heroSlides" jsonb,
     "heroWholesaleDescriptionEn" text,
     "heroWholesaleDescriptionZh" text,
-    "videoUrl" text
+    "videoUrl" text,
+    "heroProjectBg" text,
+    "heroWholesaleBg" text,
+    "bentoSubtitleEn" text,
+    "bentoSubtitleZh" text,
+    "bentoTitleEn" text,
+    "bentoTitleZh" text,
+    "processSubtitleEn" text,
+    "processSubtitleZh" text,
+    "processTitleEn" text,
+    "processTitleZh" text,
+    "gallerySubtitleEn" text,
+    "gallerySubtitleZh" text,
+    "galleryTitleEn" text,
+    "galleryTitleZh" text
 );
 
 
@@ -422,12 +457,29 @@ cat_1777856782910	生产流程	1	cat_1777363045711
 
 
 --
+-- Data for Name: HomepageBentoItem; Type: TABLE DATA; Schema: public; Owner: heovose
+--
+
+COPY public."HomepageBentoItem" (id, "order", "titleZh", "titleEn", "tagZh", "tagEn", "imageUrl", "linkUrl", "gridSize", "createdAt", "updatedAt") FROM stdin;
+cmotm03ar0001ukpw6epm8ifq	1	一体机电脑	All-In-One PC			http://localhost:9000/heovose-assets/uploads/1d5e2af2-ef38-43a7-8d69-19644b36c16d.jpg	products?category=aio	large	2026-05-06 05:21:01.106	2026-05-06 07:12:06.821
+cmotlyork0000ukpwy7tydtim	2	小主机	Mini PC			http://localhost:9000/heovose-assets/uploads/2e2479d4-e456-4444-b3f9-7f47c1d1c877.jpg	products?category=minipc	wide	2026-05-06 05:19:55.615	2026-05-06 07:12:06.821
+cmotmqkwq0002ukpwqqnjph4a	3	笔记本电脑	Notebook			http://localhost:9000/heovose-assets/uploads/a91c1517-9c44-45f5-9aad-73c33f2be500.jpg	products?category=notebook	small	2026-05-06 05:41:36.986	2026-05-06 07:12:06.821
+cmotn71fa0005ukpwe6rnf8cc	4	工业一体机				http://localhost:9000/heovose-assets/uploads/974db4dd-3375-4a63-97e6-c0d3f7f7c394.jpg	products?category=industrial	large	2026-05-06 05:54:24.885	2026-05-06 07:12:06.821
+cmotn04vj0004ukpwxydympu1	5	会议平板	Whiteboard			http://localhost:9000/heovose-assets/uploads/22811330-25ce-4b07-b7c6-f8e9554668d1.jpg	products?category=whiteboard	wide	2026-05-06 05:49:02.766	2026-05-06 07:12:06.821
+cmotnd8br0006ukpwxydqkv9o	6	核心配件	Core Components	批发业务	Wholesale	http://localhost:9000/heovose-assets/uploads/7062814e-9aa1-44bd-950c-0e1fc062cb2f.jpg	products?category=core	tall	2026-05-06 05:59:13.746	2026-05-06 07:12:06.821
+cmotmy04s0003ukpwrv11j33q	7	显示器	Monitor			http://localhost:9000/heovose-assets/uploads/be56ed65-5e25-443a-8775-b54b59ecebae.jpg	products?category=monitor	tall	2026-05-06 05:47:23.307	2026-05-06 07:12:06.821
+\.
+
+
+--
 -- Data for Name: HomepageContent; Type: TABLE DATA; Schema: public; Owner: heovose
 --
 
-COPY public."HomepageContent" (id, "heroHeadlineEn", "heroHeadlineZh", "heroSubheadlineEn", "heroSubheadlineZh", "heroWholesaleButtonEn", "heroWholesaleButtonZh", "heroProjectButtonEn", "heroProjectButtonZh", "heroWholesaleCategoryId", "heroProjectCategoryId", "isVideoEnabled", "videoTitleEn", "videoTitleZh", "videoSubtitleEn", "videoSubtitleZh", "mapTitleEn", "mapTitleZh", "mapSubtitleEn", "mapSubtitleZh", "heroProjectDescriptionEn", "heroProjectDescriptionZh", "heroSlides", "heroWholesaleDescriptionEn", "heroWholesaleDescriptionZh", "videoUrl") FROM stdin;
-hero	Elevate Your Digital Horizon	提升您的数字视野	Next-Generation Hardware Solutions for Global Enterprises	面向全球企业的下一代硬件解决方案	Wholesale Products	批发咨询	Project Products	项目方案	WHOLESALE	PROJECT	t	Our Craftsmanship	我们的工艺	\N	\N	Global Footprint	全球足迹	\N	\N			[{"id": "legacy-default", "bgImage": "http://localhost:9000/heovose-assets/uploads/633b89ab-91e2-4047-ab85-750df64c0ed3.jpg", "priority": 0, "headlineEn": "Elevate Your Digital Horizon", "headlineZh": "提升您的数字视野", "subheadlineEn": "Next-Generation Hardware Solutions for Global Enterprises", "subheadlineZh": "面向全球企业的下一代硬件解决方案"}, {"id": "slide_1777967445203", "bgImage": "http://localhost:9000/heovose-assets/uploads/b1b9ef74-fe06-45a0-93ee-f3f7283e8dfd.jpg", "priority": 1, "headlineEn": "F9-S Series All-In-One PC", "headlineZh": "F9-S系列 一体机电脑", "subheadlineEn": "The base supports lifting, rotating, and brightness adjustment, and features a pop-up camera", "subheadlineZh": "底座支撑升降旋转，支持亮度调节，弹出式摄像头"}]			\N
-video	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	t					\N	\N	\N	\N	\N	\N	\N	\N	\N	http://localhost:9000/heovose-assets/uploads/0af8547d-8b02-4615-ba22-59b3af72e7b3.mp4
+COPY public."HomepageContent" (id, "heroHeadlineEn", "heroHeadlineZh", "heroSubheadlineEn", "heroSubheadlineZh", "heroWholesaleButtonEn", "heroWholesaleButtonZh", "heroProjectButtonEn", "heroProjectButtonZh", "heroWholesaleCategoryId", "heroProjectCategoryId", "isVideoEnabled", "videoTitleEn", "videoTitleZh", "videoSubtitleEn", "videoSubtitleZh", "mapTitleEn", "mapTitleZh", "mapSubtitleEn", "mapSubtitleZh", "heroProjectDescriptionEn", "heroProjectDescriptionZh", "heroSlides", "heroWholesaleDescriptionEn", "heroWholesaleDescriptionZh", "videoUrl", "heroProjectBg", "heroWholesaleBg", "bentoSubtitleEn", "bentoSubtitleZh", "bentoTitleEn", "bentoTitleZh", "processSubtitleEn", "processSubtitleZh", "processTitleEn", "processTitleZh", "gallerySubtitleEn", "gallerySubtitleZh", "galleryTitleEn", "galleryTitleZh") FROM stdin;
+video	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	t	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	http://localhost:9000/heovose-assets/uploads/0af8547d-8b02-4615-ba22-59b3af72e7b3.mp4	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N
+bento	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	t	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	Explore our diverse product range	探索我们的多元化产品系列	\N	\N	\N	\N	\N	\N	\N	\N
+hero	Elevate Your Digital Horizon	提升您的数字视野	Next-Generation Hardware Solutions for Global Enterprises	面向全球企业的下一代硬件解决方案	Wholesale Products	批发产品	Project Products	项目产品	WHOLESALE	PROJECT	t	Our Craftsmanship	我们的工艺	\N	\N	Global Footprint	全球足迹	\N	\N	\N	\N	[{"id": "legacy-default", "bgImage": "http://localhost:9000/heovose-assets/uploads/633b89ab-91e2-4047-ab85-750df64c0ed3.jpg", "priority": 0, "headlineEn": "Elevate Your Digital Horizon", "headlineZh": "提升您的数字视野", "subheadlineEn": "Next-generation hardware solutions for global enterprises", "subheadlineZh": "面向全球企业的下一代硬件解决方案"}, {"id": "slide_1777967445203", "bgImage": "http://localhost:9000/heovose-assets/uploads/b1b9ef74-fe06-45a0-93ee-f3f7283e8dfd.jpg", "priority": 1, "headlineEn": "F9-S Series All-in-one PC", "headlineZh": "F9-S系列 一体机电脑", "subheadlineEn": "Base supports lifting, lowering, and rotation, with brightness adjustment and a pop-up camera.", "subheadlineZh": "底座支撑升降旋转，支持亮度调节，弹出式摄像头"}]	\N	\N	\N	http://localhost:9000/heovose-assets/uploads/0c0e4c85-1a0a-4ec7-86ef-47726bfa924c.png	http://localhost:9000/heovose-assets/uploads/c61bd50a-2cc7-490d-8c67-13b30ba36753.png	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N
+gallery	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	t	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	New Product	最新产品
 \.
 
 
@@ -451,8 +503,7 @@ cat_name_WHOLESALE	{"en": "Wholesale Products", "zh": "批发产品"}	2026-05-05
 cat_desc_WHOLESALE	{}	2026-05-05 02:11:57.117	2026-05-05 02:11:57.117
 cat_name_AWE	{"en": "1fwqwe", "zh": "噶而且我"}	2026-05-05 02:11:57.117	2026-05-05 02:11:57.117
 cat_desc_AWE	{}	2026-05-05 02:11:57.117	2026-05-05 02:11:57.117
-cat_name_NOTEBOOK	{"en": "Notebook computer", "zh": "笔记本电脑"}	2026-05-05 02:11:57.117	2026-05-05 02:11:57.117
-cat_desc_NOTEBOOK	{}	2026-05-05 02:11:57.117	2026-05-05 02:11:57.117
+cat_desc_NOTEBOOK	{"en": "", "zh": ""}	2026-05-05 02:11:57.117	2026-05-06 05:02:31.081
 cat_name_MINIPC	{"en": "MINI PC", "zh": "小主机"}	2026-05-05 02:11:57.117	2026-05-05 02:11:57.117
 cat_desc_MINIPC	{}	2026-05-05 02:11:57.117	2026-05-05 02:11:57.117
 core_advantages	{"en": "Core Advantages", "zh": "核心优势"}	2026-05-05 02:11:57.117	2026-05-05 02:11:57.117
@@ -621,10 +672,21 @@ nav_contact	{"en": "Contact Us", "id": "Hubungi Kami", "zh": "联系我们"}	202
 hero_headline	{"en": "All In One Computer", "id": "Komputer All In One", "zh": "一体化电脑"}	2026-05-05 09:10:12.623	2026-05-05 09:10:12.623
 hero_subheadline	{"en": "Professional Manufacturer", "id": "Produsen Profesional", "zh": "专业级制造商"}	2026-05-05 09:10:12.633	2026-05-05 09:10:12.633
 hero_cta	{"en": "Explore Solutions", "id": "Jelajahi Solusi", "zh": "探索方案"}	2026-05-05 09:10:12.638	2026-05-05 09:10:12.638
-hero_wholesale_title	{"en": "Wholesale Products", "id": "Produk Grosir", "zh": "批发产品"}	2026-05-05 09:10:12.642	2026-05-05 09:10:12.642
-hero_wholesale_desc	{"en": "AIO PCs and professional barebones kits", "id": "PC All-in-One dan kit barebone profesional", "zh": "全系列一体机及专业准系统方案"}	2026-05-05 09:10:12.646	2026-05-05 09:10:12.646
-hero_project_title	{"en": "Project Products", "id": "Solusi Proyek", "zh": "项目产品"}	2026-05-05 09:10:12.649	2026-05-05 09:10:12.649
-hero_project_desc	{"en": "Large-scale LED engineering and industry solutions", "id": "Teknik LED skala besar dan solusi industri", "zh": "大型 LED 工程及行业解决方案"}	2026-05-05 09:10:12.653	2026-05-05 09:10:12.653
+hero_wholesale_title	{"en": "Wholesale Products", "id": "Produk Grosir", "zh": "批发产品"}	2026-05-05 09:10:12.642	2026-05-06 09:12:17.825
+hero_wholesale_desc	{"en": "", "id": "", "zh": ""}	2026-05-05 09:10:12.646	2026-05-06 09:12:17.826
+hero_project_title	{"en": "Project Products", "id": "Solusi Proyek", "zh": "项目产品"}	2026-05-05 09:10:12.649	2026-05-06 09:12:17.827
+PRODUCTS_TITLE	{"en": "Explore our diverse product range", "zh": "探索我们的多元化产品系列"}	2026-05-06 09:07:43.901	2026-05-06 09:12:17.829
+cat_name_NOTEBOOK	{"en": "Notebook computer", "zh": "笔记本电脑"}	2026-05-05 02:11:57.117	2026-05-06 05:02:30.707
+hero_slide_1778034103591_headline	{"en": "New Title", "zh": "新标题"}	2026-05-06 02:21:33.568	2026-05-06 05:53:36.152
+hero_slide_1778034103591_subheadline	{"en": "New Subtitle", "zh": "新副标题"}	2026-05-06 02:21:33.571	2026-05-06 05:53:36.152
+hero_project_desc	{"en": "", "id": "", "zh": ""}	2026-05-05 09:10:12.653	2026-05-06 09:12:17.827
+PRODUCTS_SUBTITLE	{"en": "", "zh": ""}	2026-05-06 09:07:44.54	2026-05-06 09:12:18.5
+GALLERY_TITLE	{"en": "New Product", "zh": "最新产品"}	2026-05-06 09:07:44.56	2026-05-06 09:12:18.586
+GALLERY_SUBTITLE	{"en": "", "zh": ""}	2026-05-06 09:07:44.655	2026-05-06 09:12:18.59
+hero_slide_legacy-default_subheadline	{"en": "Next-generation hardware solutions for global enterprises", "zh": "面向全球企业的下一代硬件解决方案"}	2026-05-06 01:53:56.258	2026-05-06 09:12:18.591
+hero_slide_legacy-default_headline	{"en": "Elevate Your Digital Horizon", "id": "Tingkatkan Cakrawala Digital Anda", "zh": "提升您的数字视野"}	2026-05-06 01:53:56.258	2026-05-06 09:12:18.596
+hero_slide_1777967445203_headline	{"en": "F9-S Series All-in-one PC", "zh": "F9-S系列 一体机电脑"}	2026-05-06 01:53:57.069	2026-05-06 09:12:18.602
+hero_slide_1777967445203_subheadline	{"en": "Base supports lifting, lowering, and rotation, with brightness adjustment and a pop-up camera.", "zh": "底座支撑升降旋转，支持亮度调节，弹出式摄像头"}	2026-05-06 01:53:57.071	2026-05-06 09:12:19.468
 \.
 
 
@@ -658,7 +720,6 @@ PROD_KIOSK_0505_95WB	published	prod_name_PROD_KIOSK_0505_95WB	KIOSK	\N	2026-05-0
 
 COPY public."ProductCategory" (id, slug, "thumbnailImageUrl", "parentId", "nameTextId", "descriptionTextId", "order") FROM stdin;
 WHOLESALE	wholesale	http://localhost:9000/heovose-assets/uploads/6ee490d1-e5e8-4125-b5bf-ec76af05f192.jpeg	\N	cat_name_WHOLESALE	cat_desc_WHOLESALE	-1
-NOTEBOOK	notebook		WHOLESALE	cat_name_NOTEBOOK	cat_desc_NOTEBOOK	0
 MINIPC	minipc	http://localhost:9000/heovose-assets/uploads/c8eb3f01-a1ab-484f-b7f6-c2036c568fe3.jpg	WHOLESALE	cat_name_MINIPC	cat_desc_MINIPC	0
 WHITEBOARD	whiteboard		PROJECT	cat_name_WHITEBOARD	cat_desc_WHITEBOARD	0
 CORE	core		WHOLESALE	cat_name_CORE	cat_desc_CORE	1
@@ -670,6 +731,7 @@ INDUSTRIAL	industrial		PROJECT	cat_name_INDUSTRIAL	cat_desc_INDUSTRIAL	0
 LED	led		PROJECT	cat_name_LED	cat_desc_LED	0
 SHOWROOM	showroom		PROJECT	cat_name_SHOWROOM	cat_desc_SHOWROOM	0
 PROJECT	project	http://localhost:9000/heovose-assets/uploads/c7c4117f-144c-437b-894f-b2081d046560.jpg	\N	cat_name_PROJECT	cat_desc_PROJECT	0
+NOTEBOOK	notebook	http://localhost:9000/heovose-assets/uploads/a91c1517-9c44-45f5-9aad-73c33f2be500.jpg	WHOLESALE	cat_name_NOTEBOOK	cat_desc_NOTEBOOK	0
 \.
 
 
@@ -772,6 +834,14 @@ ALTER TABLE ONLY public."GalleryAsset"
 
 ALTER TABLE ONLY public."GalleryCategory"
     ADD CONSTRAINT "GalleryCategory_pkey" PRIMARY KEY (id);
+
+
+--
+-- Name: HomepageBentoItem HomepageBentoItem_pkey; Type: CONSTRAINT; Schema: public; Owner: heovose
+--
+
+ALTER TABLE ONLY public."HomepageBentoItem"
+    ADD CONSTRAINT "HomepageBentoItem_pkey" PRIMARY KEY (id);
 
 
 --
@@ -1031,5 +1101,5 @@ REVOKE USAGE ON SCHEMA public FROM PUBLIC;
 -- PostgreSQL database dump complete
 --
 
-\unrestrict FXPbbuPme60TmqQVN2leeQ7cF5G4ijSyNm0J2iTqpYnntt8JEUZwA2gneGkjUzT
+\unrestrict zvokvdoTfLbZ2mNb6mFip2g4dhvR97ibZMxEjU0deDEmNJ0WrRRmv0PI3Yegcr0
 

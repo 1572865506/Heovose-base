@@ -45,3 +45,8 @@ firebase-debug.log
 firestore-debug.log
 /src/generated/prisma
 /backups
+/scratch
+*.sql
+*.tar.gz
+*.old
+server.log

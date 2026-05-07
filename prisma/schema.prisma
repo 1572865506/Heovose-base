@@ -59,6 +59,7 @@ model HomepageContent {
   gallerySubtitleZh          String?
   galleryTitleEn             String?
   galleryTitleZh             String?
+  galleryItems               Json?
   locations                  MapLocation[]
 }
 

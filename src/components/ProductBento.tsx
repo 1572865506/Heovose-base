@@ -12,6 +12,73 @@ import { ArrowUpRight } from "lucide-react";
 import { useLocalCollection } from '@/hooks/use-local-collection';
 import { useLocalDoc } from '@/hooks/use-local-doc';
 import { useTranslations } from '@/hooks/use-translations';
+import { useImageBrightness } from '@/hooks/use-image-brightness';
+
+function BentoCard({ item, index, locale, isVisible }: { item: any, index: number, locale: Locale, isVisible: boolean }) {
+  const { theme } = useImageBrightness(item.imageUrl);
+  
+  return (
+    <Link
+      href={item.slug.startsWith('http') ? item.slug : (item.slug.startsWith('/') ? item.slug : `/${locale}/${item.slug}`)}
+      className={cn(
+        "group relative rounded-[2.5rem] overflow-hidden border border-border/40 bg-muted/5 transition-all duration-700 transform-gpu translate-z-0",
+        "opacity-0 translate-y-12",
+        isVisible && "opacity-100 translate-y-0",
+        item.grid
+      )}
+      style={{ 
+        transitionDelay: isVisible ? `${index * 50}ms` : '0ms'
+      }}
+    >
+      {item.imageUrl && (
+        <Image
+          src={item.imageUrl}
+          alt={item.label}
+          fill
+          className="object-cover"
+          sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+        />
+      )}
+      
+      {/* Dynamic Overlay for better contrast */}
+      <div className={cn(
+        "absolute inset-0 transition-opacity duration-500",
+        theme === 'light' ? "bg-white/10" : "bg-black/20"
+      )} />
+
+      <div className="absolute inset-0 p-5 pb-5 flex flex-col justify-end transition-transform duration-500 group-hover:-translate-y-1 transform-gpu will-change-transform [backface-visibility:hidden]">
+        <div className="space-y-3">
+          {item.category && (
+            <span className={cn(
+              "inline-block px-3 py-1 backdrop-blur-md text-[10px] font-bold tracking-[0.2em] uppercase rounded-full border shadow-sm transition-colors duration-500",
+              theme === 'light' 
+                ? "bg-white/80 text-slate-800 border-slate-200/50" 
+                : "bg-black/40 text-white/90 border-white/10"
+            )}>
+              {item.category}
+            </span>
+          )}
+          <div className="flex items-center justify-between gap-4">
+            <h3 className={cn(
+              "text-xl md:text-2xl font-headline font-bold leading-tight tracking-tight transition-colors duration-500",
+              theme === 'light' 
+                ? "text-slate-900 drop-shadow-[0_2px_10px_rgba(255,255,255,0.8)]" 
+                : "text-white drop-shadow-[0_2px_15px_rgba(0,0,0,0.6)]"
+            )}>
+              {item.label}
+            </h3>
+            <div className={cn(
+              "h-10 w-10 aspect-square rounded-full backdrop-blur-sm flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-500 hover:scale-110",
+              theme === 'light' ? "bg-black/5 text-slate-900" : "bg-white/20 text-white"
+            )}>
+              <ArrowUpRight className="h-5 w-5" />
+            </div>
+          </div>
+        </div>
+      </div>
+    </Link>
+  );
+}
 
 export function ProductBento({ locale }: { locale: Locale }) {
   const { t: tr, count } = useTranslations(locale);
@@ -20,7 +87,6 @@ export function ProductBento({ locale }: { locale: Locale }) {
 
   useEffect(() => {
     mutateBento();
-    console.log('[DEBUG] Bento Config Attempt:', bentoConfig);
   }, [mutateBento, bentoConfig]);
 
   // Fetch independent bento items
@@ -34,9 +100,6 @@ export function ProductBento({ locale }: { locale: Locale }) {
         if (item.gridSize === 'tall') grid = 'col-span-1 row-span-2';
         if (item.gridSize === 'large') grid = 'col-span-2 row-span-2';
 
-        // Keep lg: prefixes for desktop if needed, but standard spans work across grids
-        // We'll use the logic: on 2-col (mobile) it's 1 or 2. On 5-col (desktop) it's also 1 or 2.
-        
         const getLocalized = (prefix: string) => {
           const defaultLang = langSettings?.defaultLanguage || 'en';
           const allLocales: Locale[] = ['en', 'zh', 'id', 'vi'];
@@ -102,14 +165,11 @@ export function ProductBento({ locale }: { locale: Locale }) {
 
   // Helper for dynamic section configuration
   const getSectionConfig = (prefix: string, fallbackKey: string) => {
-    // 1. HIGH PRIORITY: Try the global translation system (What you set in "Translation Management")
     const dynamicTranslation = (tr as any)(fallbackKey);
-    // If tr() returned something different from the key, it means it found a translation
     if (dynamicTranslation && dynamicTranslation !== fallbackKey) {
       return dynamicTranslation;
     }
 
-    // 2. MEDIUM PRIORITY: Try the private section configuration
     const defaultLang = langSettings?.defaultLanguage || 'en';
     const allLocales: Locale[] = ['en', 'zh', 'id', 'vi'];
 
@@ -155,49 +215,13 @@ export function ProductBento({ locale }: { locale: Locale }) {
             ))
           ) : (
             items.map((item, index) => (
-              <Link
-                key={index}
-                href={item.slug.startsWith('http') ? item.slug : (item.slug.startsWith('/') ? item.slug : `/${locale}/${item.slug}`)}
-                className={cn(
-                  "group relative rounded-[2.5rem] overflow-hidden border border-border/40 bg-muted/5 transition-all duration-700 transform-gpu translate-z-0",
-                  "opacity-0 translate-y-12",
-                  isVisible && "opacity-100 translate-y-0",
-                  item.grid
-                )}
-                style={{ 
-                  transitionDelay: isVisible ? `${index * 50}ms` : '0ms'
-                }}
-              >
-                {item.imageUrl && (
-                  <Image
-                    src={item.imageUrl}
-                    alt={item.label}
-                    fill
-                    className="object-cover"
-                    sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-                  />
-                )}
-                
-                {/* Clean look - No overlays */}
-
-                <div className="absolute inset-0 p-5 pb-5 flex flex-col justify-end transition-transform duration-500 group-hover:-translate-y-1 transform-gpu will-change-transform [backface-visibility:hidden]">
-                  <div className="space-y-3">
-                    {item.category && (
-                      <span className="inline-block px-3 py-1 bg-white/80 backdrop-blur-md text-slate-800 text-[10px] font-bold tracking-[0.2em] uppercase rounded-full border border-slate-200/50 shadow-sm">
-                        {item.category}
-                      </span>
-                    )}
-                    <div className="flex items-center justify-between gap-4">
-                      <h3 className="text-xl md:text-2xl font-headline font-bold text-slate-900 leading-tight tracking-tight drop-shadow-[0_5px_5px_rgba(255,255,255,0.5)]">
-                        {item.label}
-                      </h3>
-                      <div className="h-10 w-10 aspect-square rounded-full bg-[#DADADA]/50 backdrop-blur-sm flex items-center justify-center text-slate-900 opacity-0 group-hover:opacity-100 transition-all duration-500 hover:scale-110">
-                        <ArrowUpRight className="h-5 w-5" />
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </Link>
+              <BentoCard 
+                key={index} 
+                item={item} 
+                index={index} 
+                locale={locale} 
+                isVisible={isVisible} 
+              />
             ))
           )}
         </div>

@@ -200,9 +200,6 @@ export default function AdminHomePage() {
 
     const newOrder = arrayMove(bentoItems, oldIndex, newIndex);
     
-    // Optimistically update local state
-    mutateBentoItems(newOrder, { revalidate: false });
-
     // Sync with backend using the new batch reorder API
     try {
       const res = await fetch('/api/bentoItems/reorder', {
@@ -254,16 +251,20 @@ export default function AdminHomePage() {
     galleryTitleZh: '',
     galleryTitleEn: '',
     gallerySubtitleZh: '',
-    gallerySubtitleEn: ''
+    gallerySubtitleEn: '',
+    galleryItems: []
   });
+
+  const { data: allProducts } = useLocalCollection<any>('products');
 
   const [isSaving, setIsSaving] = useState(false);
   const [isAiProcessing, setIsAiProcessing] = useState(false);
-  const [pickerConfig, setPickerConfig] = useState<{ open: boolean, type: 'slide' | 'video' | 'wholesale' | 'project' | 'bento', slideIndex: number | null, bentoId?: string }>({ open: false, type: 'slide', slideIndex: null });
+  const [pickerConfig, setPickerConfig] = useState<{ open: boolean, type: 'slide' | 'video' | 'wholesale' | 'project' | 'bento' | 'gallery', slideIndex: number | null, bentoId?: string }>({ open: false, type: 'slide', slideIndex: null });
+  const [productPickerOpen, setProductPickerOpen] = useState(false);
   const [bentoDialog, setBentoDialog] = useState<{ open: boolean, item: any | null }>({ open: false, item: null });
 
   useEffect(() => {
-    if ((heroData || videoData) && translations) {
+    if ((heroData || videoData || galleryData) && translations) {
       // 尝试从翻译词条中获取内容以实现联动 (系统文案 Key)
       const getTrans = (id: string, lang: 'zh' | 'en') => {
         const entry = translations.find((t: any) => t.id === id);
@@ -324,10 +325,11 @@ export default function AdminHomePage() {
         galleryTitleZh: galleryData?.galleryTitleZh || '',
         galleryTitleEn: galleryData?.galleryTitleEn || '',
         gallerySubtitleZh: galleryData?.gallerySubtitleZh || '',
-        gallerySubtitleEn: galleryData?.gallerySubtitleEn || ''
+        gallerySubtitleEn: galleryData?.gallerySubtitleEn || '',
+        galleryItems: galleryData?.galleryItems || []
       }));
     }
-  }, [heroData, videoData, bentoData, translations]);
+  }, [heroData, videoData, bentoData, galleryData, translations]);
 
   const handleSave = async () => {
     setIsSaving(true);
@@ -382,6 +384,7 @@ export default function AdminHomePage() {
           galleryTitleEn: formData.galleryTitleEn,
           gallerySubtitleZh: formData.gallerySubtitleZh,
           gallerySubtitleEn: formData.gallerySubtitleEn,
+          galleryItems: formData.galleryItems
         }),
       });
 
@@ -1193,12 +1196,141 @@ export default function AdminHomePage() {
               </div>
             </div>
 
+            <div className="flex items-center justify-between">
+              <h3 className="text-xs font-bold text-primary uppercase tracking-widest flex items-center gap-2">
+                <LayoutGrid className="h-4 w-4" /> 轮播内容管理 (Carousel Items)
+              </h3>
+              <Button 
+                onClick={() => setProductPickerOpen(true)} 
+                size="sm" 
+                className="rounded-xl h-9 px-4 gap-2 text-[10px] font-bold uppercase tracking-wider shadow-md"
+              >
+                <Plus className="h-3.5 w-3.5" /> 添加产品到轮播
+              </Button>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+              {formData.galleryItems.map((item: any, idx: number) => {
+                const product = allProducts?.find((p: any) => p.id === item.productId);
+                if (!product) return null;
+                
+                const productName = translations?.find((t: any) => t.id === product.nameTextId)?.content?.zh || product.id;
+
+                return (
+                  <div key={`${item.productId}-${idx}`} className="group relative bg-white/70 backdrop-blur-md rounded-[2rem] border border-slate-200/60 p-4 hover:border-primary/40 hover:bg-white transition-all duration-500 shadow-sm">
+                    <div className="relative aspect-[11/9] rounded-2xl overflow-hidden mb-3 shadow-inner bg-slate-50">
+                      {product.mainImageUrl ? (
+                        <Image src={product.mainImageUrl} alt="P" fill className="object-cover" />
+                      ) : (
+                        <div className="absolute inset-0 flex items-center justify-center text-slate-300">
+                          <ImageIcon className="h-8 w-8 opacity-20" />
+                        </div>
+                      )}
+                      
+                      <div className="absolute top-2 right-2 flex gap-1">
+                        <Button 
+                          variant="destructive" 
+                          size="icon" 
+                          className="h-7 w-7 rounded-full shadow-lg"
+                          onClick={() => {
+                            const newItems = [...formData.galleryItems];
+                            newItems.splice(idx, 1);
+                            setFormData({ ...formData, galleryItems: newItems });
+                          }}
+                        >
+                          <Trash2 className="h-3 w-3" />
+                        </Button>
+                      </div>
+
+                      {item.badge && (
+                        <div className="absolute top-2 left-2">
+                          <span className={cn(
+                            "inline-block px-2 py-0.5 text-[8px] font-black uppercase rounded-full text-white shadow-sm",
+                            item.badge === 'NEW' ? "bg-blue-500" : "bg-red-500"
+                          )}>
+                            {item.badge === 'NEW' ? '新品' : '热销'}
+                          </span>
+                        </div>
+                      )}
+                    </div>
+                    
+                    <div className="space-y-3">
+                      <h4 className="text-xs font-bold text-slate-800 line-clamp-1">{productName}</h4>
+                      <div className="space-y-1.5 pt-2 border-t border-dashed">
+                        <Label className="text-[9px] font-bold uppercase opacity-40">设置标签 (Badge)</Label>
+                        <Select 
+                          value={item.badge || 'none'} 
+                          onValueChange={(v) => {
+                            const newItems = [...formData.galleryItems];
+                            newItems[idx] = { ...newItems[idx], badge: v === 'none' ? null : v };
+                            setFormData({ ...formData, galleryItems: newItems });
+                          }}
+                        >
+                          <SelectTrigger className="h-8 rounded-lg text-[10px]">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent className="rounded-xl">
+                            <SelectItem value="none" className="text-[10px]">无标签</SelectItem>
+                            <SelectItem value="NEW" className="text-[10px] font-bold text-blue-600">新品 (NEW)</SelectItem>
+                            <SelectItem value="HOT" className="text-[10px] font-bold text-red-600">热销 (HOT)</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      
+                      <div className="flex gap-2 pt-1">
+                        <Button 
+                          variant="ghost" 
+                          size="icon" 
+                          className="h-7 w-7 rounded-full bg-slate-100"
+                          disabled={idx === 0}
+                          onClick={() => {
+                            const newItems = [...formData.galleryItems];
+                            [newItems[idx-1], newItems[idx]] = [newItems[idx], newItems[idx-1]];
+                            setFormData({ ...formData, galleryItems: newItems });
+                          }}
+                        >
+                          <ArrowUp className="h-3 w-3" />
+                        </Button>
+                        <Button 
+                          variant="ghost" 
+                          size="icon" 
+                          className="h-7 w-7 rounded-full bg-slate-100"
+                          disabled={idx === formData.galleryItems.length - 1}
+                          onClick={() => {
+                            const newItems = [...formData.galleryItems];
+                            [newItems[idx+1], newItems[idx]] = [newItems[idx], newItems[idx+1]];
+                            setFormData({ ...formData, galleryItems: newItems });
+                          }}
+                        >
+                          <ArrowDown className="h-3 w-3" />
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+
+              {formData.galleryItems.length === 0 && (
+                <div className="col-span-full py-16 text-center bg-muted/5 border-2 border-dashed rounded-[2.5rem]">
+                   <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest opacity-40">尚未手动添加产品。前台将默认拉取最新 8 个产品。</p>
+                   <Button 
+                    variant="outline" 
+                    size="sm" 
+                    className="mt-4 rounded-xl px-6"
+                    onClick={() => setProductPickerOpen(true)}
+                  >
+                    开始添加产品
+                  </Button>
+                </div>
+              )}
+            </div>
+
             <div className="p-6 rounded-[2.5rem] bg-indigo-50/50 border border-indigo-100/50 flex gap-4 items-start">
               <Info className="h-5 w-5 text-indigo-600 mt-1" />
               <div className="space-y-1">
-                <p className="text-xs font-bold text-indigo-900 uppercase tracking-tight">关于产品轮播</p>
+                <p className="text-xs font-bold text-indigo-900 uppercase tracking-tight">配置说明</p>
                 <p className="text-[11px] text-indigo-700 leading-relaxed">
-                  此板块会自动拉取已发布的最新产品。您可以在此配置板块的整体标题和设计感。建议使用简洁有力的文案以提升品牌感。
+                  您可以手动挑选需要展示在首页轮播中的产品。如果列表为空，系统将自动回退到“最新发布”模式。手动模式下，您可以为每个产品单独设置“新品”或“热销”标签。
                 </p>
               </div>
             </div>
@@ -1228,6 +1360,26 @@ export default function AdminHomePage() {
         selectionMode="single"
         title="选择首页媒体素材"
         subtitle="选择一张高质量图片或一段精彩视频作为首页展示"
+      />
+
+      <ProductPicker 
+        open={productPickerOpen}
+        onOpenChange={setProductPickerOpen}
+        products={allProducts || []}
+        translations={translations || []}
+        categories={categories || []}
+        onSelect={(productId) => {
+          if (formData.galleryItems.some((i: any) => i.productId === productId)) {
+            toast({ variant: "destructive", title: "产品已存在于轮播中" });
+            return;
+          }
+          setFormData({
+            ...formData,
+            galleryItems: [...formData.galleryItems, { productId, badge: null }]
+          });
+          setProductPickerOpen(false);
+          toast({ title: "已添加产品" });
+        }}
       />
 
       <BentoItemDialog 
@@ -1261,6 +1413,117 @@ export default function AdminHomePage() {
         translations={translations || []}
       />
     </div>
+  );
+}
+
+function ProductPicker({ open, onOpenChange, products, translations, categories, onSelect }: {
+  open: boolean,
+  onOpenChange: (open: boolean) => void,
+  products: any[],
+  translations: any[],
+  categories: any[],
+  onSelect: (id: string) => void
+}) {
+  const [activeCategory, setActiveCategory] = useState<string>('all');
+  const [search, setSearch] = useState('');
+  
+  const filtered = products.filter(p => {
+    const matchesCategory = activeCategory === 'all' || p.categoryId === activeCategory;
+    const nameEntry = translations.find(t => t.id === p.nameTextId);
+    const name = nameEntry?.content?.zh || p.id;
+    const matchesSearch = name.toLowerCase().includes(search.toLowerCase()) || p.id.toLowerCase().includes(search.toLowerCase());
+    return matchesCategory && matchesSearch;
+  });
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-4xl h-[80vh] rounded-[2.5rem] p-0 overflow-hidden border-none shadow-2xl flex flex-col">
+        <DialogHeader className="bg-slate-900 text-white p-8 shrink-0">
+          <DialogTitle className="text-xl font-headline font-bold flex items-center gap-3">
+            <LayoutGrid className="h-5 w-5 text-primary" />
+            产品库浏览选择
+          </DialogTitle>
+        </DialogHeader>
+        
+        <div className="flex-1 flex overflow-hidden">
+          {/* Sidebar - Categories */}
+          <div className="w-48 bg-slate-50 border-r border-slate-100 p-4 space-y-1 overflow-y-auto shrink-0">
+            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest px-3 mb-3">产品分类</p>
+            <button 
+              onClick={() => setActiveCategory('all')}
+              className={cn(
+                "w-full text-left px-3 py-2 rounded-xl text-xs font-bold transition-all",
+                activeCategory === 'all' ? "bg-primary text-white shadow-md shadow-primary/20" : "text-slate-600 hover:bg-slate-200/50"
+              )}
+            >
+              全部产品
+            </button>
+            {categories.map(cat => {
+              const name = translations.find(t => t.id === cat.nameTextId)?.content?.zh || cat.slug || cat.id;
+              return (
+                <button 
+                  key={cat.id}
+                  onClick={() => setActiveCategory(cat.id)}
+                  className={cn(
+                    "w-full text-left px-3 py-2 rounded-xl text-xs font-bold transition-all truncate",
+                    activeCategory === cat.id ? "bg-primary text-white shadow-md shadow-primary/20" : "text-slate-600 hover:bg-slate-200/50"
+                  )}
+                >
+                  {name}
+                </button>
+              );
+            })}
+          </div>
+
+          {/* Main Area - Product List */}
+          <div className="flex-1 flex flex-col p-6 space-y-6 overflow-hidden">
+            <div className="relative group">
+              <Input 
+                placeholder="在当前分类中筛选..." 
+                value={search}
+                onChange={e => setSearch(e.target.value)}
+                className="h-11 pl-10 rounded-xl bg-slate-50 border-slate-200 focus:bg-white transition-all"
+              />
+              <div className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400">
+                <Plus className="h-4 w-4 rotate-45" />
+              </div>
+            </div>
+            
+            <div className="flex-1 space-y-2 overflow-y-auto pr-2 custom-scrollbar">
+              {filtered.map(p => {
+                const name = translations.find(t => t.id === p.nameTextId)?.content?.zh || p.id;
+                return (
+                  <div 
+                    key={p.id}
+                    onClick={() => onSelect(p.id)}
+                    className="group flex items-center gap-4 bg-white border border-slate-100 p-3 rounded-2xl cursor-pointer hover:border-primary/40 hover:bg-primary/5 hover:shadow-sm transition-all duration-300"
+                  >
+                    <div className="relative w-12 h-12 rounded-xl overflow-hidden bg-slate-50 shrink-0 border border-slate-100 shadow-sm">
+                      {p.mainImageUrl && <Image src={p.mainImageUrl} alt={p.id} fill className="object-cover group-hover:scale-110 transition-transform duration-500" />}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-bold text-slate-800 truncate">{name}</p>
+                      <p className="text-[10px] font-medium text-slate-400 uppercase tracking-wider font-mono truncate">{p.id}</p>
+                    </div>
+                    <div className="opacity-0 group-hover:opacity-100 transition-all">
+                      <Button variant="ghost" size="sm" className="h-8 px-4 rounded-lg text-[10px] font-black uppercase tracking-widest text-primary bg-primary/10 hover:bg-primary hover:text-white transition-all">
+                        选择
+                      </Button>
+                    </div>
+                  </div>
+                );
+              })}
+
+              {filtered.length === 0 && (
+                <div className="py-20 text-center bg-slate-50/50 rounded-2xl border border-dashed border-slate-200">
+                  <p className="text-xs font-bold text-slate-400 uppercase tracking-widest opacity-60">该分类下暂无产品</p>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      </DialogContent>
+    </Dialog>
   );
 }
 

@@ -38,15 +38,19 @@ async function main() {
   // 1. Create Localized Strings
   const nameL1 = await prisma.localizedString.create({
     data: {
-      en: 'High-Performance Mini PC',
-      zh: '高性能迷你主机'
+      content: {
+        en: 'High-Performance Mini PC',
+        zh: '高性能迷你主机'
+      }
     }
   })
 
   const nameL2 = await prisma.localizedString.create({
     data: {
-      en: 'Curved Gaming Monitor',
-      zh: '曲面电竞显示器'
+      content: {
+        en: 'Curved Gaming Monitor',
+        zh: '曲面电竞显示器'
+      }
     }
   })
 
