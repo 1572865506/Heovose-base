@@ -23,6 +23,7 @@ import Image from 'next/image';
 import { cn } from '@/lib/utils';
 import { useLocalDoc } from '@/hooks/use-local-doc';
 import { useToast } from '@/hooks/use-toast';
+import { getAssetUrl } from '@/lib/image-utils';
 import { MediaLibraryDialog } from '@/components/admin/media-library-dialog';
 
 export default function NavigationSettingsPage() {
@@ -273,7 +274,7 @@ export default function NavigationSettingsPage() {
                           {settings.featuredCoverUrl ? (
                             <>
                               <Image 
-                                src={settings.featuredCoverUrl} 
+                                src={getAssetUrl(settings.featuredCoverUrl)} 
                                 alt="Selected" 
                                 fill 
                                 className="object-cover opacity-40 group-hover:scale-105 transition-transform"
@@ -327,7 +328,7 @@ export default function NavigationSettingsPage() {
                       <div className="relative z-10 space-y-6 flex flex-col h-full">
                         <div className="relative aspect-[4/3] rounded-2xl overflow-hidden border border-white/10 shadow-sm bg-white">
                           <Image 
-                            src={settings.featuredCoverUrl || "/image/catalog-placeholder.png"} 
+                            src={getAssetUrl(settings.featuredCoverUrl || "/image/catalog-placeholder.png")} 
                             alt="Preview" 
                             fill 
                             className="object-contain p-4"

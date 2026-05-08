@@ -151,21 +151,21 @@
 }
 
 @layer components {
-  /* Design System Glass Levels */
+  /* Design System Glass Levels - Optimized for performance */
   .glass-crystal {
-    @apply bg-white/30 backdrop-blur-[4px];
+    @apply bg-white/40 backdrop-blur-[2px];
   }
 
   .glass-frosted {
-    @apply bg-white/60 backdrop-blur-[12px];
+    @apply bg-white/85 backdrop-blur-[4px];
   }
 
   .glass-deep {
-    @apply bg-white/80 backdrop-blur-[40px];
+    @apply bg-white/95 backdrop-blur-[10px];
   }
 
   .glass-eclipse {
-    @apply bg-black/40 backdrop-blur-[12px];
+    @apply bg-black/60 backdrop-blur-[4px];
   }
 }
 

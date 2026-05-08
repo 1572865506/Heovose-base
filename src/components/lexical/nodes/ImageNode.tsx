@@ -17,6 +17,7 @@ import { useLexicalComposerContext } from '@lexical/react/LexicalComposerContext
 import { useLexicalNodeSelection } from '@lexical/react/useLexicalNodeSelection';
 import { mergeRegister } from '@lexical/utils';
 import { cn } from '@/lib/utils';
+import { getAssetUrl } from '@/lib/image-utils';
 import { Trash2 } from 'lucide-react';
 
 export interface ImagePayload {
@@ -291,7 +292,7 @@ function ImageComponent({
     <div className="relative group my-6 outline-none flex justify-center">
       <div className="relative inline-block">
         <img
-          src={src}
+          src={getAssetUrl(src)}
           alt={altText}
           ref={imageRef}
           style={{

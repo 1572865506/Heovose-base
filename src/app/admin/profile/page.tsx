@@ -21,6 +21,7 @@ import {
   Image as ImageIcon
 } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { getAssetUrl } from '@/lib/image-utils';
 import { useToast } from '@/hooks/use-toast';
 import { Badge } from '@/components/ui/badge';
 import { MediaLibraryDialog } from '@/components/admin/media-library-dialog';
@@ -105,7 +106,7 @@ export default function ProfilePage() {
                    title="从素材库选择头像"
                  >
                     <Avatar className="h-20 w-20 rounded-2xl border-2 border-white shadow-xl transition-transform group-hover:scale-95">
-                      {formData.avatarUrl ? <AvatarImage src={formData.avatarUrl} className="object-cover" /> : null}
+                      {formData.avatarUrl ? <AvatarImage src={getAssetUrl(formData.avatarUrl)} className="object-cover" /> : null}
                       <AvatarFallback className="bg-primary/10 text-primary text-xl font-bold uppercase">
                         {(formData.displayName || user?.email)?.[0]}
                       </AvatarFallback>

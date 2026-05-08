@@ -28,6 +28,7 @@ import Image from 'next/image';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 import { Badge } from '@/components/ui/badge';
+import { getAssetUrl } from '@/lib/image-utils';
 
 export interface GalleryAsset {
   id: string;
@@ -340,7 +341,7 @@ export function MediaLibraryDialog({
                         {isActuallyVideo ? (
                           <div className="w-full h-full flex items-center justify-center bg-slate-900 overflow-hidden">
                              <video 
-                               src={asset.url} 
+                               src={getAssetUrl(asset.url)} 
                                className="max-w-full max-h-full object-contain opacity-60"
                                muted
                                playsInline
@@ -358,7 +359,7 @@ export function MediaLibraryDialog({
                           </div>
                         ) : (
                           <Image 
-                            src={asset.url} 
+                            src={getAssetUrl(asset.url)} 
                             alt={asset.title} 
                             fill 
                             className="object-contain p-4 transition-transform duration-700 group-hover:scale-110" 

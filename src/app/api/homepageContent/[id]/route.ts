@@ -86,6 +86,7 @@ export async function PUT(
       'heroWholesaleBg', 'heroProjectBg', 'isVideoEnabled',
       'videoTitleEn', 'videoTitleZh', 'videoSubtitleEn', 'videoSubtitleZh', 'videoUrl',
       'bentoTitleEn', 'bentoTitleZh', 'bentoSubtitleEn', 'bentoSubtitleZh',
+      'processTitleEn', 'processTitleZh', 'processSubtitleEn', 'processSubtitleZh',
       'galleryTitleEn', 'galleryTitleZh', 'gallerySubtitleEn', 'gallerySubtitleZh', 'galleryItems',
       'mapTitleEn', 'mapTitleZh', 'mapSubtitleEn', 'mapSubtitleZh'
     ];

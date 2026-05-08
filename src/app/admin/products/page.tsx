@@ -42,6 +42,7 @@ import Image from 'next/image';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
+import { getAssetUrl } from '@/lib/image-utils';
 
 interface Product {
   id: string;
@@ -276,7 +277,7 @@ export default function AdminProductsPage() {
                   <TableCell className="pl-8">
                     <div className="relative h-14 w-14 rounded-2xl border border-border/40 bg-white shadow-sm overflow-hidden group-hover:scale-110 transition-transform duration-500">
                       {p.mainImageUrl ? (
-                        <Image src={p.mainImageUrl} alt="" fill className="object-contain p-2" unoptimized />
+                        <Image src={getAssetUrl(p.mainImageUrl)} alt="" fill className="object-contain p-2" unoptimized />
                       ) : (
                         <div className="absolute inset-0 bg-slate-50 flex items-center justify-center text-slate-300"><Package className="h-6 w-6" /></div>
                       )}

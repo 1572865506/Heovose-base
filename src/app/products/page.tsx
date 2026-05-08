@@ -17,6 +17,7 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
+import { getAssetUrl } from '@/lib/image-utils';
 import { useTranslations } from '@/hooks/use-translations';
 
 interface Product {
@@ -222,7 +223,7 @@ function ProductListContent() {
         )}>
           {rootCategory?.thumbnailImageUrl && (
             <Image 
-              src={rootCategory.thumbnailImageUrl} 
+              src={getAssetUrl(rootCategory.thumbnailImageUrl)} 
               alt="" 
               fill 
               className="object-cover mix-blend-overlay" 
@@ -381,7 +382,7 @@ function ProductListContent() {
                   >
                     <div className="relative aspect-[11/9] bg-muted/20 overflow-hidden">
                       <Image
-                        src={product.mainImageUrl || '/image/product-placeholder.png'}
+                        src={getAssetUrl(product.mainImageUrl || '/image/product-placeholder.png')}
                         alt={getT(product.nameTextId)}
                         fill
                         className="object-cover hover:scale-110 transition-transform duration-[1000ms] ease-[cubic-bezier(0.23,1,0.32,1)]"

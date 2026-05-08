@@ -49,6 +49,7 @@ import { useToast } from '@/hooks/use-toast';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
 import { Card, CardContent } from '@/components/ui/card';
+import { getAssetUrl } from '@/lib/image-utils';
 
 interface AdminUser {
   id: string;
@@ -262,7 +263,7 @@ export default function AdminUsersPage() {
               <TableRow key={admin.id} className="group hover:bg-slate-50/80 transition-all duration-300 border-slate-50">
                 <TableCell className="pl-8 py-6">
                   <Avatar className="h-12 w-12 border-2 border-white shadow-xl">
-                    <AvatarImage src={admin.avatarUrl} className="object-cover" />
+                    <AvatarImage src={getAssetUrl(admin.avatarUrl)} className="object-cover" />
                     <AvatarFallback className="bg-primary/10 text-primary text-sm font-bold">
                       {(admin.displayName || admin.email || 'U')[0].toUpperCase()}
                     </AvatarFallback>

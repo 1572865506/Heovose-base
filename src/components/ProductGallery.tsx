@@ -9,6 +9,7 @@ import { PlaceHolderImages } from "@/lib/placeholder-images";
 import { SectionHeading } from "./SectionHeading";
 import { Button } from "@/components/ui/button";
 import { ArrowRight, Play, Pause } from "lucide-react";
+import { getAssetUrl } from '@/lib/image-utils';
 import {
   Carousel,
   CarouselContent,
@@ -30,7 +31,7 @@ function GalleryCard({ product, locale }: { product: any, locale: Locale }) {
       <div className="relative w-full aspect-[11/9] overflow-hidden bg-muted/5 shrink-0">
         {product.imageUrl && (
           <Image
-            src={product.imageUrl}
+            src={getAssetUrl(product.imageUrl)}
             alt={product.label}
             fill
             className="object-cover"

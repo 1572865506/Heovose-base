@@ -34,6 +34,10 @@ interface AppConfig {
   defaultLanguage?: string;
 }
 
+interface StorageConfig {
+  baseUrl: string;
+}
+
 const GlassCard = ({ children, className }: { children: React.ReactNode, className?: string }) => (
   <div className={cn("bg-white/70 backdrop-blur-xl border border-white/40 shadow-2xl rounded-3xl overflow-hidden", className)}>
     {children}
@@ -52,10 +56,15 @@ export default function AdminSettingsPage() {
   const [backups, setBackups] = useState<any[]>([]);
 
   const { data: langSettings, isLoading: isLangLoading, mutate: mutateLangs } = useLocalDoc<AppConfig>('settings', 'languages');
+  const { data: storageSettings, isLoading: isStorageLoading, mutate: mutateStorage } = useLocalDoc<StorageConfig>('settings', 'storage');
   
   const [formData, setFormData] = useState<AppConfig>({
     supportedLanguages: [],
     defaultLanguage: 'zh'
+  });
+
+  const [storageData, setStorageData] = useState<StorageConfig>({
+    baseUrl: '/storage'
   });
 
   useEffect(() => {
@@ -65,9 +74,14 @@ export default function AdminSettingsPage() {
         defaultLanguage: langSettings.defaultLanguage || 'zh'
       });
     }
+    if (storageSettings) {
+      setStorageData({
+        baseUrl: storageSettings.baseUrl || '/storage'
+      });
+    }
     fetchStatus();
     fetchBackups();
-  }, [langSettings]);
+  }, [langSettings, storageSettings]);
 
   const fetchStatus = async () => {
     try {
@@ -97,7 +111,13 @@ export default function AdminSettingsPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(formData),
       });
+      await fetch('/api/settings/storage', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(storageData),
+      });
       mutateLangs();
+      mutateStorage();
       setIsSaving(false);
       toast({ title: "系统配置已保存" });
     } catch (e) {
@@ -300,6 +320,32 @@ export default function AdminSettingsPage() {
                     当前正在监听外部公共请求。权限由 <b>Auth.js</b> 与后端路由守卫共同保障。
                   </p>
                 </div>
+              </div>
+
+              {/* 基础设施存储配置 */}
+              <div className="pt-10 border-t border-slate-100 space-y-4">
+                <Label className="text-[11px] font-bold uppercase tracking-[0.2em] text-slate-400 flex items-center gap-2 pl-1">
+                  <Database className="h-4 w-4 text-primary" /> 存储资产分发前缀 (Storage Base URL)
+                </Label>
+                <div className="flex gap-4">
+                  <input 
+                    type="text"
+                    value={storageData.baseUrl}
+                    onChange={(e) => setStorageData({ ...storageData, baseUrl: e.target.value })}
+                    placeholder="例如: /storage 或 http://192.168.1.190:9000/heovose-assets"
+                    className="flex-1 h-14 rounded-2xl bg-slate-50 border-none px-6 font-mono text-xs font-bold text-slate-700 shadow-inner focus:ring-2 focus:ring-primary/20 outline-none"
+                  />
+                  <Button 
+                    variant="outline" 
+                    onClick={() => setStorageData({ baseUrl: '/storage' })}
+                    className="h-14 px-6 rounded-2xl border-dashed border-slate-200 text-[10px] font-bold uppercase tracking-widest text-slate-400 hover:text-primary"
+                  >
+                    恢复默认
+                  </Button>
+                </div>
+                <p className="text-[10px] text-slate-400 italic font-medium leading-relaxed px-1">
+                  <b>提示：</b>默认建议使用 <code className="text-primary">/storage</code>（内网/公网自适应模式）。若使用独立 CDN，请填入完整 URL。
+                </p>
               </div>
             </CardContent>
           </GlassCard>

@@ -71,6 +71,7 @@ model HomepageBentoItem {
   tagZh     String?
   tagEn     String?
   imageUrl  String
+  brightness Float?
   linkUrl   String?
   gridSize  String   @default("small")
   createdAt DateTime @default(now())
@@ -103,6 +104,7 @@ model CaseStudy {
   descZh   String
   descEn   String
   imageUrl String
+  brightness Float?
 }
 
 model ProductionStep {
@@ -113,6 +115,7 @@ model ProductionStep {
   descZh    String
   descEn    String
   imageUrls String[]
+  brightnesses Float[]
 }
 
 model Product {
@@ -124,9 +127,11 @@ model Product {
   createdAt         DateTime         @default(now())
   descriptionTextId String?
   enabledLanguages  String[]
-  galleryImageUrls  String[]
-  localizedDetails  Json?
   mainImageUrl      String?
+  mainImageBrightness Float?
+  galleryImageUrls  String[]
+  galleryImageBrightnesses Float[]
+  localizedDetails  Json?
   specGroups        Json?
   updatedAt         DateTime         @updatedAt
   category          ProductCategory? @relation(fields: [categoryId], references: [id])
@@ -142,6 +147,7 @@ model ProductCategory {
   id                String            @id @default(cuid())
   slug              String            @unique
   thumbnailImageUrl String?
+  thumbnailBrightness Float?
   parentId          String?
   nameTextId        String
   descriptionTextId String?
@@ -230,6 +236,7 @@ model GalleryAsset {
   duration     Float?
   thumbnailUrl String?
   type         String           @default("IMAGE")
+  brightness   Float?
   category     GalleryCategory? @relation(fields: [categoryId], references: [id])
 
   @@index([categoryId])

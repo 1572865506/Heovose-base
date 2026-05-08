@@ -7,6 +7,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Loader2, Sparkles, Languages, RotateCcw, Upload, Info } from "lucide-react";
 import { ShinyButton } from "@/components/ui/shiny-button";
 import Image from "next/image";
+import { getAssetUrl } from '@/lib/image-utils';
 
 interface BasicInfoSectionProps {
   formData: {
@@ -119,7 +120,7 @@ const BasicInfoSection = memo(({
             >
               {formData.mainImageUrl ? (
                 <>
-                  <Image src={formData.mainImageUrl} alt="Main" fill className="object-cover transition-transform duration-1000 group-hover:scale-110" unoptimized />
+                  <Image src={getAssetUrl(formData.mainImageUrl)} alt="Main" fill className="object-cover transition-transform duration-1000 group-hover:scale-110" unoptimized />
                   <div className="absolute inset-0 rounded-[2rem] bg-slate-900/60 opacity-0 group-hover:opacity-100 transition-all duration-500 flex flex-col items-center justify-center gap-4 backdrop-blur-md">
                     <div className="h-14 w-14 rounded-2xl bg-white/10 flex items-center justify-center text-white backdrop-blur-md border border-white/20 scale-50 group-hover:scale-100 transition-transform duration-700">
                       <RotateCcw className="h-6 w-6" />

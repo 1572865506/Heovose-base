@@ -59,6 +59,7 @@ import { translateContent } from '@/ai/flows/translate-flow';
 import { cn } from '@/lib/utils';
 import { ShinyButton } from '@/components/ui/shiny-button';
 import { MediaLibraryDialog } from '@/components/admin/media-library-dialog';
+import { getAssetUrl } from '@/lib/image-utils';
 import Image from 'next/image';
 
 // AI 极光渐变定义组件
@@ -112,7 +113,7 @@ function SortableBentoItem({ item, onEdit, onDelete }: { item: any, onEdit: () =
     >
       <div className="relative aspect-square rounded-2xl overflow-hidden mb-3 shadow-inner bg-slate-50">
         {item.imageUrl ? (
-          <Image src={item.imageUrl} alt={item.titleZh} fill className="object-cover transition-transform group-hover:scale-105" />
+          <Image src={getAssetUrl(item.imageUrl)} alt={item.titleZh} fill className="object-cover transition-transform group-hover:scale-105" />
         ) : (
           <div className="absolute inset-0 flex items-center justify-center text-slate-300">
             <ImageIcon className="h-8 w-8 opacity-20" />
@@ -666,7 +667,7 @@ export default function AdminHomePage() {
                     onClick={() => setPickerConfig({ open: true, type: 'wholesale', slideIndex: null })}
                   >
                     {formData.heroWholesaleBg ? (
-                      <Image src={formData.heroWholesaleBg} alt="W" fill className="object-cover" />
+                      <Image src={getAssetUrl(formData.heroWholesaleBg)} alt="W" fill className="object-cover" />
                     ) : (
                       <>
                         <Plus className="h-4 w-4 text-primary" />
@@ -709,7 +710,7 @@ export default function AdminHomePage() {
                     onClick={() => setPickerConfig({ open: true, type: 'project', slideIndex: null })}
                   >
                     {formData.heroProjectBg ? (
-                      <Image src={formData.heroProjectBg} alt="P" fill className="object-cover" />
+                      <Image src={getAssetUrl(formData.heroProjectBg)} alt="P" fill className="object-cover" />
                     ) : (
                       <>
                         <Plus className="h-4 w-4 text-primary" />
@@ -771,7 +772,7 @@ export default function AdminHomePage() {
                         className="relative aspect-[16/9] rounded-2xl overflow-hidden cursor-pointer group/img border-2 border-transparent hover:border-primary transition-all shadow-lg"
                         onClick={() => setPickerConfig({ open: true, type: 'slide', slideIndex: index })}
                       >
-                        <Image src={slide.bgImage} alt="Preview" fill className="object-cover" unoptimized />
+                        <Image src={getAssetUrl(slide.bgImage)} alt="Preview" fill className="object-cover" unoptimized />
                         <div className="absolute inset-0 bg-black/40 opacity-0 group-hover/img:opacity-100 flex items-center justify-center transition-opacity">
                           <ImageIcon className="text-white h-8 w-8" />
                         </div>
@@ -1249,7 +1250,7 @@ export default function AdminHomePage() {
                   <div key={`${item.productId}-${idx}`} className="group relative bg-white/70 backdrop-blur-md rounded-[2rem] border border-slate-200/60 p-4 hover:border-primary/40 hover:bg-white transition-all duration-500 shadow-sm">
                     <div className="relative aspect-[11/9] rounded-2xl overflow-hidden mb-3 shadow-inner bg-slate-50">
                       {product.mainImageUrl ? (
-                        <Image src={product.mainImageUrl} alt="P" fill className="object-cover" />
+                        <Image src={getAssetUrl(product.mainImageUrl)} alt="P" fill className="object-cover" />
                       ) : (
                         <div className="absolute inset-0 flex items-center justify-center text-slate-300">
                           <ImageIcon className="h-8 w-8 opacity-20" />
@@ -1528,7 +1529,7 @@ function ProductPicker({ open, onOpenChange, products, translations, categories,
                     className="group flex items-center gap-4 bg-white border border-slate-100 p-3 rounded-2xl cursor-pointer hover:border-primary/40 hover:bg-primary/5 hover:shadow-sm transition-all duration-300"
                   >
                     <div className="relative w-12 h-12 rounded-xl overflow-hidden bg-slate-50 shrink-0 border border-slate-100 shadow-sm">
-                      {p.mainImageUrl && <Image src={p.mainImageUrl} alt={p.id} fill className="object-cover group-hover:scale-110 transition-transform duration-500" />}
+                      {p.mainImageUrl && <Image src={getAssetUrl(p.mainImageUrl)} alt={p.id} fill className="object-cover group-hover:scale-110 transition-transform duration-500" />}
                     </div>
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-bold text-slate-800 truncate">{name}</p>
@@ -1596,7 +1597,7 @@ function BentoItemDialog({ open, onOpenChange, item, onSave, onTranslate, onImag
                 onClick={onImageSelect}
               >
                 {localItem.imageUrl ? (
-                  <Image src={localItem.imageUrl} alt="P" fill className="object-cover" />
+                  <Image src={getAssetUrl(localItem.imageUrl)} alt="P" fill className="object-cover" />
                 ) : (
                   <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 text-slate-400">
                     <ImageIcon className="h-8 w-8" />

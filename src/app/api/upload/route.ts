@@ -25,6 +25,13 @@ export async function POST(request: Request) {
     const fileExtension = file.name.split('.').pop();
     const fileName = `${path}/${crypto.randomUUID()}.${fileExtension}`;
 
+    // Calculate brightness if it's an image
+    let brightness: number | null = null;
+    if (file.type.startsWith('image/')) {
+      const { calculateBufferBrightness } = await import('@/lib/server/image-analysis');
+      brightness = await calculateBufferBrightness(buffer);
+    }
+
     const command = new PutObjectCommand({
       Bucket: bucketName,
       Key: fileName,
@@ -35,12 +42,12 @@ export async function POST(request: Request) {
     await s3Client.send(command);
 
     // Construct the public URL
-    // For MinIO local dev, it's usually http://localhost:9000/bucket/filename
-    const publicUrl = `http://${process.env.STORAGE_ENDPOINT}:${process.env.STORAGE_PORT}/${bucketName}/${fileName}`;
+    const publicUrl = `${bucketName}/${fileName}`;
 
     return NextResponse.json({ 
       url: publicUrl,
-      fileName: fileName
+      fileName: fileName,
+      brightness: brightness
     });
   } catch (error) {
     console.error('Upload error:', error);

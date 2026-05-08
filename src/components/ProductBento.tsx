@@ -9,13 +9,14 @@ import { PlaceHolderImages } from "@/lib/placeholder-images";
 import { SectionHeading } from "./SectionHeading";
 import { cn } from "@/lib/utils";
 import { ArrowUpRight } from "lucide-react";
+import { getAssetUrl } from '@/lib/image-utils';
 import { useLocalCollection } from '@/hooks/use-local-collection';
 import { useLocalDoc } from '@/hooks/use-local-doc';
 import { useTranslations } from '@/hooks/use-translations';
 import { useImageBrightness } from '@/hooks/use-image-brightness';
 
 function BentoCard({ item, index, locale, isVisible }: { item: any, index: number, locale: Locale, isVisible: boolean }) {
-  const { theme } = useImageBrightness(item.imageUrl);
+  const { theme } = useImageBrightness(item.imageUrl, item.brightness);
   
   return (
     <Link
@@ -32,7 +33,7 @@ function BentoCard({ item, index, locale, isVisible }: { item: any, index: numbe
     >
       {item.imageUrl && (
         <Image
-          src={item.imageUrl}
+          src={getAssetUrl(item.imageUrl)}
           alt={item.label}
           fill
           className="object-cover"
@@ -50,10 +51,10 @@ function BentoCard({ item, index, locale, isVisible }: { item: any, index: numbe
         <div className="space-y-3">
           {item.category && (
             <span className={cn(
-              "inline-block px-3 py-1 backdrop-blur-md text-[10px] font-bold tracking-[0.2em] uppercase rounded-full border shadow-sm transition-colors duration-500",
+              "inline-block px-3 py-1 text-[10px] font-bold tracking-[0.2em] uppercase rounded-full border shadow-sm transition-colors duration-500",
               theme === 'light' 
-                ? "bg-white/80 text-slate-800 border-slate-200/50" 
-                : "bg-black/40 text-white/90 border-white/10"
+                ? "bg-white/95 text-slate-800 border-slate-200/50" 
+                : "bg-black/80 text-white/90 border-white/10"
             )}>
               {item.category}
             </span>
@@ -68,8 +69,8 @@ function BentoCard({ item, index, locale, isVisible }: { item: any, index: numbe
               {item.label}
             </h3>
             <div className={cn(
-              "h-10 w-10 aspect-square rounded-full backdrop-blur-sm flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-500 hover:scale-110",
-              theme === 'light' ? "bg-black/5 text-slate-900" : "bg-white/20 text-white"
+              "h-10 w-10 aspect-square rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-500 hover:scale-110",
+              theme === 'light' ? "bg-black/10 text-slate-900" : "bg-white/90 text-black"
             )}>
               <ArrowUpRight className="h-5 w-5" />
             </div>
@@ -127,6 +128,7 @@ export function ProductBento({ locale }: { locale: Locale }) {
           category: getLocalized('tag'),
           slug: item.linkUrl || '#',
           imageUrl: item.imageUrl || PlaceHolderImages[0].imageUrl,
+          brightness: item.brightness,
           grid
         };
       });

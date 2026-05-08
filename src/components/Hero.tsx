@@ -7,6 +7,7 @@ import Link from 'next/link';
 import { Locale, translations } from "@/lib/translations";
 import { ArrowUpRight, ChevronLeft, ChevronRight } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { getAssetUrl } from '@/lib/image-utils';
 import useEmblaCarousel from 'embla-carousel-react';
 import Autoplay from 'embla-carousel-autoplay';
 import Fade from 'embla-carousel-fade';
@@ -72,8 +73,17 @@ export function Hero({ locale, homeConfig, isLoading, onThemeChange }: HeroProps
   // Analyze brightness of the current slide
   useEffect(() => {
     if (slides.length > 0) {
-      const currentSlide = slides[selectedIndex];
-      analyzeImageBrightness(currentSlide.bgImage).then((brightness) => {
+      const currentSlide = slides[selectedIndex] as any;
+      
+      // 优先使用预计算的明暗度
+      if (currentSlide.brightness !== undefined && currentSlide.brightness !== null) {
+        const theme = currentSlide.brightness > 160 ? 'light' : 'dark';
+        setCurrentTheme(theme);
+        if (onThemeChange) onThemeChange(theme);
+        return;
+      }
+
+      analyzeImageBrightness(getAssetUrl(currentSlide.bgImage)).then((brightness) => {
         const theme = brightness > 160 ? 'light' : 'dark';
         setCurrentTheme(theme);
         if (onThemeChange) onThemeChange(theme);
@@ -179,7 +189,7 @@ export function Hero({ locale, homeConfig, isLoading, onThemeChange }: HeroProps
               {/* Slide Background */}
               <div className="absolute inset-0">
                   <Image
-                    src={slide.bgImage}
+                    src={getAssetUrl(slide.bgImage)}
                     alt={getFallback(slide.headlineZh, slide.headlineEn)}
                     fill
                     className="object-cover object-[66%_center] md:object-center"
@@ -272,7 +282,7 @@ export function Hero({ locale, homeConfig, isLoading, onThemeChange }: HeroProps
                     {wholesaleBg ? (
                       <>
                         <Image
-                          src={wholesaleBg}
+                          src={getAssetUrl(wholesaleBg)}
                           alt="Wholesale"
                           fill
                           className="object-cover transition-transform duration-1000 ease-out group-hover:scale-110"
@@ -317,7 +327,7 @@ export function Hero({ locale, homeConfig, isLoading, onThemeChange }: HeroProps
                     {projectBg ? (
                       <>
                         <Image
-                          src={projectBg}
+                          src={getAssetUrl(projectBg)}
                           alt="Projects"
                           fill
                           className="object-cover transition-transform duration-1000 ease-out group-hover:scale-110"

@@ -5,7 +5,8 @@ const pendingRequests = new Map<string, Promise<any>>();
 const globalCache = new Map<string, { data: any, timestamp: number }>();
 const CACHE_TTL = 300000; // 5 minutes cache for stability
 
-export function useLocalDoc<T = any>(path: string | null, id: string | null = '') {
+export function useLocalDoc<T = any>(path: string | null, id: string | null = '', options?: { enabled?: boolean }) {
+  const enabled = options?.enabled !== false;
   const cacheKey = path ? `${path}/${id || ''}` : null;
   const cached = cacheKey ? globalCache.get(cacheKey) : null;
   
@@ -64,14 +65,14 @@ export function useLocalDoc<T = any>(path: string | null, id: string | null = ''
   }, []);
 
   useEffect(() => {
-    if (!path || id === null || id === 'new') {
-      setData(null);
+    if (!path || id === null || id === 'new' || !enabled) {
+      if (!path || id === null || id === 'new') setData(null);
       setIsLoading(false);
       return;
     }
 
     fetchData(path, id);
-  }, [path, id, fetchData]);
+  }, [path, id, enabled, fetchData]);
 
   const mutate = useCallback(() => {
     if (path) {

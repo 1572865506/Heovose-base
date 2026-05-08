@@ -45,6 +45,7 @@ import { cn } from '@/lib/utils';
 import { ShinyButton } from '@/components/ui/shiny-button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
+import { getAssetUrl } from '@/lib/image-utils';
 import { MediaLibraryDialog } from '@/components/admin/media-library-dialog';
 import Image from 'next/image';
 
@@ -288,7 +289,7 @@ export default function GlobalMapAdminPage() {
           {(formData.locations || []).map((loc: any) => (
             <Card key={loc.id} className="rounded-2xl border-border/40 overflow-hidden group hover:border-primary/40 transition-all shadow-sm">
               <div className="relative h-32 bg-muted/20">
-                {loc.imageUrl && <img src={loc.imageUrl} alt="" className="w-full h-full object-cover" />}
+                {loc.imageUrl && <img src={getAssetUrl(loc.imageUrl)} alt="" className="w-full h-full object-cover" />}
                 <div className="absolute top-2 left-2">
                   <Badge className="bg-primary text-white text-[8px] uppercase">{loc.type}</Badge>
                 </div>
@@ -382,7 +383,7 @@ export default function GlobalMapAdminPage() {
                   >
                     {locationForm.imageUrl ? (
                       <>
-                        <img src={locationForm.imageUrl} alt="" className="w-full h-full object-cover" />
+                        <img src={getAssetUrl(locationForm.imageUrl)} alt="" className="w-full h-full object-cover" />
                         <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity">
                           <Button variant="secondary" size="sm" className="rounded-full h-8 text-[10px] font-bold uppercase tracking-wider">更换图片</Button>
                         </div>

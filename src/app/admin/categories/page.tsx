@@ -53,6 +53,7 @@ import Image from 'next/image';
 import { useToast } from '@/hooks/use-toast';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
+import { getAssetUrl } from '@/lib/image-utils';
 import { translateContent } from '@/ai/flows/translate-flow';
 import { ShinyButton } from '@/components/ui/shiny-button';
 import { MediaLibraryDialog } from '@/components/admin/media-library-dialog';
@@ -507,7 +508,7 @@ export default function CategoriesPage() {
               >
                 {formData.thumbnailImageUrl ? (
                   <>
-                    <Image src={formData.thumbnailImageUrl} alt="Thumbnail" fill className="object-contain p-4 transition-transform duration-500 group-hover:scale-105" unoptimized />
+                    <Image src={getAssetUrl(formData.thumbnailImageUrl)} alt="Thumbnail" fill className="object-contain p-4 transition-transform duration-500 group-hover:scale-105" unoptimized />
                     <div className="absolute inset-0 bg-slate-900/40 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-all duration-500 gap-3 backdrop-blur-[2px]">
                       <Button variant="secondary" size="sm" className="rounded-full h-9 px-6 text-[10px] font-bold uppercase tracking-wider shadow-2xl">更换图片</Button>
                       <Button 
@@ -578,7 +579,7 @@ export default function CategoriesPage() {
                     <TableCell className="pl-8 py-6">
                       <div className="relative h-12 w-12 rounded-2xl border border-slate-200 bg-white overflow-hidden shadow-sm flex items-center justify-center group-hover:scale-110 transition-transform duration-500">
                         {cat.thumbnailImageUrl ? (
-                          <Image src={cat.thumbnailImageUrl} alt={cat.id} fill className="object-contain p-2" unoptimized />
+                          <Image src={getAssetUrl(cat.thumbnailImageUrl)} alt={cat.id} fill className="object-contain p-2" unoptimized />
                         ) : (
                           <LayoutGrid className="h-5 w-5 opacity-20 text-slate-400" />
                         )}

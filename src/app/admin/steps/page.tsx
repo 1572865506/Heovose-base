@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { useLocalDoc } from '@/hooks/use-local-doc';
 import { useLocalCollection } from '@/hooks/use-local-collection';
 import { Button } from '@/components/ui/button';
@@ -39,6 +39,7 @@ import { ShinyButton } from '@/components/ui/shiny-button';
 import { Badge } from '@/components/ui/badge';
 import { MediaLibraryDialog } from '@/components/admin/media-library-dialog';
 import Image from 'next/image';
+import { getAssetUrl } from '@/lib/image-utils';
 
 interface ProductionStep {
   id: string;
@@ -58,8 +59,29 @@ export default function ProductionStepsAdminPage() {
   const { data: galleryAssets } = useLocalCollection<any>('galleryAssets');
 
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const { data: homeContent, mutate: mutateHome } = useLocalDoc<any>('homepageContent', 'hero');
   const [isAiProcessing, setIsAiProcessing] = useState(false);
+  const [isSavingConfig, setIsSavingConfig] = useState(false);
   const [editingStep, setEditingStep] = useState<ProductionStep | null>(null);
+  
+  const [sectionForm, setSectionForm] = useState({
+    processTitleZh: '',
+    processTitleEn: '',
+    processSubtitleZh: '',
+    processSubtitleEn: ''
+  });
+
+  // 同步初始化板块标题
+  useEffect(() => {
+    if (homeContent) {
+      setSectionForm({
+        processTitleZh: homeContent.processTitleZh || '',
+        processTitleEn: homeContent.processTitleEn || '',
+        processSubtitleZh: homeContent.processSubtitleZh || '',
+        processSubtitleEn: homeContent.processSubtitleEn || ''
+      });
+    }
+  }, [homeContent]);
   
   const [isPickerOpen, setIsPickerOpen] = useState(false);
 
@@ -169,6 +191,48 @@ export default function ProductionStepsAdminPage() {
     }
   };
 
+  const handleTranslateSection = async () => {
+    if (!aiConfig?.isEnabled) {
+      toast({ variant: "destructive", title: "AI 未启用" });
+      return;
+    }
+    setIsAiProcessing(true);
+    try {
+      const results = await Promise.all([
+        sectionForm.processTitleZh ? translateContent({ text: sectionForm.processTitleZh, targetLangs: ['en'], apiKey: aiConfig.apiKey }) : null,
+        sectionForm.processSubtitleZh ? translateContent({ text: sectionForm.processSubtitleZh, targetLangs: ['en'], apiKey: aiConfig.apiKey }) : null
+      ]);
+      setSectionForm(prev => ({
+        ...prev,
+        processTitleEn: results[0]?.en || prev.processTitleEn,
+        processSubtitleEn: results[1]?.en || prev.processSubtitleEn
+      }));
+      toast({ title: "板块标题智译成功" });
+    } catch (e: any) {
+      toast({ variant: "destructive", title: "智译失败", description: e.message });
+    } finally {
+      setIsAiProcessing(false);
+    }
+  };
+
+  const handleSaveSectionConfig = async () => {
+    setIsSavingConfig(true);
+    try {
+      const res = await fetch('/api/homepageContent/hero', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(sectionForm),
+      });
+      if (!res.ok) throw new Error('Save failed');
+      mutateHome();
+      toast({ title: "板块标题配置已保存" });
+    } catch (e) {
+      toast({ variant: "destructive", title: "保存失败" });
+    } finally {
+      setIsSavingConfig(false);
+    }
+  };
+
   const moveImage = (idx: number, dir: 'left' | 'right') => {
     const urls = [...(form.imageUrls || [])];
     const targetIdx = dir === 'left' ? idx - 1 : idx + 1;
@@ -179,16 +243,88 @@ export default function ProductionStepsAdminPage() {
 
   return (
     <div className="space-y-6 animate-in fade-in duration-500 pb-20">
-      <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-xl font-headline font-bold text-primary flex items-center gap-2">
-            <ClipboardList className="h-5 w-5" /> 生产流程管理
-          </h2>
-          <p className="text-sm text-muted-foreground">定义前台 11 步精密制造流程，支持多图轮播配置。</p>
+      <div className="bg-white p-8 rounded-3xl border shadow-sm space-y-6">
+        <div className="flex items-center justify-between border-b pb-4">
+          <div className="space-y-1">
+            <h3 className="text-sm font-bold text-primary uppercase tracking-widest flex items-center gap-2">
+              <Sparkles className="h-4 w-4" /> 制造板块视觉文案配置
+            </h3>
+            <p className="text-[10px] text-muted-foreground uppercase tracking-widest font-bold opacity-60">Section Heading & Localization Settings</p>
+          </div>
+          <div className="flex gap-3">
+            {aiConfig?.isEnabled && (
+              <ShinyButton 
+                onClick={handleTranslateSection} 
+                disabled={isAiProcessing}
+                className="h-9 px-4"
+                shape="capsule"
+              >
+                <div className="flex items-center gap-2">
+                  {isAiProcessing ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Sparkles className="h-3.5 w-3.5" />}
+                  <span className="text-[10px] font-bold uppercase tracking-widest">AI 智译</span>
+                </div>
+              </ShinyButton>
+            )}
+            <Button 
+              onClick={handleSaveSectionConfig} 
+              disabled={isSavingConfig}
+              className="rounded-xl h-9 px-6 gap-2 text-[10px] font-bold uppercase tracking-widest shadow-md"
+            >
+              {isSavingConfig ? <Loader2 className="h-3 w-3 animate-spin" /> : <Check className="h-3 w-3" />}
+              保存配置
+            </Button>
+          </div>
         </div>
-        <Button onClick={() => handleOpenDialog()} className="rounded-xl h-10 px-6 gap-2 text-xs font-bold uppercase tracking-widest shadow-md">
-          <Plus className="h-4 w-4" /> 新增生产步骤
-        </Button>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+          <div className="space-y-4 p-5 bg-muted/5 rounded-2xl border border-dashed">
+            <span className="text-[10px] font-bold uppercase text-primary/60 tracking-widest">中文配置 (ZH)</span>
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <Label className="text-[10px] font-black uppercase opacity-40">主标题</Label>
+                <Input 
+                  value={sectionForm.processTitleZh} 
+                  onChange={e => setSectionForm({...sectionForm, processTitleZh: e.target.value})}
+                  placeholder="例如：精密制造"
+                  className="h-10 rounded-xl bg-white"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label className="text-[10px] font-black uppercase opacity-40">副标题</Label>
+                <Input 
+                  value={sectionForm.processSubtitleZh} 
+                  onChange={e => setSectionForm({...sectionForm, processSubtitleZh: e.target.value})}
+                  placeholder="例如：11步卓越生产流程"
+                  className="h-10 rounded-xl bg-white"
+                />
+              </div>
+            </div>
+          </div>
+
+          <div className="space-y-4 p-5 bg-muted/5 rounded-2xl border border-dashed">
+            <span className="text-[10px] font-bold uppercase text-primary/60 tracking-widest">英文配置 (EN)</span>
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <Label className="text-[10px] font-black uppercase opacity-40">Main Title</Label>
+                <Input 
+                  value={sectionForm.processTitleEn} 
+                  onChange={e => setSectionForm({...sectionForm, processTitleEn: e.target.value})}
+                  placeholder="e.g. Precision Manufacturing"
+                  className="h-10 rounded-xl bg-white border-dashed"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label className="text-[10px] font-black uppercase opacity-40">Subtitle</Label>
+                <Input 
+                  value={sectionForm.processSubtitleEn} 
+                  onChange={e => setSectionForm({...sectionForm, processSubtitleEn: e.target.value})}
+                  placeholder="e.g. 11 Steps of Excellence"
+                  className="h-10 rounded-xl bg-white border-dashed"
+                />
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
 
       <div className="bg-white rounded-2xl border border-border/40 shadow-sm overflow-hidden">
@@ -209,7 +345,7 @@ export default function ProductionStepsAdminPage() {
                   
                   <div className="relative w-20 h-14 shrink-0 bg-white rounded-lg border overflow-hidden shadow-inner">
                     {step.imageUrls?.[0] ? (
-                      <Image src={step.imageUrls[0]} alt="" fill className="object-cover" unoptimized />
+                      <Image src={getAssetUrl(step.imageUrls[0])} alt="" fill className="object-cover" unoptimized />
                     ) : (
                       <div className="flex items-center justify-center h-full opacity-20"><ImageIcon className="h-5 w-5" /></div>
                     )}
@@ -265,13 +401,13 @@ export default function ProductionStepsAdminPage() {
                 <div className="flex items-center justify-between">
                   <Label className="text-xs font-bold uppercase opacity-40 tracking-widest pl-1">步骤关联素材 ({form.imageUrls?.length || 0})</Label>
                   <Button variant="outline" size="sm" onClick={() => setIsPickerOpen(true)} className="h-8 rounded-lg text-[10px] font-bold uppercase tracking-widest gap-2">
-                    <Plus className="h-3 w-3" /> 导入素材库
+                    <Plus className="h-3 w-3" /> 批量导入素材
                   </Button>
                 </div>
                 <div className="flex gap-4 p-3 bg-muted/5 rounded-xl border border-border/40 overflow-x-auto min-h-[120px] items-center">
                   {form.imageUrls?.map((url, i) => (
                     <div key={i} className="group relative w-32 aspect-square shrink-0 rounded-lg border overflow-hidden bg-white shadow-sm transition-all hover:scale-105">
-                      <Image src={url} alt="" fill className="object-cover" unoptimized />
+                      <Image src={getAssetUrl(url)} alt="" fill className="object-cover" unoptimized />
                       <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-1.5">
                         <Button size="icon" variant="secondary" className="h-6 w-6 rounded-full" disabled={i === 0} onClick={() => moveImage(i, 'left')}><ChevronLeft className="h-3.5 w-3.5" /></Button>
                         <Button size="icon" variant="secondary" className="h-6 w-6 rounded-full" disabled={i === (form.imageUrls?.length || 0) - 1} onClick={() => moveImage(i, 'right')}><ChevronRight className="h-3.5 w-3.5" /></Button>
@@ -286,7 +422,7 @@ export default function ProductionStepsAdminPage() {
                     </div>
                   )}
                 </div>
-                <p className="text-[9px] text-muted-foreground italic">支持单张或多张配置。多张时前台自动启用进度条轮播。</p>
+                <p className="text-[9px] text-muted-foreground italic font-medium">提示：支持上传多张图片。若配置多张，前台该步骤将自动启用「进度条式」轮播切换展示。</p>
               </div>
             </div>
 
@@ -339,11 +475,20 @@ export default function ProductionStepsAdminPage() {
         onOpenChange={setIsPickerOpen}
         onSelect={(assets) => {
           const newUrls = assets.map(a => a.url);
-          setForm({ ...form, imageUrls: newUrls });
+          setForm(prev => {
+            const currentUrls = prev.imageUrls || [];
+            // 过滤掉已经存在的 URL，实现增量添加
+            const uniqueNewUrls = newUrls.filter(url => !currentUrls.includes(url));
+            return {
+              ...prev,
+              imageUrls: [...currentUrls, ...uniqueNewUrls]
+            };
+          });
+          toast({ title: `成功导入 ${newUrls.length} 张图片` });
         }}
         selectionMode="multiple"
         title="选择生产步骤素材"
-        subtitle="你可以选择多张图片，前台将以轮播形式展示"
+        subtitle="你可以选择多张图片，这些图片将按顺序在该步骤中循环播放"
       />
     </div>
   );

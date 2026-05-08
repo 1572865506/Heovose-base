@@ -3,6 +3,7 @@
 
 import { useEffect, useRef, useState, useCallback } from 'react';
 import { Locale, translations } from "@/lib/translations";
+import { getAssetUrl } from '@/lib/image-utils';
 import { cn } from "@/lib/utils";
 import { Play, Pause } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -19,6 +20,26 @@ export function VideoSection({ locale, homeConfig, isLoading }: VideoSectionProp
   const videoRef = useRef<HTMLVideoElement>(null);
   const [textProgress, setTextProgress] = useState(0); 
   const [isPlaying, setIsPlaying] = useState(true);
+
+  const [isInView, setIsInView] = useState(false);
+
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          setIsInView(true);
+          observer.unobserve(entry.target);
+        }
+      },
+      { threshold: 0.05, rootMargin: '200px' } // Start loading 200px before it enters
+    );
+
+    if (sectionRef.current) {
+      observer.observe(sectionRef.current);
+    }
+
+    return () => observer.disconnect();
+  }, []);
 
   useEffect(() => {
     let requestRunning = false;
@@ -103,7 +124,9 @@ export function VideoSection({ locale, homeConfig, isLoading }: VideoSectionProp
             className="h-full w-full object-cover"
             key={locale}
           >
-            <source src={homeConfig?.videoUrl || "/video/alibaba2023_x264.mp4"} type="video/mp4" />
+            {isInView && (
+              <source src={getAssetUrl(homeConfig?.videoUrl || "/video/alibaba2023_x264.mp4")} type="video/mp4" />
+            )}
           </video>
           <div className="absolute inset-0 bg-black/50 z-10" />
         </div>

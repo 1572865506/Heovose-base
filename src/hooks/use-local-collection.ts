@@ -5,7 +5,8 @@ const pendingRequests = new Map<string, Promise<any>>();
 const globalCache = new Map<string, { data: any, timestamp: number }>();
 const CACHE_TTL = 300000;
 
-export function useLocalCollection<T = any>(path: string | null) {
+export function useLocalCollection<T = any>(path: string | null, options?: { enabled?: boolean }) {
+  const enabled = options?.enabled !== false;
   const cached = path ? globalCache.get(path) : null;
   
   const [data, setData] = useState<T[] | null>(cached?.data || null);
@@ -64,14 +65,14 @@ export function useLocalCollection<T = any>(path: string | null) {
   }, []);
 
   useEffect(() => {
-    if (!path) {
-      setData(null);
+    if (!path || !enabled) {
+      if (!path) setData(null);
       setIsLoading(false);
       return;
     }
 
     fetchData(path);
-  }, [path, fetchData]);
+  }, [path, enabled, fetchData]);
 
   const mutate = useCallback(() => {
     if (path) {

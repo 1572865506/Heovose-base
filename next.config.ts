@@ -10,37 +10,35 @@ const nextConfig: NextConfig = {
   },
   images: {
     remotePatterns: [
-      {
-        protocol: 'https',
-        hostname: 'placehold.co',
-        port: '',
-        pathname: '/**',
-      },
-      {
-        protocol: 'https',
-        hostname: 'images.unsplash.com',
-        port: '',
-        pathname: '/**',
-      },
-      {
-        protocol: 'https',
-        hostname: 'picsum.photos',
-        port: '',
-        pathname: '/**',
-      },
-      {
-        protocol: 'http',
-        hostname: 'localhost',
-        port: '9000',
-        pathname: '/**',
-      },
-      {
-        protocol: 'http',
-        hostname: '127.0.0.1',
-        port: '9000',
-        pathname: '/**',
-      },
+      { protocol: 'https', hostname: 'placehold.co', pathname: '/**' },
+      { protocol: 'https', hostname: 'images.unsplash.com', pathname: '/**' },
+      { protocol: 'https', hostname: 'picsum.photos', pathname: '/**' },
+      { protocol: 'http', hostname: 'localhost', port: '9000', pathname: '/**' },
+      { protocol: 'http', hostname: '127.0.0.1', port: '9000', pathname: '/**' },
+      { protocol: 'http', hostname: '192.168.*', port: '9000', pathname: '/**' },
+      { protocol: 'http', hostname: '10.*', port: '9000', pathname: '/**' },
+      { protocol: 'http', hostname: '172.*', port: '9000', pathname: '/**' },
     ],
+  },
+  async headers() {
+    return [
+      {
+        source: '/storage/:path*',
+        headers: [
+          { key: 'Access-Control-Allow-Origin', value: '*' },
+          { key: 'Access-Control-Allow-Methods', value: 'GET,OPTIONS,PATCH,DELETE,POST,PUT' },
+          { key: 'Access-Control-Allow-Headers', value: 'X-CSRF-Token, X-Requested-With, Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version' },
+        ],
+      },
+    ]
+  },
+  async rewrites() {
+    return [
+      {
+        source: '/storage/:path*',
+        destination: `http://${process.env.STORAGE_ENDPOINT || 'localhost'}:${process.env.STORAGE_PORT || '9000'}/:path*`,
+      },
+    ]
   },
 };
 

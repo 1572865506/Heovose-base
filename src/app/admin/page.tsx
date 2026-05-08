@@ -21,6 +21,7 @@ import { useLocalDoc } from "@/hooks/use-local-doc";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import Image from "next/image";
+import { getAssetUrl } from '@/lib/image-utils';
 
 export default function AdminPage() {
   const { data: session } = useSession();
@@ -137,7 +138,7 @@ export default function AdminPage() {
                   <Link key={p.id} href={`/admin/products/editor?id=${p.id}`} className="flex items-center gap-6 p-6 hover:bg-slate-50/50 transition-colors group">
                     <div className="h-12 w-12 rounded-xl border border-slate-100 bg-white overflow-hidden relative shrink-0">
                       {p.mainImageUrl ? (
-                        <Image src={p.mainImageUrl} alt="" fill className="object-contain p-1.5" unoptimized />
+                        <Image src={getAssetUrl(p.mainImageUrl)} alt="" fill className="object-contain p-1.5" unoptimized />
                       ) : (
                         <div className="absolute inset-0 flex items-center justify-center bg-slate-50 text-slate-300"><Package className="h-5 w-5" /></div>
                       )}

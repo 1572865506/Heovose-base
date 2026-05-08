@@ -34,6 +34,7 @@ import {
 import { useToast } from '@/hooks/use-toast';
 import { translateContent } from '@/ai/flows/translate-flow';
 import { cn } from '@/lib/utils';
+import { getAssetUrl } from '@/lib/image-utils';
 import { ShinyButton } from '@/components/ui/shiny-button';
 import { Badge } from '@/components/ui/badge';
 import { MediaLibraryDialog } from '@/components/admin/media-library-dialog';
@@ -210,7 +211,7 @@ export default function CaseStudiesAdminPage() {
             <div key={item.id} className="group relative bg-white rounded-3xl border border-border/40 overflow-hidden shadow-sm hover:shadow-xl transition-all">
               <div className="relative h-48 bg-muted/20">
                 {item.imageUrl ? (
-                  <Image src={item.imageUrl} alt="" fill className="object-cover" unoptimized />
+                  <Image src={getAssetUrl(item.imageUrl)} alt="" fill className="object-cover" unoptimized />
                 ) : (
                   <div className="flex items-center justify-center h-full opacity-20"><ImageIcon className="h-8 w-8" /></div>
                 )}
@@ -279,7 +280,7 @@ export default function CaseStudiesAdminPage() {
                 >
                   {form.imageUrl ? (
                     <>
-                      <Image src={form.imageUrl} alt="" fill className="object-cover" unoptimized />
+                      <Image src={getAssetUrl(form.imageUrl)} alt="" fill className="object-cover" unoptimized />
                       <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity">
                         <Button variant="secondary" size="sm" className="rounded-full h-8 text-[10px] font-bold uppercase tracking-wider">更换展示图</Button>
                       </div>

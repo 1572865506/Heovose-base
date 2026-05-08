@@ -43,6 +43,7 @@ interface NavbarProps {
 import { useLocalDoc } from '@/hooks/use-local-doc';
 import { useLocalCollection } from '@/hooks/use-local-collection';
 import { LayoutGrid } from 'lucide-react';
+import { getAssetUrl } from '@/lib/image-utils';
 
 import { useTranslations } from '@/hooks/use-translations';
 
@@ -495,7 +496,7 @@ function MegaMenuContent({
           <div className="relative z-10 space-y-6 flex flex-col h-full">
             <div className="relative aspect-[4/3] rounded-2xl overflow-hidden border border-white/10 shadow-sm bg-white">
               <Image
-                src={navSettings?.featuredCoverUrl || "/image/catalog-placeholder.png"}
+                src={getAssetUrl(navSettings?.featuredCoverUrl || "/image/catalog-placeholder.png")}
                 alt="Featured Catalog"
                 fill
                 className="object-contain p-4 transition-transform duration-700 group-hover:scale-110"

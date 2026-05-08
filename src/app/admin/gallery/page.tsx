@@ -67,6 +67,7 @@ import { Progress } from '@/components/ui/progress';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Label } from '@/components/ui/label';
 import Image from 'next/image';
+import { getAssetUrl } from '@/lib/image-utils';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 import { CascaderSelect } from '@/components/ui/cascader-select';
@@ -1120,7 +1121,7 @@ export default function GalleryPage() {
                 {asset.type === 'VIDEO' ? (
                   <div className="w-full h-full flex items-center justify-center bg-slate-900 overflow-hidden">
                     <video 
-                      src={asset.url} 
+                      src={getAssetUrl(asset.url)} 
                       className="max-w-full max-h-full object-contain opacity-60"
                       muted
                       playsInline
@@ -1143,7 +1144,7 @@ export default function GalleryPage() {
                   </div>
                 ) : (
                   <Image
-                    src={asset.url}
+                    src={getAssetUrl(asset.url)}
                     alt={asset.title}
                     fill
                     className="object-cover group-hover:scale-110 transition-transform duration-1000 ease-out"
@@ -1489,7 +1490,7 @@ export default function GalleryPage() {
               <div className={cn("relative transition-all duration-500", previewZoom === '1:1' ? "w-auto h-auto" : "w-full h-full flex items-center justify-center")}>
                 {previewAsset.type === 'VIDEO' ? (
                   <video
-                    src={previewAsset.url}
+                    src={getAssetUrl(previewAsset.url)}
                     controls
                     autoPlay
                     className={cn(
@@ -1503,7 +1504,7 @@ export default function GalleryPage() {
                   />
                 ) : (
                   <img
-                    src={previewAsset.url}
+                    src={getAssetUrl(previewAsset.url)}
                     alt={previewAsset.title}
                     onLoad={(e) => {
                       const img = e.currentTarget;

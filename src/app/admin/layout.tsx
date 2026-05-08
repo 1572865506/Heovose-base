@@ -50,6 +50,7 @@ import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { getModelQuota } from '@/lib/ai-models';
+import { getAssetUrl } from '@/lib/image-utils';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import {
   DropdownMenu,
@@ -312,7 +313,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                     </div>
                     <div className="relative">
                       <Avatar className="h-10 w-10 rounded-2xl shadow-lg border border-border/40 ring-0 group-data-[state=open]:ring-4 group-data-[state=open]:ring-primary/10 transition-all overflow-hidden bg-white">
-                        {adminData.image ? <AvatarImage src={adminData.image} className="object-cover" /> : null}
+                        {adminData.image ? <AvatarImage src={getAssetUrl(adminData.image)} className="object-cover" /> : null}
                         <AvatarFallback className="bg-primary/5 text-primary text-xs font-bold uppercase">
                           {(adminData.name || user?.email)?.[0]}
                         </AvatarFallback>

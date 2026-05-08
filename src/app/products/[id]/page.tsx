@@ -27,6 +27,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { cn } from '@/lib/utils';
+import { getAssetUrl } from '@/lib/image-utils';
 import { useTranslations } from '@/hooks/use-translations';
 
 interface Product {
@@ -209,12 +210,12 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-16">
             <div className="lg:col-span-7 space-y-6">
               <div className="relative aspect-[11/9] bg-muted/20 rounded-[2.5rem] overflow-hidden border border-border/40 shadow-inner group">
-                <Image src={activeImage || product.mainImageUrl} alt="P" fill className="object-cover premium-zoom-image" />
+                <Image src={getAssetUrl(activeImage || product.mainImageUrl)} alt="P" fill className="object-cover premium-zoom-image" />
               </div>
               <div className="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-6 gap-4">
                 {[product.mainImageUrl, ...(product.galleryImageUrls || [])].map((img, idx) => (
                   <button key={idx} onClick={() => setActiveImage(img)} className={cn("relative aspect-[11/9] rounded-2xl overflow-hidden border-2 bg-muted/10 transition-all duration-500 ease-[cubic-bezier(0.23,1,0.32,1)]", activeImage === img ? "border-primary" : "border-transparent hover:border-primary/40")}>
-                    <Image src={img} alt="T" fill className="object-cover" />
+                    <Image src={getAssetUrl(img)} alt="T" fill className="object-cover" />
                   </button>
                 ))}
               </div>
@@ -319,7 +320,7 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
                   {relatedProducts.map((p) => (
                     <Link key={p.id} href={`/products/${p.id}?lang=${locale}`} className="group space-y-4">
                       <div className="relative aspect-[11/9] bg-slate-50 rounded-2xl overflow-hidden border border-slate-100 transition-all duration-500 group-hover:shadow-2xl group-hover:shadow-primary/10">
-                        <Image src={p.mainImageUrl} alt="P" fill className="object-cover transition-transform duration-700 group-hover:scale-110" />
+                        <Image src={getAssetUrl(p.mainImageUrl)} alt="P" fill className="object-cover transition-transform duration-700 group-hover:scale-110" />
                         <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
                       </div>
                       <div className="space-y-1 px-1">

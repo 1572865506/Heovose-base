@@ -21,7 +21,10 @@ export async function analyzeImageBrightness(imageUrl: string): Promise<number> 
 
   const analysisPromise = new Promise<number>((resolve) => {
     const img = new Image();
-    img.crossOrigin = "Anonymous";
+    // 只有当是绝对路径且跨域时才启用 Anonymous 模式，避免对同源/代理路径产生多余的 CORS 预检
+    if (typeof window !== 'undefined' && imageUrl.startsWith('http') && !imageUrl.includes(window.location.host)) {
+      img.crossOrigin = "Anonymous";
+    }
     img.src = imageUrl;
 
     img.onload = () => {
