@@ -35,12 +35,6 @@ export const translations = {
         components_desc: 'Motherboards, GPUs, RAM, Hard Drives, and CPUs.',
         conference: 'Conference Tablets',
         conference_desc: 'Interactive intelligent displays for modern meetings.',
-        selfservice: 'KIOSK / Self-service',
-        selfservice_desc: 'Smart terminals for retail and public service automation.',
-        industrial: 'Industrial PCs',
-        industrial_desc: 'Industrial AIO and touch-controlled display systems.',
-        led: 'LED Projects',
-        led_desc: 'Large-scale LED display engineering and solutions.',
         showroom: 'Showroom Projects',
         showroom_desc: 'Commercial display showroom and exhibition engineering.',
         featured: 'Featured',
@@ -65,7 +59,7 @@ export const translations = {
       title: 'Global Intelligent Manufacturing',
       subtitle: 'Redefining Desktop & Display Excellence.',
     },
-      products: {
+    products: {
       title: 'Our Portfolio',
       subtitle: 'Engineered for Performance and Reliability',
       aio: 'All-in-One PCs',
@@ -132,54 +126,63 @@ export const translations = {
     process: {
       title: 'Precision Manufacturing',
       subtitle: 'The 11-Step Excellence Workflow',
-      pmc: 'PMC PLANNING',
-      pmc_desc: 'Production and material control planning for optimal resource allocation and timeline management.',
-      procurement: 'PROCUREMENT',
-      procurement_desc: 'Strategic sourcing and purchasing of high-quality raw materials from certified suppliers.',
-      supplier: 'SUPPLIER',
-      supplier_desc: 'Managing supplier relationships and ensuring timely delivery of components.',
-      receiving: 'RECEIVING',
-      receiving_desc: 'Receiving and verifying incoming materials against purchase orders.',
-      inspection: 'INSPECTION',
-      inspection_desc: 'Comprehensive quality inspection ensuring all materials meet specifications.',
-      warehousing: 'WAREHOUSING',
-      warehousing_desc: 'Secure storage of qualified materials in climate-controlled facilities.',
-      issuing: 'MATERIAL ISSUING',
-      issuing_desc: 'Systematic material requisition and distribution to production lines.',
-      manufacturing: 'MANUFACTURING',
-      manufacturing_desc: 'Precision manufacturing using advanced equipment and strict quality protocols.',
-      system: 'PRE-SHIPMENT INSPECTION',
-      system_desc: 'Final quality assurance before products leave the facility.',
-      fg_warehousing: 'WAREHOUSING',
-      fg_warehousing_desc: 'Product storage and inventory management before shipment.',
-      shipment: 'SHIPMENT',
-      shipment_desc: 'Secure packaging and global distribution to customers worldwide.',
+      PROCESS_TITLE: 'Precision Manufacturing',
+      PROCESS_SUBTITLE: 'The 11-Step Excellence Workflow',
+      steps: [
+        { title: 'PMC PLANNING', desc: 'Production and material control planning for optimal resource allocation and timeline management.' },
+        { title: 'PROCUREMENT', desc: 'Strategic sourcing and purchasing of high-quality raw materials from certified suppliers.' },
+        { title: 'SUPPLIER', desc: 'Managing supplier relationships and ensuring timely delivery of components.' },
+        { title: 'RECEIVING', desc: 'Receiving and verifying incoming materials against purchase orders.' },
+        { title: 'INSPECTION', desc: 'Comprehensive quality inspection ensuring all materials meet specifications.' },
+        { title: 'WAREHOUSING', desc: 'Secure storage of qualified materials in climate-controlled facilities.' },
+        { title: 'MATERIAL ISSUING', desc: 'Systematic material requisition and distribution to production lines.' },
+        { title: 'MANUFACTURING', desc: 'Precision manufacturing using advanced equipment and strict quality protocols.' },
+        { title: 'PRE-SHIPMENT INSPECTION', desc: 'Final quality assurance before products leave the facility.' },
+        { title: 'WAREHOUSING', desc: 'Product storage and inventory management before shipment.' },
+        { title: 'SHIPMENT', desc: 'Secure packaging and global distribution to customers worldwide.' },
+      ]
     },
     map: {
       title: 'Global Footprint',
       subtitle: 'Strategically located to serve world-class brands.',
-      locations: {
-        panyu: {
+      locations: [
+        {
+          id: 'panyu',
+          type: 'HQ',
           title: 'PANYU HUB',
           address: 'Panyu District, Guangzhou, Guangdong Province, China',
-          desc: 'Primary Global Marketing Headquarters and Strategic Operations Command'
+          desc: 'Primary Global Marketing Headquarters and Strategic Operations Command',
+          posTop: '35%',
+          posLeft: '80%'
         },
-        shunde: {
+        {
+          id: 'shunde',
+          type: 'Factory',
           title: 'SHUNDE FACILITY',
           address: 'Shunde District, Foshan, Guangdong Province, China',
-          desc: 'Specialized in small-size computer equipment production and R&D'
+          desc: 'Specialized in small-size computer equipment production and R&D',
+          posTop: '38%',
+          posLeft: '79%'
         },
-        beijiao: {
+        {
+          id: 'beijiao',
+          type: 'Factory',
           title: 'BEIJIAO FACILITY',
           address: 'Beijiao Town, Shunde District, Foshan, Guangdong Province, China',
-          desc: 'Large-size and commercial display production hub for global markets'
+          desc: 'Large-size and commercial display production hub for global markets',
+          posTop: '40%',
+          posLeft: '78%'
         },
-        jakarta: {
+        {
+          id: 'jakarta',
+          type: 'Global',
           title: 'JAKARTA BASE',
           address: 'Jakarta, Indonesia',
-          desc: 'Strategic international manufacturing facility serving Southern markets'
+          desc: 'Strategic international manufacturing facility serving Southern markets',
+          posTop: '65%',
+          posLeft: '72%'
         }
-      }
+      ]
     }
   },
   zh: {
@@ -215,12 +218,6 @@ export const translations = {
         components_desc: '主板、显卡、内存、硬盘及CPU核心部件。',
         conference: '会议平板',
         conference_desc: '为现代智能办公设计的交互式显示终端。',
-        selfservice: '自助终端 / KIOSK',
-        selfservice_desc: '适用于零售、金融等场景的智能交互设备。',
-        industrial: '工业机',
-        industrial_desc: '工业一体机及工业触摸显示器等硬核方案。',
-        led: 'LED工程',
-        led_desc: '大型全彩LED显示屏工程化设计与实施。',
         showroom: '商显展厅工程',
         showroom_desc: '商业显示展厅及各类展览展示工程。',
         featured: '特色推荐',
@@ -312,54 +309,63 @@ export const translations = {
     process: {
       title: '精密制造',
       subtitle: '11步卓越生产流程',
-      pmc: 'PMC 计划',
-      pmc_desc: '生产与物料控制计划，实现最优资源配置和时间进度管理。',
-      procurement: '采购管理',
-      procurement_desc: '从认证供应商处进行高品质原材料的战略采购。',
-      supplier: '供应商协作',
-      supplier_desc: '管理供应商关系并确保关键组件的准时交付。',
-      receiving: '物料接收',
-      receiving_desc: '根据采购订单接收并严格核实进厂原材料。',
-      inspection: '品质检验',
-      inspection_desc: '全面的质量检查，确保所有材料符合规格。',
-      warehousing: '仓储管理',
-      warehousing_desc: '在气候受控的设施中安全存储合格材料。',
-      issuing: '物料发放',
-      issuing_desc: '系统化的物料申领并分发至生产线。',
-      manufacturing: '生产制造',
-      manufacturing_desc: '使用先进设备和严格质量协议的精密制造。',
-      system: '出货前检验',
-      system_desc: '产品离开工厂前的最后质量保证。',
-      fg_warehousing: '成品入库',
-      fg_warehousing_desc: '出货前的产品存储与库存管理。',
-      shipment: '包装发货',
-      shipment_desc: '专业的工业防护包装，安全高效地配送至全球客户。',
+      PROCESS_TITLE: '精密制造',
+      PROCESS_SUBTITLE: '11步卓越生产流程',
+      steps: [
+        { title: 'PMC 计划', desc: '生产与物料控制计划，实现最优资源配置和时间进度管理。' },
+        { title: '采购管理', desc: '从认证供应商处进行高品质原材料的战略采购。' },
+        { title: '供应商协作', desc: '管理供应商关系并确保关键组件的准时交付。' },
+        { title: '物料接收', desc: '根据采购订单接收并严格核实进厂原材料。' },
+        { title: '品质检验', desc: '全面的质量检查，确保所有材料符合规格。' },
+        { title: '仓储管理', desc: '在气候受控的设施中安全存储合格材料。' },
+        { title: '物料发放', desc: '系统化的物料申领并分发至生产线。' },
+        { title: '生产制造', desc: '使用先进设备和严格质量协议的精密制造。' },
+        { title: '出货前检验', desc: '产品离开工厂前的最后质量保证。' },
+        { title: '成品入库', desc: '出货前的产品存储与库存管理。' },
+        { title: '包装发货', desc: '专业的工业防护包装，安全高效地配送至全球客户。' },
+      ]
     },
     map: {
       title: '全球布局',
       subtitle: '战略布局，服务全球品牌。',
-      locations: {
-        panyu: {
+      locations: [
+        {
+          id: 'panyu',
+          type: 'HQ',
           title: 'PANYU HUB (番禺)',
           address: '中国 广东 广州 番禺区',
-          desc: '全球营销总部与战略运营指挥中心'
+          desc: '全球营销总部与战略运营指挥中心',
+          posTop: '35%',
+          posLeft: '80%'
         },
-        shunde: {
+        {
+          id: 'shunde',
+          type: 'Factory',
           title: 'SHUNDE FACILITY (顺德)',
           address: '中国 广东 佛山 顺德区',
-          desc: '专注于小型化计算设备的生产与研发'
+          desc: '专注于小型化计算设备的生产与研发',
+          posTop: '38%',
+          posLeft: '79%'
         },
-        beijiao: {
+        {
+          id: 'beijiao',
+          type: 'Factory',
           title: 'BEIJIAO FACILITY (北滘)',
           address: '中国 广东 佛山 顺德 北滘镇',
-          desc: '服务全球市场的大尺寸及商显生产枢纽'
+          desc: '服务全球市场的大尺寸及商显生产枢纽',
+          posTop: '40%',
+          posLeft: '78%'
         },
-        jakarta: {
+        {
+          id: 'jakarta',
+          type: 'Global',
           title: 'JAKARTA BASE (雅加达)',
           address: '印度尼西亚 雅加达',
-          desc: '服务南方市场的战略性国际制造基地'
+          desc: '服务南方市场的战略性国际制造基地',
+          posTop: '65%',
+          posLeft: '72%'
         }
-      }
+      ]
     }
   },
   id: {
@@ -395,12 +401,6 @@ export const translations = {
         components_desc: 'Motherboard, GPU, RAM, Hard Drive, dan CPU.',
         conference: 'Tablet Konferensi',
         conference_desc: 'Tampilan cerdas interaktif untuk pertemuan modern.',
-        selfservice: 'KIOSK / Mandiri',
-        selfservice_desc: 'Terminal cerdas untuk otomatisasi ritel dan layanan publik.',
-        industrial: 'PC Industri',
-        industrial_desc: 'AIO industri và hệ thống màn hình điều khiển cảm ứng.',
-        led: 'Proyek LED',
-        led_desc: 'Rekayasa và giải pháp màn hình LED quy mô lớn.',
         showroom: 'Proyek Showroom',
         showroom_desc: 'Showroom màn hình thương mại và triển lảm.',
         featured: 'Unggulan',
@@ -481,54 +481,60 @@ export const translations = {
     process: {
       title: 'Manufaktur Presisi',
       subtitle: 'Alur Kerja Keunggulan 11-Langkah',
-      pmc: 'PMC PLANNING',
-      pmc_desc: 'Perencanaan pengendalian produksi và vật tư để tối ưu hóa nguồn lực.',
-      procurement: 'PROCUREMENT',
-      procurement_desc: 'Sourcing chiến lược và mua nguyên liệu chất lượng cao.',
-      supplier: 'SUPPLIER',
-      supplier_desc: 'Quản lý mối quan hệ nhà cung cấp và đảm bảo giao hàng đúng hạn.',
-      receiving: 'RECEIVING',
-      receiving_desc: 'Tiếp nhận và xác minh vật liệu so với đơn đặt hàng.',
-      inspection: 'INSPEKSI',
-      inspection_desc: 'Inspeksi kualitas komprehensif memastikan semua bahan memenuhi spesifikasi.',
-      warehousing: 'PERGUDANGAN',
-      warehousing_desc: 'Penyimpanan bahan yang aman ở cơ sở kiểm soát khí hậu.',
-      issuing: 'PENGELUARAN MATERIAL',
-      issuing_desc: 'Permintaan material yang hệ thống và phân phối đến các dây chuyền sản xuất.',
-      manufacturing: 'MANUFACTURING',
-      manufacturing_desc: 'Manufaktur chính xác sử dụng thiết bị tiên tiến và các giao thức chất lượng nghiêm ngặt.',
-      system: 'PRE-SHIPMENT INSPECTION',
-      system_desc: 'Jaminan chất lượng cuối cùng sebelum produk meninggalkan pabrik.',
-      fg_warehousing: 'WAREHOUSING',
-      fg_warehousing_desc: 'Penyimpanan produk và quản lý hàng tồn kho trước khi xuất xưởng.',
-      shipment: 'PENGIRIMAN',
-      shipment_desc: 'Pengemasan aman và phân phối toàn cầu đến khách hàng trên toàn thế giới.',
+      PROCESS_TITLE: 'Manufaktur Presisi',
+      PROCESS_SUBTITLE: 'Alur Kerja Keunggulan 11-Langkah',
+      steps: [
+        { title: 'PMC PLANNING', desc: 'Perencanaan pengendalian produksi và vật tư để tối ưu hóa nguồn lực.' },
+        { title: 'PROCUREMENT', desc: 'Sourcing chiến lược và mua nguyên liệu chất lượng cao.' },
+        { title: 'SUPPLIER', desc: 'Quản lý mối quan hệ nhà cung cấp và đảm bảo giao hàng đúng hạn.' },
+        { title: 'RECEIVING', desc: 'Tiếp nhận và xác minh vật liệu so với đơn đặt hàng.' },
+        { title: 'INSPEKSI', desc: 'Inspeksi kualitas komprehensif memastikan semua bahan memenuhi spesifikasi.' },
+        { title: 'PERGUDANGAN', desc: 'Penyimpanan bahan yang aman ở cơ sở kiểm soát khí hậu.' },
+        { title: 'PENGELUARAN MATERIAL', desc: 'Permintaan material yang hệ thống và phân phối đến các dây chuyền sản xuất.' },
+        { title: 'MANUFACTURING', desc: 'Manufaktur chính xác sử dụng thiết bị tiên tiến và các giao thức chất lượng nghiêm ngặt.' },
+        { title: 'PRE-SHIPMENT INSPECTION', desc: 'Jaminan chất lượng cuối cùng sebelum produk meninggalkan pabrik.' },
+        { title: 'WAREHOUSING', desc: 'Penyimpanan produk và quản lý hàng tồn kho trước khi xuất xưởng.' },
+        { title: 'PENGIRIMAN', desc: 'Pengemasan aman và phân phối toàn cầu đến khách hàng trên toàn thế giới.' },
+      ]
     },
     map: {
       title: 'Jejak Global',
       subtitle: 'Strategically located to serve world-class brands.',
-      locations: {
-        panyu: {
+      locations: [
+        {
+          id: 'panyu',
+          type: 'HQ',
           title: 'PANYU HUB',
           address: 'Distrik Panyu, Guangzhou, Provinsi Guangdong, Tiongkok',
-          desc: 'Markas Besar Pemasaran Global Utama và Trung tâm điều hành chiến lược'
+          desc: 'Markas Besar Pemasaran Global Utama và Trung tâm điều hành chiến lược',
+          posTop: '35%',
+          posLeft: '80%'
         },
-        shunde: {
-          title: 'FASILITAS SHUNDE',
+        {
+          id: 'shunde',
+          type: 'FASILITAS SHUNDE',
           address: 'Distrik Shunde, Foshan, Provinsi Guangdong, Tiongkok',
-          desc: 'Spesialisasi trong sản xuất thiết bị máy tính cỡ nhỏ và R&D'
+          desc: 'Spesialisasi trong sản xuất thiết bị máy tính cỡ nhỏ và R&D',
+          posTop: '38%',
+          posLeft: '79%'
         },
-        beijiao: {
-          title: 'FASILITAS BEIJIAO',
+        {
+          id: 'beijiao',
+          type: 'FASILITAS BEIJIAO',
           address: 'Kota Beijiao, Distrik Shunde, Foshan, Provinsi Guangdong, Tiongkok',
-          desc: 'Hub sản xuất màn hình thương mại cho thị trường toàn cầu'
+          desc: 'Hub sản xuất màn hình thương mại cho thị trường toàn cầu',
+          posTop: '40%',
+          posLeft: '78%'
         },
-        jakarta: {
-          title: 'BASIS JAKARTA',
+        {
+          id: 'jakarta',
+          type: 'BASIS JAKARTA',
           address: 'Jakarta, Indonesia',
-          desc: 'Cơ sở sản xuất quốc tế chiến lược phục vụ thị trường miền Nam'
+          desc: 'Cơ sở sản xuất quốc tế chiến lược phục vụ thị trường miền Nam',
+          posTop: '65%',
+          posLeft: '72%'
         }
-      }
+      ]
     }
   },
   vi: {
@@ -564,12 +570,6 @@ export const translations = {
         components_desc: 'Bo mạch chủ, GPU, RAM, Ổ cứng và CPU.',
         conference: 'Máy tính bảng hội nghị',
         conference_desc: 'Màn hình thông minh tương tác cho các cuộc họp hiện đại.',
-        selfservice: 'KIOSK / Tự phục vụ',
-        selfservice_desc: 'Thiết bị thông minh cho bán lẻ và tự động hóa dịch vụ công.',
-        industrial: 'PC Công nghiệp',
-        industrial_desc: 'AIO công nghiệp và hệ thống màn hình điều khiển cảm ứng.',
-        led: 'Dự án LED',
-        led_desc: 'Giải pháp màn hình LED quy mô lớn.',
         showroom: 'Dự án Showroom',
         showroom_desc: 'Showroom màn hình thương mại và triển lãm.',
         featured: 'Nổi bật',
@@ -650,54 +650,60 @@ export const translations = {
     process: {
       title: 'Sản xuất chính xác',
       subtitle: 'Quy trình 11 bước xuất sắc',
-      pmc: 'PMC PLANNING',
-      pmc_desc: 'Lập kế hoạch kiểm soát sản xuất và vật tư để tối ưu hóa nguồn lực.',
-      procurement: 'PROCUREMENT',
-      procurement_desc: 'Tìm nguồn cung ứng chiến lược và mua nguyên liệu chất lượng cao.',
-      supplier: 'SUPPLIER',
-      supplier_desc: 'Quản lý mối quan hệ nhà cung cấp và đảm bảo giao hàng đúng hạn.',
-      receiving: 'RECEIVING',
-      receiving_desc: 'Tiếp nhận và xác minh vật liệu so với đơn đặt hàng.',
-      inspection: 'KIỂM TRA',
-      inspection_desc: 'Kiểm tra chất lượng toàn diện đảm bảo mọi nguyên vật liệu đạt tiêu chuẩn.',
-      warehousing: 'LƯU KHO',
-      warehousing_desc: 'Lưu trữ an toàn nguyên vật liệu đạt chuẩn trong cơ sở kiểm soát khí hậu.',
-      issuing: 'PHÁT HÀNH VẬT LIỆU',
-      issuing_desc: 'Yêu cầu và phân phối vật liệu hệ thống đến các dây chuyền sản xuất.',
-      manufacturing: 'SẢN XUẤT',
-      manufacturing_desc: 'Sản xuất chính xác sử dụng thiết bị tiên tiến và các giao thức chất lượng nghiêm ngặt.',
-      system: 'PRE-SHIPMENT INSPECTION',
-      system_desc: 'Đảm bảo chất lượng cuối cùng trước khi sản phẩm rời khỏi nhà máy.',
-      fg_warehousing: 'WAREHOUSING',
-      fg_warehousing_desc: 'Lưu kho sản phẩm và quản lý hàng tồn kho trước khi xuất xưởng.',
-      shipment: 'VẬN CHUYỂN',
-      shipment_desc: 'Đóng gói an toàn và phân phối toàn cầu đến khách hàng trên toàn thế giới.',
+      PROCESS_TITLE: 'Sản xuất chính xác',
+      PROCESS_SUBTITLE: 'Quy trình 11 bước xuất sắc',
+      steps: [
+        { title: 'PMC PLANNING', desc: 'Lập kế hoạch kiểm soát sản xuất và vật tư để tối ưu hóa nguồn lực.' },
+        { title: 'PROCUREMENT', desc: 'Tìm nguồn cung ứng chiến lược và mua nguyên liệu chất lượng cao.' },
+        { title: 'SUPPLIER', desc: 'Quản lý mối quan hệ nhà cung cấp và đảm bảo giao hàng đúng hạn.' },
+        { title: 'RECEIVING', desc: 'Tiếp nhận và xác minh vật liệu so với đơn đặt hàng.' },
+        { title: 'KIỂM TRA', desc: 'Kiểm tra chất lượng toàn diện đảm bảo mọi nguyên vật liệu đạt tiêu chuẩn.' },
+        { title: 'LƯU KHO', desc: 'Lưu trữ an toàn nguyên vật liệu đạt chuẩn trong cơ sở kiểm soát khí hậu.' },
+        { title: 'PHÁT HÀNH VẬT LIỆU', desc: 'Yêu cầu và phân phối vật liệu hệ thống đến các dây chuyền sản xuất.' },
+        { title: 'SẢN XUẤT', desc: 'Sản xuất chính xác sử dụng thiết bị tiên tiến và các giao thức chất lượng nghiêm ngặt.' },
+        { title: 'PRE-SHIPMENT INSPECTION', desc: 'Đảm bảo chất lượng cuối cùng trước khi sản phẩm rời khỏi nhà máy.' },
+        { title: 'WAREHOUSING', desc: 'Lưu kho sản phẩm và quản lý hàng tồn kho trước khi xuất xưởng.' },
+        { title: 'VẬN CHUYỂN', desc: 'Đóng gói an toàn và phân phối toàn cầu đến khách hàng trên toàn thế giới.' },
+      ]
     },
     map: {
       title: 'Dấu ấn toàn cầu',
       subtitle: 'Vị trí chiến lược phục vụ các thương hiệu thế giới.',
-      locations: {
-        panyu: {
+      locations: [
+        {
+          id: 'panyu',
+          type: 'HQ',
           title: 'TRUNG TÂM PHIÊN NGƯ',
           address: 'Quận Phiên Ngư, Quảng Châu, Quảng Đông, Trung Quốc',
-          desc: 'Trụ sở tiếp thị toàn cầu chính và Trung tâm điều hành chiến lược'
+          desc: 'Trụ sở tiếp thị toàn cầu chính và Trung tâm điều hành chiến lược',
+          posTop: '35%',
+          posLeft: '80%'
         },
-        shunde: {
-          title: 'CƠ SỞ THUẬN ĐỨC',
+        {
+          id: 'shunde',
+          type: 'CƠ SỞ THUẬN ĐỨC',
           address: 'Quận Thuận Đức, Phật Sơn, Quảng Đông, Trung Quốc',
-          desc: 'Chuyên sản xuất thiết bị máy tính cỡ nhỏ và R&D'
+          desc: 'Chuyên sản xuất thiết bị máy tính cỡ nhỏ và R&D',
+          posTop: '38%',
+          posLeft: '79%'
         },
-        beijiao: {
-          title: 'CƠ SỞ BẮC GIẢO',
+        {
+          id: 'beijiao',
+          type: 'CƠ SỞ BẮC GIẢO',
           address: 'Thị trấn Bắc Giảo, Thuận Đức, Phật Sơn, Quảng Đông, Trung Quốc',
-          desc: 'Trung tâm sản xuất màn hình thương mại cho thị trường toàn cầu'
+          desc: 'Trung tâm sản xuất màn hình thương mại cho thị trường toàn cầu',
+          posTop: '40%',
+          posLeft: '78%'
         },
-        jakarta: {
-          title: 'CĂN CỨ JAKARTA',
+        {
+          id: 'jakarta',
+          type: 'CĂN CỨ JAKARTA',
           address: 'Jakarta, Indonesia',
-          desc: 'Cơ sở sản xuất quốc tế chiến lược phục vụ thị trường miền Nam'
+          desc: 'Cơ sở sản xuất quốc tế chiến lược phục vụ thị trường miền Nam',
+          posTop: '65%',
+          posLeft: '72%'
         }
-      }
+      ]
     }
   }
 };

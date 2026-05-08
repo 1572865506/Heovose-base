@@ -5,13 +5,14 @@ import { useState, useEffect, useRef, useMemo } from 'react';
 import Image from 'next/image';
 import { Locale, translations } from "@/lib/translations";
 import { cn } from "@/lib/utils";
-import { Play, Pause, Loader2, X } from "lucide-react";
+import { Play, Pause, Loader2, X, Maximize } from "lucide-react";
 import { getAssetUrl } from '@/lib/image-utils';
 import { useLocalDoc } from '@/hooks/use-local-doc';
 import { useLocalCollection } from '@/hooks/use-local-collection';
-import { 
-  Dialog, 
-  DialogContent, 
+import { useTranslations } from '@/hooks/use-translations';
+import {
+  Dialog,
+  DialogContent,
   DialogTitle,
   DialogHeader
 } from "@/components/ui/dialog";
@@ -35,37 +36,68 @@ export function ProductionProcess({ locale }: { locale: Locale }) {
   const [isVisible, setIsVisible] = useState(false);
   const sectionRef = useRef<HTMLElement>(null);
   const scrollRefs = useRef<(HTMLDivElement | null)[]>([]);
-  
+
   const AUTOPLAY_DELAY = 4000;
 
   // 1. 获取数据
   const { data: remoteSteps, isLoading } = useLocalCollection<StepData>('productionSteps', { enabled: isVisible });
   const { data: homeContent } = useLocalDoc<any>('homepageContent', 'hero', { enabled: isVisible });
 
+  const { t } = useTranslations(locale);
+
   // 2. 转换数据
   const steps = useMemo(() => {
     if (remoteSteps && remoteSteps.length > 0) {
-      return remoteSteps.map(s => ({
-        label: locale === 'zh' ? s.titleZh : s.titleEn,
-        tag: s.order < 10 ? `0${s.order}` : `${s.order}`,
-        images: s.imageUrls || [],
-        desc: locale === 'zh' ? s.descZh : s.descEn
-      }));
+      return remoteSteps.map(s => {
+        // 优先使用翻译 ID，如果没有则回退到 titleZh/titleEn
+        const label = (s as any).titleTextId ? t((s as any).titleTextId) : (locale === 'zh' ? s.titleZh : s.titleEn);
+        const desc = (s as any).descriptionTextId ? t((s as any).descriptionTextId) : (locale === 'zh' ? s.descZh : s.descEn);
+        
+        return {
+          label: label || (locale === 'zh' ? s.titleZh : s.titleEn),
+          tag: s.order < 10 ? `0${s.order}` : `${s.order}`,
+          images: s.imageUrls || [],
+          desc: desc || (locale === 'zh' ? s.descZh : s.descEn)
+        };
+      });
     }
-    return [];
-  }, [remoteSteps, locale]);
+    // 回退到 translations.ts 中的硬编码步骤
+    const localSteps = (translations[locale].process as any).steps || [];
+    return localSteps.map((s: any, idx: number) => ({
+      label: s.title,
+      desc: s.desc,
+      tag: (idx + 1) < 10 ? `0${idx + 1}` : `${idx + 1}`,
+      images: []
+    }));
+  }, [remoteSteps, locale, t]);
 
   const displayTitle = useMemo(() => {
-    if (!homeContent) return translations[locale].process.title;
-    const val = locale === 'zh' ? homeContent.processTitleZh : homeContent.processTitleEn;
-    return val || translations[locale].process.title;
-  }, [homeContent, locale]);
+    // 优先从翻译资产获取
+    const translated = t('process_PROCESS_TITLE');
+    if (translated && translated !== 'process_PROCESS_TITLE') return translated;
+    
+    // 其次从后台设置获取
+    if (homeContent) {
+      const val = locale === 'zh' ? homeContent.processTitleZh : homeContent.processTitleEn;
+      if (val) return val;
+    }
+    
+    return translations[locale].process.title;
+  }, [homeContent, locale, t]);
 
   const displaySubtitle = useMemo(() => {
-    if (!homeContent) return translations[locale].process.subtitle;
-    const val = locale === 'zh' ? homeContent.processSubtitleZh : homeContent.processSubtitleEn;
-    return val || "";
-  }, [homeContent, locale]);
+    // 优先从翻译资产获取
+    const translated = t('process_PROCESS_SUBTITLE');
+    if (translated && translated !== 'process_PROCESS_SUBTITLE') return translated;
+
+    // 其次从后台设置获取
+    if (homeContent) {
+      const val = locale === 'zh' ? homeContent.processSubtitleZh : homeContent.processSubtitleEn;
+      if (val) return val;
+    }
+    
+    return translations[locale].process.subtitle;
+  }, [homeContent, locale, t]);
 
   // 3. 观察可见性
   useEffect(() => {
@@ -102,7 +134,7 @@ export function ProductionProcess({ locale }: { locale: Locale }) {
   const imageSegments = useMemo(() => {
     const segments: { start: number, end: number, images: string[] }[] = [];
     let currentSegment: { start: number, end: number, images: string[] } | null = null;
-    steps.forEach((step, index) => {
+      steps.forEach((step: any, index: number) => {
       const imagesKey = JSON.stringify(step.images);
       if (!currentSegment || JSON.stringify(currentSegment.images) !== imagesKey) {
         currentSegment = { start: index, end: index, images: step.images };
@@ -118,7 +150,7 @@ export function ProductionProcess({ locale }: { locale: Locale }) {
   const imagesKey = useMemo(() => JSON.stringify(activeImages), [activeImages]);
   const imagesRef = useRef(activeImages);
   const keyRef = useRef(imagesKey);
-  
+
   useEffect(() => { imagesRef.current = activeImages; }, [activeImages]);
 
   useEffect(() => {
@@ -192,7 +224,7 @@ export function ProductionProcess({ locale }: { locale: Locale }) {
                     {segment.images.map((imgUrl, iIndex) => {
                       const isVisibleSub = isSegmentActive && (segment.images.length > 1 ? subImageIndex === iIndex : iIndex === 0);
                       return (
-                        <div key={`${segIndex}-${iIndex}-${imgUrl}`} className={cn("absolute inset-0 transition-opacity duration-1000 ease-in-out will-change-[opacity,transform]", isVisibleSub ? "opacity-100" : "opacity-0")} onClick={() => setSelectedImage(imgUrl)} style={{ zIndex: isVisibleSub ? 20 : 10, transform: 'translateZ(0)', cursor: 'zoom-in' }}>
+                        <div key={`${segIndex}-${iIndex}-${imgUrl}`} className={cn("absolute inset-0 transition-opacity duration-1000 ease-in-out will-change-[opacity,transform] cursor-fullscreen", isVisibleSub ? "opacity-100" : "opacity-0")} onClick={() => setSelectedImage(imgUrl)} style={{ zIndex: isVisibleSub ? 20 : 10, transform: 'translateZ(0)' }}>
                           <Image src={getAssetUrl(imgUrl)} alt="Process Detail" fill className="object-cover" unoptimized={imgUrl.startsWith('data:')} />
                         </div>
                       );
@@ -205,7 +237,7 @@ export function ProductionProcess({ locale }: { locale: Locale }) {
               {activeImages.length > 1 && (
                 <div className="absolute bottom-8 right-8 z-50 flex items-center gap-4 animate-in fade-in slide-in-from-bottom-4 duration-500 cursor-default">
                   <div className="flex gap-1.5 items-center">
-                    {activeImages.map((_, i) => (
+                    {activeImages.map((_: any, i: number) => (
                       <button key={i} onClick={() => setCarouselState({ subIndex: i, progress: 0 })} className={cn("relative h-1 rounded-full transition-all duration-500 overflow-hidden bg-white/30", i === subImageIndex ? "w-8" : "w-2 hover:bg-white/50")}>
                         {i === subImageIndex && <div className="absolute inset-0 bg-accent origin-left" style={{ width: isPlaying ? `${progress}%` : '100%', transition: (progress === 0 && isPlaying) ? 'none' : 'width 50ms linear' }} />}
                       </button>
@@ -221,7 +253,7 @@ export function ProductionProcess({ locale }: { locale: Locale }) {
         </div>
 
         <div className="lg:col-span-5 space-y-[60vh] pt-[40vh] pb-[60vh]">
-          {steps.map((step, index) => (
+          {steps.map((step: any, index: number) => (
             <div key={index} ref={(el) => { scrollRefs.current[index] = el; }} className={cn("relative transition-all duration-1000 pl-4 lg:pl-0 min-h-[30vh] flex flex-col justify-center", activeStep === index ? "opacity-100" : "opacity-10")}>
               <span className={cn("absolute -left-12 -top-12 text-[15rem] font-black pointer-events-none select-none transition-all duration-1000 font-headline leading-none", activeStep === index ? "text-primary/[0.08] translate-y-0 scale-100 opacity-100" : "text-slate-200/0 translate-y-20 scale-90 opacity-0")}>
                 {step.tag}
@@ -236,11 +268,11 @@ export function ProductionProcess({ locale }: { locale: Locale }) {
                 </div>
               </div>
               <div className="lg:hidden w-full aspect-video rounded-3xl overflow-hidden relative border border-border/40 mt-8 shadow-lg">
-                 {step.images.map((imgUrl, iIndex) => (
-                    <div key={`mob-${index}-${iIndex}`} className={cn("absolute inset-0 transition-opacity duration-1000 cursor-zoom-in", activeStep === index && subImageIndex === iIndex ? "opacity-100" : "opacity-0")} onClick={() => setSelectedImage(imgUrl)}>
-                      <Image src={getAssetUrl(imgUrl)} alt={step.label} fill className="object-cover" unoptimized={imgUrl.startsWith('data:')} />
-                    </div>
-                 ))}
+                {step.images.map((imgUrl: string, iIndex: number) => (
+                  <div key={`mob-${index}-${iIndex}`} className={cn("absolute inset-0 transition-opacity duration-1000 cursor-fullscreen", activeStep === index && subImageIndex === iIndex ? "opacity-100" : "opacity-0")} onClick={() => setSelectedImage(imgUrl)}>
+                    <Image src={getAssetUrl(imgUrl)} alt={step.label} fill className="object-cover" unoptimized={imgUrl.startsWith('data:')} />
+                  </div>
+                ))}
               </div>
             </div>
           ))}
@@ -254,12 +286,12 @@ export function ProductionProcess({ locale }: { locale: Locale }) {
       {isLoading ? renderLoading() : (steps.length > 0 ? renderContent() : renderPlaceholder())}
 
       <Dialog open={!!selectedImage} onOpenChange={(open) => !open && setSelectedImage(null)}>
-        <DialogContent className="max-w-[95vw] max-h-[95vh] p-0 border-none bg-transparent shadow-none">
+        <DialogContent className="max-w-[95vw] max-h-[95vh] p-0 border-none bg-transparent shadow-none [&>button:last-child]:hidden">
           <VisuallyHidden><DialogHeader><DialogTitle>查看大图</DialogTitle></DialogHeader></VisuallyHidden>
           <div className="relative w-full h-[90vh] flex items-center justify-center group">
             {selectedImage && (
-              <div className="relative w-full h-full animate-in zoom-in-95 fade-in duration-300 ease-out">
-                <Image src={getAssetUrl(selectedImage)} alt="Enlarged View" fill className="object-contain" unoptimized={selectedImage.startsWith('data:')} />
+              <div className="relative w-full h-full animate-in zoom-in-95 fade-in duration-300 ease-out" onClick={() => setSelectedImage(null)}>
+                <Image src={getAssetUrl(selectedImage)} alt="Enlarged View" fill className="object-contain cursor-zoom-out-custom" unoptimized={selectedImage.startsWith('data:')} />
               </div>
             )}
             <button onClick={() => setSelectedImage(null)} className="absolute top-4 right-4 w-12 h-12 rounded-full bg-black/40 hover:bg-black/60 text-white flex items-center justify-center transition-all border border-white/10 z-50">

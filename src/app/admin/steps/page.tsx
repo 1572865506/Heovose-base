@@ -115,16 +115,43 @@ export default function ProductionStepsAdminPage() {
     if (!form.titleZh) return;
     
     const id = editingStep?.id || `step_${Date.now()}`;
+    const titleTextId = `process_step_${id}_title`;
+    const descTextId = `process_step_${id}_desc`;
+
+    const stepData = {
+      ...form,
+      id,
+      titleTextId,
+      descriptionTextId: descTextId
+    };
+
     try {
+      // 1. 同步到生产步骤集合
       await fetch(`/api/productionSteps/${id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(form),
+        body: JSON.stringify(stepData),
       });
+
+      // 2. 同步到翻译资产库
+      await Promise.all([
+        fetch(`/api/localizedStrings/${encodeURIComponent(titleTextId)}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ id: titleTextId, content: { zh: form.titleZh, en: form.titleEn } })
+        }),
+        fetch(`/api/localizedStrings/${encodeURIComponent(descTextId)}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ id: descTextId, content: { zh: form.descZh, en: form.descEn } })
+        })
+      ]);
+
       mutateSteps();
       setIsDialogOpen(false);
-      toast({ title: editingStep ? "步骤已更新" : "新步骤已添加" });
+      toast({ title: editingStep ? "步骤已更新并同步翻译" : "新步骤已添加并同步翻译" });
     } catch (e) {
+      console.error('Save Step Error:', e);
       toast({ variant: "destructive", title: "保存失败" });
     }
   };
@@ -218,15 +245,32 @@ export default function ProductionStepsAdminPage() {
   const handleSaveSectionConfig = async () => {
     setIsSavingConfig(true);
     try {
+      // 1. 同步到主内容配置
       const res = await fetch('/api/homepageContent/hero', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(sectionForm),
       });
-      if (!res.ok) throw new Error('Save failed');
+      if (!res.ok) throw new Error('Save to homepageContent failed');
+
+      // 2. 同步到翻译资产库 (Zero-Hardcoding 体系)
+      await Promise.all([
+        fetch(`/api/localizedStrings/${encodeURIComponent('process_PROCESS_TITLE')}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ id: 'process_PROCESS_TITLE', content: { zh: sectionForm.processTitleZh, en: sectionForm.processTitleEn } })
+        }),
+        fetch(`/api/localizedStrings/${encodeURIComponent('process_PROCESS_SUBTITLE')}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ id: 'process_PROCESS_SUBTITLE', content: { zh: sectionForm.processSubtitleZh, en: sectionForm.processSubtitleEn } })
+        })
+      ]);
+
       mutateHome();
-      toast({ title: "板块标题配置已保存" });
+      toast({ title: "板块标题配置已保存并同步至翻译库" });
     } catch (e) {
+      console.error('Save Section Config Error:', e);
       toast({ variant: "destructive", title: "保存失败" });
     } finally {
       setIsSavingConfig(false);

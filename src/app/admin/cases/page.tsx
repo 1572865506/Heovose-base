@@ -49,6 +49,9 @@ interface CaseStudy {
   titleEn: string;
   descZh: string;
   descEn: string;
+  tagTextId?: string;
+  titleTextId?: string;
+  descriptionTextId?: string;
   imageUrl: string;
 }
 
@@ -59,8 +62,34 @@ export default function CaseStudiesAdminPage() {
   const { data: galleryAssets } = useLocalCollection<any>('galleryAssets');
 
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const { data: homeContent, mutate: mutateHome } = useLocalDoc<any>('homepageContent', 'hero');
   const [isAiProcessing, setIsAiProcessing] = useState(false);
+  const [isSavingConfig, setIsSavingConfig] = useState(false);
   const [editingCase, setEditingCase] = useState<CaseStudy | null>(null);
+
+  const [sectionForm, setSectionForm] = useState({
+    casesTitleZh: '',
+    casesTitleEn: '',
+    casesSubtitleZh: '',
+    casesSubtitleEn: ''
+  });
+
+  const { data: translations, mutate: mutateTranslations } = useLocalCollection<any>('localizedStrings');
+
+  // 同步初始化板块标题 (从翻译资产库读取)
+  useMemo(() => {
+    if (translations) {
+      const titleAsset = translations.find((t: any) => t.id === 'CASES_TITLE');
+      const subtitleAsset = translations.find((t: any) => t.id === 'CASES_SUBTITLE');
+      
+      setSectionForm({
+        casesTitleZh: titleAsset?.content?.zh || homeContent?.casesTitleZh || '',
+        casesTitleEn: titleAsset?.content?.en || homeContent?.casesTitleEn || '',
+        casesSubtitleZh: subtitleAsset?.content?.zh || homeContent?.casesSubtitleZh || '',
+        casesSubtitleEn: subtitleAsset?.content?.en || homeContent?.casesSubtitleEn || ''
+      });
+    }
+  }, [translations, homeContent]);
   
   const [isPickerOpen, setIsPickerOpen] = useState(false);
 
@@ -101,19 +130,54 @@ export default function CaseStudiesAdminPage() {
     }
     
     const id = editingCase?.id || `case_${Date.now()}`;
-    
+    const titleTextId = `case_study_${id}_title`;
+    const descTextId = `case_study_${id}_desc`;
+    const tagTextId = `case_study_${id}_tag`;
+
+    const caseData = {
+      ...form,
+      id,
+      titleTextId,
+      descriptionTextId: descTextId,
+      tagTextId
+    };
+
     try {
-      const res = await fetch(`/api/caseStudies/${id}`, {
+      // 1. 同步到案例集合
+      const caseRes = await fetch(`/api/caseStudies/${id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(form),
+        body: JSON.stringify(caseData),
       });
-      
-      if (!res.ok) throw new Error("Failed to save");
+
+      if (!caseRes.ok) {
+        const errorData = await caseRes.json().catch(() => ({}));
+        throw new Error(errorData.details || errorData.error || '同步到案例数据库失败');
+      }
+
+      // 2. 同步到翻译资产库 (Zero-Hardcoding 体系)
+      await Promise.all([
+        fetch(`/api/localizedStrings/${encodeURIComponent(titleTextId)}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ id: titleTextId, content: { zh: form.titleZh, en: form.titleEn } })
+        }),
+        fetch(`/api/localizedStrings/${encodeURIComponent(descTextId)}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ id: descTextId, content: { zh: form.descZh, en: form.descEn } })
+        }),
+        fetch(`/api/localizedStrings/${encodeURIComponent(tagTextId)}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ id: tagTextId, content: { zh: form.tagZh, en: form.tagEn } })
+        })
+      ]);
 
       setIsDialogOpen(false);
       mutateCases();
-      toast({ title: editingCase ? "案例已更新" : "新案例已成功添加" });
+      mutateTranslations();
+      toast({ title: editingCase ? "案例已更新并同步翻译" : "新案例已成功添加并同步翻译" });
     } catch (e) {
       toast({ variant: "destructive", title: "保存失败" });
     }
@@ -185,8 +249,161 @@ export default function CaseStudiesAdminPage() {
     }
   };
 
+  const handleTranslateSection = async () => {
+    if (!aiConfig?.isEnabled) {
+      toast({ variant: "destructive", title: "AI 未启用" });
+      return;
+    }
+    setIsAiProcessing(true);
+    try {
+      const results = await Promise.all([
+        sectionForm.casesTitleZh ? translateContent({ text: sectionForm.casesTitleZh, targetLangs: ['en'], apiKey: aiConfig.apiKey }) : null,
+        sectionForm.casesSubtitleZh ? translateContent({ text: sectionForm.casesSubtitleZh, targetLangs: ['en'], apiKey: aiConfig.apiKey }) : null
+      ]);
+      setSectionForm(prev => ({
+        ...prev,
+        casesTitleEn: results[0]?.en || prev.casesTitleEn,
+        casesSubtitleEn: results[1]?.en || prev.casesSubtitleEn
+      }));
+      toast({ title: "板块标题智译成功" });
+    } catch (e: any) {
+      toast({ variant: "destructive", title: "智译失败", description: e.message });
+    } finally {
+      setIsAiProcessing(false);
+    }
+  };
+
+  const handleSaveSectionConfig = async () => {
+    setIsSavingConfig(true);
+    try {
+      // 1. 同步到主内容配置 (包含 TextId 引用)
+      const res = await fetch('/api/homepageContent/hero', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          // 彻底实现 0 硬编码：主表只存引用 ID，内容交由资产库
+          casesTitleTextId: 'CASES_TITLE',
+          casesSubtitleTextId: 'CASES_SUBTITLE'
+        }),
+      });
+      
+      if (!res.ok) {
+        const errorData = await res.json().catch(() => ({}));
+        throw new Error(errorData.details || errorData.error || 'Save to homepageContent failed');
+      }
+
+      // 2. 同步到翻译资产库 (Zero-Hardcoding 体系)
+      await Promise.all([
+        fetch(`/api/localizedStrings/${encodeURIComponent('CASES_TITLE')}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ id: 'CASES_TITLE', content: { zh: sectionForm.casesTitleZh, en: sectionForm.casesTitleEn } })
+        }),
+        fetch(`/api/localizedStrings/${encodeURIComponent('CASES_SUBTITLE')}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ id: 'CASES_SUBTITLE', content: { zh: sectionForm.casesSubtitleZh, en: sectionForm.casesSubtitleEn } })
+        })
+      ]);
+
+      mutateHome();
+      mutateTranslations();
+      toast({ title: "板块标题配置已保存并同步至翻译库" });
+    } catch (e) {
+      console.error('Save Section Config Error:', e);
+      toast({ variant: "destructive", title: "保存失败" });
+    } finally {
+      setIsSavingConfig(false);
+    }
+  };
+
+
   return (
     <div className="space-y-6 animate-in fade-in duration-500 pb-20">
+      <div className="bg-white p-8 rounded-3xl border shadow-sm space-y-6">
+        <div className="flex items-center justify-between border-b pb-4">
+          <div className="space-y-1">
+            <h3 className="text-sm font-bold text-primary uppercase tracking-widest flex items-center gap-2">
+              <Sparkles className="h-4 w-4" /> 案例展示板块视觉文案配置
+            </h3>
+            <p className="text-[10px] text-muted-foreground uppercase tracking-widest font-bold opacity-60">Section Heading & Localization Settings</p>
+          </div>
+          <div className="flex gap-3">
+            {aiConfig?.isEnabled && (
+              <ShinyButton 
+                onClick={handleTranslateSection} 
+                disabled={isAiProcessing}
+                className="h-9 px-4"
+                shape="capsule"
+              >
+                <div className="flex items-center gap-2">
+                  {isAiProcessing ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Sparkles className="h-3.5 w-3.5" />}
+                  <span className="text-[10px] font-bold uppercase tracking-widest">AI 智译</span>
+                </div>
+              </ShinyButton>
+            )}
+            <Button 
+              onClick={handleSaveSectionConfig} 
+              disabled={isSavingConfig}
+              className="rounded-xl h-9 px-6 gap-2 text-[10px] font-bold uppercase tracking-widest shadow-md"
+            >
+              {isSavingConfig ? <Loader2 className="h-3 w-3 animate-spin" /> : <Check className="h-3 w-3" />}
+              保存配置
+            </Button>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+          <div className="space-y-4 p-5 bg-muted/5 rounded-2xl border border-dashed">
+            <span className="text-[10px] font-bold uppercase text-primary/60 tracking-widest">中文配置 (ZH)</span>
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <Label className="text-[10px] font-black uppercase opacity-40">主标题</Label>
+                <Input 
+                  value={sectionForm.casesTitleZh} 
+                  onChange={e => setSectionForm({...sectionForm, casesTitleZh: e.target.value})}
+                  placeholder="例如：全球交付案例"
+                  className="h-10 rounded-xl bg-white"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label className="text-[10px] font-black uppercase opacity-40">副标题</Label>
+                <Input 
+                  value={sectionForm.casesSubtitleZh} 
+                  onChange={e => setSectionForm({...sectionForm, casesSubtitleZh: e.target.value})}
+                  placeholder="例如：见证我们在各行各业的成功足迹"
+                  className="h-10 rounded-xl bg-white"
+                />
+              </div>
+            </div>
+          </div>
+
+          <div className="space-y-4 p-5 bg-muted/5 rounded-2xl border border-dashed">
+            <span className="text-[10px] font-bold uppercase text-primary/60 tracking-widest">英文配置 (EN)</span>
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <Label className="text-[10px] font-black uppercase opacity-40">Main Title</Label>
+                <Input 
+                  value={sectionForm.casesTitleEn} 
+                  onChange={e => setSectionForm({...sectionForm, casesTitleEn: e.target.value})}
+                  placeholder="e.g. Global Success Stories"
+                  className="h-10 rounded-xl bg-white border-dashed"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label className="text-[10px] font-black uppercase opacity-40">Subtitle</Label>
+                <Input 
+                  value={sectionForm.casesSubtitleEn} 
+                  onChange={e => setSectionForm({...sectionForm, casesSubtitleEn: e.target.value})}
+                  placeholder="e.g. Proven track record across industries"
+                  className="h-10 rounded-xl bg-white border-dashed"
+                />
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-xl font-headline font-bold text-primary flex items-center gap-2">

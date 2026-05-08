@@ -60,22 +60,28 @@ model HomepageContent {
   galleryTitleEn             String?
   galleryTitleZh             String?
   galleryItems               Json?
+  casesSubtitleEn            String?
+  casesSubtitleZh            String?
+  casesTitleEn               String?
+  casesTitleZh               String?
+  casesTitleTextId           String?       @default("CASES_TITLE")
+  casesSubtitleTextId        String?       @default("CASES_SUBTITLE")
   locations                  MapLocation[]
 }
 
 model HomepageBentoItem {
-  id        String   @id @default(cuid())
-  order     Int      @default(0)
-  titleZh   String
-  titleEn   String
-  tagZh     String?
-  tagEn     String?
-  imageUrl  String
+  id         String   @id @default(cuid())
+  order      Int      @default(0)
+  titleZh    String
+  titleEn    String
+  tagZh      String?
+  tagEn      String?
+  imageUrl   String
+  linkUrl    String?
+  gridSize   String   @default("small")
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
   brightness Float?
-  linkUrl   String?
-  gridSize  String   @default("small")
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
 }
 
 model MapLocation {
@@ -95,48 +101,53 @@ model MapLocation {
 }
 
 model CaseStudy {
-  id       String @id @default(cuid())
-  order    Int    @default(0)
-  tagZh    String
-  tagEn    String
-  titleZh  String
-  titleEn  String
-  descZh   String
-  descEn   String
-  imageUrl String
-  brightness Float?
+  id                String  @id @default(cuid())
+  order             Int     @default(0)
+  tagZh             String
+  tagEn             String
+  titleZh           String
+  titleEn           String
+  descZh            String
+  descEn            String
+  imageUrl          String
+  brightness        Float?
+  descriptionTextId String?
+  tagTextId         String?
+  titleTextId       String?
 }
 
 model ProductionStep {
-  id        String   @id @default(cuid())
-  order     Int      @default(0)
-  titleZh   String
-  titleEn   String
-  descZh    String
-  descEn    String
-  imageUrls String[]
-  brightnesses Float[]
+  id                String   @id @default(cuid())
+  order             Int      @default(0)
+  titleZh           String
+  titleEn           String
+  descZh            String
+  descEn            String
+  imageUrls         String[]
+  brightnesses      Float[]
+  descriptionTextId String?
+  titleTextId       String?
 }
 
 model Product {
-  id                String           @id @default(cuid())
-  status            String           @default("draft")
-  nameTextId        String
-  categoryId        String?
-  advantageTextIds  String[]
-  createdAt         DateTime         @default(now())
-  descriptionTextId String?
-  enabledLanguages  String[]
-  mainImageUrl      String?
-  mainImageBrightness Float?
-  galleryImageUrls  String[]
+  id                       String           @id @default(cuid())
+  status                   String           @default("draft")
+  nameTextId               String
+  categoryId               String?
+  advantageTextIds         String[]
+  createdAt                DateTime         @default(now())
+  descriptionTextId        String?
+  enabledLanguages         String[]
+  galleryImageUrls         String[]
+  localizedDetails         Json?
+  mainImageUrl             String?
+  specGroups               Json?
+  updatedAt                DateTime         @updatedAt
   galleryImageBrightnesses Float[]
-  localizedDetails  Json?
-  specGroups        Json?
-  updatedAt         DateTime         @updatedAt
-  category          ProductCategory? @relation(fields: [categoryId], references: [id])
-  descriptionText   LocalizedString? @relation("ProductDesc", fields: [descriptionTextId], references: [id], onDelete: Cascade)
-  nameText          LocalizedString  @relation("ProductName", fields: [nameTextId], references: [id], onDelete: Cascade)
+  mainImageBrightness      Float?
+  category                 ProductCategory? @relation(fields: [categoryId], references: [id])
+  descriptionText          LocalizedString? @relation("ProductDesc", fields: [descriptionTextId], references: [id], onDelete: Cascade)
+  nameText                 LocalizedString  @relation("ProductName", fields: [nameTextId], references: [id], onDelete: Cascade)
 
   @@index([categoryId])
   @@index([nameTextId])
@@ -144,19 +155,19 @@ model Product {
 }
 
 model ProductCategory {
-  id                String            @id @default(cuid())
-  slug              String            @unique
-  thumbnailImageUrl String?
+  id                  String            @id @default(cuid())
+  slug                String            @unique
+  thumbnailImageUrl   String?
+  parentId            String?
+  nameTextId          String
+  descriptionTextId   String?
+  order               Int               @default(0)
   thumbnailBrightness Float?
-  parentId          String?
-  nameTextId        String
-  descriptionTextId String?
-  order             Int               @default(0)
-  products          Product[]
-  descriptionText   LocalizedString?  @relation("CategoryDesc", fields: [descriptionTextId], references: [id], onDelete: Cascade)
-  nameText          LocalizedString   @relation("CategoryName", fields: [nameTextId], references: [id], onDelete: Cascade)
-  parent            ProductCategory?  @relation("CategoryToCategory", fields: [parentId], references: [id])
-  children          ProductCategory[] @relation("CategoryToCategory")
+  products            Product[]
+  descriptionText     LocalizedString?  @relation("CategoryDesc", fields: [descriptionTextId], references: [id], onDelete: Cascade)
+  nameText            LocalizedString   @relation("CategoryName", fields: [nameTextId], references: [id], onDelete: Cascade)
+  parent              ProductCategory?  @relation("CategoryToCategory", fields: [parentId], references: [id])
+  children            ProductCategory[] @relation("CategoryToCategory")
 
   @@index([parentId])
   @@index([nameTextId])

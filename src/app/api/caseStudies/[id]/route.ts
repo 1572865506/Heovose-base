@@ -32,15 +32,47 @@ export async function PUT(
     // Clean up data for Prisma
     const { id: _, updatedAt: __, ...updateData } = data;
 
-    const item = await db.caseStudy.upsert({
-      where: { id },
-      update: updateData,
-      create: { ...updateData, id },
-    });
-    return NextResponse.json(item);
-  } catch (error) {
+    try {
+      const item = await db.caseStudy.upsert({
+        where: { id },
+        update: updateData,
+        create: { ...updateData, id },
+      });
+      return NextResponse.json(item);
+    } catch (upsertError: any) {
+      if (upsertError.message.includes('Unknown argument')) {
+        console.warn('[API] Stale client. Falling back to raw SQL for CaseStudy Text IDs...');
+        
+        // 分离新字段
+        const { tagTextId, titleTextId, descriptionTextId, ...safeData } = updateData;
+        
+        // 1. 原始 SQL 更新
+        if (tagTextId || titleTextId || descriptionTextId) {
+          await db.$executeRawUnsafe(
+            `UPDATE "CaseStudy" SET "tagTextId" = $1, "titleTextId" = $2, "descriptionTextId" = $3 WHERE id = $4`,
+            tagTextId || null,
+            titleTextId || null,
+            descriptionTextId || null,
+            id
+          );
+        }
+
+        // 2. 安全 upsert
+        const safeItem = await db.caseStudy.upsert({
+          where: { id },
+          update: safeData,
+          create: { ...safeData, id },
+        });
+        return NextResponse.json(safeItem);
+      }
+      throw upsertError;
+    }
+  } catch (error: any) {
     console.error('Failed to update case study:', error);
-    return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
+    return NextResponse.json({ 
+      error: 'Internal Server Error',
+      details: error.message
+    }, { status: 500 });
   }
 }
 

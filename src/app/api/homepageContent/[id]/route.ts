@@ -88,7 +88,9 @@ export async function PUT(
       'bentoTitleEn', 'bentoTitleZh', 'bentoSubtitleEn', 'bentoSubtitleZh',
       'processTitleEn', 'processTitleZh', 'processSubtitleEn', 'processSubtitleZh',
       'galleryTitleEn', 'galleryTitleZh', 'gallerySubtitleEn', 'gallerySubtitleZh', 'galleryItems',
-      'mapTitleEn', 'mapTitleZh', 'mapSubtitleEn', 'mapSubtitleZh'
+      'mapTitleEn', 'mapTitleZh', 'mapSubtitleEn', 'mapSubtitleZh',
+      'casesTitleEn', 'casesTitleZh', 'casesSubtitleEn', 'casesSubtitleZh',
+      'casesTitleTextId', 'casesSubtitleTextId'
     ];
 
     filteredData = {};
@@ -113,12 +115,49 @@ export async function PUT(
     // 调试日志：查看即将进入数据库的数据
     // console.log(`[DEBUG] Upserting to ${id}:`, JSON.stringify(filteredData, null, 2));
 
-    const item = await db.homepageContent.upsert({
-      where: { id },
-      update: filteredData,
-      create: { ...filteredData, id },
-    });
-    return NextResponse.json(item);
+    try {
+      const item = await db.homepageContent.upsert({
+        where: { id },
+        update: filteredData,
+        create: { ...filteredData, id },
+      });
+      return NextResponse.json(item);
+    } catch (upsertError: any) {
+      console.error('[API DEBUG] Upsert Error:', upsertError.message);
+      
+      // 捕获字段未同步的错误 (通常发生在 Next.js Turbopack 缓存了旧版 Prisma Client 时)
+      if (upsertError.message.includes('Unknown argument')) {
+        console.warn('[API] Stale Prisma Client detected. Using Raw SQL fallback for case-studies fields...');
+        
+        // 1. 尝试使用原始 SQL 强行写入新字段，绕过 Prisma 的类型检查
+        const { casesTitleTextId, casesSubtitleTextId, ...safeData } = filteredData;
+        
+        try {
+          if (casesTitleTextId || casesSubtitleTextId) {
+            await db.$executeRawUnsafe(
+              `UPDATE "HomepageContent" SET "casesTitleTextId" = $1, "casesSubtitleTextId" = $2 WHERE id = $3`,
+              casesTitleTextId || 'CASES_TITLE',
+              casesSubtitleTextId || 'CASES_SUBTITLE',
+              id
+            );
+          }
+        } catch (rawError) {
+          console.error('[API] Raw SQL Fallback failed:', rawError);
+        }
+
+        // 2. 移除导致报错的新字段，使用“安全”字段执行正常的 upsert
+        const safeItem = await db.homepageContent.upsert({
+          where: { id },
+          update: safeData,
+          create: { ...safeData, id },
+        });
+        
+        return NextResponse.json(safeItem);
+      }
+      
+      // 如果不是字段同步问题，则抛出原错误
+      throw upsertError;
+    }
   } catch (error: any) {
     console.error('CRITICAL ERROR: Failed to update homepage content:', error);
     // 返回更详尽的错误信息到前端，方便排查

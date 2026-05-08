@@ -38,32 +38,37 @@ export function useTranslations(locale: Locale) {
       
       if (remote) {
         const content = (remote.content as any) || {};
-        const val = content[locale] || content[defaultLanguage] || content['en'] || content['zh'];
+        // 显式检查是否存在该语言的配置，即使是空字符串也视为有效内容
+        const val = content[locale] !== undefined ? content[locale] : 
+                   (content[defaultLanguage] !== undefined ? content[defaultLanguage] : 
+                   (content['en'] !== undefined ? content['en'] : content['zh']));
         
-        if (val && typeof val === 'string' && val.trim() !== '') {
-          return val;
+        if (val !== undefined && val !== null) {
+          return val.toString();
         }
       }
 
       // 2. Fallback to local hardcoded library
       const library = (fallbackLibrary as any)[locale] || (fallbackLibrary as any)[defaultLanguage] || (fallbackLibrary as any)['en'];
+      
+      let hardcoded: string | undefined = undefined;
       if (library[key] && typeof library[key] === 'string') {
-        result = library[key];
+        hardcoded = library[key];
       } else {
         const path = key.split('_');
         const localNested = getNested(library, path);
         if (localNested && typeof localNested === 'string') {
-          result = localNested;
+          hardcoded = localNested;
         }
       }
 
-      // Final safeguard: Avoid showing ugly system IDs
-      if (result === key) {
-        const isSystemId = /^[A-Z0-9_]{5,30}$/.test(result) || /^(psl|psg|psv|prod|cat|hero|slide)_/i.test(result);
-        if (isSystemId) return '';
-      }
+      if (hardcoded !== undefined) return hardcoded;
 
-      return result;
+      // Final safeguard: Avoid showing ugly system IDs
+      const isSystemId = /^[A-Z0-9_]{5,30}$/.test(key) || /^(psl|psg|psv|prod|cat|hero|slide)_/i.test(key);
+      if (isSystemId) return undefined;
+
+      return key;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [remoteTranslations, locale, defaultLanguage, isTranslationsLoading]);

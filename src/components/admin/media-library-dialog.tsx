@@ -130,6 +130,11 @@ export function MediaLibraryDialog({
     }
   }, [open]);
 
+  // 当分类、搜索或类型变化时，重置页码，防止出现“空页”现象
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [currentCategoryId, searchQuery, filterType]);
+
   const toggleSelectAsset = (asset: GalleryAsset) => {
     const newSelected = new Set(selectedIds);
     if (selectionMode === 'single') {
