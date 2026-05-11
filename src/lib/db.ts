@@ -4,14 +4,11 @@ const prismaClientSingleton = () => {
   return new PrismaClient();
 };
 
-declare global {
-  var prisma: undefined | ReturnType<typeof prismaClientSingleton>;
-}
-
-const db = globalThis.prisma ?? prismaClientSingleton();
-// Prisma Schema Updated: 2026-05-06 16:32
+const db = (globalThis as any).prisma_v2 ?? prismaClientSingleton();
+// Prisma Schema Updated: 2026-05-11 11:15
 export default db;
 
-if (process.env.NODE_ENV !== 'production') globalThis.prisma = db;
+if (process.env.NODE_ENV !== 'production') (globalThis as any).prisma_v2 = db;
 
 // Force reload: 1778230570825
+// Force reload: 1778460899824

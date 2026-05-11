@@ -90,7 +90,8 @@ export async function PUT(
       'galleryTitleEn', 'galleryTitleZh', 'gallerySubtitleEn', 'gallerySubtitleZh', 'galleryItems',
       'mapTitleEn', 'mapTitleZh', 'mapSubtitleEn', 'mapSubtitleZh',
       'casesTitleEn', 'casesTitleZh', 'casesSubtitleEn', 'casesSubtitleZh',
-      'casesTitleTextId', 'casesSubtitleTextId'
+      'casesTitleTextId', 'casesSubtitleTextId',
+      'processTitleTextId', 'processSubtitleTextId'
     ];
 
     filteredData = {};
@@ -127,10 +128,10 @@ export async function PUT(
       
       // 捕获字段未同步的错误 (通常发生在 Next.js Turbopack 缓存了旧版 Prisma Client 时)
       if (upsertError.message.includes('Unknown argument')) {
-        console.warn('[API] Stale Prisma Client detected. Using Raw SQL fallback for case-studies fields...');
+        console.warn('[API] Stale Prisma Client detected. Using Raw SQL fallback for localization fields...');
         
         // 1. 尝试使用原始 SQL 强行写入新字段，绕过 Prisma 的类型检查
-        const { casesTitleTextId, casesSubtitleTextId, ...safeData } = filteredData;
+        const { casesTitleTextId, casesSubtitleTextId, processTitleTextId, processSubtitleTextId, ...safeData } = filteredData;
         
         try {
           if (casesTitleTextId || casesSubtitleTextId) {
@@ -138,6 +139,14 @@ export async function PUT(
               `UPDATE "HomepageContent" SET "casesTitleTextId" = $1, "casesSubtitleTextId" = $2 WHERE id = $3`,
               casesTitleTextId || 'CASES_TITLE',
               casesSubtitleTextId || 'CASES_SUBTITLE',
+              id
+            );
+          }
+          if (processTitleTextId || processSubtitleTextId) {
+            await db.$executeRawUnsafe(
+              `UPDATE "HomepageContent" SET "processTitleTextId" = $1, "processSubtitleTextId" = $2 WHERE id = $3`,
+              processTitleTextId || 'PROCESS_TITLE',
+              processSubtitleTextId || 'PROCESS_SUBTITLE',
               id
             );
           }

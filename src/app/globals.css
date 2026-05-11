@@ -298,12 +298,18 @@
 
 /* Premium Product Zoom Animation */
 .premium-zoom-image {
-  transition: transform 0.8s cubic-bezier(0.23, 1, 0.32, 1) !important;
+  transition: transform 2s cubic-bezier(0.19, 1, 0.22, 1) !important;
   will-change: transform;
+  transform: scale(1) translateZ(0);
 }
 
 .group:hover .premium-zoom-image {
-  transform: scale(1.1) !important;
+  transform: scale(1.15) translateZ(0) !important;
+}
+
+.case-card-container {
+  transition: transform 1.5s cubic-bezier(0.19, 1, 0.22, 1), box-shadow 1.5s cubic-bezier(0.19, 1, 0.22, 1), opacity 1.5s cubic-bezier(0.19, 1, 0.22, 1) !important;
+  will-change: transform, box-shadow, opacity;
 }
 
 .cursor-fullscreen {

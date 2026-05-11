@@ -2,7 +2,7 @@
 -- PostgreSQL database dump
 --
 
-\restrict zvokvdoTfLbZ2mNb6mFip2g4dhvR97ibZMxEjU0deDEmNJ0WrRRmv0PI3Yegcr0
+\restrict h3wP9oeo6RR21cmmGNKFdgoJaIFjcSxJnuTtG0NpePwIDpTi2q1KVVpEhnl3WZI
 
 -- Dumped from database version 16.13
 -- Dumped by pg_dump version 16.13
@@ -74,7 +74,11 @@ CREATE TABLE public."CaseStudy" (
     "titleEn" text NOT NULL,
     "descZh" text NOT NULL,
     "descEn" text NOT NULL,
-    "imageUrl" text NOT NULL
+    "imageUrl" text NOT NULL,
+    brightness double precision,
+    "descriptionTextId" text,
+    "tagTextId" text,
+    "titleTextId" text
 );
 
 
@@ -96,7 +100,8 @@ CREATE TABLE public."GalleryAsset" (
     width integer,
     duration double precision,
     "thumbnailUrl" text,
-    type text DEFAULT 'IMAGE'::text NOT NULL
+    type text DEFAULT 'IMAGE'::text NOT NULL,
+    brightness double precision
 );
 
 
@@ -131,7 +136,8 @@ CREATE TABLE public."HomepageBentoItem" (
     "linkUrl" text,
     "gridSize" text DEFAULT 'small'::text NOT NULL,
     "createdAt" timestamp(3) without time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
-    "updatedAt" timestamp(3) without time zone NOT NULL
+    "updatedAt" timestamp(3) without time zone NOT NULL,
+    brightness double precision
 );
 
 
@@ -181,7 +187,14 @@ CREATE TABLE public."HomepageContent" (
     "gallerySubtitleEn" text,
     "gallerySubtitleZh" text,
     "galleryTitleEn" text,
-    "galleryTitleZh" text
+    "galleryTitleZh" text,
+    "galleryItems" jsonb,
+    "casesSubtitleEn" text,
+    "casesSubtitleZh" text,
+    "casesTitleEn" text,
+    "casesTitleZh" text,
+    "casesSubtitleTextId" text DEFAULT 'CASES_SUBTITLE'::text,
+    "casesTitleTextId" text DEFAULT 'CASES_TITLE'::text
 );
 
 
@@ -240,7 +253,9 @@ CREATE TABLE public."Product" (
     "localizedDetails" jsonb,
     "mainImageUrl" text,
     "specGroups" jsonb,
-    "updatedAt" timestamp(3) without time zone NOT NULL
+    "updatedAt" timestamp(3) without time zone NOT NULL,
+    "galleryImageBrightnesses" double precision[],
+    "mainImageBrightness" double precision
 );
 
 
@@ -257,7 +272,8 @@ CREATE TABLE public."ProductCategory" (
     "parentId" text,
     "nameTextId" text NOT NULL,
     "descriptionTextId" text,
-    "order" integer DEFAULT 0 NOT NULL
+    "order" integer DEFAULT 0 NOT NULL,
+    "thumbnailBrightness" double precision
 );
 
 
@@ -274,7 +290,10 @@ CREATE TABLE public."ProductionStep" (
     "titleEn" text NOT NULL,
     "descZh" text NOT NULL,
     "descEn" text NOT NULL,
-    "imageUrls" text[]
+    "imageUrls" text[],
+    brightnesses double precision[],
+    "descriptionTextId" text,
+    "titleTextId" text
 );
 
 
@@ -384,8 +403,9 @@ COPY public."Account" ("userId", type, provider, "providerAccountId", refresh_to
 -- Data for Name: CaseStudy; Type: TABLE DATA; Schema: public; Owner: heovose
 --
 
-COPY public."CaseStudy" (id, "order", "tagZh", "tagEn", "titleZh", "titleEn", "descZh", "descEn", "imageUrl") FROM stdin;
-cmoibfi3k000buknut5a5e8tx	1	智慧零售	RETAIL	智能 POS 集成方案	Smart POS Integration	优化 500 多家门店的结账体验。	Optimizing checkout experiences across 500+ stores.	https://placehold.co/800x600?text=Retail+Case
+COPY public."CaseStudy" (id, "order", "tagZh", "tagEn", "titleZh", "titleEn", "descZh", "descEn", "imageUrl", brightness, "descriptionTextId", "tagTextId", "titleTextId") FROM stdin;
+cmoibfi3k000buknut5a5e8tx	1	智慧零售	RETAIL	智能 POS 集成方案	Smart POS Integration	优化 500 多家门店的结账体验。	Optimizing checkout experiences across 500+ stores.	http://localhost:9000/heovose-assets/uploads/6ee490d1-e5e8-4125-b5bf-ec76af05f192.jpeg	\N	case_study_cmoibfi3k000buknut5a5e8tx_desc	case_study_cmoibfi3k000buknut5a5e8tx_tag	case_study_cmoibfi3k000buknut5a5e8tx_title
+case_1778231480450	2	发顺丰的		发二分为发		圈儿去而且而12312 答复玩儿去而圈儿er		http://localhost:9000/heovose-assets/uploads/c7c4117f-144c-437b-894f-b2081d046560.jpg	\N	\N	\N	\N
 \.
 
 
@@ -393,50 +413,52 @@ cmoibfi3k000buknut5a5e8tx	1	智慧零售	RETAIL	智能 POS 集成方案	Smart PO
 -- Data for Name: GalleryAsset; Type: TABLE DATA; Schema: public; Owner: heovose
 --
 
-COPY public."GalleryAsset" (id, title, url, "categoryId", "createdAt", "fileName", "fileSize", height, width, duration, "thumbnailUrl", type) FROM stdin;
-asset_1777367981154_0	这是一个一体机电脑产品，帮我生成一张使用场景的场景图_202604151453	http://localhost:9000/heovose-assets/uploads/6ee490d1-e5e8-4125-b5bf-ec76af05f192.jpeg	cat_1777363045711	2026-04-28 09:19:21.635	uploads/6ee490d1-e5e8-4125-b5bf-ec76af05f192.jpeg	626021	\N	\N	\N	\N	IMAGE
-asset_1777433984930_0	里面的笔记本电脑就换成图1，图2这个笔记本_2K_202604160904	http://localhost:9000/heovose-assets/uploads/c7c4117f-144c-437b-894f-b2081d046560.jpg	cat_1777363045711	2026-04-29 03:39:24.956	uploads/c7c4117f-144c-437b-894f-b2081d046560.jpg	409429	\N	\N	\N	\N	IMAGE
-asset_1777433985864_1	Project Product-1	http://localhost:9000/heovose-assets/uploads/9197ccfa-8621-49ab-834a-6b3c475335c5.png	cat_1777363045711	2026-04-29 03:39:25.769	uploads/9197ccfa-8621-49ab-834a-6b3c475335c5.png	148092	\N	\N	\N	\N	IMAGE
-asset_1777433986677_2	Project Product-2	http://localhost:9000/heovose-assets/uploads/0c0e4c85-1a0a-4ec7-86ef-47726bfa924c.png	cat_1777363045711	2026-04-29 03:39:26.697	uploads/0c0e4c85-1a0a-4ec7-86ef-47726bfa924c.png	149750	\N	\N	\N	\N	IMAGE
-asset_1777433987620_3	Wholesale Product	http://localhost:9000/heovose-assets/uploads/c61bd50a-2cc7-490d-8c67-13b30ba36753.png	cat_1777363045711	2026-04-29 03:39:47.95	uploads/c61bd50a-2cc7-490d-8c67-13b30ba36753.png	120752	\N	\N	\N	\N	IMAGE
-asset_1777439484026_6	7	http://localhost:9000/heovose-assets/uploads/139f91d7-1cd2-448f-8461-d1b3d6251774.jpg	cat_1777439509227	2026-04-29 05:11:03.825	uploads/139f91d7-1cd2-448f-8461-d1b3d6251774.jpg	186134	\N	\N	\N	\N	IMAGE
-asset_1777439480942_3	4	http://localhost:9000/heovose-assets/uploads/ba19c0be-1667-47cb-a031-e5e4e8751118.jpg	cat_1777439509227	2026-04-29 05:11:21.274	uploads/ba19c0be-1667-47cb-a031-e5e4e8751118.jpg	174062	\N	\N	\N	\N	IMAGE
-asset_1777439479065_1	2	http://localhost:9000/heovose-assets/uploads/d967accc-5a8f-4b93-9976-bec5e24060f8.jpg	cat_1777439509227	2026-04-29 05:11:19.407	uploads/d967accc-5a8f-4b93-9976-bec5e24060f8.jpg	175650	\N	\N	\N	\N	IMAGE
-asset_1777439481828_4	5	http://localhost:9000/heovose-assets/uploads/4eb0f28d-4c9a-4c38-a03c-7bef304908cf.jpg	cat_1777439509227	2026-04-29 05:11:22.408	uploads/4eb0f28d-4c9a-4c38-a03c-7bef304908cf.jpg	230501	\N	\N	\N	\N	IMAGE
-asset_1777439483111_5	6	http://localhost:9000/heovose-assets/uploads/1d5e2af2-ef38-43a7-8d69-19644b36c16d.jpg	cat_1777439509227	2026-04-29 05:11:02.812	uploads/1d5e2af2-ef38-43a7-8d69-19644b36c16d.jpg	409595	\N	\N	\N	\N	IMAGE
-asset_1777439479940_2	3	http://localhost:9000/heovose-assets/uploads/3eb25a8d-676e-404e-beea-6fbf69428e08.jpg	cat_1777439509227	2026-04-29 05:11:20.387	uploads/3eb25a8d-676e-404e-beea-6fbf69428e08.jpg	240459	\N	\N	\N	\N	IMAGE
-asset_1777439478092_0	1	http://localhost:9000/heovose-assets/uploads/15229520-358f-44a7-a5b7-d28cc552a89b.jpg	cat_1777439509227	2026-04-29 05:11:18.522	uploads/15229520-358f-44a7-a5b7-d28cc552a89b.jpg	190446	\N	\N	\N	\N	IMAGE
-asset_1777439485065_7	8	http://localhost:9000/heovose-assets/uploads/7dd3944b-9973-4e65-9649-353579cf4661.jpg	cat_1777439509227	2026-04-29 05:11:04.767	uploads/7dd3944b-9973-4e65-9649-353579cf4661.jpg	182281	\N	\N	\N	\N	IMAGE
-asset_1777439647319_0	2	http://localhost:9000/heovose-assets/uploads/b0e3bfad-aefa-49b3-8054-e8d927bdd78c.jpg	cat_1777439615716	2026-04-29 05:13:47.12	uploads/b0e3bfad-aefa-49b3-8054-e8d927bdd78c.jpg	160258	\N	\N	\N	\N	IMAGE
-asset_1777439648403_1	3	http://localhost:9000/heovose-assets/uploads/614a66c7-acd1-48db-a0d9-c764f2f35617.jpg	cat_1777439615716	2026-04-29 05:13:48.107	uploads/614a66c7-acd1-48db-a0d9-c764f2f35617.jpg	162211	\N	\N	\N	\N	IMAGE
-asset_1777439649230_2	4+	http://localhost:9000/heovose-assets/uploads/8b9795e0-119c-4404-a2ca-c1eb86f1e6d6.jpg	cat_1777439615716	2026-04-29 05:13:49.021	uploads/8b9795e0-119c-4404-a2ca-c1eb86f1e6d6.jpg	55232	\N	\N	\N	\N	IMAGE
-asset_1777439650261_3	5	http://localhost:9000/heovose-assets/uploads/67efc91b-0fb2-4144-9a18-16cdc9be8051.jpg	cat_1777439615716	2026-04-29 05:13:49.944	uploads/67efc91b-0fb2-4144-9a18-16cdc9be8051.jpg	56115	\N	\N	\N	\N	IMAGE
-asset_1777439651171_4	6	http://localhost:9000/heovose-assets/uploads/18fe18d1-74f6-4534-be9f-729d05650074.jpg	cat_1777439615716	2026-04-29 05:13:50.95	uploads/18fe18d1-74f6-4534-be9f-729d05650074.jpg	141463	\N	\N	\N	\N	IMAGE
-asset_1777439652265_5	7	http://localhost:9000/heovose-assets/uploads/051df97b-d2a2-409f-8dec-a5255ce0ed52.jpg	cat_1777439615716	2026-04-29 05:14:12.599	uploads/051df97b-d2a2-409f-8dec-a5255ce0ed52.jpg	95362	\N	\N	\N	\N	IMAGE
-asset_1777439653179_6	8	http://localhost:9000/heovose-assets/uploads/a1b65d43-04ef-4fef-83c0-b90312b839ae.jpg	cat_1777439615716	2026-04-29 05:14:13.624	uploads/a1b65d43-04ef-4fef-83c0-b90312b839ae.jpg	141021	\N	\N	\N	\N	IMAGE
-asset_1777439654287_7	9	http://localhost:9000/heovose-assets/uploads/78023efa-ea99-49cb-a8e0-4b39fa4ed119.jpg	cat_1777439615716	2026-04-29 05:14:14.609	uploads/78023efa-ea99-49cb-a8e0-4b39fa4ed119.jpg	74627	\N	\N	\N	\N	IMAGE
-asset_1777439655277_8	10	http://localhost:9000/heovose-assets/uploads/ccfe4f35-2bb6-4b74-a32f-e06200382c47.jpg	cat_1777439615716	2026-04-29 05:13:56.376	uploads/ccfe4f35-2bb6-4b74-a32f-e06200382c47.jpg	302898	\N	\N	\N	\N	IMAGE
-asset_1777439656696_9	12	http://localhost:9000/heovose-assets/uploads/a91c1517-9c44-45f5-9aad-73c33f2be500.jpg	cat_1777439615716	2026-04-29 05:13:57.39	uploads/a91c1517-9c44-45f5-9aad-73c33f2be500.jpg	214659	\N	\N	\N	\N	IMAGE
-asset_1777448722825_ywqq1_0	MINI-PC-P-1	http://localhost:9000/heovose-assets/uploads/7986eb81-e9f3-4887-a764-169dcfe6eedd.jpg	cat_1777433109728	2026-04-29 07:45:24.644	uploads/7986eb81-e9f3-4887-a764-169dcfe6eedd.jpg	108510	900	1100	\N	\N	IMAGE
-asset_1777448725091_e2jyo_1	MINI-PC-P-2	http://localhost:9000/heovose-assets/uploads/e30c9cfe-d6c1-41d3-a81c-7a84b96849d6.jpg	cat_1777433109728	2026-04-29 07:45:25.551	uploads/e30c9cfe-d6c1-41d3-a81c-7a84b96849d6.jpg	138300	900	1100	\N	\N	IMAGE
-asset_1777448725958_dibm2_2	MINI-PC-P-3	http://localhost:9000/heovose-assets/uploads/85d4b221-af4a-4f81-8e4b-fcc73c3eb6a2.jpg	cat_1777433109728	2026-04-29 07:45:26.293	uploads/85d4b221-af4a-4f81-8e4b-fcc73c3eb6a2.jpg	135571	900	1100	\N	\N	IMAGE
-asset_1777448726694_4lxgr_3	MINI-PC-P-4	http://localhost:9000/heovose-assets/uploads/c8eb3f01-a1ab-484f-b7f6-c2036c568fe3.jpg	cat_1777433109728	2026-04-29 07:45:27.115	uploads/c8eb3f01-a1ab-484f-b7f6-c2036c568fe3.jpg	123066	900	1100	\N	\N	IMAGE
-asset_1777448727513_ptx4a_4	MINI-PC-P-5	http://localhost:9000/heovose-assets/uploads/be56ed65-5e25-443a-8775-b54b59ecebae.jpg	cat_1777433109728	2026-04-29 07:45:27.837	uploads/be56ed65-5e25-443a-8775-b54b59ecebae.jpg	131588	900	1100	\N	\N	IMAGE
-asset_1777448728217_q9vv7_5	MINI-PC-P-6	http://localhost:9000/heovose-assets/uploads/4a74aae7-85aa-41e9-82f2-f8765d69719c.jpg	cat_1777433109728	2026-04-29 07:45:28.628	uploads/4a74aae7-85aa-41e9-82f2-f8765d69719c.jpg	112783	900	1100	\N	\N	IMAGE
-asset_1777448729015_xnnhf_6	MINI-PC-P-7	http://localhost:9000/heovose-assets/uploads/2e2479d4-e456-4444-b3f9-7f47c1d1c877.jpg	cat_1777433109728	2026-04-29 07:45:29.336	uploads/2e2479d4-e456-4444-b3f9-7f47c1d1c877.jpg	114772	900	1100	\N	\N	IMAGE
-asset_1777864944226_q9ko0_0	alibaba2023_x264	http://localhost:9000/heovose-assets/uploads/0af8547d-8b02-4615-ba22-59b3af72e7b3.mp4	cat_1777363045711	2026-05-04 03:22:01.499	uploads/0af8547d-8b02-4615-ba22-59b3af72e7b3.mp4	5294946	1080	1920	13.546667	\N	VIDEO
-asset_1777865670277_vhy6j_0	1-1	http://localhost:9000/heovose-assets/uploads/a86df304-a607-4ce1-8278-c45cdce9fddc.jpg	cat_1777856782910	2026-05-04 03:34:06.167	uploads/a86df304-a607-4ce1-8278-c45cdce9fddc.jpg	352788	1792	2400	\N	\N	IMAGE
-asset_1777865671144_h08ot_1	2-2	http://localhost:9000/heovose-assets/uploads/22811330-25ce-4b07-b7c6-f8e9554668d1.jpg	cat_1777856782910	2026-05-04 03:34:06.911	uploads/22811330-25ce-4b07-b7c6-f8e9554668d1.jpg	310293	1792	2400	\N	\N	IMAGE
-asset_1777865671890_gl0an_2	3-1	http://localhost:9000/heovose-assets/uploads/a74635cb-af32-457a-b8c9-3fa19e8ffa07.jpg	cat_1777856782910	2026-05-04 03:34:07.731	uploads/a74635cb-af32-457a-b8c9-3fa19e8ffa07.jpg	555093	1792	2400	\N	\N	IMAGE
-asset_1777865672716_qxpao_3	4-1	http://localhost:9000/heovose-assets/uploads/974db4dd-3375-4a63-97e6-c0d3f7f7c394.jpg	cat_1777856782910	2026-05-04 03:34:08.474	uploads/974db4dd-3375-4a63-97e6-c0d3f7f7c394.jpg	586300	1792	2400	\N	\N	IMAGE
-asset_1777865673431_fk2gc_4	4-2	http://localhost:9000/heovose-assets/uploads/e7c66841-5309-43eb-abb3-aea7f8b64195.jpg	cat_1777856782910	2026-05-04 03:34:09.289	uploads/e7c66841-5309-43eb-abb3-aea7f8b64195.jpg	318675	627	901	\N	\N	IMAGE
-asset_1777865674262_u8v16_5	5-1	http://localhost:9000/heovose-assets/uploads/feffb430-8e05-4d04-8b06-04e9b1711eaf.jpg	cat_1777856782910	2026-05-04 03:34:10.008	uploads/feffb430-8e05-4d04-8b06-04e9b1711eaf.jpg	299834	1125	1500	\N	\N	IMAGE
-asset_1777865674969_e60nw_6	5-2	http://localhost:9000/heovose-assets/uploads/b9f5d5c4-7465-4e9f-90df-27b326f1f3f3.jpg	cat_1777856782910	2026-05-04 03:34:10.787	uploads/b9f5d5c4-7465-4e9f-90df-27b326f1f3f3.jpg	343537	801	1200	\N	\N	IMAGE
-asset_1777865675740_6m9gw_7	6-1	http://localhost:9000/heovose-assets/uploads/35094d60-83d1-49de-b715-be94ae2459c4.jpg	cat_1777856782910	2026-05-04 03:34:11.48	uploads/35094d60-83d1-49de-b715-be94ae2459c4.jpg	243513	1200	900	\N	\N	IMAGE
-asset_1777865733016_wzmi7_0	2-1	http://localhost:9000/heovose-assets/uploads/37d8a977-98fc-46ac-8437-cd80d1dfb965.jpg	cat_1777856782910	2026-05-04 03:35:08.707	uploads/37d8a977-98fc-46ac-8437-cd80d1dfb965.jpg	267782	1080	1620	\N	\N	IMAGE
-asset_1777439296324_0	2-1	http://localhost:9000/heovose-assets/uploads/7062814e-9aa1-44bd-950c-0e1fc062cb2f.jpg	cat_1777856782910	2026-04-29 05:08:16.776	uploads/7062814e-9aa1-44bd-950c-0e1fc062cb2f.jpg	267782	\N	\N	\N	\N	IMAGE
-asset_1777967239460_sk87r_0	一体机宣传海报	http://localhost:9000/heovose-assets/uploads/b1b9ef74-fe06-45a0-93ee-f3f7283e8dfd.jpg	cat_1777363045711	2026-05-05 07:46:55.987	uploads/b1b9ef74-fe06-45a0-93ee-f3f7283e8dfd.jpg	279781	1536	2752	\N	\N	IMAGE
-asset_1777968533975_xlq7y_0	Image 3	http://localhost:9000/heovose-assets/uploads/633b89ab-91e2-4047-ab85-750df64c0ed3.jpg	cat_1777363045711	2026-05-05 08:08:29.02	uploads/633b89ab-91e2-4047-ab85-750df64c0ed3.jpg	648935	2143	3840	\N	\N	IMAGE
+COPY public."GalleryAsset" (id, title, url, "categoryId", "createdAt", "fileName", "fileSize", height, width, duration, "thumbnailUrl", type, brightness) FROM stdin;
+asset_1777864944226_q9ko0_0	alibaba2023_x264	http://localhost:9000/heovose-assets/uploads/0af8547d-8b02-4615-ba22-59b3af72e7b3.mp4	cat_1777363045711	2026-05-04 03:22:01.499	uploads/0af8547d-8b02-4615-ba22-59b3af72e7b3.mp4	5294946	1080	1920	13.546667	\N	VIDEO	\N
+asset_1777433984930_0	里面的笔记本电脑就换成图1，图2这个笔记本_2K_202604160904	http://localhost:9000/heovose-assets/uploads/c7c4117f-144c-437b-894f-b2081d046560.jpg	cat_1777363045711	2026-04-29 03:39:24.956	uploads/c7c4117f-144c-437b-894f-b2081d046560.jpg	409429	\N	\N	\N	\N	IMAGE	98.08732214425595
+asset_1777433985864_1	Project Product-1	http://localhost:9000/heovose-assets/uploads/9197ccfa-8621-49ab-834a-6b3c475335c5.png	cat_1777363045711	2026-04-29 03:39:25.769	uploads/9197ccfa-8621-49ab-834a-6b3c475335c5.png	148092	\N	\N	\N	\N	IMAGE	153.5249831929991
+asset_1777433986677_2	Project Product-2	http://localhost:9000/heovose-assets/uploads/0c0e4c85-1a0a-4ec7-86ef-47726bfa924c.png	cat_1777363045711	2026-04-29 03:39:26.697	uploads/0c0e4c85-1a0a-4ec7-86ef-47726bfa924c.png	149750	\N	\N	\N	\N	IMAGE	72.38812706642966
+asset_1777433987620_3	Wholesale Product	http://localhost:9000/heovose-assets/uploads/c61bd50a-2cc7-490d-8c67-13b30ba36753.png	cat_1777363045711	2026-04-29 03:39:47.95	uploads/c61bd50a-2cc7-490d-8c67-13b30ba36753.png	120752	\N	\N	\N	\N	IMAGE	84.3050616188004
+asset_1777439484026_6	7	http://localhost:9000/heovose-assets/uploads/139f91d7-1cd2-448f-8461-d1b3d6251774.jpg	cat_1777439509227	2026-04-29 05:11:03.825	uploads/139f91d7-1cd2-448f-8461-d1b3d6251774.jpg	186134	\N	\N	\N	\N	IMAGE	236.5291356649274
+asset_1777439480942_3	4	http://localhost:9000/heovose-assets/uploads/ba19c0be-1667-47cb-a031-e5e4e8751118.jpg	cat_1777439509227	2026-04-29 05:11:21.274	uploads/ba19c0be-1667-47cb-a031-e5e4e8751118.jpg	174062	\N	\N	\N	\N	IMAGE	236.4127034621336
+asset_1777439479065_1	2	http://localhost:9000/heovose-assets/uploads/d967accc-5a8f-4b93-9976-bec5e24060f8.jpg	cat_1777439509227	2026-04-29 05:11:19.407	uploads/d967accc-5a8f-4b93-9976-bec5e24060f8.jpg	175650	\N	\N	\N	\N	IMAGE	235.1297905471962
+asset_1777439481828_4	5	http://localhost:9000/heovose-assets/uploads/4eb0f28d-4c9a-4c38-a03c-7bef304908cf.jpg	cat_1777439509227	2026-04-29 05:11:22.408	uploads/4eb0f28d-4c9a-4c38-a03c-7bef304908cf.jpg	230501	\N	\N	\N	\N	IMAGE	242.921940413837
+asset_1777439483111_5	6	http://localhost:9000/heovose-assets/uploads/1d5e2af2-ef38-43a7-8d69-19644b36c16d.jpg	cat_1777439509227	2026-04-29 05:11:02.812	uploads/1d5e2af2-ef38-43a7-8d69-19644b36c16d.jpg	409595	\N	\N	\N	\N	IMAGE	200.6740637832585
+asset_1777439479940_2	3	http://localhost:9000/heovose-assets/uploads/3eb25a8d-676e-404e-beea-6fbf69428e08.jpg	cat_1777439509227	2026-04-29 05:11:20.387	uploads/3eb25a8d-676e-404e-beea-6fbf69428e08.jpg	240459	\N	\N	\N	\N	IMAGE	223.6047683049831
+asset_1777439478092_0	1	http://localhost:9000/heovose-assets/uploads/15229520-358f-44a7-a5b7-d28cc552a89b.jpg	cat_1777439509227	2026-04-29 05:11:18.522	uploads/15229520-358f-44a7-a5b7-d28cc552a89b.jpg	190446	\N	\N	\N	\N	IMAGE	245.0097957943053
+asset_1777439485065_7	8	http://localhost:9000/heovose-assets/uploads/7dd3944b-9973-4e65-9649-353579cf4661.jpg	cat_1777439509227	2026-04-29 05:11:04.767	uploads/7dd3944b-9973-4e65-9649-353579cf4661.jpg	182281	\N	\N	\N	\N	IMAGE	238.6865701398756
+asset_1777439647319_0	2	http://localhost:9000/heovose-assets/uploads/b0e3bfad-aefa-49b3-8054-e8d927bdd78c.jpg	cat_1777439615716	2026-04-29 05:13:47.12	uploads/b0e3bfad-aefa-49b3-8054-e8d927bdd78c.jpg	160258	\N	\N	\N	\N	IMAGE	229.2053246521169
+asset_1777439648403_1	3	http://localhost:9000/heovose-assets/uploads/614a66c7-acd1-48db-a0d9-c764f2f35617.jpg	cat_1777439615716	2026-04-29 05:13:48.107	uploads/614a66c7-acd1-48db-a0d9-c764f2f35617.jpg	162211	\N	\N	\N	\N	IMAGE	221.7926958358433
+asset_1777439649230_2	4+	http://localhost:9000/heovose-assets/uploads/8b9795e0-119c-4404-a2ca-c1eb86f1e6d6.jpg	cat_1777439615716	2026-04-29 05:13:49.021	uploads/8b9795e0-119c-4404-a2ca-c1eb86f1e6d6.jpg	55232	\N	\N	\N	\N	IMAGE	249.0067191508075
+asset_1777439650261_3	5	http://localhost:9000/heovose-assets/uploads/67efc91b-0fb2-4144-9a18-16cdc9be8051.jpg	cat_1777439615716	2026-04-29 05:13:49.944	uploads/67efc91b-0fb2-4144-9a18-16cdc9be8051.jpg	56115	\N	\N	\N	\N	IMAGE	248.7478280031207
+asset_1777439651171_4	6	http://localhost:9000/heovose-assets/uploads/18fe18d1-74f6-4534-be9f-729d05650074.jpg	cat_1777439615716	2026-04-29 05:13:50.95	uploads/18fe18d1-74f6-4534-be9f-729d05650074.jpg	141463	\N	\N	\N	\N	IMAGE	232.4409182667673
+asset_1777439652265_5	7	http://localhost:9000/heovose-assets/uploads/051df97b-d2a2-409f-8dec-a5255ce0ed52.jpg	cat_1777439615716	2026-04-29 05:14:12.599	uploads/051df97b-d2a2-409f-8dec-a5255ce0ed52.jpg	95362	\N	\N	\N	\N	IMAGE	241.5088273448256
+asset_1777439653179_6	8	http://localhost:9000/heovose-assets/uploads/a1b65d43-04ef-4fef-83c0-b90312b839ae.jpg	cat_1777439615716	2026-04-29 05:14:13.624	uploads/a1b65d43-04ef-4fef-83c0-b90312b839ae.jpg	141021	\N	\N	\N	\N	IMAGE	230.0757208239955
+asset_1777439654287_7	9	http://localhost:9000/heovose-assets/uploads/78023efa-ea99-49cb-a8e0-4b39fa4ed119.jpg	cat_1777439615716	2026-04-29 05:14:14.609	uploads/78023efa-ea99-49cb-a8e0-4b39fa4ed119.jpg	74627	\N	\N	\N	\N	IMAGE	246.3521080336952
+asset_1777439656696_9	12	http://localhost:9000/heovose-assets/uploads/a91c1517-9c44-45f5-9aad-73c33f2be500.jpg	cat_1777439615716	2026-04-29 05:13:57.39	uploads/a91c1517-9c44-45f5-9aad-73c33f2be500.jpg	214659	\N	\N	\N	\N	IMAGE	207.9415051799249
+asset_1777448722825_ywqq1_0	MINI-PC-P-1	http://localhost:9000/heovose-assets/uploads/7986eb81-e9f3-4887-a764-169dcfe6eedd.jpg	cat_1777433109728	2026-04-29 07:45:24.644	uploads/7986eb81-e9f3-4887-a764-169dcfe6eedd.jpg	108510	900	1100	\N	\N	IMAGE	245.5979201888512
+asset_1777448725091_e2jyo_1	MINI-PC-P-2	http://localhost:9000/heovose-assets/uploads/e30c9cfe-d6c1-41d3-a81c-7a84b96849d6.jpg	cat_1777433109728	2026-04-29 07:45:25.551	uploads/e30c9cfe-d6c1-41d3-a81c-7a84b96849d6.jpg	138300	900	1100	\N	\N	IMAGE	240.2653810094099
+asset_1777448725958_dibm2_2	MINI-PC-P-3	http://localhost:9000/heovose-assets/uploads/85d4b221-af4a-4f81-8e4b-fcc73c3eb6a2.jpg	cat_1777433109728	2026-04-29 07:45:26.293	uploads/85d4b221-af4a-4f81-8e4b-fcc73c3eb6a2.jpg	135571	900	1100	\N	\N	IMAGE	243.0144285677279
+asset_1777448726694_4lxgr_3	MINI-PC-P-4	http://localhost:9000/heovose-assets/uploads/c8eb3f01-a1ab-484f-b7f6-c2036c568fe3.jpg	cat_1777433109728	2026-04-29 07:45:27.115	uploads/c8eb3f01-a1ab-484f-b7f6-c2036c568fe3.jpg	123066	900	1100	\N	\N	IMAGE	241.891355275887
+asset_1777448727513_ptx4a_4	MINI-PC-P-5	http://localhost:9000/heovose-assets/uploads/be56ed65-5e25-443a-8775-b54b59ecebae.jpg	cat_1777433109728	2026-04-29 07:45:27.837	uploads/be56ed65-5e25-443a-8775-b54b59ecebae.jpg	131588	900	1100	\N	\N	IMAGE	230.9062916267121
+asset_1777448728217_q9vv7_5	MINI-PC-P-6	http://localhost:9000/heovose-assets/uploads/4a74aae7-85aa-41e9-82f2-f8765d69719c.jpg	cat_1777433109728	2026-04-29 07:45:28.628	uploads/4a74aae7-85aa-41e9-82f2-f8765d69719c.jpg	112783	900	1100	\N	\N	IMAGE	228.4073890677427
+asset_1777448729015_xnnhf_6	MINI-PC-P-7	http://localhost:9000/heovose-assets/uploads/2e2479d4-e456-4444-b3f9-7f47c1d1c877.jpg	cat_1777433109728	2026-04-29 07:45:29.336	uploads/2e2479d4-e456-4444-b3f9-7f47c1d1c877.jpg	114772	900	1100	\N	\N	IMAGE	232.4326262626262
+asset_1777865670277_vhy6j_0	1-1	http://localhost:9000/heovose-assets/uploads/a86df304-a607-4ce1-8278-c45cdce9fddc.jpg	cat_1777856782910	2026-05-04 03:34:06.167	uploads/a86df304-a607-4ce1-8278-c45cdce9fddc.jpg	352788	1792	2400	\N	\N	IMAGE	105.1519853532395
+asset_1778118049515_63lwr_0	e42bd174-0a62-475d-ad9e-24aa75d3d5b6-stream	http://localhost:9000/heovose-assets/uploads/5fae3bc9-26a1-4a8b-b115-4edb7f8a04ba.mp4	cat_1777363045711	2026-05-07 01:40:30.342	uploads/5fae3bc9-26a1-4a8b-b115-4edb7f8a04ba.mp4	11277814	1080	1920	15	\N	VIDEO	\N
+asset_1778118341006_vt8p8_0	Heovose	http://localhost:9000/heovose-assets/uploads/eb4dd77e-2084-45f8-847d-533ca8f40285.mp4	cat_1777363045711	2026-05-07 01:45:44.901	uploads/eb4dd77e-2084-45f8-847d-533ca8f40285.mp4	20578228	1080	1920	30.033333	\N	VIDEO	\N
+asset_1777367981154_0	这是一个一体机电脑产品，帮我生成一张使用场景的场景图_202604151453	http://localhost:9000/heovose-assets/uploads/6ee490d1-e5e8-4125-b5bf-ec76af05f192.jpeg	cat_1777363045711	2026-04-28 09:19:21.635	uploads/6ee490d1-e5e8-4125-b5bf-ec76af05f192.jpeg	626021	\N	\N	\N	\N	IMAGE	145.3545043162868
+asset_1777439655277_8	10	http://localhost:9000/heovose-assets/uploads/ccfe4f35-2bb6-4b74-a32f-e06200382c47.jpg	cat_1777439615716	2026-04-29 05:13:56.376	uploads/ccfe4f35-2bb6-4b74-a32f-e06200382c47.jpg	302898	\N	\N	\N	\N	IMAGE	206.4269232323232
+asset_1777865671144_h08ot_1	2-2	http://localhost:9000/heovose-assets/uploads/22811330-25ce-4b07-b7c6-f8e9554668d1.jpg	cat_1777856782910	2026-05-04 03:34:06.911	uploads/22811330-25ce-4b07-b7c6-f8e9554668d1.jpg	310293	1792	2400	\N	\N	IMAGE	117.1303978077119
+asset_1777865671890_gl0an_2	3-1	http://localhost:9000/heovose-assets/uploads/a74635cb-af32-457a-b8c9-3fa19e8ffa07.jpg	cat_1777856782910	2026-05-04 03:34:07.731	uploads/a74635cb-af32-457a-b8c9-3fa19e8ffa07.jpg	555093	1792	2400	\N	\N	IMAGE	118.892306244876
+asset_1777865672716_qxpao_3	4-1	http://localhost:9000/heovose-assets/uploads/974db4dd-3375-4a63-97e6-c0d3f7f7c394.jpg	cat_1777856782910	2026-05-04 03:34:08.474	uploads/974db4dd-3375-4a63-97e6-c0d3f7f7c394.jpg	586300	1792	2400	\N	\N	IMAGE	116.3104274182851
+asset_1777865673431_fk2gc_4	4-2	http://localhost:9000/heovose-assets/uploads/e7c66841-5309-43eb-abb3-aea7f8b64195.jpg	cat_1777856782910	2026-05-04 03:34:09.289	uploads/e7c66841-5309-43eb-abb3-aea7f8b64195.jpg	318675	627	901	\N	\N	IMAGE	161.7050810658425
+asset_1777865674262_u8v16_5	5-1	http://localhost:9000/heovose-assets/uploads/feffb430-8e05-4d04-8b06-04e9b1711eaf.jpg	cat_1777856782910	2026-05-04 03:34:10.008	uploads/feffb430-8e05-4d04-8b06-04e9b1711eaf.jpg	299834	1125	1500	\N	\N	IMAGE	153.5070706786463
+asset_1777865674969_e60nw_6	5-2	http://localhost:9000/heovose-assets/uploads/b9f5d5c4-7465-4e9f-90df-27b326f1f3f3.jpg	cat_1777856782910	2026-05-04 03:34:10.787	uploads/b9f5d5c4-7465-4e9f-90df-27b326f1f3f3.jpg	343537	801	1200	\N	\N	IMAGE	169.0218852816004
+asset_1777865675740_6m9gw_7	6-1	http://localhost:9000/heovose-assets/uploads/35094d60-83d1-49de-b715-be94ae2459c4.jpg	cat_1777856782910	2026-05-04 03:34:11.48	uploads/35094d60-83d1-49de-b715-be94ae2459c4.jpg	243513	1200	900	\N	\N	IMAGE	127.1303367640249
+asset_1777865733016_wzmi7_0	2-1	http://localhost:9000/heovose-assets/uploads/37d8a977-98fc-46ac-8437-cd80d1dfb965.jpg	cat_1777856782910	2026-05-04 03:35:08.707	uploads/37d8a977-98fc-46ac-8437-cd80d1dfb965.jpg	267782	1080	1620	\N	\N	IMAGE	160.5970128436285
+asset_1777439296324_0	2-1	http://localhost:9000/heovose-assets/uploads/7062814e-9aa1-44bd-950c-0e1fc062cb2f.jpg	cat_1777856782910	2026-04-29 05:08:16.776	uploads/7062814e-9aa1-44bd-950c-0e1fc062cb2f.jpg	267782	\N	\N	\N	\N	IMAGE	160.5970128436285
+asset_1777967239460_sk87r_0	一体机宣传海报	http://localhost:9000/heovose-assets/uploads/b1b9ef74-fe06-45a0-93ee-f3f7283e8dfd.jpg	cat_1777363045711	2026-05-05 07:46:55.987	uploads/b1b9ef74-fe06-45a0-93ee-f3f7283e8dfd.jpg	279781	1536	2752	\N	\N	IMAGE	209.5443273881463
+asset_1777968533975_xlq7y_0	Image 3	http://localhost:9000/heovose-assets/uploads/633b89ab-91e2-4047-ab85-750df64c0ed3.jpg	cat_1777363045711	2026-05-05 08:08:29.02	uploads/633b89ab-91e2-4047-ab85-750df64c0ed3.jpg	648935	2143	3840	\N	\N	IMAGE	195.039479446144
 \.
 
 
@@ -460,14 +482,14 @@ cat_1777856782910	生产流程	1	cat_1777363045711
 -- Data for Name: HomepageBentoItem; Type: TABLE DATA; Schema: public; Owner: heovose
 --
 
-COPY public."HomepageBentoItem" (id, "order", "titleZh", "titleEn", "tagZh", "tagEn", "imageUrl", "linkUrl", "gridSize", "createdAt", "updatedAt") FROM stdin;
-cmotm03ar0001ukpw6epm8ifq	1	一体机电脑	All-In-One PC			http://localhost:9000/heovose-assets/uploads/1d5e2af2-ef38-43a7-8d69-19644b36c16d.jpg	products?category=aio	large	2026-05-06 05:21:01.106	2026-05-06 07:12:06.821
-cmotlyork0000ukpwy7tydtim	2	小主机	Mini PC			http://localhost:9000/heovose-assets/uploads/2e2479d4-e456-4444-b3f9-7f47c1d1c877.jpg	products?category=minipc	wide	2026-05-06 05:19:55.615	2026-05-06 07:12:06.821
-cmotmqkwq0002ukpwqqnjph4a	3	笔记本电脑	Notebook			http://localhost:9000/heovose-assets/uploads/a91c1517-9c44-45f5-9aad-73c33f2be500.jpg	products?category=notebook	small	2026-05-06 05:41:36.986	2026-05-06 07:12:06.821
-cmotn71fa0005ukpwe6rnf8cc	4	工业一体机				http://localhost:9000/heovose-assets/uploads/974db4dd-3375-4a63-97e6-c0d3f7f7c394.jpg	products?category=industrial	large	2026-05-06 05:54:24.885	2026-05-06 07:12:06.821
-cmotn04vj0004ukpwxydympu1	5	会议平板	Whiteboard			http://localhost:9000/heovose-assets/uploads/22811330-25ce-4b07-b7c6-f8e9554668d1.jpg	products?category=whiteboard	wide	2026-05-06 05:49:02.766	2026-05-06 07:12:06.821
-cmotnd8br0006ukpwxydqkv9o	6	核心配件	Core Components	批发业务	Wholesale	http://localhost:9000/heovose-assets/uploads/7062814e-9aa1-44bd-950c-0e1fc062cb2f.jpg	products?category=core	tall	2026-05-06 05:59:13.746	2026-05-06 07:12:06.821
-cmotmy04s0003ukpwrv11j33q	7	显示器	Monitor			http://localhost:9000/heovose-assets/uploads/be56ed65-5e25-443a-8775-b54b59ecebae.jpg	products?category=monitor	tall	2026-05-06 05:47:23.307	2026-05-06 07:12:06.821
+COPY public."HomepageBentoItem" (id, "order", "titleZh", "titleEn", "tagZh", "tagEn", "imageUrl", "linkUrl", "gridSize", "createdAt", "updatedAt", brightness) FROM stdin;
+cmotm03ar0001ukpw6epm8ifq	1	一体机电脑	All-In-One PC			http://localhost:9000/heovose-assets/uploads/1d5e2af2-ef38-43a7-8d69-19644b36c16d.jpg	products?category=aio	large	2026-05-06 05:21:01.106	2026-05-08 07:15:17.198	200.6740637832585
+cmotlyork0000ukpwy7tydtim	2	小主机	Mini PC			http://localhost:9000/heovose-assets/uploads/2e2479d4-e456-4444-b3f9-7f47c1d1c877.jpg	products?category=minipc	wide	2026-05-06 05:19:55.615	2026-05-08 07:15:17.351	232.4326262626262
+cmotmqkwq0002ukpwqqnjph4a	3	笔记本电脑	Notebook			http://localhost:9000/heovose-assets/uploads/a91c1517-9c44-45f5-9aad-73c33f2be500.jpg	products?category=notebook	small	2026-05-06 05:41:36.986	2026-05-08 07:15:44.638	207.9415051799249
+cmotn71fa0005ukpwe6rnf8cc	4	工业一体机				http://localhost:9000/heovose-assets/uploads/974db4dd-3375-4a63-97e6-c0d3f7f7c394.jpg	products?category=industrial	large	2026-05-06 05:54:24.885	2026-05-08 07:15:18.009	116.3104274182851
+cmotn04vj0004ukpwxydympu1	5	会议平板	Whiteboard			http://localhost:9000/heovose-assets/uploads/22811330-25ce-4b07-b7c6-f8e9554668d1.jpg	products?category=whiteboard	wide	2026-05-06 05:49:02.766	2026-05-08 07:15:18.42	117.1303978077119
+cmotnd8br0006ukpwxydqkv9o	6	核心配件	Core Components	批发业务	Wholesale	http://localhost:9000/heovose-assets/uploads/7062814e-9aa1-44bd-950c-0e1fc062cb2f.jpg	products?category=core	tall	2026-05-06 05:59:13.746	2026-05-08 07:15:18.651	160.5970128436285
+cmotmy04s0003ukpwrv11j33q	7	显示器	Monitor			http://localhost:9000/heovose-assets/uploads/be56ed65-5e25-443a-8775-b54b59ecebae.jpg	products?category=monitor	tall	2026-05-06 05:47:23.307	2026-05-08 07:15:18.793	230.9062916267121
 \.
 
 
@@ -475,11 +497,11 @@ cmotmy04s0003ukpwrv11j33q	7	显示器	Monitor			http://localhost:9000/heovose-as
 -- Data for Name: HomepageContent; Type: TABLE DATA; Schema: public; Owner: heovose
 --
 
-COPY public."HomepageContent" (id, "heroHeadlineEn", "heroHeadlineZh", "heroSubheadlineEn", "heroSubheadlineZh", "heroWholesaleButtonEn", "heroWholesaleButtonZh", "heroProjectButtonEn", "heroProjectButtonZh", "heroWholesaleCategoryId", "heroProjectCategoryId", "isVideoEnabled", "videoTitleEn", "videoTitleZh", "videoSubtitleEn", "videoSubtitleZh", "mapTitleEn", "mapTitleZh", "mapSubtitleEn", "mapSubtitleZh", "heroProjectDescriptionEn", "heroProjectDescriptionZh", "heroSlides", "heroWholesaleDescriptionEn", "heroWholesaleDescriptionZh", "videoUrl", "heroProjectBg", "heroWholesaleBg", "bentoSubtitleEn", "bentoSubtitleZh", "bentoTitleEn", "bentoTitleZh", "processSubtitleEn", "processSubtitleZh", "processTitleEn", "processTitleZh", "gallerySubtitleEn", "gallerySubtitleZh", "galleryTitleEn", "galleryTitleZh") FROM stdin;
-video	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	t	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	http://localhost:9000/heovose-assets/uploads/0af8547d-8b02-4615-ba22-59b3af72e7b3.mp4	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N
-bento	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	t	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	Explore our diverse product range	探索我们的多元化产品系列	\N	\N	\N	\N	\N	\N	\N	\N
-hero	Elevate Your Digital Horizon	提升您的数字视野	Next-Generation Hardware Solutions for Global Enterprises	面向全球企业的下一代硬件解决方案	Wholesale Products	批发产品	Project Products	项目产品	WHOLESALE	PROJECT	t	Our Craftsmanship	我们的工艺	\N	\N	Global Footprint	全球足迹	\N	\N	\N	\N	[{"id": "legacy-default", "bgImage": "http://localhost:9000/heovose-assets/uploads/633b89ab-91e2-4047-ab85-750df64c0ed3.jpg", "priority": 0, "headlineEn": "Elevate Your Digital Horizon", "headlineZh": "提升您的数字视野", "subheadlineEn": "Next-generation hardware solutions for global enterprises", "subheadlineZh": "面向全球企业的下一代硬件解决方案"}, {"id": "slide_1777967445203", "bgImage": "http://localhost:9000/heovose-assets/uploads/b1b9ef74-fe06-45a0-93ee-f3f7283e8dfd.jpg", "priority": 1, "headlineEn": "F9-S Series All-in-one PC", "headlineZh": "F9-S系列 一体机电脑", "subheadlineEn": "Base supports lifting, lowering, and rotation, with brightness adjustment and a pop-up camera.", "subheadlineZh": "底座支撑升降旋转，支持亮度调节，弹出式摄像头"}]	\N	\N	\N	http://localhost:9000/heovose-assets/uploads/0c0e4c85-1a0a-4ec7-86ef-47726bfa924c.png	http://localhost:9000/heovose-assets/uploads/c61bd50a-2cc7-490d-8c67-13b30ba36753.png	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N
-gallery	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	t	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	New Product	最新产品
+COPY public."HomepageContent" (id, "heroHeadlineEn", "heroHeadlineZh", "heroSubheadlineEn", "heroSubheadlineZh", "heroWholesaleButtonEn", "heroWholesaleButtonZh", "heroProjectButtonEn", "heroProjectButtonZh", "heroWholesaleCategoryId", "heroProjectCategoryId", "isVideoEnabled", "videoTitleEn", "videoTitleZh", "videoSubtitleEn", "videoSubtitleZh", "mapTitleEn", "mapTitleZh", "mapSubtitleEn", "mapSubtitleZh", "heroProjectDescriptionEn", "heroProjectDescriptionZh", "heroSlides", "heroWholesaleDescriptionEn", "heroWholesaleDescriptionZh", "videoUrl", "heroProjectBg", "heroWholesaleBg", "bentoSubtitleEn", "bentoSubtitleZh", "bentoTitleEn", "bentoTitleZh", "processSubtitleEn", "processSubtitleZh", "processTitleEn", "processTitleZh", "gallerySubtitleEn", "gallerySubtitleZh", "galleryTitleEn", "galleryTitleZh", "galleryItems", "casesSubtitleEn", "casesSubtitleZh", "casesTitleEn", "casesTitleZh", "casesSubtitleTextId", "casesTitleTextId") FROM stdin;
+video	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	t	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	http://localhost:9000/heovose-assets/uploads/eb4dd77e-2084-45f8-847d-533ca8f40285.mp4	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	CASES_SUBTITLE	CASES_TITLE
+bento	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	t	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	Explore our diverse product range	探索我们的多元化产品系列	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	CASES_SUBTITLE	CASES_TITLE
+gallery	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	t	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	Featured Products	精选产品	[{"badge": "NEW", "productId": "PROD_AIO_0504_987C"}, {"badge": null, "productId": "cmoibfi320007uknu4dcvlfch"}, {"badge": null, "productId": "cmoibfi320008uknuhbf1oyi0"}, {"badge": null, "productId": "PROD_KIOSK_0505_95WB"}, {"badge": "HOT", "productId": "PROD_MONITOR_0504_FIA9"}, {"badge": null, "productId": "PROD_KIOSK_0505_E0XK"}]	\N	\N	\N	\N	CASES_SUBTITLE	CASES_TITLE
+hero	Elevate Your Digital Horizon	提升您的数字视野	Next-Generation Hardware Solutions for Global Enterprises	面向全球企业的下一代硬件解决方案	Wholesale Products	批发产品	Project Products	项目产品	WHOLESALE	PROJECT	t	Our Craftsmanship	我们的工艺	\N	\N	Global Footprint	全球足迹	\N	\N	\N	\N	[{"id": "legacy-default", "bgImage": "http://localhost:9000/heovose-assets/uploads/633b89ab-91e2-4047-ab85-750df64c0ed3.jpg", "priority": 0, "brightness": 195.039479446144, "headlineEn": "Elevate Your Digital Horizon", "headlineZh": "提升您的数字视野", "subheadlineEn": "Next-generation hardware solutions for global enterprises", "subheadlineZh": "面向全球企业的下一代硬件解决方案"}, {"id": "slide_1777967445203", "bgImage": "http://localhost:9000/heovose-assets/uploads/b1b9ef74-fe06-45a0-93ee-f3f7283e8dfd.jpg", "priority": 1, "brightness": 209.5443273881463, "headlineEn": "F9-S Series All-in-one PC", "headlineZh": "F9-S系列 一体机电脑", "subheadlineEn": "Base supports lifting, lowering, and rotation, with brightness adjustment and a pop-up camera.", "subheadlineZh": "底座支撑升降旋转，支持亮度调节，弹出式摄像头"}, {"id": "slide_1778116448593", "bgImage": "http://localhost:9000/heovose-assets/uploads/c7c4117f-144c-437b-894f-b2081d046560.jpg", "priority": 2, "brightness": 98.08732214425595, "headlineEn": "New Headline", "headlineZh": "新标题", "subheadlineEn": "New Subheadline", "subheadlineZh": "新副标题"}]	\N	\N	\N	http://localhost:9000/heovose-assets/uploads/0c0e4c85-1a0a-4ec7-86ef-47726bfa924c.png	http://localhost:9000/heovose-assets/uploads/c61bd50a-2cc7-490d-8c67-13b30ba36753.png	\N	\N	\N	\N	\N	\N	Production Pipeline	生产流程	\N	\N	\N	\N	\N	Real-world impact of Heovose hardware solutions.	Heovose 硬件方案在全球的真实应用。	Success Stories	案例展示	CASES_SUBTITLE	CASES_TITLE
 \.
 
 
@@ -672,21 +694,63 @@ nav_contact	{"en": "Contact Us", "id": "Hubungi Kami", "zh": "联系我们"}	202
 hero_headline	{"en": "All In One Computer", "id": "Komputer All In One", "zh": "一体化电脑"}	2026-05-05 09:10:12.623	2026-05-05 09:10:12.623
 hero_subheadline	{"en": "Professional Manufacturer", "id": "Produsen Profesional", "zh": "专业级制造商"}	2026-05-05 09:10:12.633	2026-05-05 09:10:12.633
 hero_cta	{"en": "Explore Solutions", "id": "Jelajahi Solusi", "zh": "探索方案"}	2026-05-05 09:10:12.638	2026-05-05 09:10:12.638
-hero_wholesale_title	{"en": "Wholesale Products", "id": "Produk Grosir", "zh": "批发产品"}	2026-05-05 09:10:12.642	2026-05-06 09:12:17.825
-hero_wholesale_desc	{"en": "", "id": "", "zh": ""}	2026-05-05 09:10:12.646	2026-05-06 09:12:17.826
-hero_project_title	{"en": "Project Products", "id": "Solusi Proyek", "zh": "项目产品"}	2026-05-05 09:10:12.649	2026-05-06 09:12:17.827
-PRODUCTS_TITLE	{"en": "Explore our diverse product range", "zh": "探索我们的多元化产品系列"}	2026-05-06 09:07:43.901	2026-05-06 09:12:17.829
 cat_name_NOTEBOOK	{"en": "Notebook computer", "zh": "笔记本电脑"}	2026-05-05 02:11:57.117	2026-05-06 05:02:30.707
 hero_slide_1778034103591_headline	{"en": "New Title", "zh": "新标题"}	2026-05-06 02:21:33.568	2026-05-06 05:53:36.152
 hero_slide_1778034103591_subheadline	{"en": "New Subtitle", "zh": "新副标题"}	2026-05-06 02:21:33.571	2026-05-06 05:53:36.152
-hero_project_desc	{"en": "", "id": "", "zh": ""}	2026-05-05 09:10:12.653	2026-05-06 09:12:17.827
-PRODUCTS_SUBTITLE	{"en": "", "zh": ""}	2026-05-06 09:07:44.54	2026-05-06 09:12:18.5
-GALLERY_TITLE	{"en": "New Product", "zh": "最新产品"}	2026-05-06 09:07:44.56	2026-05-06 09:12:18.586
-GALLERY_SUBTITLE	{"en": "", "zh": ""}	2026-05-06 09:07:44.655	2026-05-06 09:12:18.59
-hero_slide_legacy-default_subheadline	{"en": "Next-generation hardware solutions for global enterprises", "zh": "面向全球企业的下一代硬件解决方案"}	2026-05-06 01:53:56.258	2026-05-06 09:12:18.591
-hero_slide_legacy-default_headline	{"en": "Elevate Your Digital Horizon", "id": "Tingkatkan Cakrawala Digital Anda", "zh": "提升您的数字视野"}	2026-05-06 01:53:56.258	2026-05-06 09:12:18.596
-hero_slide_1777967445203_headline	{"en": "F9-S Series All-in-one PC", "zh": "F9-S系列 一体机电脑"}	2026-05-06 01:53:57.069	2026-05-06 09:12:18.602
-hero_slide_1777967445203_subheadline	{"en": "Base supports lifting, lowering, and rotation, with brightness adjustment and a pop-up camera.", "zh": "底座支撑升降旋转，支持亮度调节，弹出式摄像头"}	2026-05-06 01:53:57.071	2026-05-06 09:12:19.468
+hero_wholesale_title	{"en": "Wholesale Products", "id": "Produk Grosir", "zh": "批发产品"}	2026-05-05 09:10:12.642	2026-05-07 02:07:32.758
+hero_wholesale_desc	{"en": "", "id": "", "zh": ""}	2026-05-05 09:10:12.646	2026-05-07 02:07:32.759
+hero_project_title	{"en": "Project Products", "id": "Solusi Proyek", "zh": "项目产品"}	2026-05-05 09:10:12.649	2026-05-07 02:07:32.761
+hero_project_desc	{"en": "", "id": "", "zh": ""}	2026-05-05 09:10:12.653	2026-05-07 02:07:32.762
+PRODUCTS_TITLE	{"en": "Explore our diverse product range", "zh": "探索我们的多元化产品系列"}	2026-05-06 09:07:43.901	2026-05-07 02:07:33.883
+PRODUCTS_SUBTITLE	{"en": "", "zh": ""}	2026-05-06 09:07:44.54	2026-05-07 02:07:33.883
+GALLERY_TITLE	{"en": "Featured Products", "zh": "精选产品"}	2026-05-06 09:07:44.56	2026-05-07 02:07:33.884
+GALLERY_SUBTITLE	{"en": "", "zh": ""}	2026-05-06 09:07:44.655	2026-05-07 02:07:33.885
+hero_slide_legacy-default_subheadline	{"en": "Next-generation hardware solutions for global enterprises", "zh": "面向全球企业的下一代硬件解决方案"}	2026-05-06 01:53:56.258	2026-05-07 02:07:33.888
+hero_slide_legacy-default_headline	{"en": "Elevate Your Digital Horizon", "id": "Tingkatkan Cakrawala Digital Anda", "zh": "提升您的数字视野"}	2026-05-06 01:53:56.258	2026-05-07 02:07:33.886
+hero_slide_1777967445203_headline	{"en": "F9-S Series All-in-one PC", "zh": "F9-S系列 一体机电脑"}	2026-05-06 01:53:57.069	2026-05-07 02:07:34.988
+hero_slide_1777967445203_subheadline	{"en": "Base supports lifting, lowering, and rotation, with brightness adjustment and a pop-up camera.", "zh": "底座支撑升降旋转，支持亮度调节，弹出式摄像头"}	2026-05-06 01:53:57.071	2026-05-07 02:07:34.991
+hero_slide_1778116448593_headline	{"en": "New Headline", "zh": "新标题"}	2026-05-07 01:14:20.034	2026-05-07 02:07:34.992
+hero_slide_1778116448593_subheadline	{"en": "New Subheadline", "zh": "新副标题"}	2026-05-07 01:14:20.042	2026-05-07 02:07:34.993
+process_PROCESS_TITLE	{"en": "Production Pipeline", "zh": "生产流程"}	2026-05-08 08:04:10.31	2026-05-08 08:04:10.31
+process_PROCESS_SUBTITLE	{"en": "", "zh": ""}	2026-05-08 08:04:10.311	2026-05-08 08:04:10.311
+process_step_step_1778201589249_title	{"en": "Procurement", "zh": "采购"}	2026-05-08 08:07:00.318	2026-05-08 08:07:07.762
+process_step_step_1778201589249_desc	{"en": "Strategic sourcing and purchasing of high-quality raw materials from certified suppliers.", "zh": "从供应商处战略性地采购优质原材料。"}	2026-05-08 08:07:00.324	2026-05-08 08:07:07.77
+BADGE_NEW	{"en": "NEW", "zh": "新品"}	2026-05-07 01:45:18.746	2026-05-07 01:45:18.746
+BADGE_HOT	{"en": "HOT", "zh": "热销"}	2026-05-07 01:45:18.756	2026-05-07 01:45:18.756
+process_step_step_1778201616561_title	{"en": "Supplier", "zh": "供应商"}	2026-05-08 08:07:07.781	2026-05-08 08:07:07.781
+process_step_step_1778201616561_desc	{"en": "Managing supplier relationships and ensuring timely delivery of components.", "zh": "管理供应商关系并确保零部件及时交付。"}	2026-05-08 08:07:07.785	2026-05-08 08:07:07.785
+process_step_step_1778201602533_title	{"en": "Receiving", "zh": "接收"}	2026-05-08 08:07:07.793	2026-05-08 08:07:07.793
+process_step_step_1778201602533_desc	{"en": "Receiving and verifying incoming materials against purchase orders.", "zh": "接收并核对到货物料与采购订单是否相符。"}	2026-05-08 08:07:07.797	2026-05-08 08:07:07.797
+process_step_cmoibfi3p000cuknuihdblv62_title	{"en": "PMC Planning", "zh": "PMC规划"}	2026-05-08 08:07:07.804	2026-05-08 08:07:07.804
+process_step_cmoibfi3p000cuknuihdblv62_desc	{"en": "Production and material control planning for optimal resource allocation and timeline management.", "zh": "生产和物料控制计划，以实现最佳资源配置和时间管理。"}	2026-05-08 08:07:07.808	2026-05-08 08:07:07.808
+process_step_step_1778201650787_title	{"en": "Inspection", "zh": "检查"}	2026-05-08 08:07:07.814	2026-05-08 08:07:07.814
+process_step_step_1778201650787_desc	{"en": "Comprehensive quality inspection ensuring all materials meet specifications.", "zh": "进行全面质量检验，确保所有材料均符合规格要求。"}	2026-05-08 08:07:07.817	2026-05-08 08:07:07.817
+process_step_step_1778201661146_title	{"en": "Warehousing", "zh": "仓储"}	2026-05-08 08:07:07.825	2026-05-08 08:07:07.825
+process_step_step_1778201661146_desc	{"en": "Secure storage of qualified materials in climate-controlled facilities.", "zh": "在温控设施中安全储存合格材料。"}	2026-05-08 08:07:07.829	2026-05-08 08:07:07.829
+process_step_step_1778201672084_title	{"en": "Material Issuing", "zh": "材料发行"}	2026-05-08 08:07:07.836	2026-05-08 08:07:07.836
+process_step_step_1778201672084_desc	{"en": "Systematic material requisition and distribution to production lines.", "zh": "系统地申请物料并将其分发到生产线。"}	2026-05-08 08:07:07.839	2026-05-08 08:07:07.839
+process_step_step_1778201695830_title	{"en": "Manufacturing", "zh": "制造"}	2026-05-08 08:07:07.845	2026-05-08 08:07:07.845
+process_step_step_1778201695830_desc	{"en": "Precision manufacturing using advanced equipment and strict quality protocols.", "zh": "采用先进设备和严格的质量控制流程进行精密制造。"}	2026-05-08 08:07:07.848	2026-05-08 08:07:07.848
+process_step_step_1778201715793_title	{"en": "Pre-Shipment Inspection", "zh": "装运前检验"}	2026-05-08 08:07:07.855	2026-05-08 08:07:07.855
+process_step_step_1778201715793_desc	{"en": "Final quality assurance before products leave the facility.", "zh": "产品出厂前的最终质量检验。"}	2026-05-08 08:07:07.859	2026-05-08 08:07:07.859
+process_step_step_1778203371049_title	{"en": "Warehousing", "zh": "仓储"}	2026-05-08 08:07:07.868	2026-05-08 08:07:07.868
+process_step_step_1778203371049_desc	{"en": "Product storage and inventory management before shipment.", "zh": "发货前的产品存储和库存管理。"}	2026-05-08 08:07:07.871	2026-05-08 08:07:07.871
+process_step_step_1778203386487_title	{"en": "Shipment", "zh": "运输"}	2026-05-08 08:07:07.88	2026-05-08 08:07:07.88
+process_step_step_1778203386487_desc	{"en": "Secure packaging and global distribution to customers worldwide.", "zh": "安全包装，全球配送，服务全球客户。"}	2026-05-08 08:07:07.884	2026-05-08 08:07:07.884
+case_study_cmoibfi3k000buknut5a5e8tx_title	{"en": "Smart POS Integration", "zh": "智能 POS 集成方案"}	2026-05-08 08:30:46.15	2026-05-08 08:30:46.15
+case_study_cmoibfi3k000buknut5a5e8tx_desc	{"en": "Optimizing checkout experiences across 500+ stores.", "zh": "优化 500 多家门店的结账体验。"}	2026-05-08 08:30:46.153	2026-05-08 08:30:46.153
+case_study_cmoibfi3k000buknut5a5e8tx_tag	{"en": "RETAIL", "zh": "智慧零售"}	2026-05-08 08:30:46.156	2026-05-08 08:30:46.156
+case_study_case_1778229658031_title	{"en": "", "zh": "儿玩阿道夫玩儿儿"}	2026-05-08 08:40:32.396	2026-05-08 08:40:32.396
+case_study_case_1778229658031_tag	{"en": "", "zh": "发的开始"}	2026-05-08 08:40:32.42	2026-05-08 08:40:32.42
+case_study_case_1778229658031_desc	{"en": "", "zh": "短发多发点服务而1231241"}	2026-05-08 08:40:32.419	2026-05-08 08:40:32.419
+case_study_case_1778230943052_desc	{"en": "", "zh": "放大圈儿确认企鹅人情恶我让玩儿去人3123 "}	2026-05-08 09:01:57.438	2026-05-08 09:01:57.438
+case_study_case_1778230943052_title	{"en": "", "zh": "发的企鹅圈儿去23"}	2026-05-08 09:01:57.439	2026-05-08 09:01:57.439
+case_study_case_1778230943052_tag	{"en": "", "zh": "阿德福韦"}	2026-05-08 09:01:57.464	2026-05-08 09:01:57.464
+case_study_case_1778231480450_title	{"en": "", "zh": "发二分为发"}	2026-05-08 09:11:21.805	2026-05-08 09:11:21.805
+case_study_case_1778231480450_desc	{"en": "", "zh": "圈儿去而且而12312 答复玩儿去而圈儿er"}	2026-05-08 09:11:21.807	2026-05-08 09:11:21.807
+case_study_case_1778231480450_tag	{"en": "", "zh": "发顺丰的"}	2026-05-08 09:11:21.806	2026-05-08 09:11:21.806
+CASES_TITLE	{"en": "Success Stories", "id": "Kisah Sukses", "vi": "Câu chuyện thành công", "zh": "案例展示"}	2026-05-08 08:30:46.114	2026-05-08 09:11:58.813
+CASES_SUBTITLE	{"en": "", "id": "Dampak dunia nyata dari solusi perangkat keras Heovose.", "vi": "Tác động thực tế của giải pháp phần cứng Heovose.", "zh": ""}	2026-05-08 08:30:46.133	2026-05-08 09:11:58.815
 \.
 
 
@@ -704,13 +768,13 @@ cmoibfi39000auknuamax4sia	Factory	印尼工厂	Indonesia Factory	印度尼西亚
 -- Data for Name: Product; Type: TABLE DATA; Schema: public; Owner: heovose
 --
 
-COPY public."Product" (id, status, "nameTextId", "categoryId", "advantageTextIds", "createdAt", "descriptionTextId", "enabledLanguages", "galleryImageUrls", "localizedDetails", "mainImageUrl", "specGroups", "updatedAt") FROM stdin;
-PROD_MONITOR_0504_FIA9	published	prod_name_PROD_MONITOR_0504_FIA9	LED	\N	2026-05-04 07:15:13.105	prod_desc_PROD_MONITOR_0504_FIA9	{zh,en,id}	{}	{"en": "", "zh": ""}	http://localhost:9000/heovose-assets/uploads/37d8a977-98fc-46ac-8437-cd80d1dfb965.jpg	[]	2026-05-05 05:20:33.425
-cmoibfi320008uknuhbf1oyi0	published	prod_name_cmoibfi320008uknuhbf1oyi0	NOTEBOOK	\N	2026-04-28 07:39:36.398	prod_desc_cmoibfi320008uknuhbf1oyi0	{zh,id,en}	{}	{"en": "", "zh": ""}	http://localhost:9000/heovose-assets/uploads/a91c1517-9c44-45f5-9aad-73c33f2be500.jpg	[]	2026-05-05 05:20:37.987
-cmoibfi320007uknu4dcvlfch	published	prod_name_cmoibfi320007uknu4dcvlfch	MINIPC	\N	2026-04-28 07:39:36.398	prod_desc_cmoibfi320007uknu4dcvlfch	{zh,en,id}	{}	{"en": "", "zh": ""}	http://localhost:9000/heovose-assets/uploads/2e2479d4-e456-4444-b3f9-7f47c1d1c877.jpg	[]	2026-05-05 05:20:39.905
-PROD_AIO_0504_987C	published	prod_name_PROD_AIO_0504_987C	AIO	\N	2026-05-04 06:23:07.527	prod_desc_PROD_AIO_0504_987C	{zh,en,id}	{http://localhost:9000/heovose-assets/uploads/7dd3944b-9973-4e65-9649-353579cf4661.jpg,http://localhost:9000/heovose-assets/uploads/139f91d7-1cd2-448f-8461-d1b3d6251774.jpg,http://localhost:9000/heovose-assets/uploads/3eb25a8d-676e-404e-beea-6fbf69428e08.jpg,http://localhost:9000/heovose-assets/uploads/d967accc-5a8f-4b93-9976-bec5e24060f8.jpg,http://localhost:9000/heovose-assets/uploads/ba19c0be-1667-47cb-a031-e5e4e8751118.jpg,http://localhost:9000/heovose-assets/uploads/4eb0f28d-4c9a-4c38-a03c-7bef304908cf.jpg,http://localhost:9000/heovose-assets/uploads/15229520-358f-44a7-a5b7-d28cc552a89b.jpg}	{"en": "", "zh": ""}	http://localhost:9000/heovose-assets/uploads/1d5e2af2-ef38-43a7-8d69-19644b36c16d.jpg	[{"items": [{"labelId": "psl_PROD_AIO_0504_987C_0_0", "valueId": "psv_PROD_AIO_0504_987C_0_0"}, {"labelId": "psl_PROD_AIO_0504_987C_0_1", "valueId": "psv_PROD_AIO_0504_987C_0_1"}, {"labelId": "psl_PROD_AIO_0504_987C_0_2", "valueId": "psv_PROD_AIO_0504_987C_0_2"}, {"labelId": "psl_PROD_AIO_0504_987C_0_3", "valueId": "psv_PROD_AIO_0504_987C_0_3"}, {"labelId": "psl_PROD_AIO_0504_987C_0_4", "valueId": "psv_PROD_AIO_0504_987C_0_4"}, {"labelId": "psl_PROD_AIO_0504_987C_0_5", "valueId": "psv_PROD_AIO_0504_987C_0_5"}, {"labelId": "psl_PROD_AIO_0504_987C_0_6", "valueId": "psv_PROD_AIO_0504_987C_0_6"}, {"labelId": "psl_PROD_AIO_0504_987C_0_7", "valueId": "psv_PROD_AIO_0504_987C_0_7"}, {"labelId": "psl_PROD_AIO_0504_987C_0_8", "valueId": "psv_PROD_AIO_0504_987C_0_8"}, {"labelId": "psl_PROD_AIO_0504_987C_0_9", "valueId": "psv_PROD_AIO_0504_987C_0_9"}, {"labelId": "psl_PROD_AIO_0504_987C_0_10", "valueId": "psv_PROD_AIO_0504_987C_0_10"}], "titleId": "psg_PROD_AIO_0504_987C_0"}, {"items": [{"labelId": "psl_PROD_AIO_0504_987C_1_0", "valueId": "psv_PROD_AIO_0504_987C_1_0"}, {"labelId": "psl_PROD_AIO_0504_987C_1_1", "valueId": "psv_PROD_AIO_0504_987C_1_1"}, {"labelId": "psl_PROD_AIO_0504_987C_1_2", "valueId": "psv_PROD_AIO_0504_987C_1_2"}], "titleId": "psg_PROD_AIO_0504_987C_1"}, {"items": [{"labelId": "psl_PROD_AIO_0504_987C_2_0", "valueId": "psv_PROD_AIO_0504_987C_2_0"}, {"labelId": "psl_PROD_AIO_0504_987C_2_1", "valueId": "psv_PROD_AIO_0504_987C_2_1"}], "titleId": "psg_PROD_AIO_0504_987C_2"}, {"items": [{"labelId": "psl_PROD_AIO_0504_987C_3_0", "valueId": "psv_PROD_AIO_0504_987C_3_0"}, {"labelId": "psl_PROD_AIO_0504_987C_3_1", "valueId": "psv_PROD_AIO_0504_987C_3_1"}, {"labelId": "psl_PROD_AIO_0504_987C_3_2", "valueId": "psv_PROD_AIO_0504_987C_3_2"}, {"labelId": "psl_PROD_AIO_0504_987C_3_3", "valueId": "psv_PROD_AIO_0504_987C_3_3"}], "titleId": "psg_PROD_AIO_0504_987C_3"}, {"items": [{"labelId": "psl_PROD_AIO_0504_987C_4_0", "valueId": "psv_PROD_AIO_0504_987C_4_0"}, {"labelId": "psl_PROD_AIO_0504_987C_4_1", "valueId": "psv_PROD_AIO_0504_987C_4_1"}, {"labelId": "psl_PROD_AIO_0504_987C_4_2", "valueId": "psv_PROD_AIO_0504_987C_4_2"}], "titleId": "psg_PROD_AIO_0504_987C_4"}]	2026-05-05 03:33:43.895
-PROD_KIOSK_0505_E0XK	published	prod_name_PROD_KIOSK_0505_E0XK	KIOSK	\N	2026-05-05 05:09:56.611	prod_desc_PROD_KIOSK_0505_E0XK	{zh,en,id}	{http://localhost:9000/heovose-assets/uploads/35094d60-83d1-49de-b715-be94ae2459c4.jpg,http://localhost:9000/heovose-assets/uploads/b9f5d5c4-7465-4e9f-90df-27b326f1f3f3.jpg,http://localhost:9000/heovose-assets/uploads/a74635cb-af32-457a-b8c9-3fa19e8ffa07.jpg,http://localhost:9000/heovose-assets/uploads/22811330-25ce-4b07-b7c6-f8e9554668d1.jpg}	{"en": "<p class=\\"mb-4 text-[12px] leading-relaxed text-slate-600 font-body\\"><span style=\\"white-space: pre-wrap;\\">Tutoring fee</span><b><strong class=\\"font-bold\\" style=\\"white-space: pre-wrap;\\">Tutoring fee Adolf</strong></b></p><p class=\\"mb-4 text-[12px] leading-relaxed text-slate-600 font-body\\"><span style=\\"white-space: pre-wrap;\\">fa place is short hair short hair</span></p><p class=\\"mb-4 text-[12px] leading-relaxed text-slate-600 font-body\\"><img src=\\"http://localhost:9000/heovose-assets/uploads/614a66c7-acd1-48db-a0d9-c764f2f35617.jpg\\" alt=\\"Product image\\" width=\\"auto\\" height=\\"auto\\"></p><p class=\\"mb-4 text-[12px] leading-relaxed text-slate-600 font-body\\"><span style=\\"white-space: pre-wrap;\\">I</span></p>", "zh": "<p class=\\"mb-4 text-[12px] leading-relaxed text-slate-600 font-body\\"><span style=\\"white-space: pre-wrap;\\">辅导费</span><b><strong class=\\"font-bold\\" style=\\"white-space: pre-wrap;\\">辅导费阿道夫</strong></b></p><p class=\\"mb-4 text-[12px] leading-relaxed text-slate-600 font-body\\"><span style=\\"white-space: pre-wrap;\\">fa地方是短发短发</span></p><p class=\\"mb-4 text-[12px] leading-relaxed text-slate-600 font-body\\"><img src=\\"http://localhost:9000/heovose-assets/uploads/614a66c7-acd1-48db-a0d9-c764f2f35617.jpg\\" alt=\\"Product image\\" width=\\"auto\\" height=\\"auto\\"></p><p class=\\"mb-4 text-[12px] leading-relaxed text-slate-600 font-body\\"><span style=\\"white-space: pre-wrap;\\">我</span></p>"}	http://localhost:9000/heovose-assets/uploads/a91c1517-9c44-45f5-9aad-73c33f2be500.jpg	[{"items": [{"labelId": "psl_PROD_KIOSK_0505_E0XK_0_0", "valueId": "psv_PROD_KIOSK_0505_E0XK_0_0"}, {"labelId": "psl_PROD_KIOSK_0505_E0XK_0_1", "valueId": "psv_PROD_KIOSK_0505_E0XK_0_1"}, {"labelId": "psl_PROD_KIOSK_0505_E0XK_0_2", "valueId": "psv_PROD_KIOSK_0505_E0XK_0_2"}, {"labelId": "psl_PROD_KIOSK_0505_E0XK_0_3", "valueId": "psv_PROD_KIOSK_0505_E0XK_0_3"}, {"labelId": "psl_PROD_KIOSK_0505_E0XK_0_4", "valueId": "psv_PROD_KIOSK_0505_E0XK_0_4"}, {"labelId": "psl_PROD_KIOSK_0505_E0XK_0_5", "valueId": "psv_PROD_KIOSK_0505_E0XK_0_5"}, {"labelId": "psl_PROD_KIOSK_0505_E0XK_0_6", "valueId": "psv_PROD_KIOSK_0505_E0XK_0_6"}, {"labelId": "psl_PROD_KIOSK_0505_E0XK_0_7", "valueId": "psv_PROD_KIOSK_0505_E0XK_0_7"}, {"labelId": "psl_PROD_KIOSK_0505_E0XK_0_8", "valueId": "psv_PROD_KIOSK_0505_E0XK_0_8"}, {"labelId": "psl_PROD_KIOSK_0505_E0XK_0_9", "valueId": "psv_PROD_KIOSK_0505_E0XK_0_9"}, {"labelId": "psl_PROD_KIOSK_0505_E0XK_0_10", "valueId": "psv_PROD_KIOSK_0505_E0XK_0_10"}], "titleId": "psg_PROD_KIOSK_0505_E0XK_0"}, {"items": [{"labelId": "psl_PROD_KIOSK_0505_E0XK_1_0", "valueId": "psv_PROD_KIOSK_0505_E0XK_1_0"}, {"labelId": "psl_PROD_KIOSK_0505_E0XK_1_1", "valueId": "psv_PROD_KIOSK_0505_E0XK_1_1"}, {"labelId": "psl_PROD_KIOSK_0505_E0XK_1_2", "valueId": "psv_PROD_KIOSK_0505_E0XK_1_2"}], "titleId": "psg_PROD_KIOSK_0505_E0XK_1"}, {"items": [{"labelId": "psl_PROD_KIOSK_0505_E0XK_2_0", "valueId": "psv_PROD_KIOSK_0505_E0XK_2_0"}, {"labelId": "psl_PROD_KIOSK_0505_E0XK_2_1", "valueId": "psv_PROD_KIOSK_0505_E0XK_2_1"}], "titleId": "psg_PROD_KIOSK_0505_E0XK_2"}, {"items": [{"labelId": "psl_PROD_KIOSK_0505_E0XK_3_0", "valueId": "psv_PROD_KIOSK_0505_E0XK_3_0"}, {"labelId": "psl_PROD_KIOSK_0505_E0XK_3_1", "valueId": "psv_PROD_KIOSK_0505_E0XK_3_1"}, {"labelId": "psl_PROD_KIOSK_0505_E0XK_3_2", "valueId": "psv_PROD_KIOSK_0505_E0XK_3_2"}, {"labelId": "psl_PROD_KIOSK_0505_E0XK_3_3", "valueId": "psv_PROD_KIOSK_0505_E0XK_3_3"}], "titleId": "psg_PROD_KIOSK_0505_E0XK_3"}, {"items": [{"labelId": "psl_PROD_KIOSK_0505_E0XK_4_0", "valueId": "psv_PROD_KIOSK_0505_E0XK_4_0"}, {"labelId": "psl_PROD_KIOSK_0505_E0XK_4_1", "valueId": "psv_PROD_KIOSK_0505_E0XK_4_1"}, {"labelId": "psl_PROD_KIOSK_0505_E0XK_4_2", "valueId": "psv_PROD_KIOSK_0505_E0XK_4_2"}], "titleId": "psg_PROD_KIOSK_0505_E0XK_4"}]	2026-05-05 05:11:10.678
-PROD_KIOSK_0505_95WB	published	prod_name_PROD_KIOSK_0505_95WB	KIOSK	\N	2026-05-05 05:20:19.018	prod_desc_PROD_KIOSK_0505_95WB	{zh,en,id}	{http://localhost:9000/heovose-assets/uploads/be56ed65-5e25-443a-8775-b54b59ecebae.jpg,http://localhost:9000/heovose-assets/uploads/c8eb3f01-a1ab-484f-b7f6-c2036c568fe3.jpg,http://localhost:9000/heovose-assets/uploads/85d4b221-af4a-4f81-8e4b-fcc73c3eb6a2.jpg,http://localhost:9000/heovose-assets/uploads/e30c9cfe-d6c1-41d3-a81c-7a84b96849d6.jpg,http://localhost:9000/heovose-assets/uploads/7986eb81-e9f3-4887-a764-169dcfe6eedd.jpg}	{"en": "<p class=\\"mb-4 text-[12px] leading-relaxed text-slate-600 font-body\\"><br></p>", "zh": ""}	http://localhost:9000/heovose-assets/uploads/4a74aae7-85aa-41e9-82f2-f8765d69719c.jpg	[{"items": [{"labelId": "psl_PROD_KIOSK_0505_95WB_0_0", "valueId": "psv_PROD_KIOSK_0505_95WB_0_0"}, {"labelId": "psl_PROD_KIOSK_0505_95WB_0_1", "valueId": "psv_PROD_KIOSK_0505_95WB_0_1"}, {"labelId": "psl_PROD_KIOSK_0505_95WB_0_2", "valueId": "psv_PROD_KIOSK_0505_95WB_0_2"}, {"labelId": "psl_PROD_KIOSK_0505_95WB_0_3", "valueId": "psv_PROD_KIOSK_0505_95WB_0_3"}, {"labelId": "psl_PROD_KIOSK_0505_95WB_0_4", "valueId": "psv_PROD_KIOSK_0505_95WB_0_4"}, {"labelId": "psl_PROD_KIOSK_0505_95WB_0_5", "valueId": "psv_PROD_KIOSK_0505_95WB_0_5"}], "titleId": "psg_PROD_KIOSK_0505_95WB_0"}, {"items": [{"labelId": "psl_PROD_KIOSK_0505_95WB_1_0", "valueId": "psv_PROD_KIOSK_0505_95WB_1_0"}, {"labelId": "psl_PROD_KIOSK_0505_95WB_1_1", "valueId": "psv_PROD_KIOSK_0505_95WB_1_1"}], "titleId": "psg_PROD_KIOSK_0505_95WB_1"}]	2026-05-05 05:20:30.187
+COPY public."Product" (id, status, "nameTextId", "categoryId", "advantageTextIds", "createdAt", "descriptionTextId", "enabledLanguages", "galleryImageUrls", "localizedDetails", "mainImageUrl", "specGroups", "updatedAt", "galleryImageBrightnesses", "mainImageBrightness") FROM stdin;
+PROD_MONITOR_0504_FIA9	published	prod_name_PROD_MONITOR_0504_FIA9	LED	\N	2026-05-04 07:15:13.105	prod_desc_PROD_MONITOR_0504_FIA9	{zh,en,id}	{}	{"en": "", "zh": ""}	http://localhost:9000/heovose-assets/uploads/37d8a977-98fc-46ac-8437-cd80d1dfb965.jpg	[]	2026-05-08 07:15:23.271	\N	160.5970128436285
+cmoibfi320008uknuhbf1oyi0	published	prod_name_cmoibfi320008uknuhbf1oyi0	NOTEBOOK	\N	2026-04-28 07:39:36.398	prod_desc_cmoibfi320008uknuhbf1oyi0	{zh,id,en}	{}	{"en": "", "zh": ""}	http://localhost:9000/heovose-assets/uploads/a91c1517-9c44-45f5-9aad-73c33f2be500.jpg	[]	2026-05-08 07:15:23.434	\N	207.9415051799249
+cmoibfi320007uknu4dcvlfch	published	prod_name_cmoibfi320007uknu4dcvlfch	MINIPC	\N	2026-04-28 07:39:36.398	prod_desc_cmoibfi320007uknu4dcvlfch	{zh,en,id}	{}	{"en": "", "zh": ""}	http://localhost:9000/heovose-assets/uploads/2e2479d4-e456-4444-b3f9-7f47c1d1c877.jpg	[]	2026-05-08 07:15:23.56	\N	232.4326262626262
+PROD_KIOSK_0505_E0XK	published	prod_name_PROD_KIOSK_0505_E0XK	KIOSK	\N	2026-05-05 05:09:56.611	prod_desc_PROD_KIOSK_0505_E0XK	{zh,en,id}	{http://localhost:9000/heovose-assets/uploads/35094d60-83d1-49de-b715-be94ae2459c4.jpg,http://localhost:9000/heovose-assets/uploads/b9f5d5c4-7465-4e9f-90df-27b326f1f3f3.jpg,http://localhost:9000/heovose-assets/uploads/a74635cb-af32-457a-b8c9-3fa19e8ffa07.jpg,http://localhost:9000/heovose-assets/uploads/22811330-25ce-4b07-b7c6-f8e9554668d1.jpg}	{"en": "<p class=\\"mb-4 text-[12px] leading-relaxed text-slate-600 font-body\\"><span style=\\"white-space: pre-wrap;\\">Tutoring fee</span><b><strong class=\\"font-bold\\" style=\\"white-space: pre-wrap;\\">Tutoring fee Adolf</strong></b></p><p class=\\"mb-4 text-[12px] leading-relaxed text-slate-600 font-body\\"><span style=\\"white-space: pre-wrap;\\">fa place is short hair short hair</span></p><p class=\\"mb-4 text-[12px] leading-relaxed text-slate-600 font-body\\"><img src=\\"http://localhost:9000/heovose-assets/uploads/614a66c7-acd1-48db-a0d9-c764f2f35617.jpg\\" alt=\\"Product image\\" width=\\"auto\\" height=\\"auto\\"></p><p class=\\"mb-4 text-[12px] leading-relaxed text-slate-600 font-body\\"><span style=\\"white-space: pre-wrap;\\">I</span></p>", "zh": "<p class=\\"mb-4 text-[12px] leading-relaxed text-slate-600 font-body\\"><span style=\\"white-space: pre-wrap;\\">辅导费</span><b><strong class=\\"font-bold\\" style=\\"white-space: pre-wrap;\\">辅导费阿道夫</strong></b></p><p class=\\"mb-4 text-[12px] leading-relaxed text-slate-600 font-body\\"><span style=\\"white-space: pre-wrap;\\">fa地方是短发短发</span></p><p class=\\"mb-4 text-[12px] leading-relaxed text-slate-600 font-body\\"><img src=\\"http://localhost:9000/heovose-assets/uploads/614a66c7-acd1-48db-a0d9-c764f2f35617.jpg\\" alt=\\"Product image\\" width=\\"auto\\" height=\\"auto\\"></p><p class=\\"mb-4 text-[12px] leading-relaxed text-slate-600 font-body\\"><span style=\\"white-space: pre-wrap;\\">我</span></p>"}	http://localhost:9000/heovose-assets/uploads/a91c1517-9c44-45f5-9aad-73c33f2be500.jpg	[{"items": [{"labelId": "psl_PROD_KIOSK_0505_E0XK_0_0", "valueId": "psv_PROD_KIOSK_0505_E0XK_0_0"}, {"labelId": "psl_PROD_KIOSK_0505_E0XK_0_1", "valueId": "psv_PROD_KIOSK_0505_E0XK_0_1"}, {"labelId": "psl_PROD_KIOSK_0505_E0XK_0_2", "valueId": "psv_PROD_KIOSK_0505_E0XK_0_2"}, {"labelId": "psl_PROD_KIOSK_0505_E0XK_0_3", "valueId": "psv_PROD_KIOSK_0505_E0XK_0_3"}, {"labelId": "psl_PROD_KIOSK_0505_E0XK_0_4", "valueId": "psv_PROD_KIOSK_0505_E0XK_0_4"}, {"labelId": "psl_PROD_KIOSK_0505_E0XK_0_5", "valueId": "psv_PROD_KIOSK_0505_E0XK_0_5"}, {"labelId": "psl_PROD_KIOSK_0505_E0XK_0_6", "valueId": "psv_PROD_KIOSK_0505_E0XK_0_6"}, {"labelId": "psl_PROD_KIOSK_0505_E0XK_0_7", "valueId": "psv_PROD_KIOSK_0505_E0XK_0_7"}, {"labelId": "psl_PROD_KIOSK_0505_E0XK_0_8", "valueId": "psv_PROD_KIOSK_0505_E0XK_0_8"}, {"labelId": "psl_PROD_KIOSK_0505_E0XK_0_9", "valueId": "psv_PROD_KIOSK_0505_E0XK_0_9"}, {"labelId": "psl_PROD_KIOSK_0505_E0XK_0_10", "valueId": "psv_PROD_KIOSK_0505_E0XK_0_10"}], "titleId": "psg_PROD_KIOSK_0505_E0XK_0"}, {"items": [{"labelId": "psl_PROD_KIOSK_0505_E0XK_1_0", "valueId": "psv_PROD_KIOSK_0505_E0XK_1_0"}, {"labelId": "psl_PROD_KIOSK_0505_E0XK_1_1", "valueId": "psv_PROD_KIOSK_0505_E0XK_1_1"}, {"labelId": "psl_PROD_KIOSK_0505_E0XK_1_2", "valueId": "psv_PROD_KIOSK_0505_E0XK_1_2"}], "titleId": "psg_PROD_KIOSK_0505_E0XK_1"}, {"items": [{"labelId": "psl_PROD_KIOSK_0505_E0XK_2_0", "valueId": "psv_PROD_KIOSK_0505_E0XK_2_0"}, {"labelId": "psl_PROD_KIOSK_0505_E0XK_2_1", "valueId": "psv_PROD_KIOSK_0505_E0XK_2_1"}], "titleId": "psg_PROD_KIOSK_0505_E0XK_2"}, {"items": [{"labelId": "psl_PROD_KIOSK_0505_E0XK_3_0", "valueId": "psv_PROD_KIOSK_0505_E0XK_3_0"}, {"labelId": "psl_PROD_KIOSK_0505_E0XK_3_1", "valueId": "psv_PROD_KIOSK_0505_E0XK_3_1"}, {"labelId": "psl_PROD_KIOSK_0505_E0XK_3_2", "valueId": "psv_PROD_KIOSK_0505_E0XK_3_2"}, {"labelId": "psl_PROD_KIOSK_0505_E0XK_3_3", "valueId": "psv_PROD_KIOSK_0505_E0XK_3_3"}], "titleId": "psg_PROD_KIOSK_0505_E0XK_3"}, {"items": [{"labelId": "psl_PROD_KIOSK_0505_E0XK_4_0", "valueId": "psv_PROD_KIOSK_0505_E0XK_4_0"}, {"labelId": "psl_PROD_KIOSK_0505_E0XK_4_1", "valueId": "psv_PROD_KIOSK_0505_E0XK_4_1"}, {"labelId": "psl_PROD_KIOSK_0505_E0XK_4_2", "valueId": "psv_PROD_KIOSK_0505_E0XK_4_2"}], "titleId": "psg_PROD_KIOSK_0505_E0XK_4"}]	2026-05-08 07:15:26.273	{127.1303367640249,169.0218852816004,118.892306244876,117.1303978077119}	207.9415051799249
+PROD_KIOSK_0505_95WB	published	prod_name_PROD_KIOSK_0505_95WB	KIOSK	\N	2026-05-05 05:20:19.018	prod_desc_PROD_KIOSK_0505_95WB	{zh,en,id}	{http://localhost:9000/heovose-assets/uploads/be56ed65-5e25-443a-8775-b54b59ecebae.jpg,http://localhost:9000/heovose-assets/uploads/c8eb3f01-a1ab-484f-b7f6-c2036c568fe3.jpg,http://localhost:9000/heovose-assets/uploads/85d4b221-af4a-4f81-8e4b-fcc73c3eb6a2.jpg,http://localhost:9000/heovose-assets/uploads/e30c9cfe-d6c1-41d3-a81c-7a84b96849d6.jpg,http://localhost:9000/heovose-assets/uploads/7986eb81-e9f3-4887-a764-169dcfe6eedd.jpg}	{"en": "<p class=\\"mb-4 text-[12px] leading-relaxed text-slate-600 font-body\\"><br></p>", "zh": ""}	http://localhost:9000/heovose-assets/uploads/4a74aae7-85aa-41e9-82f2-f8765d69719c.jpg	[{"items": [{"labelId": "psl_PROD_KIOSK_0505_95WB_0_0", "valueId": "psv_PROD_KIOSK_0505_95WB_0_0"}, {"labelId": "psl_PROD_KIOSK_0505_95WB_0_1", "valueId": "psv_PROD_KIOSK_0505_95WB_0_1"}, {"labelId": "psl_PROD_KIOSK_0505_95WB_0_2", "valueId": "psv_PROD_KIOSK_0505_95WB_0_2"}, {"labelId": "psl_PROD_KIOSK_0505_95WB_0_3", "valueId": "psv_PROD_KIOSK_0505_95WB_0_3"}, {"labelId": "psl_PROD_KIOSK_0505_95WB_0_4", "valueId": "psv_PROD_KIOSK_0505_95WB_0_4"}, {"labelId": "psl_PROD_KIOSK_0505_95WB_0_5", "valueId": "psv_PROD_KIOSK_0505_95WB_0_5"}], "titleId": "psg_PROD_KIOSK_0505_95WB_0"}, {"items": [{"labelId": "psl_PROD_KIOSK_0505_95WB_1_0", "valueId": "psv_PROD_KIOSK_0505_95WB_1_0"}, {"labelId": "psl_PROD_KIOSK_0505_95WB_1_1", "valueId": "psv_PROD_KIOSK_0505_95WB_1_1"}], "titleId": "psg_PROD_KIOSK_0505_95WB_1"}]	2026-05-08 07:15:27.061	{230.9062916267121,241.891355275887,243.0144285677279,240.2653810094099,245.5979201888512}	228.4073890677427
+PROD_AIO_0504_987C	published	prod_name_PROD_AIO_0504_987C	AIO	\N	2026-05-04 06:23:07.527	prod_desc_PROD_AIO_0504_987C	{zh,en,id}	{http://localhost:9000/heovose-assets/uploads/7dd3944b-9973-4e65-9649-353579cf4661.jpg,http://localhost:9000/heovose-assets/uploads/139f91d7-1cd2-448f-8461-d1b3d6251774.jpg,http://localhost:9000/heovose-assets/uploads/3eb25a8d-676e-404e-beea-6fbf69428e08.jpg,http://localhost:9000/heovose-assets/uploads/d967accc-5a8f-4b93-9976-bec5e24060f8.jpg,http://localhost:9000/heovose-assets/uploads/ba19c0be-1667-47cb-a031-e5e4e8751118.jpg,http://localhost:9000/heovose-assets/uploads/4eb0f28d-4c9a-4c38-a03c-7bef304908cf.jpg,http://localhost:9000/heovose-assets/uploads/15229520-358f-44a7-a5b7-d28cc552a89b.jpg}	{"en": "", "zh": ""}	http://localhost:9000/heovose-assets/uploads/1d5e2af2-ef38-43a7-8d69-19644b36c16d.jpg	[{"items": [{"labelId": "psl_PROD_AIO_0504_987C_0_0", "valueId": "psv_PROD_AIO_0504_987C_0_0"}, {"labelId": "psl_PROD_AIO_0504_987C_0_1", "valueId": "psv_PROD_AIO_0504_987C_0_1"}, {"labelId": "psl_PROD_AIO_0504_987C_0_2", "valueId": "psv_PROD_AIO_0504_987C_0_2"}, {"labelId": "psl_PROD_AIO_0504_987C_0_3", "valueId": "psv_PROD_AIO_0504_987C_0_3"}, {"labelId": "psl_PROD_AIO_0504_987C_0_4", "valueId": "psv_PROD_AIO_0504_987C_0_4"}, {"labelId": "psl_PROD_AIO_0504_987C_0_5", "valueId": "psv_PROD_AIO_0504_987C_0_5"}, {"labelId": "psl_PROD_AIO_0504_987C_0_6", "valueId": "psv_PROD_AIO_0504_987C_0_6"}, {"labelId": "psl_PROD_AIO_0504_987C_0_7", "valueId": "psv_PROD_AIO_0504_987C_0_7"}, {"labelId": "psl_PROD_AIO_0504_987C_0_8", "valueId": "psv_PROD_AIO_0504_987C_0_8"}, {"labelId": "psl_PROD_AIO_0504_987C_0_9", "valueId": "psv_PROD_AIO_0504_987C_0_9"}, {"labelId": "psl_PROD_AIO_0504_987C_0_10", "valueId": "psv_PROD_AIO_0504_987C_0_10"}], "titleId": "psg_PROD_AIO_0504_987C_0"}, {"items": [{"labelId": "psl_PROD_AIO_0504_987C_1_0", "valueId": "psv_PROD_AIO_0504_987C_1_0"}, {"labelId": "psl_PROD_AIO_0504_987C_1_1", "valueId": "psv_PROD_AIO_0504_987C_1_1"}, {"labelId": "psl_PROD_AIO_0504_987C_1_2", "valueId": "psv_PROD_AIO_0504_987C_1_2"}], "titleId": "psg_PROD_AIO_0504_987C_1"}, {"items": [{"labelId": "psl_PROD_AIO_0504_987C_2_0", "valueId": "psv_PROD_AIO_0504_987C_2_0"}, {"labelId": "psl_PROD_AIO_0504_987C_2_1", "valueId": "psv_PROD_AIO_0504_987C_2_1"}], "titleId": "psg_PROD_AIO_0504_987C_2"}, {"items": [{"labelId": "psl_PROD_AIO_0504_987C_3_0", "valueId": "psv_PROD_AIO_0504_987C_3_0"}, {"labelId": "psl_PROD_AIO_0504_987C_3_1", "valueId": "psv_PROD_AIO_0504_987C_3_1"}, {"labelId": "psl_PROD_AIO_0504_987C_3_2", "valueId": "psv_PROD_AIO_0504_987C_3_2"}, {"labelId": "psl_PROD_AIO_0504_987C_3_3", "valueId": "psv_PROD_AIO_0504_987C_3_3"}], "titleId": "psg_PROD_AIO_0504_987C_3"}, {"items": [{"labelId": "psl_PROD_AIO_0504_987C_4_0", "valueId": "psv_PROD_AIO_0504_987C_4_0"}, {"labelId": "psl_PROD_AIO_0504_987C_4_1", "valueId": "psv_PROD_AIO_0504_987C_4_1"}, {"labelId": "psl_PROD_AIO_0504_987C_4_2", "valueId": "psv_PROD_AIO_0504_987C_4_2"}], "titleId": "psg_PROD_AIO_0504_987C_4"}]	2026-05-08 07:15:24.863	{238.6865701398756,236.5291356649274,223.6047683049831,235.1297905471962,236.4127034621336,242.921940413837,245.0097957943053}	200.6740637832585
 \.
 
 
@@ -718,20 +782,20 @@ PROD_KIOSK_0505_95WB	published	prod_name_PROD_KIOSK_0505_95WB	KIOSK	\N	2026-05-0
 -- Data for Name: ProductCategory; Type: TABLE DATA; Schema: public; Owner: heovose
 --
 
-COPY public."ProductCategory" (id, slug, "thumbnailImageUrl", "parentId", "nameTextId", "descriptionTextId", "order") FROM stdin;
-WHOLESALE	wholesale	http://localhost:9000/heovose-assets/uploads/6ee490d1-e5e8-4125-b5bf-ec76af05f192.jpeg	\N	cat_name_WHOLESALE	cat_desc_WHOLESALE	-1
-MINIPC	minipc	http://localhost:9000/heovose-assets/uploads/c8eb3f01-a1ab-484f-b7f6-c2036c568fe3.jpg	WHOLESALE	cat_name_MINIPC	cat_desc_MINIPC	0
-WHITEBOARD	whiteboard		PROJECT	cat_name_WHITEBOARD	cat_desc_WHITEBOARD	0
-CORE	core		WHOLESALE	cat_name_CORE	cat_desc_CORE	1
-AIO	aio	http://localhost:9000/heovose-assets/uploads/1d5e2af2-ef38-43a7-8d69-19644b36c16d.jpg	WHOLESALE	cat_name_AIO	cat_desc_AIO	-1
-MONITOR	monitor		WHOLESALE	cat_name_MONITOR	cat_desc_MONITOR	0
-ESSENTIALS	essentials		WHOLESALE	cat_name_ESSENTIALS	cat_desc_ESSENTIALS	0
-KIOSK	kiosk		PROJECT	cat_name_KIOSK	cat_desc_KIOSK	0
-INDUSTRIAL	industrial		PROJECT	cat_name_INDUSTRIAL	cat_desc_INDUSTRIAL	0
-LED	led		PROJECT	cat_name_LED	cat_desc_LED	0
-SHOWROOM	showroom		PROJECT	cat_name_SHOWROOM	cat_desc_SHOWROOM	0
-PROJECT	project	http://localhost:9000/heovose-assets/uploads/c7c4117f-144c-437b-894f-b2081d046560.jpg	\N	cat_name_PROJECT	cat_desc_PROJECT	0
-NOTEBOOK	notebook	http://localhost:9000/heovose-assets/uploads/a91c1517-9c44-45f5-9aad-73c33f2be500.jpg	WHOLESALE	cat_name_NOTEBOOK	cat_desc_NOTEBOOK	0
+COPY public."ProductCategory" (id, slug, "thumbnailImageUrl", "parentId", "nameTextId", "descriptionTextId", "order", "thumbnailBrightness") FROM stdin;
+WHITEBOARD	whiteboard		PROJECT	cat_name_WHITEBOARD	cat_desc_WHITEBOARD	0	\N
+CORE	core		WHOLESALE	cat_name_CORE	cat_desc_CORE	1	\N
+MONITOR	monitor		WHOLESALE	cat_name_MONITOR	cat_desc_MONITOR	0	\N
+ESSENTIALS	essentials		WHOLESALE	cat_name_ESSENTIALS	cat_desc_ESSENTIALS	0	\N
+KIOSK	kiosk		PROJECT	cat_name_KIOSK	cat_desc_KIOSK	0	\N
+INDUSTRIAL	industrial		PROJECT	cat_name_INDUSTRIAL	cat_desc_INDUSTRIAL	0	\N
+LED	led		PROJECT	cat_name_LED	cat_desc_LED	0	\N
+SHOWROOM	showroom		PROJECT	cat_name_SHOWROOM	cat_desc_SHOWROOM	0	\N
+WHOLESALE	wholesale	http://localhost:9000/heovose-assets/uploads/6ee490d1-e5e8-4125-b5bf-ec76af05f192.jpeg	\N	cat_name_WHOLESALE	cat_desc_WHOLESALE	-1	145.3545043162868
+MINIPC	minipc	http://localhost:9000/heovose-assets/uploads/c8eb3f01-a1ab-484f-b7f6-c2036c568fe3.jpg	WHOLESALE	cat_name_MINIPC	cat_desc_MINIPC	0	241.891355275887
+AIO	aio	http://localhost:9000/heovose-assets/uploads/1d5e2af2-ef38-43a7-8d69-19644b36c16d.jpg	WHOLESALE	cat_name_AIO	cat_desc_AIO	-1	200.6740637832585
+PROJECT	project	http://localhost:9000/heovose-assets/uploads/c7c4117f-144c-437b-894f-b2081d046560.jpg	\N	cat_name_PROJECT	cat_desc_PROJECT	0	98.08732214425595
+NOTEBOOK	notebook	http://localhost:9000/heovose-assets/uploads/a91c1517-9c44-45f5-9aad-73c33f2be500.jpg	WHOLESALE	cat_name_NOTEBOOK	cat_desc_NOTEBOOK	0	207.9415051799249
 \.
 
 
@@ -739,8 +803,18 @@ NOTEBOOK	notebook	http://localhost:9000/heovose-assets/uploads/a91c1517-9c44-45f
 -- Data for Name: ProductionStep; Type: TABLE DATA; Schema: public; Owner: heovose
 --
 
-COPY public."ProductionStep" (id, "order", "titleZh", "titleEn", "descZh", "descEn", "imageUrls") FROM stdin;
-cmoibfi3p000cuknuihdblv62	1	IQC 来料检验	IQC (Incoming Quality Control)	对所有原材料进行严格测试。	Rigorous testing of all raw materials.	{https://placehold.co/400x300?text=IQC}
+COPY public."ProductionStep" (id, "order", "titleZh", "titleEn", "descZh", "descEn", "imageUrls", brightnesses, "descriptionTextId", "titleTextId") FROM stdin;
+step_1778201715793	9	装运前检验	Pre-Shipment Inspection	产品出厂前的最终质量检验。	Final quality assurance before products leave the facility.	{http://localhost:9000/heovose-assets/uploads/e7c66841-5309-43eb-abb3-aea7f8b64195.jpg,http://localhost:9000/heovose-assets/uploads/974db4dd-3375-4a63-97e6-c0d3f7f7c394.jpg}	{161.7050810658425,116.3104274182851}	process_step_step_1778201715793_desc	process_step_step_1778201715793_title
+step_1778203371049	11	仓储	Warehousing	发货前的产品存储和库存管理。	Product storage and inventory management before shipment.	{http://localhost:9000/heovose-assets/uploads/feffb430-8e05-4d04-8b06-04e9b1711eaf.jpg,http://localhost:9000/heovose-assets/uploads/b9f5d5c4-7465-4e9f-90df-27b326f1f3f3.jpg}	{153.5070706786463,169.0218852816004}	process_step_step_1778203371049_desc	process_step_step_1778203371049_title
+step_1778203386487	12	运输	Shipment	安全包装，全球配送，服务全球客户。	Secure packaging and global distribution to customers worldwide.	{http://localhost:9000/heovose-assets/uploads/35094d60-83d1-49de-b715-be94ae2459c4.jpg}	{127.1303367640249}	process_step_step_1778203386487_desc	process_step_step_1778203386487_title
+step_1778201589249	2	采购	Procurement	从供应商处战略性地采购优质原材料。	Strategic sourcing and purchasing of high-quality raw materials from certified suppliers.	{http://localhost:9000/heovose-assets/uploads/a86df304-a607-4ce1-8278-c45cdce9fddc.jpg}	{105.1519853532395}	process_step_step_1778201589249_desc	process_step_step_1778201589249_title
+step_1778201616561	3	供应商	Supplier	管理供应商关系并确保零部件及时交付。	Managing supplier relationships and ensuring timely delivery of components.	{http://localhost:9000/heovose-assets/uploads/a86df304-a607-4ce1-8278-c45cdce9fddc.jpg}	{105.1519853532395}	process_step_step_1778201616561_desc	process_step_step_1778201616561_title
+step_1778201602533	4	接收	Receiving	接收并核对到货物料与采购订单是否相符。	Receiving and verifying incoming materials against purchase orders.	{http://localhost:9000/heovose-assets/uploads/a86df304-a607-4ce1-8278-c45cdce9fddc.jpg}	{105.1519853532395}	process_step_step_1778201602533_desc	process_step_step_1778201602533_title
+cmoibfi3p000cuknuihdblv62	1	PMC规划	PMC Planning	生产和物料控制计划，以实现最佳资源配置和时间管理。	Production and material control planning for optimal resource allocation and timeline management.	{http://localhost:9000/heovose-assets/uploads/a86df304-a607-4ce1-8278-c45cdce9fddc.jpg}	{105.1519853532395}	process_step_cmoibfi3p000cuknuihdblv62_desc	process_step_cmoibfi3p000cuknuihdblv62_title
+step_1778201650787	5	检查	Inspection	进行全面质量检验，确保所有材料均符合规格要求。	Comprehensive quality inspection ensuring all materials meet specifications.	{http://localhost:9000/heovose-assets/uploads/7062814e-9aa1-44bd-950c-0e1fc062cb2f.jpg}	{160.5970128436285}	process_step_step_1778201650787_desc	process_step_step_1778201650787_title
+step_1778201661146	6	仓储	Warehousing	在温控设施中安全储存合格材料。	Secure storage of qualified materials in climate-controlled facilities.	{http://localhost:9000/heovose-assets/uploads/7062814e-9aa1-44bd-950c-0e1fc062cb2f.jpg}	{160.5970128436285}	process_step_step_1778201661146_desc	process_step_step_1778201661146_title
+step_1778201672084	7	材料发行	Material Issuing	系统地申请物料并将其分发到生产线。	Systematic material requisition and distribution to production lines.	{http://localhost:9000/heovose-assets/uploads/22811330-25ce-4b07-b7c6-f8e9554668d1.jpg}	{117.1303978077119}	process_step_step_1778201672084_desc	process_step_step_1778201672084_title
+step_1778201695830	8	制造	Manufacturing	采用先进设备和严格的质量控制流程进行精密制造。	Precision manufacturing using advanced equipment and strict quality protocols.	{http://localhost:9000/heovose-assets/uploads/a74635cb-af32-457a-b8c9-3fa19e8ffa07.jpg}	{118.892306244876}	process_step_step_1778201695830_desc	process_step_step_1778201695830_title
 \.
 
 
@@ -801,6 +875,7 @@ COPY public._prisma_migrations (id, checksum, finished_at, migration_name, logs,
 d42474bc-f221-4b4d-bb70-30a22c6463ec	b363a71b05e1385cc2cd2bca98f15c674ccb97327bb620ffc9ae3f592e3b5d4e	2026-04-28 05:46:47.64225+00	20260428023813_gallery	\N	\N	2026-04-28 05:46:47.596307+00	1
 17b38abb-8aa9-4657-b7ec-312d7c03beec	376d1b7f801b48166bae42a975dffb4bd15ad80d60f0ecf526858af3fed5be02	2026-04-28 05:46:59.361156+00	20260428054659_simplify_gallery_categories	\N	\N	2026-04-28 05:46:59.311913+00	1
 962a8156-a673-408e-b9e7-889032fa0708	c31b8b5f5920fb40d8c9f4615a3e93d445a12e99587dd1d226ab45d103d8cdf1	2026-04-28 06:00:36.043244+00	20260428060036_add_asset_file_details	\N	\N	2026-04-28 06:00:36.025975+00	1
+457ede1e-5a2a-44da-9ced-b5a8f168ed1c	ebf71310fc6630b6a4f392b10b5d81f61f6ab0fef73fe67060db0468d6aeab68	2026-05-07 00:48:43.541452+00	20260507004045_unify_localizations		\N	2026-05-07 00:48:43.541452+00	0
 \.
 
 
@@ -1101,5 +1176,5 @@ REVOKE USAGE ON SCHEMA public FROM PUBLIC;
 -- PostgreSQL database dump complete
 --
 
-\unrestrict zvokvdoTfLbZ2mNb6mFip2g4dhvR97ibZMxEjU0deDEmNJ0WrRRmv0PI3Yegcr0
+\unrestrict h3wP9oeo6RR21cmmGNKFdgoJaIFjcSxJnuTtG0NpePwIDpTi2q1KVVpEhnl3WZI
 

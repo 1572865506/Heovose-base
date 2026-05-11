@@ -72,31 +72,19 @@ export function ProductionProcess({ locale }: { locale: Locale }) {
   }, [remoteSteps, locale, t]);
 
   const displayTitle = useMemo(() => {
-    // 优先从翻译资产获取
-    const translated = t('process_PROCESS_TITLE');
-    if (translated && translated !== 'process_PROCESS_TITLE') return translated;
+    // 优先从翻译资产获取 (Zero-Hardcoding 体系)
+    const translated = t('PROCESS_TITLE');
     
-    // 其次从后台设置获取
-    if (homeContent) {
-      const val = locale === 'zh' ? homeContent.processTitleZh : homeContent.processTitleEn;
-      if (val) return val;
-    }
-    
-    return translations[locale].process.title;
+    // 如果翻译资产存在 (包括空字符串)，则返回翻译资产内容
+    // 只有在 translated 为 undefined (即 key 不存在) 时才回退
+    return translated ?? (locale === 'zh' ? homeContent?.processTitleZh : homeContent?.processTitleEn) ?? translations[locale].process.title;
   }, [homeContent, locale, t]);
 
   const displaySubtitle = useMemo(() => {
     // 优先从翻译资产获取
-    const translated = t('process_PROCESS_SUBTITLE');
-    if (translated && translated !== 'process_PROCESS_SUBTITLE') return translated;
-
-    // 其次从后台设置获取
-    if (homeContent) {
-      const val = locale === 'zh' ? homeContent.processSubtitleZh : homeContent.processSubtitleEn;
-      if (val) return val;
-    }
+    const translated = t('PROCESS_SUBTITLE');
     
-    return translations[locale].process.subtitle;
+    return translated ?? (locale === 'zh' ? homeContent?.processSubtitleZh : homeContent?.processSubtitleEn) ?? translations[locale].process.subtitle;
   }, [homeContent, locale, t]);
 
   // 3. 观察可见性
@@ -154,7 +142,7 @@ export function ProductionProcess({ locale }: { locale: Locale }) {
   useEffect(() => { imagesRef.current = activeImages; }, [activeImages]);
 
   useEffect(() => {
-    if (!isPlaying) return;
+    if (!isPlaying || !isVisible) return;
     let lastTick = Date.now();
     let timerId: NodeJS.Timeout;
     const tick = () => {
@@ -177,7 +165,7 @@ export function ProductionProcess({ locale }: { locale: Locale }) {
     };
     timerId = setTimeout(tick, 50);
     return () => clearTimeout(timerId);
-  }, [imagesKey, isPlaying]);
+  }, [imagesKey, isPlaying, isVisible]);
 
   const subImageIndex = carouselState.subIndex;
   const progress = carouselState.progress;

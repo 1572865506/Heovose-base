@@ -21,7 +21,9 @@ import {
   Check,
   X,
   Search,
-  ExternalLink
+  ExternalLink,
+  Eye,
+  EyeOff
 } from 'lucide-react';
 import { 
   Dialog, 
@@ -37,6 +39,7 @@ import { cn } from '@/lib/utils';
 import { getAssetUrl } from '@/lib/image-utils';
 import { ShinyButton } from '@/components/ui/shiny-button';
 import { Badge } from '@/components/ui/badge';
+import { Switch } from '@/components/ui/switch';
 import { MediaLibraryDialog } from '@/components/admin/media-library-dialog';
 import Image from 'next/image';
 
@@ -49,15 +52,16 @@ interface CaseStudy {
   titleEn: string;
   descZh: string;
   descEn: string;
+  descriptionTextId?: string;
   tagTextId?: string;
   titleTextId?: string;
-  descriptionTextId?: string;
   imageUrl: string;
+  published: boolean;
 }
 
 export default function CaseStudiesAdminPage() {
   const { toast } = useToast();
-  const { data: cases, isLoading, mutate: mutateCases } = useLocalCollection<CaseStudy>('caseStudies');
+  const { data: cases, isLoading, mutate: mutateCases } = useLocalCollection<CaseStudy>('caseStudies?all=true');
   const { data: aiConfig } = useLocalDoc<any>('settings', 'ai');
   const { data: galleryAssets } = useLocalCollection<any>('galleryAssets');
 
@@ -83,10 +87,10 @@ export default function CaseStudiesAdminPage() {
       const subtitleAsset = translations.find((t: any) => t.id === 'CASES_SUBTITLE');
       
       setSectionForm({
-        casesTitleZh: titleAsset?.content?.zh || homeContent?.casesTitleZh || '',
-        casesTitleEn: titleAsset?.content?.en || homeContent?.casesTitleEn || '',
-        casesSubtitleZh: subtitleAsset?.content?.zh || homeContent?.casesSubtitleZh || '',
-        casesSubtitleEn: subtitleAsset?.content?.en || homeContent?.casesSubtitleEn || ''
+        casesTitleZh: titleAsset?.content?.zh ?? homeContent?.casesTitleZh ?? '',
+        casesTitleEn: titleAsset?.content?.en ?? homeContent?.casesTitleEn ?? '',
+        casesSubtitleZh: subtitleAsset?.content?.zh ?? homeContent?.casesSubtitleZh ?? '',
+        casesSubtitleEn: subtitleAsset?.content?.en ?? homeContent?.casesSubtitleEn ?? ''
       });
     }
   }, [translations, homeContent]);
@@ -100,7 +104,8 @@ export default function CaseStudiesAdminPage() {
     titleEn: '',
     descZh: '',
     descEn: '',
-    imageUrl: ''
+    imageUrl: '',
+    published: true
   });
 
   const handleOpenDialog = (item?: CaseStudy) => {
@@ -117,7 +122,8 @@ export default function CaseStudiesAdminPage() {
         descZh: '',
         descEn: '',
         imageUrl: '',
-        order: (cases?.length || 0) + 1
+        order: (cases?.length || 0) + 1,
+        published: true
       });
     }
     setIsDialogOpen(true);
@@ -432,10 +438,15 @@ export default function CaseStudiesAdminPage() {
                 ) : (
                   <div className="flex items-center justify-center h-full opacity-20"><ImageIcon className="h-8 w-8" /></div>
                 )}
-                <div className="absolute top-4 left-4">
+                <div className="absolute top-4 left-4 flex gap-2">
                   <Badge className="bg-primary text-white text-[10px] uppercase font-bold tracking-widest px-2.5 py-1">
                     {item.tagZh}
                   </Badge>
+                  {!item.published && (
+                    <Badge variant="outline" className="bg-white/90 text-red-600 border-red-200 text-[10px] uppercase font-bold tracking-widest px-2.5 py-1 backdrop-blur-md">
+                      <EyeOff className="h-3 w-3 mr-1" /> 已隐藏
+                    </Badge>
+                  )}
                 </div>
                 <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
                    <div className="flex gap-2 bg-white/20 backdrop-blur-md p-2 rounded-full">
@@ -546,12 +557,25 @@ export default function CaseStudiesAdminPage() {
                 </div>
               </div>
               
-              <div className="pt-6 border-l pl-8 border-dashed">
-                <div className="space-y-2">
-                  <Label className="text-[10px] font-bold uppercase opacity-40">显示排序权重</Label>
-                  <Input type="number" value={form.order} onChange={e => setForm({...form, order: parseInt(e.target.value)})} className="h-10 rounded-xl bg-muted/10 border-transparent font-mono" />
+                <div className="space-y-4 pt-6 border-l pl-8 border-dashed">
+                  <div className="space-y-2">
+                    <Label className="text-[10px] font-bold uppercase opacity-40">显示排序权重</Label>
+                    <Input type="number" value={form.order} onChange={e => setForm({...form, order: parseInt(e.target.value)})} className="h-10 rounded-xl bg-muted/10 border-transparent font-mono" />
+                  </div>
+                  
+                  <div className="flex items-center justify-between p-4 bg-muted/5 rounded-2xl border border-dashed">
+                    <div className="space-y-0.5">
+                      <Label className="text-xs font-bold uppercase tracking-tight">前台显示状态</Label>
+                      <p className="text-[10px] text-muted-foreground uppercase font-bold opacity-60">
+                        {form.published ? '目前在前台公开展示' : '目前已隐藏，仅后台可见'}
+                      </p>
+                    </div>
+                    <Switch 
+                      checked={form.published} 
+                      onCheckedChange={(checked) => setForm({...form, published: checked})}
+                    />
+                  </div>
                 </div>
-              </div>
             </div>
           </div>
 

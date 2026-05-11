@@ -71,6 +71,16 @@ export function useLocalCollection<T = any>(path: string | null, options?: { ena
       return;
     }
 
+    // Reset data if path changed and it's not in cache to avoid stale data from different queries
+    const currentCached = globalCache.get(path);
+    if (!currentCached) {
+      setData(null);
+      setIsLoading(true);
+    } else {
+      setData(currentCached.data);
+      setIsLoading(false);
+    }
+
     fetchData(path);
   }, [path, enabled, fetchData]);
 

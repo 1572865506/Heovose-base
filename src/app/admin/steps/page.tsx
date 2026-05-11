@@ -60,6 +60,7 @@ export default function ProductionStepsAdminPage() {
 
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const { data: homeContent, mutate: mutateHome } = useLocalDoc<any>('homepageContent', 'hero');
+  const { data: translations, mutate: mutateTranslations } = useLocalCollection<any>('localizedStrings');
   const [isAiProcessing, setIsAiProcessing] = useState(false);
   const [isSavingConfig, setIsSavingConfig] = useState(false);
   const [editingStep, setEditingStep] = useState<ProductionStep | null>(null);
@@ -71,17 +72,20 @@ export default function ProductionStepsAdminPage() {
     processSubtitleEn: ''
   });
 
-  // 同步初始化板块标题
-  useEffect(() => {
-    if (homeContent) {
+  // 同步初始化板块标题 (资产库优先 + Nullish Coalescing)
+  useMemo(() => {
+    if (translations) {
+      const titleAsset = translations.find((t: any) => t.id === 'PROCESS_TITLE');
+      const subtitleAsset = translations.find((t: any) => t.id === 'PROCESS_SUBTITLE');
+      
       setSectionForm({
-        processTitleZh: homeContent.processTitleZh || '',
-        processTitleEn: homeContent.processTitleEn || '',
-        processSubtitleZh: homeContent.processSubtitleZh || '',
-        processSubtitleEn: homeContent.processSubtitleEn || ''
+        processTitleZh: titleAsset?.content?.zh ?? homeContent?.processTitleZh ?? '',
+        processTitleEn: titleAsset?.content?.en ?? homeContent?.processTitleEn ?? '',
+        processSubtitleZh: subtitleAsset?.content?.zh ?? homeContent?.processSubtitleZh ?? '',
+        processSubtitleEn: subtitleAsset?.content?.en ?? homeContent?.processSubtitleEn ?? ''
       });
     }
-  }, [homeContent]);
+  }, [translations, homeContent]);
   
   const [isPickerOpen, setIsPickerOpen] = useState(false);
 
@@ -245,30 +249,34 @@ export default function ProductionStepsAdminPage() {
   const handleSaveSectionConfig = async () => {
     setIsSavingConfig(true);
     try {
-      // 1. 同步到主内容配置
+      // 1. 同步到主内容配置 (0 硬编码：仅同步 TextId 引用)
       const res = await fetch('/api/homepageContent/hero', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(sectionForm),
+        body: JSON.stringify({
+          processTitleTextId: 'PROCESS_TITLE',
+          processSubtitleTextId: 'PROCESS_SUBTITLE'
+        }),
       });
       if (!res.ok) throw new Error('Save to homepageContent failed');
 
       // 2. 同步到翻译资产库 (Zero-Hardcoding 体系)
       await Promise.all([
-        fetch(`/api/localizedStrings/${encodeURIComponent('process_PROCESS_TITLE')}`, {
+        fetch(`/api/localizedStrings/${encodeURIComponent('PROCESS_TITLE')}`, {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ id: 'process_PROCESS_TITLE', content: { zh: sectionForm.processTitleZh, en: sectionForm.processTitleEn } })
+          body: JSON.stringify({ id: 'PROCESS_TITLE', content: { zh: sectionForm.processTitleZh, en: sectionForm.processTitleEn } })
         }),
-        fetch(`/api/localizedStrings/${encodeURIComponent('process_PROCESS_SUBTITLE')}`, {
+        fetch(`/api/localizedStrings/${encodeURIComponent('PROCESS_SUBTITLE')}`, {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ id: 'process_PROCESS_SUBTITLE', content: { zh: sectionForm.processSubtitleZh, en: sectionForm.processSubtitleEn } })
+          body: JSON.stringify({ id: 'PROCESS_SUBTITLE', content: { zh: sectionForm.processSubtitleZh, en: sectionForm.processSubtitleEn } })
         })
       ]);
 
       mutateHome();
-      toast({ title: "板块标题配置已保存并同步至翻译库" });
+      mutateTranslations();
+      toast({ title: "板块标题配置已保存并同步至资产库" });
     } catch (e) {
       console.error('Save Section Config Error:', e);
       toast({ variant: "destructive", title: "保存失败" });

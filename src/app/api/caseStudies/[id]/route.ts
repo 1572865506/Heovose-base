@@ -28,6 +28,7 @@ export async function PUT(
   try {
     const { id } = await params;
     const data = await request.json();
+    console.log('[API] Updating case study:', id, 'data:', JSON.stringify(data));
     
     // Clean up data for Prisma
     const { id: _, updatedAt: __, ...updateData } = data;
@@ -44,18 +45,18 @@ export async function PUT(
         console.warn('[API] Stale client. Falling back to raw SQL for CaseStudy Text IDs...');
         
         // 分离新字段
-        const { tagTextId, titleTextId, descriptionTextId, ...safeData } = updateData;
+        const { tagTextId, titleTextId, descriptionTextId, published, ...safeData } = updateData;
+        console.log('[API Fallback] published:', published);
         
         // 1. 原始 SQL 更新
-        if (tagTextId || titleTextId || descriptionTextId) {
-          await db.$executeRawUnsafe(
-            `UPDATE "CaseStudy" SET "tagTextId" = $1, "titleTextId" = $2, "descriptionTextId" = $3 WHERE id = $4`,
-            tagTextId || null,
-            titleTextId || null,
-            descriptionTextId || null,
-            id
-          );
-        }
+        await db.$executeRawUnsafe(
+          `UPDATE "CaseStudy" SET "tagTextId" = $1, "titleTextId" = $2, "descriptionTextId" = $3, "published" = $4 WHERE id = $5`,
+          tagTextId || null,
+          titleTextId || null,
+          descriptionTextId || null,
+          published === undefined ? true : published,
+          id
+        );
 
         // 2. 安全 upsert
         const safeItem = await db.caseStudy.upsert({

@@ -66,6 +66,8 @@ model HomepageContent {
   casesTitleZh               String?
   casesTitleTextId           String?       @default("CASES_TITLE")
   casesSubtitleTextId        String?       @default("CASES_SUBTITLE")
+  processTitleTextId         String?       @default("PROCESS_TITLE")
+  processSubtitleTextId      String?       @default("PROCESS_SUBTITLE")
   locations                  MapLocation[]
 }
 
@@ -114,7 +116,9 @@ model CaseStudy {
   descriptionTextId String?
   tagTextId         String?
   titleTextId       String?
+  published         Boolean @default(true)
 }
+
 
 model ProductionStep {
   id                String   @id @default(cuid())
