@@ -2,7 +2,7 @@
 "use client";
 
 import { Camera, Mesh, Plane, Program, Renderer, Texture, Transform } from 'ogl';
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState, useMemo, forwardRef, useImperativeHandle } from 'react';
 import './CircularGallery.css';
 
 interface GalleryItem {
@@ -180,6 +180,8 @@ class Media {
   speed: number = 0;
   isBefore: boolean = false;
   isAfter: boolean = false;
+  onImageLoad: any;
+  texture: any;
 
   constructor({
     geometry,
@@ -197,9 +199,11 @@ class Media {
     borderRadius = 0,
     font,
     tag,
-    description
+    description,
+    onImageLoad
   }: any) {
     this.extra = 0;
+    this.onImageLoad = onImageLoad;
     this.geometry = geometry;
     this.gl = gl;
     this.image = image;
@@ -222,9 +226,10 @@ class Media {
     this.onResize();
   }
   createShader() {
-    const texture = new Texture(this.gl, {
+    this.texture = new Texture(this.gl, {
       generateMipmaps: true
     });
+    const texture = this.texture;
 
     const textTexture = createTextTexture(this.gl, this.text, this.tag, this.description, this.textColor);
 
@@ -267,17 +272,22 @@ class Media {
             vUv.x * ratio.x + (1.0 - ratio.x) * 0.5,
             vUv.y * ratio.y + (1.0 - ratio.y) * 0.5
           );
+          // Base placeholder color (light gray)
+          vec3 baseColor = vec3(0.94, 0.95, 0.97); 
           vec4 imageColor = texture2D(tMap, uv);
           
-          // Dark gradient overlay for text area
+          // Blend with image if loaded (checking alpha)
+          vec3 finalImageColor = mix(baseColor, imageColor.rgb, imageColor.a);
+          
+          // Dark gradient overlay for text area (only if image is loaded, or keep it subtle)
           float gradient = smoothstep(0.0, 0.6, vUv.y);
-          imageColor.rgb *= mix(0.1, 1.0, gradient);
+          finalImageColor *= mix(0.6, 1.0, gradient); // Less aggressive darkening for light theme
           
           // Text texture mapping
-          vec4 textColor = texture2D(tText, vUv);
+          vec4 textCol = texture2D(tText, vUv);
           
-          // Blend image and text
-          vec3 finalRGB = mix(imageColor.rgb, textColor.rgb, textColor.a);
+          // Blend image/base and text
+          vec3 finalRGB = mix(finalImageColor, textCol.rgb, textCol.a);
           
           // Rounded corners
           float d = roundedBoxSDF(vUv - 0.5, vec2(0.5 - uBorderRadius), uBorderRadius);
@@ -302,7 +312,8 @@ class Media {
     img.crossOrigin = 'anonymous';
     img.src = this.image;
     img.onload = () => {
-      texture.image = img;
+      this.texture.image = img;
+      if (this.onImageLoad) this.onImageLoad();
       this.program.uniforms.uImageSizes.value = [img.naturalWidth, img.naturalHeight];
     };
   }
@@ -362,7 +373,15 @@ class Media {
         this.plane.program.uniforms.uViewportSizes.value = [this.viewport.width, this.viewport.height];
       }
     }
-    this.scale = this.screen.height / 1500;
+    // Decouple scale from container height to avoid oversized cards
+    const scaleBase = Math.min(this.screen.height, 700);
+    this.scale = scaleBase / 1500;
+    
+    // Completely disable bend for mobile as requested for a flat clean look
+    if (this.screen.width < 768) {
+      this.bend = 0;
+    }
+    
     // Use a fixed 4:5 ratio to avoid stretching
     const baseHeight = 1125;
     const baseWidth = 900; 
@@ -370,7 +389,9 @@ class Media {
     this.plane.scale.x = this.plane.scale.y * (baseWidth / baseHeight);
     
     this.plane.program.uniforms.uPlaneSizes.value = [this.plane.scale.x, this.plane.scale.y];
-    this.padding = 3.0; 
+    
+    // Adjust padding for mobile
+    this.padding = this.screen.width < 768 ? 1.5 : 3.0; 
     this.width = this.plane.scale.x + this.padding;
     this.widthTotal = this.width * this.length;
     this.x = this.width * this.index;
@@ -389,6 +410,7 @@ class App {
   planeGeometry: any;
   mediasImages: any[] = [];
   medias: Media[] = [];
+  items: any[] = [];
   storedItems: any[] = [];
   screen: any;
   viewport: any;
@@ -400,6 +422,7 @@ class App {
   boundOnTouchDown: any;
   boundOnTouchMove: any;
   boundOnTouchUp: any;
+  hasInitialRender: boolean = false;
 
   constructor(
     container: HTMLElement,
@@ -418,6 +441,7 @@ class App {
     document.documentElement.classList.remove('no-js');
     this.container = container;
     this.scrollSpeed = scrollSpeed;
+    this.items = items;
     this.scroll = {
       ease: scrollEase,
       current: 0,
@@ -433,6 +457,7 @@ class App {
     this.onResize();
     this.createGeometry();
     this.createMedias(items, bend, textColor, borderRadius, font);
+    this.hasInitialRender = false;
     this.update();
     this.addEventListeners();
   }
@@ -462,25 +487,30 @@ class App {
   }
   createMedias(items: any[], bend = 1, textColor: string, borderRadius: number, font: string) {
     const galleryItems = items && items.length ? items : [];
+    this.items = galleryItems;
     this.mediasImages = galleryItems.concat(galleryItems);
     this.medias = this.mediasImages.map((data, index) => {
+      const { image, text, tag, description } = data;
       return new Media({
-        geometry: this.planeGeometry,
         gl: this.gl,
-        image: data.image,
-        index,
-        length: this.mediasImages.length,
-        renderer: this.renderer,
+        geometry: this.planeGeometry,
         scene: this.scene,
+        renderer: this.renderer,
         screen: this.screen,
-        text: data.text,
-        tag: data.tag,
-        description: data.description,
         viewport: this.viewport,
+        length: this.mediasImages.length,
+        image,
+        text,
+        tag,
+        description,
+        index,
         bend,
         textColor,
         borderRadius,
-        font
+        font,
+        onImageLoad: () => {
+          this.hasInitialRender = false;
+        }
       });
     });
   }
@@ -492,7 +522,9 @@ class App {
   onTouchMove(e: any) {
     if (!this.isDown) return;
     const x = e.touches ? e.touches[0].clientX : e.clientX;
-    const distance = (this.start - x) * (this.scrollSpeed * 0.025);
+    // Higher sensitivity for mobile
+    const sensitivity = this.screen.width < 768 ? 0.06 : 0.025;
+    const distance = (this.start - x) * (this.scrollSpeed * sensitivity);
     this.scroll.target = this.scroll.position + distance;
   }
   onTouchUp() {
@@ -533,15 +565,16 @@ class App {
     this.scroll.current = lerp(this.scroll.current, this.scroll.target, this.scroll.ease);
     const direction = this.scroll.current > this.scroll.last ? 'right' : 'left';
     
-    // Only update and render if there is movement or interaction
+    // Only update and render if there is movement, interaction, or we need the initial frame
     const diff = Math.abs(this.scroll.target - this.scroll.current);
-    const isMoving = diff > 0.01;
+    const isMoving = diff > 0.001;
 
-    if (isMoving || this.isDown) {
+    if (isMoving || this.isDown || !this.hasInitialRender) {
       if (this.medias) {
         this.medias.forEach(media => media.update(this.scroll, direction));
       }
       this.renderer.render({ scene: this.scene, camera: this.camera });
+      this.hasInitialRender = true;
     }
 
     this.scroll.last = this.scroll.current;
@@ -579,6 +612,18 @@ class App {
     });
     this.createMedias(items, this.medias[0]?.bend || 3, this.medias[0]?.textColor || '#ffffff', this.medias[0]?.borderRadius || 0, this.medias[0]?.font || '');
   }
+  next() {
+    if (!this.medias || !this.medias[0]) return;
+    const width = this.medias[0].width;
+    this.scroll.target += width;
+    this.onCheck();
+  }
+  prev() {
+    if (!this.medias || !this.medias[0]) return;
+    const width = this.medias[0].width;
+    this.scroll.target -= width;
+    this.onCheck();
+  }
   destroy() {
     window.cancelAnimationFrame(this.raf);
     window.removeEventListener('resize', this.boundOnResize);
@@ -599,7 +644,7 @@ class App {
   }
 }
 
-export default function CircularGallery({
+const CircularGallery = forwardRef(({
   items,
   bend = 3,
   textColor = '#ffffff',
@@ -607,15 +652,19 @@ export default function CircularGallery({
   font = 'bold 30px Figtree',
   scrollSpeed = 1.5,
   scrollEase = 0.1 
-}: CircularGalleryProps) {
+}: any, ref) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const appRef = useRef<App | null>(null);
+
+  useImperativeHandle(ref, () => ({
+    next: () => appRef.current?.next(),
+    prev: () => appRef.current?.prev()
+  }));
 
   useEffect(() => {
     if (!containerRef.current) return;
     
     if (!appRef.current) {
-      console.log('Mounting CircularGallery App');
       appRef.current = new App(containerRef.current, { items: items || [], bend, textColor, borderRadius, font, scrollSpeed, scrollEase });
     } else {
       appRef.current.updateItems(items || []);
@@ -629,5 +678,11 @@ export default function CircularGallery({
     };
   }, [items, bend, textColor, borderRadius, font, scrollSpeed, scrollEase]);
 
-  return <div className="circular-gallery" ref={containerRef} />;
-}
+  return (
+    <div className="circular-gallery" ref={containerRef} style={{ width: '100%', height: '100%' }} />
+  );
+});
+
+CircularGallery.displayName = 'CircularGallery';
+
+export default CircularGallery;
