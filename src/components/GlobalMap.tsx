@@ -2,12 +2,12 @@
 "use client";
 
 import { useState, useMemo, useEffect, useRef } from 'react';
-import { Locale, translations } from "@/lib/translations";
+import { Locale } from "@/lib/translations";
 import { SectionHeading } from "./SectionHeading";
 import { cn } from "@/lib/utils";
 import { getAssetUrl } from '@/lib/image-utils';
 import { MapPin, Building2, Factory, Microscope, Globe, Loader2 } from "lucide-react";
-import Image from 'next/image';
+import { useTranslations } from '@/hooks/use-translations';
 
 interface GlobalMapProps {
   locale: Locale;
@@ -16,7 +16,7 @@ interface GlobalMapProps {
 }
 
 export function GlobalMap({ locale, homeConfig, isLoading }: GlobalMapProps) {
-  const t = translations[locale].map;
+  const { t: lt } = useTranslations(locale);
   const [activeLocation, setActiveLocation] = useState<string | null>(null);
   const [isVisible, setIsVisible] = useState(false);
   const sectionRef = useRef<HTMLElement>(null);
@@ -50,53 +50,78 @@ export function GlobalMap({ locale, homeConfig, isLoading }: GlobalMapProps) {
     }
   };
 
-  // 动态数据解析与匹配
-  const displayTitle = locale === 'zh'
-    ? (homeConfig?.mapTitleZh || t.title)
-    : (homeConfig?.mapTitleEn || t.title);
+  // 动态标题与副标题解析 - 采用 0 硬编码逻辑
+  const displayTitle = useMemo(() => {
+    // 1. 优先使用后台配置的特定翻译 ID
+    const customId = homeConfig?.mapTitleTextId;
+    const tr = customId ? lt(customId) : lt('MAP_TITLE');
+    if (tr && tr.trim() !== '') return tr;
 
-  const displaySubtitle = locale === 'zh'
-    ? (homeConfig?.mapSubtitleZh || t.subtitle)
-    : (homeConfig?.mapSubtitleEn || t.subtitle);
+    // 2. 其次使用后台直填的文案
+    const zh = homeConfig?.mapTitleZh;
+    const en = homeConfig?.mapTitleEn;
+    const config = locale === 'zh' ? zh : en;
+    if (config && config.trim() !== '') return config;
 
-  // 优先使用后台配置的 locations
+    return null;
+  }, [homeConfig, locale, lt]);
+
+  const displaySubtitle = useMemo(() => {
+    const customId = homeConfig?.mapSubtitleTextId;
+    const tr = customId ? lt(customId) : lt('MAP_SUBTITLE');
+    if (tr && tr.trim() !== '') return tr;
+
+    const zh = homeConfig?.mapSubtitleZh;
+    const en = homeConfig?.mapSubtitleEn;
+    const config = locale === 'zh' ? zh : en;
+    if (config && config.trim() !== '') return config;
+
+    return null;
+  }, [homeConfig, locale, lt]);
+
+  // 优先使用后台配置的 locations，无硬编码兜底
   const pins = useMemo(() => {
-    if (homeConfig?.locations && homeConfig.locations.length > 0) {
-      return homeConfig.locations.map((loc: any) => ({
+    const rawLocations = homeConfig?.locations || [];
+    if (rawLocations.length === 0) return [];
+
+    return rawLocations.map((loc: any) => {
+      const getLocalized = (textId: string | null | undefined, zh: string, en: string) => {
+        const translated = textId ? lt(textId) : undefined;
+        if (translated && translated.trim() !== '') return translated;
+        
+        const direct = locale === 'zh' ? zh : en;
+        if (direct && direct.trim() !== '') return direct;
+        
+        return (locale === 'zh' ? en : zh) || '';
+      };
+
+      return {
         key: loc.id,
         style: { top: loc.posTop, left: loc.posLeft },
         type: loc.type,
         icon: getIcon(loc.type),
-        title: locale === 'zh' ? loc.titleZh : loc.titleEn,
-        address: locale === 'zh' ? loc.addressZh : loc.addressEn,
-        desc: locale === 'zh' ? loc.descZh : loc.descEn,
+        title: getLocalized(loc.titleTextId, loc.titleZh, loc.titleEn),
+        address: getLocalized(loc.addressTextId, loc.addressZh, loc.addressEn),
+        desc: getLocalized(loc.descTextId, loc.descZh, loc.descEn),
         imageUrl: loc.imageUrl
-      }));
-    }
+      };
+    });
+  }, [homeConfig, locale, lt]);
 
-    // 回退到 translations.ts 中的硬编码网点
-    const locs = translations[locale].map.locations;
-    return locs.map(loc => ({
-      key: loc.id,
-      style: { top: loc.posTop, left: loc.posLeft },
-      type: loc.type,
-      icon: getIcon(loc.type as any),
-      title: loc.title,
-      address: loc.address,
-      desc: loc.desc,
-      imageUrl: ''
-    }));
-  }, [homeConfig, locale]);
+  // 如果没有配置地点且不是加载中，直接不渲染整个板块
+  if (!isLoading && pins.length === 0) return null;
 
   return (
     <section id="global" ref={sectionRef} className="py-24 bg-white overflow-hidden relative min-h-[400px]">
-      {(isLoading || pins.length === 0) ? (
+      {isLoading ? (
         <div className="container mx-auto px-6 flex items-center justify-center py-40">
-          {isLoading && <Loader2 className="h-10 w-10 animate-spin text-primary opacity-20" />}
+          <Loader2 className="h-10 w-10 animate-spin text-primary opacity-20" />
         </div>
       ) : (
         <div className="container mx-auto px-6">
-          <SectionHeading title={displayTitle} subtitle={displaySubtitle} />
+          {displayTitle && (
+            <SectionHeading title={displayTitle} subtitle={displaySubtitle || undefined} />
+          )}
 
           <div className={cn(
             "grid grid-cols-1 lg:grid-cols-12 gap-12 items-start transition-all duration-1000 delay-300",
@@ -214,7 +239,9 @@ export function GlobalMap({ locale, homeConfig, isLoading }: GlobalMapProps) {
               <div className="absolute bottom-8 left-8 right-8 flex justify-between items-end">
                 <div className="flex items-center gap-3 bg-white/90 px-6 py-3 rounded-full border border-white/20 shadow-lg">
                   <div className="w-3 h-3 bg-accent rounded-full animate-ping" />
-                  <span className="text-[10px] font-bold text-primary uppercase tracking-[0.3em]">Heovose Global Network</span>
+                  <span className="text-[10px] font-bold text-primary uppercase tracking-[0.3em]">
+                    {lt('MAP_NETWORK_LABEL')}
+                  </span>
                 </div>
 
                 {activeLocation && pins.find((p: any) => p.key === activeLocation)?.imageUrl && (

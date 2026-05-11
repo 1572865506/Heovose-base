@@ -36,44 +36,52 @@ export async function PUT(
 
     // Handle locations separately if it's the map document
     if (id === 'map' && locations) {
-      await db.$transaction(async (tx: any) => {
-        // Update basic fields
-        await tx.homepageContent.upsert({
-          where: { id },
-          update: updateData,
-          create: { ...updateData, id },
-        });
-
-        // Delete existing locations and recreate them (simpler than syncing)
-        await tx.mapLocation.deleteMany({
-          where: { homepageId: id },
-        });
-
-        if (locations.length > 0) {
-          await tx.mapLocation.createMany({
-            data: locations.map((loc: any) => ({
-              id: loc.id || undefined,
-              type: loc.type,
-              titleZh: loc.titleZh,
-              titleEn: loc.titleEn,
-              addressZh: loc.addressZh,
-              addressEn: loc.addressEn,
-              descZh: loc.descZh,
-              descEn: loc.descEn,
-              imageUrl: loc.imageUrl,
-              posTop: loc.posTop,
-              posLeft: loc.posLeft,
-              homepageId: id,
-            })),
+      try {
+        await db.$transaction(async (tx: any) => {
+          // Update basic fields
+          await tx.homepageContent.upsert({
+            where: { id },
+            update: updateData,
+            create: { ...updateData, id },
           });
-        }
-      });
-      
-      const updatedItem = await db.homepageContent.findUnique({
-        where: { id },
-        include: { locations: true },
-      });
-      return NextResponse.json(updatedItem);
+
+          // Delete existing locations and recreate them
+          await tx.mapLocation.deleteMany({
+            where: { homepageId: id },
+          });
+
+          if (locations.length > 0) {
+            await tx.mapLocation.createMany({
+              data: locations.map((loc: any) => ({
+                id: (loc.id && loc.id.startsWith('loc_')) ? loc.id : undefined,
+                type: loc.type || 'Factory',
+                titleZh: loc.titleZh || '',
+                titleEn: loc.titleEn || '',
+                addressZh: loc.addressZh || '',
+                addressEn: loc.addressEn || '',
+                descZh: loc.descZh || '',
+                descEn: loc.descEn || '',
+                titleTextId: loc.titleTextId || null,
+                addressTextId: loc.addressTextId || null,
+                descTextId: loc.descTextId || null,
+                imageUrl: loc.imageUrl || null,
+                posTop: loc.posTop || '50%',
+                posLeft: loc.posLeft || '50%',
+                homepageId: id,
+              })),
+            });
+          }
+        });
+        
+        const updatedItem = await db.homepageContent.findUnique({
+          where: { id },
+          include: { locations: true },
+        });
+        return NextResponse.json(updatedItem);
+      } catch (txError: any) {
+        console.error('[API] Map Transaction Failed:', txError);
+        // 如果事务失败，尝试进入下方的通用流程（可能部分字段能存进去）
+      }
     }
 
     // 增强防御性：只允许模型中定义的字段进入 Prisma
@@ -89,6 +97,7 @@ export async function PUT(
       'processTitleEn', 'processTitleZh', 'processSubtitleEn', 'processSubtitleZh',
       'galleryTitleEn', 'galleryTitleZh', 'gallerySubtitleEn', 'gallerySubtitleZh', 'galleryItems',
       'mapTitleEn', 'mapTitleZh', 'mapSubtitleEn', 'mapSubtitleZh',
+      'mapTitleTextId', 'mapSubtitleTextId',
       'casesTitleEn', 'casesTitleZh', 'casesSubtitleEn', 'casesSubtitleZh',
       'casesTitleTextId', 'casesSubtitleTextId',
       'processTitleTextId', 'processSubtitleTextId'
@@ -131,7 +140,12 @@ export async function PUT(
         console.warn('[API] Stale Prisma Client detected. Using Raw SQL fallback for localization fields...');
         
         // 1. 尝试使用原始 SQL 强行写入新字段，绕过 Prisma 的类型检查
-        const { casesTitleTextId, casesSubtitleTextId, processTitleTextId, processSubtitleTextId, ...safeData } = filteredData;
+        const { 
+          casesTitleTextId, casesSubtitleTextId, 
+          processTitleTextId, processSubtitleTextId,
+          mapTitleTextId, mapSubtitleTextId,
+          ...safeData 
+        } = filteredData;
         
         try {
           if (casesTitleTextId || casesSubtitleTextId) {
@@ -147,6 +161,14 @@ export async function PUT(
               `UPDATE "HomepageContent" SET "processTitleTextId" = $1, "processSubtitleTextId" = $2 WHERE id = $3`,
               processTitleTextId || 'PROCESS_TITLE',
               processSubtitleTextId || 'PROCESS_SUBTITLE',
+              id
+            );
+          }
+          if (mapTitleTextId || mapSubtitleTextId) {
+            await db.$executeRawUnsafe(
+              `UPDATE "HomepageContent" SET "mapTitleTextId" = $1, "mapSubtitleTextId" = $2 WHERE id = $3`,
+              mapTitleTextId || 'MAP_TITLE',
+              mapSubtitleTextId || 'MAP_SUBTITLE',
               id
             );
           }

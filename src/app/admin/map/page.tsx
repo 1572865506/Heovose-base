@@ -80,8 +80,10 @@ export default function GlobalMapAdminPage() {
   const [formData, setFormData] = useState<any>({
     mapTitleZh: '',
     mapTitleEn: '',
+    mapTitleTextId: '',
     mapSubtitleZh: '',
     mapSubtitleEn: '',
+    mapSubtitleTextId: '',
     locations: []
   });
 
@@ -98,10 +100,13 @@ export default function GlobalMapAdminPage() {
     type: 'Factory',
     titleZh: '',
     titleEn: '',
+    titleTextId: '',
     addressZh: '',
     addressEn: '',
+    addressTextId: '',
     descZh: '',
     descEn: '',
+    descTextId: '',
     imageUrl: '',
     posTop: '50%',
     posLeft: '50%'
@@ -112,8 +117,10 @@ export default function GlobalMapAdminPage() {
       setFormData({
         mapTitleZh: homeData.mapTitleZh || '',
         mapTitleEn: homeData.mapTitleEn || '',
+        mapTitleTextId: homeData.mapTitleTextId || '',
         mapSubtitleZh: homeData.mapSubtitleZh || '',
         mapSubtitleEn: homeData.mapSubtitleEn || '',
+        mapSubtitleTextId: homeData.mapSubtitleTextId || '',
         locations: homeData.locations || []
       });
     }
@@ -122,17 +129,58 @@ export default function GlobalMapAdminPage() {
   const handleSave = async () => {
     setIsSaving(true);
     try {
-      await fetch('/api/homepageContent/map', {
+      const finalData = {
+        ...formData,
+        mapTitleTextId: formData.mapTitleTextId || 'MAP_TITLE',
+        mapSubtitleTextId: formData.mapSubtitleTextId || 'MAP_SUBTITLE'
+      };
+
+      // 1. 自动同步核心板块翻译
+      await upsertLocalizedString(finalData.mapTitleTextId, { zh: formData.mapTitleZh, en: formData.mapTitleEn });
+      await upsertLocalizedString(finalData.mapSubtitleTextId, { zh: formData.mapSubtitleZh, en: formData.mapSubtitleEn });
+      await upsertLocalizedString('MAP_NETWORK_LABEL', { zh: '全球网点布局', en: 'Heovose Global Network' });
+
+      // 2. 自动同步所有网点翻译
+      for (const loc of formData.locations) {
+        if (loc.titleTextId) await upsertLocalizedString(loc.titleTextId, { zh: loc.titleZh, en: loc.titleEn });
+        if (loc.addressTextId) await upsertLocalizedString(loc.addressTextId, { zh: loc.addressZh, en: loc.addressEn });
+        if (loc.descTextId) await upsertLocalizedString(loc.descTextId, { zh: loc.descZh, en: loc.descEn });
+      }
+
+      const res = await fetch('/api/homepageContent/map', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(formData),
+        body: JSON.stringify(finalData),
       });
+
+      if (!res.ok) {
+        const errorData = await res.json();
+        throw new Error(errorData.details || errorData.error || '同步到数据库失败');
+      }
+
       mutateMap();
       setIsSaving(false);
-      toast({ title: "地图配置已同步至前台" });
-    } catch (e) {
+      toast({ title: "地图配置及翻译库已同步" });
+    } catch (e: any) {
       setIsSaving(false);
-      toast({ variant: "destructive", title: "保存失败" });
+      toast({ 
+        variant: "destructive", 
+        title: "保存失败", 
+        description: e.message || "未知错误"
+      });
+    }
+  };
+
+  const upsertLocalizedString = async (id: string, content: { zh?: string, en?: string }) => {
+    if (!id) return;
+    try {
+      await fetch(`/api/localizedStrings/${id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ content })
+      });
+    } catch (e) {
+      console.error(`Failed to sync translation for ${id}`, e);
     }
   };
 
@@ -165,11 +213,22 @@ export default function GlobalMapAdminPage() {
 
   const handleLocationSubmit = () => {
     const newLocations = [...(formData.locations || [])];
+    const locId = editingLocation ? editingLocation.id : `loc_${Date.now()}`;
+    
+    // 自动生成并锁定翻译 ID
+    const processedForm = {
+      ...locationForm,
+      id: locId,
+      titleTextId: `MAP_LOC_${locId.toUpperCase()}_TITLE`,
+      addressTextId: `MAP_LOC_${locId.toUpperCase()}_ADDR`,
+      descTextId: `MAP_LOC_${locId.toUpperCase()}_DESC`
+    };
+
     if (editingLocation) {
       const idx = newLocations.findIndex(l => l.id === editingLocation.id);
-      newLocations[idx] = { ...locationForm };
+      newLocations[idx] = processedForm;
     } else {
-      newLocations.push({ ...locationForm, id: `loc_${Date.now()}` });
+      newLocations.push(processedForm);
     }
     setFormData({ ...formData, locations: newLocations });
     setIsLocationDialogOpen(false);

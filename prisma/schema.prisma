@@ -39,6 +39,8 @@ model HomepageContent {
   mapTitleZh                 String?
   mapSubtitleEn              String?
   mapSubtitleZh              String?
+  mapTitleTextId             String?       @default("MAP_TITLE")
+  mapSubtitleTextId          String?       @default("MAP_SUBTITLE")
   heroProjectDescriptionEn   String?
   heroProjectDescriptionZh   String?
   heroSlides                 Json?
@@ -98,6 +100,9 @@ model MapLocation {
   imageUrl        String?
   posTop          String
   posLeft         String
+  titleTextId     String?
+  addressTextId   String?
+  descTextId      String?
   homepageId      String
   homepageContent HomepageContent @relation(fields: [homepageId], references: [id])
 }
