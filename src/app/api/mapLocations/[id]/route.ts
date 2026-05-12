@@ -37,9 +37,30 @@ export async function DELETE(
 
   try {
     const { id } = await params;
+    
+    // 1. Get the location first to find associated textIds
+    const location = await db.mapLocation.findUnique({
+      where: { id },
+      select: { titleTextId: true, addressTextId: true, descTextId: true }
+    });
+
+    if (location) {
+      // 2. Collect all non-null text IDs
+      const textIds = [location.titleTextId, location.addressTextId, location.descTextId].filter(Boolean) as string[];
+      
+      // 3. Delete associated localized strings
+      if (textIds.length > 0) {
+        await db.localizedString.deleteMany({
+          where: { id: { in: textIds } }
+        });
+      }
+    }
+
+    // 4. Finally delete the location
     await db.mapLocation.delete({
       where: { id },
     });
+    
     return NextResponse.json({ success: true });
   } catch (error: any) {
     console.error('[API] mapLocations DELETE Error:', error);

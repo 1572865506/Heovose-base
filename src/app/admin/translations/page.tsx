@@ -140,6 +140,10 @@ export default function TranslationsPage() {
   });
   const [newLang, setNewLang] = useState({ code: '', label: '' });
 
+  // 删除状态
+  const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
+
   const { data: langSettings, mutate: mutateLangs } = useLocalDoc<LanguageSettings>('settings', 'languages');
   const { data: aiConfig } = useLocalDoc<AiConfig>('settings', 'ai');
   const { data: translations, isLoading, mutate: mutateTrans } = useLocalCollection<LocalizedString>('localizedStrings?full=true');
@@ -521,6 +525,24 @@ export default function TranslationsPage() {
       toast({ title: "词条已保存" });
     } catch (e) {
       toast({ variant: "destructive", title: "保存失败" });
+    }
+  };
+
+  const handleDeleteEntry = async () => {
+    if (!deletingId) return;
+    setIsDeleting(true);
+    try {
+      const res = await fetch(`/api/localizedStrings/${encodeURIComponent(deletingId)}`, {
+        method: 'DELETE',
+      });
+      if (!res.ok) throw new Error('删除失败');
+      mutateTrans();
+      toast({ title: "词条资产已移除" });
+      setDeletingId(null);
+    } catch (e: any) {
+      toast({ variant: "destructive", title: "操作失败", description: e.message });
+    } finally {
+      setIsDeleting(false);
     }
   };
 
@@ -925,10 +947,18 @@ export default function TranslationsPage() {
                            }} className="h-10 w-10 rounded-xl opacity-0 group-hover:opacity-100 transition-all hover:bg-primary/5 hover:text-primary">
                              <Edit2 className="h-4 w-4" />
                            </Button>
-                            {refs.length === 0 && (
-                             <Button variant="ghost" size="icon" className="h-10 w-10 rounded-xl text-destructive opacity-0 group-hover:opacity-100 transition-all hover:bg-destructive/5" onClick={async () => { if(confirm('彻底删除此词条资产？')) { await fetch(`/api/localizedStrings/${t.id}`, { method: 'DELETE' }); mutateTrans(); toast({ title: "已删除" }); } }}>
-                               <Trash2 className="h-4 w-4" />
-                             </Button>
+                           {refs.length === 0 && (
+                             <Button 
+                                variant="ghost" 
+                                size="icon" 
+                                className="h-10 w-10 rounded-xl text-destructive opacity-0 group-hover:opacity-100 transition-all hover:bg-destructive/5" 
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setDeletingId(t.id);
+                                }}
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
                            )}
                          </div>
                        )}
@@ -1128,6 +1158,46 @@ export default function TranslationsPage() {
           <DialogFooter className="bg-slate-50/80 p-8 border-t border-slate-100/50 gap-4">
             <Button variant="ghost" onClick={() => setIsAdding(false)} className="h-12 rounded-xl flex-1 font-bold uppercase tracking-widest text-[10px] text-slate-400 hover:bg-slate-100 transition-colors">取消操作</Button>
             <Button onClick={handleSave} className="h-12 rounded-xl flex-1 font-bold uppercase tracking-widest text-[10px] shadow-xl shadow-primary/20 bg-primary hover:bg-primary/90 text-white transition-all">签署并同步</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+      {/* Delete Confirmation Dialog */}
+      <Dialog open={!!deletingId} onOpenChange={(open) => !open && setDeletingId(null)}>
+        <DialogContent className="max-w-md rounded-[2.5rem] overflow-hidden border-none shadow-2xl p-0 bg-white">
+          <div className="bg-red-500 p-8 text-white relative overflow-hidden">
+            <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 blur-2xl rounded-full translate-x-16 -translate-y-16" />
+            <DialogHeader className="relative z-10">
+              <DialogTitle className="text-xl font-headline font-bold uppercase tracking-wider flex items-center gap-3">
+                <AlertTriangle className="h-6 w-6" /> 确认永久删除
+              </DialogTitle>
+              <DialogDescription className="text-red-100 text-xs font-medium uppercase tracking-widest mt-2">
+                Permanent Asset Deletion
+              </DialogDescription>
+            </DialogHeader>
+          </div>
+          <div className="p-8 space-y-4">
+            <p className="text-sm text-slate-600 leading-relaxed">
+              您确定要删除词条 <span className="font-mono font-bold text-slate-900 bg-slate-100 px-2 py-0.5 rounded">{deletingId}</span> 吗？
+            </p>
+            <div className="bg-red-50 border border-red-100 p-4 rounded-2xl flex gap-4">
+              <Info className="h-5 w-5 text-red-500 shrink-0 mt-0.5" />
+              <div className="space-y-1">
+                <p className="text-[11px] font-bold text-red-800 uppercase">风险提示</p>
+                <p className="text-[10px] text-red-700/70 leading-relaxed">此操作无法撤销。虽然系统已确认该词条目前未被任何产品或分类引用，但手动硬编码的引用可能会失效。</p>
+              </div>
+            </div>
+          </div>
+          <DialogFooter className="bg-slate-50 p-6 border-t border-slate-100 gap-3">
+            <Button variant="ghost" onClick={() => setDeletingId(null)} className="h-12 rounded-xl flex-1 font-bold uppercase tracking-widest text-[10px] text-slate-400">取消</Button>
+            <Button 
+              variant="destructive"
+              onClick={handleDeleteEntry} 
+              disabled={isDeleting} 
+              className="h-12 rounded-xl flex-1 font-bold uppercase tracking-widest text-[10px] bg-red-600 hover:bg-red-700 shadow-lg shadow-red-100"
+            >
+              {isDeleting ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Trash2 className="h-4 w-4 mr-2" />}
+              确认彻底删除
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

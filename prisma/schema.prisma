@@ -90,6 +90,7 @@ model HomepageBentoItem {
 
 model MapLocation {
   id              String          @id @default(cuid())
+  order           Int             @default(0)
   type            String
   titleZh         String
   titleEn         String

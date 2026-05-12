@@ -7,7 +7,7 @@ export const dynamic = 'force-dynamic';
 export async function GET() {
   try {
     const locations = await db.mapLocation.findMany({
-      orderBy: { id: 'asc' }
+      orderBy: { order: 'asc' }
     });
     return NextResponse.json(locations);
   } catch (error) {
@@ -21,9 +21,17 @@ export async function POST(request: Request) {
 
   try {
     const data = await request.json();
+    
+    // Get the highest order to append
+    const lastLocation = await db.mapLocation.findFirst({
+      orderBy: { order: 'desc' }
+    });
+    const nextOrder = (lastLocation?.order ?? -1) + 1;
+
     const location = await db.mapLocation.create({
       data: {
         id: data.id || undefined,
+        order: nextOrder,
         type: data.type || 'Factory',
         titleZh: data.titleZh || '',
         titleEn: data.titleEn || '',

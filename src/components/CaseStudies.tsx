@@ -141,6 +141,8 @@ export function CaseStudies({ locale }: { locale: Locale }) {
     };
   }, []);
 
+  const [selectedCase, setSelectedCase] = useState<any>(null);
+
   return (
     <section id="cases" ref={sectionRef} className="relative pt-20 pb-20 lg:pt-24 lg:pb-24 bg-background overflow-hidden">
       <div className="container mx-auto px-6 mb-4 relative z-10 text-center lg:text-left">
@@ -152,35 +154,95 @@ export function CaseStudies({ locale }: { locale: Locale }) {
       </div>
 
       <div className={cn("relative w-full z-10 transition-opacity duration-700", isVisible ? "opacity-100" : "opacity-0")}>
-        {/* 画廊主容器：应用负 Margin 提升重心 */}
+        {/* 画廊主容器 */}
         <div className="h-[700px] relative -mt-16 lg:-mt-20">
           {isRendered && cases.length > 0 && (
             <CircularGallery
               ref={galleryRef}
               items={cases}
-              bend={3}
-              borderRadius={0.05}
-              scrollEase={0.08}
+              onItemClick={setSelectedCase}
             />
           )}
-        </div>
 
-        {/* 底部居中导航按钮：使用负 Margin 向上压缩空间 */}
-        <div className="flex justify-center items-center gap-6 -mt-12 pb-10 relative z-20">
-          <button
-            onClick={() => galleryRef.current?.prev()}
-            className="w-14 h-14 rounded-full bg-slate-100/90 backdrop-blur-md border border-slate-200 flex items-center justify-center text-slate-900 hover:bg-slate-200 transition-all active:scale-95 shadow-lg"
-            aria-label="Previous case"
-          >
-            <ChevronLeft size={28} />
-          </button>
-          <button
-            onClick={() => galleryRef.current?.next()}
-            className="w-14 h-14 rounded-full bg-slate-100/90 backdrop-blur-md border border-slate-200 flex items-center justify-center text-slate-900 hover:bg-slate-200 transition-all active:scale-95 shadow-lg"
-            aria-label="Next case"
-          >
-            <ChevronRight size={28} />
-          </button>
+          {/* 底部居中导航按钮 */}
+          <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-6 z-20">
+            <button
+              onClick={() => galleryRef.current?.prev()}
+              className="w-14 h-14 rounded-full bg-white/80 backdrop-blur-md shadow-lg flex items-center justify-center text-slate-800 hover:bg-blue-600 hover:text-white transition-all duration-300 group"
+            >
+              <ChevronLeft className="w-6 h-6 group-hover:-translate-x-1 transition-transform" />
+            </button>
+            <button
+              onClick={() => galleryRef.current?.next()}
+              className="w-14 h-14 rounded-full bg-white/80 backdrop-blur-md shadow-lg flex items-center justify-center text-slate-800 hover:bg-blue-600 hover:text-white transition-all duration-300 group"
+            >
+              <ChevronRight className="w-6 h-6 group-hover:translate-x-1 transition-transform" />
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* 详情模态窗 - 优化性能与同步感 */}
+      <div 
+        className={cn(
+          "fixed inset-0 z-[100] flex items-center justify-center p-6 lg:p-20",
+          selectedCase ? "visible" : "invisible pointer-events-none"
+        )}
+      >
+        {/* 背景遮罩：独立控制透明度，并预热滤镜 */}
+        <div 
+          className={cn(
+            "absolute inset-0 bg-slate-950/60 transition-opacity duration-300 ease-out cursor-zoom-out",
+            "backdrop-blur-md will-change-[backdrop-filter,opacity]",
+            selectedCase ? "opacity-100" : "opacity-0"
+          )}
+          onClick={() => setSelectedCase(null)}
+        />
+        
+        {/* 弹窗主体：稍慢一点的缩放进入，形成层次感 */}
+        <div 
+          className={cn(
+            "relative w-full max-w-5xl bg-white rounded-[32px] overflow-hidden shadow-2xl flex flex-col lg:flex-row transition-all duration-500 ease-out transform will-change-transform",
+            selectedCase ? "translate-y-0 scale-100 opacity-100" : "translate-y-8 scale-95 opacity-0"
+          )}
+        >
+          {/* 左侧/上方大图 */}
+          <div className="w-full lg:w-1/2 h-[300px] lg:h-auto relative overflow-hidden">
+            {selectedCase && (
+              <img 
+                src={selectedCase.image} 
+                alt={selectedCase.text} 
+                className="w-full h-full object-cover"
+              />
+            )}
+            <div className="absolute inset-0 bg-gradient-to-r from-black/20 to-transparent" />
+          </div>
+
+          {/* 右侧内容 */}
+          <div className="w-full lg:w-1/2 p-8 lg:p-14 flex flex-col justify-center bg-white relative">
+            {/* 关闭按钮 */}
+            <button 
+              onClick={() => setSelectedCase(null)}
+              className="absolute top-6 right-6 w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center text-slate-500 hover:bg-slate-200 hover:text-slate-900 transition-colors"
+            >
+              <span className="text-2xl leading-none">×</span>
+            </button>
+
+            {selectedCase && (
+              <div className="animate-in fade-in slide-in-from-bottom-4 duration-700">
+                <span className="inline-block px-4 py-1.5 bg-blue-50 text-blue-600 rounded-full text-xs font-bold uppercase tracking-widest mb-6">
+                  {selectedCase.tag}
+                </span>
+                <h2 className="text-3xl lg:text-4xl font-bold text-slate-900 mb-6 leading-tight">
+                  {selectedCase.text}
+                </h2>
+                <div className="w-12 h-1 bg-blue-600 mb-8 rounded-full" />
+                <p className="text-slate-600 leading-relaxed text-base lg:text-lg">
+                  {selectedCase.description}
+                </p>
+              </div>
+            )}
+          </div>
         </div>
       </div>
     </section>

@@ -44,8 +44,8 @@ function GalleryCard({ product, locale }: { product: any, locale: Locale }) {
           <div className="absolute top-6 left-6 z-10">
             <span className={cn(
               "inline-block px-3 py-1 text-[10px] font-bold tracking-wider uppercase rounded-full border shadow-lg backdrop-blur-md",
-              product.badgeType === 'NEW' 
-                ? "bg-blue-600/90 text-white border-blue-400/50" 
+              product.badgeType === 'NEW'
+                ? "bg-blue-600/90 text-white border-blue-400/50"
                 : "bg-red-600/90 text-white border-red-400/50"
             )}>
               {product.badge}
@@ -66,7 +66,7 @@ function GalleryCard({ product, locale }: { product: any, locale: Locale }) {
             </p>
           </div>
         </div>
-        
+
         <div className="flex items-center justify-end mt-6">
           <div className="h-10 w-10 rounded-full bg-slate-100 flex items-center justify-center text-slate-900 group-hover:bg-primary/30 group-hover:text-primary transition-all duration-500 transform-gpu group-hover:scale-110">
             <ArrowRight className="h-5 w-5" />
@@ -83,7 +83,7 @@ export function ProductGallery({ locale }: { locale: Locale }) {
   const [current, setCurrent] = useState(0);
   const [count, setCount] = useState(0);
   const [isPlaying, setIsPlaying] = useState(true);
-  const isPlayingRef = useRef(true); 
+  const isPlayingRef = useRef(true);
   const [progress, setProgress] = useState(0);
   const AUTOPLAY_DELAY = 5000;
 
@@ -96,9 +96,9 @@ export function ProductGallery({ locale }: { locale: Locale }) {
   const { data: remoteProducts, isLoading } = useLocalCollection<any>('products?status=published&limit=8');
   const { data: allTranslations } = useLocalCollection<any>(`localizedStrings?lang=${locale}`);
   const { data: langSettings } = useLocalDoc<any>('settings', 'languages');
-  
+
   const { data: galleryConfig, mutate: mutateGallery } = useLocalDoc<any>('homepageContent', 'gallery');
-  
+
 
 
   // Unified translation helper with multi-level fallback
@@ -145,7 +145,7 @@ export function ProductGallery({ locale }: { locale: Locale }) {
       return galleryConfig.galleryItems.map((item: any) => {
         const product = remoteProducts.find((p: any) => p.id === item.productId);
         if (!product) return null;
-        
+
         // 翻译 Badge
         let badgeLabel = item.badge;
         if (item.badge === 'NEW') badgeLabel = getT('BADGE_NEW');
@@ -201,7 +201,7 @@ export function ProductGallery({ locale }: { locale: Locale }) {
       const snapIndex = api.selectedScrollSnap();
       setCurrent((prev) => {
         if (prev !== snapIndex) {
-          setProgress(0); 
+          setProgress(0);
           return snapIndex;
         }
         return prev;
@@ -248,7 +248,7 @@ export function ProductGallery({ locale }: { locale: Locale }) {
       if (isPlayingRef.current) {
         setProgress((prev) => {
           if (prev >= 100) return 100;
-          
+
           const next = prev + step;
           if (next >= 100) {
             api.scrollNext();
@@ -260,14 +260,14 @@ export function ProductGallery({ locale }: { locale: Locale }) {
     }, intervalTime);
 
     return () => clearInterval(timer);
-  }, [api, isVisible]); 
+  }, [api, isVisible]);
 
   const toggleAutoplay = useCallback(() => {
     setIsPlaying(prev => !prev);
   }, []);
 
   return (
-    <section id="products" className="relative z-20 py-24 bg-background overflow-hidden shadow-[0_50px_100px_rgba(0,0,0,0.05)] group/carousel">
+    <section ref={containerRef} id="products" className="relative z-20 py-24 bg-background overflow-hidden shadow-[0_50px_100px_rgba(0,0,0,0.05)] group/carousel">
       <div className="container mx-auto px-6">
         <SectionHeading
           key={count}
@@ -275,7 +275,7 @@ export function ProductGallery({ locale }: { locale: Locale }) {
           subtitle={getSectionConfig('gallerySubtitle', 'GALLERY_SUBTITLE')}
         />
       </div>
-      
+
       <div className="relative px-4 md:px-12 lg:px-24">
         <Carousel
           setApi={setApi}
@@ -285,7 +285,7 @@ export function ProductGallery({ locale }: { locale: Locale }) {
           }}
           className="w-full overflow-visible"
         >
-          <CarouselContent className="-ml-8" viewportClassName="py-16 overflow-visible">
+          <CarouselContent className="-ml-8" viewportClassName="py-8 overflow-visible">
             {products.map((product: any) => (
               <CarouselItem key={product.id} className="pl-8 md:basis-1/2 lg:basis-1/3 xl:basis-1/4">
                 <GalleryCard product={product} locale={locale} />

@@ -15,20 +15,21 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { 
-  Save, 
-  Sparkles, 
+  Globe, 
+  MapPin, 
+  Building2, 
+  Factory, 
+  Microscope, 
+  Trash2, 
+  Edit2, 
+  Plus, 
+  Check, 
   Loader2, 
-  Image as ImageIcon, 
-  MapPin,
-  Plus,
-  Trash2,
-  Edit2,
-  Globe,
-  Building2,
-  Microscope,
-  Factory,
+  Sparkles, 
+  Image as ImageIcon,
+  ChevronLeft,
+  ChevronRight,
   Search,
-  Check,
   X
 } from 'lucide-react';
 import { 
@@ -91,6 +92,76 @@ export default function GlobalMapAdminPage() {
   
   // 图库选择器状态
   const [isPickerOpen, setIsPickerOpen] = useState(false);
+  
+  // 删除确认对话框状态
+  const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
+
+  const handleMoveLocation = async (id: string, direction: 'left' | 'right') => {
+    if (!locations || locations.length < 2) return;
+    
+    // 获取当前数组副本
+    const items = [...locations];
+    const currentIndex = items.findIndex((l: any) => l.id === id);
+    const targetIndex = direction === 'left' ? currentIndex - 1 : currentIndex + 1;
+    
+    if (targetIndex < 0 || targetIndex >= items.length) return;
+    
+    try {
+      // 核心修复：如果发现排序值重复（如初始全为0），则先进行全量重排
+      const hasDuplicateOrders = new Set(items.map(i => i.order)).size !== items.length;
+      
+      if (hasDuplicateOrders) {
+        console.log('[Admin] Duplicate orders detected, normalizing...');
+        // 按照当前索引全量更新排序值
+        await Promise.all(items.map((item, idx) => 
+          fetch(`/api/mapLocations/${item.id}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ order: idx })
+          })
+        ));
+        // 重新获取数据后再次尝试交换，或者直接基于新分配的 order 交换
+        // 为了简便，这里直接计算交换后的结果
+        const currentId = items[currentIndex].id;
+        const targetId = items[targetIndex].id;
+        await Promise.all([
+          fetch(`/api/mapLocations/${currentId}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ order: targetIndex })
+          }),
+          fetch(`/api/mapLocations/${targetId}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ order: currentIndex })
+          })
+        ]);
+      } else {
+        // 正常交换逻辑
+        const current = items[currentIndex];
+        const target = items[targetIndex];
+        await Promise.all([
+          fetch(`/api/mapLocations/${current.id}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ order: target.order })
+          }),
+          fetch(`/api/mapLocations/${target.id}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ order: current.order })
+          })
+        ]);
+      }
+      
+      mutateLocs();
+      toast({ title: "排序已更新" });
+    } catch (e) {
+      console.error('[Admin] Sort Error:', e);
+      toast({ variant: "destructive", title: "排序更新失败" });
+    }
+  };
 
   const [locationForm, setLocationForm] = useState<any>({
     id: '',
@@ -204,15 +275,24 @@ export default function GlobalMapAdminPage() {
     }
   };
 
-  const handleDeleteLocation = async (id: string) => {
-    if (!confirm('确定要删除该网点吗？')) return;
+  const handleDeleteLocation = async () => {
+    if (!deletingId) return;
+    
+    setIsDeleting(true);
     try {
-      const res = await fetch(`/api/mapLocations/${id}`, { method: 'DELETE' });
-      if (!res.ok) throw new Error('删除失败');
+      const res = await fetch(`/api/mapLocations/${deletingId}`, { method: 'DELETE' });
+      if (!res.ok) {
+        const error = await res.json();
+        throw new Error(error.error || '删除失败');
+      }
       mutateLocs();
       toast({ title: "网点已删除" });
+      setDeletingId(null);
     } catch (e: any) {
+      console.error('[Admin] Delete Error:', e);
       toast({ variant: "destructive", title: "操作失败", description: e.message });
+    } finally {
+      setIsDeleting(false);
     }
   };
 
@@ -270,12 +350,6 @@ export default function GlobalMapAdminPage() {
     <div className="space-y-6 animate-in fade-in duration-500 pb-20">
       <AiGradientDef />
       
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 sticky top-[-24px] z-50 bg-background/95 backdrop-blur-md py-4 border-b -mx-6 px-6 mb-6">
-        <h2 className="text-xl font-headline font-bold text-primary flex items-center gap-2">
-          <MapPin className="h-5 w-5" /> 全球地图配置中心
-        </h2>
-      </div>
-
       <div className="bg-white p-8 rounded-3xl border shadow-sm space-y-8">
         <div className="flex items-center justify-between border-b pb-4">
           <div className="space-y-1">
@@ -351,42 +425,87 @@ export default function GlobalMapAdminPage() {
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {isLoadingLocs ? (
+          {isLoadingLocs && (
             <div className="col-span-full py-20 text-center"><Loader2 className="h-8 w-8 animate-spin mx-auto opacity-10" /></div>
-          ) : (locations || []).length === 0 ? (
+          )}
+          
+          {!isLoadingLocs && (locations || []).length === 0 && (
             <div className="col-span-full py-20 text-center border-2 border-dashed rounded-3xl bg-muted/5">
               <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest">暂无网点数据，请点击上方按钮添加</p>
             </div>
-          ) : (
-            (locations || []).map((loc: any) => (
-              <Card key={loc.id} className="rounded-2xl border-border/40 overflow-hidden group hover:border-primary/40 transition-all shadow-sm">
-                <div className="relative h-32 bg-muted/20">
-                  {loc.imageUrl && <img src={getAssetUrl(loc.imageUrl)} alt="" className="w-full h-full object-cover" />}
-                  <div className="absolute top-2 left-2">
-                    <Badge className="bg-primary text-white text-[8px] uppercase">{loc.type}</Badge>
-                  </div>
-                  <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
-                     <Button variant="secondary" size="icon" className="h-8 w-8 rounded-full" onClick={() => { setEditingLocation(loc); setLocationForm(loc); setIsLocationDialogOpen(true); }}><Edit2 className="h-3.5 w-3.5" /></Button>
-                     <Button variant="destructive" size="icon" className="h-8 w-8 rounded-full" onClick={() => handleDeleteLocation(loc.id)}><Trash2 className="h-3.5 w-3.5" /></Button>
+          )}
+
+          {!isLoadingLocs && (locations || []).map((loc: any) => (
+            <Card key={loc.id} className="rounded-2xl border-border/40 overflow-hidden group hover:border-primary/40 transition-all shadow-sm">
+              <div className="relative h-32 bg-muted/20">
+                {loc.imageUrl && <img src={getAssetUrl(loc.imageUrl)} alt="" className="w-full h-full object-cover" />}
+                <div className="absolute top-2 left-2">
+                  <Badge className="bg-primary text-white text-[8px] uppercase">{loc.type}</Badge>
+                </div>
+                <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
+                   <Button 
+                     variant="secondary" 
+                     size="icon" 
+                     className="h-8 w-8 rounded-full z-20" 
+                     disabled={(locations || []).indexOf(loc) === 0}
+                     onClick={(e) => { e.stopPropagation(); handleMoveLocation(loc.id, 'left'); }}
+                   >
+                     <ChevronLeft className="h-3.5 w-3.5" />
+                   </Button>
+
+                   <Button 
+                     variant="secondary" 
+                     size="icon" 
+                     className="h-8 w-8 rounded-full z-20" 
+                     onClick={(e) => { 
+                       e.stopPropagation();
+                       setEditingLocation(loc); 
+                       setLocationForm(loc); 
+                       setIsLocationDialogOpen(true); 
+                     }}
+                   >
+                     <Edit2 className="h-3.5 w-3.5" />
+                   </Button>
+
+                   <button 
+                     type="button"
+                     className="h-8 w-8 rounded-full bg-red-600 hover:bg-red-700 text-white flex items-center justify-center shadow-lg transition-all active:scale-95 cursor-pointer relative z-30"
+                     onClick={(e) => {
+                       e.stopPropagation();
+                       e.preventDefault();
+                       setDeletingId(loc.id);
+                     }}
+                     title="删除网点"
+                   >
+                     <Trash2 className="h-3.5 w-3.5" />
+                   </button>
+
+                   <Button 
+                     variant="secondary" 
+                     size="icon" 
+                     className="h-8 w-8 rounded-full z-20" 
+                     disabled={(locations || []).indexOf(loc) === (locations || []).length - 1}
+                     onClick={(e) => { e.stopPropagation(); handleMoveLocation(loc.id, 'right'); }}
+                   >
+                     <ChevronRight className="h-3.5 w-3.5" />
+                   </Button>
+                </div>
+              </div>
+              <CardContent className="p-4 space-y-2">
+                <h4 className="text-xs font-bold text-primary truncate">{loc.titleZh}</h4>
+                <p className="text-[10px] text-muted-foreground line-clamp-1">{loc.addressZh}</p>
+                <div className="flex justify-between items-center pt-2 border-t border-dashed">
+                  <span className="text-[8px] font-mono opacity-40">POS: L:{loc.posLeft}, T:{loc.posTop}</span>
+                  <div className="flex items-center gap-1">
+                    {loc.titleEn ? <Badge variant="secondary" className="h-3 px-1 text-[6px] bg-green-50 text-green-600">EN OK</Badge> : <Badge variant="secondary" className="h-3 px-1 text-[6px]">NO EN</Badge>}
                   </div>
                 </div>
-                <CardContent className="p-4 space-y-2">
-                  <h4 className="text-xs font-bold text-primary truncate">{loc.titleZh}</h4>
-                  <p className="text-[10px] text-muted-foreground line-clamp-1">{loc.addressZh}</p>
-                  <div className="flex justify-between items-center pt-2 border-t border-dashed">
-                    <span className="text-[8px] font-mono opacity-40">POS: L:{loc.posLeft}, T:{loc.posTop}</span>
-                    <div className="flex items-center gap-1">
-                      {loc.titleEn ? <Badge variant="secondary" className="h-3 px-1 text-[6px] bg-green-50 text-green-600">EN OK</Badge> : <Badge variant="secondary" className="h-3 px-1 text-[6px]">NO EN</Badge>}
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            ))
-          )}
+              </CardContent>
+            </Card>
+          ))}
         </div>
       </div>
 
-      {/* Location Editor Dialog */}
       <Dialog open={isLocationDialogOpen} onOpenChange={setIsLocationDialogOpen}>
         <DialogContent className="max-w-5xl p-0 rounded-3xl overflow-hidden border-none shadow-2xl">
           <div className="bg-primary p-6 text-white flex items-center justify-between">
@@ -399,7 +518,6 @@ export default function GlobalMapAdminPage() {
           </div>
 
           <div className="p-8 bg-white space-y-8 max-h-[80vh] overflow-y-auto">
-            {/* 第一排：类型选择与预览 */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2 col-span-2">
@@ -447,9 +565,7 @@ export default function GlobalMapAdminPage() {
               </div>
             </div>
 
-            {/* 内容对齐区域 */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-x-10 gap-y-6">
-              {/* 名称行 */}
               <div className="space-y-2">
                 <Label className="text-[10px] font-bold uppercase opacity-40">网点名称 (ZH)</Label>
                 <Input value={locationForm.titleZh} onChange={e => setLocationForm({...locationForm, titleZh: e.target.value})} className="h-10 rounded-xl" />
@@ -459,7 +575,6 @@ export default function GlobalMapAdminPage() {
                 <Input value={locationForm.titleEn} onChange={e => setLocationForm({...locationForm, titleEn: e.target.value})} className="h-10 rounded-xl border-dashed" />
               </div>
 
-              {/* 地址行 */}
               <div className="space-y-2">
                 <Label className="text-[10px] font-bold uppercase opacity-40">详细地址 (ZH)</Label>
                 <Input value={locationForm.addressZh} onChange={e => setLocationForm({...locationForm, addressZh: e.target.value})} className="h-10 rounded-xl" />
@@ -469,7 +584,6 @@ export default function GlobalMapAdminPage() {
                 <Input value={locationForm.addressEn} onChange={e => setLocationForm({...locationForm, addressEn: e.target.value})} className="h-10 rounded-xl border-dashed" />
               </div>
 
-              {/* 介绍行 */}
               <div className="space-y-2">
                 <Label className="text-[10px] font-bold uppercase opacity-40">详细介绍 (ZH)</Label>
                 <Textarea value={locationForm.descZh} onChange={e => setLocationForm({...locationForm, descZh: e.target.value})} className="min-h-[100px] rounded-xl resize-none" />
@@ -480,7 +594,6 @@ export default function GlobalMapAdminPage() {
               </div>
             </div>
 
-            {/* 图片与坐标区域 */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-10 pt-6 border-t border-dashed">
               <div className="space-y-2">
                 <Label className="text-[10px] font-bold uppercase opacity-40">展示图预览</Label>
@@ -542,6 +655,34 @@ export default function GlobalMapAdminPage() {
             title="选择网点展示图片"
             subtitle="从素材库中选择一张高质量的工厂或办事处照片"
           />
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Confirmation Dialog */}
+      <Dialog open={!!deletingId} onOpenChange={(open) => !open && setDeletingId(null)}>
+        <DialogContent className="max-w-md rounded-3xl overflow-hidden border-none shadow-2xl p-0">
+          <div className="bg-destructive p-6 text-white flex items-center gap-3">
+            <Trash2 className="h-6 w-6" />
+            <DialogHeader>
+              <DialogTitle className="text-white">确认删除</DialogTitle>
+              <DialogDescription className="text-white/60">此操作无法撤销。</DialogDescription>
+            </DialogHeader>
+          </div>
+          <div className="p-8 bg-white space-y-4">
+            <p className="text-sm text-muted-foreground">您确定要永久删除该全球网点标注吗？这会立即从前台地图中移除。</p>
+          </div>
+          <DialogFooter className="bg-muted/10 p-6 flex gap-3 border-t">
+            <Button variant="outline" onClick={() => setDeletingId(null)} className="rounded-xl flex-1 font-bold uppercase text-[10px]">取消</Button>
+            <Button 
+              variant="destructive" 
+              onClick={handleDeleteLocation} 
+              disabled={isDeleting}
+              className="rounded-xl flex-1 font-bold uppercase text-[10px]"
+            >
+              {isDeleting ? <Loader2 className="h-3 w-3 animate-spin" /> : <Trash2 className="h-3 w-3 mr-2" />}
+              确认删除
+            </Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
     </div>
