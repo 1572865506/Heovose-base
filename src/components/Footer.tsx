@@ -87,15 +87,15 @@ export function Footer({ locale }: { locale: Locale }) {
             <ul className="space-y-6 opacity-60 text-[13px]">
               <li className="group cursor-pointer">
                 <span className="block text-[10px] text-accent mb-1 uppercase font-bold tracking-tighter">Email</span>
-                <div className="flex items-center gap-3 group-hover:text-accent transition-colors">
+                <a href="mailto:sales@heovose.com" className="flex items-center gap-3 group-hover:text-accent transition-colors">
                   <Mail className="h-4 w-4" /> sales@heovose.com
-                </div>
+                </a>
               </li>
               <li className="group cursor-pointer">
                 <span className="block text-[10px] text-accent mb-1 uppercase font-bold tracking-tighter">Support</span>
-                <div className="flex items-center gap-3 group-hover:text-accent transition-colors">
+                <a href="tel:+86075512345678" className="flex items-center gap-3 group-hover:text-accent transition-colors">
                   <Phone className="h-4 w-4" /> +86 0755 1234 5678
-                </div>
+                </a>
               </li>
             </ul>
           </div>

@@ -124,137 +124,106 @@ export function GlobalMap({ locale, homeConfig, isLoading }: GlobalMapProps) {
           )}
 
           <div className={cn(
-            "grid grid-cols-1 lg:grid-cols-12 gap-12 items-start transition-all duration-1000 delay-300",
+            "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 items-start transition-all duration-1000 delay-300",
             isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-20"
           )}>
-            {/* 左侧卡片列表 */}
-            <div className="lg:col-span-4 space-y-4 max-h-[600px] overflow-y-auto pr-2 scrollbar-minimal">
-              {pins.map((pin: any) => (
-                <div
-                  key={`card-${pin.key}`}
-                  onMouseEnter={() => setActiveLocation(pin.key)}
-                  onMouseLeave={() => setActiveLocation(null)}
-                  className={cn(
-                    "p-6 rounded-3xl border transition-all duration-500 cursor-pointer group relative overflow-hidden",
-                    activeLocation === pin.key
-                      ? "bg-primary border-primary shadow-2xl -translate-y-1"
-                      : "bg-white border-border/40 hover:border-primary/50"
+            {pins.map((pin: any) => (
+              <div
+                key={`card-${pin.key}`}
+                onMouseEnter={() => setActiveLocation(pin.key)}
+                onMouseLeave={() => setActiveLocation(null)}
+                style={{ maskImage: 'radial-gradient(white, black)' }}
+                className={cn(
+                  "group relative h-[240px] rounded-[2rem] border border-border/40 overflow-hidden transition-all duration-700 cursor-pointer shadow-xl transform-gpu isolate",
+                  activeLocation === pin.key ? "shadow-primary/30 -translate-y-2 scale-[1.03] z-10" : "hover:border-primary/30"
+                )}
+              >
+                {/* 背景图片 */}
+                <div className="absolute inset-0 z-0 transition-transform duration-1000 group-hover:scale-110 overflow-hidden rounded-[2rem]">
+                  {pin.imageUrl ? (
+                    <>
+                      <img 
+                        src={getAssetUrl(pin.imageUrl)} 
+                        alt="" 
+                        className="w-full h-full object-cover"
+                      />
+                      {/* 仅在有图时提供一个统一的微弱暗化，代替渐变 */}
+                      <div className="absolute inset-0 bg-slate-950/20" />
+                    </>
+                  ) : (
+                    <div className="w-full h-full bg-slate-50 border-inner" />
                   )}
-                >
+                  
                   <div className={cn(
-                    "absolute top-0 right-0 w-32 h-32 bg-accent/10 rounded-full blur-3xl -mr-16 -mt-16 transition-opacity duration-500",
+                    "absolute inset-0 bg-primary/10 transition-opacity duration-700",
                     activeLocation === pin.key ? "opacity-100" : "opacity-0"
                   )} />
+                </div>
 
-                  <div className="flex gap-4 relative z-10">
+                {/* 内容区域 */}
+                <div className="relative z-10 h-full p-8 flex flex-col justify-between items-start">
+                  {/* 左上角主要信息 */}
+                  <div className="space-y-3 max-w-[80%]">
                     <div className={cn(
-                      "w-12 h-12 rounded-2xl flex items-center justify-center shrink-0 transition-all duration-500",
-                      activeLocation === pin.key ? "bg-white text-primary scale-110 shadow-lg" : "bg-primary/5 text-primary"
+                      "inline-flex items-center gap-2 px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-[0.15em] transition-all duration-500",
+                      pin.imageUrl 
+                        ? "bg-white/10 text-white/80 border border-white/20 backdrop-blur-md"
+                        : "bg-primary/5 text-primary border border-primary/10"
                     )}>
-                      <pin.icon className="h-6 w-6" />
+                      <pin.icon className="h-3 w-3" />
+                      {pin.type}
                     </div>
-                    <div className="space-y-1 flex-1">
-                      <div className="flex items-center justify-between">
-                        <span className={cn(
-                          "text-[10px] font-bold uppercase tracking-[0.2em]",
-                          activeLocation === pin.key ? "text-accent" : "text-primary/60"
-                        )}>
-                          {pin.type}
-                        </span>
-                        {activeLocation === pin.key && (
-                          <div className="w-2 h-2 bg-accent rounded-full animate-pulse shadow-[0_0_10px_rgba(252,220,0,0.8)]" />
-                        )}
-                      </div>
+                    
+                    <div className="space-y-1.5">
                       <h4 className={cn(
-                        "font-headline font-bold text-lg leading-tight transition-colors duration-500",
-                        activeLocation === pin.key ? "text-white" : "text-primary"
+                        "font-headline font-bold text-xl leading-tight tracking-tight transition-colors duration-500",
+                        pin.imageUrl ? "text-white" : "text-primary"
                       )}>
                         {pin.title}
                       </h4>
                       <p className={cn(
-                        "text-[10px] font-medium leading-relaxed transition-colors duration-500",
-                        activeLocation === pin.key ? "text-white/60" : "text-muted-foreground"
+                        "text-[10px] font-medium leading-relaxed line-clamp-1 transition-colors duration-500",
+                        pin.imageUrl ? "text-white/50" : "text-primary/40"
                       )}>
                         {pin.address}
                       </p>
+                    </div>
 
-                      <div className={cn(
-                        "mt-4 pt-4 border-t transition-all duration-500",
-                        activeLocation === pin.key ? "border-white/10 opacity-100" : "border-border/40 opacity-60"
+                    <div className={cn(
+                      "pt-3 border-t overflow-hidden transition-all duration-500",
+                      pin.imageUrl ? "border-white/10" : "border-primary/5",
+                      activeLocation === pin.key ? "max-h-20 opacity-100" : "max-h-0 opacity-0"
+                    )}>
+                      <p className={cn(
+                        "text-[10px] leading-relaxed font-medium italic line-clamp-2",
+                        pin.imageUrl ? "text-white/70" : "text-primary/60"
                       )}>
-                        <p className={cn(
-                          "text-[11px] leading-relaxed font-medium italic",
-                          activeLocation === pin.key ? "text-white/80" : "text-primary/70"
-                        )}>
-                          {pin.desc}
-                        </p>
+                        {pin.desc}
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* 右下角全屏/查看按钮 - 默认隐藏 */}
+                  <div className={cn(
+                    "absolute bottom-6 right-6 transition-all duration-500 transform-gpu",
+                    activeLocation === pin.key ? "opacity-100 translate-y-0 scale-100" : "opacity-0 translate-y-4 scale-90"
+                  )}>
+                    <div className={cn(
+                      "w-12 h-12 rounded-2xl backdrop-blur-2xl border transition-all duration-500 flex items-center justify-center group/btn shadow-xl bg-primary/20 text-white border-white/20"
+                    )}>
+                      <div className={cn(
+                        "transition-all duration-500 transform-gpu",
+                        activeLocation === pin.key ? "scale-[1.3]" : "scale-100"
+                      )}>
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="h-4 w-4">
+                          <path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7" />
+                        </svg>
                       </div>
                     </div>
                   </div>
                 </div>
-              ))}
-            </div>
-
-            {/* 右侧交互地图 */}
-            <div className="lg:col-span-8 relative aspect-[16/9] bg-muted/30 rounded-[3rem] overflow-hidden border border-border/40 shadow-inner">
-              <div className="absolute inset-0 opacity-20 pointer-events-none">
-                <svg viewBox="0 0 1000 500" className="w-full h-full fill-primary/30">
-                  <rect width="1000" height="500" fill="none" />
-                  <path d="M150,200 Q200,100 300,150 T500,100 T700,200 T900,150 L900,400 Q700,450 500,400 T150,400 Z" />
-                </svg>
               </div>
-
-              {pins.map((pin: any) => (
-                <div
-                  key={`pin-${pin.key}`}
-                  onMouseEnter={() => setActiveLocation(pin.key)}
-                  onMouseLeave={() => setActiveLocation(null)}
-                  className={cn(
-                    "absolute transition-all duration-500 z-10 cursor-pointer",
-                    activeLocation === pin.key ? "scale-150 z-20" : "hover:scale-125"
-                  )}
-                  style={pin.style}
-                >
-                  <div className="relative">
-                    <div className={cn(
-                      activeLocation === pin.key ? "animate-none" : "animate-bounce"
-                    )}>
-                      <MapPin className={cn(
-                        "h-8 w-8 transition-all duration-500",
-                        activeLocation === pin.key
-                          ? "text-accent fill-accent shadow-2xl"
-                          : "text-primary fill-primary/20"
-                      )} />
-                    </div>
-                    {activeLocation === pin.key && (
-                      <>
-                        <div className="absolute inset-0 -z-10 bg-accent/60 rounded-full animate-ping scale-150" />
-                        <div className="absolute inset-0 -z-10 bg-accent/30 rounded-full animate-ping scale-[2.5] duration-1000" />
-                      </>
-                    )}
-                  </div>
-                </div>
-              ))}
-
-              <div className="absolute bottom-8 left-8 right-8 flex justify-between items-end">
-                <div className="flex items-center gap-3 bg-white/90 px-6 py-3 rounded-full border border-white/20 shadow-lg">
-                  <div className="w-3 h-3 bg-accent rounded-full animate-ping" />
-                  <span className="text-[10px] font-bold text-primary uppercase tracking-[0.3em]">
-                    {lt('MAP_NETWORK_LABEL')}
-                  </span>
-                </div>
-
-                {activeLocation && pins.find((p: any) => p.key === activeLocation)?.imageUrl && (
-                  <div className="w-48 aspect-video rounded-2xl overflow-hidden shadow-2xl border-4 border-white/80 animate-in slide-in-from-bottom-4 duration-500 hidden md:block">
-                    <img
-                      src={getAssetUrl(pins.find((p: any) => p.key === activeLocation).imageUrl)}
-                      alt=""
-                      className="w-full h-full object-cover"
-                    />
-                  </div>
-                )}
-              </div>
-            </div>
+            ))}
           </div>
         </div>
       )}

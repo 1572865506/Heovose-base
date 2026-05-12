@@ -225,9 +225,21 @@ export function ProductGallery({ locale }: { locale: Locale }) {
     };
   }, [api]);
 
+  const [isVisible, setIsVisible] = useState(false);
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  // 性能优化：观察可见性
+  useEffect(() => {
+    const observer = new IntersectionObserver(([entry]) => {
+      setIsVisible(entry.isIntersecting);
+    }, { threshold: 0.05 });
+    if (containerRef.current) observer.observe(containerRef.current);
+    return () => observer.disconnect();
+  }, []);
+
   // CUSTOM TIMER: Manages both progress and slide switching
   useEffect(() => {
-    if (!api) return;
+    if (!api || !isVisible) return; // 不可见时不运行计时器
 
     const intervalTime = 50;
     const step = (intervalTime / AUTOPLAY_DELAY) * 100;
@@ -235,7 +247,7 @@ export function ProductGallery({ locale }: { locale: Locale }) {
     const timer = setInterval(() => {
       if (isPlayingRef.current) {
         setProgress((prev) => {
-          if (prev >= 100) return 100; // Stay at 100 until onSelect resets it
+          if (prev >= 100) return 100;
           
           const next = prev + step;
           if (next >= 100) {
@@ -248,7 +260,7 @@ export function ProductGallery({ locale }: { locale: Locale }) {
     }, intervalTime);
 
     return () => clearInterval(timer);
-  }, [api]); 
+  }, [api, isVisible]); 
 
   const toggleAutoplay = useCallback(() => {
     setIsPlaying(prev => !prev);
@@ -283,17 +295,17 @@ export function ProductGallery({ locale }: { locale: Locale }) {
         </Carousel>
 
         {/* Carousel Indicators & Progress Bar */}
-        <div className="container mx-auto px-6 mt-12">
-          <div className="flex items-center justify-center lg:justify-end gap-8 max-w-4xl ml-auto">
+        <div className="container mx-auto px-6 mt-8 lg:mt-12">
+          <div className="flex items-center justify-center lg:justify-end gap-4 lg:gap-8 max-w-4xl ml-auto">
             {/* Progress Indicators */}
-            <div className="flex gap-3 h-1.5 items-center flex-grow max-w-xs">
+            <div className="flex gap-2 lg:gap-3 h-1.5 items-center flex-grow max-w-[180px] lg:max-w-xs">
               {count > 0 ? Array.from({ length: count }).map((_, i) => (
                 <button
                   key={i}
                   onClick={() => api?.scrollTo(i)}
                   className={cn(
                     "relative h-full rounded-full transition-all duration-500 cursor-pointer overflow-hidden flex-grow",
-                    i === current ? "bg-slate-200 w-16" : "bg-slate-100 w-8 hover:bg-slate-200"
+                    i === current ? "bg-slate-200 w-10 lg:w-16" : "bg-slate-100 w-4 lg:w-8 hover:bg-slate-200"
                   )}
                 >
                   {i === current && (
@@ -309,7 +321,7 @@ export function ProductGallery({ locale }: { locale: Locale }) {
             </div>
 
             {/* Digital Index */}
-            <div className="flex items-center gap-3 text-primary/40 font-mono text-sm font-bold">
+            <div className="flex items-center gap-2 lg:gap-3 text-primary/40 font-mono text-[10px] lg:text-sm font-bold">
               <span className="text-primary">{String(current + 1).padStart(2, '0')}</span>
               <span className="h-4 w-[1px] bg-border" />
               <span>{String(count || products.length || 0).padStart(2, '0')}</span>
@@ -321,9 +333,9 @@ export function ProductGallery({ locale }: { locale: Locale }) {
                 variant="ghost"
                 size="icon"
                 onClick={toggleAutoplay}
-                className="rounded-full hover:bg-primary/10 text-primary h-12 w-12 shrink-0 border border-border/50"
+                className="rounded-full hover:bg-primary/10 text-primary h-10 w-10 lg:h-12 lg:w-12 shrink-0 border border-border/50"
               >
-                {isPlaying ? <Pause className="h-5 w-5" /> : <Play className="h-5 w-5" />}
+                {isPlaying ? <Pause className="h-4 w-4 lg:h-5 lg:w-5" /> : <Play className="h-4 w-4 lg:h-5 lg:w-5" />}
               </Button>
             </div>
           </div>

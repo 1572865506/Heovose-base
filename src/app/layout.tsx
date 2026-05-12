@@ -11,6 +11,7 @@ export const metadata: Metadata = {
 import { AuthProvider } from '@/components/providers/session-provider';
 import { SystemConfigProvider } from '@/components/providers/system-config-provider';
 import { LanguageIntelligence } from '@/components/LanguageIntelligence';
+import SmoothScrollProvider from '@/components/providers/SmoothScrollProvider';
 import { Suspense } from 'react';
 
 export default function RootLayout({

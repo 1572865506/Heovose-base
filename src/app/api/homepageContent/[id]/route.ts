@@ -1,6 +1,8 @@
 import { NextResponse } from 'next/server';
 import db from '@/lib/db';
 import { auth } from '@/auth';
+ 
+export const dynamic = 'force-dynamic';
 
 export async function GET(
   request: Request,
@@ -30,6 +32,7 @@ export async function PUT(
   try {
     const { id } = await params;
     const data = await request.json();
+    console.log(`[API] Received PUT for homepageContent ID: ${id}`);
     
     // Remove system fields
     const { id: _, locations, updatedAt: ___, ...updateData } = data;
@@ -37,6 +40,7 @@ export async function PUT(
     // Handle locations separately if it's the map document
     if (id === 'map' && locations) {
       try {
+        console.log('[API] Starting Map Transaction...');
         await db.$transaction(async (tx: any) => {
           // Update basic fields
           await tx.homepageContent.upsert({
@@ -44,11 +48,13 @@ export async function PUT(
             update: updateData,
             create: { ...updateData, id },
           });
+          console.log('[API] HomepageContent Upserted');
 
           // Delete existing locations and recreate them
           await tx.mapLocation.deleteMany({
             where: { homepageId: id },
           });
+          console.log('[API] Locations Deleted');
 
           if (locations.length > 0) {
             await tx.mapLocation.createMany({

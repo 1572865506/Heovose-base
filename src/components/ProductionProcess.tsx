@@ -39,9 +39,9 @@ export function ProductionProcess({ locale }: { locale: Locale }) {
 
   const AUTOPLAY_DELAY = 4000;
 
-  // 1. 获取数据
-  const { data: remoteSteps, isLoading } = useLocalCollection<StepData>('productionSteps', { enabled: isVisible });
-  const { data: homeContent } = useLocalDoc<any>('homepageContent', 'hero', { enabled: isVisible });
+  // 1. 获取数据 - 改为默认开启预加载，不再等待进入视口
+  const { data: remoteSteps, isLoading } = useLocalCollection<StepData>('productionSteps', { enabled: true });
+  const { data: homeContent } = useLocalDoc<any>('homepageContent', 'hero', { enabled: true });
 
   const { t } = useTranslations(locale);
 
@@ -87,7 +87,7 @@ export function ProductionProcess({ locale }: { locale: Locale }) {
     return translated ?? (locale === 'zh' ? homeContent?.processSubtitleZh : homeContent?.processSubtitleEn) ?? translations[locale].process.subtitle;
   }, [homeContent, locale, t]);
 
-  // 3. 观察可见性
+  // 3. 观察可见性 - 提前 800px 触发渲染，确保滚动到时已经完全加载
   useEffect(() => {
     const observer = new IntersectionObserver(
       ([entry]) => {
@@ -96,7 +96,7 @@ export function ProductionProcess({ locale }: { locale: Locale }) {
           observer.unobserve(entry.target);
         }
       },
-      { threshold: 0.05, rootMargin: '200px' }
+      { threshold: 0.05, rootMargin: '800px' }
     );
     if (sectionRef.current) observer.observe(sectionRef.current);
     return () => observer.disconnect();
@@ -223,16 +223,34 @@ export function ProductionProcess({ locale }: { locale: Locale }) {
               })}
 
               {activeImages.length > 1 && (
-                <div className="absolute bottom-8 right-8 z-50 flex items-center gap-4 animate-in fade-in slide-in-from-bottom-4 duration-500 cursor-default">
+                <div className="absolute bottom-4 right-4 lg:bottom-8 lg:right-8 z-50 flex items-center gap-3 lg:gap-4 animate-in fade-in slide-in-from-bottom-4 duration-500 cursor-default">
                   <div className="flex gap-1.5 items-center">
                     {activeImages.map((_: any, i: number) => (
-                      <button key={i} onClick={() => setCarouselState({ subIndex: i, progress: 0 })} className={cn("relative h-1 rounded-full transition-all duration-500 overflow-hidden bg-white/30", i === subImageIndex ? "w-8" : "w-2 hover:bg-white/50")}>
-                        {i === subImageIndex && <div className="absolute inset-0 bg-accent origin-left" style={{ width: isPlaying ? `${progress}%` : '100%', transition: (progress === 0 && isPlaying) ? 'none' : 'width 50ms linear' }} />}
+                      <button 
+                        key={i} 
+                        onClick={() => setCarouselState({ subIndex: i, progress: 0 })} 
+                        className={cn(
+                          "relative h-1 rounded-full transition-all duration-500 overflow-hidden bg-white/30", 
+                          i === subImageIndex ? "w-6 lg:w-8" : "w-1.5 lg:w-2 hover:bg-white/50"
+                        )}
+                      >
+                        {i === subImageIndex && (
+                          <div 
+                            className="absolute inset-0 bg-accent origin-left" 
+                            style={{ 
+                              width: isPlaying ? `${progress}%` : '100%', 
+                              transition: (progress === 0 && isPlaying) ? 'none' : 'width 50ms linear' 
+                            }} 
+                          />
+                        )}
                       </button>
                     ))}
                   </div>
-                  <button onClick={() => setIsPlaying(!isPlaying)} className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center text-white hover:bg-accent hover:text-accent-foreground transition-all shadow-lg border border-white/10">
-                    {isPlaying ? <Pause className="h-5 w-5" /> : <Play className="h-5 w-5 ml-0.5" />}
+                  <button 
+                    onClick={() => setIsPlaying(!isPlaying)} 
+                    className="w-8 h-8 lg:w-10 lg:h-10 rounded-full bg-white/10 flex items-center justify-center text-white hover:bg-accent hover:text-accent-foreground transition-all shadow-lg border border-white/10"
+                  >
+                    {isPlaying ? <Pause className="h-4 w-4 lg:h-5 lg:w-5" /> : <Play className="h-4 w-4 lg:h-5 lg:w-5 ml-0.5" />}
                   </button>
                 </div>
               )}
@@ -240,7 +258,7 @@ export function ProductionProcess({ locale }: { locale: Locale }) {
           </div>
         </div>
 
-        <div className="lg:col-span-5 space-y-[60vh] pt-[40vh] pb-[60vh]">
+        <div className="lg:col-span-5 space-y-[60vh] pt-12 lg:pt-[40vh] pb-[60vh]">
           {steps.map((step: any, index: number) => (
             <div key={index} ref={(el) => { scrollRefs.current[index] = el; }} className={cn("relative transition-all duration-1000 pl-4 lg:pl-0 min-h-[30vh] flex flex-col justify-center", activeStep === index ? "opacity-100" : "opacity-10")}>
               <span className={cn("absolute -left-12 -top-12 text-[15rem] font-black pointer-events-none select-none transition-all duration-1000 font-headline leading-none", activeStep === index ? "text-primary/[0.08] translate-y-0 scale-100 opacity-100" : "text-slate-200/0 translate-y-20 scale-90 opacity-0")}>
@@ -261,6 +279,21 @@ export function ProductionProcess({ locale }: { locale: Locale }) {
                     <Image src={getAssetUrl(imgUrl)} alt={step.label} fill className="object-cover" unoptimized={imgUrl.startsWith('data:')} />
                   </div>
                 ))}
+                {/* 移动端轮播控制 */}
+                {step.images.length > 1 && activeStep === index && (
+                  <div className="absolute bottom-3 right-3 z-30 flex items-center gap-2 animate-in fade-in duration-500">
+                    <div className="flex gap-1 items-center">
+                      {step.images.map((_: any, i: number) => (
+                        <div key={i} className={cn("h-0.5 rounded-full bg-white/30 overflow-hidden transition-all duration-500", i === subImageIndex ? "w-4" : "w-1")}>
+                          {i === subImageIndex && <div className="h-full bg-accent origin-left" style={{ width: isPlaying ? `${progress}%` : '100%' }} />}
+                        </div>
+                      ))}
+                    </div>
+                    <button onClick={(e) => { e.stopPropagation(); setIsPlaying(!isPlaying); }} className="w-7 h-7 rounded-full bg-black/20 backdrop-blur-sm flex items-center justify-center text-white border border-white/10">
+                      {isPlaying ? <Pause className="h-3.5 w-3.5" /> : <Play className="h-3.5 w-3.5 ml-0.5" />}
+                    </button>
+                  </div>
+                )}
               </div>
             </div>
           ))}
@@ -270,7 +303,7 @@ export function ProductionProcess({ locale }: { locale: Locale }) {
   );
 
   return (
-    <section id="process" ref={sectionRef} className="py-32 bg-white relative overflow-x-clip min-h-[400px]">
+    <section id="process" ref={sectionRef} className="pt-16 pb-24 lg:py-32 bg-white relative overflow-x-clip min-h-[400px]">
       {isLoading ? renderLoading() : (steps.length > 0 ? renderContent() : renderPlaceholder())}
 
       <Dialog open={!!selectedImage} onOpenChange={(open) => !open && setSelectedImage(null)}>

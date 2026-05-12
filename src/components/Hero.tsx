@@ -74,7 +74,7 @@ export function Hero({ locale, homeConfig, isLoading, onThemeChange }: HeroProps
   useEffect(() => {
     if (slides.length > 0) {
       const currentSlide = slides[selectedIndex] as any;
-      
+
       // 优先使用预计算的明暗度
       if (currentSlide.brightness !== undefined && currentSlide.brightness !== null) {
         const theme = currentSlide.brightness > 160 ? 'light' : 'dark';
@@ -188,27 +188,27 @@ export function Hero({ locale, homeConfig, isLoading, onThemeChange }: HeroProps
             <div key={slide.id} className="relative flex-[0_0_100%] min-w-0 h-full">
               {/* Slide Background */}
               <div className="absolute inset-0">
-                  <Image
-                    src={getAssetUrl(slide.bgImage)}
-                    alt={getFallback(slide.headlineZh, slide.headlineEn)}
-                    fill
-                    className="object-cover object-[66%_center] md:object-center"
-                    priority={index === 0 || slide.id === 'legacy-default'}
-                    quality={100}
-                    sizes="100vw"
-                  />
+                <Image
+                  src={getAssetUrl(slide.bgImage)}
+                  alt={getFallback(slide.headlineZh, slide.headlineEn)}
+                  fill
+                  className="object-cover object-[66%_center] md:object-center"
+                  priority={index === 0 || slide.id === 'legacy-default'}
+                  quality={100}
+                  sizes="100vw"
+                />
 
                 {/* Visual Enhancements Removed */}
               </div>
 
               {/* Slide Content */}
-              <div className="max-w-[1600px] mx-auto px-6 relative z-30 h-[calc(100vh-160px)] min-h-[600px] flex items-center">
-                <div className="max-w-[50rem] flex flex-col gap-4 md:gap-6 animate-fade-in text-center md:text-left mx-auto md:mx-0 mt-20 md:mt-32">
+              <div className="max-w-[1600px] mx-auto px-6 relative z-30 h-[calc(100vh-160px)] min-h-[600px] flex items-center justify-center">
+                <div className="max-w-[50rem] flex flex-col gap-4 md:gap-6 animate-fade-in text-center mx-auto mt-20 md:mt-32 items-center">
                   <SplitText
                     key={`headline-${slide.id}-${selectedIndex === index}-v1.1`}
                     text={tr(`hero_slide_${slide.id.replace(/^slide_/, '')}_headline`) || getFallback(slide.headlineZh, slide.headlineEn)}
                     className={cn(
-                      "text-4xl md:text-5xl lg:text-[4rem] font-headline font-black leading-[1.1] tracking-tight drop-shadow-[0_4px_30px_rgba(0,0,0,0.5)] gpu-accelerated overflow-visible",
+                      "hero-headline text-4xl md:text-5xl lg:text-[4rem] font-headline font-black leading-[1.2] tracking-tight drop-shadow-[0_4px_30px_rgba(0,0,0,0.5)] gpu-accelerated overflow-visible",
                       currentTheme === 'light' ? "text-slate-900" : "text-white"
                     )}
                     tag="h1"
@@ -217,25 +217,34 @@ export function Hero({ locale, homeConfig, isLoading, onThemeChange }: HeroProps
                     ease="power4.out"
                     from={headlineAnimateFrom}
                     to={headlineAnimateTo}
-                    textAlign="left"
+                    textAlign="center"
                     threshold={0.1}
                     rootMargin="0px"
                     splitType="chars"
                   />
 
-                  <div className="relative">
-                    <style dangerouslySetInnerHTML={{ __html: `
+                  <div className="relative w-full">
+                    <style dangerouslySetInnerHTML={{
+                      __html: `
+                      .hero-headline {
+                        line-height: 1.2 !important;
+                      }
+                      .hero-headline div {
+                        line-height: 1.2 !important;
+                        height: auto !important;
+                      }
                       .hero-subheadline .split-line {
                         line-height: 1.35 !important;
                         height: auto !important;
                         padding-bottom: 0.1em;
+                        justify-content: center !important;
                       }
                     `}} />
                     <SplitText
                       key={`subheadline-${slide.id}-${selectedIndex === index}-${locale}-v1.35`}
                       text={tr(`hero_slide_${slide.id.replace(/^slide_/, '')}_subheadline`) || getFallback(slide.subheadlineZh, slide.subheadlineEn)}
                       className={cn(
-                        "hero-subheadline text-xl md:text-2xl lg:text-[3rem] font-body max-w-full leading-[1.35] tracking-tight drop-shadow-[0_2px_15px_rgba(0,0,0,0.4)] block mx-auto md:mx-0 gpu-accelerated overflow-visible",
+                        "hero-subheadline text-xl md:text-2xl lg:text-[2rem] font-body max-w-full leading-[1.35] tracking-tight drop-shadow-[0_2px_15px_rgba(0,0,0,0.4)] block mx-auto gpu-accelerated overflow-visible",
                         currentTheme === 'light' ? "text-slate-800/80" : "text-white/90"
                       )}
                       tag="h2"
@@ -244,7 +253,7 @@ export function Hero({ locale, homeConfig, isLoading, onThemeChange }: HeroProps
                       ease="power3.out"
                       from={subheadlineAnimateFrom}
                       to={subheadlineAnimateTo}
-                      textAlign="left"
+                      textAlign="center"
                       threshold={0.1}
                       rootMargin="0px"
                       splitType="lines"
@@ -264,14 +273,14 @@ export function Hero({ locale, homeConfig, isLoading, onThemeChange }: HeroProps
           {/* Entry Cards - Responsive & Balanced with Enhanced Hover */}
           {showEntryCards && (
             <div className={cn(
-              "absolute bottom-10 md:bottom-[102px] right-0 left-0 md:left-auto md:right-0 px-6 md:px-0 w-full md:max-w-2xl pointer-events-auto transform translate-z-0 z-50",
+              "absolute bottom-10 md:bottom-[60px] left-1/2 -translate-x-1/2 px-10 md:px-0 w-full md:max-w-3xl pointer-events-auto transform translate-z-0 z-50",
               (hasWholesaleConfig && hasProjectConfig) 
                 ? "grid grid-cols-1 sm:grid-cols-2 gap-4 md:gap-8" 
-                : "flex justify-end"
+                : "flex justify-center"
             )}>
               {/* Wholesale Card */}
               {hasWholesaleConfig && (
-                <Link 
+                <Link
                   href={wholesaleHref}
                   className={cn(
                     "group relative h-32 md:h-40 rounded-[2rem] md:rounded-[2.5rem] transition-all duration-700 ease-[cubic-bezier(0.23,1,0.32,1)] cursor-pointer overflow-hidden shadow-2xl border border-white/10 hover:-translate-y-3 hover:scale-[1.02] hover:shadow-primary/30 hover:border-primary/30 gpu-accelerated w-full",
@@ -316,7 +325,7 @@ export function Hero({ locale, homeConfig, isLoading, onThemeChange }: HeroProps
 
               {/* Project Card */}
               {hasProjectConfig && (
-                <Link 
+                <Link
                   href={projectHref}
                   className={cn(
                     "group relative h-32 md:h-40 rounded-[2rem] md:rounded-[2.5rem] transition-all duration-700 ease-[cubic-bezier(0.23,1,0.32,1)] cursor-pointer overflow-hidden shadow-2xl border border-white/10 hover:-translate-y-3 hover:scale-[1.02] hover:shadow-accent/30 hover:border-accent/30 gpu-accelerated w-full",
@@ -361,20 +370,20 @@ export function Hero({ locale, homeConfig, isLoading, onThemeChange }: HeroProps
             </div>
           )}
 
-          {/* Minimalist Progress Indicators - Centered on Small/Tablet */}
+          {/* Minimalist Progress Indicators - Positioned at Bottom Right */}
           {slides.length > 1 && (
-            <div className="absolute bottom-10 md:bottom-[102px] left-1/2 -translate-x-1/2 min-[1600px]:left-0 md:left-6 min-[1600px]:translate-x-0 flex items-center gap-3 pointer-events-auto transform translate-z-0">
+            <div className="absolute bottom-10 md:bottom-[60px] right-6 md:right-12 flex items-center gap-3 pointer-events-auto transform translate-z-0 z-50">
               {slides.map((_, index) => (
                 <button
                   key={index}
                   onClick={() => emblaApi?.scrollTo(index)}
-                  className="relative h-1 w-10 md:w-16 bg-white/20 rounded-full overflow-hidden transition-all duration-300"
+                  className="relative h-1 w-6 md:w-16 bg-white/20 rounded-full overflow-hidden transition-all duration-300"
                 >
                   {selectedIndex === index && (
-                    <div 
+                    <div
                       key={`progress-${index}`}
                       className="absolute inset-y-0 left-0 bg-white rounded-full"
-                      style={{ 
+                      style={{
                         animation: 'hero-progress 6000ms linear forwards'
                       }}
                     />

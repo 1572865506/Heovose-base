@@ -21,53 +21,56 @@ export function VideoSection({ locale, homeConfig, isLoading }: VideoSectionProp
   const [textProgress, setTextProgress] = useState(0); 
   const [isPlaying, setIsPlaying] = useState(true);
 
-  const [isInView, setIsInView] = useState(false);
+  const [videoUrl, setVideoUrl] = useState<string>("");
+  const stickyRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const observer = new IntersectionObserver(
       ([entry]) => {
         if (entry.isIntersecting) {
-          setIsInView(true);
-          observer.unobserve(entry.target);
+          // 进入视野：开始加载并播放
+          if (!videoUrl) {
+            console.log("[Video] Sticky container entering view, injecting URL...");
+            setVideoUrl(getAssetUrl(homeConfig?.videoUrl || "/video/alibaba2023_x264.mp4"));
+          }
+          if (videoRef.current && isPlaying) {
+            videoRef.current.play().catch(() => {});
+          }
+        } else {
+          // 离开视野：立即暂停节省性能
+          if (videoRef.current) {
+            console.log("[Video] Sticky container leaving view, pausing...");
+            videoRef.current.pause();
+          }
         }
       },
-      { threshold: 0.05, rootMargin: '200px' } // Start loading 200px before it enters
+      { threshold: 0.01 } // 只要露头就加载，完全消失就暂停
     );
 
-    if (sectionRef.current) {
-      observer.observe(sectionRef.current);
-    }
-
+    if (stickyRef.current) observer.observe(stickyRef.current);
     return () => observer.disconnect();
-  }, []);
+  }, [videoUrl, homeConfig, isPlaying]);
 
   useEffect(() => {
     let requestRunning = false;
-
     const handleScroll = () => {
       if (requestRunning) return;
       requestRunning = true;
-
       requestAnimationFrame(() => {
         if (!sectionRef.current) {
           requestRunning = false;
           return;
         }
-        
         const rect = sectionRef.current.getBoundingClientRect();
         const windowHeight = window.innerHeight;
-        
         const scrolledPastTop = Math.max(-rect.top, 0);
         const contentScrollableHeight = rect.height - windowHeight;
         const progress = Math.min(Math.max(scrolledPastTop / contentScrollableHeight, 0), 1);
         
         setTextProgress(prev => {
-          if (Math.abs(prev - progress) > 0.001) {
-            return progress;
-          }
+          if (Math.abs(prev - progress) > 0.001) return progress;
           return prev;
         });
-        
         requestRunning = false;
       });
     };
@@ -86,6 +89,14 @@ export function VideoSection({ locale, homeConfig, isLoading }: VideoSectionProp
     }
     setIsPlaying(!isPlaying);
   }, [isPlaying]);
+
+  // 针对第一次加载地址后的自动播放补丁
+  useEffect(() => {
+    if (videoUrl && videoRef.current && isPlaying) {
+      videoRef.current.load();
+      videoRef.current.play().catch(() => {});
+    }
+  }, [videoUrl]);
 
   if (isLoading) {
     return (
@@ -112,22 +123,19 @@ export function VideoSection({ locale, homeConfig, isLoading }: VideoSectionProp
       ref={sectionRef} 
       className="relative h-[500vh] -mt-[100vh] z-10 bg-black"
     >
-      <div className="sticky top-0 h-screen w-full overflow-hidden">
+      <div ref={stickyRef} className="sticky top-0 h-screen w-full overflow-hidden">
         {/* Background Video */}
         <div className="absolute inset-0 w-full h-full">
           <video
             ref={videoRef}
-            autoPlay
             muted
             loop
             playsInline
             className="h-full w-full object-cover"
-            key={locale}
-          >
-            {isInView && (
-              <source src={getAssetUrl(homeConfig?.videoUrl || "/video/alibaba2023_x264.mp4")} type="video/mp4" />
-            )}
-          </video>
+            preload="none"
+            key="brand-video"
+            src={videoUrl || undefined}
+          />
           <div className="absolute inset-0 bg-black/50 z-10" />
         </div>
 

@@ -16,11 +16,23 @@ import { Suspense } from 'react';
 import { useTranslations } from '@/hooks/use-translations';
 import { Loader2 } from 'lucide-react';
 
-// 对首屏以下的重型组件采用动态导入
-const VideoSection = nextDynamic(() => import('@/components/VideoSection').then(mod => mod.VideoSection), { ssr: false });
-const ProductionProcess = nextDynamic(() => import('@/components/ProductionProcess').then(mod => mod.ProductionProcess), { ssr: false });
-const CaseStudies = nextDynamic(() => import('@/components/CaseStudies').then(mod => mod.CaseStudies), { ssr: false });
-const GlobalMap = nextDynamic(() => import('@/components/GlobalMap').then(mod => mod.GlobalMap), { ssr: false });
+// 对首屏以下的重型组件采用动态导入，通过 loading 维持高度解决刷新跳回顶部问题
+const VideoSection = nextDynamic(() => import('@/components/VideoSection').then(mod => mod.VideoSection), { 
+  ssr: false, 
+  loading: () => <section className="h-[500vh] bg-black" /> 
+});
+const ProductionProcess = nextDynamic(() => import('@/components/ProductionProcess').then(mod => mod.ProductionProcess), { 
+  ssr: false, 
+  loading: () => <section className="py-32 min-h-[800px] bg-white" />
+});
+const CaseStudies = nextDynamic(() => import('@/components/CaseStudies').then(mod => mod.CaseStudies), { 
+  ssr: false, 
+  loading: () => <section className="py-32 min-h-[600px] bg-background" />
+});
+const GlobalMap = nextDynamic(() => import('@/components/GlobalMap').then(mod => mod.GlobalMap), { 
+  ssr: false, 
+  loading: () => <section className="py-24 min-h-[400px] bg-white" />
+});
 
 function HomeContent() {
   const [locale, setLocale] = useState<Locale>('en');
@@ -61,9 +73,8 @@ function HomeContent() {
     setIsLocaleReady(true);
   }, [searchParams, langSettings]);
 
-  if (isHeroLoading || isTrLoading || !isLocaleReady) {
-    return <div className="min-h-screen flex items-center justify-center bg-background"><Loader2 className="h-10 w-10 animate-spin opacity-20 text-primary" /></div>;
-  }
+  // 移除全屏 Loading 拦截，改为流式渲染
+  // 以前这里会 return <Loader2 />，现在直接进入主体渲染
 
   return (
     <main className="relative min-h-screen">

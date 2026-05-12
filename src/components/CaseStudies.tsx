@@ -142,7 +142,7 @@ export function CaseStudies({ locale }: { locale: Locale }) {
   }, []);
 
   return (
-    <section id="cases" ref={sectionRef} className="relative pt-24 lg:pt-32 bg-background overflow-hidden min-h-[600px]">
+    <section id="cases" ref={sectionRef} className="relative pt-20 pb-20 lg:pt-24 lg:pb-24 bg-background overflow-hidden">
       <div className="container mx-auto px-6 mb-4 relative z-10 text-center lg:text-left">
         <SectionHeading
           title={displayTitle}
@@ -152,22 +152,21 @@ export function CaseStudies({ locale }: { locale: Locale }) {
       </div>
 
       <div className={cn("relative w-full z-10 transition-opacity duration-700", isVisible ? "opacity-100" : "opacity-0")}>
-        <div className="h-[600px] lg:h-[800px] relative lg:-mt-24">
+        {/* 画廊主容器：应用负 Margin 提升重心 */}
+        <div className="h-[700px] relative -mt-16 lg:-mt-20">
           {isRendered && cases.length > 0 && (
             <CircularGallery
               ref={galleryRef}
               items={cases}
               bend={3}
-              textColor="#ffffff"
               borderRadius={0.05}
-              scrollSpeed={2}
-              scrollEase={0.05}
+              scrollEase={0.08}
             />
           )}
         </div>
 
-        {/* Navigation Buttons - More prominent on mobile */}
-        <div className="flex justify-center items-center gap-6 mt-2 pb-12 relative z-20">
+        {/* 底部居中导航按钮：使用负 Margin 向上压缩空间 */}
+        <div className="flex justify-center items-center gap-6 -mt-12 pb-10 relative z-20">
           <button
             onClick={() => galleryRef.current?.prev()}
             className="w-14 h-14 rounded-full bg-slate-100/90 backdrop-blur-md border border-slate-200 flex items-center justify-center text-slate-900 hover:bg-slate-200 transition-all active:scale-95 shadow-lg"
