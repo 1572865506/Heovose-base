@@ -53,7 +53,8 @@ import {
   ShieldAlert,
   Info,
   Gauge,
-  LayoutGrid
+  LayoutGrid,
+  MessageSquare
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { Badge } from '@/components/ui/badge';
@@ -77,6 +78,8 @@ interface AiConfig {
   apiKey: string;
   temperature: number;
   systemInstruction: string;
+  isInquiryAiEnabled: boolean;
+  inquirySystemInstruction: string;
   lastDiagnosis?: DiagnosisRecord;
 }
 
@@ -92,10 +95,12 @@ export default function AiSettingsPage() {
 
   const [formData, setFormData] = useState<AiConfig>({
     isEnabled: true,
-    model: 'googleai/gemini-2.5-flash',
+    model: 'googleai/gemini-2.0-flash',
     apiKey: '',
     temperature: 0.7,
-    systemInstruction: '你是一位专业的工业硬件制造专家，擅长将复杂的计算机硬件规格（如一体机、迷你电脑、工业显示器）翻译成地道、专业的商务语言。请保持术语的准确性，并统一单位。'
+    systemInstruction: '你是一位专业的工业硬件制造专家，擅长将复杂的计算机硬件规格（如一体机、迷你电脑、工业显示器）翻译成地道、专业的商务语言。请保持术语的准确性，并统一单位。',
+    isInquiryAiEnabled: false,
+    inquirySystemInstruction: '你是一位资深的商务拓展经理，负责初步回复客户的询盘。请根据用户的留言内容，表达感谢，并告知我们的专家会尽快联系。回复需专业、礼貌，且简洁。'
   });
 
   const [showKey, setShowKey] = useState(false);
@@ -114,7 +119,9 @@ export default function AiSettingsPage() {
         apiKey: aiConfig.apiKey || '',
         isEnabled: aiConfig.isEnabled ?? true,
         temperature: aiConfig.temperature ?? 0.7,
-        systemInstruction: aiConfig.systemInstruction || formData.systemInstruction
+        systemInstruction: aiConfig.systemInstruction || formData.systemInstruction,
+        isInquiryAiEnabled: aiConfig.isInquiryAiEnabled ?? false,
+        inquirySystemInstruction: aiConfig.inquirySystemInstruction || formData.inquirySystemInstruction
       });
       
       if (aiConfig.lastDiagnosis) {
@@ -335,8 +342,8 @@ export default function AiSettingsPage() {
                     <Wand2 className="h-6 w-6" />
                   </div>
                   <div>
-                    <CardTitle className="text-lg font-headline font-bold text-slate-900">AI 专家人设与执行准则</CardTitle>
-                    <CardDescription className="text-[10px] uppercase font-bold text-slate-400 tracking-widest mt-1">Expert System Prompt Injection</CardDescription>
+                    <CardTitle className="text-lg font-headline font-bold text-slate-900">AI 翻译专家人设协议</CardTitle>
+                    <CardDescription className="text-[10px] uppercase font-bold text-slate-400 tracking-widest mt-1">Global Translation System Payload</CardDescription>
                   </div>
                 </div>
                 <Badge className="bg-primary/10 text-primary border-none text-[10px] font-bold uppercase tracking-wider px-4 h-7 rounded-full">ACTIVE PAYLOAD</Badge>
@@ -379,6 +386,54 @@ export default function AiSettingsPage() {
                       <span className="text-[10px] text-slate-400">防止 HTML 标签解析冲突</span>
                     </div>
                  </div>
+              </div>
+            </CardContent>
+          </GlassCard>
+
+          <GlassCard className="border-none shadow-xl">
+            <CardHeader className="p-8 border-b border-slate-100">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-4">
+                  <div className="h-12 w-12 rounded-2xl bg-orange-50 text-orange-600 flex items-center justify-center shadow-inner">
+                    <MessageSquare className="h-6 w-6" />
+                  </div>
+                  <div>
+                    <CardTitle className="text-lg font-headline font-bold text-slate-900">询盘系统 AI 自动化</CardTitle>
+                    <CardDescription className="text-[10px] uppercase font-bold text-slate-400 tracking-widest mt-1">Automated Inquiry Response Protocol</CardDescription>
+                  </div>
+                </div>
+                <div className="flex items-center gap-3 bg-slate-50 p-2 rounded-2xl border border-slate-100">
+                  <span className="text-[10px] font-bold uppercase tracking-widest opacity-60 mr-2">开启 AI 回复</span>
+                  <Switch 
+                    checked={formData.isInquiryAiEnabled} 
+                    onCheckedChange={(v) => setFormData({...formData, isInquiryAiEnabled: v})} 
+                    className="data-[state=checked]:bg-primary"
+                  />
+                </div>
+              </div>
+            </CardHeader>
+            <CardContent className="p-8 space-y-6">
+              <div className="space-y-4">
+                <div className="flex items-center justify-between px-1">
+                  <Label className="text-[11px] font-bold uppercase tracking-[0.2em] text-slate-400 flex items-center gap-2">
+                    <Terminal className="h-4 w-4 text-primary" /> AI 回复人设准则 (System Prompt)
+                  </Label>
+                </div>
+                <div className="relative">
+                  <div className="absolute top-4 left-4 h-full w-[2px] bg-orange-500/20 rounded-full" />
+                  <Textarea 
+                    value={formData.inquirySystemInstruction}
+                    onChange={(e) => setFormData({...formData, inquirySystemInstruction: e.target.value})}
+                    placeholder="设置 AI 如何回复客户的询盘留言..."
+                    className="min-h-[160px] rounded-2xl border-slate-100 bg-slate-50/50 pl-10 pt-6 text-sm leading-relaxed font-medium focus-visible:ring-2 focus-visible:ring-primary/10 shadow-inner resize-none"
+                  />
+                </div>
+              </div>
+              <div className="p-5 bg-blue-50 rounded-[1.5rem] border border-blue-100 flex gap-4">
+                <Info className="h-5 w-5 text-blue-600 shrink-0 mt-1" />
+                <p className="text-[10px] text-blue-900/60 leading-relaxed font-medium italic">
+                  启用后，系统将在接收到有效询盘后自动生成一份初步答复，作为客户跟进的第一步。
+                </p>
               </div>
             </CardContent>
           </GlassCard>

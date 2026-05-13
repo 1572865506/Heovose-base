@@ -40,7 +40,16 @@ export function useLocalCollection<T = any>(path: string | null, options?: { ena
 
     const fetchPromise = (async () => {
       const res = await fetch(url);
-      if (!res.ok) throw new Error(`Failed to fetch collection "${currentPath}": ${res.statusText} (Status: ${res.status})`);
+      if (!res.ok) {
+        let errorMessage = res.statusText;
+        try {
+          const errorJson = await res.json();
+          if (errorJson.error) errorMessage = errorJson.error;
+        } catch (e) {
+          // Fallback to status text
+        }
+        throw new Error(`Failed to fetch collection "${currentPath}": ${errorMessage} (Status: ${res.status})`);
+      }
       const json = await res.json();
       if (!Array.isArray(json)) {
         throw new Error(`Collection "${currentPath}" returned invalid data (not an array)`);

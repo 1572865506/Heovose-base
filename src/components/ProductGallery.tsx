@@ -20,43 +20,48 @@ import { cn } from "@/lib/utils";
 import { useLocalCollection } from '@/hooks/use-local-collection';
 import { useLocalDoc } from '@/hooks/use-local-doc';
 import { useTranslations } from '@/hooks/use-translations';
+import { useInquiry } from '@/hooks/../components/providers/InquiryProvider';
+import { MessageSquare } from 'lucide-react';
 
 function GalleryCard({ product, locale }: { product: any, locale: Locale }) {
+  const { openInquiry } = useInquiry();
+  const { t: tr } = useTranslations(locale);
+
   return (
-    <Link
-      href={`/products?category=${encodeURIComponent(product.slug)}`}
-      className="group relative flex flex-col h-full bg-white rounded-[2.5rem] shadow-sm hover:shadow-xl hover:-translate-y-2 transition-all duration-500 border border-border/5 overflow-hidden transform-gpu"
-    >
-      {/* Product Image - 11:9 Ratio at the top */}
-      <div className="relative w-full aspect-[11/9] overflow-hidden bg-muted/5 shrink-0">
-        {product.imageUrl && (
-          <Image
-            src={getAssetUrl(product.imageUrl)}
-            alt={product.label}
-            fill
-            className="object-cover"
-            sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 25vw"
-          />
-        )}
+    <div className="group relative flex flex-col h-full bg-white rounded-[2.5rem] shadow-sm hover:shadow-xl hover:-translate-y-2 transition-all duration-500 border border-border/5 overflow-hidden transform-gpu">
+      <Link
+        href={`/products?category=${encodeURIComponent(product.slug)}`}
+        className="block"
+      >
+        {/* Product Image - 11:9 Ratio at the top */}
+        <div className="relative w-full aspect-[11/9] overflow-hidden bg-muted/5 shrink-0">
+          {product.imageUrl && (
+            <Image
+              src={getAssetUrl(product.imageUrl)}
+              alt={product.label}
+              fill
+              className="object-cover transition-transform duration-700 group-hover:scale-110"
+              sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 25vw"
+            />
+          )}
 
-        {/* Floating Badge */}
-        {product.badge && (
-          <div className="absolute top-6 left-6 z-10">
-            <span className={cn(
-              "inline-block px-3 py-1 text-[10px] font-bold tracking-wider uppercase rounded-full border shadow-lg backdrop-blur-md",
-              product.badgeType === 'NEW'
-                ? "bg-blue-600/90 text-white border-blue-400/50"
-                : "bg-red-600/90 text-white border-red-400/50"
-            )}>
-              {product.badge}
-            </span>
-          </div>
-        )}
-      </div>
+          {/* Floating Badge */}
+          {product.badge && (
+            <div className="absolute top-6 left-6 z-10">
+              <span className={cn(
+                "inline-block px-3 py-1 text-[10px] font-bold tracking-wider uppercase rounded-full border shadow-lg backdrop-blur-md",
+                product.badgeType === 'NEW'
+                  ? "bg-blue-600/90 text-white border-blue-400/50"
+                  : "bg-red-600/90 text-white border-red-400/50"
+              )}>
+                {product.badge}
+              </span>
+            </div>
+          )}
+        </div>
 
-      {/* Content Area - Below the image */}
-      <div className="p-6 md:p-8 flex flex-col flex-grow justify-between bg-white">
-        <div className="space-y-4">
+        {/* Content Area - Below the image */}
+        <div className="p-6 md:p-8 flex flex-col bg-white">
           <div className="space-y-2">
             <h3 className="text-xl md:text-2xl font-headline font-bold text-slate-900 leading-tight tracking-tight line-clamp-1">
               {product.label}
@@ -66,14 +71,29 @@ function GalleryCard({ product, locale }: { product: any, locale: Locale }) {
             </p>
           </div>
         </div>
+      </Link>
 
-        <div className="flex items-center justify-end mt-6">
-          <div className="h-10 w-10 rounded-full bg-slate-100 flex items-center justify-center text-slate-900 group-hover:bg-primary/30 group-hover:text-primary transition-all duration-500 transform-gpu group-hover:scale-110">
-            <ArrowRight className="h-5 w-5" />
-          </div>
-        </div>
+      <div className="px-6 md:px-8 pb-8 mt-auto flex items-center justify-between gap-4">
+        <Button 
+          variant="outline"
+          size="sm"
+          onClick={(e) => {
+            e.preventDefault();
+            openInquiry({ productId: product.id, productName: product.label });
+          }}
+          className="rounded-full px-5 text-[10px] font-bold uppercase tracking-wider border-primary/20 text-primary hover:bg-primary hover:text-white transition-all duration-500 gap-2 flex-1"
+        >
+          <MessageSquare className="h-3 w-3" />
+          {tr('products_requestQuote')}
+        </Button>
+        <Link 
+          href={`/products?category=${encodeURIComponent(product.slug)}`}
+          className="h-9 w-9 rounded-full bg-slate-50 border border-slate-100 flex items-center justify-center text-slate-400 hover:bg-primary/10 hover:text-primary hover:border-primary/20 transition-all duration-500 shrink-0"
+        >
+          <ArrowRight className="h-4 w-4" />
+        </Link>
       </div>
-    </Link>
+    </div>
   );
 }
 

@@ -5,7 +5,7 @@ const prismaClientSingleton = () => {
 };
 
 const db = (globalThis as any).prisma_v2 ?? prismaClientSingleton();
-// Prisma Schema Updated: 2026-05-11 11:15
+// Prisma Schema Updated: 2026-05-12 09:27 (Force Fresh)
 export default db;
 
 if (process.env.NODE_ENV !== 'production') (globalThis as any).prisma_v2 = db;

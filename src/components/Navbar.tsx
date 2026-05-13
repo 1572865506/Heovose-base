@@ -46,9 +46,11 @@ import { LayoutGrid } from 'lucide-react';
 import { getAssetUrl } from '@/lib/image-utils';
 
 import { useTranslations } from '@/hooks/use-translations';
+import { useInquiry } from '@/components/providers/InquiryProvider';
 
 export function Navbar({ locale, setLocale, headerTheme = 'dark', themeLine }: NavbarProps) {
   const { t: tr } = useTranslations(locale);
+  const { openInquiry } = useInquiry();
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const router = useRouter();
@@ -119,6 +121,9 @@ export function Navbar({ locale, setLocale, headerTheme = 'dark', themeLine }: N
   // 2. Fetch dynamic navigation settings
   const { data: navSettings } = useLocalDoc<any>('settings', 'navigation');
 
+  // 3. Fetch dynamic site settings for Logo
+  const { data: siteConfig } = useLocalDoc<any>('settings', 'site');
+
   const getIcon = (id: string) => {
     const map: Record<string, any> = {
       'AIO': Monitor,
@@ -181,6 +186,9 @@ export function Navbar({ locale, setLocale, headerTheme = 'dark', themeLine }: N
     return { wholesaleItems: wholesale, projectItems: projects };
   }, [remoteCats, locale, tr]);
 
+  const logoStandard = siteConfig?.logoStandard ? getAssetUrl(siteConfig.logoStandard) : "/image/Heovose-color.svg";
+  const logoInverted = siteConfig?.logoInverted ? getAssetUrl(siteConfig.logoInverted) : "/image/Heovose.svg";
+
   return (
     <>
       {/* 1. Top Scrim & Gradient Blur Layer - The "Advanced Glass" Layer */}
@@ -216,7 +224,7 @@ export function Navbar({ locale, setLocale, headerTheme = 'dark', themeLine }: N
         <div className="container mx-auto px-6 flex items-center w-full h-full">
           <Link href="/" className="flex items-center shrink-0">
             <Image
-              src={isNavbarActive || headerTheme === 'light' ? "/image/Heovose-color.svg" : "/image/Heovose.svg"}
+              src={isNavbarActive || headerTheme === 'light' ? logoStandard : logoInverted}
               alt="Heovose Logo"
               width={160}
               height={32}
@@ -336,22 +344,21 @@ export function Navbar({ locale, setLocale, headerTheme = 'dark', themeLine }: N
 
             <div className="flex items-center gap-6 h-full">
               <LanguageToggle currentLocale={locale} setLocale={setLocale} headerTheme={headerTheme} isNavbarActive={isNavbarActive} />
-              <Link href="/products">
-                <Button 
-                  size="sm" 
-                  className={cn(
-                    "rounded-full px-6 shadow-lg transition-all duration-500 text-sm font-medium",
-                    themeLine === 'project' 
-                      ? "bg-[#F97316] hover:bg-[#F97316]/90" 
-                      : "bg-primary hover:bg-primary/90"
-                  )}
-                >
-                  <span className="flex items-center gap-2">
-                    <MessageSquare className="h-4 w-4" />
-                    {tr('nav_contact')}
-                  </span>
-                </Button>
-              </Link>
+              <Button 
+                size="sm" 
+                onClick={() => openInquiry()}
+                className={cn(
+                  "rounded-full px-6 shadow-lg transition-all duration-500 text-sm font-medium",
+                  themeLine === 'project' 
+                    ? "bg-[#F97316] hover:bg-[#F97316]/90" 
+                    : "bg-primary hover:bg-primary/90"
+                )}
+              >
+                <span className="flex items-center gap-2">
+                  <MessageSquare className="h-4 w-4" />
+                  {tr('nav_contact')}
+                </span>
+              </Button>
             </div>
           </div>
 
@@ -396,12 +403,16 @@ export function Navbar({ locale, setLocale, headerTheme = 'dark', themeLine }: N
               <Link href="/#cases" onClick={() => setMobileMenuOpen(false)} className="text-lg font-bold text-primary">{tr('nav_cases')}</Link>
 
               <div className="pt-6 border-t border-slate-100 mt-auto">
-                <Link href="/#contact" onClick={() => setMobileMenuOpen(false)} className="block w-full">
-                  <Button className="w-full rounded-xl bg-primary flex items-center justify-center gap-2">
-                    <MessageSquare className="h-4 w-4" />
-                    {tr('nav_contact')}
-                  </Button>
-                </Link>
+                <Button 
+                  onClick={() => {
+                    setMobileMenuOpen(false);
+                    openInquiry();
+                  }}
+                  className="w-full rounded-xl bg-primary flex items-center justify-center gap-2"
+                >
+                  <MessageSquare className="h-4 w-4" />
+                  {tr('nav_contact')}
+                </Button>
               </div>
             </div>
           </div>

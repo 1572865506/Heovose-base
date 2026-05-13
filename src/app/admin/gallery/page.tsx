@@ -31,7 +31,11 @@ import {
   ChevronLeft,
   ChevronRight,
   Eraser,
-  Play
+  Play,
+  FileText,
+  Archive,
+  File,
+  FolderOpen
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -83,7 +87,7 @@ interface GalleryAsset {
   id: string;
   url: string;
   title: string;
-  type: 'IMAGE' | 'VIDEO';
+  type: 'IMAGE' | 'VIDEO' | 'DOCUMENT';
   thumbnailUrl?: string;
   duration?: number;
   categoryId: string;
@@ -93,6 +97,9 @@ interface GalleryAsset {
   height?: number;
   createdAt?: any;
 }
+
+const DOCUMENT_EXTS = ['pdf', 'doc', 'docx', 'xls', 'xlsx', 'ppt', 'pptx', 'txt'];
+const ARCHIVE_EXTS = ['zip', 'rar', '7z', 'tar', 'gz'];
 
 interface UploadTask {
   id: string;
@@ -213,6 +220,7 @@ export default function GalleryPage() {
   }, [toast]);
 
   const [searchQuery, setSearchQuery] = useState('');
+  const [filterType, setFilterType] = useState<'all' | 'image' | 'video' | 'document'>('all');
   const [filterCategory, setFilterCategory] = useState<string>('all');
   const [editingAsset, setEditingAsset] = useState<GalleryAsset | null>(null);
   const [previewAsset, setPreviewAsset] = useState<GalleryAsset | null>(null);
@@ -317,11 +325,26 @@ export default function GalleryPage() {
   const filteredAssets = useMemo(() => {
     if (!assets) return [];
     return assets.filter(a => {
-      const ms = a.title.toLowerCase().includes(searchQuery.toLowerCase());
-      const mc = filterCategory === 'all' || a.categoryId === filterCategory;
-      return ms && mc;
+      const matchSearch = a.title.toLowerCase().includes(searchQuery.toLowerCase()) || 
+                         a.fileName.toLowerCase().includes(searchQuery.toLowerCase());
+      const matchCategory = filterCategory === 'all' || a.categoryId === filterCategory;
+      
+      const fileExt = a.fileName?.toLowerCase().split('.').pop() || '';
+      const isVideoFile = ['mp4', 'webm', 'ogg', 'mov'].includes(fileExt);
+      const isDocFile = DOCUMENT_EXTS.includes(fileExt) || ARCHIVE_EXTS.includes(fileExt);
+      
+      let actualType = a.type || 'IMAGE';
+      if (isVideoFile) actualType = 'VIDEO';
+      if (isDocFile) actualType = 'DOCUMENT';
+
+      const matchType = filterType === 'all' || 
+                        (filterType === 'image' && actualType === 'IMAGE') ||
+                        (filterType === 'video' && actualType === 'VIDEO') ||
+                        (filterType === 'document' && actualType === 'DOCUMENT');
+
+      return matchSearch && matchCategory && matchType;
     });
-  }, [assets, searchQuery, filterCategory]);
+  }, [assets, searchQuery, filterCategory, filterType]);
 
   const totalPages = Math.ceil(filteredAssets.length / ITEMS_PER_PAGE);
   const paginatedAssets = useMemo(() => {
@@ -419,8 +442,7 @@ export default function GalleryPage() {
 
     // 校验文件大小
     const oversized = fileArray.filter(f => {
-      const isVideo = f.type.startsWith('video/');
-      const limit = isVideo ? 20 * 1024 * 1024 : 700 * 1024; // 视频 20MB, 图片 700KB
+      const limit = 20 * 1024 * 1024; // 统一 20MB
       return f.size > limit;
     });
     
@@ -428,7 +450,7 @@ export default function GalleryPage() {
       toast({
         variant: "destructive",
         title: "文件过大",
-        description: `${oversized.length} 个文件超过了限制（图片 700KB / 视频 20MB）。`
+        description: `${oversized.length} 个文件超过了 20MB 的系统限制。`
       });
       return;
     }
@@ -518,6 +540,7 @@ export default function GalleryPage() {
         
         updateTask(taskId, { progress: 70 });
 
+        const title = file.name.split('.')[0];
         const categoryId = targetUploadCategoryId || categoryTree[0]?.id;
         
         if (!categoryId) {
@@ -526,14 +549,22 @@ export default function GalleryPage() {
 
         // 使用更安全的 ID 生成方式
         const randomString = Math.random().toString(36).substring(2, 7);
-        const assetId = `asset_${Date.now()}_${randomString}_${i}`;
+        let assetId = `asset_${Date.now()}_${randomString}_${i}`;
         
+        // --- Duplicate Handling Strategy ---
+        if (duplicateStrategy === 'overwrite' && assets) {
+          const existing = assets.find(a => a.title === title && a.categoryId === categoryId);
+          if (existing) {
+            assetId = existing.id;
+          }
+        }
+
         const assetData = {
           id: assetId,
           url,
           type: isVideo ? 'VIDEO' : 'IMAGE',
           duration: isVideo ? duration : undefined,
-          title: file.name.split('.')[0],
+          title: title,
           fileName: fileName,
           fileSize: file.size,
           categoryId: categoryId,
@@ -557,7 +588,7 @@ export default function GalleryPage() {
         updateTask(taskId, { status: 'completed', progress: 100 });
       } catch (e: any) {
         console.error('Upload task error:', e);
-        updateTask(taskId, { status: 'error', error: e.message });
+        updateTask(taskId, { status: 'error', progress: 0, error: e.message });
         toast({ 
           variant: "destructive", 
           title: "上传中断", 
@@ -722,6 +753,15 @@ export default function GalleryPage() {
       onMouseUp={handleMouseUp}
       onMouseMove={handleMouseMove}
       onMouseDown={handleMouseDown}
+      onDragOver={(e) => { e.preventDefault(); e.stopPropagation(); }}
+      onDrop={(e) => { 
+        e.preventDefault(); 
+        e.stopPropagation(); 
+        if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+          handleFileUpload(e.dataTransfer.files);
+          setIsUploadDialogOpen(true);
+        }
+      }}
       ref={containerRef}
     >
       {/* 背景装饰 */}
@@ -734,11 +774,11 @@ export default function GalleryPage() {
         <div className="space-y-1">
           <h2 className="text-2xl font-headline font-bold text-slate-900 flex items-center gap-4">
             <div className="h-10 w-10 rounded-2xl bg-primary/10 flex items-center justify-center text-primary shadow-sm">
-              <ImageIcon className="h-5 w-5" />
+              <FolderOpen className="h-5 w-5" />
             </div>
-            全球素材图库
+            全球资源管理中心
           </h2>
-          <p className="text-[10px] text-slate-400 font-bold uppercase tracking-[0.2em] pl-14">Management / Digital Assets / Gallery</p>
+          <p className="text-[10px] text-slate-400 font-bold uppercase tracking-[0.2em] pl-14">Management / Digital Assets / Resources</p>
         </div>
         <div className="flex gap-3">
           <Dialog open={isCategoryDialogOpen} onOpenChange={(o) => { setIsCategoryDialogOpen(o); if (!o) resetCatForm(); }}>
@@ -925,14 +965,14 @@ export default function GalleryPage() {
                           <Upload className="h-7 w-7 text-slate-400 group-hover:text-primary" />
                         </div>
                         <p className="text-sm font-bold text-slate-900">点击或拖拽素材至此处</p>
-                        <p className="text-[10px] text-slate-400 mt-2 uppercase font-bold tracking-widest">DRAG & DROP IMAGE OR VIDEO FILES</p>
+                        <p className="text-[10px] text-slate-400 mt-2 uppercase font-bold tracking-widest">DRAG & DROP YOUR ASSETS HERE</p>
                         <div className="mt-6 px-4 py-2 bg-primary/5 rounded-full flex flex-col items-center gap-1">
                           <div className="flex items-center gap-2">
-                            <ImageIcon className="h-3 w-3 text-primary" />
-                            <span className="text-[9px] font-bold text-primary uppercase">图片限 700KB</span>
+                            <CloudUpload className="h-3 w-3 text-primary" />
+                            <span className="text-[9px] font-bold text-primary uppercase">全类型支持 (最大 20MB)</span>
                             <span className="text-[9px] font-bold text-slate-300">|</span>
-                            <PanelTop className="h-3 w-3 text-primary" />
-                            <span className="text-[9px] font-bold text-primary uppercase">视频限 20MB</span>
+                            <Archive className="h-3 w-3 text-primary" />
+                            <span className="text-[9px] font-bold text-primary uppercase">支持 ZIP/RAR/PDF</span>
                           </div>
                         </div>
                       </>
@@ -977,7 +1017,7 @@ export default function GalleryPage() {
                         </div>
                       </div>
                     )}
-                    <input type="file" ref={fileInputRef} multiple accept="image/*,video/*" className="hidden" onChange={e => handleFileUpload(e.target.files)} />
+                    <input type="file" ref={fileInputRef} multiple accept="image/*,video/*,.pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.zip,.rar,.7z" className="hidden" onChange={e => handleFileUpload(e.target.files)} />
                   </div>
                 </div>
                 <div className="md:col-span-5 space-y-8">
@@ -1006,17 +1046,32 @@ export default function GalleryPage() {
                     </div>
                     <div className="space-y-2.5">
                       <Label className="text-[10px] font-bold uppercase text-slate-400 tracking-widest pl-1">重名冲突处理策略</Label>
-                      <Select value={duplicateStrategy} onValueChange={(v: DuplicateStrategy) => setDuplicateStrategy(v)}>
-                        <SelectTrigger className="h-12 rounded-xl bg-slate-500/5 border-transparent text-sm font-medium">
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent className="rounded-2xl border-none bg-white/95 backdrop-blur-xl shadow-2xl p-2 animate-in zoom-in-95 duration-200">
-                          <SelectItem value="rename" className="rounded-xl text-xs py-3 px-4 font-medium focus:bg-primary/5">自动重命名 (生成副本)</SelectItem>
-                          <SelectItem value="overwrite" className="rounded-xl text-xs py-3 px-4 text-orange-600 font-bold focus:bg-orange-50">覆盖现有文件 (全站同步)</SelectItem>
-                        </SelectContent>
-                      </Select>
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="outline" className="w-full h-12 rounded-xl bg-slate-500/5 border-transparent focus:ring-4 focus:ring-primary/5 justify-between px-4 font-medium transition-all group text-left">
+                            <span className={cn("text-sm truncate", duplicateStrategy === 'overwrite' && "text-orange-600 font-bold")}>
+                              {duplicateStrategy === 'rename' ? '自动重命名 (生成副本)' : '覆盖现有文件 (全站同步)'}
+                            </span>
+                            <ChevronDown className="h-4 w-4 opacity-40 group-hover:opacity-100 transition-all" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="start" sideOffset={8} className="min-w-[12rem] p-1.5 rounded-2xl shadow-2xl border-none bg-white/95 backdrop-blur-xl animate-in fade-in slide-in-from-top-2 duration-300 z-[1200]">
+                          <DropdownMenuItem
+                            onClick={() => setDuplicateStrategy('rename')}
+                            className="rounded-xl text-xs py-3 px-4 font-medium focus:bg-primary/5 cursor-pointer"
+                          >
+                            自动重命名 (生成副本)
+                          </DropdownMenuItem>
+                          <DropdownMenuItem
+                            onClick={() => setDuplicateStrategy('overwrite')}
+                            className="rounded-xl text-xs py-3 px-4 text-orange-600 font-bold focus:bg-orange-50 cursor-pointer"
+                          >
+                            覆盖现有文件 (全站同步)
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
                       <p className="text-[9px] text-slate-400 leading-relaxed mt-4 italic font-medium">
-                        重要提示：由于云端存储限制，系统会严格校验图片 Base64 体积。建议在上传前进行必要的压缩。
+                        重要提示：系统会根据文件名自动识别。如果选择覆盖，同名文件将被新版本替换。
                       </p>
                     </div>
                   </div>
@@ -1086,6 +1141,24 @@ export default function GalleryPage() {
             </DropdownMenuContent>
           </DropdownMenu>
         </div>
+        <div className="flex bg-slate-500/5 p-1 rounded-2xl border border-slate-500/5">
+          {['all', 'image', 'video', 'document'].map((t) => (
+            <Button 
+              key={t}
+              variant="ghost" 
+              size="sm" 
+              onClick={() => setFilterType(t as any)}
+              className={cn(
+                "h-10 rounded-xl px-6 text-[10px] font-bold uppercase transition-all duration-300",
+                filterType === t 
+                  ? "bg-white text-primary shadow-xl shadow-slate-200/50 translate-y-[-1px]" 
+                  : "text-slate-400 hover:text-slate-600"
+              )}
+            >
+              {t === 'all' ? '全部素材' : t === 'image' ? '高清图片' : t === 'video' ? '视频矩阵' : '文档/压缩包'}
+            </Button>
+          ))}
+        </div>
       </div>
 
       {isLoading ? (
@@ -1095,7 +1168,16 @@ export default function GalleryPage() {
         </div>
       ) : (
         <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-8 relative z-10">
-          {paginatedAssets.map((asset) => (
+          {paginatedAssets.map((asset) => {
+            const fileExt = asset.fileName?.toLowerCase().split('.').pop() || '';
+            const isVideoFile = ['mp4', 'webm', 'ogg', 'mov'].includes(fileExt);
+            const isDocFile = DOCUMENT_EXTS.includes(fileExt) || ARCHIVE_EXTS.includes(fileExt);
+            const isArchive = ARCHIVE_EXTS.includes(fileExt);
+            let actualType = asset.type || 'IMAGE';
+            if (isVideoFile) actualType = 'VIDEO';
+            if (isDocFile) actualType = 'DOCUMENT';
+
+            return (
             <div
               key={asset.id}
               ref={el => { if (el) itemRefs.current.set(asset.id, el); else itemRefs.current.delete(asset.id); }}
@@ -1118,7 +1200,7 @@ export default function GalleryPage() {
               </div>
 
               <div className="relative aspect-square bg-slate-500/5 overflow-hidden flex items-center justify-center m-2 rounded-[1.5rem]">
-                {asset.type === 'VIDEO' ? (
+                {actualType === 'VIDEO' ? (
                   <div className="w-full h-full flex items-center justify-center bg-slate-900 overflow-hidden">
                     <video 
                       src={getAssetUrl(asset.url)} 
@@ -1141,6 +1223,11 @@ export default function GalleryPage() {
                         {Math.floor(asset.duration / 60)}:{(asset.duration % 60).toFixed(0).padStart(2, '0')}
                       </div>
                     )}
+                  </div>
+                ) : actualType === 'DOCUMENT' ? (
+                  <div className="w-full h-full flex flex-col items-center justify-center text-slate-300">
+                     {isArchive ? <Archive className="h-16 w-16 mb-4 opacity-40" /> : <FileText className="h-16 w-16 mb-4 opacity-40" />}
+                     <span className="text-[10px] font-bold uppercase tracking-widest">{fileExt.toUpperCase()}</span>
                   </div>
                 ) : (
                   <Image
@@ -1183,7 +1270,7 @@ export default function GalleryPage() {
                     <span>{((asset.fileSize || 0) / 1024).toFixed(0)}KB</span>
                     <span>•</span>
                     <span>{asset.fileName.split('.').pop()?.toUpperCase()}</span>
-                    <AssetResolution id={asset.id} initialW={asset.width} initialH={asset.height} />
+                    {actualType === 'IMAGE' && <AssetResolution id={asset.id} initialW={asset.width} initialH={asset.height} />}
                   </p>
                 </div>
                 <div className="flex items-center justify-between border-t border-slate-100 pt-3">
@@ -1212,11 +1299,11 @@ export default function GalleryPage() {
                     variant="ghost"
                     className="h-8 w-8 rounded-xl text-destructive/40 hover:text-destructive hover:bg-destructive/5"
                     onClick={async () => {
-                      if (confirm('永久移除该图片？')) {
+                      if (confirm('永久移除该文件？')) {
                         try {
                           await fetch(`/api/galleryAssets/${asset.id}`, { method: 'DELETE' });
                           mutateAssets();
-                          toast({ title: "素材已删除" });
+                          toast({ title: "文件已删除" });
                         } catch (e) {
                           toast({ variant: "destructive", title: "删除失败" });
                         }
@@ -1229,7 +1316,8 @@ export default function GalleryPage() {
                 </div>
               </div>
             </div>
-          ))}
+            );
+          })}
         </div>
       )}
 
@@ -1429,7 +1517,7 @@ export default function GalleryPage() {
           setPreviewZoom('fit');
         }
       }}>
-        <DialogContent className="max-w-[95vw] w-full h-[90vh] p-0 overflow-hidden bg-black/95 border-none shadow-2xl rounded-2xl flex flex-col z-50 [&>button:last-child]:hidden">
+        <DialogContent className="max-w-[95vw] w-full h-[90vh] p-0 overflow-hidden bg-black/95 border-none shadow-2xl rounded-2xl flex flex-col [&>button:last-child]:hidden">
           <DialogHeader className="sr-only">
             <DialogTitle>图片预览: {previewAsset?.title}</DialogTitle>
             <DialogDescription>查看全屏高清素材详情。</DialogDescription>

@@ -192,10 +192,58 @@ model User {
   image         String?
   password      String?
   role          String    @default("editor")
+  permissions   Json?     @default("[]")
+  lastSeen      DateTime?
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
   accounts      Account[]
   sessions      Session[]
+}
+
+model Inquiry {
+  id            String   @id @default(cuid())
+  name          String
+  email         String
+  phone         String?
+  company       String?
+  subject       String?
+  message       String
+  productId     String?
+  status        String   @default("pending") // pending, processed, archived
+  emailViewedAt DateTime? // 邮件查看时间
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+}
+
+model VisitorSession {
+  id        String           @id @default(cuid())
+  visitorId String
+  ip        String?
+  country   String?
+  city      String?
+  userAgent String?
+  referrer  String?
+  lastPath  String?
+  createdAt DateTime         @default(now())
+  updatedAt DateTime         @default(now()) @updatedAt
+  events    AnalyticsEvent[]
+
+  @@index([visitorId])
+}
+
+model AnalyticsEvent {
+  id        String         @id @default(cuid())
+  sessionId String
+  type      String // PAGE_VIEW, CLICK
+  path      String
+  x         Float? // Percentage 0-100
+  y         Float? // Percentage 0-100
+  element   String?
+  extraData Json? // Store metadata like button text or duration
+  timestamp DateTime       @default(now())
+  session   VisitorSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+
+  @@index([sessionId])
 }
 
 model Account {

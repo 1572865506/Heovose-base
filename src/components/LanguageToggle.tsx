@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo } from "react";
+import { useMemo, useState, useEffect } from "react";
 import { Locale } from "@/lib/translations";
 import { useLocalDoc } from "@/hooks/use-local-doc";
 import {
@@ -32,6 +32,11 @@ interface LanguageToggleProps {
 export function LanguageToggle({ currentLocale, setLocale, headerTheme = 'dark', isNavbarActive }: LanguageToggleProps) {
   // 1. 实时获取云端语种配置
   const { data: langSettings, isLoading } = useLocalDoc<LanguageSettings>('settings', 'languages');
+
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   // 2. 处理动态语种列表
   const availableLanguages = useMemo(() => {
@@ -71,7 +76,7 @@ export function LanguageToggle({ currentLocale, setLocale, headerTheme = 'dark',
               : "bg-white/10 hover:bg-white/20 border-white/10 text-white"
           )}
         >
-          {isLoading ? (
+          {(!mounted || isLoading) ? (
             <Loader2 className="h-3.5 w-3.5 animate-spin opacity-40" />
           ) : (
             <Languages className="h-4 w-4 text-primary/60 group-hover:text-primary transition-colors" />

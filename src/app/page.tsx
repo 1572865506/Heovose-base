@@ -15,11 +15,12 @@ import { Footer } from '@/components/Footer';
 import { Suspense } from 'react';
 import { useTranslations } from '@/hooks/use-translations';
 import { Loader2 } from 'lucide-react';
+import { InquiryProvider } from '@/components/providers/InquiryProvider';
 
 // 对首屏以下的重型组件采用动态导入，通过 loading 维持高度解决刷新跳回顶部问题
 const VideoSection = nextDynamic(() => import('@/components/VideoSection').then(mod => mod.VideoSection), { 
   ssr: false, 
-  loading: () => <section className="h-[500vh] bg-black" /> 
+  loading: () => <section className="h-[100vh] bg-black" /> 
 });
 const ProductionProcess = nextDynamic(() => import('@/components/ProductionProcess').then(mod => mod.ProductionProcess), { 
   ssr: false, 
@@ -77,33 +78,33 @@ function HomeContent() {
   // 以前这里会 return <Loader2 />，现在直接进入主体渲染
 
   return (
-    <main className="relative min-h-screen">
-      <Navbar locale={locale} setLocale={setLocale} headerTheme={headerTheme} />
-      
-      <Hero 
-        locale={locale} 
-        homeConfig={heroConfig} 
-        isLoading={isHeroLoading} 
-        onThemeChange={(theme) => setHeaderTheme(theme)}
-      />
-      
-      <ProductBento locale={locale} />
-      
-      <ProductGallery locale={locale} />
-      
-      {/* 动态开关：视频/品牌故事模块 */}
-      {(isVideoLoading || videoConfig?.isVideoEnabled !== false) && (
-        <VideoSection locale={locale} homeConfig={videoConfig} isLoading={isVideoLoading} />
-      )}
-      
-      <ProductionProcess locale={locale} />
-      
-      <CaseStudies locale={locale} />
-      
-      <GlobalMap locale={locale} homeConfig={mapConfig} isLoading={isMapLoading} />
-      
-      <Footer locale={locale} />
-    </main>
+      <main className="relative min-h-screen">
+        <Navbar locale={locale} setLocale={setLocale} headerTheme={headerTheme} />
+        
+        <Hero 
+          locale={locale} 
+          homeConfig={heroConfig} 
+          isLoading={isHeroLoading} 
+          onThemeChange={(theme) => setHeaderTheme(theme)}
+        />
+        
+        <ProductBento locale={locale} />
+        
+        <ProductGallery locale={locale} />
+        
+        {/* 动态开关：视频/品牌故事模块 */}
+        {(isVideoLoading || videoConfig?.isVideoEnabled !== false) && (
+          <VideoSection locale={locale} homeConfig={videoConfig} isLoading={isVideoLoading} />
+        )}
+        
+        <ProductionProcess locale={locale} />
+        
+        <CaseStudies locale={locale} />
+        
+        <GlobalMap locale={locale} homeConfig={mapConfig} isLoading={isMapLoading} />
+        
+        <Footer locale={locale} />
+      </main>
   );
 }
 

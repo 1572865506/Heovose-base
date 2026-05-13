@@ -178,7 +178,8 @@ function ProductListContent() {
       const matchesCategory = !selectedCategoryId || p.categoryId === selectedCategoryId;
       
       // 最后匹配搜索
-      const matchSearch = getT(p.nameTextId).toLowerCase().includes(searchQuery.toLowerCase());
+      const productName = getT(p.nameTextId) || '';
+      const matchSearch = productName.toLowerCase().includes(searchQuery.toLowerCase());
       
       return matchesCategory && matchSearch;
     });
@@ -383,7 +384,7 @@ function ProductListContent() {
                     <div className="relative aspect-[11/9] bg-muted/20 overflow-hidden">
                       <Image
                         src={getAssetUrl(product.mainImageUrl || '/image/product-placeholder.png')}
-                        alt={getT(product.nameTextId)}
+                        alt={getT(product.nameTextId) || 'Product Image'}
                         fill
                         className="object-cover hover:scale-110 transition-transform duration-[1000ms] ease-[cubic-bezier(0.23,1,0.32,1)]"
                         unoptimized={product.mainImageUrl?.startsWith('data:')}

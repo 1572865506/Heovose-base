@@ -283,9 +283,10 @@ export function Hero({ locale, homeConfig, isLoading, onThemeChange }: HeroProps
                 <Link
                   href={wholesaleHref}
                   className={cn(
-                    "group relative h-32 md:h-40 rounded-[2rem] md:rounded-[2.5rem] transition-all duration-700 ease-[cubic-bezier(0.23,1,0.32,1)] cursor-pointer overflow-hidden shadow-2xl border border-white/10 hover:-translate-y-3 hover:scale-[1.02] hover:shadow-primary/30 hover:border-primary/30 gpu-accelerated w-full",
+                    "group relative h-32 md:h-40 rounded-[2rem] md:rounded-[2.5rem] transition-all duration-700 ease-[cubic-bezier(0.23,1,0.32,1)] cursor-pointer overflow-hidden shadow-2xl border border-white/10 hover:-translate-y-3 hover:scale-[1.02] hover:shadow-primary/30 hover:border-primary/30 gpu-accelerated w-full isolate",
                     (!hasProjectConfig) && "sm:max-w-[calc(50%-1rem)]"
                   )}
+                  style={{ maskImage: 'radial-gradient(white, white)', WebkitMaskImage: '-webkit-radial-gradient(white, white)' }}
                 >
                   <div className={cn("absolute inset-0 z-0", !wholesaleBg && "bg-primary")}>
                     {wholesaleBg ? (
@@ -313,7 +314,7 @@ export function Hero({ locale, homeConfig, isLoading, onThemeChange }: HeroProps
                           {displayWholesaleDesc}
                         </p>
                       </div>
-                      <div className="w-10 h-10 md:w-12 md:h-12 rounded-full glass-frosted flex items-center justify-center text-white border border-white/20 group-hover:bg-primary group-hover:text-white group-hover:border-transparent transition-all duration-500 shadow-xl group-hover:scale-110 group-hover:rotate-45 shrink-0 aspect-square">
+                      <div className="w-10 h-10 md:w-12 md:h-12 rounded-full glass-frosted flex items-center justify-center text-slate-900 border border-white/20 group-hover:bg-primary group-hover:text-white group-hover:border-transparent transition-all duration-500 shadow-xl group-hover:scale-110 group-hover:rotate-45 shrink-0 aspect-square">
                         <ArrowUpRight className="h-5 w-5 md:h-6 md:w-6" />
                       </div>
                     </div>
@@ -328,9 +329,10 @@ export function Hero({ locale, homeConfig, isLoading, onThemeChange }: HeroProps
                 <Link
                   href={projectHref}
                   className={cn(
-                    "group relative h-32 md:h-40 rounded-[2rem] md:rounded-[2.5rem] transition-all duration-700 ease-[cubic-bezier(0.23,1,0.32,1)] cursor-pointer overflow-hidden shadow-2xl border border-white/10 hover:-translate-y-3 hover:scale-[1.02] hover:shadow-accent/30 hover:border-accent/30 gpu-accelerated w-full",
+                    "group relative h-32 md:h-40 rounded-[2rem] md:rounded-[2.5rem] transition-all duration-700 ease-[cubic-bezier(0.23,1,0.32,1)] cursor-pointer overflow-hidden shadow-2xl border border-white/10 hover:-translate-y-3 hover:scale-[1.02] hover:shadow-accent/30 hover:border-accent/30 gpu-accelerated w-full isolate",
                     (!hasWholesaleConfig) && "sm:max-w-[calc(50%-1rem)]"
                   )}
+                  style={{ maskImage: 'radial-gradient(white, white)', WebkitMaskImage: '-webkit-radial-gradient(white, white)' }}
                 >
                   <div className={cn("absolute inset-0 z-0", !projectBg && "bg-accent")}>
                     {projectBg ? (
@@ -358,7 +360,7 @@ export function Hero({ locale, homeConfig, isLoading, onThemeChange }: HeroProps
                           {displayProjectDesc}
                         </p>
                       </div>
-                      <div className="w-10 h-10 md:w-12 md:h-12 rounded-full glass-frosted flex items-center justify-center text-white border border-white/20 group-hover:bg-accent group-hover:text-white group-hover:border-transparent transition-all duration-500 shadow-xl group-hover:scale-110 group-hover:rotate-45 shrink-0 aspect-square">
+                      <div className="w-10 h-10 md:w-12 md:h-12 rounded-full glass-frosted flex items-center justify-center text-slate-900 border border-white/20 group-hover:bg-accent group-hover:text-white group-hover:border-transparent transition-all duration-500 shadow-xl group-hover:scale-110 group-hover:rotate-45 shrink-0 aspect-square">
                         <ArrowUpRight className="h-5 w-5 md:h-6 md:w-6" />
                       </div>
                     </div>

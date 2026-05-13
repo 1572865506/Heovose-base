@@ -42,7 +42,9 @@ import {
   RefreshCw,
   Key,
   Star,
-  Compass
+  Compass,
+  MessageSquare,
+  FolderOpen
 } from 'lucide-react';
 import Link from 'next/link';
 import Image from 'next/image';
@@ -61,6 +63,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { useToast } from '@/hooks/use-toast';
+import { WelcomeBackBanner } from '@/components/admin/WelcomeBackBanner';
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   const { data: session, status } = useSession();
@@ -71,6 +74,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
   const { data: adminData, isLoading: isAdminDataLoading } = useLocalDoc<any>('profile', '');
   const { data: aiConfig } = useLocalDoc<any>('settings', 'ai');
+  const { data: siteConfig } = useLocalDoc<any>('settings', 'site');
 
   const isDeterminingAccess = status === 'loading' || (session && isAdminDataLoading);
   const isUnauthorized = !isDeterminingAccess && session && !adminData && pathname !== '/admin/login';
@@ -162,6 +166,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       label: "Overview",
       items: [
         { title: "控制面板", icon: LayoutDashboard, href: "/admin" },
+        { title: "数据洞察", icon: BarChart3, href: "/admin/analytics" },
       ]
     },
     {
@@ -169,13 +174,14 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       items: [
         { title: "产品管理", icon: Package, href: "/admin/products" },
         { title: "分类管理", icon: Layers, href: "/admin/categories" },
-        { title: "素材中心", icon: ImageIcon, href: "/admin/gallery" },
+        { title: "资源管理", icon: FolderOpen, href: "/admin/gallery" },
       ]
     },
     {
       label: "Content",
       items: [
         { title: "首页配置", icon: Home, href: "/admin/home" },
+        { title: "询盘管理", icon: MessageSquare, href: "/admin/inquiries" },
         { title: "全球地图", icon: MapPin, href: "/admin/map" },
         { title: "成功案例", icon: Star, href: "/admin/cases" },
         { title: "制造流程", icon: ClipboardList, href: "/admin/steps" },
@@ -189,7 +195,8 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         { title: "AI 中枢", icon: Bot, href: "/admin/settings/ai" },
         ...(isSuperAdmin ? [{ title: "成员权限", icon: Users, href: "/admin/users" }] : []),
         { title: "设计规范", icon: ScrollText, href: "/admin/manifest" },
-        { title: "通用设置", icon: Settings, href: "/admin/settings" },
+        { title: "站点与品牌", icon: Star, href: "/admin/settings/site" },
+        { title: "系统运维", icon: Settings, href: "/admin/settings" },
       ]
     }
   ];
@@ -208,14 +215,24 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         </div>
 
         <Sidebar collapsible="icon" className="border-r border-border/40 shadow-[20px_0_40px_-20px_rgba(0,0,0,0.03)] bg-white/80 backdrop-blur-xl shrink-0 z-40">
-          <SidebarHeader className="h-16 flex items-center px-6 group-data-[collapsible=icon]:px-0 group-data-[collapsible=icon]:justify-center border-b border-border/40">
-            <Link href="/admin" className="flex items-center gap-3 group-data-[collapsible=icon]:gap-0 group">
-              <div className="h-9 w-9 rounded-xl bg-primary flex items-center justify-center shadow-lg shadow-primary/20 group-hover:scale-105 transition-transform">
-                <Image src="/image/Heovose-color.svg" alt="" width={24} height={24} className="h-5 w-5 brightness-0 invert" />
+          <SidebarHeader className="h-16 flex items-center justify-center border-b border-border/40">
+            <Link href="/admin" className="flex items-center justify-center gap-3 w-full px-4 overflow-hidden">
+              <div className="flex-shrink-0 flex items-center justify-center">
+                {siteConfig?.logoStandard ? (
+                  <Image 
+                    src={getAssetUrl(siteConfig.logoStandard)} 
+                    alt="Logo" 
+                    width={80} 
+                    height={32} 
+                    className="h-8 w-auto object-contain max-w-[120px]" 
+                  />
+                ) : (
+                  <Image src="/image/Heovose-color.svg" alt="Heovose" width={80} height={32} className="h-7 w-auto" />
+                )}
               </div>
-              <div className="flex flex-col group-data-[collapsible=icon]:hidden">
-                <span className="text-xs font-headline font-bold text-primary tracking-widest uppercase">ELEVATE</span>
-                <span className="text-[9px] font-bold bg-primary/10 text-primary px-1.5 rounded-sm uppercase tracking-tighter w-fit">ADMIN v1.2</span>
+              <div className="flex flex-col justify-center leading-tight">
+                <span className="text-[13px] font-bold text-slate-900 whitespace-nowrap tracking-wider">后台</span>
+                <span className="text-[13px] font-bold text-slate-900 whitespace-nowrap tracking-wider">系统</span>
               </div>
             </Link>
           </SidebarHeader>
@@ -228,31 +245,48 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                 </SidebarGroupLabel>
                 <SidebarGroupContent>
                   <SidebarMenu className="px-3 group-data-[collapsible=icon]:px-2 space-y-1">
-                    {group.items.map((item) => (
-                      <SidebarMenuItem key={item.title}>
-                        <SidebarMenuButton asChild isActive={pathname === item.href || (item.href !== '/admin' && pathname.startsWith(item.href))}>
-                          <Link href={item.href} className={cn(
-                            "flex items-center gap-3 px-4 py-2.5 transition-all duration-500 rounded-xl relative group/item overflow-hidden",
-                            "group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:px-0 group-data-[collapsible=icon]:gap-0",
-                            (pathname === item.href || (item.href !== '/admin' && pathname.startsWith(item.href)))
-                              ? "!bg-primary !text-white shadow-xl shadow-primary/30 font-bold translate-x-1 group-data-[collapsible=icon]:translate-x-0" 
-                              : "text-slate-600 hover:bg-primary/5 hover:text-primary hover:translate-x-1 group-data-[collapsible=icon]:hover:translate-x-0"
-                          )}>
-                            {/* Left Indicator bar for active state */}
-                            {(pathname === item.href || (item.href !== '/admin' && pathname.startsWith(item.href))) && (
-                              <div className="absolute left-0 top-2 bottom-2 w-1 bg-accent rounded-r-full shadow-[0_0_10px_rgba(252,220,0,0.8)]" />
-                            )}
-                            
-                            <item.icon className={cn("h-4 w-4 shrink-0 transition-all duration-500 group-hover/item:scale-110", (pathname === item.href || (item.href !== '/admin' && pathname.startsWith(item.href))) ? "!text-white drop-shadow-sm" : "text-slate-400 group-hover/item:text-primary")} />
-                            <span className="text-sm font-medium tracking-tight group-data-[collapsible=icon]:hidden">{item.title}</span>
-                            
-                            {(pathname === item.href || (item.href !== '/admin' && pathname.startsWith(item.href))) && (
-                              <div className="absolute right-3 h-1 w-1 rounded-full bg-accent animate-pulse shadow-[0_0_8px_rgba(252,220,0,0.6)] group-data-[collapsible=icon]:hidden" />
-                            )}
-                          </Link>
-                        </SidebarMenuButton>
-                      </SidebarMenuItem>
-                    ))}
+                    {group.items.map((item) => {
+                      // 改进的激活逻辑：
+                      // 1. 如果路径完全一致，必然激活
+                      // 2. 如果是子路径（startsWith），但前提是侧边栏中没有更长的匹配项
+                      const isExact = pathname === item.href;
+                      const isSubPath = item.href !== '/admin' && pathname.startsWith(item.href + '/');
+                      
+                      // 检查是否有其他更长的匹配项
+                      const hasBetterMatch = group.items.some(other => 
+                        other.href !== item.href && 
+                        other.href.startsWith(item.href) && 
+                        pathname.startsWith(other.href)
+                      );
+
+                      const isActive = isExact || (isSubPath && !hasBetterMatch);
+
+                      return (
+                        <SidebarMenuItem key={item.title}>
+                          <SidebarMenuButton asChild isActive={isActive}>
+                            <Link href={item.href} className={cn(
+                              "flex items-center gap-3 px-4 py-2.5 transition-all duration-500 rounded-xl relative group/item overflow-hidden",
+                              "group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:px-0 group-data-[collapsible=icon]:gap-0",
+                              isActive
+                                ? "!bg-primary !text-white shadow-xl shadow-primary/30 font-bold translate-x-1 group-data-[collapsible=icon]:translate-x-0" 
+                                : "text-slate-600 hover:bg-primary/5 hover:text-primary hover:translate-x-1 group-data-[collapsible=icon]:hover:translate-x-0"
+                            )}>
+                              {/* Left Indicator bar for active state */}
+                              {isActive && (
+                                <div className="absolute left-0 top-2 bottom-2 w-1 bg-accent rounded-r-full shadow-[0_0_10px_rgba(252,220,0,0.8)]" />
+                              )}
+                              
+                              <item.icon className={cn("h-4 w-4 shrink-0 transition-all duration-500 group-hover/item:scale-110", isActive ? "!text-white drop-shadow-sm" : "text-slate-400 group-hover/item:text-primary")} />
+                              <span className="text-sm font-medium tracking-tight group-data-[collapsible=icon]:hidden">{item.title}</span>
+                              
+                              {isActive && (
+                                <div className="absolute right-3 h-1 w-1 rounded-full bg-accent animate-pulse shadow-[0_0_8px_rgba(252,220,0,0.6)] group-data-[collapsible=icon]:hidden" />
+                              )}
+                            </Link>
+                          </SidebarMenuButton>
+                        </SidebarMenuItem>
+                      );
+                    })}
                   </SidebarMenu>
                 </SidebarGroupContent>
               </SidebarGroup>
@@ -339,7 +373,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                   <DropdownMenuItem asChild className="rounded-xl px-4 py-3 cursor-pointer focus:bg-primary/5 focus:text-primary transition-colors">
                     <Link href="/admin/settings" className="flex items-center gap-4">
                       <Settings className="h-4 w-4" />
-                      <span className="text-xs font-bold uppercase tracking-widest">系统设置</span>
+                      <span className="text-xs font-bold uppercase tracking-widest">系统运维</span>
                     </Link>
                   </DropdownMenuItem>
                   <DropdownMenuSeparator className="mx-2 bg-border/40" />
@@ -361,6 +395,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           </div>
         </main>
       </div>
+      <WelcomeBackBanner />
     </SidebarProvider>
   );
 }

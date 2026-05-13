@@ -63,12 +63,12 @@ export function useTranslations(locale: Locale) {
 
       if (hardcoded !== undefined) return hardcoded;
       
-      // 3. Loading Guard: If we are still loading remote data, don't show the key yet
-      if (isTranslationsLoading) return undefined;
-
-      // Final safeguard: Avoid showing ugly system IDs
+      // 3. Loading Guard: If we are still loading remote data, return empty to avoid flicker or crashes
+      if (isTranslationsLoading) return '';
+      
+      // Final safeguard: Avoid showing ugly system IDs in the UI
       const isSystemId = /^[A-Z0-9_]{5,40}$/i.test(key) || /^(psl|psg|psv|prod|cat|hero|slide|case|step)_/i.test(key);
-      if (isSystemId) return undefined;
+      if (isSystemId) return '';
 
       return key;
     };

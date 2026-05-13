@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useSearchParams } from 'next/navigation';
+import { useSearchParams, usePathname } from 'next/navigation';
 import { toast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
 import { X } from 'lucide-react';
@@ -17,10 +17,13 @@ import { useLocalDoc } from '@/hooks/use-local-doc';
  */
 export function LanguageIntelligence() {
   const searchParams = useSearchParams();
+  const pathname = usePathname();
   const { data: langSettings } = useLocalDoc<any>('settings', 'languages');
   const [hasPrompted, setHasPrompted] = useState(false);
 
   useEffect(() => {
+    // DISABLE for Admin panel - Backend should remain in a single language
+    if (pathname?.startsWith('/admin')) return;
     // Wait for settings to load and ensure we only prompt once per session/mount
     if (!langSettings || hasPrompted) return;
 
