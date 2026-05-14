@@ -8,6 +8,8 @@
 
 import { genkit, z } from 'genkit';
 import { googleAI } from '@genkit-ai/google-genai';
+import { openAI } from 'genkitx-openai';
+import db from '@/lib/db';
 
 const TranslateInputSchema = z.object({
   text: z.string().describe('待翻译的源文本或 HTML。'),
@@ -15,6 +17,8 @@ const TranslateInputSchema = z.object({
   targetLangs: z.array(z.string()),
   model: z.string().optional().describe('覆盖默认模型设置。'),
   apiKey: z.string().optional().describe('手动指定的 API 密钥。'),
+  provider: z.enum(['google', 'openai', 'local']).optional(),
+  baseUrl: z.string().optional().describe('用于本地模型的自定义 Base URL。'),
 });
 
 const TranslateOutputSchema = z.record(z.string(), z.string()).describe('语种代码到译文的映射。');
@@ -26,57 +30,115 @@ export type TranslateOutput = z.infer<typeof TranslateOutputSchema>;
  * 翻译逻辑核心
  */
 export async function translateContent(input: TranslateInput): Promise<TranslateOutput> {
-  // 1. 动态实例化 AI 以支持手动 Key
-  const activeAi = genkit({
-    plugins: [
-      googleAI(input.apiKey ? { apiKey: input.apiKey } : undefined)
-    ],
-  });
+  const aiSettingsDoc = await db.setting.findUnique({ where: { id: 'ai' } });
+  if (!aiSettingsDoc) throw new Error('AI 配置未初始化');
+  
+  const config = JSON.parse(aiSettingsDoc.value as string);
+  const systemPrompt = config.systemInstruction || "You are a professional industrial hardware manufacturing translator.";
+  
+  // 1. 获取所有可用的服务器端节点 (排除禁用和浏览器直连模式)
+  const activeProviders = (config.providers || [])
+    .filter((p: any) => p.isActive && p.type !== 'browser-local')
+    .sort((a: any, b: any) => (a.isPrimary ? -1 : 1));
 
-  // 2. 模型标识符标准化 (Gemini 2.5 规范)
-  let rawModel = input.model || 'googleai/gemini-2.5-flash';
-  if (rawModel.includes('/')) {
-    rawModel = rawModel.split('/').pop() || rawModel;
+  if (activeProviders.length === 0) {
+    throw new Error('没有可用的服务器端 AI 节点，请检查后台配置。');
   }
-  const finalModel = `googleai/${rawModel.toLowerCase()}`;
 
-  try {
-    // 3. 执行翻译
-    const { output } = await activeAi.generate({
-      model: finalModel as any,
-      output: {
-        schema: TranslateOutputSchema
-      },
-      prompt: `You are a professional industrial hardware manufacturing translator. 
-      Translate the provided text from ${input.sourceLang || 'zh'} to these languages: ${input.targetLangs.join(', ')}.
+  let lastError: any = null;
+
+  // 2. 迭代尝试每个可用节点 (降级逻辑)
+  for (const providerInfo of activeProviders) {
+    try {
+      console.log(`☁️ [TranslateEngine] 正在尝试节点: ${providerInfo.name} (${providerInfo.model})`);
       
-      CRITICAL INSTRUCTIONS:
-      1. For HTML content: YOU MUST PRESERVE ALL HTML TAGS (especially <img>, <table>, <div>, <span>, <br>). 
-      2. DO NOT strip or replace any image tags. If an <img> tag exists in the source, it MUST exist in the translated output with identical attributes.
-      3. NEVER modify attributes like "src", "class", or "style".
-      4. Ensure the output is a valid JSON object where keys are language codes.
-      5. If the content contains technical specs, maintain professional terminology.
-      6. PRESERVE FORMATTING: YOU MUST PRESERVE ALL NEWLINE CHARACTERS (\n) and their exact positions. DO NOT combine multiple lines into one.
-      7. FORMAT: Return ONLY the structured JSON output. 
-      8. JSON SAFETY: Escape all special characters and newlines (\\n) within string values to ensure valid JSON parsing. 
-      9. NO MARKDOWN: Do not include backticks (\`\`\`) or "json" labels in your output.
+      const plugins = [];
+      if (providerInfo.type === 'google') {
+        plugins.push(googleAI({ apiKey: providerInfo.apiKey }));
+      } else {
+        plugins.push(openAI({ 
+          apiKey: providerInfo.apiKey || 'no-key',
+          baseURL: providerInfo.baseUrl,
+          models: [{ 
+            name: providerInfo.model, 
+            info: { label: providerInfo.model, supports: { systemRole: true } },
+            configSchema: z.object({
+              temperature: z.number().optional(),
+              topP: z.number().optional(),
+              maxTokens: z.number().optional(),
+              stop: z.array(z.string()).optional(),
+            })
+          }]
+        }));
+      }
+
+      const activeAi = genkit({ plugins });
+      const finalModel = providerInfo.type === 'google' 
+        ? `googleai/${providerInfo.model.split('/').pop() || providerInfo.model}`
+        : `openai/${providerInfo.model}`;
+
+      const isLocal = providerInfo.type !== 'google' && providerInfo.type !== 'openai';
       
-      Source Content: ${input.text}`
-    });
-    
-    if (!output) throw new Error('AI 智译未返回有效结果。请检查模型配额或内容长度。');
-    return output;
-  } catch (error: any) {
-    const msg = error.message || '';
-    if (msg.includes('429')) {
-      throw new Error('API 配额已耗尽（免费层级限制），请等候一分钟后再试。');
+      const response = await activeAi.generate({
+        model: finalModel as any,
+        config: {
+          temperature: 0.1,
+          maxOutputTokens: 4096,
+        },
+        messages: isLocal ? [
+          { role: 'user', content: [{ text: 'Task: Translate to JSON. Example: "Apple" -> {"en": "Apple"}' }] },
+          { role: 'model', content: [{ text: '{"en": "Apple"}' }] },
+          { role: 'user', content: [{ text: `Translate "${input.text}" to ${JSON.stringify(input.targetLangs)}` }] }
+        ] : [
+          { role: 'user', content: [{ text: `${systemPrompt}\n\nTranslate "${input.text}" to ${input.targetLangs.join(', ')}. Return ONLY a JSON object.` }] }
+        ]
+      });
+
+      // 获取原始文本
+      const fullText = response.text || (response.message?.content?.[0] as any)?.text || (response.custom as any)?.choices?.[0]?.message?.content || '';
+      
+      if (!fullText) throw new Error('AI Node returned no content');
+
+      // 鲁棒性 JSON 提取逻辑 (针对 Qwen, Hunyuan 等健谈模型)
+      try {
+        const text = fullText.trim();
+        
+        // 1. 尝试直接解析
+        if (text.startsWith('{') && text.endsWith('}')) {
+          try { return JSON.parse(text); } catch(e) {}
+        }
+
+        // 2. 尝试清洗 Markdown 标签后解析
+        const cleaned = text.replace(/```json\n?|\n?```/g, '').trim();
+        if (cleaned.startsWith('{') && cleaned.endsWith('}')) {
+          try { return JSON.parse(cleaned); } catch(e) {}
+        }
+
+        // 3. 正则提取：寻找内容中最长的一个 JSON 块
+        const matches = fullText.match(/\{[\s\S]*\}/g);
+        if (matches) {
+          // 如果有多个匹配，取最长的一个（通常是我们要的完整 JSON）
+          const longest = matches.reduce((a: string, b: string) => a.length > b.length ? a : b);
+          try { return JSON.parse(longest); } catch(e) {}
+        }
+        
+        throw new Error('No valid JSON found in response');
+      } catch (e) {
+        console.error('Final Extraction Failed. Response:', fullText);
+        throw new Error('AI 返回的内容包含过多无关干扰，无法提取有效数据。');
+      }
+
+    } catch (error: any) {
+      console.warn(`⚠️ [TranslateEngine] 节点 ${providerInfo.name} 失败:`, error.message);
+      lastError = error;
+      // 继续循环尝试下一个节点
     }
-    if (msg.includes('404')) {
-      throw new Error(`模型 ${finalModel} 在当前区域或 Key 下不可用，请前往设置切换至 Gemini 2.5 系列。`);
-    }
-    if (msg.includes('503')) {
-      throw new Error('AI 服务当前负载过高（503），建议精简内容或稍后重试。');
-    }
-    throw error;
   }
+
+  // 3. 全部失败后的错误处理
+  const msg = lastError?.message || '';
+  if (msg.includes('429')) throw new Error('所有可用 AI 节点的配额均已耗尽，请稍后再试。');
+  if (msg.includes('503')) throw new Error('AI 服务集群当前负载过高，请稍后重试。');
+  
+  throw new Error(`智译失败：已尝试所有可用节点，最后一次错误为: ${msg}`);
 }

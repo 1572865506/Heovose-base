@@ -348,10 +348,7 @@ export function Navbar({ locale, setLocale, headerTheme = 'dark', themeLine }: N
                 size="sm" 
                 onClick={() => openInquiry()}
                 className={cn(
-                  "rounded-full px-6 shadow-lg transition-all duration-500 text-sm font-medium",
-                  themeLine === 'project' 
-                    ? "bg-[#F97316] hover:bg-[#F97316]/90" 
-                    : "bg-primary hover:bg-primary/90"
+                  "rounded-full px-6 shadow-lg transition-all duration-500 text-sm font-medium bg-primary hover:bg-primary/90"
                 )}
               >
                 <span className="flex items-center gap-2">

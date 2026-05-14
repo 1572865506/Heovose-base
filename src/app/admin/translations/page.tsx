@@ -62,7 +62,7 @@ import {
 } from "@/components/ui/tooltip";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ShinyButton } from '@/components/ui/shiny-button';
-import { translateContent } from '@/ai/flows/translate-flow';
+import { smartTranslate } from '@/lib/translate-client';
 import { translations as localLibrary } from '@/lib/translations';
 
 // AI 极光渐变定义组件 - 增强色距与饱和度
@@ -362,7 +362,7 @@ export default function TranslationsPage() {
       console.log('Source Lang:', sc);
       console.log('Target Langs:', ml);
 
-      const res = await translateContent({ text: st, sourceLang: sc, targetLangs: ml, model: aiConfig.model, apiKey: aiConfig.apiKey });
+      const res = await smartTranslate({ text: st, sourceLang: sc, targetLangs: ml });
       
       console.log('AI Response:', res);
 

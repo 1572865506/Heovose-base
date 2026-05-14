@@ -8,7 +8,7 @@ import { useLocalCollection } from '@/hooks/use-local-collection';
 import { Loader2, TableProperties, Settings, ImageIcon, Library } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from '@/hooks/use-toast';
-import { translateContent } from '@/ai/flows/translate-flow';
+import { smartTranslate } from '@/lib/translate-client';
 import { MediaLibraryDialog } from '@/components/admin/media-library-dialog';
 
 // 导入拆分后的子组件
@@ -69,8 +69,10 @@ function robustJsonParse(rawStr: string) {
   try {
     return JSON.parse(jsonStr);
   } catch (e) {
+    // 如果不是 JSON，直接返回原字符串 (鲁棒性增强)
+    if (!jsonStr.startsWith('{') && !jsonStr.startsWith('[')) return jsonStr;
     const sanitized = jsonStr.replace(/[\u0000-\u001F]+/g, m => m === '\n' ? '\\n' : m === '\r' ? '\\r' : m === '\t' ? '\\t' : '');
-    return JSON.parse(sanitized);
+    try { return JSON.parse(sanitized); } catch(i) { return jsonStr; }
   }
 }
 
@@ -246,11 +248,11 @@ function ProductEditorContent() {
     if (!aiConfig?.isEnabled) return;
     setIsAiProcessing(true);
     try {
-      const [n, d] = await Promise.all([
-        formData.nameZh ? translateContent({ text: formData.nameZh, targetLangs: ['en'], apiKey: aiConfig.apiKey }) : null,
-        formData.descZh ? translateContent({ text: formData.descZh, targetLangs: ['en'], apiKey: aiConfig.apiKey }) : null
+      const [nameRes, descRes] = await Promise.all([
+        formData.nameZh ? smartTranslate({ text: formData.nameZh, targetLangs: ['en'] }) : null,
+        formData.descZh ? smartTranslate({ text: formData.descZh, targetLangs: ['en'] }) : null
       ]);
-      setFormData(prev => ({ ...prev, nameEn: n?.en || prev.nameEn, descEn: d?.en || prev.descEn }));
+      setFormData(prev => ({ ...prev, nameEn: nameRes?.en || prev.nameEn, descEn: descRes?.en || prev.descEn }));
     } finally { setIsAiProcessing(false); }
   };
 
@@ -258,9 +260,8 @@ function ProductEditorContent() {
     if (!aiConfig?.isEnabled || !formData.localizedDetails.zh) return;
     setIsAiProcessing(true);
     try {
-      const res = await translateContent({
-        text: formData.localizedDetails.zh, sourceLang: 'zh', targetLangs: [targetDetailsLang],
-        model: aiConfig.model, apiKey: aiConfig.apiKey
+      const res = await smartTranslate({
+        text: formData.localizedDetails.zh, sourceLang: 'zh', targetLangs: [targetDetailsLang]
       });
       if (res[targetDetailsLang]) handleUpdateField('localizedDetails', { ...formData.localizedDetails, [targetDetailsLang]: res[targetDetailsLang] });
     } finally { setIsAiProcessing(false); }
@@ -272,13 +273,21 @@ function ProductEditorContent() {
     const key = `i_${gIdx}_${iIdx}_label`;
     setProcessingItems(prev => new Set(prev).add(key));
     try {
-      const res = await translateContent({ text: `Translate hardware spec (JSON): {"label": "${item.labelZh}", "value": "${item.valueZh}"}`, targetLangs: ['en'], apiKey: aiConfig.apiKey });
+      const res = await smartTranslate({ 
+        text: `Label: ${item.labelZh}\nValue: ${item.valueZh}`, 
+        targetLangs: ['en'] 
+      });
       if (res?.en) {
-        const p = robustJsonParse(res.en);
+        const lines = res.en.split('\n');
+        let label = item.labelZh, value = item.valueZh;
+        lines.forEach((l: string) => {
+          if (l.toLowerCase().includes('label:')) label = l.split(':')[1]?.trim() || label;
+          if (l.toLowerCase().includes('value:')) value = l.split(':')[1]?.trim() || value;
+        });
+        
         const newG = [...formData.specGroups];
-        newG[gIdx].items[iIdx].labelEn = p.label;
-        newG[gIdx].items[iIdx].valueEn = p.value;
-        handleUpdateField('specGroups', newG);
+        newG[gIdx].items[iIdx] = { ...item, labelEn: label, valueEn: value };
+        setFormData(prev => ({ ...prev, specGroups: newG }));
       }
     } finally { setProcessingItems(prev => { const n = new Set(prev); n.delete(key); return n; }); }
   };
@@ -296,7 +305,10 @@ function ProductEditorContent() {
         });
       });
       if (Object.keys(taskMap).length === 0) return;
-      const res = await translateContent({ text: `Translate specs (JSON): ${JSON.stringify(taskMap)}`, targetLangs: ['en'], apiKey: aiConfig.apiKey });
+      const res = await smartTranslate({ 
+        text: `Translate specs (JSON): ${JSON.stringify(taskMap)}`, 
+        targetLangs: ['en'] 
+      });
       if (res?.en) {
         const results = robustJsonParse(res.en);
         const next = [...formData.specGroups];
@@ -350,7 +362,7 @@ function ProductEditorContent() {
               onMoveGroup={(idx, dir) => { const next = [...formData.specGroups]; const target = dir === 'up' ? idx - 1 : idx + 1; if (target >= 0 && target < next.length) { [next[idx], next[target]] = [next[target], next[idx]]; handleUpdateField('specGroups', next); } }}
               onMoveItem={(gIdx, iIdx, dir) => { const next = [...formData.specGroups]; const items = [...next[gIdx].items]; const target = dir === 'up' ? iIdx - 1 : iIdx + 1; if (target >= 0 && target < items.length) { [items[iIdx], items[target]] = [items[target], items[iIdx]]; next[gIdx].items = items; handleUpdateField('specGroups', next); } }}
               onDeleteGroup={(idx) => { const next = [...formData.specGroups]; next.splice(idx, 1); handleUpdateField('specGroups', next); }}
-              specTemplates={specTemplates}
+              specTemplates={specTemplates || []}
               onApplyTemplate={(tpl, replace) => {
                 const newGroups = tpl.specGroups.map((g: any, gIdx: number) => ({
                   uid: `tg_${Date.now()}_${gIdx}`,

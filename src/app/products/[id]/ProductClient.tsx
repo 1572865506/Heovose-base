@@ -178,7 +178,15 @@ export default function ProductClient({ product, initialLocale }: { product: any
               </div>
 
               <div className="flex flex-col sm:flex-row gap-4 pt-6">
-                 <Button onClick={() => openInquiry()} className="h-16 px-10 rounded-2xl text-base font-bold flex-1 shadow-xl">{tr('product_contact_now')} <ArrowRight className="ml-2 h-5 w-5" /></Button>
+                  <Button 
+                    onClick={() => openInquiry({ 
+                      productId: product.id, 
+                      productName: tr(product.nameTextId) 
+                    })} 
+                    className="h-16 px-10 rounded-2xl text-base font-bold flex-1 shadow-xl"
+                  >
+                    {tr('product_contact_now')} <ArrowRight className="ml-2 h-5 w-5" />
+                  </Button>
                  <Button variant="outline" className="h-16 px-8 rounded-2xl"><Download className="mr-2 h-5 w-5" />{tr('product_spec_sheet')}</Button>
               </div>
 

@@ -34,7 +34,8 @@ import {
   Shield,
   Globe,
   Lock,
-  ChevronLeft
+  ChevronLeft,
+  Download
 } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
@@ -152,7 +153,6 @@ export default function InquiriesPage() {
       
       await mutate();
       
-      // 同步更新当前选中的询盘详情状态
       if (selectedInquiry && selectedInquiry.id === id) {
         setSelectedInquiry({ ...selectedInquiry, status });
       }
@@ -178,6 +178,40 @@ export default function InquiriesPage() {
     }
   };
 
+  const handleExport = () => {
+    if (!filteredInquiries.length) {
+      toast({ variant: "destructive", title: "没有可导出的数据" });
+      return;
+    }
+
+    const headers = ['姓名', '电子邮箱', '公司', '电话', '关联产品ID', '咨询内容', '状态', '提交时间'];
+    const rows = filteredInquiries.map((inq: any) => [
+      inq.name,
+      inq.email,
+      inq.company || '个人客户',
+      inq.phone || '',
+      inq.productId || '无',
+      inq.message.replace(/\n/g, ' '),
+      inq.status === 'pending' ? '待处理' : '已处理',
+      format(new Date(inq.createdAt), 'yyyy-MM-dd HH:mm:ss')
+    ]);
+
+    const csvContent = "\uFEFF" + [
+      headers.join(','),
+      ...rows.map((row: any) => row.map((cell: any) => `"${String(cell).replace(/"/g, '""')}"`).join(','))
+    ].join('\n');
+
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.setAttribute('download', `heovose-inquiries-${new Date().toISOString().split('T')[0]}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    toast({ title: "数据导出成功", description: "Excel 已就绪" });
+  };
+
   return (
     <div className="space-y-8 animate-in fade-in duration-700">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
@@ -199,6 +233,13 @@ export default function InquiriesPage() {
               className="pl-11 h-12 rounded-2xl bg-white border-slate-200 shadow-sm focus-visible:ring-primary/20 transition-all"
             />
           </div>
+          <Button 
+            variant="outline" 
+            onClick={handleExport}
+            className="h-12 rounded-2xl gap-2 font-bold px-6 border-slate-200 hover:bg-slate-50 transition-all text-slate-600"
+          >
+            <Download className="h-4 w-4" /> 导出 Excel
+          </Button>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="outline" className={cn(

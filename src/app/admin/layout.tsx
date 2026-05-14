@@ -77,7 +77,69 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   const { data: siteConfig } = useLocalDoc<any>('settings', 'site');
 
   const isDeterminingAccess = status === 'loading' || (session && isAdminDataLoading);
-  const isUnauthorized = !isDeterminingAccess && session && !adminData && pathname !== '/admin/login';
+
+  const isSuperAdmin = adminData?.role === 'superadmin';
+  const userPermissions = Array.isArray(adminData?.permissions) ? adminData.permissions : [];
+
+  const menuGroups = [
+    {
+      label: "Overview",
+      items: [
+        { title: "控制面板", icon: LayoutDashboard, href: "/admin" },
+        { title: "数据洞察", icon: BarChart3, href: "/admin/analytics", permission: 'analytics_view' },
+      ]
+    },
+    {
+      label: "Products",
+      items: [
+        { title: "产品管理", icon: Package, href: "/admin/products", permission: 'products_view' },
+        { title: "分类管理", icon: Layers, href: "/admin/categories", permission: 'categories_manage' },
+        { title: "资源管理", icon: FolderOpen, href: "/admin/gallery", permission: 'gallery_manage' },
+      ]
+    },
+    {
+      label: "Content",
+      items: [
+        { title: "首页配置", icon: Home, href: "/admin/home", permission: 'home_config' },
+        { title: "导航设置", icon: Compass, href: "/admin/navigation", permission: 'nav_manage' },
+        { title: "制造流程", icon: ClipboardList, href: "/admin/steps", permission: 'steps_manage' },
+        { title: "成功案例", icon: Star, href: "/admin/cases", permission: 'cases_manage' },
+        { title: "全球网点", icon: MapPin, href: "/admin/map", permission: 'map_manage' },
+        { title: "询盘管理", icon: MessageSquare, href: "/admin/inquiries", permission: 'inquiries_view' },
+      ]
+    },
+    {
+      label: "System",
+      items: [
+        { title: "多语言智译", icon: Globe, href: "/admin/translations", permission: 'translations_manage' },
+        { title: "AI 中枢", icon: Bot, href: "/admin/settings/ai", permission: 'ai_config' },
+        ...(isSuperAdmin ? [{ title: "成员权限", icon: Users, href: "/admin/users" }] : []),
+        { title: "设计规范", icon: ScrollText, href: "/admin/manifest" },
+        { title: "站点与品牌", icon: Star, href: "/admin/settings/site", permission: 'settings_manage' },
+        { title: "系统运维", icon: Settings, href: "/admin/settings", permission: 'settings_manage' },
+      ]
+    }
+  ];
+
+  // Filter groups and items based on permissions
+  const filteredMenuGroups = menuGroups.map(group => ({
+    ...group,
+    items: group.items.filter(item => {
+      if (isSuperAdmin) return true;
+      if (!item.permission) return true;
+      return userPermissions.includes(item.permission);
+    })
+  })).filter(group => group.items.length > 0);
+
+  // Check if current page is allowed
+  const allItems = menuGroups.flatMap(g => g.items);
+  const currentItem = allItems.find(i => 
+    pathname === i.href || (i.href !== '/admin' && pathname.startsWith(i.href + '/'))
+  );
+  
+  const hasPermission = !currentItem || !currentItem.permission || isSuperAdmin || userPermissions.includes(currentItem.permission);
+  
+  const isUnauthorized = (!isDeterminingAccess && session && !adminData && pathname !== '/admin/login') || (session && adminData && !hasPermission);
 
   useEffect(() => {
     if (status !== 'loading' && !session && pathname !== '/admin/login') {
@@ -117,7 +179,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           <AlertDescription className="space-y-8">
             <div className="space-y-3">
               <p className="text-muted-foreground text-sm leading-relaxed">
-                您的账号 <span className="font-bold text-primary">{user?.email}</span> 已通过 SSO 验证，但在管理员白名单中未找到对应记录。
+                您的账号 <span className="font-bold text-primary">{user?.email}</span> 已通过 SSO 验证，但在管理员白名单中未找到对应记录或权限不足。
               </p>
             </div>
 
@@ -159,48 +221,6 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   if (pathname === '/admin/login') return <>{children}</>;
   if (!session || !adminData) return null;
 
-  const isSuperAdmin = adminData.role === 'superadmin';
-
-  const menuGroups = [
-    {
-      label: "Overview",
-      items: [
-        { title: "控制面板", icon: LayoutDashboard, href: "/admin" },
-        { title: "数据洞察", icon: BarChart3, href: "/admin/analytics" },
-      ]
-    },
-    {
-      label: "Products",
-      items: [
-        { title: "产品管理", icon: Package, href: "/admin/products" },
-        { title: "分类管理", icon: Layers, href: "/admin/categories" },
-        { title: "资源管理", icon: FolderOpen, href: "/admin/gallery" },
-      ]
-    },
-    {
-      label: "Content",
-      items: [
-        { title: "首页配置", icon: Home, href: "/admin/home" },
-        { title: "询盘管理", icon: MessageSquare, href: "/admin/inquiries" },
-        { title: "全球地图", icon: MapPin, href: "/admin/map" },
-        { title: "成功案例", icon: Star, href: "/admin/cases" },
-        { title: "制造流程", icon: ClipboardList, href: "/admin/steps" },
-        { title: "导航设置", icon: Compass, href: "/admin/navigation" },
-      ]
-    },
-    {
-      label: "System",
-      items: [
-        { title: "多语言智译", icon: Globe, href: "/admin/translations" },
-        { title: "AI 中枢", icon: Bot, href: "/admin/settings/ai" },
-        ...(isSuperAdmin ? [{ title: "成员权限", icon: Users, href: "/admin/users" }] : []),
-        { title: "设计规范", icon: ScrollText, href: "/admin/manifest" },
-        { title: "站点与品牌", icon: Star, href: "/admin/settings/site" },
-        { title: "系统运维", icon: Settings, href: "/admin/settings" },
-      ]
-    }
-  ];
-
   const activeModel = aiConfig?.model ? getModelQuota(aiConfig.model) : null;
   const aiStatus = aiConfig?.lastDiagnosis?.status;
 
@@ -238,7 +258,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           </SidebarHeader>
 
           <SidebarContent className="py-6 overflow-y-auto scrollbar-minimal">
-            {menuGroups.map((group) => (
+            {filteredMenuGroups.map((group) => (
               <SidebarGroup key={group.label} className="mb-4 group-data-[collapsible=icon]:px-0">
                 <SidebarGroupLabel className="px-6 text-xs font-bold uppercase tracking-[0.3em] text-muted-foreground/40 mb-2 group-data-[collapsible=icon]:hidden">
                   {group.label}
@@ -246,19 +266,13 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                 <SidebarGroupContent>
                   <SidebarMenu className="px-3 group-data-[collapsible=icon]:px-2 space-y-1">
                     {group.items.map((item) => {
-                      // 改进的激活逻辑：
-                      // 1. 如果路径完全一致，必然激活
-                      // 2. 如果是子路径（startsWith），但前提是侧边栏中没有更长的匹配项
                       const isExact = pathname === item.href;
                       const isSubPath = item.href !== '/admin' && pathname.startsWith(item.href + '/');
-                      
-                      // 检查是否有其他更长的匹配项
                       const hasBetterMatch = group.items.some(other => 
                         other.href !== item.href && 
                         other.href.startsWith(item.href) && 
                         pathname.startsWith(other.href)
                       );
-
                       const isActive = isExact || (isSubPath && !hasBetterMatch);
 
                       return (
@@ -271,14 +285,11 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                                 ? "!bg-primary !text-white shadow-xl shadow-primary/30 font-bold translate-x-1 group-data-[collapsible=icon]:translate-x-0" 
                                 : "text-slate-600 hover:bg-primary/5 hover:text-primary hover:translate-x-1 group-data-[collapsible=icon]:hover:translate-x-0"
                             )}>
-                              {/* Left Indicator bar for active state */}
                               {isActive && (
                                 <div className="absolute left-0 top-2 bottom-2 w-1 bg-accent rounded-r-full shadow-[0_0_10px_rgba(252,220,0,0.8)]" />
                               )}
-                              
                               <item.icon className={cn("h-4 w-4 shrink-0 transition-all duration-500 group-hover/item:scale-110", isActive ? "!text-white drop-shadow-sm" : "text-slate-400 group-hover/item:text-primary")} />
                               <span className="text-sm font-medium tracking-tight group-data-[collapsible=icon]:hidden">{item.title}</span>
-                              
                               {isActive && (
                                 <div className="absolute right-3 h-1 w-1 rounded-full bg-accent animate-pulse shadow-[0_0_8px_rgba(252,220,0,0.6)] group-data-[collapsible=icon]:hidden" />
                               )}
@@ -307,7 +318,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
               <SidebarTrigger className="h-10 w-10 rounded-xl hover:bg-primary/5 text-primary transition-colors" />
               <div className="h-6 w-px bg-border/60" />
               <h1 className="font-headline font-bold text-sm text-primary uppercase tracking-[0.25em]">
-                {menuGroups.flatMap(g => g.items).find(i => i.href === pathname)?.title || 'WORKSPACE'}
+                {allItems.find(i => pathname === i.href || (i.href !== '/admin' && pathname.startsWith(i.href + '/')))?.title || 'WORKSPACE'}
               </h1>
             </div>
 

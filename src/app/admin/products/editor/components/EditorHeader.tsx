@@ -86,15 +86,52 @@ const EditorHeader = memo(({
                 <SelectValue placeholder="选择所属分类..." />
               </SelectTrigger>
               <SelectContent className="rounded-2xl border-slate-200 shadow-2xl">
-                {categories?.map(c => {
-                  const trans = translations?.find(t => t.id === c.nameTextId);
-                  const name = trans ? (trans.zh || trans.en || c.id) : c.id;
-                  return (
-                    <SelectItem key={c.id} value={c.id} className="text-[10px] font-bold uppercase py-3">
-                      {name}
-                    </SelectItem>
-                  );
-                })}
+                {(() => {
+                  const buildTree = (parentId: string | null, depth = 0): React.ReactNode[] => {
+                    const children = categories?.filter(c => c.parentId === parentId) || [];
+                    return children.flatMap(c => {
+                      const trans = translations?.find(t => t.id === c.nameTextId);
+                      const name = trans ? (trans.zh || trans.content?.zh || trans.en || trans.content?.en || c.id) : c.id;
+                      
+                      const item = (
+                        <SelectItem 
+                          key={c.id} 
+                          value={c.id} 
+                          className={cn(
+                            "text-[10px] font-bold uppercase py-3",
+                            depth > 0 && "pl-8 opacity-70",
+                            depth === 0 && "bg-slate-50 font-black"
+                          )}
+                        >
+                          {depth > 0 ? `— ${name}` : name}
+                        </SelectItem>
+                      );
+                      
+                      return [item, ...buildTree(c.id, depth + 1)];
+                    });
+                  };
+
+                  // Start from the two main root IDs: WHOLESALE and PROJECT
+                  const roots = categories?.filter(c => !c.parentId) || [];
+                  // If no explicitly null parentIds, try to find WHOLESALE and PROJECT manually
+                  if (roots.length === 0 && categories?.length > 0) {
+                     const mainRoots = ['WHOLESALE', 'PROJECT'];
+                     return categories
+                       .filter(c => mainRoots.includes(c.id))
+                       .flatMap(c => {
+                          const trans = translations?.find(t => t.id === c.nameTextId);
+                          const name = trans ? (trans.zh || trans.content?.zh || trans.en || trans.content?.en || c.id) : c.id;
+                          return [
+                            <SelectItem key={c.id} value={c.id} className="text-[10px] font-black uppercase py-3 bg-slate-50">
+                              {name}
+                            </SelectItem>,
+                            ...buildTree(c.id, 1)
+                          ];
+                       });
+                  }
+                  
+                  return buildTree(null);
+                })()}
               </SelectContent>
             </Select>
           </div>

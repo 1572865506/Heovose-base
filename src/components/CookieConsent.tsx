@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { usePathname } from 'next/navigation';
 import { useLanguage } from '@/hooks/use-language';
 import { useTranslations } from '@/hooks/use-translations';
 import { Button } from '@/components/ui/button';
@@ -9,10 +10,14 @@ import { motion, AnimatePresence } from 'framer-motion';
 
 export default function CookieConsent() {
   const [isVisible, setIsVisible] = useState(false);
+  const pathname = usePathname();
   const { locale, isReady } = useLanguage();
   const { t } = useTranslations(locale);
 
   useEffect(() => {
+    // 禁用后台路由弹出
+    if (pathname?.startsWith('/admin')) return;
+
     const consent = localStorage.getItem('cookie-consent');
     if (!consent) {
       const timer = setTimeout(() => {
@@ -20,14 +25,14 @@ export default function CookieConsent() {
       }, 2000); // Delay for better UX
       return () => clearTimeout(timer);
     }
-  }, []);
+  }, [pathname]);
 
   const handleAccept = () => {
     localStorage.setItem('cookie-consent', 'accepted');
     setIsVisible(false);
   };
 
-  if (!isReady) return null;
+  if (!isReady || pathname?.startsWith('/admin')) return null;
 
   return (
     <AnimatePresence>
