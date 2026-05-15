@@ -54,7 +54,7 @@ import { useToast } from '@/hooks/use-toast';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
 import { getAssetUrl } from '@/lib/image-utils';
-import { translateContent } from '@/ai/flows/translate-flow';
+import { smartTranslate } from '@/lib/translate-client';
 import { ShinyButton } from '@/components/ui/shiny-button';
 import { MediaLibraryDialog } from '@/components/admin/media-library-dialog';
 
@@ -112,19 +112,27 @@ export default function CategoriesPage() {
       return;
     }
 
+    const nameNeeds = formData.nameZh && !formData.nameEn;
+    const descNeeds = formData.descZh && !formData.descEn;
+
+    if (!nameNeeds && !descNeeds) {
+      toast({ title: "无需翻译", description: "英文内容已存在" });
+      return;
+    }
+
     setIsTranslating(true);
     try {
-      const results = await Promise.all([
-        formData.nameZh ? translateContent({ text: formData.nameZh, targetLangs: ['en'] }) : null,
-        formData.descZh ? translateContent({ text: formData.descZh, targetLangs: ['en'] }) : null
+      const [nameRes, descRes] = await Promise.all([
+        nameNeeds ? smartTranslate({ text: formData.nameZh, targetLangs: ['en'], taskType: 'text' }) : null,
+        descNeeds ? smartTranslate({ text: formData.descZh, targetLangs: ['en'], taskType: 'text' }) : null
       ]);
 
       setFormData(prev => ({
         ...prev,
-        nameEn: results[0]?.en || prev.nameEn,
-        descEn: results[1]?.en || prev.descEn
+        nameEn: nameRes?.en || prev.nameEn,
+        descEn: descRes?.en || prev.descEn
       }));
-      toast({ title: "全项智译成功" });
+      toast({ title: "智译匹配完成" });
     } catch (error: any) {
       toast({ variant: "destructive", title: error.message || "智译失败" });
     } finally {

@@ -41,7 +41,7 @@ import {
   DialogDescription,
 } from '@/components/ui/dialog';
 import { useToast } from '@/hooks/use-toast';
-import { translateContent } from '@/ai/flows/translate-flow';
+import { smartTranslate } from '@/lib/translate-client';
 import { cn } from '@/lib/utils';
 import { ShinyButton } from '@/components/ui/shiny-button';
 import { Badge } from '@/components/ui/badge';
@@ -296,53 +296,61 @@ export default function GlobalMapAdminPage() {
     }
   };
 
-  const handleTranslateFields = async (fields: { source: string, targetKey: string }[], localData: any) => {
+
+  const handleTranslateLocation = async () => {
     if (!aiConfig?.isEnabled) {
       toast({ variant: "destructive", title: "AI 智译未启用" });
-      return null;
+      return;
     }
-
     setIsAiProcessing(true);
     try {
-      const updates: any = {};
-      for (const field of fields) {
-        if (!localData[field.source]) continue;
-        const res = await translateContent({
-          text: localData[field.source] || '',
-          targetLangs: ['en'],
-          apiKey: aiConfig.apiKey
-        });
-        if (res.en) updates[field.targetKey] = res.en;
+      const needsTitle = locationForm.titleZh && (!locationForm.titleEn || locationForm.titleEn.trim() === '');
+      const needsAddress = locationForm.addressZh && (!locationForm.addressEn || locationForm.addressEn.trim() === '');
+      const needsDesc = locationForm.descZh && (!locationForm.descEn || locationForm.descEn.trim() === '');
+
+      if (needsTitle) {
+        const res = await smartTranslate({ text: locationForm.titleZh, targetLangs: ['en'], taskType: 'text' });
+        if (res.en) setLocationForm(prev => ({ ...prev, titleEn: res.en }));
       }
-      return updates;
-    } catch (error: any) {
-      toast({ variant: "destructive", title: "智译失败", description: error.message });
-      return null;
+      if (needsAddress) {
+        const res = await smartTranslate({ text: locationForm.addressZh, targetLangs: ['en'], taskType: 'text' });
+        if (res.en) setLocationForm(prev => ({ ...prev, addressEn: res.en }));
+      }
+      if (needsDesc) {
+        const res = await smartTranslate({ text: locationForm.descZh, targetLangs: ['en'], taskType: 'text' });
+        if (res.en) setLocationForm(prev => ({ ...prev, descEn: res.en }));
+      }
+      toast({ title: "网点信息智译完成" });
+    } catch (e: any) {
+      toast({ variant: "destructive", title: "智译失败", description: e.message });
     } finally {
       setIsAiProcessing(false);
     }
   };
 
-  const handleTranslateLocation = async () => {
-    const updates = await handleTranslateFields([
-      { source: 'titleZh', targetKey: 'titleEn' },
-      { source: 'addressZh', targetKey: 'addressEn' },
-      { source: 'descZh', targetKey: 'descEn' }
-    ], locationForm);
-    if (updates) {
-      setLocationForm({ ...locationForm, ...updates });
-      toast({ title: "网点信息智译完成" });
-    }
-  };
-
   const handleTranslateSection = async () => {
-    const updates = await handleTranslateFields([
-      { source: 'mapTitleZh', targetKey: 'mapTitleEn' },
-      { source: 'mapSubtitleZh', targetKey: 'mapSubtitleEn' }
-    ], sectionForm);
-    if (updates) {
-      setSectionForm({ ...sectionForm, ...updates });
+    if (!aiConfig?.isEnabled) {
+      toast({ variant: "destructive", title: "AI 智译未启用" });
+      return;
+    }
+    setIsAiProcessing(true);
+    try {
+      const needsTitle = sectionForm.mapTitleZh && (!sectionForm.mapTitleEn || sectionForm.mapTitleEn.trim() === '');
+      const needsSubtitle = sectionForm.mapSubtitleZh && (!sectionForm.mapSubtitleEn || sectionForm.mapSubtitleEn.trim() === '');
+
+      if (needsTitle) {
+        const res = await smartTranslate({ text: sectionForm.mapTitleZh, targetLangs: ['en'], taskType: 'text' });
+        if (res.en) setSectionForm(prev => ({ ...prev, mapTitleEn: res.en }));
+      }
+      if (needsSubtitle) {
+        const res = await smartTranslate({ text: sectionForm.mapSubtitleZh, targetLangs: ['en'], taskType: 'text' });
+        if (res.en) setSectionForm(prev => ({ ...prev, mapSubtitleEn: res.en }));
+      }
       toast({ title: "板块标题智译完成" });
+    } catch (e: any) {
+      toast({ variant: "destructive", title: "智译失败", description: e.message });
+    } finally {
+      setIsAiProcessing(false);
     }
   };
 

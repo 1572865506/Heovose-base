@@ -66,13 +66,35 @@ const AiGradientDef = () => (
 function robustJsonParse(rawStr: string) {
   let jsonStr = (String(rawStr) || '').trim();
   if (jsonStr.includes('```')) jsonStr = jsonStr.replace(/```json\n?|```/g, '').trim();
+  
+  // 1. 常规清洗与解析
+  const clean = (s: string) => s.replace(/"\s*[：:]\s*"/g, '": "').replace(/([glv]_\d+_?\d*)\s*[：:]\s*/gi, '"$1": ');
   try {
-    return JSON.parse(jsonStr);
+    return JSON.parse(clean(jsonStr));
   } catch (e) {
-    // 如果不是 JSON，直接返回原字符串 (鲁棒性增强)
-    if (!jsonStr.startsWith('{') && !jsonStr.startsWith('[')) return jsonStr;
-    const sanitized = jsonStr.replace(/[\u0000-\u001F]+/g, m => m === '\n' ? '\\n' : m === '\r' ? '\\r' : m === '\t' ? '\\t' : '');
-    try { return JSON.parse(sanitized); } catch(i) { return jsonStr; }
+    try {
+      // 2. 处理转义字符
+      const sanitized = jsonStr.replace(/[\u0000-\u001F]+/g, m => m === '\n' ? '\\n' : m === '\r' ? '\\r' : m === '\t' ? '\\t' : '');
+      return JSON.parse(clean(sanitized));
+    } catch (i) {
+      // 3. 终极救命稻草：正则特征抠取
+      console.log('⚠️ [SmartTranslate] 标准解析失败，启动正则特征抠取...');
+      const pairs: Record<string, string> = {};
+      // 匹配 "l_0_0": "value" 或 l_0_0: "value" 等各种变形
+      const regex = /["']?([glv]_\d+_?\d*)["']?\s*[：:]\s*["']([^"']*)["']/gi;
+      let match;
+      while ((match = regex.exec(jsonStr)) !== null) {
+        pairs[match[1]] = match[2];
+      }
+      
+      if (Object.keys(pairs).length > 0) {
+        console.log(`✅ [SmartTranslate] 正则抠取成功，抓取到 ${Object.keys(pairs).length} 个字段`);
+        return pairs;
+      }
+      
+      if (!jsonStr.startsWith('{') && !jsonStr.startsWith('[')) return jsonStr;
+      return null;
+    }
   }
 }
 
@@ -248,22 +270,48 @@ function ProductEditorContent() {
     if (!aiConfig?.isEnabled) return;
     setIsAiProcessing(true);
     try {
+      const tasks = [];
+      const nameNeedsTranslate = formData.nameZh && !formData.nameEn;
+      const descNeedsTranslate = formData.descZh && !formData.descEn;
+
       const [nameRes, descRes] = await Promise.all([
-        formData.nameZh ? smartTranslate({ text: formData.nameZh, targetLangs: ['en'] }) : null,
-        formData.descZh ? smartTranslate({ text: formData.descZh, targetLangs: ['en'] }) : null
+        nameNeedsTranslate ? smartTranslate({ text: formData.nameZh, targetLangs: ['en'], taskType: 'text' }) : null,
+        descNeedsTranslate ? smartTranslate({ text: formData.descZh, targetLangs: ['en'], taskType: 'text' }) : null
       ]);
-      setFormData(prev => ({ ...prev, nameEn: nameRes?.en || prev.nameEn, descEn: descRes?.en || prev.descEn }));
+      
+      setFormData(prev => ({ 
+        ...prev, 
+        nameEn: nameRes?.en || prev.nameEn, 
+        descEn: descRes?.en || prev.descEn 
+      }));
+      
+      if (!nameNeedsTranslate && !descNeedsTranslate) {
+        toast({ title: "无需翻译", description: "名称和描述的英文内容已存在" });
+      }
     } finally { setIsAiProcessing(false); }
   };
 
   const handleAiTranslateDetails = async () => {
     if (!aiConfig?.isEnabled || !formData.localizedDetails.zh) return;
+    
+    // 如果目标语言已有内容，则跳过
+    const existing = String(formData.localizedDetails[targetDetailsLang] || '').replace(/<[^>]*>/g, '').trim();
+    if (existing) {
+      toast({ title: "无需翻译", description: "详情介绍已有翻译内容" });
+      return;
+    }
+
     setIsAiProcessing(true);
     try {
       const res = await smartTranslate({
-        text: formData.localizedDetails.zh, sourceLang: 'zh', targetLangs: [targetDetailsLang]
+        text: formData.localizedDetails.zh, sourceLang: 'zh', targetLangs: [targetDetailsLang], taskType: 'rich-text'
       });
-      if (res[targetDetailsLang]) handleUpdateField('localizedDetails', { ...formData.localizedDetails, [targetDetailsLang]: res[targetDetailsLang] });
+      if (res && res[targetDetailsLang]) {
+        handleUpdateField('localizedDetails', { 
+          ...formData.localizedDetails, 
+          [targetDetailsLang]: res[targetDetailsLang] 
+        });
+      }
     } finally { setIsAiProcessing(false); }
   };
 
@@ -271,30 +319,85 @@ function ProductEditorContent() {
     if (!aiConfig?.isEnabled) return;
     const item = formData.specGroups[gIdx].items[iIdx];
     const key = `i_${gIdx}_${iIdx}_label`;
+
+    const needsLabel = !item.labelEn;
+    const needsValue = !item.valueEn;
+
+    if (!needsLabel && !needsValue) {
+      toast({ title: "无需翻译", description: "该项已有翻译内容" });
+      return;
+    }
+
     setProcessingItems(prev => new Set(prev).add(key));
     try {
       const res = await smartTranslate({ 
-        text: `Label: ${item.labelZh}\nValue: ${item.valueZh}`, 
-        targetLangs: ['en'] 
+        text: JSON.stringify({ label: item.labelZh, value: item.valueZh }), 
+        targetLangs: ['en'],
+        taskType: 'spec'
       });
+      
       if (res?.en) {
-        const lines = res.en.split('\n');
-        let label = item.labelZh, value = item.valueZh;
-        lines.forEach((l: string) => {
-          if (l.toLowerCase().includes('label:')) label = l.split(':')[1]?.trim() || label;
-          if (l.toLowerCase().includes('value:')) value = l.split(':')[1]?.trim() || value;
-        });
+        const result = robustJsonParse(res.en);
         
-        const newG = [...formData.specGroups];
-        newG[gIdx].items[iIdx] = { ...item, labelEn: label, valueEn: value };
-        setFormData(prev => ({ ...prev, specGroups: newG }));
+        let labelEn = '';
+        let valueEn = '';
+
+        if (typeof result === 'object' && result !== null) {
+          if (Array.isArray(result)) {
+            // 策略 A: 数组索引提取
+            labelEn = result[0] || '';
+            valueEn = result[1] || '';
+          } else {
+            // 策略 B: 超级模糊 Key 匹配
+            const keys = Object.keys(result);
+            const findKey = (terms: string[]) => 
+              keys.find(k => terms.some(t => k.toLowerCase().includes(t.toLowerCase())));
+            
+            const lKey = findKey(['label', 'lbl', 'name', 'key', 'l']);
+            const vKey = findKey(['value', 'val', 'content', 'text', 'v', 'res']);
+            
+            labelEn = lKey ? result[lKey] : '';
+            valueEn = vKey ? result[vKey] : '';
+
+            // 策略 C: 兜底逻辑 - 如果没匹配到，按属性顺序取 (第一个是 label, 第二个是 value)
+            if (!labelEn && keys[0]) labelEn = result[keys[0]];
+            if (!valueEn && keys[1]) valueEn = result[keys[1]];
+          }
+        } else if (typeof result === 'string') {
+          // 策略 D: 纯字符串拆分 (处理 AI 没给 JSON 的情况)
+          const parts = result.split(/[\n\r:：]+/).filter(p => p.trim());
+          if (parts.length >= 2) {
+            labelEn = parts[0].trim();
+            valueEn = parts[1].trim();
+          } else {
+            labelEn = result;
+          }
+        }
+
+        setFormData(prev => {
+          const nextGroups = [...prev.specGroups];
+          nextGroups[gIdx] = {
+            ...nextGroups[gIdx],
+            items: [...nextGroups[gIdx].items]
+          };
+          nextGroups[gIdx].items[iIdx] = { 
+            ...nextGroups[gIdx].items[iIdx], 
+            labelEn: needsLabel ? (labelEn || item.labelEn) : item.labelEn, 
+            valueEn: needsValue ? (valueEn || item.valueEn) : item.valueEn 
+          };
+          return { ...prev, specGroups: nextGroups };
+        });
       }
     } finally { setProcessingItems(prev => { const n = new Set(prev); n.delete(key); return n; }); }
   };
 
+  const [renderKey, setRenderKey] = useState(0);
+
   const handleAiTranslateAllSpecs = async () => {
     if (!aiConfig?.isEnabled || formData.specGroups.length === 0) return;
     setIsAiProcessing(true);
+    
+    let matchCount = 0;
     try {
       const taskMap: Record<string, string> = {};
       formData.specGroups.forEach((g, gIdx) => {
@@ -304,35 +407,104 @@ function ProductEditorContent() {
           if (i.valueZh && !i.valueEn) taskMap[`v_${gIdx}_${iIdx}`] = i.valueZh;
         });
       });
-      if (Object.keys(taskMap).length === 0) return;
+      
+      const totalTasks = Object.keys(taskMap).length;
+      if (totalTasks === 0) {
+        alert('没有需要翻译的空字段');
+        return;
+      }
+      
       const res = await smartTranslate({ 
-        text: `Translate specs (JSON): ${JSON.stringify(taskMap)}`, 
-        targetLangs: ['en'] 
+        text: JSON.stringify(taskMap), 
+        targetLangs: ['en'],
+        taskType: 'spec'
       });
+      
       if (res?.en) {
         const results = robustJsonParse(res.en);
-        const next = [...formData.specGroups];
-        Object.keys(results).forEach(key => {
-          const val = results[key];
-          if (key.startsWith('g_')) { const idx = parseInt(key.split('_')[1]); next[idx].titleEn = val; }
-          else if (key.startsWith('l_')) { const p = key.split('_'); next[parseInt(p[1])].items[parseInt(p[2])].labelEn = val; }
-          else if (key.startsWith('v_')) { const p = key.split('_'); next[parseInt(p[1])].items[parseInt(p[2])].valueEn = val; }
+
+        if (typeof results !== 'object' || results === null) {
+          throw new Error('AI 返回的数据格式无法解析为对象');
+        }
+
+        setFormData(prev => {
+          const next = [...prev.specGroups];
+          Object.keys(results).forEach(rawKey => {
+            const val = results[rawKey];
+            if (!val) return;
+
+            const cleanVal = String(val).replace(/\\n/g, '\n');
+            const key = rawKey.trim().replace(/[：:]/g, '');
+            const parts = key.split('_');
+            const type = parts[0].toLowerCase();
+            
+            let gIdx = -1;
+            let iIdx = -1;
+
+            if (type === 'g') {
+              gIdx = parseInt(parts[1]);
+            } else if (parts.length === 3) {
+              gIdx = parseInt(parts[1]);
+              iIdx = parseInt(parts[2]);
+            } else if (parts.length === 2) {
+              gIdx = 0; 
+              iIdx = parseInt(parts[1]);
+            }
+
+            if (isNaN(gIdx) || gIdx < 0 || gIdx >= next.length) return;
+
+            if (type === 'g') { 
+              next[gIdx] = { ...next[gIdx], titleEn: cleanVal }; 
+              matchCount++;
+            } else if (type === 'l') { 
+              if (isNaN(iIdx) || iIdx < 0) return;
+              next[gIdx] = { ...next[gIdx], items: [...next[gIdx].items] };
+              if (next[gIdx].items[iIdx]) {
+                next[gIdx].items[iIdx] = { ...next[gIdx].items[iIdx], labelEn: cleanVal };
+                matchCount++;
+              }
+            } else if (type === 'v') { 
+              if (isNaN(iIdx) || iIdx < 0) return;
+              next[gIdx] = { ...next[gIdx], items: [...next[gIdx].items] };
+              if (next[gIdx].items[iIdx]) {
+                next[gIdx].items[iIdx] = { ...next[gIdx].items[iIdx], valueEn: cleanVal };
+                matchCount++;
+              }
+            }
+          });
+          return { ...prev, specGroups: next };
         });
-        handleUpdateField('specGroups', next);
+
+        setRenderKey(prev => prev + 1);
+        alert(`✅ 全表智译完成！已回填 ${matchCount} 个字段。`);
       }
+    } catch (err) {
+      alert('智译异常：' + (err as Error).message);
     } finally { setIsAiProcessing(false); }
   };
 
   const handleSaveTemplate = async (mode: 'create' | 'overwrite', name: string, id: string) => {
     const tId = mode === 'create' ? `tpl_${Date.now()}` : id;
-    const tName = mode === 'create' ? name : specTemplates?.find((t: any) => t.id === id)?.name;
-    const cleanGroups = formData.specGroups.map(g => ({ titleEn: g.titleEn, titleZh: g.titleZh, items: g.items.map(i => ({ labelEn: i.labelEn, labelZh: i.labelZh, valueEn: i.valueEn, valueZh: i.valueZh })) }));
-    await fetch(`/api/specTemplates/${tId}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: tId, name: tName, specGroups: cleanGroups }) });
-    mutateTemplates(); toast({ title: "模板已同步" });
+    const tName = mode === 'create' ? name : (specTemplates?.find((t: any) => t.id === id)?.name || name);
+    const cleanGroups = formData.specGroups.map(g => ({ 
+      titleEn: g.titleEn, 
+      titleZh: g.titleZh, 
+      items: g.items.map(i => ({ labelEn: i.labelEn, labelZh: i.labelZh, valueEn: i.valueEn, valueZh: i.valueZh })) 
+    }));
+    await fetch(`/api/specTemplates/${tId}`, { 
+      method: 'PUT', 
+      headers: { 'Content-Type': 'application/json' }, 
+      body: JSON.stringify({ id: tId, name: tName, specGroups: cleanGroups }) 
+    });
+    mutateTemplates();
+    alert("模板已同步至云端规格库");
   };
 
   const handleDeleteTemplate = async (id: string, name: string) => {
-    if (confirm(`删除模板 ${name}？`)) { await fetch(`/api/specTemplates/${id}`, { method: 'DELETE' }); mutateTemplates(); }
+    if (confirm(`确定要彻底删除模板 "${name}" 吗？`)) { 
+      await fetch(`/api/specTemplates/${id}`, { method: 'DELETE' }); 
+      mutateTemplates(); 
+    }
   };
 
   if (isProdLoading) return <div className="h-screen flex items-center justify-center"><Loader2 className="animate-spin opacity-20 text-primary" /></div>;
@@ -357,6 +529,7 @@ function ProductEditorContent() {
           <TabsContent value="media"><MediaSection galleryUrls={formData.galleryUrls} onUpdateGallery={(urls) => handleUpdateField('galleryUrls', urls)} onOpenPicker={() => { setPickerTarget('gallery'); setIsPickerOpen(true); }} onMoveItem={(idx, dir) => { const n = [...formData.galleryUrls]; const t = dir === 'left' ? idx - 1 : idx + 1; if (t >= 0 && t < n.length) { [n[idx], n[t]] = [n[t], n[idx]]; handleUpdateField('galleryUrls', n); } }} /></TabsContent>
           <TabsContent value="specs">
             <SpecMatrixSection
+              key={renderKey}
               groups={formData.specGroups} setGroups={(g) => handleUpdateField('specGroups', g)} aiConfig={aiConfig} isAiProcessing={isAiProcessing} processingItems={processingItems} onAiTranslate={handleAiTranslateSpecItem}
               onAiTranslateAll={handleAiTranslateAllSpecs}
               onMoveGroup={(idx, dir) => { const next = [...formData.specGroups]; const target = dir === 'up' ? idx - 1 : idx + 1; if (target >= 0 && target < next.length) { [next[idx], next[target]] = [next[target], next[idx]]; handleUpdateField('specGroups', next); } }}

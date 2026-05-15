@@ -2,7 +2,7 @@
 "use client";
 
 import { useEffect, useRef, useState, useCallback } from 'react';
-import { Locale, translations } from "@/lib/translations";
+import { Locale } from "@/lib/translations";
 import { getAssetUrl } from '@/lib/image-utils';
 import { cn } from "@/lib/utils";
 import { Play, Pause } from "lucide-react";
@@ -18,7 +18,6 @@ interface VideoSectionProps {
 
 export function VideoSection({ locale, homeConfig, isLoading }: VideoSectionProps) {
   const { t: tr, defaultLanguage } = useTranslations(locale);
-  const t = translations[locale].video;
   const sectionRef = useRef<HTMLDivElement>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
   const [textProgress, setTextProgress] = useState(0); 
@@ -109,12 +108,12 @@ export function VideoSection({ locale, homeConfig, isLoading }: VideoSectionProp
   // 动态文案回退逻辑
   const rawTitle = tr('video_section_title');
   const displayTitle = (!rawTitle || isKey(rawTitle))
-    ? getFallback(homeConfig?.videoTitleZh, homeConfig?.videoTitleEn) || t.title
+    ? getFallback(homeConfig?.videoTitleZh, homeConfig?.videoTitleEn)
     : rawTitle;
 
   const rawSubtitle = tr('video_section_subtitle');
   const displaySubtitle = (!rawSubtitle || isKey(rawSubtitle))
-    ? getFallback(homeConfig?.videoSubtitleZh, homeConfig?.videoSubtitleEn) || t.subtitle
+    ? getFallback(homeConfig?.videoSubtitleZh, homeConfig?.videoSubtitleEn)
     : rawSubtitle;
 
   const isFirstTextVisible = textProgress >= 0.5 && textProgress < 0.75;

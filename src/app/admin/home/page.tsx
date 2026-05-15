@@ -55,7 +55,7 @@ import {
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { useToast } from '@/hooks/use-toast';
-import { translateContent } from '@/ai/flows/translate-flow';
+import { smartTranslate } from '@/lib/translate-client';
 import { cn } from '@/lib/utils';
 import { ShinyButton } from '@/components/ui/shiny-button';
 import { MediaLibraryDialog } from '@/components/admin/media-library-dialog';
@@ -502,31 +502,36 @@ export default function AdminHomePage() {
       const updates: any = { ...localFormData };
       
       for (const field of fields) {
+        // 如果中文为空，或者英文已有内容且不是占位符，则跳过
         if (!localFormData[field.source]) continue;
-        const res = await translateContent({
+        if (localFormData[field.targetKey] && localFormData[field.targetKey].trim() !== '') continue;
+
+        const res = await smartTranslate({
           text: localFormData[field.source] || '',
           targetLangs: ['en'],
-          apiKey: aiConfig.apiKey
+          taskType: 'text'
         });
         if (res.en) updates[field.targetKey] = res.en;
       }
 
+      // 翻译轮播图标题
       const translatedSlides = await Promise.all(localFormData.heroSlides.map(async (slide: any) => {
-        const headlineRes = await translateContent({
-          text: slide.headlineZh || '',
-          targetLangs: ['en'],
-          apiKey: aiConfig.apiKey
-        });
-        const subheadlineRes = await translateContent({
-          text: slide.subheadlineZh || '',
-          targetLangs: ['en'],
-          apiKey: aiConfig.apiKey
-        });
-        return {
-          ...slide,
-          headlineEn: headlineRes.en || slide.headlineEn,
-          subheadlineEn: subheadlineRes.en || slide.subheadlineEn
-        };
+        const headlineNeeds = slide.headlineZh && (!slide.headlineEn || slide.headlineEn === 'New Headline');
+        const subheadlineNeeds = slide.subheadlineZh && (!slide.subheadlineEn || slide.subheadlineEn === 'New Subheadline');
+
+        let headlineEn = slide.headlineEn;
+        let subheadlineEn = slide.subheadlineEn;
+
+        if (headlineNeeds) {
+          const res = await smartTranslate({ text: slide.headlineZh, targetLangs: ['en'], taskType: 'text' });
+          if (res.en) headlineEn = res.en;
+        }
+        if (subheadlineNeeds) {
+          const res = await smartTranslate({ text: slide.subheadlineZh, targetLangs: ['en'], taskType: 'text' });
+          if (res.en) subheadlineEn = res.en;
+        }
+
+        return { ...slide, headlineEn, subheadlineEn };
       }));
 
       updates.heroSlides = translatedSlides;
@@ -882,7 +887,7 @@ export default function AdminHomePage() {
               </div>
               <Switch 
                 checked={formData.isVideoEnabled} 
-                onCheckedChange={v => setFormData({...formData, isVideoEnabled: v})} 
+                onCheckedChange={v => setFormData(prev => ({...prev, isVideoEnabled: v}))} 
               />
             </div>
 
@@ -894,13 +899,23 @@ export default function AdminHomePage() {
                   </h3>
                    {aiConfig?.isEnabled && (
                     <ShinyButton 
-                      onClick={async () => {
-                        const updates = await handleTranslate([
-                          {source: 'videoTitleZh', targetKey: 'videoTitleEn'},
-                          {source: 'videoSubtitleZh', targetKey: 'videoSubtitleEn'}
-                        ]);
-                        if(updates) setFormData({...formData, ...updates});
-                      }}
+                    onClick={async () => {
+                      const res = await smartTranslate({
+                        text: formData.videoTitleZh,
+                        targetLangs: ['en'],
+                        taskType: 'text'
+                      });
+                      if(res.en) setFormData(prev => ({...prev, videoTitleEn: res.en}));
+                      
+                      const res2 = await smartTranslate({
+                        text: formData.videoSubtitleZh,
+                        targetLangs: ['en'],
+                        taskType: 'text'
+                      });
+                      if(res2.en) setFormData(prev => ({...prev, videoSubtitleEn: res2.en}));
+                      
+                      toast({ title: "视频文案智译完成" });
+                    }}
                       disabled={isAiProcessing}
                       className="h-9 px-4"
                       shape="capsule"
@@ -994,14 +1009,23 @@ export default function AdminHomePage() {
                       {aiConfig?.isEnabled && (
                         <div className="absolute right-1.5 top-1/2 -translate-y-1/2">
                           <ShinyButton 
-                            onClick={async () => {
-                              const res = await translateContent({
-                                text: formData.bentoTitleZh,
-                                targetLangs: ['en'],
-                                apiKey: aiConfig.apiKey
-                              });
-                              if (res.en) setFormData({ ...formData, bentoTitleEn: res.en });
-                            }}
+                    onClick={async () => {
+                      const res = await smartTranslate({
+                        text: formData.bentoTitleZh,
+                        targetLangs: ['en'],
+                        taskType: 'text'
+                      });
+                      if(res.en) setFormData(prev => ({...prev, bentoTitleEn: res.en}));
+                      
+                      const res2 = await smartTranslate({
+                        text: formData.bentoSubtitleZh,
+                        targetLangs: ['en'],
+                        taskType: 'text'
+                      });
+                      if(res2.en) setFormData(prev => ({...prev, bentoSubtitleEn: res2.en}));
+                      
+                      toast({ title: "Bento 文案智译完成" });
+                    }}
                             disabled={isAiProcessing}
                             className="w-9 h-9 p-0 flex items-center justify-center shadow-lg shadow-primary/5"
                             shape="capsule"
@@ -1040,10 +1064,10 @@ export default function AdminHomePage() {
                         <div className="absolute right-1.5 top-1/2 -translate-y-1/2">
                           <ShinyButton 
                             onClick={async () => {
-                              const res = await translateContent({
+                              const res = await smartTranslate({
                                 text: formData.bentoSubtitleZh,
                                 targetLangs: ['en'],
-                                apiKey: aiConfig.apiKey
+                                taskType: 'text'
                               });
                               if (res.en) setFormData({ ...formData, bentoSubtitleEn: res.en });
                             }}
@@ -1156,10 +1180,10 @@ export default function AdminHomePage() {
                         <div className="absolute right-1.5 top-1/2 -translate-y-1/2">
                           <ShinyButton 
                             onClick={async () => {
-                              const res = await translateContent({
+                              const res = await smartTranslate({
                                 text: formData.galleryTitleZh,
                                 targetLangs: ['en'],
-                                apiKey: aiConfig.apiKey
+                                taskType: 'text'
                               });
                               if (res.en) setFormData({ ...formData, galleryTitleEn: res.en });
                             }}
@@ -1201,10 +1225,10 @@ export default function AdminHomePage() {
                         <div className="absolute right-1.5 top-1/2 -translate-y-1/2">
                           <ShinyButton 
                             onClick={async () => {
-                              const res = await translateContent({
+                              const res = await smartTranslate({
                                 text: formData.gallerySubtitleZh,
                                 targetLangs: ['en'],
-                                apiKey: aiConfig.apiKey
+                                taskType: 'text'
                               });
                               if (res.en) setFormData({ ...formData, gallerySubtitleEn: res.en });
                             }}
@@ -1431,10 +1455,10 @@ export default function AdminHomePage() {
           }
         }}
         onTranslate={async (text) => {
-          const res = await translateContent({
+          const res = await smartTranslate({
             text,
             targetLangs: ['en'],
-            apiKey: aiConfig?.apiKey
+            taskType: 'text'
           });
           return res.en || '';
         }}

@@ -3,7 +3,7 @@
 
 import { useState, useEffect, useRef, useMemo } from 'react';
 import Image from 'next/image';
-import { Locale, translations } from "@/lib/translations";
+import { Locale } from "@/lib/translations";
 import { cn } from "@/lib/utils";
 import { Play, Pause, Loader2, X, Maximize } from "lucide-react";
 import { getAssetUrl } from '@/lib/image-utils';
@@ -61,14 +61,7 @@ export function ProductionProcess({ locale }: { locale: Locale }) {
         };
       });
     }
-    // 回退到 translations.ts 中的硬编码步骤
-    const localSteps = (translations[locale].process as any).steps || [];
-    return localSteps.map((s: any, idx: number) => ({
-      label: s.title,
-      desc: s.desc,
-      tag: (idx + 1) < 10 ? `0${idx + 1}` : `${idx + 1}`,
-      images: []
-    }));
+    return [];
   }, [remoteSteps, locale, t]);
 
   const displayTitle = useMemo(() => {
@@ -77,14 +70,14 @@ export function ProductionProcess({ locale }: { locale: Locale }) {
     
     // 如果翻译资产存在 (包括空字符串)，则返回翻译资产内容
     // 只有在 translated 为 undefined (即 key 不存在) 时才回退
-    return translated ?? (locale === 'zh' ? homeContent?.processTitleZh : homeContent?.processTitleEn) ?? translations[locale].process.title;
+    return translated ?? (locale === 'zh' ? homeContent?.processTitleZh : homeContent?.processTitleEn) ?? "";
   }, [homeContent, locale, t]);
 
   const displaySubtitle = useMemo(() => {
     // 优先从翻译资产获取
     const translated = t('PROCESS_SUBTITLE');
     
-    return translated ?? (locale === 'zh' ? homeContent?.processSubtitleZh : homeContent?.processSubtitleEn) ?? translations[locale].process.subtitle;
+    return translated ?? (locale === 'zh' ? homeContent?.processSubtitleZh : homeContent?.processSubtitleEn) ?? "";
   }, [homeContent, locale, t]);
 
   // 3. 观察可见性 - 提前 800px 触发渲染，确保滚动到时已经完全加载

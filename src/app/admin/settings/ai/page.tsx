@@ -323,28 +323,31 @@ export default function AiManagementPage() {
               <Plus className="h-4 w-4" /> 新增算力节点
             </Button>
           </DialogTrigger>
-          <DialogContent className="sm:max-w-[500px] rounded-[2.5rem] border-white/40 bg-white/95 backdrop-blur-3xl shadow-2xl p-8">
-            <DialogHeader className="space-y-4">
-              <div className="h-12 w-12 rounded-2xl bg-primary/10 flex items-center justify-center text-primary mb-2">
-                <Cpu className="h-6 w-6" />
-              </div>
-              <DialogTitle className="text-2xl font-headline font-bold text-slate-900">
-                {editingProvider?.id ? '编辑算力节点' : '新增 AI 算力节点'}
-              </DialogTitle>
-              <DialogDescription className="text-xs font-medium text-slate-500 leading-relaxed">
-                配置 AI 服务商信息。您可以接入主流云端大模型，或通过 OpenAI 兼容协议接入本地私有化部署的模型。
-              </DialogDescription>
-            </DialogHeader>
-            
-            <div className="grid gap-8 py-8">
-              <div className="space-y-4">
-                <Label className="text-[10px] font-bold uppercase tracking-widest text-slate-400 pl-1">供应商类型 (Provider Type)</Label>
-                <div className="grid grid-cols-4 gap-4">
+          <DialogContent className="max-w-2xl rounded-[3rem] p-0 border-none bg-slate-50 overflow-hidden max-h-[90vh] flex flex-col">
+            {/* 固定头部：标题 + 供应商选择 */}
+            <div className="p-12 pb-8 bg-white border-b border-slate-100 shadow-sm z-10">
+              <DialogHeader className="mb-8">
+                <div className="flex items-center gap-4 mb-4">
+                  <div className="h-12 w-12 rounded-2xl bg-blue-600 text-white flex items-center justify-center shadow-lg shadow-blue-200">
+                    <Cpu className="h-6 w-6" />
+                  </div>
+                  <DialogTitle className="text-3xl font-headline font-bold text-slate-900 tracking-tight">
+                    {editingProvider?.id ? '编辑算力节点' : '新增 AI 算力节点'}
+                  </DialogTitle>
+                </div>
+                <DialogDescription className="text-sm text-slate-500 leading-relaxed max-w-md font-medium">
+                  配置 AI 服务商信息。您可以接入主流云端大模型，或通过 OpenAI 兼容协议接入本地私有化部署的模型。
+                </DialogDescription>
+              </DialogHeader>
+
+              <div className="space-y-3">
+                <Label className="text-[9px] font-bold uppercase tracking-[0.2em] text-slate-400 pl-1">供应商类型 (Provider Type)</Label>
+                <div className="grid grid-cols-4 gap-2">
                   {[
-                    { id: 'google', label: 'Gemini', icon: Zap, color: 'text-blue-600', bg: 'bg-blue-50' },
-                    { id: 'openai', label: 'OpenAI', icon: Sparkles, color: 'text-green-600', bg: 'bg-green-50' },
-                    { id: 'local', label: 'Local (Server)', icon: Server, color: 'text-slate-600', bg: 'bg-slate-50' },
-                    { id: 'browser-local', label: 'Local (Browser)', icon: Monitor, color: 'text-purple-600', bg: 'bg-purple-50' }
+                    { id: 'google', label: 'Gemini', icon: Zap, color: 'text-blue-500', bg: 'bg-blue-50' },
+                    { id: 'openai', label: 'OpenAI', icon: Sparkles, color: 'text-green-500', bg: 'bg-green-50' },
+                    { id: 'local', label: 'Local', icon: Server, color: 'text-slate-500', bg: 'bg-slate-50' },
+                    { id: 'browser-local', label: 'Browser', icon: Monitor, color: 'text-purple-500', bg: 'bg-purple-50' }
                   ].map((t) => (
                     <button
                       key={t.id}
@@ -355,21 +358,22 @@ export default function AiManagementPage() {
                         model: t.id === 'google' ? 'gemini-1.5-flash' : (t.id === 'openai' ? 'gpt-4o' : 'hy-mt1.5-1.8b')
                       }))}
                       className={cn(
-                        "flex flex-col items-center justify-center gap-3 p-4 rounded-3xl border-2 transition-all duration-500",
+                        "flex items-center justify-center gap-2 py-2.5 px-2 rounded-xl border transition-all duration-300",
                         editingProvider?.type === t.id 
-                          ? "border-primary bg-primary/5 shadow-lg scale-105" 
-                          : "border-transparent bg-slate-50 hover:bg-slate-100 opacity-60"
+                          ? "border-blue-500 bg-blue-50/50 text-blue-700 shadow-sm" 
+                          : "border-slate-100 bg-white hover:border-slate-200 text-slate-600"
                       )}
                     >
-                      <div className={cn("h-10 w-10 rounded-2xl flex items-center justify-center transition-transform", t.bg, t.color, editingProvider?.type === t.id && "scale-110")}>
-                        <t.icon className="h-5 w-5" />
-                      </div>
-                      <span className="text-[9px] font-bold uppercase tracking-tight text-center">{t.label}</span>
+                      <t.icon className={cn("h-3.5 w-3.5 shrink-0", editingProvider?.type === t.id ? "text-blue-500" : "text-slate-400")} />
+                      <span className="text-[10px] font-bold truncate">{t.label}</span>
                     </button>
                   ))}
                 </div>
               </div>
+            </div>
 
+            {/* 滚动主体：具体参数配置 */}
+            <div className="overflow-y-auto p-12 pt-8 scrollbar-none flex-1 space-y-10">
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label className="text-[10px] font-bold uppercase tracking-widest text-slate-400 pl-1">节点名称</Label>
@@ -377,7 +381,7 @@ export default function AiManagementPage() {
                     value={editingProvider?.name || ''} 
                     onChange={e => setEditingProvider(prev => ({...prev, name: e.target.value}))}
                     placeholder="例如: 生产力集群-A" 
-                    className="rounded-xl h-12 bg-slate-100/50 border-transparent font-bold"
+                    className="rounded-xl h-12 bg-white border-slate-100 font-bold"
                   />
                 </div>
                 <div className="space-y-2">
@@ -386,7 +390,7 @@ export default function AiManagementPage() {
                     value={editingProvider?.model || ''} 
                     onChange={e => setEditingProvider(prev => ({...prev, model: e.target.value}))}
                     placeholder={editingProvider?.type === 'google' ? 'gemini-1.5-flash' : 'gpt-4o'} 
-                    className="rounded-xl h-12 bg-slate-100/50 border-transparent font-mono text-xs font-bold"
+                    className="rounded-xl h-12 bg-white border-slate-100 font-mono text-xs font-bold"
                   />
                 </div>
               </div>
@@ -397,9 +401,9 @@ export default function AiManagementPage() {
                   <Input 
                     type="password"
                     value={editingProvider?.apiKey || ''} 
-                    onChange={e => setEditingProvider({...editingProvider, apiKey: e.target.value})}
+                    onChange={e => setEditingProvider(prev => ({...prev!, apiKey: e.target.value}))}
                     placeholder={editingProvider?.type === 'local' ? 'not-needed' : 'sk-****************'} 
-                    className="rounded-xl h-12 bg-slate-100/50 border-transparent font-mono text-xs font-bold pl-10"
+                    className="rounded-xl h-12 bg-white border-slate-100 font-mono text-xs font-bold pl-10"
                   />
                   <Key className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-300" />
                 </div>
@@ -412,11 +416,11 @@ export default function AiManagementPage() {
                   </Label>
                   <Input 
                     value={editingProvider?.baseUrl || ''} 
-                    onChange={e => setEditingProvider({...editingProvider, baseUrl: e.target.value})}
+                    onChange={e => setEditingProvider(prev => ({...prev!, baseUrl: e.target.value}))}
                     placeholder={editingProvider?.type === 'browser-local' ? 'http://localhost:1234/v1' : 'http://172.x.x.x:1234/v1'} 
-                    className="rounded-xl h-12 bg-slate-100/50 border-transparent font-mono text-xs font-bold"
+                    className="rounded-xl h-12 bg-white border-slate-100 font-mono text-xs font-bold"
                   />
-                  <p className="text-[9px] text-slate-400 italic px-1">
+                  <p className="text-[9px] text-slate-400 italic px-1 mt-1">
                     {editingProvider?.type === 'browser-local' 
                       ? "基于浏览器直连模式。访问者将直接请求其本机的 127.0.0.1，请确保模型开启了 CORS。" 
                       : "基于服务器中转模式。翻译请求将由 WSL 服务器发起，需填写宿主机内网 IP。"}
@@ -424,19 +428,20 @@ export default function AiManagementPage() {
                 </div>
               )}
 
-              <div className="flex items-center justify-between p-4 bg-slate-50 rounded-2xl border border-slate-100 mt-2">
-                 <div className="space-y-0.5">
-                    <span className="text-xs font-bold text-slate-900 block">设为首选节点 (Primary)</span>
-                    <span className="text-[10px] text-slate-400 font-medium">所有任务将优先通过此节点下发。</span>
+              <div className="flex items-center justify-between p-6 bg-white rounded-[2rem] border border-slate-100 shadow-sm">
+                 <div className="space-y-1">
+                    <span className="text-sm font-bold text-slate-900 block">设为首选节点 (Primary)</span>
+                    <span className="text-[10px] text-slate-400 font-medium tracking-tight">所有任务将优先通过此节点下发。</span>
                  </div>
                  <Switch 
                   checked={editingProvider?.isPrimary || false} 
-                  onCheckedChange={checked => setEditingProvider({...editingProvider, isPrimary: checked})}
+                  onCheckedChange={checked => setEditingProvider(prev => ({...prev!, isPrimary: checked}))}
                  />
               </div>
             </div>
 
-            <DialogFooter className="sm:justify-between gap-4">
+            {/* 固定底部：操作按钮 */}
+            <DialogFooter className="p-8 bg-white border-t border-slate-100 sm:justify-between items-center">
               <Button variant="ghost" onClick={() => setIsDialogOpen(false)} className="rounded-xl h-12 px-6 font-bold uppercase text-[10px] tracking-widest text-slate-400">取消</Button>
               <Button onClick={handleAddOrUpdateProvider} className="rounded-xl h-12 px-10 font-bold uppercase text-[10px] tracking-widest shadow-lg shadow-primary/20">签署并同步</Button>
             </DialogFooter>

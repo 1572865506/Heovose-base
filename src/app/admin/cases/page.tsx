@@ -34,7 +34,7 @@ import {
   DialogDescription,
 } from '@/components/ui/dialog';
 import { useToast } from '@/hooks/use-toast';
-import { translateContent } from '@/ai/flows/translate-flow';
+import { smartTranslate } from '@/lib/translate-client';
 import { cn } from '@/lib/utils';
 import { getAssetUrl } from '@/lib/image-utils';
 import { ShinyButton } from '@/components/ui/shiny-button';
@@ -236,18 +236,23 @@ export default function CaseStudiesAdminPage() {
     }
     setIsAiProcessing(true);
     try {
-      const results = await Promise.all([
-        form.tagZh ? translateContent({ text: form.tagZh || '', targetLangs: ['en'], apiKey: aiConfig.apiKey }) : null,
-        form.titleZh ? translateContent({ text: form.titleZh || '', targetLangs: ['en'], apiKey: aiConfig.apiKey }) : null,
-        form.descZh ? translateContent({ text: form.descZh || '', targetLangs: ['en'], apiKey: aiConfig.apiKey }) : null
-      ]);
-      setForm(prev => ({
-        ...prev,
-        tagEn: results[0]?.en?.toUpperCase() || prev.tagEn,
-        titleEn: results[1]?.en || prev.titleEn,
-        descEn: results[2]?.en || prev.descEn
-      }));
-      toast({ title: "智译成功" });
+      const needsTag = form.tagZh && (!form.tagEn || form.tagEn.trim() === '');
+      const needsTitle = form.titleZh && (!form.titleEn || form.titleEn.trim() === '');
+      const needsDesc = form.descZh && (!form.descEn || form.descEn.trim() === '');
+
+      if (needsTag) {
+        const res = await smartTranslate({ text: form.tagZh || '', targetLangs: ['en'], taskType: 'text' });
+        if (res.en) setForm(prev => ({ ...prev, tagEn: res.en.toUpperCase() }));
+      }
+      if (needsTitle) {
+        const res = await smartTranslate({ text: form.titleZh || '', targetLangs: ['en'], taskType: 'text' });
+        if (res.en) setForm(prev => ({ ...prev, titleEn: res.en }));
+      }
+      if (needsDesc) {
+        const res = await smartTranslate({ text: form.descZh || '', targetLangs: ['en'], taskType: 'text' });
+        if (res.en) setForm(prev => ({ ...prev, descEn: res.en }));
+      }
+      toast({ title: "案例内容智译完成" });
     } catch (e: any) {
       toast({ variant: "destructive", title: "智译失败", description: e.message });
     } finally {
@@ -262,15 +267,17 @@ export default function CaseStudiesAdminPage() {
     }
     setIsAiProcessing(true);
     try {
-      const results = await Promise.all([
-        sectionForm.casesTitleZh ? translateContent({ text: sectionForm.casesTitleZh, targetLangs: ['en'], apiKey: aiConfig.apiKey }) : null,
-        sectionForm.casesSubtitleZh ? translateContent({ text: sectionForm.casesSubtitleZh, targetLangs: ['en'], apiKey: aiConfig.apiKey }) : null
-      ]);
-      setSectionForm(prev => ({
-        ...prev,
-        casesTitleEn: results[0]?.en || prev.casesTitleEn,
-        casesSubtitleEn: results[1]?.en || prev.casesSubtitleEn
-      }));
+      const needsTitle = sectionForm.casesTitleZh && (!sectionForm.casesTitleEn || sectionForm.casesTitleEn.trim() === '');
+      const needsSubtitle = sectionForm.casesSubtitleZh && (!sectionForm.casesSubtitleEn || sectionForm.casesSubtitleEn.trim() === '');
+
+      if (needsTitle) {
+        const res = await smartTranslate({ text: sectionForm.casesTitleZh, targetLangs: ['en'], taskType: 'text' });
+        if (res.en) setSectionForm(prev => ({ ...prev, casesTitleEn: res.en }));
+      }
+      if (needsSubtitle) {
+        const res = await smartTranslate({ text: sectionForm.casesSubtitleZh, targetLangs: ['en'], taskType: 'text' });
+        if (res.en) setSectionForm(prev => ({ ...prev, casesSubtitleEn: res.en }));
+      }
       toast({ title: "板块标题智译成功" });
     } catch (e: any) {
       toast({ variant: "destructive", title: "智译失败", description: e.message });

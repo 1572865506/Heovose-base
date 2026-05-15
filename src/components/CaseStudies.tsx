@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef, useMemo } from 'react';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
-import { Locale, translations } from "@/lib/translations";
+import { Locale } from "@/lib/translations";
 import { SectionHeading } from "./SectionHeading";
 import { useLocalCollection } from '@/hooks/use-local-collection';
 import { useLocalDoc } from '@/hooks/use-local-doc';
@@ -27,7 +27,6 @@ interface RemoteCase {
 }
 
 export function CaseStudies({ locale }: { locale: Locale }) {
-  const t = translations[locale].cases;
   const { t: lt } = useTranslations(locale);
   const [isNear, setIsNear] = useState(false);
   const [isVisible, setIsVisible] = useState(false);
@@ -51,8 +50,8 @@ export function CaseStudies({ locale }: { locale: Locale }) {
     if (config !== undefined && config !== null) return config;
 
     // 只有在完全没有配置时才使用兜底
-    return t.title;
-  }, [homeConfig, locale, lt, t]);
+    return "";
+  }, [homeConfig, locale, lt]);
 
   const displaySubtitle = useMemo(() => {
     const tr = lt('CASES_SUBTITLE');
@@ -64,8 +63,8 @@ export function CaseStudies({ locale }: { locale: Locale }) {
 
     if (config !== undefined && config !== null) return config;
 
-    return t.subtitle;
-  }, [homeConfig, locale, lt, t]);
+    return "";
+  }, [homeConfig, locale, lt]);
 
   // 3. 转换数据并过滤
   const cases = useMemo(() => {
@@ -96,14 +95,8 @@ export function CaseStudies({ locale }: { locale: Locale }) {
       }
     }
 
-    // 兜底数据
-    return [
-      { image: PlaceHolderImages.find(i => i.id === 'case-retail')?.imageUrl || '', text: t.retail.title, tag: t.tags.retail, description: t.retail.desc },
-      { image: PlaceHolderImages.find(i => i.id === 'case-factory')?.imageUrl || '', text: t.industry.title, tag: t.tags.industry, description: t.industry.desc },
-      { image: PlaceHolderImages.find(i => i.id === 'case-office')?.imageUrl || '', text: t.office.title, tag: t.tags.office, description: t.office.desc },
-      { image: PlaceHolderImages.find(i => i.id === 'case-transport')?.imageUrl || '', text: t.transport.title, tag: t.tags.transport, description: t.transport.desc },
-    ];
-  }, [remoteCases, locale, lt, t]);
+    return [];
+  }, [remoteCases, locale, lt]);
 
   useEffect(() => {
     // Observer 1: For pre-fetching data (Viewport-relative for responsive preloading)
