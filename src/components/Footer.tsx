@@ -4,6 +4,7 @@ import Image from 'next/image';
 import { Locale } from "@/lib/translations";
 import { Linkedin, Twitter, Facebook, Instagram, Youtube, Mail, Phone, MapPin, Link as LinkIcon, ArrowRight } from "lucide-react";
 import { useTranslations } from '@/hooks/use-translations';
+import { useInquiry } from '@/components/providers/InquiryProvider';
 import { useLocalDoc } from '@/hooks/use-local-doc';
 import { useLocalCollection } from '@/hooks/use-local-collection';
 import { useMemo } from 'react';
@@ -19,6 +20,7 @@ interface SiteConfig {
 
 export function Footer({ locale }: { locale: Locale }) {
   const { t: tr } = useTranslations(locale);
+  const { openInquiry } = useInquiry();
   const { data: siteConfig } = useLocalDoc<SiteConfig>('settings', 'site');
 
   const companyAddr = tr('COMPANY_ADDR');
@@ -58,15 +60,15 @@ export function Footer({ locale }: { locale: Locale }) {
                 <p className="opacity-60 text-xs leading-relaxed max-w-[260px]">{tr('footer_slogan2')}</p>
               </div>
             </div>
-            <a 
-              href="/products" 
-              className="inline-flex items-center gap-3 px-8 py-3 rounded-full bg-white/10 hover:bg-accent hover:text-accent-foreground transition-all group border border-white/10"
+            <button 
+              onClick={() => openInquiry()}
+              className="inline-flex items-center gap-3 px-8 py-3 rounded-full bg-white/10 hover:bg-accent hover:text-accent-foreground transition-all group border border-white/10 cursor-pointer"
             >
-              <span className="text-xs font-bold uppercase tracking-widest">{tr('nav_sub_download')}</span>
+              <span className="text-xs font-bold uppercase tracking-widest">{tr('nav_contact')}</span>
               <div className="h-6 w-6 rounded-full bg-white/10 flex items-center justify-center group-hover:bg-white/20">
                 <ArrowRight className="h-3 w-3" />
               </div>
-            </a>
+            </button>
           </div>
 
           {/* Col 2: Dynamic Products in 2 Columns (5/12) */}
