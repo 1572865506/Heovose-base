@@ -46,6 +46,12 @@ export const translations = {
     footer: {
       slogan1: 'The world shares good things!',
       slogan2: 'Let excellent application solutions benefit the world!',
+      privacy: 'Privacy Policy',
+      terms: 'Terms of Service',
+      copyright_suffix: 'Global Intelligence Manufacturing.',
+      email: 'Email',
+      support: 'Support',
+      office: 'Office',
     },
     hero: {
       headline: 'All In One Computer',
@@ -229,6 +235,12 @@ export const translations = {
     footer: {
       slogan1: '世界共享美好！',
       slogan2: '让优秀的场景应用方案造福世界！',
+      privacy: '隐私政策',
+      terms: '服务条款',
+      copyright_suffix: '全球智造。',
+      email: '电子邮箱',
+      support: '服务支持',
+      office: '办公地址',
     },
     hero: {
       headline: '一体机电脑',
@@ -412,6 +424,12 @@ export const translations = {
     footer: {
       slogan1: 'Dunia berbagi hal-hal baik!',
       slogan2: 'Biarkan solusi aplikasi yang luar biasa bermanfaat bagi dunia!',
+      privacy: 'Kebijakan Privasi',
+      terms: 'Ketentuan Layanan',
+      copyright_suffix: 'Manufaktur Intelijen Global.',
+      email: 'Email',
+      support: 'Dukungan',
+      office: 'Kantor',
     },
     hero: {
       headline: 'Komputer All In One',
@@ -581,6 +599,12 @@ export const translations = {
     footer: {
       slogan1: 'Thế giới chia sẻ những điều tốt đẹp!',
       slogan2: 'Hãy để các giải pháp ứng dụng xuất sắc mang lại lợi ích cho thế giới!',
+      privacy: 'Chính sách Bảo mật',
+      terms: 'Điều khoản Dịch vụ',
+      copyright_suffix: 'Sản xuất Thông minh Toàn cầu.',
+      email: 'Email',
+      support: 'Hỗ trợ',
+      office: 'Văn phòng',
     },
     hero: {
       headline: 'Máy tính All In One',
