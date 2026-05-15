@@ -4,7 +4,7 @@ interface TranslateInput {
   text: string;
   sourceLang?: string;
   targetLangs: string[];
-  taskType?: 'spec' | 'rich-text' | 'text';
+  taskType?: 'spec' | 'rich-text' | 'text' | 'json-map';
 }
 
 /**
@@ -41,7 +41,8 @@ export async function smartTranslate(input: TranslateInput) {
         const singleInput = { ...input, targetLangs: [targetLang] };
         let translation = '';
         
-        if (isComplexJson && isLocalModel) {
+        const isMultiLineText = taskType === 'text' && textContent.includes('\n');
+        if ((isComplexJson || isMultiLineText) && isLocalModel) {
           const res = await handleShelllessTranslate(singleInput, provider, aiConfig);
           translation = res[targetLang] || '';
         } else {
@@ -76,25 +77,46 @@ function isAlreadyTargetLanguage(text: string, targetLang: string): boolean {
 async function handleShelllessTranslate(input: TranslateInput, provider: any, aiConfig: any) {
   const lang = input.targetLangs[0];
   let json: any;
-  try { json = JSON.parse(input.text); } catch (e) {
-    return await handleOriginalTranslate(input, provider, 'text', aiConfig);
+  let isPlainLines = false;
+  
+  try { 
+    json = JSON.parse(input.text); 
+  } catch (e) {
+    // 如果不是 JSON 但包含换行，则按行拆分
+    if (input.text.includes('\n')) {
+      const lines = input.text.split('\n');
+      json = {};
+      lines.forEach((line, i) => { json[i] = line; });
+      isPlainLines = true;
+    } else {
+      return await handleOriginalTranslate(input, provider, 'text', aiConfig);
+    }
   }
   
   const textNodes: { parent: any, key: string, value: string }[] = [];
-  const traverse = (obj: any) => {
-    if (!obj || typeof obj !== 'object') return;
-    for (const key in obj) {
-      const val = obj[key];
-      if (key === 'text' && typeof val === 'string' && val.trim() && obj.type === 'text') {
-        textNodes.push({ parent: obj, key, value: val });
-      } else if (typeof val === 'string' && val.trim() && !obj.type) {
-        textNodes.push({ parent: obj, key, value: val });
-      } else if (typeof val === 'object') {
-        traverse(val);
+  
+  if (isPlainLines) {
+    // 纯文本行模式：直接把每行作为待译节点
+    Object.keys(json).forEach(key => {
+      textNodes.push({ parent: json, key, value: json[key] });
+    });
+  } else {
+    // JSON 模式：深度遍历
+    const traverse = (obj: any) => {
+      if (!obj || typeof obj !== 'object') return;
+      for (const key in obj) {
+        const val = obj[key];
+        if (key === 'text' && typeof val === 'string' && val.trim() && obj.type === 'text') {
+          textNodes.push({ parent: obj, key, value: val });
+        } else if (typeof val === 'string' && val.trim() && !obj.type) {
+          textNodes.push({ parent: obj, key, value: val });
+        } else if (typeof val === 'object') {
+          traverse(val);
+        }
       }
-    }
-  };
-  traverse(json);
+    };
+    traverse(json);
+  }
 
   if (textNodes.length > 0) {
     const map: Record<number, string> = {};
@@ -118,7 +140,7 @@ async function handleShelllessTranslate(input: TranslateInput, provider: any, ai
     const res = await smartTranslate({ 
       text: JSON.stringify(map), 
       targetLangs: input.targetLangs,
-      taskType: 'text' 
+      taskType: 'json-map' 
     });
     
     const translatedRaw = res[lang];
@@ -134,10 +156,18 @@ async function handleShelllessTranslate(input: TranslateInput, provider: any, ai
       textNodes.forEach((node, i) => {
         if (translatedMap[i]) node.parent[node.key] = translatedMap[i];
       });
+      
+      if (isPlainLines) {
+        // 如果是纯文本行模式，重新拼接成多行字符串
+        const result = Object.values(json).join('\n');
+        return { [lang]: result };
+      }
       return { [lang]: JSON.stringify(json) };
     }
   }
-  return { [lang]: input.text };
+  
+  // 无法解析 JSON 或无文本节点，回退
+  return await handleOriginalTranslate(input, provider, 'text', aiConfig);
 }
 
 /**
@@ -163,8 +193,9 @@ async function handleOriginalTranslate(input: TranslateInput, provider: any, tas
 Rules:
 1. Translate to ${targetLangName}. 
 2. NO explanation, NO markdown, NO prefix. 
-3. Preserve all \\n and format exactly.
-4. Return ONLY the translation, do NOT repeat the original text.${(taskType === 'spec' || taskType === 'rich-text') ? '\n5. If JSON, keep keys, translate values only.' : ''}`;
+3. Preserve all \\n and format EXACTLY. 
+4. Keep the same number of lines as the source text.
+5. Return ONLY the translation, do NOT repeat the original text.${(taskType === 'spec' || taskType === 'rich-text') ? '\n6. If JSON, keep keys, translate values only.' : ''}`;
 
   if (provider.type === 'browser-local') {
     const userContent = (taskType === 'spec' || taskType === 'rich-text') 
@@ -189,7 +220,13 @@ Rules:
     const rawContent = data.choices?.[0]?.message?.content || '';
     const finalVal = robustExtract(rawContent);
 
-    if (typeof finalVal === 'object') {
+    // 如果是 JSON 任务（如规格表、富文本、内部 Map），或者提取到了对象，则整体回传
+    const isJsonTask = taskType === 'spec' || taskType === 'rich-text' || taskType === 'json-map' || (typeof finalVal === 'object' && finalVal !== null);
+    if (typeof finalVal === 'object' && finalVal !== null) {
+      if (isJsonTask) {
+        return { [lang]: JSON.stringify(finalVal) };
+      }
+      // 否则尝试寻找语种 Key
       const val = finalVal[lang] || 
                   finalVal[lang.toLowerCase()] || 
                   finalVal[targetLangName] || 

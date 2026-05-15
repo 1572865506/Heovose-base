@@ -74,8 +74,9 @@ Output:
 Rules:
 1. Translate to ${targetLangName}. 
 2. NO explanation, NO markdown, NO prefix. 
-3. Preserve all \\n and format exactly.
-4. Return ONLY the translation, do NOT repeat the original text.${isJsonTask ? '\n5. If JSON, keep keys, translate values only.' : ''}`;
+3. Preserve all \\n and format EXACTLY. 
+4. Keep the same number of lines as the source text.
+5. Return ONLY the translation, do NOT repeat the original text.${isJsonTask ? '\n6. If JSON, keep keys, translate values only.' : ''}`;
 
         const userPrompt = isJsonTask 
           ? `SOURCE_JSON:\n${input.text}\n\nTRANSLATED_JSON_IN_${targetLangName.toUpperCase()}:`
