@@ -41,7 +41,7 @@ Output:
 
   const allProviders = config.providers || [];
   let targetProviders = [];
-  
+
   if (input.providerId) {
     const p = allProviders.find((p: any) => p.id === input.providerId && p.isActive);
     if (!p) throw new Error(`节点 ${input.providerId} 不可用`);
@@ -58,8 +58,8 @@ Output:
   for (const providerInfo of targetProviders) {
     try {
       console.log(`🤖 [AI-Flow] 使用节点: ${providerInfo.name}, 任务: ${input.taskType}`);
-      
-      // --- 关键优化：针对自定义 OpenAI 兼容节点，直接使用 HTTP 代理以绕过 Genkit 的严苛校验 ---
+
+      // --- 分支一：针对自定义 OpenAI 兼容节点 (Local)，直接使用 HTTP 代理 ---
       if (providerInfo.type !== 'google') {
         const langMap: Record<string, string> = {
           'en': 'English', 'zh': 'Chinese (Simplified)', 'jp': 'Japanese',
@@ -104,20 +104,39 @@ Rules:
         return { [targetLang]: typeof finalVal === 'object' ? JSON.stringify(finalVal) : String(finalVal) };
       }
 
-      // --- 针对 Google AI 等标准节点，继续使用 Genkit 框架 ---
+      // --- 分支二：针对 Google AI 标准节点 (Cloud)，使用 Genkit 框架 (Part Array 格式) ---
       const activeAi = genkit({
         plugins: [googleAI({ apiKey: providerInfo.apiKey })]
       });
 
+      const langMap: Record<string, string> = {
+        'en': 'English', 'zh': 'Chinese (Simplified)', 'jp': 'Japanese',
+        'kr': 'Korean', 'ru': 'Russian', 'de': 'German', 'fr': 'French', 
+        'es': 'Spanish', 'id': 'Indonesian', 'th': 'Thai', 'vi': 'Vietnamese'
+      };
       const targetLang = input.targetLangs[0].toLowerCase();
+      const targetLangName = langMap[targetLang] || targetLang.toUpperCase();
+      const isJsonTask = input.taskType === 'spec' || input.taskType === 'rich-text';
+
       const finalModel = `googleai/${providerInfo.model.split('/').pop() || providerInfo.model}`;
+
+      const systemPrompt = `You are a professional translator. 
+Rules:
+1. Translate to ${targetLangName}. 
+2. NO explanation, NO markdown, NO prefix. 
+3. Preserve all \\n and format exactly.
+4. Return ONLY the translation, do NOT repeat the original text.${isJsonTask ? '\n5. If JSON, keep keys, translate values only.' : ''}`;
+
+      const userPrompt = isJsonTask 
+        ? `SOURCE_JSON:\n${input.text}\n\nTRANSLATED_JSON_IN_${targetLangName.toUpperCase()}:`
+        : `SOURCE_TEXT:\n${input.text}\n\nTRANSLATION_IN_${targetLangName.toUpperCase()}_ONLY:`;
 
       const response = await activeAi.generate({
         model: finalModel as any,
         config: { temperature: 0.1, maxOutputTokens: 4096 },
         messages: [
-          { role: 'system', content: `You are a professional translator. Rules: 1. Translate to ${targetLang}. 2. NO explanation.` }, 
-          { role: 'user', content: `Task: Translate to ${targetLang}:\n\n${input.text}` }
+          { role: 'system', content: [{ text: systemPrompt }] }, 
+          { role: 'user', content: [{ text: userPrompt }] }
         ]
       });
 
@@ -139,7 +158,7 @@ function robustExtract(raw: string) {
     const longest = matches.reduce((a, b) => a.length > b.length ? a : b);
     try {
       return JSON.parse(longest);
-    } catch (e) {}
+    } catch (e) { }
   }
 
   // 2. 清洗普通文本：移除 Markdown 加粗、常见前缀
