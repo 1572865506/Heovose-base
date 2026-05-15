@@ -288,6 +288,13 @@ function ProductEditorContent() {
       if (!nameNeedsTranslate && !descNeedsTranslate) {
         toast({ title: "无需翻译", description: "名称和描述的英文内容已存在" });
       }
+    } catch (e: any) {
+      console.error("Translate Error:", e);
+      toast({ 
+        variant: "destructive", 
+        title: "智译失败", 
+        description: e.message || "请求 AI 翻译时发生未知错误" 
+      });
     } finally { setIsAiProcessing(false); }
   };
 
@@ -312,6 +319,13 @@ function ProductEditorContent() {
           [targetDetailsLang]: res[targetDetailsLang] 
         });
       }
+    } catch (e: any) {
+      console.error("Translate Details Error:", e);
+      toast({ 
+        variant: "destructive", 
+        title: "详情智译失败", 
+        description: e.message 
+      });
     } finally { setIsAiProcessing(false); }
   };
 
@@ -388,6 +402,13 @@ function ProductEditorContent() {
           return { ...prev, specGroups: nextGroups };
         });
       }
+    } catch (e: any) {
+      console.error("Translate Spec Item Error:", e);
+      toast({ 
+        variant: "destructive", 
+        title: "规格项翻译失败", 
+        description: e.message 
+      });
     } finally { setProcessingItems(prev => { const n = new Set(prev); n.delete(key); return n; }); }
   };
 

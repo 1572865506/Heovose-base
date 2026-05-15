@@ -21,7 +21,7 @@ export async function smartTranslate(input: TranslateInput) {
 
   if (providers.length === 0) throw new Error('未配置可用的 AI 节点');
 
-  let lastError: any = null;
+  let nodeErrors: string[] = [];
   for (const provider of providers) {
     try {
       const rawText = input.text || '';
@@ -55,11 +55,12 @@ export async function smartTranslate(input: TranslateInput) {
       
       return results;
     } catch (e: any) {
-      lastError = e;
+      const friendly = getFriendlyErrorMessage(e);
+      nodeErrors.push(`【${provider.name}】${friendly}`);
       console.warn(`⚠️ [SmartTranslate] 节点 ${provider.name} 失败:`, e.message);
     }
   }
-  throw new Error(`智译失败：${lastError?.message}`);
+  throw new Error(`智译失败，已尝试所有节点：\n${nodeErrors.join('\n')}`);
 }
 
 /**
@@ -268,4 +269,33 @@ function robustExtract(raw: string) {
     .trim();
 
   return cleaned;
+}
+
+/**
+ * 转换技术错误为用户友好的中文提示
+ */
+function getFriendlyErrorMessage(error: any): string {
+  if (!error) return '未知错误';
+  const msg = error.message || String(error);
+
+  if (msg.includes('503') || msg.includes('Service Unavailable') || msg.includes('high demand')) {
+    return 'AI 服务器目前压力过大，请稍后再试或切换到本地模型节点。';
+  }
+  if (msg.includes('429') || msg.includes('Too Many Requests')) {
+    return '触发频率限制，请稍等片刻再试。';
+  }
+  if (msg.includes('401') || msg.includes('403') || msg.includes('invalid_api_key')) {
+    return 'AI 节点认证失败，请检查 API Key 配置是否正确。';
+  }
+  if (msg.includes('ECONNREFUSED') || msg.includes('Failed to fetch')) {
+    return '无法连接到 AI 服务，请检查本地模型服务是否已启动或网络是否通畅。';
+  }
+  if (msg.includes('timeout')) {
+    return 'AI 响应超时，可能是网络连接不稳定或模型推理过慢。';
+  }
+  if (msg.includes('m.content.find') || msg.includes('format error')) {
+    return '模型输出格式异常，请尝试更换其他 AI 模型节点。';
+  }
+
+  return msg; // 兜底返回原始消息
 }
