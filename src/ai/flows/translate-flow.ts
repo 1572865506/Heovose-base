@@ -59,36 +59,71 @@ Output:
     try {
       console.log(`🤖 [AI-Flow] 使用节点: ${providerInfo.name}, 任务: ${input.taskType}`);
       
-      const plugins = [];
-      if (providerInfo.type === 'google') {
-        plugins.push(googleAI({ apiKey: providerInfo.apiKey }));
-      } else {
-        plugins.push(openAI({
-          apiKey: providerInfo.apiKey || 'no-key',
-          baseURL: providerInfo.baseUrl,
-          models: [{ name: providerInfo.model, info: { label: providerInfo.model, supports: { systemRole: true } } }]
-        }));
+      // --- 关键优化：针对自定义 OpenAI 兼容节点，直接使用 HTTP 代理以绕过 Genkit 的严苛校验 ---
+      if (providerInfo.type !== 'google') {
+        const langMap: Record<string, string> = {
+          'en': 'English', 'zh': 'Chinese (Simplified)', 'jp': 'Japanese',
+          'kr': 'Korean', 'ru': 'Russian', 'de': 'German', 'fr': 'French', 
+          'es': 'Spanish', 'id': 'Indonesian', 'th': 'Thai', 'vi': 'Vietnamese'
+        };
+        const targetLang = input.targetLangs[0].toLowerCase();
+        const targetLangName = langMap[targetLang] || targetLang.toUpperCase();
+        const isJsonTask = input.taskType === 'spec' || input.taskType === 'rich-text';
+
+        const systemPrompt = `You are a professional translator. 
+Rules:
+1. Translate to ${targetLangName}. 
+2. NO explanation, NO markdown, NO prefix. 
+3. Preserve all \\n and format exactly.
+4. Return ONLY the translation, do NOT repeat the original text.${isJsonTask ? '\n5. If JSON, keep keys, translate values only.' : ''}`;
+
+        const userPrompt = isJsonTask 
+          ? `SOURCE_JSON:\n${input.text}\n\nTRANSLATED_JSON_IN_${targetLangName.toUpperCase()}:`
+          : `SOURCE_TEXT:\n${input.text}\n\nTRANSLATION_IN_${targetLangName.toUpperCase()}_ONLY:`;
+
+        const proxyRes = await fetch(`${providerInfo.baseUrl}/chat/completions`, {
+          method: 'POST',
+          headers: { 
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${providerInfo.apiKey || 'no-key'}`
+          },
+          body: JSON.stringify({
+            model: providerInfo.model,
+            messages: [
+              { role: 'system', content: systemPrompt }, 
+              { role: 'user', content: userPrompt }
+            ],
+            temperature: 0.1
+          })
+        });
+
+        if (!proxyRes.ok) throw new Error(`Model Node Error: ${proxyRes.status}`);
+        const data = await proxyRes.json();
+        const fullText = data.choices?.[0]?.message?.content || '';
+        const finalVal = robustExtract(fullText);
+        return { [targetLang]: typeof finalVal === 'object' ? JSON.stringify(finalVal) : String(finalVal) };
       }
 
-      const activeAi = genkit({ plugins });
-      const finalModel = providerInfo.type === 'google'
-        ? `googleai/${providerInfo.model.split('/').pop() || providerInfo.model}`
-        : `openai/${providerInfo.model}`;
+      // --- 针对 Google AI 等标准节点，继续使用 Genkit 框架 ---
+      const activeAi = genkit({
+        plugins: [googleAI({ apiKey: providerInfo.apiKey })]
+      });
+
+      const targetLang = input.targetLangs[0].toLowerCase();
+      const finalModel = `googleai/${providerInfo.model.split('/').pop() || providerInfo.model}`;
 
       const response = await activeAi.generate({
         model: finalModel as any,
         config: { temperature: 0.1, maxOutputTokens: 4096 },
         messages: [
-          { role: 'system', content: finalSystemPrompt }, 
-          { role: 'user', content: `TRANSLATE THIS TEXT TO ${input.targetLangs[0].toUpperCase()}. 
-KEEP ALL NEWLINES AND FORMATTING EXACTLY:
-
-${input.text}` }
+          { role: 'system', content: `You are a professional translator. Rules: 1. Translate to ${targetLang}. 2. NO explanation.` }, 
+          { role: 'user', content: `Task: Translate to ${targetLang}:\n\n${input.text}` }
         ]
       });
 
       const fullText = response.text || '';
-      return robustExtract(fullText);
+      const finalVal = robustExtract(fullText);
+      return { [targetLang]: typeof finalVal === 'object' ? JSON.stringify(finalVal) : String(finalVal) };
     } catch (error: any) {
       lastError = error;
       console.warn(`[Node-Error] ${providerInfo.name}:`, error.message);
@@ -98,24 +133,22 @@ ${input.text}` }
 }
 
 function robustExtract(raw: string) {
-  let clean = raw.trim().replace(/```json\n?|\n?```/g, '').trim();
-  const tryParse = (str: string) => {
-    try {
-      const fixed = str.replace(/\n/g, (match, offset, full) => {
-        const q = full.substring(0, offset).split('"').length - 1;
-        const eq = full.substring(0, offset).split('\\"').length - 1;
-        return ((q - eq) % 2 === 1) ? '\\n' : match;
-      });
-      return JSON.parse(fixed);
-    } catch { return null; }
-  };
-  let result = tryParse(clean);
-  if (result) return result;
+  // 1. 尝试提取 JSON
   const matches = raw.match(/\{[\s\S]*\}/g);
   if (matches) {
     const longest = matches.reduce((a, b) => a.length > b.length ? a : b);
-    result = tryParse(longest);
-    if (result) return result;
+    try {
+      return JSON.parse(longest);
+    } catch (e) {}
   }
-  return raw;
+
+  // 2. 清洗普通文本：移除 Markdown 加粗、常见前缀
+  let cleaned = raw
+    .replace(/\*\*/g, '')
+    .replace(/^(Translation|Result|Translated|Output|Response|译文|结果)[:：]\s*/i, '')
+    .replace(/^Here is the translation[:：]?\s*/i, '')
+    .replace(/^This is translated to [\w\s]+[:：]?\s*/i, '')
+    .trim();
+
+  return cleaned;
 }

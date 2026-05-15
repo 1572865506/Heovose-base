@@ -153,21 +153,23 @@ async function handleOriginalTranslate(input: TranslateInput, provider: any, tas
     'ru': 'Russian',
     'de': 'German',
     'fr': 'French',
-    'es': 'Spanish'
+    'es': 'Spanish',
+    'id': 'Indonesian',
+    'th': 'Thai',
+    'vi': 'Vietnamese'
   };
   const targetLangName = langMap[lang.toLowerCase()] || lang.toUpperCase();
-  const finalSystem = `You are a professional translator. 
+  const finalSystem = `You are a professional translator.
 Rules:
 1. Translate to ${targetLangName}. 
-2. NO explanation. 
-3. Preserve all \\n and format. 
-4. If JSON, translate values only.`;
+2. NO explanation, NO markdown, NO prefix. 
+3. Preserve all \\n and format exactly.
+4. Return ONLY the translation, do NOT repeat the original text.${(taskType === 'spec' || taskType === 'rich-text') ? '\n5. If JSON, keep keys, translate values only.' : ''}`;
 
   if (provider.type === 'browser-local') {
-    const isJsonTask = taskType === 'spec' || taskType === 'rich-text' || input.text.trim().startsWith('{');
-    const userPrompt = isJsonTask 
-      ? `Task: Translate JSON values to ${targetLangName}. Keep keys. Return JSON only:\n\n${input.text}\n\nTARGET_LANGUAGE: ${targetLangName}`
-      : `Task: Translate to ${targetLangName}. Keep format:\n\n${input.text}\n\nTARGET_LANGUAGE: ${targetLangName}`;
+    const userContent = (taskType === 'spec' || taskType === 'rich-text') 
+      ? `SOURCE_JSON:\n${input.text}\n\nTRANSLATED_JSON_IN_${targetLangName.toUpperCase()}:`
+      : `SOURCE_TEXT:\n${input.text}\n\nTRANSLATION_IN_${targetLangName.toUpperCase()}_ONLY:`;
 
     const res = await fetch(`${provider.baseUrl}/chat/completions`, {
       method: 'POST',
@@ -176,7 +178,7 @@ Rules:
         model: provider.model,
         messages: [
           { role: 'system', content: finalSystem },
-          { role: 'user', content: userPrompt }
+          { role: 'user', content: userContent }
         ],
         temperature: 0.1
       })
@@ -184,43 +186,20 @@ Rules:
 
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     const data = await res.json();
-    const content = data.choices?.[0]?.message?.content || '';
+    const rawContent = data.choices?.[0]?.message?.content || '';
+    const finalVal = robustExtract(rawContent);
+
+    if (typeof finalVal === 'object') {
+      const val = finalVal[lang] || 
+                  finalVal[lang.toLowerCase()] || 
+                  finalVal[targetLangName] || 
+                  finalVal[targetLangName.toLowerCase()] ||
+                  finalVal['translation'] ||
+                  Object.values(finalVal)[0];
+      return { [lang]: String(val) };
+    }
     
-    let parsed: any = null;
-    const tryParse = (str: string) => {
-      try {
-        // 修复本地模型可能输出的原始换行符在 JSON 字符串中的问题
-        const fixed = str.replace(/\n/g, (match, offset, full) => {
-          const q = full.substring(0, offset).split('"').length - 1;
-          const eq = full.substring(0, offset).split('\\"').length - 1;
-          return ((q - eq) % 2 === 1) ? '\\n' : match;
-        });
-        return JSON.parse(fixed);
-      } catch { return null; }
-    };
-
-    parsed = tryParse(content);
-    if (!parsed) {
-      const m = content.match(/\{[\s\S]*\}/);
-      if (m) parsed = tryParse(m[0]);
-    }
-
-    if (parsed) {
-      // 尝试多种可能的 Key 提取方式
-      const val = parsed[lang] || 
-                  parsed[lang.toLowerCase()] || 
-                  parsed[lang.toUpperCase()] || 
-                  parsed[targetLangName] || 
-                  parsed[targetLangName.toLowerCase()] || 
-                  parsed;
-      
-      // 如果提取出来的还是那个对象且不是我们想要的 map 结构，则序列化
-      return { [lang]: typeof val === 'object' ? JSON.stringify(val) : String(val) };
-    }
-
-    // 清理 markdown 标记，但保留内部换行
-    const cleaned = content.replace(/```(json|text|markdown)?\n?|\n?```/g, '').trim();
-    return { [lang]: cleaned };
+    return { [lang]: String(finalVal) };
   } else {
     return await translateContent({
       ...input,
@@ -228,4 +207,28 @@ Rules:
       providerId: provider.id
     });
   }
+}
+
+/**
+ * 鲁棒性提取：支持提取 JSON 对象或清洗纯文本
+ */
+function robustExtract(raw: string) {
+  // 1. 尝试提取 JSON
+  const matches = raw.match(/\{[\s\S]*\}/g);
+  if (matches) {
+    const longest = matches.reduce((a, b) => a.length > b.length ? a : b);
+    try {
+      return JSON.parse(longest);
+    } catch (e) {}
+  }
+
+  // 2. 清洗普通文本：移除 Markdown 加粗、常见前缀
+  let cleaned = raw
+    .replace(/\*\*/g, '')
+    .replace(/^(Translation|Result|Translated|Output|Response|译文|结果)[:：]\s*/i, '')
+    .replace(/^Here is the translation[:：]?\s*/i, '')
+    .replace(/^This is translated to [\w\s]+[:：]?\s*/i, '')
+    .trim();
+
+  return cleaned;
 }
