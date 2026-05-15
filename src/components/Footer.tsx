@@ -2,7 +2,7 @@
 
 import Image from 'next/image';
 import { Locale } from "@/lib/translations";
-import { Linkedin, Twitter, Facebook, Instagram, Youtube, Mail, Phone, MapPin, Link as LinkIcon } from "lucide-react";
+import { Linkedin, Twitter, Facebook, Instagram, Youtube, Mail, Phone, MapPin, Link as LinkIcon, ArrowRight } from "lucide-react";
 import { useTranslations } from '@/hooks/use-translations';
 import { useLocalDoc } from '@/hooks/use-local-doc';
 import { useLocalCollection } from '@/hooks/use-local-collection';
@@ -40,88 +40,50 @@ export function Footer({ locale }: { locale: Locale }) {
   return (
     <footer className="bg-primary text-primary-foreground py-24">
       <div className="container mx-auto px-6">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-16 lg:gap-12">
+        {/* Top Section: Main Navigation Matrix */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-12 gap-16 lg:gap-12 mb-20">
           
-          {/* Column 1: Brand & Social */}
-          <div className="space-y-8">
-            <div className="space-y-4">
+          {/* Col 1: Brand & Action (3/12) */}
+          <div className="lg:col-span-3 space-y-10">
+            <div className="space-y-6">
               <Image
                 src={siteConfig?.logoInverted ? getAssetUrl(siteConfig.logoInverted) : "/image/Heovose.svg"}
                 alt="Heovose Logo"
                 width={180}
                 height={36}
-                className="h-9 w-auto object-contain"
+                className="h-10 w-auto object-contain"
               />
-              <div className="space-y-1">
-                <p className="text-accent font-bold text-sm tracking-wide">{tr('footer_slogan1')}</p>
-                <p className="opacity-60 text-xs leading-relaxed max-w-[240px]">{tr('footer_slogan2')}</p>
+              <div className="space-y-2">
+                <p className="text-accent font-bold text-base tracking-wide">{tr('footer_slogan1')}</p>
+                <p className="opacity-60 text-xs leading-relaxed max-w-[260px]">{tr('footer_slogan2')}</p>
               </div>
             </div>
-            <div className="flex gap-4">
-              {siteConfig?.socialLinks && siteConfig.socialLinks.length > 0 ? (
-                siteConfig.socialLinks.map((link, idx) => {
-                  const PlatformIcon = (() => {
-                    switch (link.platform.toLowerCase()) {
-                      case 'facebook': return Facebook;
-                      case 'instagram': return Instagram;
-                      case 'linkedin': return Linkedin;
-                      case 'youtube': return Youtube;
-                      case 'twitter':
-                      case 'x': return Twitter;
-                      default: return LinkIcon;
-                    }
-                  })();
-
-                  return (
-                    <a 
-                      key={idx} 
-                      href={link.url} 
-                      target="_blank" 
-                      rel="noopener noreferrer"
-                      className="h-10 w-10 rounded-full bg-white/5 flex items-center justify-center hover:bg-accent hover:text-accent-foreground cursor-pointer transition-all"
-                    >
-                      <PlatformIcon className="h-5 w-5" />
-                    </a>
-                  );
-                })
-              ) : (
-                <>
-                  <div className="h-10 w-10 rounded-full bg-white/5 flex items-center justify-center hover:bg-accent hover:text-accent-foreground cursor-pointer transition-all">
-                    <Linkedin className="h-5 w-5" />
-                  </div>
-                  <div className="h-10 w-10 rounded-full bg-white/5 flex items-center justify-center hover:bg-accent hover:text-accent-foreground cursor-pointer transition-all">
-                    <Twitter className="h-5 w-5" />
-                  </div>
-                  <div className="h-10 w-10 rounded-full bg-white/5 flex items-center justify-center hover:bg-accent hover:text-accent-foreground cursor-pointer transition-all">
-                    <Facebook className="h-5 w-5" />
-                  </div>
-                </>
-              )}
-            </div>
+            <a 
+              href="/products" 
+              className="inline-flex items-center gap-3 px-8 py-3 rounded-full bg-white/10 hover:bg-accent hover:text-accent-foreground transition-all group border border-white/10"
+            >
+              <span className="text-xs font-bold uppercase tracking-widest">{tr('nav_sub_download')}</span>
+              <div className="h-6 w-6 rounded-full bg-white/10 flex items-center justify-center group-hover:bg-white/20">
+                <ArrowRight className="h-3 w-3" />
+              </div>
+            </a>
           </div>
 
-          {/* Column 2: Products */}
-          <div>
-            <h4 className="font-bold mb-8 text-white uppercase tracking-widest text-xs border-b border-white/10 pb-4">{tr('nav_products')}</h4>
-            <div className="grid grid-cols-1 gap-10">
+          {/* Col 2: Dynamic Products in 2 Columns (5/12) */}
+          <div className="lg:col-span-5">
+            <h4 className="font-bold mb-10 text-white uppercase tracking-[0.2em] text-[10px] opacity-40">{tr('nav_products')}</h4>
+            <div className="grid grid-cols-2 gap-x-12 gap-y-10">
               <div className="space-y-4">
                 <span className="text-[10px] font-bold text-accent uppercase tracking-widest opacity-80">{tr('nav_wholesale')}</span>
                 <ul className="space-y-3 opacity-60 text-[13px]">
                   {dynamicWholesale.length > 0 ? (
                     dynamicWholesale.map(cat => (
                       <li key={cat.id} className="hover:text-accent cursor-pointer transition-colors">
-                        <a href={`/products?category=${encodeURIComponent(cat.slug || cat.id)}`}>
-                          {tr(cat.nameTextId)}
-                        </a>
+                        <a href={`/products?category=${encodeURIComponent(cat.slug || cat.id)}`}>{tr(cat.nameTextId)}</a>
                       </li>
                     ))
                   ) : (
-                    <>
-                      <li className="hover:text-accent cursor-pointer transition-colors">{tr('nav_sub_aio')}</li>
-                      <li className="hover:text-accent cursor-pointer transition-colors">{tr('nav_sub_minipc')}</li>
-                      <li className="hover:text-accent cursor-pointer transition-colors">{tr('nav_sub_monitor')}</li>
-                      <li className="hover:text-accent cursor-pointer transition-colors">{tr('nav_sub_laptop')}</li>
-                    </>
+                    <li className="italic opacity-40 text-xs">Loading...</li>
                   )}
                 </ul>
               </div>
@@ -131,65 +93,111 @@ export function Footer({ locale }: { locale: Locale }) {
                   {dynamicProject.length > 0 ? (
                     dynamicProject.map(cat => (
                       <li key={cat.id} className="hover:text-accent cursor-pointer transition-colors">
-                        <a href={`/products?category=${encodeURIComponent(cat.slug || cat.id)}`}>
-                          {tr(cat.nameTextId)}
-                        </a>
+                        <a href={`/products?category=${encodeURIComponent(cat.slug || cat.id)}`}>{tr(cat.nameTextId)}</a>
                       </li>
                     ))
                   ) : (
-                    <>
-                      <li className="hover:text-accent cursor-pointer transition-colors">{tr('nav_sub_conference')}</li>
-                      <li className="hover:text-accent cursor-pointer transition-colors">{tr('nav_sub_selfservice')}</li>
-                    </>
+                    <li className="italic opacity-40 text-xs">Loading...</li>
                   )}
                 </ul>
               </div>
             </div>
           </div>
 
-          {/* Column 3: Company Info */}
-          <div>
-            <h4 className="font-bold mb-8 text-white uppercase tracking-widest text-xs border-b border-white/10 pb-4">{tr('nav_company')}</h4>
+          {/* Col 3: Company (2/12) */}
+          <div className="lg:col-span-2">
+            <h4 className="font-bold mb-10 text-white uppercase tracking-[0.2em] text-[10px] opacity-40">{tr('nav_company')}</h4>
             <ul className="space-y-4 opacity-60 text-[13px]">
-              <li className="hover:text-accent cursor-pointer transition-colors">{tr('nav_about')}</li>
+              <li className="hover:text-accent cursor-pointer transition-colors"><a href="/#about">{tr('nav_about')}</a></li>
+              <li className="hover:text-accent cursor-pointer transition-colors"><a href="/#cases">{tr('nav_cases')}</a></li>
               <li className="hover:text-accent cursor-pointer transition-colors">{tr('nav_career')}</li>
-              <li className="hover:text-accent cursor-pointer transition-colors">{tr('nav_cases')}</li>
+              <li className="hover:text-accent cursor-pointer transition-colors">{tr('nav_contact')}</li>
             </ul>
           </div>
 
-          {/* Column 4: Contact Us */}
-          <div>
-            <h4 className="font-bold mb-8 text-white uppercase tracking-widest text-xs border-b border-white/10 pb-4">{tr('nav_contact')}</h4>
-            <ul className="space-y-6 opacity-60 text-[13px]">
-              {companyEmail && (
-                <li className="group cursor-pointer">
-                  <span className="block text-[10px] text-accent mb-1 uppercase font-bold tracking-tighter">{tr('footer_email')}</span>
-                  <a href={`mailto:${companyEmail}`} className="flex items-center gap-3 group-hover:text-accent transition-colors">
-                    <Mail className="h-4 w-4" /> {companyEmail}
+          {/* Col 4: Follow Us (2/12) */}
+          <div className="lg:col-span-2">
+            <h4 className="font-bold mb-10 text-white uppercase tracking-[0.2em] text-[10px] opacity-40">Follow Us</h4>
+            <div className="flex flex-col gap-4">
+              {siteConfig?.socialLinks?.map((link, idx) => {
+                const PlatformIcon = (() => {
+                  switch (link.platform.toLowerCase()) {
+                    case 'facebook': return Facebook;
+                    case 'instagram': return Instagram;
+                    case 'linkedin': return Linkedin;
+                    case 'youtube': return Youtube;
+                    case 'twitter':
+                    case 'x': return Twitter;
+                    default: return LinkIcon;
+                  }
+                })();
+                return (
+                  <a key={idx} href={link.url} target="_blank" rel="noopener noreferrer" className="flex items-center gap-3 opacity-60 hover:opacity-100 hover:text-accent transition-all text-[13px]">
+                    <PlatformIcon className="h-4 w-4" /> {link.platform}
                   </a>
-                </li>
+                );
+              }) || (
+                <div className="space-y-4 opacity-40 text-[13px]">
+                  <p className="flex items-center gap-3"><Linkedin className="h-4 w-4" /> LinkedIn</p>
+                  <p className="flex items-center gap-3"><Twitter className="h-4 w-4" /> Twitter</p>
+                  <p className="flex items-center gap-3"><Facebook className="h-4 w-4" /> Facebook</p>
+                </div>
               )}
-              {companyPhone && (
-                <li className="group cursor-pointer">
-                  <span className="block text-[10px] text-accent mb-1 uppercase font-bold tracking-tighter">{tr('footer_support')}</span>
-                  <a href={`tel:${companyPhone}`} className="flex items-center gap-3 group-hover:text-accent transition-colors">
-                    <Phone className="h-4 w-4" /> {companyPhone}
-                  </a>
-                </li>
-              )}
-              {companyAddr && (
-                <li className="group cursor-pointer">
-                  <span className="block text-[10px] text-accent mb-1 uppercase font-bold tracking-tighter">{tr('footer_office')}</span>
-                  <div className="flex items-start gap-3 group-hover:text-accent transition-colors">
-                    <MapPin className="h-4 w-4 mt-1 shrink-0" /> 
-                    <span className="leading-relaxed">{companyAddr}</span>
-                  </div>
-                </li>
-              )}
-            </ul>
+            </div>
           </div>
         </div>
 
+        {/* Separator Line */}
+        <div className="h-px w-full bg-white/10 mb-20" />
+
+        {/* Bottom Section: Contact & Global Presence */}
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-16 items-start">
+          
+          {/* Contact Left (3/12) */}
+          <div className="lg:col-span-3 space-y-12">
+            <div className="space-y-2">
+              <span className="text-[10px] font-bold text-accent uppercase tracking-widest">{tr('footer_email')}</span>
+              <p className="text-xl font-medium tracking-tight text-white hover:text-accent transition-colors">
+                <a href={`mailto:${companyEmail}`}>{companyEmail}</a>
+              </p>
+            </div>
+            <div className="space-y-2">
+              <span className="text-[10px] font-bold text-accent uppercase tracking-widest">{tr('footer_support')}</span>
+              <p className="text-xl font-medium tracking-tight text-white flex items-center gap-3">
+                <span className="h-8 w-8 rounded-full bg-green-500/20 flex items-center justify-center">
+                  <Phone className="h-4 w-4 text-green-400" />
+                </span>
+                <a href={`tel:${companyPhone}`}>{companyPhone}</a>
+              </p>
+            </div>
+          </div>
+
+          {/* Presence Right (9/12) */}
+          <div className="lg:col-span-9 space-y-8">
+            <h4 className="text-xl font-bold text-white">Global Manufacturing Presence In</h4>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+              {[
+                { id: 'panyu', country: 'CHINA', name: 'PANYU HQ', flag: '🇨🇳', addr: 'Guangzhou, Guangdong' },
+                { id: 'shunde', country: 'CHINA', name: 'SHUNDE FACILITY', flag: '🇨🇳', addr: 'Foshan, Guangdong' },
+                { id: 'beijiao', country: 'CHINA', name: 'BEIJIAO FACILITY', flag: '🇨🇳', addr: 'Foshan, Guangdong' },
+                { id: 'jakarta', country: 'INDONESIA', name: 'JAKARTA BASE', flag: '🇮🇩', addr: 'Jakarta, Indonesia' }
+              ].map((loc) => (
+                <div key={loc.id} className="p-6 rounded-2xl bg-white/5 border border-white/5 hover:bg-white/10 transition-all space-y-4 group">
+                  <div className="flex items-center justify-between">
+                    <span className="text-2xl">{loc.flag}</span>
+                    <span className="text-[9px] font-bold opacity-30 group-hover:opacity-60 uppercase tracking-widest transition-opacity">{loc.country}</span>
+                  </div>
+                  <div className="space-y-1">
+                    <p className="font-bold text-sm text-white tracking-wide">{loc.name}</p>
+                    <p className="text-[11px] opacity-40 leading-relaxed">{loc.addr}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        {/* Final Copyright */}
         <div className="mt-24 pt-8 border-t border-white/5 flex flex-col md:flex-row justify-between items-center gap-6 opacity-30 text-[9px] uppercase tracking-[0.2em] font-bold">
           <p>© {new Date().getFullYear()} {companyName}. {tr('footer_copyright_suffix')}</p>
           <div className="flex gap-8">
