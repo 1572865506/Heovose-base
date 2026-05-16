@@ -43,7 +43,7 @@ export function useTranslations(locale: Locale) {
         const val = content[locale];
         
         if (val !== undefined && val !== null) {
-          return val.toString();
+          return val;
         }
       }
 

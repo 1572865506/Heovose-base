@@ -10,7 +10,9 @@ import { Label } from '@/components/ui/label';
 import { 
   Select,
   SelectContent,
+  SelectGroup,
   SelectItem,
+  SelectLabel,
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
@@ -173,6 +175,7 @@ export default function GlobalMapAdminPage() {
     descZh: '',
     descEn: '',
     imageUrl: '',
+    countryCode: 'cn',
     posTop: '50%',
     posLeft: '50%'
   });
@@ -424,7 +427,7 @@ export default function GlobalMapAdminPage() {
             <p className="text-[10px] text-muted-foreground uppercase font-medium">配置地图上显示的交互式 Pins。</p>
           </div>
           <Button onClick={() => {
-            setLocationForm({ id: '', type: 'Factory', titleZh: '', titleEn: '', addressZh: '', addressEn: '', descZh: '', descEn: '', imageUrl: '', posTop: '50%', posLeft: '50%' });
+            setLocationForm({ id: '', type: 'Factory', titleZh: '', titleEn: '', addressZh: '', addressEn: '', descZh: '', descEn: '', imageUrl: '', countryCode: 'cn', posTop: '50%', posLeft: '50%' });
             setEditingLocation(null);
             setIsLocationDialogOpen(true);
           }} className="rounded-xl h-10 px-6 gap-2 text-xs font-bold uppercase tracking-widest shadow-md">
@@ -447,8 +450,16 @@ export default function GlobalMapAdminPage() {
             <Card key={loc.id} className="rounded-2xl border-border/40 overflow-hidden group hover:border-primary/40 transition-all shadow-sm">
               <div className="relative h-32 bg-muted/20">
                 {loc.imageUrl && <img src={getAssetUrl(loc.imageUrl)} alt="" className="w-full h-full object-cover" />}
-                <div className="absolute top-2 left-2">
+                <div className="absolute top-2 left-2 flex gap-1.5">
                   <Badge className="bg-primary text-white text-[8px] uppercase">{loc.type}</Badge>
+                  <Badge variant="outline" className="bg-white/90 backdrop-blur-sm border-transparent text-[8px] flex items-center gap-1 px-1.5 py-0.5">
+                    <img 
+                      src={`https://flagcdn.com/w20/${(loc.countryCode || 'cn').toLowerCase()}.png`} 
+                      alt="" 
+                      className="w-3 h-2 object-cover rounded-[1px]" 
+                    />
+                    <span className="font-bold opacity-70">{(loc.countryCode || 'CN').toUpperCase()}</span>
+                  </Badge>
                 </div>
                 <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
                    <Button 
@@ -468,7 +479,7 @@ export default function GlobalMapAdminPage() {
                      onClick={(e) => { 
                        e.stopPropagation();
                        setEditingLocation(loc); 
-                       setLocationForm(loc); 
+                       setLocationForm({ ...loc, countryCode: loc.countryCode || 'cn' }); 
                        setIsLocationDialogOpen(true); 
                      }}
                    >
@@ -503,7 +514,7 @@ export default function GlobalMapAdminPage() {
                 <h4 className="text-xs font-bold text-primary truncate">{loc.titleZh}</h4>
                 <p className="text-[10px] text-muted-foreground line-clamp-1">{loc.addressZh}</p>
                 <div className="flex justify-between items-center pt-2 border-t border-dashed">
-                  <span className="text-[8px] font-mono opacity-40">POS: L:{loc.posLeft}, T:{loc.posTop}</span>
+                  <span className="text-[8px] font-mono opacity-40 uppercase tracking-widest">Country: {loc.countryCode || 'cn'}</span>
                   <div className="flex items-center gap-1">
                     {loc.titleEn ? <Badge variant="secondary" className="h-3 px-1 text-[6px] bg-green-50 text-green-600">EN OK</Badge> : <Badge variant="secondary" className="h-3 px-1 text-[6px]">NO EN</Badge>}
                   </div>
@@ -515,8 +526,8 @@ export default function GlobalMapAdminPage() {
       </div>
 
       <Dialog open={isLocationDialogOpen} onOpenChange={setIsLocationDialogOpen}>
-        <DialogContent className="max-w-5xl p-0 rounded-3xl overflow-hidden border-none shadow-2xl">
-          <div className="bg-primary p-6 text-white flex items-center justify-between">
+        <DialogContent className="max-w-5xl h-[90vh] p-0 rounded-3xl overflow-hidden border-none shadow-2xl flex flex-col">
+          <div className="bg-primary p-6 text-white flex items-center justify-between flex-shrink-0">
             <DialogHeader>
               <DialogTitle className="text-lg font-bold flex items-center gap-2">
                 <MapPin className="h-5 w-5" /> {editingLocation ? '编辑网点' : '新增全球网点'}
@@ -525,7 +536,7 @@ export default function GlobalMapAdminPage() {
             </DialogHeader>
           </div>
 
-          <div className="p-8 bg-white space-y-8 max-h-[80vh] overflow-y-auto">
+          <div className="p-8 bg-white space-y-8 flex-1 overflow-y-auto">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2 col-span-2">
@@ -553,6 +564,60 @@ export default function GlobalMapAdminPage() {
                       </button>
                     ))}
                   </div>
+                </div>
+                
+                <div className="space-y-2 col-span-2">
+                  <Label className="text-[10px] font-bold uppercase opacity-40">所属国家</Label>
+                  <Select 
+                    value={locationForm.countryCode || "cn"} 
+                    onValueChange={(val) => setLocationForm({ ...locationForm, countryCode: val })}
+                  >
+                    <SelectTrigger className="h-10 rounded-xl bg-muted/5 border-transparent flex items-center justify-between w-full">
+                      <SelectValue placeholder="请选择网点所属国家" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectGroup>
+                        <SelectLabel>亚洲 (Asia)</SelectLabel>
+                        <SelectItem value="cn">中国 (China)</SelectItem>
+                        <SelectItem value="hk">中国香港 (Hong Kong)</SelectItem>
+                        <SelectItem value="tw">中国台湾 (Taiwan)</SelectItem>
+                        <SelectItem value="id">印尼 (Indonesia)</SelectItem>
+                        <SelectItem value="my">马来西亚 (Malaysia)</SelectItem>
+                        <SelectItem value="sg">新加坡 (Singapore)</SelectItem>
+                        <SelectItem value="th">泰国 (Thailand)</SelectItem>
+                        <SelectItem value="vn">越南 (Vietnam)</SelectItem>
+                        <SelectItem value="jp">日本 (Japan)</SelectItem>
+                        <SelectItem value="kr">韩国 (South Korea)</SelectItem>
+                        <SelectItem value="in">印度 (India)</SelectItem>
+                        <SelectItem value="ph">菲律宾 (Philippines)</SelectItem>
+                      </SelectGroup>
+                      <SelectGroup>
+                        <SelectLabel>欧洲 (Europe)</SelectLabel>
+                        <SelectItem value="de">德国 (Germany)</SelectItem>
+                        <SelectItem value="fr">法国 (France)</SelectItem>
+                        <SelectItem value="gb">英国 (UK)</SelectItem>
+                        <SelectItem value="it">意大利 (Italy)</SelectItem>
+                        <SelectItem value="es">西班牙 (Spain)</SelectItem>
+                        <SelectItem value="nl">荷兰 (Netherlands)</SelectItem>
+                        <SelectItem value="ru">俄罗斯 (Russia)</SelectItem>
+                      </SelectGroup>
+                      <SelectGroup>
+                        <SelectLabel>北美洲 (North America)</SelectLabel>
+                        <SelectItem value="us">美国 (USA)</SelectItem>
+                        <SelectItem value="ca">加拿大 (Canada)</SelectItem>
+                        <SelectItem value="mx">墨西哥 (Mexico)</SelectItem>
+                      </SelectGroup>
+                      <SelectGroup>
+                        <SelectLabel>其他 (Others)</SelectLabel>
+                        <SelectItem value="au">澳大利亚 (Australia)</SelectItem>
+                        <SelectItem value="br">巴西 (Brazil)</SelectItem>
+                        <SelectItem value="ae">阿联酋 (UAE)</SelectItem>
+                        <SelectItem value="sa">沙特 (Saudi Arabia)</SelectItem>
+                        <SelectItem value="za">南非 (South Africa)</SelectItem>
+                        <SelectItem value="tr">土耳其 (Turkey)</SelectItem>
+                      </SelectGroup>
+                    </SelectContent>
+                  </Select>
                 </div>
               </div>
               
@@ -602,7 +667,7 @@ export default function GlobalMapAdminPage() {
               </div>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-10 pt-6 border-t border-dashed">
+            <div className="grid grid-cols-1 gap-10 pt-6 border-t border-dashed">
               <div className="space-y-2">
                 <Label className="text-[10px] font-bold uppercase opacity-40">展示图预览</Label>
                 <div 
@@ -624,29 +689,10 @@ export default function GlobalMapAdminPage() {
                   )}
                 </div>
               </div>
-
-              <div className="space-y-6">
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label className="text-[10px] font-bold uppercase opacity-40">地图坐标 Left (%)</Label>
-                    <Input value={locationForm.posLeft} onChange={e => setLocationForm({...locationForm, posLeft: e.target.value})} placeholder="如: 75%" className="h-10 rounded-xl font-mono" />
-                  </div>
-                  <div className="space-y-2">
-                    <Label className="text-[10px] font-bold uppercase opacity-40">地图坐标 Top (%)</Label>
-                    <Input value={locationForm.posTop} onChange={e => setLocationForm({...locationForm, posTop: e.target.value})} placeholder="如: 40%" className="h-10 rounded-xl font-mono" />
-                  </div>
-                </div>
-                <div className="p-4 bg-muted/5 rounded-2xl border border-dashed">
-                  <p className="text-[10px] text-muted-foreground leading-relaxed">
-                    <span className="font-bold text-primary uppercase block mb-1">坐标说明：</span>
-                    请填入百分比数值。Left 代表从地图左边缘起算的距离，Top 代表从顶边缘起算的距离。
-                  </p>
-                </div>
-              </div>
             </div>
           </div>
 
-          <DialogFooter className="bg-muted/10 p-6 flex gap-3 border-t">
+          <DialogFooter className="bg-muted/10 p-6 flex gap-3 border-t flex-shrink-0">
             <Button variant="outline" onClick={() => setIsLocationDialogOpen(false)} className="rounded-xl h-11 flex-1 font-bold uppercase text-[10px]">取消编辑</Button>
             <Button onClick={handleLocationSubmit} className="rounded-xl h-11 flex-1 font-bold uppercase text-[10px]">确认并保存</Button>
           </DialogFooter>

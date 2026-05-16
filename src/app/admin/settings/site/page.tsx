@@ -32,7 +32,9 @@ import {
   Youtube,
   Twitter,
   Plus,
-  Trash2
+  Trash2,
+  MessagesSquare,
+  Globe as GlobeIcon
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { getAssetUrl } from '@/lib/image-utils';
@@ -69,6 +71,11 @@ const SITE_KEYS = {
   COMPANY_ADDR: 'COMPANY_ADDR',
   COMPANY_PHONE: 'COMPANY_PHONE',
   COMPANY_EMAIL: 'COMPANY_EMAIL',
+  COMPANY_WECHAT: 'COMPANY_WECHAT',
+  COMPANY_WHATSAPP: 'COMPANY_WHATSAPP',
+  PRODUCT_SEO_TEMPLATE: 'PRODUCT_SEO_TEMPLATE',
+  ARTICLE_SEO_TEMPLATE: 'ARTICLE_SEO_TEMPLATE',
+  SOCIAL_LINKS: 'SOCIAL_LINKS',
 };
 
 // --- Sub-components (defined outside to prevent re-render issues) ---
@@ -118,15 +125,21 @@ export default function SiteSettingsPage() {
         const entry = translations.find(t => t.id === key);
         if (entry) {
           const content = (entry.content as any) || {};
-          // Ensure all active languages have a value, even if empty
-          const fullContent: Record<string, string> = {};
+          const fullContent: Record<string, any> = {};
           activeLanguages.forEach((l: any) => {
-            fullContent[l.code] = content[l.code] || (entry[l.code] as string) || '';
+            const val = content[l.code];
+            if (key === SITE_KEYS.SOCIAL_LINKS) {
+              fullContent[l.code] = Array.isArray(val) ? val : [];
+            } else {
+              fullContent[l.code] = (val !== undefined && val !== null) ? val : '';
+            }
           });
           initialEdits[key] = fullContent;
         } else {
-          const emptyContent: Record<string, string> = {};
-          activeLanguages.forEach((l: any) => { emptyContent[l.code] = ''; });
+          const emptyContent: Record<string, any> = {};
+          activeLanguages.forEach((l: any) => { 
+            emptyContent[l.code] = key === SITE_KEYS.SOCIAL_LINKS ? [] : ''; 
+          });
           initialEdits[key] = emptyContent;
         }
       });
@@ -134,7 +147,7 @@ export default function SiteSettingsPage() {
     }
   }, [translations, activeLanguages]);
 
-  const handleTransChange = (key: string, lang: string, value: string) => {
+  const handleTransChange = (key: string, lang: string, value: any) => {
     setTransEdits(prev => ({
       ...prev,
       [key]: {
@@ -159,23 +172,20 @@ export default function SiteSettingsPage() {
   };
 
   const handleAddSocial = () => {
-    const current = localConfig.socialLinks || [];
-    setLocalConfig(prev => ({
-      ...prev,
-      socialLinks: [...current, { platform: 'Facebook', url: '' }]
-    }));
+    const current = transEdits[SITE_KEYS.SOCIAL_LINKS]?.[activeLang] || [];
+    handleTransChange(SITE_KEYS.SOCIAL_LINKS, activeLang, [...current, { platform: 'Facebook', url: '' }]);
   };
 
   const handleRemoveSocial = (index: number) => {
-    const current = [...(localConfig.socialLinks || [])];
+    const current = [...(transEdits[SITE_KEYS.SOCIAL_LINKS]?.[activeLang] || [])];
     current.splice(index, 1);
-    setLocalConfig(prev => ({ ...prev, socialLinks: current }));
+    handleTransChange(SITE_KEYS.SOCIAL_LINKS, activeLang, current);
   };
 
   const handleSocialChange = (index: number, field: 'platform' | 'url', value: string) => {
-    const current = [...(localConfig.socialLinks || [])];
+    const current = [...((transEdits[SITE_KEYS.SOCIAL_LINKS]?.[activeLang] as any) || [])];
     current[index] = { ...current[index], [field]: value };
-    setLocalConfig(prev => ({ ...prev, socialLinks: current }));
+    handleTransChange(SITE_KEYS.SOCIAL_LINKS, activeLang, current);
   };
 
   const getPlatformIcon = (platform: string) => {
@@ -186,6 +196,8 @@ export default function SiteSettingsPage() {
       case 'youtube': return <Youtube className="h-4 w-4" />;
       case 'twitter':
       case 'x': return <Twitter className="h-4 w-4" />;
+      case 'wechat': return <MessagesSquare className="h-4 w-4" />;
+      case 'weibo': return <GlobeIcon className="h-4 w-4" />;
       default: return <LinkIcon className="h-4 w-4" />;
     }
   };
@@ -361,8 +373,8 @@ export default function SiteSettingsPage() {
                     产品页 SEO 模板 <Sparkles className="h-3 w-3 text-primary" />
                   </Label>
                   <Input 
-                    value={localConfig.productSeoTemplate || ''} 
-                    onChange={e => setLocalConfig({...localConfig, productSeoTemplate: e.target.value})}
+                    value={transEdits[SITE_KEYS.PRODUCT_SEO_TEMPLATE]?.[activeLang] || ''} 
+                    onChange={e => handleTransChange(SITE_KEYS.PRODUCT_SEO_TEMPLATE, activeLang, e.target.value)}
                     placeholder="[ProductName] | [SiteTitle]"
                     className="h-12 rounded-xl bg-slate-900 text-white border-none font-mono text-xs shadow-xl"
                   />
@@ -373,8 +385,8 @@ export default function SiteSettingsPage() {
                     案例/文章 SEO 模板
                   </Label>
                   <Input 
-                    value={localConfig.articleSeoTemplate || ''} 
-                    onChange={e => setLocalConfig({...localConfig, articleSeoTemplate: e.target.value})}
+                    value={transEdits[SITE_KEYS.ARTICLE_SEO_TEMPLATE]?.[activeLang] || ''} 
+                    onChange={e => handleTransChange(SITE_KEYS.ARTICLE_SEO_TEMPLATE, activeLang, e.target.value)}
                     placeholder="[Title] - [SiteTitle]"
                     className="h-12 rounded-xl bg-slate-900 text-white border-none font-mono text-xs shadow-xl"
                   />
@@ -438,6 +450,28 @@ export default function SiteSettingsPage() {
                   </div>
                </div>
 
+               {/* New: Messaging Matrix */}
+               <div className="grid grid-cols-1 md:grid-cols-2 gap-10 pt-6 border-t border-slate-50">
+                  <div className="space-y-3">
+                    <Label className="text-[11px] font-bold uppercase tracking-[0.2em] text-slate-400 pl-1">企业微信号 (WeChat)</Label>
+                    <Input 
+                      value={transEdits[SITE_KEYS.COMPANY_WECHAT]?.[activeLang] || ''} 
+                      onChange={e => handleTransChange(SITE_KEYS.COMPANY_WECHAT, activeLang, e.target.value)}
+                      placeholder="例如: Heovose_Official"
+                      className="h-12 rounded-xl bg-slate-50 border-none font-bold"
+                    />
+                  </div>
+                  <div className="space-y-3">
+                    <Label className="text-[11px] font-bold uppercase tracking-[0.2em] text-slate-400 pl-1">WhatsApp 号码</Label>
+                    <Input 
+                      value={transEdits[SITE_KEYS.COMPANY_WHATSAPP]?.[activeLang] || ''} 
+                      onChange={e => handleTransChange(SITE_KEYS.COMPANY_WHATSAPP, activeLang, e.target.value)}
+                      placeholder="例如: +86 138..."
+                      className="h-12 rounded-xl bg-slate-50 border-none font-bold font-mono"
+                    />
+                  </div>
+               </div>
+
                {/* Social Matrix */}
                 <div className="space-y-6">
                    <div className="flex items-center justify-between">
@@ -455,15 +489,15 @@ export default function SiteSettingsPage() {
                    </div>
                    
                    <div className="space-y-3">
-                     {(localConfig.socialLinks || []).length === 0 ? (
+                     {(transEdits[SITE_KEYS.SOCIAL_LINKS]?.[activeLang] || []).length === 0 ? (
                        <div className="p-12 border-2 border-dashed border-slate-100 rounded-3xl text-center space-y-3">
                           <div className="h-12 w-12 rounded-2xl bg-slate-50 flex items-center justify-center mx-auto">
                              <LinkIcon className="h-5 w-5 text-slate-200" />
                           </div>
-                          <p className="text-[10px] font-bold text-slate-300 uppercase tracking-widest">暂无配置社交外链</p>
+                          <p className="text-[10px] font-bold text-slate-300 uppercase tracking-widest">暂无配置当前语言下的社交外链</p>
                        </div>
                      ) : (
-                       localConfig.socialLinks?.map((link, idx) => (
+                       ((transEdits[SITE_KEYS.SOCIAL_LINKS]?.[activeLang] as unknown as any[]) || []).map((link: any, idx: number) => (
                          <div key={idx} className="flex items-center gap-3 animate-in fade-in slide-in-from-right-4 duration-300">
                            <div className="flex-1 grid grid-cols-12 gap-3 p-3 bg-slate-50 rounded-2xl border border-slate-100 items-center">
                              <div className="col-span-4 flex items-center gap-3 pl-2">
@@ -480,6 +514,8 @@ export default function SiteSettingsPage() {
                                   <option value="LinkedIn">LinkedIn</option>
                                   <option value="YouTube">YouTube</option>
                                   <option value="Twitter">X / Twitter</option>
+                                  <option value="WeChat">WeChat / 微信</option>
+                                  <option value="Weibo">Weibo / 微博</option>
                                   <option value="Other">Other</option>
                                 </select>
                              </div>
@@ -504,7 +540,7 @@ export default function SiteSettingsPage() {
                        ))
                      )}
                    </div>
-                   <p className="text-[10px] text-slate-400 italic px-2">链接将自动同步至网站页脚社交图标组。</p>
+                   <p className="text-[10px] text-slate-400 italic px-2">链接将根据当前语言版本独立同步至网站页脚。</p>
                 </div>
             </CardContent>
           </GlassCard>

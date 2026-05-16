@@ -96,6 +96,7 @@ export function useLocalCollection<T = any>(path: string | null, options?: { ena
   const mutate = useCallback(() => {
     if (path) {
       globalCache.delete(path);
+      pendingRequests.delete(path); // Clear any pending requests to force a real fetch
       fetchData(path);
     }
   }, [path, fetchData]);

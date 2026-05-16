@@ -184,13 +184,17 @@ export function GlobalMap({ locale, homeConfig, isLoading: isConfigLoading }: Gl
 
                 {/* 内容区域 - 针对高密度布局优化 Padding */}
                 <div className={cn(
-                  "relative z-10 h-full flex flex-col justify-between items-start",
+                  "relative z-10 h-full flex flex-col justify-end items-start",
                   pins.length > 5 ? "p-5" : "p-8"
                 )}>
-                  <div className="space-y-3 w-full">
+                  {/* 文字容器：Hover 时上移 */}
+                  <div className={cn(
+                    "space-y-3 w-full transition-all duration-700 cubic-bezier(0.23, 1, 0.32, 1) transform-gpu",
+                    activeLocation === pin.key ? "translate-y-0" : "translate-y-24"
+                  )}>
                     {/* 标签 */}
                     <div className={cn(
-                      "inline-flex items-center gap-2 px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-[0.15em] transition-all duration-500",
+                      "inline-flex items-center gap-2 px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-[0.15em] transition-all duration-700",
                       pin.imageUrl 
                         ? "bg-white/20 text-white border border-white/30 backdrop-blur-md"
                         : "bg-primary/5 text-primary border border-primary/10"
@@ -202,16 +206,18 @@ export function GlobalMap({ locale, homeConfig, isLoading: isConfigLoading }: Gl
                     {/* 标题与地址 - 针对高密度布局优化字号 */}
                     <div className="space-y-1.5">
                       <h4 className={cn(
-                        "font-headline font-bold leading-tight tracking-tight transition-all duration-500 line-clamp-2",
+                        "font-headline font-bold leading-tight tracking-tight transition-all duration-700 line-clamp-2",
                         pins.length > 5 ? "text-base" : "text-2xl",
                         pin.imageUrl ? "text-white" : "text-primary"
                       )}>
                         {pin.title}
                       </h4>
+                      {/* 地址在 Hover 时显现 */}
                       <p className={cn(
-                        "font-medium leading-relaxed transition-colors duration-500 line-clamp-2",
+                        "font-medium leading-relaxed transition-all duration-500 line-clamp-2",
                         pins.length > 5 ? "text-[9px]" : "text-xs",
-                        pin.imageUrl ? "text-white/60" : "text-primary/40"
+                        pin.imageUrl ? "text-white/60" : "text-primary/40",
+                        activeLocation === pin.key ? "opacity-100" : "opacity-0"
                       )}>
                         {pin.address}
                       </p>
@@ -221,7 +227,7 @@ export function GlobalMap({ locale, homeConfig, isLoading: isConfigLoading }: Gl
                     <div className={cn(
                       "pt-3 border-t transition-all duration-500",
                       pin.imageUrl ? "border-white/20" : "border-primary/10",
-                      activeLocation === pin.key ? "opacity-100 translate-y-0" : "opacity-0 translate-y-2"
+                      activeLocation === pin.key ? "opacity-100 translate-y-0 h-auto mt-4" : "opacity-0 translate-y-4 h-0 overflow-hidden"
                     )}>
                       <p className={cn(
                         "leading-relaxed font-medium italic line-clamp-3",
@@ -235,8 +241,8 @@ export function GlobalMap({ locale, homeConfig, isLoading: isConfigLoading }: Gl
 
                   {/* 右下角查看按钮 - 针对高密度布局优化尺寸 */}
                   <div className={cn(
-                    "w-full flex justify-end transition-all duration-300 transform-gpu",
-                    activeLocation === pin.key ? "opacity-100 translate-y-0 scale-100" : "opacity-0 translate-y-4 scale-90"
+                    "w-full flex justify-end mt-4 transition-all duration-500 delay-100 transform-gpu",
+                    activeLocation === pin.key ? "opacity-100 translate-y-0 scale-100" : "opacity-0 translate-y-8 scale-50"
                   )}>
                     <div className={cn(
                       "rounded-full backdrop-blur-2xl border transition-all duration-300 flex items-center justify-center group/btn shadow-xl bg-white/20 text-white border-white/30",

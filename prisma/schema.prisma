@@ -39,8 +39,6 @@ model HomepageContent {
   mapTitleZh                 String?
   mapSubtitleEn              String?
   mapSubtitleZh              String?
-  mapTitleTextId             String?       @default("MAP_TITLE")
-  mapSubtitleTextId          String?       @default("MAP_SUBTITLE")
   heroProjectDescriptionEn   String?
   heroProjectDescriptionZh   String?
   heroSlides                 Json?
@@ -66,10 +64,12 @@ model HomepageContent {
   casesSubtitleZh            String?
   casesTitleEn               String?
   casesTitleZh               String?
-  casesTitleTextId           String?       @default("CASES_TITLE")
   casesSubtitleTextId        String?       @default("CASES_SUBTITLE")
-  processTitleTextId         String?       @default("PROCESS_TITLE")
+  casesTitleTextId           String?       @default("CASES_TITLE")
   processSubtitleTextId      String?       @default("PROCESS_SUBTITLE")
+  processTitleTextId         String?       @default("PROCESS_TITLE")
+  mapSubtitleTextId          String?       @default("MAP_SUBTITLE")
+  mapTitleTextId             String?       @default("MAP_TITLE")
   locations                  MapLocation[]
 }
 
@@ -90,7 +90,6 @@ model HomepageBentoItem {
 
 model MapLocation {
   id              String          @id @default(cuid())
-  order           Int             @default(0)
   type            String
   titleZh         String
   titleEn         String
@@ -101,10 +100,12 @@ model MapLocation {
   imageUrl        String?
   posTop          String
   posLeft         String
-  titleTextId     String?
+  homepageId      String
   addressTextId   String?
   descTextId      String?
-  homepageId      String
+  titleTextId     String?
+  order           Int             @default(0)
+  countryCode     String?         @default("cn")
   homepageContent HomepageContent @relation(fields: [homepageId], references: [id])
 }
 
@@ -124,7 +125,6 @@ model CaseStudy {
   titleTextId       String?
   published         Boolean @default(true)
 }
-
 
 model ProductionStep {
   id                String   @id @default(cuid())
@@ -192,16 +192,16 @@ model User {
   image         String?
   password      String?
   role          String    @default("editor")
-  permissions   Json?     @default("[]")
-  lastSeen      DateTime?
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
+  permissions   Json?     @default("[]")
+  lastSeen      DateTime?
   accounts      Account[]
   sessions      Session[]
 }
 
 model Inquiry {
-  id            String   @id @default(cuid())
+  id            String    @id @default(cuid())
   name          String
   email         String
   phone         String?
@@ -209,10 +209,10 @@ model Inquiry {
   subject       String?
   message       String
   productId     String?
-  status        String   @default("pending") // pending, processed, archived
-  emailViewedAt DateTime? // 邮件查看时间
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  status        String    @default("pending")
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  emailViewedAt DateTime?
 }
 
 model VisitorSession {
@@ -223,8 +223,8 @@ model VisitorSession {
   city      String?
   userAgent String?
   referrer  String?
-  lastPath  String?
   createdAt DateTime         @default(now())
+  lastPath  String?
   updatedAt DateTime         @default(now()) @updatedAt
   events    AnalyticsEvent[]
 
@@ -234,13 +234,13 @@ model VisitorSession {
 model AnalyticsEvent {
   id        String         @id @default(cuid())
   sessionId String
-  type      String // PAGE_VIEW, CLICK
+  type      String
   path      String
-  x         Float? // Percentage 0-100
-  y         Float? // Percentage 0-100
+  x         Float?
+  y         Float?
   element   String?
-  extraData Json? // Store metadata like button text or duration
   timestamp DateTime       @default(now())
+  extraData Json?
   session   VisitorSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
 
   @@index([sessionId])

@@ -1,0 +1,17 @@
+# Heovose Elevate - Agent Behavior Rules
+
+## Localization & Internationalization (Zero Hardcoding Policy)
+
+1. **Absolute No Hardcoding**: DO NOT add, modify, or maintain translation strings in `src/lib/translations.ts`. This file is deprecated for new features.
+2. **Database-Driven Content**: All new UI strings, labels, and content MUST be managed via the `LocalizedString` database table.
+3. **Dynamic Language Support**:
+   - The application must support adding or removing languages (e.g., Japanese, Thai) via database configuration without any code changes.
+   - DO NOT hardcode the list of supported locales (e.g., `['en', 'zh', 'id', 'vi']`) in business logic.
+   - Fetch the active language list from the `settings` or `languages` collection in the database.
+4. **Translation Hook**: Always use the `tr()` hook from `useTranslations`. Ensure the hook is resilient to missing keys or languages by providing appropriate fallbacks from the database configuration.
+5. **Architectural Decoupling**: Frontend components (language switchers, SEO tags, etc.) must dynamically render based on the database-provided language list.
+
+## Database Integrity
+
+1. **Schema Sync**: When adding new features that require data persistence, update `prisma/schema.prisma` and use Raw SQL if the Prisma Client runtime experiences caching issues in the Next.js/Turbopack environment.
+2. **Safe Writes**: Always ensure that related records (like `HomepageContent`) exist before performing writes to dependent tables.
