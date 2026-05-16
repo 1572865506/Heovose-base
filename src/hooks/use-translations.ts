@@ -42,35 +42,38 @@ export function useTranslations(locale: Locale) {
         // DO NOT fallback to other languages here, let the component handle its own fallback logic.
         const val = content[locale];
         
-        if (val !== undefined && val !== null) {
+        if (val !== undefined && val !== null && typeof val === 'string') {
           return val;
         }
       }
 
-      // 2. Fallback to local hardcoded library
-      const library = (fallbackLibrary as any)[locale] || (fallbackLibrary as any)[defaultLanguage] || (fallbackLibrary as any)['en'];
+      // 2. Fallback to local hardcoded library (if exists)
+      const library = (fallbackLibrary as any)?.[locale] || (fallbackLibrary as any)?.[defaultLanguage] || (fallbackLibrary as any)?.['en'];
       
       let hardcoded: string | undefined = undefined;
-      if (library[key] && typeof library[key] === 'string') {
-        hardcoded = library[key];
-      } else {
-        const path = key.split('_');
-        const localNested = getNested(library, path);
-        if (localNested && typeof localNested === 'string') {
-          hardcoded = localNested;
+      if (library && typeof library === 'object') {
+        if (library[key] && typeof library[key] === 'string') {
+          hardcoded = library[key];
+        } else {
+          const path = key.split('_');
+          const localNested = getNested(library, path);
+          if (localNested && typeof localNested === 'string') {
+            hardcoded = localNested;
+          }
         }
       }
 
       if (hardcoded !== undefined) return hardcoded;
       
       // 3. Loading Guard: If we are still loading remote data, return empty to avoid flicker or crashes
-      if (isTranslationsLoading) return '';
+      if (isLoading) return '';
       
       // Final safeguard: Avoid showing ugly system IDs in the UI
       const isSystemId = /^[A-Z0-9_]{5,40}$/i.test(key) || /^(psl|psg|psv|prod|cat|hero|slide|case|step)_/i.test(key);
       if (isSystemId) return '';
 
-      return key;
+      // Final result MUST be a string to avoid React "Object as child" error
+      return typeof key === 'string' ? key : '';
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [remoteTranslations, locale, defaultLanguage, isTranslationsLoading]);

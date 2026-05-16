@@ -63,7 +63,8 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ShinyButton } from '@/components/ui/shiny-button';
 import { smartTranslate } from '@/lib/translate-client';
-import { translations as localLibrary } from '@/lib/translations';
+// import { translations as localLibrary } from '@/lib/translations';
+
 
 // AI 极光渐变定义组件 - 增强色距与饱和度
 const AiGradientDef = () => (
@@ -396,73 +397,7 @@ export default function TranslationsPage() {
     } finally { setTranslatingId(null); }
   };
 
-  const handleSyncFromLocal = async () => {
-    setIsSyncingLocal(true);
-    setShowSyncConfirm(false);
-    
-    try {
-      const flatten = (obj: any, prefix = '') => {
-        let result: any = {};
-        for (let key in obj) {
-          if (typeof obj[key] === 'object' && obj[key] !== null) {
-            Object.assign(result, flatten(obj[key], `${prefix}${key}_`));
-          } else {
-            result[`${prefix}${key}`] = obj[key];
-          }
-        }
-        return result;
-      };
 
-      const locales = Object.keys(localLibrary);
-      const allKeys = new Set<string>();
-      const flattenedByLocale: any = {};
-
-      locales.forEach(l => {
-        flattenedByLocale[l] = flatten((localLibrary as any)[l]);
-        Object.keys(flattenedByLocale[l]).forEach(k => allKeys.add(k));
-      });
-
-      const keysArray = Array.from(allKeys);
-      console.log(`Found ${keysArray.length} keys to sync.`);
-      
-      await Promise.all(keysArray.map(async key => {
-        const payload: any = { id: key };
-        locales.forEach(l => {
-          if (flattenedByLocale[l][key]) payload[l] = flattenedByLocale[l][key];
-        });
-
-        const res = await fetch(`/api/localizedStrings/${encodeURIComponent(key)}`, {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(payload),
-        });
-
-        if (!res.ok) {
-          const errData = await res.json().catch(() => ({}));
-          console.error(`Failed to sync key ${key}:`, errData);
-          throw new Error(`Failed to sync key ${key}: ${errData.error || 'Unknown error'}`);
-        }
-      }));
-
-      toast({
-        title: "同步成功",
-        description: `已成功同步 ${keysArray.length} 条本地文案至数据库`,
-        className: "bg-green-50 border-green-200 text-green-800 rounded-2xl"
-      });
-      mutateTrans();
-    } catch (error: any) {
-      console.error('Sync failed:', error);
-      toast({
-        title: "同步失败",
-        description: error.message || "同步过程中发生未知错误",
-        variant: "destructive",
-        className: "rounded-2xl"
-      });
-    } finally {
-      setIsSyncingLocal(false);
-      setShowSyncConfirm(false);
-    }
-  };
 
   const filteredTranslations = useMemo(() => {
     const list = activeTab === 'business' ? categorizedTranslations.business : categorizedTranslations.system;
@@ -679,50 +614,7 @@ export default function TranslationsPage() {
             </DialogContent>
           </Dialog>
 
-          <Dialog open={showSyncConfirm} onOpenChange={setShowSyncConfirm}>
-            <DialogTrigger asChild>
-              <Button 
-                variant="outline"
-                disabled={isSyncingLocal}
-                className="rounded-full h-12 px-6 gap-2 text-xs font-bold uppercase tracking-wider border-primary/20 bg-primary/5 text-primary hover:bg-primary/10"
-              >
-                {isSyncingLocal ? <Loader2 className="h-4 w-4 animate-spin" /> : <GitMerge className="h-4 w-4" />}
-                本地库签署并同步
-              </Button>
-            </DialogTrigger>
-            <DialogContent className="rounded-[2.5rem] max-w-md p-0 overflow-hidden shadow-2xl border-none bg-white">
-              <div className="bg-orange-500 p-8 text-white relative overflow-hidden">
-                <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 blur-2xl rounded-full translate-x-16 -translate-y-16" />
-                <DialogHeader className="relative z-10">
-                  <DialogTitle className="text-xl font-headline font-bold uppercase tracking-wider flex items-center gap-3">
-                    <AlertTriangle className="h-6 w-6" /> 关键同步确认
-                  </DialogTitle>
-                  <DialogDescription className="text-orange-100 text-xs font-medium uppercase tracking-widest mt-2">
-                    System Asset Synchronization Notice
-                  </DialogDescription>
-                </DialogHeader>
-              </div>
-              <div className="p-8 space-y-6">
-                <p className="text-sm text-slate-600 leading-relaxed">
-                  您即将启动从 <span className="font-bold text-slate-900">本地硬编码库 (lib/translations.ts)</span> 同步内容至 <span className="font-bold text-primary">云端资产库 (PostgreSQL)</span> 的操作。
-                </p>
-                <div className="bg-orange-50 border border-orange-100 p-4 rounded-2xl flex gap-4">
-                  <Info className="h-5 w-5 text-orange-500 shrink-0 mt-0.5" />
-                  <div className="space-y-1">
-                    <p className="text-[11px] font-bold text-orange-800 uppercase">重要提示</p>
-                    <p className="text-[10px] text-orange-700/70 leading-relaxed">此操作将覆盖数据库中已存在的同名系统词条（如导航栏、页脚等）。建议在同步前确保本地库代码已包含最新修订。</p>
-                  </div>
-                </div>
-              </div>
-              <DialogFooter className="bg-slate-50 p-6 border-t border-slate-100 gap-3">
-                <Button variant="ghost" onClick={() => setShowSyncConfirm(false)} className="h-12 rounded-xl flex-1 font-bold uppercase tracking-widest text-[10px] text-slate-400">取消</Button>
-                <Button onClick={handleSyncFromLocal} disabled={isSyncingLocal} className="h-12 rounded-xl flex-1 font-bold uppercase tracking-widest text-[10px] bg-orange-500 hover:bg-orange-600 shadow-lg shadow-orange-100">
-                  {isSyncingLocal ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <CheckCircle2 className="h-4 w-4 mr-2" />}
-                  确认签署并同步
-                </Button>
-              </DialogFooter>
-            </DialogContent>
-          </Dialog>
+
 
           <Button onClick={() => { setIsAdding(true); setFormData({ id: '', translations: {} }); }} className="rounded-full h-12 px-8 font-bold uppercase tracking-widest text-xs gap-2 shadow-xl shadow-primary/20">
             <Plus className="h-5 w-5" /> 新增词条
@@ -1112,12 +1004,10 @@ export default function TranslationsPage() {
                           }
                           setTranslatingId(`new-${lang.code}`);
                           try {
-                            const res = await translateContent({ 
+                            const res = await smartTranslate({ 
                               text: sourceText, 
                               sourceLang: formData.translations['en'] ? 'en' : 'zh', 
                               targetLangs: [lang.code],
-                              model: aiConfig?.model || 'gemini-2.0-flash-exp',
-                              apiKey: aiConfig?.apiKey || ''
                             });
                             if (res && res[lang.code]) {
                               setFormData({

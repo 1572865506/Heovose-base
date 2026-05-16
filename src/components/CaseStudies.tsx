@@ -35,9 +35,9 @@ export function CaseStudies({ locale }: { locale: Locale }) {
   const galleryRef = useRef<any>(null);
   const unmountTimer = useRef<NodeJS.Timeout | null>(null);
 
-  // 1. 获取数据 - 仅在接近时(isNear)开启抓取，兼顾性能与加载速度
-  const { data: remoteCases } = useLocalCollection<RemoteCase>('caseStudies', { enabled: isNear });
-  const { data: homeConfig } = useLocalDoc<any>('homepageContent', 'hero', { enabled: isNear });
+  // 1. 获取数据 - 进站即开启抓取，确保锚点跳转时数据完整
+  const { data: remoteCases } = useLocalCollection<RemoteCase>('caseStudies');
+  const { data: homeConfig } = useLocalDoc<any>('homepageContent', 'hero');
   const displayTitle = useMemo(() => {
     const tr = lt('CASES_TITLE');
     if (tr !== undefined && tr !== null) return tr;

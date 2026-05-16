@@ -9,7 +9,7 @@ import Link from 'next/link';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { useLocalCollection } from '@/hooks/use-local-collection';
 import { useLocalDoc } from '@/hooks/use-local-doc';
-import { Locale, translations } from '@/lib/translations';
+import { Locale } from '@/lib/translations';
 import { Navbar } from '@/components/Navbar';
 import { Footer } from '@/components/Footer';
 import { Search, ArrowRight, ChevronRight, Package, LayoutGrid, Loader2, ShoppingBag, Building2, ExternalLink, MessageSquare } from 'lucide-react';

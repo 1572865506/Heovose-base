@@ -14,37 +14,32 @@ import {
   Loader2, 
   Globe, 
   Image as ImageIcon, 
-  Search, 
   Link as LinkIcon, 
   Building2, 
   ShieldCheck, 
   Sparkles,
   Info,
-  ExternalLink,
-  Smartphone,
-  Monitor,
   Layout,
-  RefreshCw,
-  MousePointer2,
-  Facebook,
-  Instagram,
-  Linkedin,
-  Youtube,
-  Twitter,
   Plus,
   Trash2,
   MessagesSquare,
-  Globe as GlobeIcon
+  Globe as GlobeIcon,
+  Search,
+  Hash,
+  Database,
+  ArrowUpRight,
+  CheckCircle2,
+  Mail,
+  Phone,
+  Share2
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { getAssetUrl } from '@/lib/image-utils';
 import Image from 'next/image';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import Link from 'next/link';
-import { Badge } from '@/components/ui/badge';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
-
 import { MediaLibraryDialog } from '@/components/admin/media-library-dialog';
+import { motion, AnimatePresence } from 'framer-motion';
 
 // --- Types ---
 interface SiteConfig {
@@ -52,14 +47,12 @@ interface SiteConfig {
   logoStandard?: string;
   logoInverted?: string;
   favicon?: string;
-  productSeoTemplate?: string;
-  articleSeoTemplate?: string;
   socialLinks?: { platform: string; url: string }[];
 }
 
 interface LocalizedString {
   id: string;
-  [key: string]: any;
+  content: Record<string, string>;
 }
 
 // --- Translation Key Constants ---
@@ -75,13 +68,26 @@ const SITE_KEYS = {
   COMPANY_WHATSAPP: 'COMPANY_WHATSAPP',
   PRODUCT_SEO_TEMPLATE: 'PRODUCT_SEO_TEMPLATE',
   ARTICLE_SEO_TEMPLATE: 'ARTICLE_SEO_TEMPLATE',
-  SOCIAL_LINKS: 'SOCIAL_LINKS',
+  ABOUT_HERO_TITLE: 'ABOUT_HERO_TITLE',
+  ABOUT_HERO_SUBTITLE: 'ABOUT_HERO_SUBTITLE',
+  ABOUT_INTRO_TITLE: 'ABOUT_INTRO_TITLE',
+  ABOUT_INTRO_TEXT: 'ABOUT_INTRO_TEXT',
 };
 
-// --- Sub-components (defined outside to prevent re-render issues) ---
 const GlassCard = ({ children, className }: { children: React.ReactNode, className?: string }) => (
-  <div className={cn("bg-white/70 backdrop-blur-xl border border-white/40 shadow-2xl rounded-3xl overflow-hidden animate-in fade-in slide-in-from-bottom-4 duration-700", className)}>
+  <motion.div 
+    initial={{ opacity: 0, y: 20 }}
+    animate={{ opacity: 1, y: 0 }}
+    className={cn("bg-white/80 backdrop-blur-2xl border border-white/40 shadow-[0_8px_32px_rgba(0,0,0,0.04)] rounded-[2.5rem] overflow-hidden", className)}
+  >
     {children}
+  </motion.div>
+);
+
+const SectionLabel = ({ children, icon: Icon }: { children: React.ReactNode, icon?: any }) => (
+  <div className="flex items-center gap-2 mb-4">
+    {Icon && <Icon className="w-3.5 h-3.5 text-primary/50" />}
+    <span className="text-[11px] font-bold text-slate-400 uppercase tracking-[0.2em]">{children}</span>
   </div>
 );
 
@@ -89,130 +95,56 @@ export default function SiteSettingsPage() {
   const { toast } = useToast();
   const [activeLang, setActiveLang] = useState('zh');
   const [isSaving, setIsSaving] = useState(false);
-  
-  // Media Library State
   const [isMediaOpen, setIsMediaOpen] = useState(false);
   const [mediaTarget, setMediaTarget] = useState<'logoStandard' | 'logoInverted' | 'favicon' | null>(null);
 
-  // 1. Fetch Global Settings Doc (for non-translatable fields)
   const { data: siteConfig, mutate: mutateConfig } = useLocalDoc<SiteConfig>('settings', 'site');
-  
-  // 2. Fetch All Translations (for translatable fields)
-  const { data: translations, mutate: mutateTrans, isLoading: isTransLoading } = useLocalCollection<LocalizedString>('localizedStrings?full=true');
-  
-  // 3. Language Settings (for knowing which languages are active)
+  const { data: translations, mutate: mutateTrans } = useLocalCollection<LocalizedString>('localizedStrings?full=true');
   const { data: langSettings } = useLocalDoc<any>('settings', 'languages');
+  
   const activeLanguages = useMemo(() => langSettings?.supportedLanguages || [
     { code: 'zh', label: '中文' }, 
     { code: 'en', label: 'English' }
   ], [langSettings]);
 
-  // --- Local State for Form ---
   const [localConfig, setLocalConfig] = useState<SiteConfig>({});
-  
-  // We use a separate state to track translation edits before saving
   const [transEdits, setTransEdits] = useState<Record<string, Record<string, string>>>({});
 
   useEffect(() => {
     if (siteConfig) setLocalConfig(siteConfig);
   }, [siteConfig]);
 
-  // Sync translation edits from DB when loaded
   useEffect(() => {
     if (translations) {
       const initialEdits: any = {};
       Object.values(SITE_KEYS).forEach(key => {
         const entry = translations.find(t => t.id === key);
         if (entry) {
-          const content = (entry.content as any) || {};
-          const fullContent: Record<string, any> = {};
-          activeLanguages.forEach((l: any) => {
-            const val = content[l.code];
-            if (key === SITE_KEYS.SOCIAL_LINKS) {
-              fullContent[l.code] = Array.isArray(val) ? val : [];
-            } else {
-              fullContent[l.code] = (val !== undefined && val !== null) ? val : '';
-            }
-          });
-          initialEdits[key] = fullContent;
+          initialEdits[key] = (entry.content as any) || {};
         } else {
-          const emptyContent: Record<string, any> = {};
-          activeLanguages.forEach((l: any) => { 
-            emptyContent[l.code] = key === SITE_KEYS.SOCIAL_LINKS ? [] : ''; 
-          });
-          initialEdits[key] = emptyContent;
+          initialEdits[key] = {};
         }
       });
       setTransEdits(initialEdits);
     }
-  }, [translations, activeLanguages]);
+  }, [translations]);
 
-  const handleTransChange = (key: string, lang: string, value: any) => {
+  const handleTransChange = (key: string, lang: string, value: string) => {
     setTransEdits(prev => ({
       ...prev,
-      [key]: {
-        ...(prev[key] || {}),
-        [lang]: value
-      }
+      [key]: { ...(prev[key] || {}), [lang]: value }
     }));
-  };
-
-  const openMedia = (target: 'logoStandard' | 'logoInverted' | 'favicon') => {
-    setMediaTarget(target);
-    setIsMediaOpen(true);
-  };
-
-  const handleMediaSelect = (assets: any[]) => {
-    if (mediaTarget && assets.length > 0) {
-      const selectedAsset = assets[0];
-      // CRITICAL: Use asset.url instead of asset.id for preview and config consistency
-      setLocalConfig(prev => ({ ...prev, [mediaTarget]: selectedAsset.url }));
-    }
-    setIsMediaOpen(false);
-  };
-
-  const handleAddSocial = () => {
-    const current = transEdits[SITE_KEYS.SOCIAL_LINKS]?.[activeLang] || [];
-    handleTransChange(SITE_KEYS.SOCIAL_LINKS, activeLang, [...current, { platform: 'Facebook', url: '' }]);
-  };
-
-  const handleRemoveSocial = (index: number) => {
-    const current = [...(transEdits[SITE_KEYS.SOCIAL_LINKS]?.[activeLang] || [])];
-    current.splice(index, 1);
-    handleTransChange(SITE_KEYS.SOCIAL_LINKS, activeLang, current);
-  };
-
-  const handleSocialChange = (index: number, field: 'platform' | 'url', value: string) => {
-    const current = [...((transEdits[SITE_KEYS.SOCIAL_LINKS]?.[activeLang] as any) || [])];
-    current[index] = { ...current[index], [field]: value };
-    handleTransChange(SITE_KEYS.SOCIAL_LINKS, activeLang, current);
-  };
-
-  const getPlatformIcon = (platform: string) => {
-    switch (platform.toLowerCase()) {
-      case 'facebook': return <Facebook className="h-4 w-4" />;
-      case 'instagram': return <Instagram className="h-4 w-4" />;
-      case 'linkedin': return <Linkedin className="h-4 w-4" />;
-      case 'youtube': return <Youtube className="h-4 w-4" />;
-      case 'twitter':
-      case 'x': return <Twitter className="h-4 w-4" />;
-      case 'wechat': return <MessagesSquare className="h-4 w-4" />;
-      case 'weibo': return <GlobeIcon className="h-4 w-4" />;
-      default: return <LinkIcon className="h-4 w-4" />;
-    }
   };
 
   const handleSave = async () => {
     setIsSaving(true);
     try {
-      // 1. Save Site Config
       await fetch('/api/settings/site', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(localConfig),
       });
 
-      // 2. Save All Linked Translations
       const transPromises = Object.entries(transEdits).map(([id, content]) => {
         return fetch(`/api/localizedStrings/${encodeURIComponent(id)}`, {
           method: 'PUT',
@@ -222,455 +154,440 @@ export default function SiteSettingsPage() {
       });
       await Promise.all(transPromises);
 
-      // 3. Trigger Domain Sync (Hook)
-      if (localConfig.primaryDomain) {
-        await fetch('/api/admin/system/domain-sync', { 
-          method: 'POST', 
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ domain: localConfig.primaryDomain }) 
-        }).catch(err => console.log('Domain sync hook (optional) skipped or failed:', err));
-      }
-
       mutateConfig();
       mutateTrans();
       toast({ 
-        title: "全站配置部署成功", 
-        description: "词库、视觉资产及域名路由已同步至边缘节点。",
-        className: "bg-slate-900 text-white rounded-2xl border-none shadow-2xl"
+        title: "全局配置已同步", 
+        description: "品牌资产与多语言词库已成功签署部署。",
+        className: "bg-primary text-white border-none rounded-2xl"
       });
     } catch (e) {
-      toast({ variant: "destructive", title: "部署失败", description: "通信链路异常，请稍后重试。" });
+      toast({ variant: "destructive", title: "部署失败", description: "网络通信异常，请检查网关状态。" });
     } finally {
       setIsSaving(false);
     }
   };
 
-  return (
-    <div className="space-y-10 pb-20 relative">
-      {/* Background Decor */}
-      <div className="absolute top-[-5%] right-[-10%] w-[50%] h-[50%] bg-primary/5 blur-[120px] rounded-full -z-10" />
-      <div className="absolute bottom-[10%] left-[-5%] w-[40%] h-[40%] bg-accent/5 blur-[100px] rounded-full -z-10" />
+  const addSocial = () => {
+    const current = [...(localConfig.socialLinks || [])];
+    setLocalConfig({ ...localConfig, socialLinks: [...current, { platform: 'LinkedIn', url: '' }] });
+  };
 
+  const removeSocial = (index: number) => {
+    const current = [...(localConfig.socialLinks || [])];
+    current.splice(index, 1);
+    setLocalConfig({ ...localConfig, socialLinks: current });
+  };
+
+  const updateSocial = (index: number, field: string, value: string) => {
+    const current = [...(localConfig.socialLinks || [])];
+    current[index] = { ...current[index], [field]: value };
+    setLocalConfig({ ...localConfig, socialLinks: current });
+  };
+
+  return (
+    <div className="max-w-[1600px] mx-auto space-y-12 pb-32">
       {/* Header Area */}
       <div className="flex flex-col md:flex-row md:items-end justify-between gap-8">
-        <div className="space-y-2">
-          <div className="flex items-center gap-3">
-            <div className="h-12 w-12 rounded-2xl bg-slate-900 flex items-center justify-center text-white shadow-xl">
-              <Layout className="h-6 w-6" />
-            </div>
-            <h2 className="text-3xl font-headline font-bold text-slate-900">站点与品牌管理</h2>
+        <div className="space-y-4">
+          <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-primary/5 border border-primary/10">
+            <Sparkles className="w-4 h-4 text-primary animate-pulse" />
+            <span className="text-[10px] font-black uppercase tracking-widest text-primary">Brand Engine v2.0</span>
           </div>
-          <p className="text-sm text-slate-500 font-medium max-w-2xl pl-1">
-            定义全站 SEO 策略、视觉资产以及公司基本资料。所有文本均由词库动态驱动。
+          <h1 className="text-5xl font-black text-slate-900 tracking-tight font-headline">站点与品牌设置</h1>
+          <p className="text-slate-500 max-w-xl leading-relaxed">
+            在此管理您的全球品牌资产、联系矩阵以及智能 SEO 引擎。
+            所有更改将实时同步至全球 20+ 个边缘节点。
           </p>
         </div>
-        
-        <div className="flex items-center gap-4">
-          <div className="flex bg-slate-100 p-1 rounded-full border border-slate-200">
-            {activeLanguages.map((lang: any) => (
-              <Button 
-                key={lang.code}
-                variant={activeLang === lang.code ? "outline" : "outline"} 
-                size="sm" 
-                onClick={() => setActiveLang(lang.code)}
+
+        <div className="flex items-center gap-6 p-2 bg-white/50 backdrop-blur-xl border border-white/40 rounded-[2rem] shadow-sm">
+          <div className="flex p-1 bg-slate-100/50 rounded-full">
+            {activeLanguages.map((l: any) => (
+              <button
+                key={l.code}
+                onClick={() => setActiveLang(l.code)}
                 className={cn(
-                  "h-9 px-4 rounded-full text-[10px] font-bold uppercase tracking-widest transition-all border-none",
-                  activeLang === lang.code ? "bg-white text-primary shadow-sm" : "text-slate-400 bg-transparent"
+                  "px-6 py-2 rounded-full text-xs font-bold transition-all duration-300",
+                  activeLang === l.code ? "bg-white text-primary shadow-lg scale-105" : "text-slate-400 hover:text-slate-600"
                 )}
               >
-                {lang.label}
-              </Button>
+                {l.label}
+              </button>
             ))}
           </div>
           <Button 
             onClick={handleSave} 
-            disabled={isSaving} 
-            className="rounded-full h-12 px-8 gap-2 font-bold uppercase tracking-widest text-xs shadow-xl shadow-primary/20"
+            disabled={isSaving}
+            className="h-12 px-10 rounded-full bg-primary hover:bg-primary/90 text-white font-bold gap-3 shadow-xl shadow-primary/20 transition-all active:scale-95"
           >
-            {isSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
+            {isSaving ? <Loader2 className="w-5 h-5 animate-spin" /> : <Save className="w-5 h-5" />}
             签署并部署
           </Button>
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-10">
-        {/* Left Column: Site & Brand */}
-        <div className="lg:col-span-8 space-y-10">
-          
-          {/* SEO & TDK Section */}
-          <GlassCard>
-            <div className="bg-slate-900 p-8 text-white relative overflow-hidden">
-               <div className="absolute top-0 right-0 w-64 h-64 bg-primary/20 blur-[80px] rounded-full translate-x-32 -translate-y-32" />
-               <div className="relative z-10 flex items-center gap-4">
-                  <div className="h-10 w-10 rounded-xl bg-white/10 backdrop-blur-md flex items-center justify-center border border-white/10">
-                    <Globe className="h-5 w-5 text-primary" />
-                  </div>
-                  <div>
-                    <CardTitle className="text-lg font-headline font-bold">SEO 与 检索优化</CardTitle>
-                    <CardDescription className="text-white/40 text-[10px] uppercase tracking-[0.2em] font-bold">Search Engine & Discovery</CardDescription>
-                  </div>
-               </div>
-            </div>
-            <CardContent className="p-10 space-y-8">
-              <div className="space-y-6">
-                <div className="space-y-3">
-                  <Label className="text-[11px] font-bold uppercase tracking-[0.2em] text-slate-400 flex items-center gap-2 pl-1">
-                    站点标题 (SITE_TITLE) <Badge variant="outline" className="text-[8px] opacity-60">词库联动</Badge>
-                  </Label>
-                  <Input 
-                    value={transEdits[SITE_KEYS.TITLE]?.[activeLang] || ''} 
-                    onChange={e => handleTransChange(SITE_KEYS.TITLE, activeLang, e.target.value)}
-                    placeholder="例如: Heovose Elevate | 铝合金门窗智造专家"
-                    className="h-14 rounded-2xl bg-slate-50 border-none font-bold shadow-inner"
-                  />
-                </div>
+      <div className="grid grid-cols-12 gap-12">
+        {/* Left Column: Config Matrix */}
+        <div className="col-span-12 lg:col-span-8 space-y-12">
+          <Tabs defaultValue="identity" className="space-y-10">
+            <TabsList className="bg-slate-100/50 p-1.5 rounded-[2rem] h-14 border border-slate-200/50 w-full md:w-fit backdrop-blur-md">
+              <TabsTrigger value="identity" className="rounded-full px-10 h-full data-[state=active]:bg-white data-[state=active]:shadow-lg text-[11px] font-black uppercase tracking-widest transition-all">品牌身份</TabsTrigger>
+              <TabsTrigger value="contact" className="rounded-full px-10 h-full data-[state=active]:bg-white data-[state=active]:shadow-lg text-[11px] font-black uppercase tracking-widest transition-all">联系矩阵</TabsTrigger>
+              <TabsTrigger value="seo" className="rounded-full px-10 h-full data-[state=active]:bg-white data-[state=active]:shadow-lg text-[11px] font-black uppercase tracking-widest transition-all">智能 SEO</TabsTrigger>
+              <TabsTrigger value="about" className="rounded-full px-10 h-full data-[state=active]:bg-white data-[state=active]:shadow-lg text-[11px] font-black uppercase tracking-widest transition-all">关于内容</TabsTrigger>
+            </TabsList>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                  <div className="space-y-3">
-                    <Label className="text-[11px] font-bold uppercase tracking-[0.2em] text-slate-400 flex items-center gap-2 pl-1">
-                      站点关键词 (SITE_KEYWORDS)
-                    </Label>
+            <TabsContent value="identity" className="mt-0 space-y-10 focus-visible:outline-none">
+              <GlassCard>
+                <div className="p-10 border-b border-slate-100 flex items-center justify-between">
+                  <div>
+                    <CardTitle className="text-2xl font-bold font-headline text-slate-900">核心身份信息</CardTitle>
+                    <CardDescription className="mt-1">定义站点在全球搜索结果中的第一印象。</CardDescription>
+                  </div>
+                  <div className="p-3 bg-primary/5 rounded-2xl"><Globe className="w-6 h-6 text-primary" /></div>
+                </div>
+                <div className="p-12 space-y-10">
+                  <div className="space-y-4">
+                    <SectionLabel icon={Info}>站点标题 (Meta Title)</SectionLabel>
                     <Input 
-                      value={transEdits[SITE_KEYS.KEYWORDS]?.[activeLang] || ''} 
-                      onChange={e => handleTransChange(SITE_KEYS.KEYWORDS, activeLang, e.target.value)}
-                      placeholder="关键词,用逗号隔开"
-                      className="h-14 rounded-2xl bg-slate-50 border-none font-bold shadow-inner"
+                      value={transEdits[SITE_KEYS.TITLE]?.[activeLang] || ''} 
+                      onChange={e => handleTransChange(SITE_KEYS.TITLE, activeLang, e.target.value)}
+                      placeholder="例如: Heovose - 全球领先的 IT 解决方案提供商"
+                      className="h-16 rounded-2xl bg-slate-50/50 border-slate-100 focus:bg-white focus:ring-4 focus:ring-primary/5 transition-all text-lg font-bold"
                     />
                   </div>
-                  <div className="space-y-3">
-                    <Label className="text-[11px] font-bold uppercase tracking-[0.2em] text-slate-400 flex items-center gap-2 pl-1">
-                      主运行域名 (Primary Domain)
-                    </Label>
-                    <div className="relative">
-                      <LinkIcon className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
+                    <div className="space-y-4">
+                      <SectionLabel icon={Search}>关键词 (Keywords)</SectionLabel>
+                      <Input 
+                        value={transEdits[SITE_KEYS.KEYWORDS]?.[activeLang] || ''} 
+                        onChange={e => handleTransChange(SITE_KEYS.KEYWORDS, activeLang, e.target.value)}
+                        placeholder="关键词, 多个, 以逗号分隔"
+                        className="h-14 rounded-xl bg-slate-50/50 border-slate-100"
+                      />
+                    </div>
+                    <div className="space-y-4">
+                      <SectionLabel icon={LinkIcon}>官方主域名</SectionLabel>
                       <Input 
                         value={localConfig.primaryDomain || ''} 
                         onChange={e => setLocalConfig({...localConfig, primaryDomain: e.target.value})}
-                        placeholder="https://www.heovose.com"
-                        className="h-14 pl-12 rounded-2xl bg-slate-50 border-none font-mono text-xs font-bold shadow-inner"
+                        placeholder="https://heovose.com"
+                        className="h-14 rounded-xl bg-slate-50/50 border-slate-100 font-mono text-sm"
                       />
                     </div>
                   </div>
-                </div>
 
-                <div className="space-y-3">
-                  <Label className="text-[11px] font-bold uppercase tracking-[0.2em] text-slate-400 flex items-center gap-2 pl-1">
-                    全站 SEO 描述 (SITE_DESCRIPTION)
-                  </Label>
-                  <Textarea 
-                    value={transEdits[SITE_KEYS.DESC]?.[activeLang] || ''} 
-                    onChange={e => handleTransChange(SITE_KEYS.DESC, activeLang, e.target.value)}
-                    placeholder="简明扼要地描述您的品牌与服务..."
-                    className="min-h-[100px] rounded-2xl bg-slate-50 border-none font-medium shadow-inner p-4"
-                  />
-                </div>
-              </div>
-
-              {/* SEO Templates */}
-              <div className="pt-8 border-t border-slate-100 grid grid-cols-1 md:grid-cols-2 gap-8">
-                <div className="space-y-3">
-                  <Label className="text-[11px] font-bold uppercase tracking-[0.2em] text-slate-400 flex items-center gap-2 pl-1">
-                    产品页 SEO 模板 <Sparkles className="h-3 w-3 text-primary" />
-                  </Label>
-                  <Input 
-                    value={transEdits[SITE_KEYS.PRODUCT_SEO_TEMPLATE]?.[activeLang] || ''} 
-                    onChange={e => handleTransChange(SITE_KEYS.PRODUCT_SEO_TEMPLATE, activeLang, e.target.value)}
-                    placeholder="[ProductName] | [SiteTitle]"
-                    className="h-12 rounded-xl bg-slate-900 text-white border-none font-mono text-xs shadow-xl"
-                  />
-                  <p className="text-[10px] text-slate-400 italic px-1">可用变量: [ProductName], [SiteTitle], [Category]</p>
-                </div>
-                <div className="space-y-3">
-                  <Label className="text-[11px] font-bold uppercase tracking-[0.2em] text-slate-400 flex items-center gap-2 pl-1">
-                    案例/文章 SEO 模板
-                  </Label>
-                  <Input 
-                    value={transEdits[SITE_KEYS.ARTICLE_SEO_TEMPLATE]?.[activeLang] || ''} 
-                    onChange={e => handleTransChange(SITE_KEYS.ARTICLE_SEO_TEMPLATE, activeLang, e.target.value)}
-                    placeholder="[Title] - [SiteTitle]"
-                    className="h-12 rounded-xl bg-slate-900 text-white border-none font-mono text-xs shadow-xl"
-                  />
-                  <p className="text-[10px] text-slate-400 italic px-1">可用变量: [Title], [SiteTitle], [Date]</p>
-                </div>
-              </div>
-            </CardContent>
-          </GlassCard>
-
-          {/* Company Infrastructure Section */}
-          <GlassCard>
-            <CardHeader className="p-8 border-b border-slate-50">
-               <div className="flex items-center gap-4">
-                  <div className="h-10 w-10 rounded-xl bg-accent/10 flex items-center justify-center text-accent">
-                    <Building2 className="h-5 w-5" />
+                  <div className="space-y-4">
+                    <SectionLabel icon={Layout}>全局 Meta 描述</SectionLabel>
+                    <Textarea 
+                      value={transEdits[SITE_KEYS.DESC]?.[activeLang] || ''} 
+                      onChange={e => handleTransChange(SITE_KEYS.DESC, activeLang, e.target.value)}
+                      placeholder="简明扼要地描述您的品牌，字数建议在 160 字以内。"
+                      className="min-h-[120px] rounded-2xl bg-slate-50/50 border-slate-100 focus:bg-white p-6 resize-none leading-relaxed"
+                    />
                   </div>
+                </div>
+              </GlassCard>
+
+              <GlassCard>
+                <div className="p-10 border-b border-slate-100 flex items-center justify-between">
                   <div>
-                    <CardTitle className="text-lg font-headline font-bold text-slate-900">企业基础设施资料</CardTitle>
-                    <CardDescription className="text-[10px] uppercase tracking-[0.2em] font-bold text-slate-400">Company Identity & Contact</CardDescription>
+                    <CardTitle className="text-2xl font-bold font-headline text-slate-900">社交媒体矩阵</CardTitle>
+                    <CardDescription className="mt-1">配置页脚展示的全球社交平台链接。</CardDescription>
                   </div>
-               </div>
-            </CardHeader>
-            <CardContent className="p-10 space-y-10">
-               <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
-                  <div className="space-y-6">
-                    <div className="space-y-3">
-                      <Label className="text-[11px] font-bold uppercase tracking-[0.2em] text-slate-400 pl-1">官方公司名称</Label>
-                      <Input 
-                        value={transEdits[SITE_KEYS.COMPANY_NAME]?.[activeLang] || ''} 
-                        onChange={e => handleTransChange(SITE_KEYS.COMPANY_NAME, activeLang, e.target.value)}
-                        className="h-12 rounded-xl bg-slate-50 border-none font-bold"
-                      />
-                    </div>
-                    <div className="space-y-3">
-                      <Label className="text-[11px] font-bold uppercase tracking-[0.2em] text-slate-400 pl-1">办公物理地址 (为空则隐藏)</Label>
-                      <Input 
-                        value={transEdits[SITE_KEYS.COMPANY_ADDR]?.[activeLang] || ''} 
-                        onChange={e => handleTransChange(SITE_KEYS.COMPANY_ADDR, activeLang, e.target.value)}
-                        className="h-12 rounded-xl bg-slate-50 border-none font-medium"
-                      />
-                    </div>
-                  </div>
-
-                  <div className="space-y-6">
-                    <div className="space-y-3">
-                      <Label className="text-[11px] font-bold uppercase tracking-[0.2em] text-slate-400 pl-1">全球联络电话</Label>
-                      <Input 
-                        value={transEdits[SITE_KEYS.COMPANY_PHONE]?.[activeLang] || ''} 
-                        onChange={e => handleTransChange(SITE_KEYS.COMPANY_PHONE, activeLang, e.target.value)}
-                        className="h-12 rounded-xl bg-slate-50 border-none font-bold font-mono"
-                      />
-                    </div>
-                    <div className="space-y-3">
-                      <Label className="text-[11px] font-bold uppercase tracking-[0.2em] text-slate-400 pl-1">官方联络邮箱</Label>
-                      <Input 
-                        value={transEdits[SITE_KEYS.COMPANY_EMAIL]?.[activeLang] || ''} 
-                        onChange={e => handleTransChange(SITE_KEYS.COMPANY_EMAIL, activeLang, e.target.value)}
-                        className="h-12 rounded-xl bg-slate-50 border-none font-bold font-mono"
-                      />
-                    </div>
-                  </div>
-               </div>
-
-               {/* New: Messaging Matrix */}
-               <div className="grid grid-cols-1 md:grid-cols-2 gap-10 pt-6 border-t border-slate-50">
-                  <div className="space-y-3">
-                    <Label className="text-[11px] font-bold uppercase tracking-[0.2em] text-slate-400 pl-1">企业微信号 (WeChat)</Label>
-                    <Input 
-                      value={transEdits[SITE_KEYS.COMPANY_WECHAT]?.[activeLang] || ''} 
-                      onChange={e => handleTransChange(SITE_KEYS.COMPANY_WECHAT, activeLang, e.target.value)}
-                      placeholder="例如: Heovose_Official"
-                      className="h-12 rounded-xl bg-slate-50 border-none font-bold"
-                    />
-                  </div>
-                  <div className="space-y-3">
-                    <Label className="text-[11px] font-bold uppercase tracking-[0.2em] text-slate-400 pl-1">WhatsApp 号码</Label>
-                    <Input 
-                      value={transEdits[SITE_KEYS.COMPANY_WHATSAPP]?.[activeLang] || ''} 
-                      onChange={e => handleTransChange(SITE_KEYS.COMPANY_WHATSAPP, activeLang, e.target.value)}
-                      placeholder="例如: +86 138..."
-                      className="h-12 rounded-xl bg-slate-50 border-none font-bold font-mono"
-                    />
-                  </div>
-               </div>
-
-               {/* Social Matrix */}
-                <div className="space-y-6">
-                   <div className="flex items-center justify-between">
-                     <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest flex items-center gap-2">
-                       <RefreshCw className="h-3 w-3" /> 社交媒体矩阵 (Social Matrix)
-                     </p>
-                     <Button 
-                       variant="ghost" 
-                       size="sm" 
-                       onClick={handleAddSocial}
-                       className="h-8 rounded-xl px-4 text-[10px] font-bold uppercase tracking-widest text-primary hover:bg-primary/5"
-                     >
-                       <Plus className="h-3 w-3 mr-2" /> 新增矩阵节点
-                     </Button>
-                   </div>
-                   
-                   <div className="space-y-3">
-                     {(transEdits[SITE_KEYS.SOCIAL_LINKS]?.[activeLang] || []).length === 0 ? (
-                       <div className="p-12 border-2 border-dashed border-slate-100 rounded-3xl text-center space-y-3">
-                          <div className="h-12 w-12 rounded-2xl bg-slate-50 flex items-center justify-center mx-auto">
-                             <LinkIcon className="h-5 w-5 text-slate-200" />
-                          </div>
-                          <p className="text-[10px] font-bold text-slate-300 uppercase tracking-widest">暂无配置当前语言下的社交外链</p>
-                       </div>
-                     ) : (
-                       ((transEdits[SITE_KEYS.SOCIAL_LINKS]?.[activeLang] as unknown as any[]) || []).map((link: any, idx: number) => (
-                         <div key={idx} className="flex items-center gap-3 animate-in fade-in slide-in-from-right-4 duration-300">
-                           <div className="flex-1 grid grid-cols-12 gap-3 p-3 bg-slate-50 rounded-2xl border border-slate-100 items-center">
-                             <div className="col-span-4 flex items-center gap-3 pl-2">
-                                <div className="h-8 w-8 rounded-lg bg-white shadow-sm flex items-center justify-center text-slate-400">
-                                   {getPlatformIcon(link.platform)}
-                                </div>
-                                <select 
-                                  value={link.platform} 
-                                  onChange={(e) => handleSocialChange(idx, 'platform', e.target.value)}
-                                  className="bg-transparent border-none text-[11px] font-bold text-slate-600 focus:ring-0 cursor-pointer"
-                                >
-                                  <option value="Facebook">Facebook</option>
-                                  <option value="Instagram">Instagram</option>
-                                  <option value="LinkedIn">LinkedIn</option>
-                                  <option value="YouTube">YouTube</option>
-                                  <option value="Twitter">X / Twitter</option>
-                                  <option value="WeChat">WeChat / 微信</option>
-                                  <option value="Weibo">Weibo / 微博</option>
-                                  <option value="Other">Other</option>
-                                </select>
-                             </div>
-                             <div className="col-span-8">
-                                <Input 
-                                  value={link.url} 
-                                  onChange={(e) => handleSocialChange(idx, 'url', e.target.value)}
-                                  placeholder="https://..." 
-                                  className="h-9 border-none bg-white/50 text-xs font-medium rounded-xl"
-                                />
-                             </div>
-                           </div>
-                           <Button 
-                             variant="ghost" 
-                             size="icon" 
-                             onClick={() => handleRemoveSocial(idx)}
-                             className="h-10 w-10 rounded-full text-slate-300 hover:text-destructive hover:bg-destructive/5 shrink-0"
-                           >
-                             <Trash2 className="h-4 w-4" />
-                           </Button>
-                         </div>
-                       ))
-                     )}
-                   </div>
-                   <p className="text-[10px] text-slate-400 italic px-2">链接将根据当前语言版本独立同步至网站页脚。</p>
+                  <Button onClick={addSocial} variant="outline" className="rounded-full gap-2 border-primary/20 text-primary hover:bg-primary/5">
+                    <Plus className="w-4 h-4" /> 添加平台
+                  </Button>
                 </div>
-            </CardContent>
-          </GlassCard>
+                <div className="p-10">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <AnimatePresence mode="popLayout">
+                      {(localConfig.socialLinks || []).map((link, idx) => (
+                        <motion.div 
+                          key={idx}
+                          initial={{ opacity: 0, scale: 0.95 }}
+                          animate={{ opacity: 1, scale: 1 }}
+                          exit={{ opacity: 0, scale: 0.95 }}
+                          className="group flex items-center gap-4 p-5 bg-slate-50/50 rounded-2xl border border-slate-100 hover:border-primary/20 hover:bg-white transition-all shadow-sm hover:shadow-md"
+                        >
+                          <div className="space-y-2 flex-1">
+                            <Input 
+                              value={link.platform} 
+                              onChange={e => updateSocial(idx, 'platform', e.target.value)}
+                              placeholder="平台名称"
+                              className="h-8 bg-transparent border-none p-0 text-xs font-black uppercase tracking-widest text-primary focus:ring-0"
+                            />
+                            <Input 
+                              value={link.url} 
+                              onChange={e => updateSocial(idx, 'url', e.target.value)}
+                              placeholder="URL 链接"
+                              className="h-10 bg-white rounded-lg border-slate-100 text-sm font-medium"
+                            />
+                          </div>
+                          <button 
+                            onClick={() => removeSocial(idx)}
+                            className="p-3 text-slate-300 hover:text-red-500 hover:bg-red-50 rounded-xl transition-all opacity-0 group-hover:opacity-100"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </motion.div>
+                      ))}
+                    </AnimatePresence>
+                  </div>
+                  {(!localConfig.socialLinks || localConfig.socialLinks.length === 0) && (
+                    <div className="py-20 text-center border-2 border-dashed border-slate-100 rounded-[2rem]">
+                      <Share2 className="w-12 h-12 text-slate-200 mx-auto mb-4" />
+                      <p className="text-slate-400 font-medium">暂无社交媒体配置，点击右上角添加。</p>
+                    </div>
+                  )}
+                </div>
+              </GlassCard>
+            </TabsContent>
+
+            <TabsContent value="contact" className="mt-0 space-y-10 focus-visible:outline-none">
+              <GlassCard>
+                <div className="p-10 border-b border-slate-100 flex items-center justify-between">
+                  <div>
+                    <CardTitle className="text-2xl font-bold font-headline text-slate-900">企业联系信息</CardTitle>
+                    <CardDescription className="mt-1">用于展示在页脚与联系我们页面的全球通用信息。</CardDescription>
+                  </div>
+                  <div className="p-3 bg-accent/5 rounded-2xl"><Building2 className="w-6 h-6 text-accent" /></div>
+                </div>
+                <div className="p-12">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-8">
+                    <div className="space-y-4">
+                      <SectionLabel>官方公司名称</SectionLabel>
+                      <Input value={transEdits[SITE_KEYS.COMPANY_NAME]?.[activeLang] || ''} onChange={e => handleTransChange(SITE_KEYS.COMPANY_NAME, activeLang, e.target.value)} className="h-14 rounded-xl" />
+                    </div>
+                    <div className="space-y-4">
+                      <SectionLabel>总部地址</SectionLabel>
+                      <Input value={transEdits[SITE_KEYS.COMPANY_ADDR]?.[activeLang] || ''} onChange={e => handleTransChange(SITE_KEYS.COMPANY_ADDR, activeLang, e.target.value)} className="h-14 rounded-xl" />
+                    </div>
+                    <div className="space-y-4">
+                      <SectionLabel icon={Phone}>全球客服热线</SectionLabel>
+                      <Input value={transEdits[SITE_KEYS.COMPANY_PHONE]?.[activeLang] || ''} onChange={e => handleTransChange(SITE_KEYS.COMPANY_PHONE, activeLang, e.target.value)} className="h-14 rounded-xl" />
+                    </div>
+                    <div className="space-y-4">
+                      <SectionLabel icon={Mail}>官方联络邮箱</SectionLabel>
+                      <Input value={transEdits[SITE_KEYS.COMPANY_EMAIL]?.[activeLang] || ''} onChange={e => handleTransChange(SITE_KEYS.COMPANY_EMAIL, activeLang, e.target.value)} className="h-14 rounded-xl" />
+                    </div>
+                    <div className="space-y-4">
+                      <SectionLabel icon={MessagesSquare}>WeChat ID</SectionLabel>
+                      <Input value={transEdits[SITE_KEYS.COMPANY_WECHAT]?.[activeLang] || ''} onChange={e => handleTransChange(SITE_KEYS.COMPANY_WECHAT, activeLang, e.target.value)} className="h-14 rounded-xl" />
+                    </div>
+                    <div className="space-y-4">
+                      <SectionLabel icon={GlobeIcon}>WhatsApp 号码</SectionLabel>
+                      <Input value={transEdits[SITE_KEYS.COMPANY_WHATSAPP]?.[activeLang] || ''} onChange={e => handleTransChange(SITE_KEYS.COMPANY_WHATSAPP, activeLang, e.target.value)} className="h-14 rounded-xl" />
+                    </div>
+                  </div>
+                </div>
+              </GlassCard>
+            </TabsContent>
+
+            <TabsContent value="seo" className="mt-0 space-y-10 focus-visible:outline-none">
+              <GlassCard>
+                <div className="p-10 border-b border-slate-100 flex items-center justify-between">
+                  <div>
+                    <CardTitle className="text-2xl font-bold font-headline text-slate-900">智能 SEO 模板引擎</CardTitle>
+                    <CardDescription className="mt-1">自动为成千上万个产品和文章页生成高度优化的 SEO 标题。</CardDescription>
+                  </div>
+                  <div className="p-3 bg-blue-500/5 rounded-2xl"><Hash className="w-6 h-6 text-blue-500" /></div>
+                </div>
+                <div className="p-12 space-y-10">
+                  <div className="space-y-4">
+                    <SectionLabel icon={Database}>产品详情页模板 (Product Template)</SectionLabel>
+                    <Input 
+                      value={transEdits[SITE_KEYS.PRODUCT_SEO_TEMPLATE]?.[activeLang] || ''} 
+                      onChange={e => handleTransChange(SITE_KEYS.PRODUCT_SEO_TEMPLATE, activeLang, e.target.value)}
+                      placeholder="示例: {{title}} | {{category}} | Heovose Tech"
+                      className="h-16 rounded-2xl bg-slate-50/50 border-slate-100 font-mono text-primary"
+                    />
+                    <div className="flex flex-wrap gap-2">
+                      {['{{title}}', '{{category}}', '{{brand}}', '{{sku}}'].map(tag => (
+                        <span key={tag} className="px-3 py-1 bg-slate-100 text-[10px] font-bold text-slate-400 rounded-full border border-slate-200">{tag}</span>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className="space-y-4 pt-6 border-t border-slate-50">
+                    <SectionLabel icon={Database}>内容文章页模板 (Article Template)</SectionLabel>
+                    <Input 
+                      value={transEdits[SITE_KEYS.ARTICLE_SEO_TEMPLATE]?.[activeLang] || ''} 
+                      onChange={e => handleTransChange(SITE_KEYS.ARTICLE_SEO_TEMPLATE, activeLang, e.target.value)}
+                      placeholder="示例: {{title}} - 行业洞察 - Heovose"
+                      className="h-16 rounded-2xl bg-slate-50/50 border-slate-100 font-mono text-blue-600"
+                    />
+                    <div className="flex flex-wrap gap-2">
+                      {['{{title}}', '{{author}}', '{{brand}}'].map(tag => (
+                        <span key={tag} className="px-3 py-1 bg-slate-100 text-[10px] font-bold text-slate-400 rounded-full border border-slate-200">{tag}</span>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              </GlassCard>
+            </TabsContent>
+
+            <TabsContent value="about" className="mt-0 space-y-10 focus-visible:outline-none">
+              <GlassCard>
+                <div className="p-10 border-b border-slate-100">
+                  <CardTitle className="text-2xl font-bold font-headline text-slate-900">“关于我们” 页面核心文案</CardTitle>
+                </div>
+                <div className="p-12 space-y-10">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
+                    <div className="space-y-4">
+                      <SectionLabel>Hero 顶部标题</SectionLabel>
+                      <Input value={transEdits[SITE_KEYS.ABOUT_HERO_TITLE]?.[activeLang] || ''} onChange={e => handleTransChange(SITE_KEYS.ABOUT_HERO_TITLE, activeLang, e.target.value)} className="h-14 font-bold" />
+                    </div>
+                    <div className="space-y-4">
+                      <SectionLabel>Hero 顶部副标题</SectionLabel>
+                      <Input value={transEdits[SITE_KEYS.ABOUT_HERO_SUBTITLE]?.[activeLang] || ''} onChange={e => handleTransChange(SITE_KEYS.ABOUT_HERO_SUBTITLE, activeLang, e.target.value)} className="h-14" />
+                    </div>
+                  </div>
+                  <div className="space-y-4">
+                    <SectionLabel>品牌简介标题</SectionLabel>
+                    <Input value={transEdits[SITE_KEYS.ABOUT_INTRO_TITLE]?.[activeLang] || ''} onChange={e => handleTransChange(SITE_KEYS.ABOUT_INTRO_TITLE, activeLang, e.target.value)} className="h-14 font-bold" />
+                  </div>
+                  <div className="space-y-4">
+                    <SectionLabel>品牌详细介绍 (支持换行)</SectionLabel>
+                    <Textarea value={transEdits[SITE_KEYS.ABOUT_INTRO_TEXT]?.[activeLang] || ''} onChange={e => handleTransChange(SITE_KEYS.ABOUT_INTRO_TEXT, activeLang, e.target.value)} className="min-h-[200px] leading-relaxed p-6" />
+                  </div>
+                </div>
+              </GlassCard>
+            </TabsContent>
+          </Tabs>
         </div>
 
-        {/* Right Column: Brand Assets */}
-        <div className="lg:col-span-4 space-y-10">
+        {/* Right Column: Brand Assets & Preview */}
+        <div className="col-span-12 lg:col-span-4 space-y-12">
+          {/* Logo Matrix */}
           <GlassCard>
-            <CardHeader className="p-8 border-b border-slate-50">
-               <div className="flex items-center gap-3">
-                  <div className="h-10 w-10 rounded-xl bg-primary/10 flex items-center justify-center text-primary shadow-inner">
-                    <ImageIcon className="h-5 w-5" />
-                  </div>
-                  <div>
-                    <CardTitle className="text-lg font-headline font-bold text-slate-900">视觉资产 (Assets)</CardTitle>
-                    <CardDescription className="text-[10px] uppercase tracking-[0.2em] font-bold text-slate-400">Logo & Icons</CardDescription>
-                  </div>
-               </div>
-            </CardHeader>
-            <CardContent className="p-8 space-y-8">
-              {/* Logo Standard */}
+            <div className="p-8 border-b border-slate-100 flex items-center gap-3">
+              <ImageIcon className="w-5 h-5 text-primary" />
+              <CardTitle className="text-lg">品牌视觉资产 (Logo)</CardTitle>
+            </div>
+            <div className="p-8 space-y-8">
+              {/* Standard Logo */}
               <div className="space-y-4">
-                 <Label className="text-[11px] font-bold uppercase tracking-[0.2em] text-slate-400 flex items-center justify-between">
-                   标准 LOGO (浅色背景)
-                   <TooltipProvider>
-                     <Tooltip>
-                       <TooltipTrigger><Info className="h-3.5 w-3.5" /></TooltipTrigger>
-                       <TooltipContent>用于白色或淡色背景的导航栏与页脚</TooltipContent>
-                     </Tooltip>
-                   </TooltipProvider>
-                 </Label>
-                 <div 
-                   onClick={() => openMedia('logoStandard')}
-                   className="group relative aspect-[3/1] bg-slate-100 rounded-2xl border-2 border-dashed border-slate-200 overflow-hidden flex items-center justify-center transition-all hover:border-primary/50 cursor-pointer"
-                 >
-                   {localConfig.logoStandard ? (
-                     <div className="relative w-full h-full p-4">
-                       <Image src={getAssetUrl(localConfig.logoStandard)} alt="Logo" fill className="object-contain" />
-                       <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
-                         <Button size="sm" variant="secondary" className="rounded-full h-8 text-[10px] font-bold uppercase tracking-widest">更换图片</Button>
-                       </div>
-                     </div>
-                   ) : (
-                     <div className="text-center space-y-2 opacity-30">
-                       <ImageIcon className="h-8 w-8 mx-auto" />
-                       <p className="text-[10px] font-bold uppercase tracking-widest">点击上传</p>
-                     </div>
-                   )}
-                 </div>
+                <div className="flex items-center justify-between">
+                  <SectionLabel>标准 LOGO (Light Mode)</SectionLabel>
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger><Info className="w-4 h-4 text-slate-300" /></TooltipTrigger>
+                      <TooltipContent><p className="w-48 text-xs">用于浅色背景，通常出现在导航栏和常规文档中。</p></TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+                </div>
+                <div 
+                  onClick={() => {setMediaTarget('logoStandard'); setIsMediaOpen(true);}}
+                  className="group relative aspect-[3/1] bg-slate-50 border-2 border-dashed border-slate-200 rounded-3xl flex items-center justify-center cursor-pointer hover:border-primary/50 hover:bg-white transition-all overflow-hidden shadow-inner"
+                >
+                  {localConfig.logoStandard ? (
+                    <div className="relative w-full h-full p-6 transition-transform duration-500 group-hover:scale-105">
+                      <Image src={getAssetUrl(localConfig.logoStandard)} alt="Standard Logo" fill className="object-contain" />
+                    </div>
+                  ) : (
+                    <div className="text-center space-y-2">
+                      <ImageIcon className="w-8 h-8 text-slate-300 mx-auto" />
+                      <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">点击上传</p>
+                    </div>
+                  )}
+                  <div className="absolute inset-0 bg-primary/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                    <ArrowUpRight className="w-8 h-8 text-white" />
+                  </div>
+                </div>
               </div>
 
-              {/* Logo Inverted */}
+              {/* Inverted Logo */}
               <div className="space-y-4">
-                 <Label className="text-[11px] font-bold uppercase tracking-[0.2em] text-slate-400 flex items-center justify-between">
-                   反色 LOGO (深色/透明)
-                 </Label>
-                 <div 
-                   onClick={() => openMedia('logoInverted')}
-                   className="group relative aspect-[3/1] bg-slate-900 rounded-2xl overflow-hidden flex items-center justify-center transition-all cursor-pointer"
-                 >
-                   {localConfig.logoInverted ? (
-                     <div className="relative w-full h-full p-4">
-                       <Image src={getAssetUrl(localConfig.logoInverted)} alt="Logo" fill className="object-contain" />
-                       <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
-                         <Button size="sm" variant="secondary" className="rounded-full h-8 text-[10px] font-bold uppercase tracking-widest">更换图片</Button>
-                       </div>
-                     </div>
-                   ) : (
-                     <div className="text-center space-y-2 opacity-30 text-white">
-                       <ImageIcon className="h-8 w-8 mx-auto" />
-                       <p className="text-[10px] font-bold uppercase tracking-widest">点击上传</p>
-                     </div>
-                   )}
-                 </div>
+                <div className="flex items-center justify-between">
+                  <SectionLabel>反色 LOGO (Dark Mode)</SectionLabel>
+                </div>
+                <div 
+                  onClick={() => {setMediaTarget('logoInverted'); setIsMediaOpen(true);}}
+                  className="group relative aspect-[3/1] bg-slate-900 border-2 border-slate-800 rounded-3xl flex items-center justify-center cursor-pointer hover:border-primary/50 transition-all overflow-hidden shadow-2xl"
+                >
+                  {localConfig.logoInverted ? (
+                    <div className="relative w-full h-full p-6 transition-transform duration-500 group-hover:scale-105">
+                      <Image src={getAssetUrl(localConfig.logoInverted)} alt="Inverted Logo" fill className="object-contain" />
+                    </div>
+                  ) : (
+                    <div className="text-center space-y-2">
+                      <ImageIcon className="w-8 h-8 text-white/20 mx-auto" />
+                      <p className="text-[10px] text-white/40 font-bold uppercase tracking-widest">点击上传</p>
+                    </div>
+                  )}
+                  <div className="absolute inset-0 bg-primary/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                    <ArrowUpRight className="w-8 h-8 text-white" />
+                  </div>
+                </div>
               </div>
 
               {/* Favicon */}
               <div className="space-y-4">
-                 <Label className="text-[11px] font-bold uppercase tracking-[0.2em] text-slate-400">Favicon (站点图标)</Label>
-                 <div className="flex items-center gap-6 p-4 bg-slate-50 rounded-2xl border border-slate-100">
-                    <div className="h-16 w-16 bg-white rounded-xl shadow-sm flex items-center justify-center border border-slate-200 overflow-hidden shrink-0">
-                       {localConfig.favicon ? (
-                         <Image src={getAssetUrl(localConfig.favicon)} alt="Fav" width={32} height={32} />
-                       ) : (
-                         <Layout className="h-6 w-6 text-slate-300" />
-                       )}
-                    </div>
-                    <div className="space-y-2">
-                      <Button 
-                        variant="outline" 
-                        size="sm" 
-                        onClick={() => openMedia('favicon')}
-                        className="h-9 rounded-lg text-[10px] font-bold uppercase tracking-widest border-slate-200"
-                      >
-                        上传 .ico / .png
-                      </Button>
-                      <p className="text-[10px] text-slate-400 italic">建议尺寸: 32x32 或 48x48</p>
-                    </div>
-                 </div>
+                <SectionLabel>网站图标 (Favicon)</SectionLabel>
+                <div className="flex items-center gap-6 p-6 bg-slate-50/50 rounded-2xl border border-slate-100">
+                  <div className="h-16 w-16 bg-white rounded-2xl border border-slate-100 shadow-sm flex items-center justify-center overflow-hidden">
+                    {localConfig.favicon ? (
+                      <Image src={getAssetUrl(localConfig.favicon)} alt="Favicon" width={32} height={32} />
+                    ) : (
+                      <Globe className="w-8 h-8 text-slate-200" />
+                    )}
+                  </div>
+                  <div className="space-y-2">
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      onClick={() => {setMediaTarget('favicon'); setIsMediaOpen(true);}}
+                      className="rounded-full h-10 px-6 font-bold"
+                    >
+                      更换图标
+                    </Button>
+                    <p className="text-[10px] text-slate-400">建议尺寸: 32x32 或 64x64px (ICO/PNG)</p>
+                  </div>
+                </div>
               </div>
-            </CardContent>
+            </div>
           </GlassCard>
 
-          <GlassCard className="bg-primary/5 border-primary/10">
-             <div className="p-8 space-y-4 text-center">
-                <ShieldCheck className="h-10 w-10 text-primary mx-auto opacity-40" />
-                <p className="text-[11px] font-bold text-primary uppercase tracking-[0.2em]">数据一致性守卫</p>
-                <p className="text-[10px] text-primary/60 leading-relaxed italic">
-                  签署并同步后，所有变更将立即生效于全站生产环境。建议在发布前访问原始域名进行核验。
-                </p>
-             </div>
-          </GlassCard>
-
-          <GlassCard className="border-none shadow-sm opacity-60 hover:opacity-100 transition-opacity">
-            <div className="p-8 text-center space-y-4">
-               <p className="text-[10px] text-slate-400 leading-relaxed font-bold uppercase tracking-[0.1em]">
-                 需要增减支持的本地化语言？
-               </p>
-               <Button variant="outline" className="w-full h-14 rounded-2xl border-primary/20 text-primary font-bold uppercase text-[10px] tracking-widest hover:bg-primary/5" asChild>
-                 <Link href="/admin/translations">进入翻译资产治理</Link>
-               </Button>
+          {/* Quick Health Status */}
+          <GlassCard className="bg-primary shadow-2xl shadow-primary/20 border-none relative overflow-hidden group">
+            <div className="absolute top-0 right-0 p-8 opacity-10 group-hover:scale-150 transition-transform duration-1000 rotate-12">
+              <ShieldCheck className="w-40 h-40 text-white" />
+            </div>
+            <div className="p-10 text-white space-y-6 relative z-10">
+              <div className="flex items-center gap-3">
+                <CheckCircle2 className="w-6 h-6 text-white" />
+                <span className="text-sm font-black uppercase tracking-widest">系统合规性就绪</span>
+              </div>
+              <p className="text-white/80 text-sm leading-relaxed font-medium italic">
+                “您的品牌配置符合国际 SEO 最佳实践。签署并部署后，系统将自动刷新边缘 CDN 缓存，确保全球一致性体验。”
+              </p>
+              <div className="pt-4 flex gap-6">
+                <div className="space-y-1">
+                  <p className="text-[10px] font-bold text-white/40 uppercase tracking-widest">TLS 加密</p>
+                  <p className="text-lg font-bold">已启用</p>
+                </div>
+                <div className="space-y-1">
+                  <p className="text-[10px] font-bold text-white/40 uppercase tracking-widest">多语言同步</p>
+                  <p className="text-lg font-bold">100%</p>
+                </div>
+              </div>
             </div>
           </GlassCard>
         </div>
       </div>
 
-      <MediaLibraryDialog
-        open={isMediaOpen}
-        onOpenChange={setIsMediaOpen}
-        onSelect={handleMediaSelect}
+      <MediaLibraryDialog 
+        open={isMediaOpen} 
+        onOpenChange={setIsMediaOpen} 
+        onSelect={(assets) => {
+          if (mediaTarget && assets[0]) {
+            setLocalConfig({...localConfig, [mediaTarget]: assets[0].url});
+          }
+          setIsMediaOpen(false);
+        }} 
       />
     </div>
   );

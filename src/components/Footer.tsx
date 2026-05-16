@@ -119,7 +119,7 @@ export function Footer({ locale }: { locale: Locale }) {
           <div className="lg:col-span-2">
             <h4 className="font-bold mb-10 text-white uppercase tracking-[0.2em] text-[14px] opacity-100">{tr('nav_company')}</h4>
             <ul className="space-y-4 text-[13px] mt-[30px]">
-              <li className="opacity-60 hover:opacity-100 hover:text-accent cursor-pointer transition-colors"><a href="/#about">{tr('nav_about')}</a></li>
+              <li className="opacity-60 hover:opacity-100 hover:text-accent cursor-pointer transition-colors"><a href="/about">{tr('nav_about')}</a></li>
               <li className="opacity-60 hover:opacity-100 hover:text-accent cursor-pointer transition-colors"><a href="/#cases">{tr('nav_cases')}</a></li>
               <li className="opacity-60 hover:opacity-100 hover:text-accent cursor-pointer transition-colors">{tr('nav_career')}</li>
               <li className="opacity-60 hover:opacity-100 hover:text-accent cursor-pointer transition-colors">{tr('nav_contact')}</li>
@@ -130,31 +130,27 @@ export function Footer({ locale }: { locale: Locale }) {
           <div className="lg:col-span-2">
             <h4 className="font-bold mb-10 text-white uppercase tracking-[0.2em] text-[14px] opacity-100">{tr('footer_follow_us')}</h4>
             <div className="flex flex-col gap-4 mt-[30px]">
-              {(() => {
-                const localizedSocials = tr('SOCIAL_LINKS');
-                const finalSocials = Array.isArray(localizedSocials) ? localizedSocials : [];
-
-                return finalSocials.map((link: any, idx: number) => {
-                  const PlatformIcon = (() => {
-                    switch (link.platform?.toLowerCase() || '') {
-                      case 'facebook': return Facebook;
-                      case 'instagram': return Instagram;
-                      case 'linkedin': return Linkedin;
-                      case 'youtube': return Youtube;
-                      case 'twitter':
-                      case 'x': return Twitter;
-                      case 'wechat': return MessagesSquare;
-                      case 'weibo': return Globe;
-                      default: return LinkIcon;
-                    }
-                  })();
-                  return (
-                    <a key={idx} href={link.url} target="_blank" rel="noopener noreferrer" className="flex items-center gap-3 opacity-60 hover:opacity-100 hover:text-accent transition-all text-[13px]">
-                      <PlatformIcon className="h-4 w-4" /> {link.platform}
-                    </a>
-                  );
-                });
-              })()}
+              {(siteConfig?.socialLinks || []).map((link, idx) => {
+                const PlatformIcon = (() => {
+                  switch (link.platform?.toLowerCase() || '') {
+                    case 'facebook': return Facebook;
+                    case 'instagram': return Instagram;
+                    case 'linkedin': return Linkedin;
+                    case 'youtube': return Youtube;
+                    case 'twitter':
+                    case 'x': return Twitter;
+                    case 'wechat': return MessagesSquare;
+                    case 'whatsapp': return MessageCircle;
+                    case 'weibo': return Globe;
+                    default: return LinkIcon;
+                  }
+                })();
+                return (
+                  <a key={idx} href={link.url} target="_blank" rel="noopener noreferrer" className="flex items-center gap-3 opacity-60 hover:opacity-100 hover:text-accent transition-all text-[13px]">
+                    <PlatformIcon className="h-4 w-4" /> {link.platform}
+                  </a>
+                );
+              })}
             </div>
           </div>
         </div>

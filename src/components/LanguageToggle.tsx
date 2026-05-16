@@ -53,6 +53,8 @@ export function LanguageToggle({ currentLocale, setLocale, headerTheme = 'dark',
   const handleLocaleChange = (code: string) => {
     // 保存到本地缓存，以便下次访问自动判定
     localStorage.setItem('heovose-locale', code);
+    // 同时设置 Cookie 以便中间件 (Server-side) 识别
+    document.cookie = `NEXT_LOCALE=${code}; path=/; max-age=31536000`; // 1 year
     setLocale(code as Locale);
   };
 

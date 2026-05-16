@@ -4,7 +4,7 @@ import { useState, useEffect, useRef, useMemo } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
-import { Locale, translations } from "@/lib/translations";
+import { Locale } from "@/lib/translations";
 import { LanguageToggle } from "./LanguageToggle";
 import {
   Menu,
@@ -251,7 +251,7 @@ export function Navbar({ locale, setLocale, headerTheme = 'dark', themeLine }: N
                       )}
                       onMouseEnter={() => handleMouseEnter('wholesale')}
                     >
-                      <span>{tr('nav_wholesale')}</span>
+                      <span>{tr('NAV_WHOLESALE')}</span>
                       <ChevronDown className={cn(
                         "w-4 h-4 transition-transform duration-300",
                         activeMenu === 'wholesale' ? "rotate-180" : ""
@@ -298,7 +298,7 @@ export function Navbar({ locale, setLocale, headerTheme = 'dark', themeLine }: N
                       )}
                       onMouseEnter={() => handleMouseEnter('projects')}
                     >
-                      <span>{tr('nav_projects')}</span>
+                      <span>{tr('NAV_PROJECTS')}</span>
                       <ChevronDown className={cn(
                         "w-4 h-4 transition-transform duration-300",
                         activeMenu === 'projects' ? "rotate-180" : ""
@@ -338,7 +338,15 @@ export function Navbar({ locale, setLocale, headerTheme = 'dark', themeLine }: N
                   ? "text-slate-800 hover:bg-slate-100"
                   : "text-white hover:bg-white/10"
               )}>
-                {tr('nav_cases')}
+                {tr('NAV_CASES')}
+              </Link>
+              <Link href="/about" className={cn(
+                "px-4 py-2 rounded-full transition-all duration-300 text-sm font-medium whitespace-nowrap",
+                (isNavbarActive || headerTheme === 'light')
+                  ? "text-slate-800 hover:bg-slate-100"
+                  : "text-white hover:bg-white/10"
+              )}>
+                {tr('NAV_ABOUT')}
               </Link>
             </div>
 
@@ -353,7 +361,7 @@ export function Navbar({ locale, setLocale, headerTheme = 'dark', themeLine }: N
               >
                 <span className="flex items-center gap-2">
                   <MessageSquare className="h-4 w-4" />
-                  {tr('nav_contact')}
+                  {tr('NAV_CONTACT')}
                 </span>
               </Button>
             </div>
@@ -397,7 +405,8 @@ export function Navbar({ locale, setLocale, headerTheme = 'dark', themeLine }: N
                   ))}
                 </div>
               </div>
-              <Link href="/#cases" onClick={() => setMobileMenuOpen(false)} className="text-lg font-bold text-primary">{tr('nav_cases')}</Link>
+              <Link href="/#cases" onClick={() => setMobileMenuOpen(false)} className="text-lg font-bold text-primary">{tr('NAV_CASES')}</Link>
+              <Link href="/about" onClick={() => setMobileMenuOpen(false)} className="text-lg font-bold text-primary">{tr('NAV_ABOUT')}</Link>
 
               <div className="pt-6 border-t border-slate-100 mt-auto">
                 <Button 
@@ -408,7 +417,7 @@ export function Navbar({ locale, setLocale, headerTheme = 'dark', themeLine }: N
                   className="w-full rounded-xl bg-primary flex items-center justify-center gap-2"
                 >
                   <MessageSquare className="h-4 w-4" />
-                  {tr('nav_contact')}
+                  {tr('NAV_CONTACT')}
                 </Button>
               </div>
             </div>
