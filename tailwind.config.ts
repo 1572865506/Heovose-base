@@ -127,7 +127,11 @@ export default {
           '30%': { transform: 'rotate(380deg)' },
           '45%': { transform: 'rotate(360deg)' },
           '100%': { transform: 'rotate(360deg)' },
-        }
+        },
+        'slideRight': {
+          '0%': { transform: 'translateX(-100%)' },
+          '100%': { transform: 'translateX(500%)' },
+        },
       },
       animation: {
         'accordion-down': 'accordion-down 0.2s ease-out',
@@ -140,11 +144,15 @@ export default {
         'ai-glow': 'ai-glow 4s ease-in-out infinite',
         'ai-pulse': 'ai-pulse 4s ease-in-out infinite',
         'ai-spin': 'ai-spin 3s cubic-bezier(0.4, 0, 0.2, 1) infinite',
+        'slideRight': 'slideRight 1.8s ease-in-out infinite',
       },
     },
   },
   plugins: [
     require('tailwindcss-animate'),
-    require('@tailwindcss/typography')
+    require('@tailwindcss/typography'),
+    ({ addVariant }: { addVariant: any }) => {
+      addVariant('admin-interface-dark', '.admin-interface-dark &');
+    }
   ],
 } satisfies Config;

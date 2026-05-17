@@ -303,7 +303,7 @@ export default function ProductionStepsAdminPage() {
 
   return (
     <div className="space-y-6 animate-in fade-in duration-500 pb-20">
-      <div className="bg-white p-8 rounded-3xl border shadow-sm space-y-6">
+      <div className="bg-card p-8 rounded-3xl border border-border/40 shadow-sm space-y-6">
         <div className="flex items-center justify-between border-b pb-4">
           <div className="space-y-1">
             <h3 className="text-sm font-bold text-primary uppercase tracking-widest flex items-center gap-2">
@@ -346,7 +346,7 @@ export default function ProductionStepsAdminPage() {
                   value={sectionForm.processTitleZh} 
                   onChange={e => setSectionForm({...sectionForm, processTitleZh: e.target.value})}
                   placeholder="例如：精密制造"
-                  className="h-10 rounded-xl bg-white"
+                  className="h-10 rounded-xl bg-card border-border/40 text-foreground"
                 />
               </div>
               <div className="space-y-2">
@@ -355,7 +355,7 @@ export default function ProductionStepsAdminPage() {
                   value={sectionForm.processSubtitleZh} 
                   onChange={e => setSectionForm({...sectionForm, processSubtitleZh: e.target.value})}
                   placeholder="例如：11步卓越生产流程"
-                  className="h-10 rounded-xl bg-white"
+                  className="h-10 rounded-xl bg-card border-border/40 text-foreground"
                 />
               </div>
             </div>
@@ -370,7 +370,7 @@ export default function ProductionStepsAdminPage() {
                   value={sectionForm.processTitleEn} 
                   onChange={e => setSectionForm({...sectionForm, processTitleEn: e.target.value})}
                   placeholder="e.g. Precision Manufacturing"
-                  className="h-10 rounded-xl bg-white border-dashed"
+                  className="h-10 rounded-xl bg-card border-border/40 border-dashed text-foreground"
                 />
               </div>
               <div className="space-y-2">
@@ -379,7 +379,7 @@ export default function ProductionStepsAdminPage() {
                   value={sectionForm.processSubtitleEn} 
                   onChange={e => setSectionForm({...sectionForm, processSubtitleEn: e.target.value})}
                   placeholder="e.g. 11 Steps of Excellence"
-                  className="h-10 rounded-xl bg-white border-dashed"
+                  className="h-10 rounded-xl bg-card border-border/40 border-dashed text-foreground"
                 />
               </div>
             </div>
@@ -387,7 +387,7 @@ export default function ProductionStepsAdminPage() {
         </div>
       </div>
 
-      <div className="bg-white rounded-2xl border border-border/40 shadow-sm overflow-hidden">
+      <div className="bg-card rounded-2xl border border-border/40 shadow-sm overflow-hidden">
         <div className="p-6 space-y-4">
           {isLoading ? (
             <div className="py-20 text-center"><Loader2 className="h-8 w-8 animate-spin mx-auto opacity-10" /></div>
@@ -403,7 +403,7 @@ export default function ProductionStepsAdminPage() {
                     {idx + 1}
                   </div>
                   
-                  <div className="relative w-20 h-14 shrink-0 bg-white rounded-lg border overflow-hidden shadow-inner">
+                  <div className="relative w-20 h-14 shrink-0 bg-card rounded-lg border border-border/40 overflow-hidden shadow-inner">
                     {step.imageUrls?.[0] ? (
                       <Image src={getAssetUrl(step.imageUrls[0])} alt="" fill className="object-cover" unoptimized />
                     ) : (
@@ -444,16 +444,16 @@ export default function ProductionStepsAdminPage() {
             </DialogHeader>
           </div>
 
-          <div className="p-8 bg-white grid grid-cols-1 md:grid-cols-2 gap-10">
+          <div className="p-8 bg-card grid grid-cols-1 md:grid-cols-2 gap-10">
             <div className="space-y-6">
               <div className="space-y-4">
                 <div className="space-y-2">
                   <Label className="text-xs font-bold uppercase opacity-40 tracking-widest pl-1">步骤标题 (ZH)</Label>
-                  <Input value={form.titleZh} onChange={e => setForm({...form, titleZh: e.target.value})} className="h-11 rounded-xl" placeholder="例如: PMC 生产计划" />
+                  <Input value={form.titleZh} onChange={e => setForm({...form, titleZh: e.target.value})} className="h-11 rounded-xl bg-muted/20 border-border/20 text-foreground" placeholder="例如: PMC 生产计划" />
                 </div>
                 <div className="space-y-2">
                   <Label className="text-xs font-bold uppercase opacity-40 tracking-widest pl-1">核心描述 (ZH)</Label>
-                  <Textarea value={form.descZh} onChange={e => setForm({...form, descZh: e.target.value})} className="min-h-[120px] rounded-xl" placeholder="详细说明此环节的操作逻辑与质量标准..." />
+                  <Textarea value={form.descZh} onChange={e => setForm({...form, descZh: e.target.value})} className="min-h-[120px] rounded-xl bg-muted/20 border-border/20 text-foreground" placeholder="详细说明此环节的操作逻辑与质量标准..." />
                 </div>
               </div>
 
@@ -466,7 +466,7 @@ export default function ProductionStepsAdminPage() {
                 </div>
                 <div className="flex gap-4 p-3 bg-muted/5 rounded-xl border border-border/40 overflow-x-auto min-h-[120px] items-center">
                   {form.imageUrls?.map((url, i) => (
-                    <div key={i} className="group relative w-32 aspect-square shrink-0 rounded-lg border overflow-hidden bg-white shadow-sm transition-all hover:scale-105">
+                    <div key={i} className="group relative w-32 aspect-square shrink-0 rounded-lg border border-border/40 overflow-hidden bg-card shadow-sm transition-all hover:scale-105">
                       <Image src={getAssetUrl(url)} alt="" fill className="object-cover" unoptimized />
                       <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-1.5">
                         <Button size="icon" variant="secondary" className="h-6 w-6 rounded-full" disabled={i === 0} onClick={() => moveImage(i, 'left')}><ChevronLeft className="h-3.5 w-3.5" /></Button>
@@ -506,11 +506,11 @@ export default function ProductionStepsAdminPage() {
               <div className="space-y-4 pt-4 border-l pl-8 border-dashed flex-1">
                 <div className="space-y-2">
                   <Label className="text-xs font-bold uppercase opacity-40 tracking-widest pl-1">Title (EN)</Label>
-                  <Input value={form.titleEn} onChange={e => setForm({...form, titleEn: e.target.value})} className="h-11 rounded-xl border-dashed" placeholder="STEP TITLE IN ENGLISH" />
+                  <Input value={form.titleEn} onChange={e => setForm({...form, titleEn: e.target.value})} className="h-11 rounded-xl border-dashed bg-muted/20 border-border/20 text-foreground" placeholder="STEP TITLE IN ENGLISH" />
                 </div>
                 <div className="space-y-2">
                   <Label className="text-xs font-bold uppercase opacity-40 tracking-widest pl-1">Description (EN)</Label>
-                  <Textarea value={form.descEn} onChange={e => setForm({...form, descEn: e.target.value})} className="min-h-[120px] rounded-xl border-dashed" placeholder="DETAILED ENGLISH DESCRIPTION..." />
+                  <Textarea value={form.descEn} onChange={e => setForm({...form, descEn: e.target.value})} className="min-h-[120px] rounded-xl border-dashed bg-muted/20 border-border/20 text-foreground" placeholder="DETAILED ENGLISH DESCRIPTION..." />
                 </div>
               </div>
               

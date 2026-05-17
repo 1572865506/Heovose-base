@@ -57,7 +57,7 @@ const SortableImageCard = memo(({ url, idx, onDelete, onMove }: {
       ref={setNodeRef}
       style={style}
       className={cn(
-        "group/card relative aspect-[11/9] rounded-[2rem] bg-white border border-slate-100 shadow-sm overflow-hidden transform-gpu",
+        "group/card relative aspect-[11/9] rounded-[2rem] bg-card/60 border border-border/30 shadow-sm overflow-hidden transform-gpu",
         !isDragging && "transition-[box-shadow,transform,opacity] duration-500",
         isDragging ? "shadow-2xl scale-105 ring-4 ring-primary/20 opacity-90 cursor-grabbing" : "hover:shadow-2xl hover:-translate-y-1"
       )}
@@ -95,13 +95,13 @@ const SortableImageCard = memo(({ url, idx, onDelete, onMove }: {
       </div>
 
       {/* 序号标记 */}
-      <div className="absolute top-4 left-4 h-8 w-8 rounded-xl bg-black/40 backdrop-blur-md flex items-center justify-center text-white font-headline font-bold text-[10px] shadow-sm z-20 border border-white/10">
+      <div className="absolute top-4 left-4 h-8 w-8 rounded-xl bg-black/50 backdrop-blur-md flex items-center justify-center text-white font-headline font-bold text-[10px] shadow-sm z-20 border border-white/10">
         #{idx + 1}
       </div>
 
       {/* 拖拽手柄 */}
       <div
-        className="absolute top-4 right-4 h-8 w-8 rounded-xl bg-white/90 backdrop-blur-xl flex items-center justify-center text-slate-500 opacity-0 group-hover/card:opacity-100 transition-opacity z-20 shadow-lg border border-white/50 cursor-grab active:cursor-grabbing"
+        className="absolute top-4 right-4 h-8 w-8 rounded-xl bg-card/80 backdrop-blur-xl flex items-center justify-center text-muted-foreground opacity-0 group-hover/card:opacity-100 transition-opacity z-20 shadow-lg border border-border/30 cursor-grab active:cursor-grabbing"
         {...attributes}
         {...listeners}
       >
@@ -134,7 +134,7 @@ const MediaSection = memo(({
   };
 
   return (
-    <section className="bg-white/60 backdrop-blur-md rounded-[2.5rem] border border-white/40 p-10 shadow-[0_8px_30px_rgb(0,0,0,0.04)] relative group overflow-hidden min-h-[400px] flex items-center justify-center">
+    <section className="bg-card/60 backdrop-blur-md rounded-[2.5rem] border border-border/30 p-10 shadow-[0_8px_30px_rgb(0,0,0,0.08)] relative group overflow-hidden min-h-[400px] flex items-center justify-center">
       <DndContext
         sensors={sensors}
         collisionDetection={closestCenter}
@@ -159,22 +159,22 @@ const MediaSection = memo(({
               className={cn(
                 "aspect-[11/9] rounded-[2rem] flex flex-col items-center justify-center gap-4 transition-all duration-500",
                 galleryUrls.length < 10
-                  ? "bg-slate-500/5 border-2 border-dashed border-slate-200 cursor-pointer hover:bg-primary/[0.02] hover:border-primary/40 group/add"
-                  : "bg-slate-100 border-2 border-slate-200 cursor-not-allowed opacity-60"
+                  ? "bg-muted/10 border-2 border-dashed border-border/30 cursor-pointer hover:bg-primary/[0.03] hover:border-primary/40 group/add"
+                  : "bg-muted/20 border-2 border-border/20 cursor-not-allowed opacity-60"
               )}
               onClick={() => galleryUrls.length < 10 && onOpenPicker()}
             >
               <div className={cn(
                 "h-14 w-14 rounded-2xl flex items-center justify-center transition-all duration-500",
                 galleryUrls.length < 10
-                  ? "bg-white shadow-sm group-hover/add:scale-110 group-hover/add:bg-primary group-hover/add:text-white"
-                  : "bg-slate-200 text-slate-400"
+                  ? "bg-muted/30 border border-border/30 group-hover/add:scale-110 group-hover/add:bg-primary group-hover/add:text-white group-hover/add:border-transparent"
+                  : "bg-muted/20 text-muted-foreground/30"
               )}>
                 {galleryUrls.length < 10 ? <PlusCircle className="h-7 w-7" /> : <Ban className="h-7 w-7" />}
               </div>
               <p className={cn(
                 "text-[10px] font-bold uppercase tracking-widest",
-                galleryUrls.length < 10 ? "text-slate-400" : "text-slate-500"
+                galleryUrls.length < 10 ? "text-muted-foreground/50" : "text-muted-foreground/30"
               )}>
                 {galleryUrls.length < 10 ? "添加矩阵资产" : `已达上限 (${galleryUrls.length}/10)`}
               </p>

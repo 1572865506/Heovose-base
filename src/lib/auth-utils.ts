@@ -42,3 +42,33 @@ export async function isSuperAdmin() {
 
   return user?.role === 'superadmin';
 }
+
+/**
+ * 角色校验工具函数，如不满足权限则抛出异常
+ * @param requiredRole 'superadmin' | 'editor'
+ */
+export async function checkRole(requiredRole: string) {
+  const session = await auth();
+  if (!session?.user?.email) {
+    throw new Error('Unauthorized');
+  }
+
+  const user = await db.user.findUnique({
+    where: { email: session.user.email },
+    select: { id: true, role: true }
+  });
+
+  if (!user) {
+    throw new Error('Unauthorized');
+  }
+
+  if (user.role === 'superadmin') {
+    return user;
+  }
+
+  if (requiredRole === 'superadmin' && user.role !== 'superadmin') {
+    throw new Error('Forbidden');
+  }
+
+  return user;
+}

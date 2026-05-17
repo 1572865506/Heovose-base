@@ -107,15 +107,15 @@ function SortableBentoItem({ item, onEdit, onDelete }: { item: any, onEdit: () =
       ref={setNodeRef} 
       style={style}
       className={cn(
-        "group relative bg-white/70 backdrop-blur-md rounded-[2rem] border border-slate-200/60 p-3 hover:border-primary/40 hover:bg-white transition-all duration-500 shadow-sm",
+        "group relative bg-card/70 backdrop-blur-md rounded-[2rem] border border-border/60 p-3 hover:border-primary/40 hover:bg-card transition-all duration-500 shadow-sm",
         isDragging && "shadow-2xl ring-2 ring-primary/20 scale-105"
       )}
     >
-      <div className="relative aspect-square rounded-2xl overflow-hidden mb-3 shadow-inner bg-slate-50">
+      <div className="relative aspect-square rounded-2xl overflow-hidden mb-3 shadow-inner bg-muted/20">
         {item.imageUrl ? (
           <Image src={getAssetUrl(item.imageUrl)} alt={item.titleZh} fill className="object-cover transition-transform group-hover:scale-105" />
         ) : (
-          <div className="absolute inset-0 flex items-center justify-center text-slate-300">
+          <div className="absolute inset-0 flex items-center justify-center text-muted-foreground/30">
             <ImageIcon className="h-8 w-8 opacity-20" />
           </div>
         )}
@@ -126,13 +126,13 @@ function SortableBentoItem({ item, onEdit, onDelete }: { item: any, onEdit: () =
           {...listeners}
           className="absolute inset-0 flex items-center justify-center bg-black/0 hover:bg-black/5 opacity-0 group-hover:opacity-100 transition-all cursor-grab active:cursor-grabbing z-20"
         >
-          <div className="bg-white/90 p-2 rounded-full shadow-lg border border-slate-200 transform translate-y-4 group-hover:translate-y-0 transition-transform">
-            <GripVertical className="h-4 w-4 text-slate-400" />
+          <div className="bg-card/90 p-2 rounded-full shadow-lg border border-border transform translate-y-4 group-hover:translate-y-0 transition-transform">
+            <GripVertical className="h-4 w-4 text-muted-foreground/50" />
           </div>
         </div>
 
         {/* Order Badge */}
-        <div className="absolute top-2 left-2 w-6 h-6 rounded-full bg-white/95 backdrop-blur-md border border-slate-200 flex items-center justify-center text-[9px] font-bold text-primary shadow-sm z-10">
+        <div className="absolute top-2 left-2 w-6 h-6 rounded-full bg-card/95 backdrop-blur-md border border-border flex items-center justify-center text-[9px] font-bold text-primary shadow-sm z-10">
           {item.order}
         </div>
         
@@ -162,7 +162,7 @@ function SortableBentoItem({ item, onEdit, onDelete }: { item: any, onEdit: () =
             </Button>
           </div>
         </div>
-        <h4 className="text-xs font-bold text-slate-800 line-clamp-1">{item.titleZh}</h4>
+        <h4 className="text-xs font-bold text-foreground line-clamp-1">{item.titleZh}</h4>
       </div>
     </div>
   );
@@ -602,15 +602,15 @@ export default function AdminHomePage() {
     <div className="space-y-6 animate-in fade-in duration-500 pb-20">
       <AiGradientDef />
       
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 sticky top-[-24px] z-50 bg-white/80 backdrop-blur-xl py-5 border-b border-white/40 -mx-6 px-10 shadow-sm transition-all duration-300">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 sticky top-[-24px] z-50 bg-background/80 backdrop-blur-xl py-5 border-b border-border/40 -mx-6 px-10 shadow-sm transition-all duration-300">
         <div className="space-y-1">
-          <h2 className="text-xl font-headline font-bold text-slate-900 flex items-center gap-3">
+          <h2 className="text-xl font-headline font-bold text-foreground flex items-center gap-3">
             <div className="h-9 w-9 rounded-xl bg-primary/10 flex items-center justify-center text-primary">
               <Home className="h-4.5 w-4.5" />
             </div>
             首页视觉配置
           </h2>
-          <p className="text-[10px] text-slate-400 font-bold uppercase tracking-[0.2em] pl-12">Management / Content / Home Visuals</p>
+          <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-[0.2em] pl-12">Management / Content / Home Visuals</p>
         </div>
         
         <Button onClick={handleSave} disabled={isSaving} className="rounded-2xl h-14 px-10 gap-3 font-bold uppercase tracking-widest text-xs shadow-xl shadow-primary/20 hover:scale-105 transition-all">
@@ -620,23 +620,35 @@ export default function AdminHomePage() {
       </div>
 
       <Tabs defaultValue="hero" className="w-full">
-        <TabsList className="bg-muted/30 p-1 rounded-2xl mb-8 h-14">
-          <TabsTrigger value="hero" className="rounded-xl px-8 text-xs font-bold uppercase tracking-wider gap-2">
+        <TabsList className="bg-muted/20 border border-border/40 p-1.5 rounded-2xl mb-8 h-14 inline-flex gap-1 shadow-inner backdrop-blur-sm">
+          <TabsTrigger 
+            value="hero" 
+            className="rounded-xl px-8 h-11 text-xs font-bold uppercase tracking-wider gap-2 transition-all duration-300 data-[state=active]:bg-card data-[state=active]:text-primary data-[state=active]:shadow-[0_4px_12px_rgba(0,0,0,0.05)] data-[state=active]:border-border/60 border border-transparent text-muted-foreground hover:text-foreground"
+          >
             <ImageIcon className="h-4 w-4" /> 英雄视觉 (Hero)
           </TabsTrigger>
-          <TabsTrigger value="video" className="rounded-xl px-8 text-xs font-bold uppercase tracking-wider gap-2">
+          <TabsTrigger 
+            value="video" 
+            className="rounded-xl px-8 h-11 text-xs font-bold uppercase tracking-wider gap-2 transition-all duration-300 data-[state=active]:bg-card data-[state=active]:text-primary data-[state=active]:shadow-[0_4px_12px_rgba(0,0,0,0.05)] data-[state=active]:border-border/60 border border-transparent text-muted-foreground hover:text-foreground"
+          >
             <Film className="h-4 w-4" /> 品牌故事 (Video)
           </TabsTrigger>
-          <TabsTrigger value="bento" className="rounded-xl px-8 text-xs font-bold uppercase tracking-wider gap-2">
+          <TabsTrigger 
+            value="bento" 
+            className="rounded-xl px-8 h-11 text-xs font-bold uppercase tracking-wider gap-2 transition-all duration-300 data-[state=active]:bg-card data-[state=active]:text-primary data-[state=active]:shadow-[0_4px_12px_rgba(0,0,0,0.05)] data-[state=active]:border-border/60 border border-transparent text-muted-foreground hover:text-foreground"
+          >
             <LayoutGrid className="h-4 w-4" /> 产品布局 (Bento)
           </TabsTrigger>
-          <TabsTrigger value="gallery" className="rounded-xl px-8 text-xs font-bold uppercase tracking-wider gap-2">
+          <TabsTrigger 
+            value="gallery" 
+            className="rounded-xl px-8 h-11 text-xs font-bold uppercase tracking-wider gap-2 transition-all duration-300 data-[state=active]:bg-card data-[state=active]:text-primary data-[state=active]:shadow-[0_4px_12px_rgba(0,0,0,0.05)] data-[state=active]:border-border/60 border border-transparent text-muted-foreground hover:text-foreground"
+          >
             <Layers className="h-4 w-4" /> 产品轮播 (Gallery)
           </TabsTrigger>
         </TabsList>
 
         <TabsContent value="hero" className="space-y-6">
-          <div className="bg-white p-8 rounded-3xl border shadow-sm space-y-6">
+          <div className="bg-card p-8 rounded-3xl border border-border shadow-sm space-y-6">
             <h3 className="text-sm font-bold text-primary uppercase tracking-widest flex items-center gap-2 border-b pb-4">
               <Layers className="h-4 w-4" /> 底部入口卡片配置
             </h3>
@@ -731,8 +743,8 @@ export default function AdminHomePage() {
             </div>
           </div>
 
-          <div className="bg-white p-8 rounded-3xl border shadow-sm space-y-8">
-            <div className="flex items-center justify-between border-b pb-4">
+          <div className="bg-card p-8 rounded-3xl border border-border shadow-sm space-y-8">
+            <div className="flex items-center justify-between border-b border-border/40 pb-4">
               <div className="space-y-1">
                 <h3 className="text-sm font-bold text-primary uppercase tracking-widest flex items-center gap-2">
                   <ImageIcon className="h-4 w-4" /> 英雄屏视觉卡片管理
@@ -769,7 +781,7 @@ export default function AdminHomePage() {
 
             <div className="space-y-6">
               {formData.heroSlides.map((slide: any, index: number) => (
-                <div key={slide.id} className="group relative bg-muted/5 rounded-3xl border border-dashed p-6 hover:border-primary/40 hover:bg-muted/10 transition-all duration-500">
+                <div key={slide.id} className="group relative bg-muted/10 border border-border/60 hover:bg-muted/20 hover:border-primary/30 rounded-3xl p-6 transition-all duration-500 shadow-sm">
                   <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
                     <div className="lg:col-span-3 space-y-3">
                       <Label className="text-[10px] font-bold uppercase opacity-40">背景图片</Label>
@@ -799,7 +811,7 @@ export default function AdminHomePage() {
                           <Input 
                             value={slide.headlineZh} 
                             onChange={e => updateSlide(index, { headlineZh: e.target.value })} 
-                            className="h-10 rounded-xl bg-white" 
+                            className="rounded-xl" 
                           />
                         </div>
                         <div className="space-y-2">
@@ -807,17 +819,17 @@ export default function AdminHomePage() {
                           <Input 
                             value={slide.subheadlineZh} 
                             onChange={e => updateSlide(index, { subheadlineZh: e.target.value })} 
-                            className="h-10 rounded-xl bg-white" 
+                            className="rounded-xl" 
                           />
                         </div>
                       </div>
-                      <div className="space-y-4 md:border-l md:pl-6 border-dashed">
+                      <div className="space-y-4 md:border-l md:pl-6 border-dashed border-border/40">
                         <div className="space-y-2">
                           <Label className="text-[10px] font-bold uppercase opacity-40">HEADLINE (EN)</Label>
                           <Input 
                             value={slide.headlineEn} 
                             onChange={e => updateSlide(index, { headlineEn: e.target.value })} 
-                            className="h-10 rounded-xl bg-white border-dashed" 
+                            className="rounded-xl border-dashed" 
                           />
                         </div>
                         <div className="space-y-2">
@@ -825,7 +837,7 @@ export default function AdminHomePage() {
                           <Input 
                             value={slide.subheadlineEn} 
                             onChange={e => updateSlide(index, { subheadlineEn: e.target.value })} 
-                            className="h-10 rounded-xl bg-white border-dashed" 
+                            className="rounded-xl border-dashed" 
                           />
                         </div>
                       </div>
@@ -874,7 +886,7 @@ export default function AdminHomePage() {
         </TabsContent>
 
         <TabsContent value="video" className="space-y-6">
-          <div className="bg-white p-8 rounded-3xl border shadow-sm space-y-8">
+          <div className="bg-card p-8 rounded-3xl border border-border shadow-sm space-y-8">
             <div className="flex items-center justify-between border-b pb-6">
               <div className="flex items-center gap-4">
                 <div className={cn("p-2 rounded-xl transition-colors", formData.isVideoEnabled ? "bg-primary text-white" : "bg-muted text-muted-foreground")}>
@@ -887,7 +899,7 @@ export default function AdminHomePage() {
               </div>
               <Switch 
                 checked={formData.isVideoEnabled} 
-                onCheckedChange={v => setFormData(prev => ({...prev, isVideoEnabled: v}))} 
+                onCheckedChange={v => setFormData((prev: any) => ({...prev, isVideoEnabled: v}))} 
               />
             </div>
 
@@ -905,14 +917,14 @@ export default function AdminHomePage() {
                         targetLangs: ['en'],
                         taskType: 'text'
                       });
-                      if(res.en) setFormData(prev => ({...prev, videoTitleEn: res.en}));
+                      if(res.en) setFormData((prev: any) => ({...prev, videoTitleEn: res.en}));
                       
                       const res2 = await smartTranslate({
                         text: formData.videoSubtitleZh,
                         targetLangs: ['en'],
                         taskType: 'text'
                       });
-                      if(res2.en) setFormData(prev => ({...prev, videoSubtitleEn: res2.en}));
+                      if(res2.en) setFormData((prev: any) => ({...prev, videoSubtitleEn: res2.en}));
                       
                       toast({ title: "视频文案智译完成" });
                     }}
@@ -978,7 +990,7 @@ export default function AdminHomePage() {
           </div>
         </TabsContent>
         <TabsContent value="bento" className="space-y-6">
-          <div className="bg-white p-8 rounded-3xl border shadow-sm space-y-8">
+          <div className="bg-card p-8 rounded-3xl border border-border shadow-sm space-y-8">
             <div className="flex items-center justify-between border-b pb-6">
               <div className="space-y-1">
                 <h3 className="text-sm font-bold text-primary uppercase tracking-widest flex items-center gap-2">
@@ -991,20 +1003,20 @@ export default function AdminHomePage() {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
               <div className="space-y-6">
                 <div className="space-y-3">
-                  <Label className="text-[10px] font-bold uppercase tracking-widest text-slate-400">板块主标题 (Main Title)</Label>
+                  <Label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">板块主标题 (Main Title)</Label>
                   <div className="grid grid-cols-1 gap-3">
                     <Input 
                       value={formData.bentoTitleZh} 
                       onChange={e => setFormData({...formData, bentoTitleZh: e.target.value})} 
                       placeholder="例如：产品中心" 
-                      className="h-12 rounded-2xl bg-slate-50/50 border-slate-200"
+                      className="h-12 rounded-2xl bg-muted/20 border-border focus:bg-background transition-all"
                     />
                     <div className="relative group/input">
                       <Input 
                         value={formData.bentoTitleEn} 
                         onChange={e => setFormData({...formData, bentoTitleEn: e.target.value})} 
                         placeholder="e.g. OUR PORTFOLIO" 
-                        className="h-12 rounded-2xl border-dashed bg-slate-50/20 pr-12"
+                        className="h-12 rounded-2xl border-dashed bg-muted/10 border-border/80 pr-12 focus:bg-background/50 transition-all"
                       />
                       {aiConfig?.isEnabled && (
                         <div className="absolute right-1.5 top-1/2 -translate-y-1/2">
@@ -1015,14 +1027,14 @@ export default function AdminHomePage() {
                         targetLangs: ['en'],
                         taskType: 'text'
                       });
-                      if(res.en) setFormData(prev => ({...prev, bentoTitleEn: res.en}));
+                      if(res.en) setFormData((prev: any) => ({...prev, bentoTitleEn: res.en}));
                       
                       const res2 = await smartTranslate({
                         text: formData.bentoSubtitleZh,
                         targetLangs: ['en'],
                         taskType: 'text'
                       });
-                      if(res2.en) setFormData(prev => ({...prev, bentoSubtitleEn: res2.en}));
+                      if(res2.en) setFormData((prev: any) => ({...prev, bentoSubtitleEn: res2.en}));
                       
                       toast({ title: "Bento 文案智译完成" });
                     }}
@@ -1045,20 +1057,20 @@ export default function AdminHomePage() {
 
               <div className="space-y-6">
                 <div className="space-y-3">
-                  <Label className="text-[10px] font-bold uppercase tracking-widest text-slate-400">板块副标题 (Subtitle)</Label>
+                  <Label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">板块副标题 (Subtitle)</Label>
                   <div className="grid grid-cols-1 gap-3">
                     <Input 
                       value={formData.bentoSubtitleZh} 
                       onChange={e => setFormData({...formData, bentoSubtitleZh: e.target.value})} 
                       placeholder="例如：为性能与可靠性而生" 
-                      className="h-12 rounded-2xl bg-slate-50/50 border-slate-200"
+                      className="h-12 rounded-2xl bg-muted/20 border-border focus:bg-background transition-all"
                     />
                     <div className="relative group/input">
                       <Input 
                         value={formData.bentoSubtitleEn} 
                         onChange={e => setFormData({...formData, bentoSubtitleEn: e.target.value})} 
                         placeholder="e.g. Engineered for Performance" 
-                        className="h-12 rounded-2xl border-dashed bg-slate-50/20 pr-12"
+                        className="h-12 rounded-2xl border-dashed bg-muted/10 border-border/80 pr-12 focus:bg-background/50 transition-all"
                       />
                       {aiConfig?.isEnabled && (
                         <div className="absolute right-1.5 top-1/2 -translate-y-1/2">
@@ -1148,7 +1160,7 @@ export default function AdminHomePage() {
         </TabsContent>
 
         <TabsContent value="gallery" className="space-y-6">
-          <div className="bg-white p-8 rounded-3xl border shadow-sm space-y-8">
+          <div className="bg-card p-8 rounded-3xl border border-border shadow-sm space-y-8">
             <div className="flex items-center justify-between border-b pb-6">
               <div className="space-y-1">
                 <h3 className="text-sm font-bold text-primary uppercase tracking-widest flex items-center gap-2">
@@ -1161,20 +1173,20 @@ export default function AdminHomePage() {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
               <div className="space-y-6">
                 <div className="space-y-3">
-                  <Label className="text-[10px] font-bold uppercase tracking-widest text-slate-400">板块主标题 (Main Title)</Label>
+                  <Label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">板块主标题 (Main Title)</Label>
                   <div className="grid grid-cols-1 gap-3">
                     <Input 
                       value={formData.galleryTitleZh} 
                       onChange={e => setFormData({...formData, galleryTitleZh: e.target.value})} 
                       placeholder="例如：精选产品" 
-                      className="h-12 rounded-2xl bg-slate-50/50 border-slate-200"
+                      className="h-12 rounded-2xl bg-muted/20 border-border focus:bg-background transition-all"
                     />
                     <div className="relative group/input">
                       <Input 
                         value={formData.galleryTitleEn} 
                         onChange={e => setFormData({...formData, galleryTitleEn: e.target.value})} 
                         placeholder="e.g. FEATURED PRODUCTS" 
-                        className="h-12 rounded-2xl border-dashed bg-slate-50/20 pr-12"
+                        className="h-12 rounded-2xl border-dashed bg-muted/10 border-border/80 pr-12 focus:bg-background/50 transition-all"
                       />
                       {aiConfig?.isEnabled && (
                         <div className="absolute right-1.5 top-1/2 -translate-y-1/2">
@@ -1206,20 +1218,20 @@ export default function AdminHomePage() {
 
               <div className="space-y-6">
                 <div className="space-y-3">
-                  <Label className="text-[10px] font-bold uppercase tracking-widest text-slate-400">板块副标题 (Subtitle)</Label>
+                  <Label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">板块副标题 (Subtitle)</Label>
                   <div className="grid grid-cols-1 gap-3">
                     <Input 
                       value={formData.gallerySubtitleZh} 
                       onChange={e => setFormData({...formData, gallerySubtitleZh: e.target.value})} 
                       placeholder="例如：于细节处见创新与精密" 
-                      className="h-12 rounded-2xl bg-slate-50/50 border-slate-200"
+                      className="h-12 rounded-2xl bg-muted/20 border-border focus:bg-background transition-all"
                     />
                     <div className="relative group/input">
                       <Input 
                         value={formData.gallerySubtitleEn} 
                         onChange={e => setFormData({...formData, gallerySubtitleEn: e.target.value})} 
                         placeholder="e.g. Innovation in every detail" 
-                        className="h-12 rounded-2xl border-dashed bg-slate-50/20 pr-12"
+                        className="h-12 rounded-2xl border-dashed bg-muted/10 border-border/80 pr-12 focus:bg-background/50 transition-all"
                       />
                       {aiConfig?.isEnabled && (
                         <div className="absolute right-1.5 top-1/2 -translate-y-1/2">
@@ -1271,12 +1283,12 @@ export default function AdminHomePage() {
                 const productName = translations?.find((t: any) => t.id === product.nameTextId)?.content?.zh || product.id;
 
                 return (
-                  <div key={`${item.productId}-${idx}`} className="group relative bg-white/70 backdrop-blur-md rounded-[2rem] border border-slate-200/60 p-4 hover:border-primary/40 hover:bg-white transition-all duration-500 shadow-sm">
-                    <div className="relative aspect-[11/9] rounded-2xl overflow-hidden mb-3 shadow-inner bg-slate-50">
+                  <div key={`${item.productId}-${idx}`} className="group relative bg-card/70 backdrop-blur-md rounded-[2rem] border border-border/60 p-4 hover:border-primary/40 hover:bg-card transition-all duration-500 shadow-sm">
+                    <div className="relative aspect-[11/9] rounded-2xl overflow-hidden mb-3 shadow-inner bg-muted/20">
                       {product.mainImageUrl ? (
                         <Image src={getAssetUrl(product.mainImageUrl)} alt="P" fill className="object-cover" />
                       ) : (
-                        <div className="absolute inset-0 flex items-center justify-center text-slate-300">
+                        <div className="absolute inset-0 flex items-center justify-center text-muted-foreground/30">
                           <ImageIcon className="h-8 w-8 opacity-20" />
                         </div>
                       )}
@@ -1309,8 +1321,8 @@ export default function AdminHomePage() {
                     </div>
                     
                     <div className="space-y-3">
-                      <h4 className="text-xs font-bold text-slate-800 line-clamp-1">{productName}</h4>
-                      <div className="space-y-1.5 pt-2 border-t border-dashed">
+                      <h4 className="text-xs font-bold text-foreground line-clamp-1">{productName}</h4>
+                      <div className="space-y-1.5 pt-2 border-t border-dashed border-border/60">
                         <Label className="text-[9px] font-bold uppercase opacity-40">设置标签 (Badge)</Label>
                         <Select 
                           value={item.badge || 'none'} 
@@ -1335,7 +1347,7 @@ export default function AdminHomePage() {
                         <Button 
                           variant="ghost" 
                           size="icon" 
-                          className="h-7 w-7 rounded-full bg-slate-100"
+                          className="h-7 w-7 rounded-full bg-muted/40 hover:bg-muted/80 text-muted-foreground hover:text-foreground"
                           disabled={idx === 0}
                           onClick={() => {
                             const newItems = [...formData.galleryItems];
@@ -1348,7 +1360,7 @@ export default function AdminHomePage() {
                         <Button 
                           variant="ghost" 
                           size="icon" 
-                          className="h-7 w-7 rounded-full bg-slate-100"
+                          className="h-7 w-7 rounded-full bg-muted/40 hover:bg-muted/80 text-muted-foreground hover:text-foreground"
                           disabled={idx === formData.galleryItems.length - 1}
                           onClick={() => {
                             const newItems = [...formData.galleryItems];
@@ -1491,8 +1503,8 @@ function ProductPicker({ open, onOpenChange, products, translations, categories,
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-4xl h-[80vh] rounded-[2.5rem] p-0 overflow-hidden border-none shadow-2xl flex flex-col">
-        <DialogHeader className="bg-slate-900 text-white p-8 shrink-0">
+      <DialogContent className="max-w-4xl h-[80vh] rounded-[2.5rem] p-0 overflow-hidden border border-border/40 shadow-2xl flex flex-col">
+        <DialogHeader className="bg-slate-950 text-white p-8 shrink-0 border-b border-border/20">
           <DialogTitle className="text-xl font-headline font-bold flex items-center gap-3">
             <LayoutGrid className="h-5 w-5 text-primary" />
             产品库浏览选择
@@ -1501,13 +1513,13 @@ function ProductPicker({ open, onOpenChange, products, translations, categories,
         
         <div className="flex-1 flex overflow-hidden">
           {/* Sidebar - Categories */}
-          <div className="w-48 bg-slate-50 border-r border-slate-100 p-4 space-y-1 overflow-y-auto shrink-0">
-            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest px-3 mb-3">产品分类</p>
+          <div className="w-48 bg-muted/20 border-r border-border/60 p-4 space-y-1 overflow-y-auto shrink-0">
+            <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest px-3 mb-3">产品分类</p>
             <button 
               onClick={() => setActiveCategory('all')}
               className={cn(
                 "w-full text-left px-3 py-2 rounded-xl text-xs font-bold transition-all",
-                activeCategory === 'all' ? "bg-primary text-white shadow-md shadow-primary/20" : "text-slate-600 hover:bg-slate-200/50"
+                activeCategory === 'all' ? "bg-primary text-white shadow-md shadow-primary/20" : "text-muted-foreground hover:bg-muted/50 hover:text-foreground"
               )}
             >
               全部产品
@@ -1520,7 +1532,7 @@ function ProductPicker({ open, onOpenChange, products, translations, categories,
                   onClick={() => setActiveCategory(cat.id)}
                   className={cn(
                     "w-full text-left px-3 py-2 rounded-xl text-xs font-bold transition-all truncate",
-                    activeCategory === cat.id ? "bg-primary text-white shadow-md shadow-primary/20" : "text-slate-600 hover:bg-slate-200/50"
+                    activeCategory === cat.id ? "bg-primary text-white shadow-md shadow-primary/20" : "text-muted-foreground hover:bg-muted/50 hover:text-foreground"
                   )}
                 >
                   {name}
@@ -1536,9 +1548,9 @@ function ProductPicker({ open, onOpenChange, products, translations, categories,
                 placeholder="在当前分类中筛选..." 
                 value={search}
                 onChange={e => setSearch(e.target.value)}
-                className="h-11 pl-10 rounded-xl bg-slate-50 border-slate-200 focus:bg-white transition-all"
+                className="h-11 pl-10 rounded-xl bg-muted/20 border-border focus:bg-background transition-all"
               />
-              <div className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400">
+              <div className="absolute left-3.5 top-1/2 -translate-y-1/2 text-muted-foreground/60">
                 <Plus className="h-4 w-4 rotate-45" />
               </div>
             </div>
@@ -1550,14 +1562,14 @@ function ProductPicker({ open, onOpenChange, products, translations, categories,
                   <div 
                     key={p.id}
                     onClick={() => onSelect(p.id)}
-                    className="group flex items-center gap-4 bg-white border border-slate-100 p-3 rounded-2xl cursor-pointer hover:border-primary/40 hover:bg-primary/5 hover:shadow-sm transition-all duration-300"
+                    className="group flex items-center gap-4 bg-card border border-border/60 p-3 rounded-2xl cursor-pointer hover:border-primary/40 hover:bg-primary/5 hover:shadow-sm transition-all duration-300"
                   >
-                    <div className="relative w-12 h-12 rounded-xl overflow-hidden bg-slate-50 shrink-0 border border-slate-100 shadow-sm">
+                    <div className="relative w-12 h-12 rounded-xl overflow-hidden bg-muted/20 shrink-0 border border-border/40 shadow-sm">
                       {p.mainImageUrl && <Image src={getAssetUrl(p.mainImageUrl)} alt={p.id} fill className="object-cover group-hover:scale-110 transition-transform duration-500" />}
                     </div>
                     <div className="flex-1 min-w-0">
-                      <p className="text-sm font-bold text-slate-800 truncate">{name}</p>
-                      <p className="text-[10px] font-medium text-slate-400 uppercase tracking-wider font-mono truncate">{p.id}</p>
+                      <p className="text-sm font-bold text-foreground truncate">{name}</p>
+                      <p className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider font-mono truncate">{p.id}</p>
                     </div>
                     <div className="opacity-0 group-hover:opacity-100 transition-all">
                       <Button variant="ghost" size="sm" className="h-8 px-4 rounded-lg text-[10px] font-black uppercase tracking-widest text-primary bg-primary/10 hover:bg-primary hover:text-white transition-all">
@@ -1569,8 +1581,8 @@ function ProductPicker({ open, onOpenChange, products, translations, categories,
               })}
 
               {filtered.length === 0 && (
-                <div className="py-20 text-center bg-slate-50/50 rounded-2xl border border-dashed border-slate-200">
-                  <p className="text-xs font-bold text-slate-400 uppercase tracking-widest opacity-60">该分类下暂无产品</p>
+                <div className="py-20 text-center bg-muted/5 rounded-2xl border border-dashed border-border">
+                  <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest opacity-60">该分类下暂无产品</p>
                 </div>
               )}
             </div>
@@ -1604,26 +1616,26 @@ function BentoItemDialog({ open, onOpenChange, item, onSave, onTranslate, onImag
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl rounded-[2.5rem] p-0 overflow-hidden border-none shadow-2xl">
-        <DialogHeader className="bg-slate-900 text-white p-8">
+      <DialogContent className="max-w-2xl rounded-[2.5rem] p-0 overflow-hidden border border-border/40 shadow-2xl">
+        <DialogHeader className="bg-slate-950 text-white p-8 border-b border-border/20">
           <DialogTitle className="text-xl font-headline font-bold flex items-center gap-3">
             <LayoutGrid className="h-5 w-5 text-primary" />
             {localItem.id ? '编辑格位' : '新增格位'}
           </DialogTitle>
         </DialogHeader>
         
-        <div className="p-8 space-y-6 max-h-[70vh] overflow-y-auto text-slate-800">
+        <div className="p-8 space-y-6 max-h-[70vh] overflow-y-auto text-foreground">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
             <div className="space-y-4">
-              <Label className="text-[10px] font-bold uppercase tracking-widest text-slate-400">背景图片</Label>
+              <Label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">背景图片</Label>
               <div 
-                className="relative aspect-video rounded-3xl overflow-hidden cursor-pointer group border-2 border-dashed border-slate-200 hover:border-primary transition-all bg-slate-50"
+                className="relative aspect-video rounded-3xl overflow-hidden cursor-pointer group border-2 border-dashed border-border hover:border-primary transition-all bg-muted/20"
                 onClick={onImageSelect}
               >
                 {localItem.imageUrl ? (
                   <Image src={getAssetUrl(localItem.imageUrl)} alt="P" fill className="object-cover" />
                 ) : (
-                  <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 text-slate-400">
+                  <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 text-muted-foreground/50">
                     <ImageIcon className="h-8 w-8" />
                     <span className="text-[10px] font-bold uppercase">点击上传图片</span>
                   </div>
@@ -1639,9 +1651,9 @@ function BentoItemDialog({ open, onOpenChange, item, onSave, onTranslate, onImag
 
             <div className="space-y-6">
               <div className="space-y-3">
-                <Label className="text-[10px] font-bold uppercase tracking-widest text-slate-400">格位尺寸 (Grid Size)</Label>
+                <Label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">格位尺寸 (Grid Size)</Label>
                 <Select value={localItem.gridSize} onValueChange={v => setLocalItem({ ...localItem, gridSize: v })}>
-                  <SelectTrigger className="h-12 rounded-2xl border-slate-200">
+                  <SelectTrigger className="h-12 rounded-2xl border-border">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent className="rounded-2xl">
@@ -1673,25 +1685,25 @@ function BentoItemDialog({ open, onOpenChange, item, onSave, onTranslate, onImag
                 </Select>
               </div>
               <div className="space-y-3">
-                <Label className="text-[10px] font-bold uppercase tracking-widest text-slate-400">显示顺序</Label>
+                <Label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">显示顺序</Label>
                 <Input 
                   type="number"
                   value={localItem.order} 
                   onChange={e => setLocalItem({ ...localItem, order: parseInt(e.target.value) })}
-                  className="h-12 rounded-2xl border-slate-200"
+                  className="h-12 rounded-2xl border-border"
                 />
               </div>
             </div>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 border-t pt-8">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 border-t border-border/60 pt-8">
             <div className="space-y-4">
-              <Label className="text-[10px] font-bold uppercase tracking-widest text-slate-400">中文内容 (ZH)</Label>
-              <Input value={localItem.titleZh} onChange={e => setLocalItem({ ...localItem, titleZh: e.target.value })} placeholder="主标题" className="h-11 rounded-xl border-slate-200" />
-              <Input value={localItem.tagZh} onChange={e => setLocalItem({ ...localItem, tagZh: e.target.value })} placeholder="小标签 (如：批发业务)" className="h-11 rounded-xl border-slate-200" />
+              <Label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">中文内容 (ZH)</Label>
+              <Input value={localItem.titleZh} onChange={e => setLocalItem({ ...localItem, titleZh: e.target.value })} placeholder="主标题" className="h-11 rounded-xl border-border" />
+              <Input value={localItem.tagZh} onChange={e => setLocalItem({ ...localItem, tagZh: e.target.value })} placeholder="小标签 (如：批发业务)" className="h-11 rounded-xl border-border" />
               
-              <div className="pt-4 border-t border-dashed space-y-3">
-                <Label className="text-[10px] font-bold uppercase tracking-widest text-slate-400">跳转逻辑 (Navigation)</Label>
+              <div className="pt-4 border-t border-dashed border-border/60 space-y-3">
+                <Label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">跳转逻辑 (Navigation)</Label>
                 <Select 
                   onValueChange={v => {
                     if (v === 'custom') return;
@@ -1701,7 +1713,7 @@ function BentoItemDialog({ open, onOpenChange, item, onSave, onTranslate, onImag
                     }
                   }}
                 >
-                  <SelectTrigger className="h-10 rounded-xl border-slate-200 text-xs">
+                  <SelectTrigger className="h-10 rounded-xl border-border text-xs">
                     <SelectValue placeholder="快速关联产品分类" />
                   </SelectTrigger>
                   <SelectContent className="rounded-xl">
@@ -1713,20 +1725,20 @@ function BentoItemDialog({ open, onOpenChange, item, onSave, onTranslate, onImag
                     })}
                   </SelectContent>
                 </Select>
-                <Input value={localItem.linkUrl} onChange={e => setLocalItem({ ...localItem, linkUrl: e.target.value })} placeholder="跳转链接 (如：products?category=...)" className="h-11 rounded-xl border-slate-200 font-mono text-[11px]" />
+                <Input value={localItem.linkUrl} onChange={e => setLocalItem({ ...localItem, linkUrl: e.target.value })} placeholder="跳转链接 (如：products?category=...)" className="h-11 rounded-xl border-border font-mono text-[11px]" />
               </div>
             </div>
 
-            <div className="space-y-4 border-l pl-8 border-dashed border-slate-200">
+            <div className="space-y-4 border-l pl-8 border-dashed border-border/60">
               <div className="flex items-center justify-between">
-                <Label className="text-[10px] font-bold uppercase tracking-widest text-slate-400">ENGLISH CONTENT (EN)</Label>
+                <Label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">ENGLISH CONTENT (EN)</Label>
               </div>
               <div className="relative group/input">
                 <Input 
                   value={localItem.titleEn} 
                   onChange={e => setLocalItem({ ...localItem, titleEn: e.target.value })} 
                   placeholder="Main Title" 
-                  className="h-11 rounded-xl border-dashed border-slate-300 pr-12" 
+                  className="h-11 rounded-xl border-dashed border-border pr-12" 
                 />
                 <div className="absolute right-1 top-1/2 -translate-y-1/2">
                   <ShinyButton 
@@ -1757,7 +1769,7 @@ function BentoItemDialog({ open, onOpenChange, item, onSave, onTranslate, onImag
                   value={localItem.tagEn} 
                   onChange={e => setLocalItem({ ...localItem, tagEn: e.target.value })} 
                   placeholder="Small Tag (e.g. Wholesale)" 
-                  className="h-11 rounded-xl border-dashed border-slate-300 pr-12" 
+                  className="h-11 rounded-xl border-dashed border-border pr-12" 
                 />
                 <div className="absolute right-1 top-1/2 -translate-y-1/2">
                   <ShinyButton 
@@ -1786,7 +1798,7 @@ function BentoItemDialog({ open, onOpenChange, item, onSave, onTranslate, onImag
           </div>
         </div>
 
-        <DialogFooter className="bg-slate-50 p-6 flex justify-end gap-3 border-t">
+        <DialogFooter className="bg-muted/30 p-6 flex justify-end gap-3 border-t border-border/60">
           <Button variant="ghost" onClick={() => onOpenChange(false)} className="rounded-xl">取消</Button>
           <Button onClick={() => onSave(localItem)} className="rounded-xl px-8 shadow-lg shadow-primary/20 bg-primary text-white hover:bg-primary/90">保存格位</Button>
         </DialogFooter>

@@ -313,15 +313,15 @@ export default function GlobalMapAdminPage() {
 
       if (needsTitle) {
         const res = await smartTranslate({ text: locationForm.titleZh, targetLangs: ['en'], taskType: 'text' });
-        if (res.en) setLocationForm(prev => ({ ...prev, titleEn: res.en }));
+        if (res.en) setLocationForm((prev: any) => ({ ...prev, titleEn: res.en }));
       }
       if (needsAddress) {
         const res = await smartTranslate({ text: locationForm.addressZh, targetLangs: ['en'], taskType: 'text' });
-        if (res.en) setLocationForm(prev => ({ ...prev, addressEn: res.en }));
+        if (res.en) setLocationForm((prev: any) => ({ ...prev, addressEn: res.en }));
       }
       if (needsDesc) {
         const res = await smartTranslate({ text: locationForm.descZh, targetLangs: ['en'], taskType: 'text' });
-        if (res.en) setLocationForm(prev => ({ ...prev, descEn: res.en }));
+        if (res.en) setLocationForm((prev: any) => ({ ...prev, descEn: res.en }));
       }
       toast({ title: "网点信息智译完成" });
     } catch (e: any) {
@@ -343,11 +343,11 @@ export default function GlobalMapAdminPage() {
 
       if (needsTitle) {
         const res = await smartTranslate({ text: sectionForm.mapTitleZh, targetLangs: ['en'], taskType: 'text' });
-        if (res.en) setSectionForm(prev => ({ ...prev, mapTitleEn: res.en }));
+        if (res.en) setSectionForm((prev: any) => ({ ...prev, mapTitleEn: res.en }));
       }
       if (needsSubtitle) {
         const res = await smartTranslate({ text: sectionForm.mapSubtitleZh, targetLangs: ['en'], taskType: 'text' });
-        if (res.en) setSectionForm(prev => ({ ...prev, mapSubtitleEn: res.en }));
+        if (res.en) setSectionForm((prev: any) => ({ ...prev, mapSubtitleEn: res.en }));
       }
       toast({ title: "板块标题智译完成" });
     } catch (e: any) {
@@ -361,8 +361,8 @@ export default function GlobalMapAdminPage() {
     <div className="space-y-6 animate-in fade-in duration-500 pb-20">
       <AiGradientDef />
       
-      <div className="bg-white p-8 rounded-3xl border shadow-sm space-y-8">
-        <div className="flex items-center justify-between border-b pb-4">
+      <div className="bg-card p-8 rounded-3xl border border-border/10 shadow-sm space-y-8">
+        <div className="flex items-center justify-between border-b border-border/10 pb-4">
           <div className="space-y-1">
             <h3 className="text-lg font-headline font-bold text-primary flex items-center gap-2">
               <Globe className="h-5 w-5 text-primary" /> 全球地图与网点管理
@@ -405,7 +405,7 @@ export default function GlobalMapAdminPage() {
               <Textarea value={sectionForm.mapSubtitleZh} onChange={e => setSectionForm({...sectionForm, mapSubtitleZh: e.target.value})} className="min-h-[80px] rounded-xl" />
             </div>
           </div>
-          <div className="space-y-4 border-l pl-10 border-dashed">
+          <div className="space-y-4 border-l pl-10 border-dashed border-border/20">
             <div className="space-y-2">
               <Label className="text-[10px] font-bold uppercase opacity-40">SECTION TITLE (EN)</Label>
               <Input value={sectionForm.mapTitleEn} onChange={e => setSectionForm({...sectionForm, mapTitleEn: e.target.value})} className="h-11 rounded-xl border-dashed" />
@@ -418,8 +418,8 @@ export default function GlobalMapAdminPage() {
         </div>
       </div>
 
-      <div className="bg-white p-8 rounded-3xl border shadow-sm space-y-8">
-        <div className="flex items-center justify-between border-b pb-4">
+      <div className="bg-card p-8 rounded-3xl border border-border/10 shadow-sm space-y-8">
+        <div className="flex items-center justify-between border-b border-border/10 pb-4">
           <div className="space-y-1">
             <h3 className="text-sm font-bold text-primary uppercase tracking-widest flex items-center gap-2">
               <MapPin className="h-4 w-4" /> 网点标注点管理
@@ -452,7 +452,7 @@ export default function GlobalMapAdminPage() {
                 {loc.imageUrl && <img src={getAssetUrl(loc.imageUrl)} alt="" className="w-full h-full object-cover" />}
                 <div className="absolute top-2 left-2 flex gap-1.5">
                   <Badge className="bg-primary text-white text-[8px] uppercase">{loc.type}</Badge>
-                  <Badge variant="outline" className="bg-white/90 backdrop-blur-sm border-transparent text-[8px] flex items-center gap-1 px-1.5 py-0.5">
+                  <Badge variant="outline" className="bg-card/90 backdrop-blur-sm border-transparent text-[8px] flex items-center gap-1 px-1.5 py-0.5">
                     <img 
                       src={`https://flagcdn.com/w20/${(loc.countryCode || 'cn').toLowerCase()}.png`} 
                       alt="" 
@@ -513,7 +513,7 @@ export default function GlobalMapAdminPage() {
               <CardContent className="p-4 space-y-2">
                 <h4 className="text-xs font-bold text-primary truncate">{loc.titleZh}</h4>
                 <p className="text-[10px] text-muted-foreground line-clamp-1">{loc.addressZh}</p>
-                <div className="flex justify-between items-center pt-2 border-t border-dashed">
+                <div className="flex justify-between items-center pt-2 border-t border-dashed border-border/20">
                   <span className="text-[8px] font-mono opacity-40 uppercase tracking-widest">Country: {loc.countryCode || 'cn'}</span>
                   <div className="flex items-center gap-1">
                     {loc.titleEn ? <Badge variant="secondary" className="h-3 px-1 text-[6px] bg-green-50 text-green-600">EN OK</Badge> : <Badge variant="secondary" className="h-3 px-1 text-[6px]">NO EN</Badge>}
@@ -536,7 +536,7 @@ export default function GlobalMapAdminPage() {
             </DialogHeader>
           </div>
 
-          <div className="p-8 bg-white space-y-8 flex-1 overflow-y-auto">
+          <div className="p-8 bg-card space-y-8 flex-1 overflow-y-auto">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2 col-span-2">
@@ -555,8 +555,8 @@ export default function GlobalMapAdminPage() {
                         className={cn(
                           "flex items-center gap-2 px-3 py-2 rounded-xl border transition-all text-left",
                           locationForm.type === t.id 
-                            ? "bg-primary/5 border-primary text-primary shadow-sm" 
-                            : "bg-muted/5 border-transparent hover:border-border text-muted-foreground"
+                            ? "bg-primary/10 border-primary text-primary shadow-sm" 
+                            : "bg-muted/10 border-transparent hover:border-border/20 text-muted-foreground"
                         )}
                       >
                         <t.icon className={cn("h-4 w-4", locationForm.type === t.id ? "text-primary" : "opacity-40")} />
@@ -572,7 +572,7 @@ export default function GlobalMapAdminPage() {
                     value={locationForm.countryCode || "cn"} 
                     onValueChange={(val) => setLocationForm({ ...locationForm, countryCode: val })}
                   >
-                    <SelectTrigger className="h-10 rounded-xl bg-muted/5 border-transparent flex items-center justify-between w-full">
+                    <SelectTrigger className="h-10 rounded-xl bg-muted/10 border-transparent flex items-center justify-between w-full">
                       <SelectValue placeholder="请选择网点所属国家" />
                     </SelectTrigger>
                     <SelectContent>
@@ -667,11 +667,11 @@ export default function GlobalMapAdminPage() {
               </div>
             </div>
 
-            <div className="grid grid-cols-1 gap-10 pt-6 border-t border-dashed">
+            <div className="grid grid-cols-1 gap-10 pt-6 border-t border-dashed border-border/20">
               <div className="space-y-2">
                 <Label className="text-[10px] font-bold uppercase opacity-40">展示图预览</Label>
                 <div 
-                  className="relative aspect-video rounded-xl bg-muted/20 border-2 border-dashed border-border/40 overflow-hidden flex flex-col items-center justify-center group cursor-pointer hover:bg-muted/30 transition-all"
+                  className="relative aspect-video rounded-xl bg-muted/10 border-2 border-dashed border-border/20 overflow-hidden flex flex-col items-center justify-center group cursor-pointer hover:bg-muted/20 transition-all"
                   onClick={() => setIsPickerOpen(true)}
                 >
                   {locationForm.imageUrl ? (
@@ -722,10 +722,10 @@ export default function GlobalMapAdminPage() {
               <DialogDescription className="text-white/60">此操作无法撤销。</DialogDescription>
             </DialogHeader>
           </div>
-          <div className="p-8 bg-white space-y-4">
+          <div className="p-8 bg-card space-y-4">
             <p className="text-sm text-muted-foreground">您确定要永久删除该全球网点标注吗？这会立即从前台地图中移除。</p>
           </div>
-          <DialogFooter className="bg-muted/10 p-6 flex gap-3 border-t">
+          <DialogFooter className="bg-muted/20 p-6 flex gap-3 border-t border-border/10">
             <Button variant="outline" onClick={() => setDeletingId(null)} className="rounded-xl flex-1 font-bold uppercase text-[10px]">取消</Button>
             <Button 
               variant="destructive" 

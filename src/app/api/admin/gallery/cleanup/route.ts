@@ -20,7 +20,7 @@ export async function POST() {
     
     // 1. 获取数据库中所有引用的文件名
     const dbAssets = await db.galleryAsset.findMany({ select: { fileName: true } });
-    const referencedFiles = new Set(dbAssets.map(a => a.fileName));
+    const referencedFiles = new Set(dbAssets.map((a: any) => a.fileName));
 
     // 2. 获取 MinIO 中所有物理文件
     const listRes = await s3.send(new ListObjectsV2Command({ Bucket: bucket, Prefix: 'uploads/' }));

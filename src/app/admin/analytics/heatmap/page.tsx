@@ -163,46 +163,46 @@ export default function HeatmapPage() {
         <div className="space-y-1">
           <div className="flex items-center gap-3">
             <Link href="/admin/analytics">
-              <Button variant="outline" size="icon" className="h-8 w-8 rounded-full border-slate-200">
+              <Button variant="outline" size="icon" className="h-8 w-8 rounded-full border-border/20 hover:bg-muted/20">
                 <ArrowLeft className="h-4 w-4" />
               </Button>
             </Link>
-            <h2 className="text-2xl font-headline font-bold text-slate-900">交互热力图</h2>
+            <h2 className="text-2xl font-headline font-bold text-foreground">交互热力图</h2>
           </div>
-          <p className="text-sm text-slate-500 ml-11">可视化分析用户在各个页面的点击分布热度。</p>
+          <p className="text-sm text-muted-foreground ml-11">可视化分析用户在各个页面的点击分布热度。</p>
         </div>
       </div>
 
-      <Card className="border-none shadow-xl rounded-[2.5rem] bg-white overflow-hidden">
-        <CardHeader className="p-8 border-b border-slate-50 bg-slate-50/30">
+      <Card className="border-none shadow-xl rounded-[2.5rem] bg-card overflow-hidden">
+        <CardHeader className="p-8 border-b border-border/10 bg-muted/5">
           <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
             <div className="flex items-center gap-3">
               <div className="h-10 w-10 rounded-2xl bg-primary/10 flex items-center justify-center text-primary shadow-sm">
                 <Layers className="h-5 w-5" />
               </div>
               <div>
-                <CardTitle className="text-lg font-headline font-bold">分析对象</CardTitle>
-                <CardDescription className="text-[10px] font-bold uppercase tracking-widest text-slate-400">Path and viewport selection</CardDescription>
+                <CardTitle className="text-lg font-headline font-bold text-foreground">分析对象</CardTitle>
+                <CardDescription className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Path and viewport selection</CardDescription>
               </div>
             </div>
 
             <div className="flex flex-wrap items-center gap-4">
               <Select value={selectedPath || ''} onValueChange={setSelectedPath}>
-                <SelectTrigger className="w-full md:w-[300px] h-12 rounded-xl bg-white border-slate-200">
+                <SelectTrigger className="w-full md:w-[300px] h-12 rounded-xl bg-muted/20 border-border/10 text-foreground">
                   <SelectValue placeholder="选择要分析的页面路径..." />
                 </SelectTrigger>
-                <SelectContent className="rounded-xl">
+                <SelectContent className="rounded-xl bg-card border-border/20">
                   {pathsWithClicks.map(path => (
-                    <SelectItem key={path} value={path} className="font-mono text-xs">{path}</SelectItem>
+                    <SelectItem key={path} value={path} className="font-mono text-xs hover:bg-muted/20">{path}</SelectItem>
                   ))}
                 </SelectContent>
               </Select>
 
-              <div className="flex bg-slate-100 p-1 rounded-xl border border-slate-200">
+              <div className="flex bg-muted/20 p-1 rounded-xl border border-border/10">
                 <Button 
                   variant="ghost" 
                   size="sm" 
-                  className={cn("h-10 px-4 rounded-lg gap-2 text-[10px] font-bold uppercase tracking-widest transition-all", previewWidth === 1280 ? "bg-white text-primary shadow-sm" : "text-slate-400")}
+                  className={cn("h-10 px-4 rounded-lg gap-2 text-[10px] font-bold uppercase tracking-widest transition-all", previewWidth === 1280 ? "bg-primary/20 text-primary shadow-sm" : "text-muted-foreground")}
                   onClick={() => setPreviewWidth(1280)}
                 >
                   <Monitor className="h-3.5 w-3.5" /> Desktop ({widthStats.desktop})
@@ -210,7 +210,7 @@ export default function HeatmapPage() {
                 <Button 
                   variant="ghost" 
                   size="sm" 
-                  className={cn("h-10 px-4 rounded-lg gap-2 text-[10px] font-bold uppercase tracking-widest transition-all", previewWidth === 1024 ? "bg-white text-primary shadow-sm" : "text-slate-400")}
+                  className={cn("h-10 px-4 rounded-lg gap-2 text-[10px] font-bold uppercase tracking-widest transition-all", previewWidth === 1024 ? "bg-primary/20 text-primary shadow-sm" : "text-muted-foreground")}
                   onClick={() => setPreviewWidth(1024)}
                 >
                   <Laptop className="h-3.5 w-3.5" /> Tablet ({widthStats.tablet})
@@ -218,7 +218,7 @@ export default function HeatmapPage() {
                 <Button 
                   variant="ghost" 
                   size="sm" 
-                  className={cn("h-10 px-4 rounded-lg gap-2 text-[10px] font-bold uppercase tracking-widest transition-all", previewWidth === 375 ? "bg-white text-primary shadow-sm" : "text-slate-400")}
+                  className={cn("h-10 px-4 rounded-lg gap-2 text-[10px] font-bold uppercase tracking-widest transition-all", previewWidth === 375 ? "bg-primary/20 text-primary shadow-sm" : "text-muted-foreground")}
                   onClick={() => setPreviewWidth(375)}
                 >
                   <Smartphone className="h-3.5 w-3.5" /> Mobile ({widthStats.mobile})
@@ -239,7 +239,7 @@ export default function HeatmapPage() {
                 <div className="flex items-center gap-2">
                   <Tooltip>
                     <TooltipTrigger asChild>
-                      <HelpCircle className="h-4 w-4 text-slate-300 cursor-help" />
+                      <HelpCircle className="h-4 w-4 text-muted-foreground/40 cursor-help" />
                     </TooltipTrigger>
                     <TooltipContent className="max-w-xs text-[10px] font-medium leading-relaxed">
                       由于响应式布局会导致元素位置发生位移，我们按访问设备宽度对数据进行了分类展示。请选择对应的预览模式以获得最精确的对齐效果。
@@ -255,7 +255,7 @@ export default function HeatmapPage() {
               </div>
 
               {/* Heatmap Container */}
-              <div className="relative w-full h-[650px] bg-slate-900/5 rounded-[2.5rem] border-8 border-slate-100/50 overflow-hidden shadow-2xl group flex justify-center">
+              <div className="relative w-full h-[650px] bg-muted/5 rounded-[2.5rem] border-8 border-border/10 overflow-hidden shadow-2xl group flex justify-center">
                 {/* Scaled Content Wrapper */}
                 <div className="absolute inset-0 overflow-auto scrollbar-minimal">
                    <div 
@@ -308,7 +308,7 @@ export default function HeatmapPage() {
                 </div>
 
                 {/* Loading State Overlay */}
-                <div className="absolute inset-0 flex items-center justify-center text-slate-300 font-bold uppercase tracking-[0.2em] text-xs pointer-events-none z-0">
+                <div className="absolute inset-0 flex items-center justify-center text-muted-foreground/20 font-bold uppercase tracking-[0.2em] text-xs pointer-events-none z-0">
                   <div className="text-center space-y-4 opacity-5">
                     <MousePointer2 className="h-16 w-16 mx-auto animate-bounce" />
                     <p>HOLOGRAPHIC POSITION SYNCING</p>
@@ -316,13 +316,13 @@ export default function HeatmapPage() {
                 </div>
               </div>
               
-              <div className="p-8 bg-slate-50/50 rounded-3xl border border-slate-100 flex items-start gap-6">
-                <div className="h-10 w-10 rounded-xl bg-white flex items-center justify-center text-primary shadow-md shrink-0">
+              <div className="p-8 bg-muted/10 rounded-3xl border border-border/10 flex items-start gap-6">
+                <div className="h-10 w-10 rounded-xl bg-card flex items-center justify-center text-primary shadow-md shrink-0">
                   <Layers className="h-5 w-5" />
                 </div>
                 <div className="space-y-2">
-                  <p className="text-xs font-bold text-slate-900 uppercase tracking-widest">精确对齐指南 (Alignment Guide)</p>
-                  <p className="text-[11px] leading-relaxed text-slate-500 font-medium max-w-3xl">
+                  <p className="text-xs font-bold text-foreground uppercase tracking-widest">精确对齐指南 (Alignment Guide)</p>
+                  <p className="text-[11px] leading-relaxed text-muted-foreground font-medium max-w-3xl">
                     我们采用了**自适应重构技术**。系统检测到您的部分点击是在不同尺寸的屏幕上产生的。
                     由于响应式布局会自动调整元素位置（如从多列变单列），请通过上方的 **Desktop / Tablet / Mobile** 切换到对应视图，
                     系统会自动缩放画布以还原真实的交互现场。
@@ -331,8 +331,8 @@ export default function HeatmapPage() {
               </div>
             </div>
           ) : (
-            <div className="h-[40vh] flex flex-col items-center justify-center text-slate-300 gap-6">
-               <div className="p-8 rounded-[2.5rem] bg-slate-50 border border-slate-100">
+            <div className="h-[40vh] flex flex-col items-center justify-center text-muted-foreground/20 gap-6">
+               <div className="p-8 rounded-[2.5rem] bg-muted/5 border border-border/10">
                  <MousePointer2 className="h-16 w-16 opacity-10 mx-auto" />
                </div>
                <p className="text-sm font-bold uppercase tracking-[0.2em] opacity-30 text-center">请先从上方选择一个页面路径以开启全息热力分析</p>

@@ -28,7 +28,7 @@ import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 
 const GlassCard = ({ children, className }: { children: React.ReactNode, className?: string }) => (
-  <div className={cn("bg-white/70 backdrop-blur-xl border border-white/40 shadow-2xl rounded-3xl overflow-hidden", className)}>
+  <div className={cn("bg-card/70 backdrop-blur-xl border border-border/20 shadow-2xl rounded-3xl overflow-hidden", className)}>
     {children}
   </div>
 );
@@ -84,12 +84,12 @@ export default function ManifestPage() {
       <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
         <div className="space-y-2">
           <div className="flex items-center gap-3">
-            <div className="h-12 w-12 rounded-2xl bg-slate-900 flex items-center justify-center text-white shadow-xl shadow-slate-200">
+            <div className="h-12 w-12 rounded-2xl bg-slate-950 flex items-center justify-center text-white shadow-xl shadow-primary/5">
               <FileText className="h-6 w-6" />
             </div>
-            <h2 className="text-3xl font-headline font-bold text-slate-900">设计与架构白皮书</h2>
+            <h2 className="text-3xl font-headline font-bold text-foreground">设计与架构白皮书</h2>
           </div>
-          <p className="text-sm text-slate-500 font-medium max-w-2xl pl-1">治理全站设计语言、业务逻辑约束及跨模块交互协议的元数据中心。</p>
+          <p className="text-sm text-muted-foreground font-medium max-w-2xl pl-1">治理全站设计语言、业务逻辑约束及跨模块交互协议的元数据中心。</p>
         </div>
         
         <div className="flex items-center gap-4">
@@ -111,7 +111,7 @@ export default function ManifestPage() {
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-10">
         <div className="lg:col-span-8">
           <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full space-y-6">
-            <div className="flex items-center justify-between bg-white/50 backdrop-blur-md p-1.5 rounded-2xl border border-white/40 shadow-sm w-fit">
+            <div className="flex items-center justify-between bg-card/50 backdrop-blur-md p-1.5 rounded-2xl border border-border/20 shadow-sm w-fit">
               <TabsList className="bg-transparent h-10 gap-1">
                 <TabsTrigger value="edit" className="rounded-xl px-6 text-[11px] font-bold uppercase tracking-wider gap-2 data-[state=active]:bg-primary data-[state=active]:text-white shadow-none transition-all">
                   <Edit3 className="h-3.5 w-3.5" /> 核心协议编辑
@@ -140,7 +140,7 @@ export default function ManifestPage() {
                   <Textarea 
                     value={content}
                     onChange={(e) => setContent(e.target.value)}
-                    className="min-h-[600px] w-full border-none bg-slate-50/50 p-10 text-sm leading-relaxed font-mono focus-visible:ring-0 shadow-inner resize-none transition-all placeholder:text-slate-300"
+                    className="min-h-[600px] w-full border-none bg-muted/20 p-10 text-sm leading-relaxed font-mono focus-visible:ring-0 shadow-inner resize-none transition-all placeholder:text-muted-foreground/30 text-foreground"
                     placeholder="# 在此录入系统架构规格..."
                   />
                 </CardContent>
@@ -148,7 +148,7 @@ export default function ManifestPage() {
             </TabsContent>
 
             <TabsContent value="preview" className="m-0 focus-visible:ring-0">
-              <GlassCard className="p-12 border-none shadow-xl bg-white prose prose-slate max-w-none prose-headings:font-headline prose-headings:text-slate-900 prose-p:text-slate-600 prose-li:text-slate-600 min-h-[700px] overflow-y-auto">
+              <GlassCard className="p-12 border-none shadow-xl bg-card prose prose-slate dark:prose-invert max-w-none prose-headings:font-headline prose-headings:text-foreground prose-p:text-muted-foreground prose-li:text-muted-foreground min-h-[700px] overflow-y-auto">
                 <ReactMarkdown remarkPlugins={[remarkGfm]}>
                   {content}
                 </ReactMarkdown>
@@ -188,30 +188,30 @@ export default function ManifestPage() {
           </GlassCard>
 
           <GlassCard className="border-none shadow-xl">
-             <CardHeader className="p-8 border-b border-slate-50">
-                <CardTitle className="text-[11px] font-bold flex items-center gap-3 text-slate-400 uppercase tracking-[0.2em]">
+             <CardHeader className="p-8 border-b border-border/10">
+                <CardTitle className="text-[11px] font-bold flex items-center gap-3 text-muted-foreground uppercase tracking-[0.2em]">
                   <Activity className="h-5 w-5 text-primary" />
                   元数据信息 (Manifest Info)
                 </CardTitle>
              </CardHeader>
              <CardContent className="p-8 space-y-6">
                 <div className="space-y-4">
-                   <div className="flex justify-between items-center pb-3 border-b border-slate-100">
-                      <span className="text-xs font-bold text-slate-400 uppercase">Version</span>
-                      <span className="text-xs font-bold text-slate-900">v2.1.5-final</span>
+                   <div className="flex justify-between items-center pb-3 border-b border-border/10">
+                      <span className="text-xs font-bold text-muted-foreground uppercase">Version</span>
+                      <span className="text-xs font-bold text-foreground">v2.1.5-final</span>
                    </div>
-                   <div className="flex justify-between items-center pb-3 border-b border-slate-100">
-                      <span className="text-xs font-bold text-slate-400 uppercase">Status</span>
+                   <div className="flex justify-between items-center pb-3 border-b border-border/10">
+                      <span className="text-xs font-bold text-muted-foreground uppercase">Status</span>
                       <Badge className="bg-green-500 text-white border-none h-6 px-3 text-[9px] font-bold uppercase">Active</Badge>
                    </div>
-                   <Button variant="ghost" size="sm" className="w-full h-12 rounded-2xl text-[10px] font-bold uppercase gap-2 text-slate-400 hover:bg-slate-50" onClick={loadManifest}>
+                   <Button variant="ghost" size="sm" className="w-full h-12 rounded-2xl text-[10px] font-bold uppercase gap-2 text-muted-foreground hover:bg-muted/10" onClick={loadManifest}>
                      <History className="h-4 w-4" /> 刷新核心缓存
                    </Button>
                 </div>
              </CardContent>
           </GlassCard>
 
-          <GlassCard className="border-none bg-slate-900 p-8 text-white space-y-4 shadow-2xl relative overflow-hidden">
+          <GlassCard className="border-none bg-slate-950 p-8 text-white space-y-4 shadow-2xl relative overflow-hidden">
              <div className="absolute top-0 right-0 w-32 h-32 bg-primary/20 blur-3xl rounded-full translate-x-16 -translate-y-16" />
              <div className="relative z-10 flex items-center gap-3">
                 <ExternalLink className="h-5 w-5 text-primary" />

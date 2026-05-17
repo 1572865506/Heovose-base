@@ -51,6 +51,7 @@ import { AnalyticsTracker } from '@/components/AnalyticsTracker';
 import { InquiryProvider } from '@/components/providers/InquiryProvider';
 import CookieConsent from '@/components/CookieConsent';
 import SmoothScrollProvider from '@/components/providers/SmoothScrollProvider';
+import { AdminThemeProvider } from '@/components/admin/AdminThemeProvider';
 import { Suspense } from 'react';
 
 import { cookies } from "next/headers";
@@ -78,12 +79,14 @@ export default async function RootLayout({
             <Suspense fallback={null}>
               <LanguageIntelligence />
             </Suspense>
-            <InquiryProvider>
-              <AnalyticsTracker />
-              {children}
-            </InquiryProvider>
-            <CookieConsent />
-            <Toaster />
+            <AdminThemeProvider>
+              <InquiryProvider>
+                <AnalyticsTracker />
+                {children}
+              </InquiryProvider>
+              <CookieConsent />
+              <Toaster />
+            </AdminThemeProvider>
           </SystemConfigProvider>
         </AuthProvider>
       </body>

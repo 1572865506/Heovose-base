@@ -359,7 +359,7 @@ export function MediaLibraryDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-[1400px] p-0 h-[90vh] rounded-2xl overflow-hidden flex flex-col shadow-[0_50px_100px_-20px_rgba(0,0,0,0.3)] border-none bg-white z-[10002]">
+      <DialogContent className="max-w-[1400px] p-0 h-[90vh] rounded-2xl overflow-hidden flex flex-col shadow-[0_50px_100px_-20px_rgba(0,0,0,0.3)] border border-slate-100 admin-interface-dark:border-border/60 bg-background z-[10002]">
         {/* Header */}
         <div className="bg-slate-900 p-8 text-white flex items-center justify-between relative overflow-hidden shrink-0">
            <div className="absolute top-0 right-0 p-8 opacity-10">
@@ -392,18 +392,20 @@ export function MediaLibraryDialog({
           {activeTab === 'library' ? (
             <>
               {/* Library Sidebar */}
-              <div className="w-64 border-r border-slate-100 flex flex-col bg-slate-50/10 shrink-0">
+              <div className="w-64 border-r border-slate-100 admin-interface-dark:border-border/60 flex flex-col bg-slate-50/10 admin-interface-dark:bg-muted/10 shrink-0">
                  <div className="p-6 pb-2">
-                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-[0.2em] mb-4 pl-2">资源目录树</p>
+                    <p className="text-[10px] font-bold text-slate-400 admin-interface-dark:text-muted-foreground uppercase tracking-[0.2em] mb-4 pl-2">资源目录树</p>
                     <Button 
                       variant="ghost"
                       className={cn(
-                        "w-full justify-start gap-3 rounded-xl h-11 text-[11px] font-bold uppercase tracking-wider transition-all",
-                        currentCategoryId === 'all' ? "bg-slate-900 text-white shadow-lg shadow-slate-200" : "text-slate-600 hover:bg-slate-100"
+                        "group w-full justify-start gap-3 rounded-xl h-11 text-[11px] font-bold uppercase tracking-wider transition-all",
+                        currentCategoryId === 'all' 
+                          ? "bg-slate-900 admin-interface-dark:bg-slate-800 text-white shadow-lg shadow-slate-200/5" 
+                          : "text-slate-600 admin-interface-dark:text-muted-foreground/80 hover:bg-slate-100 admin-interface-dark:hover:bg-muted/40 hover:text-slate-900 admin-interface-dark:hover:text-foreground"
                       )}
                       onClick={() => setCurrentCategoryId('all')}
                     >
-                      <LayoutGrid className={cn("h-4 w-4", currentCategoryId === 'all' ? "text-white" : "text-slate-400")} />
+                      <LayoutGrid className={cn("h-4 w-4 transition-colors", currentCategoryId === 'all' ? "text-white" : "text-slate-400 admin-interface-dark:text-muted-foreground/60 group-hover:text-slate-900 admin-interface-dark:group-hover:text-foreground")} />
                       全部资源
                     </Button>
                  </div>
@@ -425,7 +427,7 @@ export function MediaLibraryDialog({
                                 <div 
                                   className={cn(
                                     "group flex items-center rounded-lg transition-all mb-0.5 relative",
-                                    isActive ? "bg-primary/5" : "hover:bg-slate-50"
+                                    isActive ? "bg-primary/5" : "hover:bg-slate-100/50 admin-interface-dark:hover:bg-muted/30"
                                   )}
                                   style={{ paddingLeft: `${level * 0.75 + 0.25}rem` }}
                                 >
@@ -434,17 +436,17 @@ export function MediaLibraryDialog({
                                      className="w-6 h-6 flex items-center justify-center cursor-pointer opacity-40 hover:opacity-100 transition-opacity"
                                      onClick={(e) => toggleExpand(cat.id, e)}
                                    >
-                                     {hasChildren && <ChevronRight className={cn("h-3 w-3 transition-transform duration-300", isExpanded && "rotate-90")} />}
+                                     {hasChildren && <ChevronRight className={cn("h-3 w-3 transition-transform duration-300", isExpanded && "rotate-90", isActive ? "text-primary" : "text-slate-400 admin-interface-dark:text-muted-foreground/60")} />}
                                    </div>
                                    <Button 
                                      variant="ghost"
                                      className={cn(
                                        "flex-1 justify-start gap-2 h-9 text-[11px] font-semibold transition-all px-0 hover:bg-transparent",
-                                       isActive ? "text-primary" : "text-slate-600"
+                                       isActive ? "text-primary font-bold" : "text-slate-600 admin-interface-dark:text-muted-foreground/80 group-hover:text-slate-900 admin-interface-dark:group-hover:text-foreground"
                                      )}
                                      onClick={() => setCurrentCategoryId(cat.id)}
                                    >
-                                      <FolderOpen className={cn("h-3.5 w-3.5 shrink-0", isActive ? "text-primary" : "text-slate-400")} />
+                                      <FolderOpen className={cn("h-3.5 w-3.5 shrink-0 transition-colors", isActive ? "text-primary" : "text-slate-400 admin-interface-dark:text-muted-foreground/50 group-hover:text-slate-900 admin-interface-dark:group-hover:text-foreground")} />
                                       <span className="truncate">{cat.name}</span>
                                    </Button>
                                 </div>
@@ -459,21 +461,21 @@ export function MediaLibraryDialog({
               </div>
 
               {/* Library Main Area */}
-              <div className="flex-1 flex flex-col overflow-hidden bg-white">
-                <div className="px-8 py-4 border-b border-slate-50 flex gap-6 items-center shrink-0 bg-white">
+              <div className="flex-1 flex flex-col overflow-hidden bg-background">
+                <div className="px-8 py-4 border-b border-slate-100 admin-interface-dark:border-border/60 flex gap-6 items-center shrink-0 bg-background">
                   <div className="relative flex-1 group">
                     <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 group-focus-within:text-primary transition-colors" />
-                    <Input placeholder="搜索素材标题或文件名..." value={searchQuery} onChange={e => setSearchQuery(e.target.value)} className="pl-11 h-12 border-none bg-slate-50 font-medium rounded-xl" />
+                    <Input placeholder="搜索素材标题或文件名..." value={searchQuery} onChange={e => setSearchQuery(e.target.value)} className="pl-11 h-12 border-none bg-slate-50 admin-interface-dark:bg-muted/40 font-medium rounded-xl text-foreground placeholder:text-slate-400 admin-interface-dark:placeholder:text-muted-foreground/50" />
                   </div>
                   <div className="flex items-center gap-4">
-                     <div className="flex bg-slate-100 p-1 rounded-xl shrink-0">
+                     <div className="flex bg-slate-100 admin-interface-dark:bg-muted/30 p-1 rounded-xl shrink-0">
                         {['all', 'image', 'video', 'document'].map((t) => (
                           <Button 
                             key={t}
                             variant="ghost" 
                             size="sm" 
                             onClick={() => setFilterType(t as any)}
-                            className={cn("h-8 rounded-lg px-4 text-[10px] font-bold uppercase transition-all", filterType === t ? "bg-white text-primary shadow-sm" : "text-slate-400")}
+                            className={cn("h-8 rounded-lg px-4 text-[10px] font-bold uppercase transition-all", filterType === t ? "bg-white admin-interface-dark:bg-slate-800 text-primary shadow-sm" : "text-slate-400 admin-interface-dark:text-muted-foreground hover:text-slate-900 admin-interface-dark:hover:text-foreground hover:bg-slate-200/50 admin-interface-dark:hover:bg-muted/20")}
                           >
                             {t === 'all' ? '全部' : t === 'image' ? '图片' : t === 'video' ? '视频' : '文档'}
                           </Button>
@@ -482,7 +484,7 @@ export function MediaLibraryDialog({
                   </div>
                 </div>
 
-                <div className="flex-1 overflow-y-auto custom-scrollbar bg-slate-50/30 p-8">
+                <div className="flex-1 overflow-y-auto custom-scrollbar bg-slate-50/30 admin-interface-dark:bg-muted/5 p-8">
                   <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-6">
                     {isLoadingAssets ? (
                       <div className="col-span-full h-64 flex flex-col items-center justify-center gap-4 opacity-40">
@@ -504,8 +506,10 @@ export function MediaLibraryDialog({
                           <div 
                             key={asset.id} 
                             className={cn(
-                              "group relative aspect-square bg-white rounded-2xl border-2 transition-all duration-500 cursor-pointer shadow-sm hover:shadow-xl hover:-translate-y-1 overflow-hidden transform-gpu", 
-                              selectedIds.has(asset.id) ? "border-primary ring-4 ring-primary/10" : "border-transparent"
+                              "group relative aspect-square bg-white admin-interface-dark:bg-card rounded-2xl border-2 transition-all duration-500 cursor-pointer shadow-sm hover:shadow-xl hover:-translate-y-1 overflow-hidden transform-gpu", 
+                              selectedIds.has(asset.id) 
+                                ? "border-primary ring-4 ring-primary/10" 
+                                : "border-transparent hover:border-slate-200 admin-interface-dark:hover:border-border/60"
                             )} 
                             onClick={() => toggleSelectAsset(asset)}
                           >
@@ -517,7 +521,7 @@ export function MediaLibraryDialog({
                                  </div>
                               </div>
                             ) : isDoc ? (
-                              <div className="w-full h-full flex flex-col items-center justify-center bg-slate-50 gap-3">
+                              <div className="w-full h-full flex flex-col items-center justify-center bg-slate-50 admin-interface-dark:bg-muted/30 gap-3">
                                  <AssetIcon type={asset.type} fileName={asset.fileName} />
                                  <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{fileExt}</span>
                               </div>
@@ -525,14 +529,14 @@ export function MediaLibraryDialog({
                               <Image src={getAssetUrl(asset.url)} alt={asset.title} fill className="object-contain p-4 transition-transform duration-700 group-hover:scale-110" unoptimized />
                             )}
                             
-                            <div className="absolute inset-x-0 bottom-0 p-3 bg-white/80 backdrop-blur-md border-t border-slate-100 opacity-0 group-hover:opacity-100 transition-opacity translate-y-1 group-hover:translate-y-0 duration-300">
-                               <p className="text-[10px] font-bold text-slate-800 truncate">{asset.title}</p>
-                               <p className="text-[8px] text-slate-400 font-mono">{( (asset.fileSize || 0) / 1024).toFixed(0)}KB</p>
+                            <div className="absolute inset-x-0 bottom-0 p-3 bg-white/95 admin-interface-dark:bg-slate-900/90 backdrop-blur-md border-t border-slate-100 admin-interface-dark:border-border/40 opacity-0 group-hover:opacity-100 transition-opacity translate-y-1 group-hover:translate-y-0 duration-300">
+                               <p className="text-[10px] font-bold text-foreground truncate">{asset.title}</p>
+                               <p className="text-[8px] text-slate-400 admin-interface-dark:text-muted-foreground/60 font-mono">{( (asset.fileSize || 0) / 1024).toFixed(0)}KB</p>
                             </div>
 
                             {selectedIds.has(asset.id) && (
-                              <div className="absolute inset-0 bg-primary/5 flex items-center justify-center backdrop-blur-[1px] animate-in fade-in duration-300 z-10">
-                                <div className="bg-white text-primary rounded-full p-2 shadow-2xl scale-110"><Check className="h-4 w-4 stroke-[4px]" /></div>
+                              <div className="absolute inset-0 bg-primary/10 admin-interface-dark:bg-primary/20 flex items-center justify-center backdrop-blur-[1px] animate-in fade-in duration-300 z-10">
+                                <div className="bg-white admin-interface-dark:bg-slate-900 text-primary rounded-full p-2 shadow-2xl scale-110"><Check className="h-4 w-4 stroke-[4px]" /></div>
                               </div>
                             )}
                           </div>
@@ -543,9 +547,9 @@ export function MediaLibraryDialog({
                 </div>
                 
                 {totalPages > 1 && (
-                  <div className="px-8 py-3 border-t border-slate-50 flex items-center justify-center gap-4 bg-white shrink-0">
+                  <div className="px-8 py-3 border-t border-slate-100 admin-interface-dark:border-border/60 flex items-center justify-center gap-4 bg-background shrink-0">
                      <Button variant="ghost" size="icon" disabled={currentPage === 1} onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))} className="h-8 w-8 rounded-full"><ChevronLeft className="h-4 w-4" /></Button>
-                     <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400">第 {currentPage} 页 / 共 {totalPages} 页</p>
+                     <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400 admin-interface-dark:text-muted-foreground">第 {currentPage} 页 / 共 {totalPages} 页</p>
                      <Button variant="ghost" size="icon" disabled={currentPage === totalPages} onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))} className="h-8 w-8 rounded-full"><ChevronRight className="h-4 w-4" /></Button>
                   </div>
                 )}
@@ -553,7 +557,7 @@ export function MediaLibraryDialog({
             </>
           ) : (
             /* Upload Tab Content */
-            <div className="flex-1 flex flex-col p-12 bg-slate-50/50 overflow-y-auto custom-scrollbar">
+            <div className="flex-1 flex flex-col p-12 bg-slate-50/50 admin-interface-dark:bg-muted/5 overflow-y-auto custom-scrollbar">
                <div className="grid grid-cols-1 md:grid-cols-12 gap-12 max-w-7xl mx-auto w-full">
                   <div className="md:col-span-7 space-y-8">
                      <div 
@@ -561,21 +565,21 @@ export function MediaLibraryDialog({
                         onDrop={e => { e.preventDefault(); handleFileUpload(e.dataTransfer.files); }}
                         onClick={() => pendingFiles.length === 0 && fileInputRef.current?.click()}
                         className={cn(
-                           "h-[450px] border-2 border-dashed rounded-2xl flex flex-col items-center justify-center transition-all cursor-pointer group bg-white shadow-sm",
-                           pendingFiles.length > 0 ? "border-primary/40" : "border-slate-200 hover:border-primary/40 hover:bg-primary/[0.01]"
+                           "h-[450px] border-2 border-dashed rounded-2xl flex flex-col items-center justify-center transition-all cursor-pointer group bg-white admin-interface-dark:bg-card shadow-sm",
+                           pendingFiles.length > 0 ? "border-primary/40" : "border-slate-200 admin-interface-dark:border-border/60 hover:border-primary/40 hover:bg-primary/[0.01] admin-interface-dark:hover:bg-primary/[0.03]"
                         )}
                      >
                         <input type="file" ref={fileInputRef} multiple className="hidden" onChange={e => handleFileUpload(e.target.files)} />
                         {pendingFiles.length === 0 ? (
                            <div className="text-center space-y-4">
-                              <div className="h-20 w-20 rounded-3xl bg-slate-50 flex items-center justify-center mx-auto group-hover:scale-110 group-hover:bg-primary/10 transition-all duration-500">
+                              <div className="h-20 w-20 rounded-3xl bg-slate-50 admin-interface-dark:bg-muted/40 flex items-center justify-center mx-auto group-hover:scale-110 group-hover:bg-primary/10 transition-all duration-500">
                                  <CloudUpload className="h-10 w-10 text-slate-300 group-hover:text-primary" />
                               </div>
                               <div className="space-y-1">
-                                 <p className="text-lg font-bold text-slate-900 tracking-tight">拖放本地文件至此处</p>
-                                 <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">支持图片、视频、PDF 及压缩包 (最大 20MB)</p>
+                                 <p className="text-lg font-bold text-slate-900 admin-interface-dark:text-foreground tracking-tight">拖放本地文件至此处</p>
+                                 <p className="text-[10px] font-bold text-slate-400 admin-interface-dark:text-muted-foreground uppercase tracking-widest">支持图片、视频、PDF 及压缩包 (最大 20MB)</p>
                               </div>
-                              <Button variant="outline" className="rounded-xl h-12 px-8 border-slate-200 text-xs font-bold uppercase tracking-widest mt-4">浏览文件库</Button>
+                              <Button variant="outline" className="rounded-xl h-12 px-8 border-slate-200 admin-interface-dark:border-border/60 text-xs font-bold uppercase tracking-widest mt-4 text-foreground hover:bg-slate-100 admin-interface-dark:hover:bg-muted/40">浏览文件库</Button>
                            </div>
                         ) : (
                            <div className="w-full h-full flex flex-col p-8" onClick={e => e.stopPropagation()}>
@@ -585,13 +589,13 @@ export function MediaLibraryDialog({
                               </div>
                               <div className="flex-1 overflow-y-auto space-y-3 pr-2 custom-scrollbar">
                                  {pendingFiles.map((file, i) => (
-                                    <div key={i} className="flex items-center justify-between p-4 bg-slate-50 rounded-2xl border border-slate-100 group/item">
+                                    <div key={i} className="flex items-center justify-between p-4 bg-slate-50 admin-interface-dark:bg-muted/20 rounded-2xl border border-slate-100 admin-interface-dark:border-border/40 group/item">
                                        <div className="flex items-center gap-4 overflow-hidden">
-                                          <div className="h-10 w-10 rounded-xl bg-white flex items-center justify-center shrink-0 shadow-sm">
+                                          <div className="h-10 w-10 rounded-xl bg-white admin-interface-dark:bg-slate-800 flex items-center justify-center shrink-0 shadow-sm">
                                              <File className="h-5 w-5 text-slate-400" />
                                           </div>
                                           <div className="flex flex-col overflow-hidden">
-                                             <span className="text-xs font-bold text-slate-700 truncate">{file.name}</span>
+                                             <span className="text-xs font-bold text-slate-700 admin-interface-dark:text-foreground truncate">{file.name}</span>
                                              <span className="text-[9px] font-bold text-slate-400">{(file.size / 1024 / 1024).toFixed(2)} MB</span>
                                           </div>
                                        </div>
@@ -606,25 +610,25 @@ export function MediaLibraryDialog({
                   
                   <div className="md:col-span-5 space-y-10">
                      <div className="space-y-4">
-                        <Label className="text-[10px] font-bold uppercase text-slate-400 tracking-[0.2em] pl-1">保存归属分类</Label>
+                        <Label className="text-[10px] font-bold uppercase text-slate-400 admin-interface-dark:text-muted-foreground tracking-[0.2em] pl-1">保存归属分类</Label>
                         <DropdownMenu>
                            <DropdownMenuTrigger asChild>
-                              <Button variant="outline" className="w-full h-14 rounded-2xl bg-white border-slate-200 shadow-sm justify-between px-6 font-bold text-xs group">
+                              <Button variant="outline" className="w-full h-14 rounded-2xl bg-white admin-interface-dark:bg-card border-slate-200 admin-interface-dark:border-border/60 shadow-sm justify-between px-6 font-bold text-xs text-foreground hover:bg-slate-50 admin-interface-dark:hover:bg-muted/30 group">
                                  <span className="truncate">
                                     {targetUploadCategoryId ? (categories?.find(c => c.id === targetUploadCategoryId)?.name || '未知分类') : '选择目标目录'}
                                  </span>
                                  <ChevronDown className="h-4 w-4 opacity-40 group-hover:opacity-100 transition-all" />
                               </Button>
                            </DropdownMenuTrigger>
-                           <DropdownMenuContent align="start" className="w-[300px] rounded-2xl p-2 border-none shadow-2xl animate-in zoom-in-95 duration-200 z-[11000]">
+                           <DropdownMenuContent align="start" className="w-[300px] rounded-2xl p-2 border border-slate-100 admin-interface-dark:border-border bg-white admin-interface-dark:bg-popover text-slate-900 admin-interface-dark:text-popover-foreground shadow-2xl animate-in zoom-in-95 duration-200 z-[11000]">
                               <DropdownMenuLabel className="text-[10px] uppercase font-bold opacity-40 px-3 py-2">可用分类列表</DropdownMenuLabel>
-                              <DropdownMenuSeparator className="bg-slate-100 my-1" />
+                              <DropdownMenuSeparator className="bg-slate-100 admin-interface-dark:bg-muted my-1" />
                               <div className="max-h-[300px] overflow-y-auto custom-scrollbar">
                                  {categories?.map(cat => (
                                     <DropdownMenuItem 
                                        key={cat.id} 
                                        onClick={() => setTargetUploadCategoryId(cat.id)}
-                                       className="rounded-xl py-3 px-4 text-xs font-bold transition-all focus:bg-primary/5 cursor-pointer"
+                                       className="rounded-xl py-3 px-4 text-xs font-bold transition-all focus:bg-primary/5 admin-interface-dark:focus:bg-muted/50 text-slate-700 admin-interface-dark:text-popover-foreground cursor-pointer"
                                     >
                                        {cat.name}
                                     </DropdownMenuItem>
@@ -635,26 +639,26 @@ export function MediaLibraryDialog({
                      </div>
 
                      <div className="space-y-4">
-                        <Label className="text-[10px] font-bold uppercase text-slate-400 tracking-[0.2em] pl-1">重复文件冲突策略</Label>
+                        <Label className="text-[10px] font-bold uppercase text-slate-400 admin-interface-dark:text-muted-foreground tracking-[0.2em] pl-1">重复文件冲突策略</Label>
                         <DropdownMenu>
                            <DropdownMenuTrigger asChild>
-                              <Button variant="outline" className="w-full h-14 rounded-2xl bg-white border-slate-200 shadow-sm justify-between px-6 font-bold text-xs group">
+                              <Button variant="outline" className="w-full h-14 rounded-2xl bg-white admin-interface-dark:bg-card border-slate-200 admin-interface-dark:border-border/60 shadow-sm justify-between px-6 font-bold text-xs text-foreground hover:bg-slate-50 admin-interface-dark:hover:bg-muted/30 group">
                                  <span className={cn("truncate", duplicateStrategy === 'overwrite' && "text-orange-600")}>
                                     {duplicateStrategy === 'rename' ? '自动重命名 (生成副本)' : '覆盖现有文件 (全站同步)'}
                                  </span>
                                  <ChevronDown className="h-4 w-4 opacity-40 group-hover:opacity-100 transition-all" />
                               </Button>
                            </DropdownMenuTrigger>
-                           <DropdownMenuContent align="start" className="w-[300px] rounded-2xl p-2 border-none shadow-2xl animate-in zoom-in-95 duration-200 z-[11000]">
+                           <DropdownMenuContent align="start" className="w-[300px] rounded-2xl p-2 border border-slate-100 admin-interface-dark:border-border bg-white admin-interface-dark:bg-popover text-slate-900 admin-interface-dark:text-popover-foreground shadow-2xl animate-in zoom-in-95 duration-200 z-[11000]">
                               <DropdownMenuItem 
                                  onClick={() => setDuplicateStrategy('rename')}
-                                 className="rounded-xl py-3 px-4 text-xs font-bold transition-all focus:bg-primary/5 cursor-pointer"
+                                 className="rounded-xl py-3 px-4 text-xs font-bold transition-all focus:bg-primary/5 admin-interface-dark:focus:bg-muted/50 text-slate-700 admin-interface-dark:text-popover-foreground cursor-pointer"
                               >
                                  自动重命名 (生成副本)
                               </DropdownMenuItem>
                               <DropdownMenuItem 
                                  onClick={() => setDuplicateStrategy('overwrite')}
-                                 className="rounded-xl py-3 px-4 text-xs font-bold text-orange-600 transition-all focus:bg-orange-50 cursor-pointer"
+                                 className="rounded-xl py-3 px-4 text-xs font-bold text-orange-600 transition-all focus:bg-orange-50 admin-interface-dark:focus:bg-orange-950/20 cursor-pointer"
                               >
                                  覆盖现有文件 (全站同步)
                               </DropdownMenuItem>
@@ -674,15 +678,15 @@ export function MediaLibraryDialog({
 
                      {uploadTasks.length > 0 && (
                         <div className="space-y-4 animate-in fade-in duration-500">
-                           <Label className="text-[10px] font-bold uppercase text-slate-400 tracking-widest pl-1">正在处理任务 ({uploadTasks.filter(t => t.status === 'completed').length}/{uploadTasks.length})</Label>
+                           <Label className="text-[10px] font-bold uppercase text-slate-400 admin-interface-dark:text-muted-foreground tracking-widest pl-1">正在处理任务 ({uploadTasks.filter(t => t.status === 'completed').length}/{uploadTasks.length})</Label>
                            <div className="max-h-[200px] overflow-y-auto space-y-3 pr-2 custom-scrollbar">
                               {uploadTasks.map(task => (
                                  <div key={task.id} className="space-y-2">
                                     <div className="flex justify-between text-[9px] font-bold uppercase tracking-tight">
-                                       <span className="truncate max-w-[200px] text-slate-600">{task.fileName}</span>
+                                       <span className="truncate max-w-[200px] text-slate-600 admin-interface-dark:text-muted-foreground">{task.fileName}</span>
                                        {task.status === 'completed' ? <span className="text-green-600">已完成</span> : task.status === 'error' ? <span className="text-destructive">{task.error}</span> : <span className="animate-pulse text-primary">上传中...</span>}
                                     </div>
-                                    <Progress value={task.progress} className="h-1 rounded-full bg-slate-100 [&>div]:bg-primary" />
+                                    <Progress value={task.progress} className="h-1 rounded-full bg-slate-100 admin-interface-dark:bg-muted [&>div]:bg-primary" />
                                  </div>
                               ))}
                            </div>
@@ -704,7 +708,7 @@ export function MediaLibraryDialog({
         </div>
 
         {/* Footer Actions */}
-        <DialogFooter className="p-6 border-t border-slate-50 flex items-center justify-between bg-white shrink-0">
+        <DialogFooter className="p-6 border-t border-slate-100 admin-interface-dark:border-border/60 flex items-center justify-between bg-background shrink-0">
           <div className="flex items-center gap-4">
             {selectedIds.size > 0 && (
               <Badge className="bg-primary/10 text-primary border-none py-1.5 px-4 rounded-full text-[10px] font-bold uppercase tracking-widest animate-in slide-in-from-left duration-300">
@@ -713,7 +717,7 @@ export function MediaLibraryDialog({
             )}
           </div>
           <div className="flex gap-4">
-            <Button variant="ghost" onClick={handleCancel} className="px-8 h-12 rounded-xl text-xs font-bold uppercase tracking-widest text-slate-400 hover:bg-slate-50">放弃更改</Button>
+            <Button variant="ghost" onClick={handleCancel} className="px-8 h-12 rounded-xl text-xs font-bold uppercase tracking-widest text-slate-400 admin-interface-dark:text-muted-foreground/60 hover:text-slate-800 admin-interface-dark:hover:text-foreground hover:bg-slate-50 admin-interface-dark:hover:bg-muted/40">放弃更改</Button>
             <Button 
               onClick={handleConfirm} 
               disabled={selectedIds.size === 0 || activeTab === 'upload'}

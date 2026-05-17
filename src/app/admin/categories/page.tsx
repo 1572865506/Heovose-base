@@ -385,144 +385,277 @@ export default function CategoriesPage() {
   };
 
   return (
-    <div className="space-y-10 animate-in fade-in duration-700 relative min-h-[80vh] pb-20">
-      <AiGradientDef />
-      {/* 背景装饰 */}
-      <div className="fixed inset-0 pointer-events-none z-0">
-        <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-primary/[0.02] rounded-full blur-[100px] -translate-y-1/2 translate-x-1/3" />
-        <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-[0.015] brightness-100 contrast-150" />
-      </div>
-
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 relative z-10">
-        <div className="space-y-1">
-          <h2 className="text-2xl font-headline font-bold text-slate-900 flex items-center gap-4">
-            <div className="h-10 w-10 rounded-2xl bg-primary/10 flex items-center justify-center text-primary shadow-sm">
-              <Layers className="h-5 w-5" />
-            </div>
-            产品分类架构管理
-          </h2>
-          <p className="text-xs text-slate-400 font-bold uppercase tracking-[0.2em] pl-14">Management / Structure / Taxonomy</p>
+    <>
+      <div className="space-y-10 animate-in fade-in duration-700 relative min-h-[80vh] pb-20">
+        <AiGradientDef />
+        {/* 背景装饰 */}
+        <div className="fixed inset-0 pointer-events-none z-0">
+          <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-primary/[0.02] rounded-full blur-[100px] -translate-y-1/2 translate-x-1/3" />
+          <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-[0.015] brightness-100 contrast-150" />
         </div>
-        
-        <div className="flex gap-3">
-          {(!systemPresets.hasWholesale || !systemPresets.hasProject) && (
+
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 relative z-10">
+          <div className="space-y-1">
+            <h2 className="text-2xl font-headline font-bold text-foreground flex items-center gap-4">
+              <div className="h-10 w-10 rounded-2xl bg-primary/10 flex items-center justify-center text-primary shadow-sm">
+                <Layers className="h-5 w-5" />
+              </div>
+              产品分类架构管理
+            </h2>
+            <p className="text-xs text-muted-foreground font-bold uppercase tracking-[0.2em] pl-14">Management / Structure / Taxonomy</p>
+          </div>
+          
+          <div className="flex gap-3 relative z-10">
+            {(!systemPresets.hasWholesale || !systemPresets.hasProject) && (
+              <Button 
+                variant="outline" 
+                onClick={handleInitPresets} 
+                className="rounded-2xl h-14 px-6 font-bold uppercase text-[10px] tracking-widest gap-2 border-amber-500/20 bg-amber-500/5 text-amber-500 hover:bg-amber-500/10 transition-all shadow-2xl shadow-amber-900/10"
+              >
+                <Zap className="h-3.5 w-3.5 animate-pulse" /> 初始化预设顶级分类
+              </Button>
+            )}
             <Button 
-              variant="outline" 
-              onClick={handleInitPresets} 
-              className="rounded-2xl h-14 px-6 font-bold uppercase text-xs gap-2 border-orange-200 bg-orange-50/50 backdrop-blur-sm text-orange-700 hover:bg-orange-100 transition-all shadow-sm"
+              onClick={handleOpenDialog} 
+              className="rounded-2xl h-14 px-8 font-bold uppercase text-[10px] tracking-[0.2em] gap-3 shadow-2xl shadow-primary/20 hover:scale-[1.02] active:scale-[0.98] transition-all"
             >
-              <Zap className="h-3.5 w-3.5" /> 初始化预设顶级分类
+              <Plus className="h-5 w-5" /> 新增层级分类
             </Button>
-          )}
-          <Button 
-            onClick={handleOpenDialog} 
-            className="rounded-2xl h-14 px-8 font-bold uppercase text-xs gap-3 shadow-xl shadow-primary/20 hover:scale-105 transition-all"
-          >
-            <Plus className="h-5 w-5" /> 新增层级分类
-          </Button>
+          </div>
+        </div>
+
+        {/* 表格主内容区 */}
+        <div className="relative z-10 space-y-4">
+          <div className="bg-card/40 backdrop-blur-3xl rounded-[3rem] border border-border/10 shadow-2xl shadow-black/10 overflow-hidden">
+            <Table>
+              <TableHeader className="bg-muted/30 border-b border-border/10">
+                <TableRow className="hover:bg-transparent border-none">
+                  <TableHead className="w-28 pl-10 font-bold uppercase text-[10px] tracking-[0.25em] text-muted-foreground/60 h-16">视觉 / VISUAL</TableHead>
+                  <TableHead className="font-bold uppercase text-[10px] tracking-[0.25em] text-muted-foreground/60 h-16">分类层级与命名 / HIERARCHY</TableHead>
+                  <TableHead className="font-bold uppercase text-[10px] tracking-[0.25em] text-muted-foreground/60 h-16">系统标识 / SLUG</TableHead>
+                  <TableHead className="w-48 text-right pr-10 font-bold uppercase text-[10px] tracking-[0.25em] text-muted-foreground/60 h-16">操作中心 / ACTIONS</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {isCatsLoading ? (
+                  <TableRow><TableCell colSpan={4} className="h-80 text-center"><Loader2 className="h-12 w-12 animate-spin mx-auto text-primary opacity-10" /></TableCell></TableRow>
+                ) : categoryTree.length === 0 ? (
+                  <TableRow><TableCell colSpan={4} className="h-80 text-center text-[11px] text-muted-foreground/20 font-bold uppercase tracking-[0.4em] italic">尚未建立分类体系 / EMPTY ARCHITECTURE</TableCell></TableRow>
+                ) : categoryTree.map((cat) => {
+                  const t = translations?.find(tr => tr.id === cat.nameTextId);
+                  const isTopLevel = !cat.parentId || cat.parentId === 'none';
+                  const isSystemPreset = cat.id === 'WHOLESALE' || cat.id === 'PROJECT';
+
+                  return (
+                    <TableRow key={cat.id} className="group hover:bg-primary/[0.02] transition-all duration-500 border-b border-border/5 last:border-0 relative">
+                      <TableCell className="pl-10 py-7">
+                        <div className="absolute left-0 top-4 bottom-4 w-1 bg-primary scale-y-0 group-hover:scale-y-100 transition-transform duration-500 rounded-r-full shadow-[0_0_15px_rgba(var(--primary),0.5)]" />
+                        <div className="relative h-14 w-14 rounded-2xl border border-border/10 bg-background shadow-inner flex items-center justify-center group-hover:scale-105 transition-transform duration-500 overflow-hidden">
+                          {cat.thumbnailImageUrl ? (
+                            <Image src={getAssetUrl(cat.thumbnailImageUrl)} alt={cat.id} fill className="object-contain p-2.5" unoptimized />
+                          ) : (
+                            <LayoutGrid className="h-6 w-6 opacity-10 text-muted-foreground" />
+                          )}
+                          <div className="absolute inset-0 bg-primary/5 opacity-0 group-hover:opacity-100 transition-opacity" />
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                         <div className="flex items-center gap-3">
+                            {Array.from({ length: cat.depth }).map((_, i) => (
+                              <div key={i} className="w-10 h-[2px] bg-primary/10 shrink-0 ml-1 rounded-full" />
+                            ))}
+                            {cat.depth > 0 && (
+                              <div className="h-8 w-8 rounded-xl bg-primary/5 border border-primary/10 flex items-center justify-center mr-2 shadow-inner">
+                                <ChevronRight className="h-4 w-4 text-primary/40" />
+                              </div>
+                            )}
+                            <div className="flex flex-col gap-1">
+                              <div className="flex items-center gap-3">
+                                <span className={cn(
+                                  "font-headline font-bold text-[15px] tracking-tight transition-colors", 
+                                  isTopLevel ? "text-foreground" : "text-muted-foreground group-hover:text-foreground"
+                                )}>
+                                  {(t?.content as any)?.zh || (t as any)?.zh || cat.id}
+                                </span>
+                                {isTopLevel && (
+                                  <Badge className={cn(
+                                    "text-[8px] h-5 px-3 uppercase font-bold tracking-[0.2em] border-none shadow-2xl",
+                                    isSystemPreset ? "bg-primary text-white shadow-primary/20" : "bg-muted text-muted-foreground/60"
+                                  )}>
+                                    {isSystemPreset ? 'CORE PRESET' : 'TOP LEVEL'}
+                                  </Badge>
+                                )}
+                              </div>
+                              <span className="text-[10px] text-muted-foreground/30 font-bold uppercase tracking-widest">
+                                {(t?.content as any)?.en || (t as any)?.en || 'UNTRANSLATED'}
+                              </span>
+                            </div>
+                          </div>
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex flex-col gap-1.5">
+                          <code className="text-[11px] font-mono font-black text-primary bg-primary/5 px-2.5 py-1 rounded-lg w-fit tracking-tighter uppercase">{cat.slug}</code>
+                          <span className="text-[9px] font-bold text-muted-foreground/20 uppercase tracking-widest pl-1">ID: {cat.id}</span>
+                        </div>
+                      </TableCell>
+                      <TableCell className="pr-10 text-right">
+                        <div className="flex items-center justify-end gap-3 opacity-0 group-hover:opacity-100 transition-all duration-500">
+                          <div className="flex items-center bg-muted/10 rounded-2xl p-1.5 border border-border/5 shadow-inner">
+                             <Button 
+                               size="icon" 
+                               variant="ghost" 
+                               className="h-9 w-9 rounded-xl text-muted-foreground/60 hover:text-primary hover:bg-primary/15 shadow-sm" 
+                               onClick={() => handleMove(cat, 'up')}
+                             >
+                               <ArrowUp className="h-4 w-4" />
+                             </Button>
+                             <Button 
+                               size="icon" 
+                               variant="ghost" 
+                               className="h-9 w-9 rounded-xl text-muted-foreground/60 hover:text-primary hover:bg-primary/15 shadow-sm" 
+                               onClick={() => handleMove(cat, 'down')}
+                             >
+                               <ArrowDown className="h-4 w-4" />
+                             </Button>
+                          </div>
+                          <Button 
+                            size="icon" 
+                            variant="ghost" 
+                            className="h-12 w-12 rounded-2xl text-muted-foreground hover:text-primary hover:bg-primary/15 transition-all" 
+                            onClick={() => handleStartEdit(cat)}
+                          >
+                            <Edit2 className="h-5 w-5" />
+                          </Button>
+                          <Button 
+                            size="icon" 
+                            variant="ghost" 
+                            className="h-12 w-12 rounded-2xl text-destructive/20 hover:text-destructive hover:bg-destructive/10 transition-all" 
+                            onClick={() => handleDelete(cat.id)}
+                          >
+                            <Trash2 className="h-5 w-5" />
+                          </Button>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  );
+                })}
+              </TableBody>
+            </Table>
+          </div>
+
+          {/* Advisory Section moved inside Main Content Area */}
+          <div className="mt-12 p-8 bg-primary/5 rounded-[2.5rem] border border-primary/10 relative overflow-hidden group">
+            <div className="absolute top-0 right-0 p-8 opacity-[0.03] group-hover:opacity-[0.05] transition-opacity">
+              <Zap className="h-24 w-24 text-primary" />
+            </div>
+            <p className="text-[13px] leading-relaxed text-muted-foreground/70 font-medium relative z-10">
+              为了实现最优的用户导向，建议将所有业务子类挂载到 <strong className="text-primary font-black">“批发产品” (WHOLESALE)</strong> 或 <strong className="text-primary font-black">“项目产品” (PROJECT)</strong> 之下。
+              这种“垂直双轨制”架构能够直接与首页的英雄屏按钮联动，确保全球客户能第一时间精准进入其对应的业务板块。
+            </p>
+          </div>
         </div>
       </div>
 
       <Dialog open={isDialogOpen} onOpenChange={(open) => { setIsDialogOpen(open); if (!open) resetForm(); }}>
-        <DialogContent className="rounded-[2.5rem] max-w-2xl p-0 overflow-hidden shadow-[0_50px_100px_-20px_rgba(0,0,0,0.15)] border-none bg-white/90 backdrop-blur-2xl">
-          <div className="bg-slate-900 p-8 text-white relative overflow-hidden">
-            <div className="absolute top-0 right-0 p-8 opacity-10">
-              <FolderPlus className="h-24 w-24" />
+        <DialogContent className="rounded-[3rem] max-w-2xl p-0 overflow-hidden shadow-[0_50px_100px_-20px_rgba(0,0,0,0.5)] border border-white/5 bg-card/40 backdrop-blur-3xl">
+          <div className="bg-gradient-to-br from-slate-950 to-slate-900 p-10 text-white relative overflow-hidden border-b border-white/5">
+            <div className="absolute top-0 right-0 p-10 opacity-10">
+              <FolderPlus className="h-32 w-32" />
             </div>
             <DialogHeader className="relative z-10 space-y-2">
-              <DialogTitle className="text-xl font-headline font-bold flex items-center gap-3">
-                <div className="h-10 w-10 rounded-xl bg-white/10 flex items-center justify-center">
-                  <FolderPlus className="h-5 w-5" />
+              <DialogTitle className="text-2xl font-headline font-black flex items-center gap-4">
+                <div className="h-12 w-12 rounded-2xl bg-white/10 flex items-center justify-center border border-white/5">
+                  <FolderPlus className="h-6 w-6" />
                 </div>
                 {editingCategory ? '编辑分类属性' : '创建新分类层级'}
               </DialogTitle>
-              <DialogDescription className="text-xs font-bold text-white/40 uppercase tracking-widest">Taxonomy Structural Configuration</DialogDescription>
+              <DialogDescription className="text-[10px] font-bold text-white/30 uppercase tracking-[0.3em]">Taxonomy Structural Configuration</DialogDescription>
             </DialogHeader>
           </div>
-          <div className="p-6 space-y-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div className="space-y-2.5">
-                <Label className="text-xs font-bold uppercase text-slate-400 tracking-widest pl-1">所属上级 (Parent)</Label>
+          <div className="p-8 space-y-8">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+              <div className="space-y-3">
+                <Label className="text-[10px] font-bold uppercase text-muted-foreground/40 tracking-[0.2em] pl-1">所属上级 (Parent Node)</Label>
                 <Select value={formData.parentId} onValueChange={v => setFormData({...formData, parentId: v})}>
-                   <SelectTrigger className="h-12 rounded-xl bg-slate-500/5 border-transparent text-sm font-medium">
+                   <SelectTrigger className="h-14 rounded-2xl bg-muted/10 border-transparent text-sm font-bold shadow-inner">
                      <SelectValue placeholder="选择上级分类" />
                    </SelectTrigger>
-                   <SelectContent className="rounded-2xl border-slate-200 shadow-2xl">
-                      <SelectItem value="none" className="text-xs font-bold uppercase tracking-widest py-3">无 (顶级分类)</SelectItem>
+                   <SelectContent className="rounded-[1.5rem] border-border/10 bg-card/95 backdrop-blur-2xl shadow-2xl">
+                      <SelectItem value="none" className="text-[10px] font-bold uppercase tracking-widest py-4">无 (顶级分类 ROOT)</SelectItem>
                       {categoryTree.filter(c => c.id !== editingCategory?.id).map(cat => (
-                        <SelectItem key={cat.id} value={cat.id} className="text-xs py-3">
-                           <span style={{ paddingLeft: `${cat.depth * 0.5}rem` }} className={cn(cat.depth > 0 && "opacity-60")}>
-                             {getT(cat.nameTextId)}
+                        <SelectItem key={cat.id} value={cat.id} className="text-[11px] py-4 font-bold uppercase tracking-tight">
+                           <span style={{ paddingLeft: `${cat.depth * 1}rem` }} className={cn(cat.depth > 0 && "opacity-40")}>
+                             {cat.depth > 0 && "↳ "}{getT(cat.nameTextId)}
                            </span>
                         </SelectItem>
                       ))}
                    </SelectContent>
                 </Select>
               </div>
-              <div className="space-y-2.5">
-                <Label className="text-xs font-bold uppercase text-slate-400 tracking-widest pl-1">唯一 ID / SLUG</Label>
+              <div className="space-y-3">
+                <Label className="text-[10px] font-bold uppercase text-muted-foreground/40 tracking-[0.2em] pl-1">唯一标识 (SLUG / ID)</Label>
                 <Input 
                   disabled={!!editingCategory} 
-                  placeholder="如: aio_pro" 
+                  placeholder="如: AIO_PRO" 
                   value={formData.id} 
                   onChange={e => setFormData({...formData, id: e.target.value.toUpperCase().replace(/\s+/g, '_'), slug: e.target.value.toLowerCase()})} 
-                  className="h-12 rounded-xl bg-slate-500/5 border-transparent font-mono text-sm font-bold placeholder:font-normal" 
+                  className="h-14 rounded-2xl bg-muted/10 border-transparent font-mono text-sm font-black tracking-tighter placeholder:font-bold placeholder:opacity-20 shadow-inner" 
                 />
               </div>
             </div>
 
-            <div className="space-y-5 pt-5 border-t border-slate-100">
+            <div className="space-y-6 pt-8 border-t border-border/5">
               <div className="flex items-center justify-between">
-                <Label className="text-xs font-bold uppercase text-slate-400 tracking-widest flex items-center gap-2"><Languages className="h-3.5 w-3.5" /> 双语名称与描述配置</Label>
+                <Label className="text-[10px] font-bold uppercase text-muted-foreground/40 tracking-[0.2em] flex items-center gap-3"><Languages className="h-4 w-4 text-primary" /> 多语言元数据配置</Label>
                 <ShinyButton 
                   onClick={handleAutoTranslate} 
                   disabled={isTranslating} 
-                  className="h-7 px-4"
+                  className="h-9 px-6"
                   shape="capsule"
                 >
-                  {isTranslating ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Sparkles className="h-3.5 w-3.5" />}
-                  <span className="text-[9px] font-bold uppercase tracking-widest">极光智译</span>
+                  {isTranslating ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
+                  <span className="text-[10px] font-bold uppercase tracking-[0.2em]">智译全息同步</span>
                 </ShinyButton>
               </div>
-              <div className="grid grid-cols-2 gap-6">
-                <div className="space-y-3">
-                   <div className="space-y-2">
-                     <Label className="text-[9px] font-bold opacity-40 uppercase pl-1">中文名称</Label>
-                     <Input placeholder="高性能一体机" value={formData.nameZh} onChange={e => setFormData({...formData, nameZh: e.target.value})} className="rounded-xl h-11 text-sm font-medium" />
+              <div className="grid grid-cols-2 gap-8">
+                <div className="space-y-4">
+                   <div className="space-y-2.5">
+                     <Label className="text-[9px] font-bold text-muted-foreground/30 uppercase pl-1 tracking-widest">中文名称 (ZH)</Label>
+                     <Input placeholder="高性能一体机" value={formData.nameZh} onChange={e => setFormData({...formData, nameZh: e.target.value})} className="rounded-2xl h-12 text-sm font-bold bg-muted/5 border-transparent shadow-inner" />
                    </div>
-                   <div className="space-y-2">
-                     <Label className="text-[9px] font-bold opacity-40 uppercase pl-1">中文简述</Label>
-                     <Input placeholder="极致性能，为专业办公而生" value={formData.descZh} onChange={e => setFormData({...formData, descZh: e.target.value})} className="rounded-xl h-11 text-[11px] font-medium" />
+                   <div className="space-y-2.5">
+                     <Label className="text-[9px] font-bold text-muted-foreground/30 uppercase pl-1 tracking-widest">中文简述 (ZH-DESC)</Label>
+                     <Input placeholder="极致性能，为专业办公而生" value={formData.descZh} onChange={e => setFormData({...formData, descZh: e.target.value})} className="rounded-2xl h-12 text-[11px] font-bold bg-muted/5 border-transparent shadow-inner" />
                    </div>
                 </div>
-                <div className="space-y-3">
-                   <div className="space-y-2">
-                     <Label className="text-[9px] font-bold opacity-40 uppercase pl-1">English Name</Label>
-                     <Input placeholder="High Performance AIO" value={formData.nameEn} onChange={e => setFormData({...formData, nameEn: e.target.value})} className="rounded-xl h-11 text-sm font-medium border-dashed" />
+                <div className="space-y-4">
+                   <div className="space-y-2.5">
+                     <Label className="text-[9px] font-bold text-muted-foreground/30 uppercase pl-1 tracking-widest">English Name (EN)</Label>
+                     <Input placeholder="High Performance AIO" value={formData.nameEn} onChange={e => setFormData({...formData, nameEn: e.target.value})} className="rounded-2xl h-12 text-sm font-bold bg-muted/5 border-dashed border-primary/20 shadow-inner" />
                    </div>
-                   <div className="space-y-2">
-                     <Label className="text-[9px] font-bold opacity-40 uppercase pl-1">English Desc</Label>
-                     <Input placeholder="Professional performance for modern workspace" value={formData.descEn} onChange={e => setFormData({...formData, descEn: e.target.value})} className="rounded-xl h-11 text-[11px] font-medium border-dashed" />
+                   <div className="space-y-2.5">
+                     <Label className="text-[9px] font-bold text-muted-foreground/30 uppercase pl-1 tracking-widest">English Desc (EN-DESC)</Label>
+                     <Input placeholder="Professional performance for modern workspace" value={formData.descEn} onChange={e => setFormData({...formData, descEn: e.target.value})} className="rounded-2xl h-12 text-[11px] font-bold bg-muted/5 border-dashed border-primary/20 shadow-inner" />
                    </div>
                 </div>
               </div>
             </div>
 
-            <div className="space-y-2.5 pt-4 border-t border-slate-100">
-              <Label className="text-[10px] font-bold uppercase text-slate-400 tracking-widest pl-1">分类缩略图</Label>
+            <div className="space-y-3 pt-6 border-t border-border/5">
+              <Label className="text-[10px] font-bold uppercase text-muted-foreground/40 tracking-[0.2em] pl-1">视觉缩略图 (Identity Visual)</Label>
               <div 
-                className="relative aspect-[6/1] rounded-[0.75rem] bg-slate-500/5 border-2 border-dashed border-slate-200 overflow-hidden flex flex-col items-center justify-center group cursor-pointer hover:bg-primary/[0.02] hover:border-primary/40 transition-all"
+                className="relative aspect-[8/1.5] rounded-2xl bg-muted/5 border-2 border-dashed border-border/10 overflow-hidden flex flex-col items-center justify-center group cursor-pointer hover:bg-primary/[0.02] hover:border-primary/40 transition-all shadow-inner"
                 onClick={() => setIsPickerOpen(true)}
               >
                 {formData.thumbnailImageUrl ? (
                   <>
-                    <Image src={getAssetUrl(formData.thumbnailImageUrl)} alt="Thumbnail" fill className="object-contain p-4 transition-transform duration-500 group-hover:scale-105" unoptimized />
-                    <div className="absolute inset-0 bg-slate-900/40 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-all duration-500 gap-3 backdrop-blur-[2px]">
-                      <Button variant="secondary" size="sm" className="rounded-full h-9 px-6 text-[10px] font-bold uppercase tracking-wider shadow-2xl">更换图片</Button>
+                    <Image src={getAssetUrl(formData.thumbnailImageUrl)} alt="Thumbnail" fill className="object-contain p-5 transition-transform duration-700 group-hover:scale-105" unoptimized />
+                    <div className="absolute inset-0 bg-background/60 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-all duration-500 gap-4 backdrop-blur-[4px]">
+                      <Button variant="secondary" size="sm" className="rounded-xl h-10 px-6 text-[10px] font-bold uppercase tracking-wider shadow-2xl bg-background text-foreground border-none">更换视觉资源</Button>
                       <Button 
                         variant="destructive" 
                         size="icon" 
-                        className="h-9 w-9 rounded-full shadow-2xl" 
+                        className="h-10 w-10 rounded-xl shadow-2xl" 
                         onClick={(e) => { e.stopPropagation(); setFormData({...formData, thumbnailImageUrl: ''}); }}
                       >
                         <X className="h-4 w-4" />
@@ -530,19 +663,19 @@ export default function CategoriesPage() {
                     </div>
                   </>
                 ) : (
-                  <div className="flex flex-col items-center gap-4 text-slate-400 group-hover:text-primary transition-colors">
-                    <div className="h-14 w-14 rounded-2xl bg-white shadow-sm flex items-center justify-center">
-                      <ImageIcon className="h-7 w-7" />
+                  <div className="flex flex-col items-center gap-4 text-muted-foreground/20 group-hover:text-primary transition-colors">
+                    <div className="h-14 w-14 rounded-2xl bg-card/20 shadow-inner flex items-center justify-center border border-border/5">
+                      <ImageIcon className="h-6 w-6" />
                     </div>
-                    <span className="text-[10px] font-bold uppercase tracking-[0.2em]">从素材库选择媒体</span>
+                    <span className="text-[10px] font-bold uppercase tracking-[0.3em]">从素材库选择媒体资源 / ATTACH MEDIA</span>
                   </div>
                 )}
               </div>
             </div>
           </div>
-          <DialogFooter className="bg-slate-50 p-6 border-t border-slate-200 gap-4">
-            <Button variant="outline" onClick={() => setIsDialogOpen(false)} className="h-12 rounded-2xl flex-1 font-bold uppercase text-xs tracking-widest border-slate-200">放弃编辑</Button>
-            <Button onClick={handleSave} className="h-12 rounded-2xl flex-1 font-bold uppercase text-xs tracking-widest shadow-xl shadow-primary/20">确认保存架构</Button>
+          <DialogFooter className="bg-muted/5 p-8 border-t border-border/5 gap-4">
+            <Button variant="ghost" onClick={() => setIsDialogOpen(false)} className="h-14 rounded-2xl flex-1 font-bold uppercase text-[10px] tracking-widest text-muted-foreground/40 hover:text-foreground">放弃当前编辑</Button>
+            <Button onClick={handleSave} className="h-14 rounded-2xl flex-1 font-bold uppercase text-[10px] tracking-[0.2em] shadow-2xl shadow-primary/20">确认保存分类架构</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -560,137 +693,6 @@ export default function CategoriesPage() {
         }}
       />
 
-      {/* Main Content Area */}
-      <div className="relative z-10 space-y-4">
-        <div className="bg-white/60 backdrop-blur-md rounded-[2.5rem] border border-white/40 shadow-[0_8px_30px_rgb(0,0,0,0.04)] overflow-hidden">
-          <Table>
-            <TableHeader className="bg-slate-500/5 border-b border-white/40">
-              <TableRow className="hover:bg-transparent border-none">
-                <TableHead className="w-24 pl-8 font-bold uppercase text-xs tracking-[0.2em] text-slate-400 h-16">视觉标识</TableHead>
-                <TableHead className="font-bold uppercase text-xs tracking-[0.2em] text-slate-400 h-16">分类层级与全称</TableHead>
-                <TableHead className="font-bold uppercase text-xs tracking-[0.2em] text-slate-400 h-16">系统标识码 / SLUG</TableHead>
-                <TableHead className="w-40 text-right pr-8 font-bold uppercase text-xs tracking-[0.2em] text-slate-400 h-16">操作中心</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {isCatsLoading ? (
-                <TableRow><TableCell colSpan={4} className="h-64 text-center"><Loader2 className="h-10 w-10 animate-spin mx-auto opacity-10" /></TableCell></TableRow>
-              ) : categoryTree.length === 0 ? (
-                <TableRow><TableCell colSpan={4} className="h-64 text-center text-[10px] text-slate-400 font-bold uppercase tracking-widest italic">尚未建立分类体系 / NO DATA</TableCell></TableRow>
-              ) : categoryTree.map((cat) => {
-                const t = translations?.find(tr => tr.id === cat.nameTextId);
-                const isTopLevel = !cat.parentId || cat.parentId === 'none';
-                const isSystemPreset = cat.id === 'WHOLESALE' || cat.id === 'PROJECT';
-
-                return (
-                  <TableRow key={cat.id} className="group hover:bg-white/80 transition-all duration-300 border-white/20">
-                    <TableCell className="pl-8 py-6">
-                      <div className="relative h-12 w-12 rounded-2xl border border-slate-200 bg-white overflow-hidden shadow-sm flex items-center justify-center group-hover:scale-110 transition-transform duration-500">
-                        {cat.thumbnailImageUrl ? (
-                          <Image src={getAssetUrl(cat.thumbnailImageUrl)} alt={cat.id} fill className="object-contain p-2" unoptimized />
-                        ) : (
-                          <LayoutGrid className="h-5 w-5 opacity-20 text-slate-400" />
-                        )}
-                        <div className="absolute inset-0 bg-primary/5 opacity-0 group-hover:opacity-100 transition-opacity" />
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                       <div className="flex items-center gap-2">
-                          {Array.from({ length: cat.depth }).map((_, i) => (
-                            <div key={i} className="w-8 h-px bg-slate-200 shrink-0 ml-1" />
-                          ))}
-                          {cat.depth > 0 && (
-                            <div className="h-6 w-6 rounded-lg bg-slate-50 flex items-center justify-center mr-2">
-                              <ChevronRight className="h-3 w-3 text-slate-400" />
-                            </div>
-                          )}
-                          <div className="flex flex-col space-y-0.5">
-                            <div className="flex items-center gap-3">
-                              <span className={cn(
-                                "font-headline font-bold text-sm tracking-tight transition-colors", 
-                                isTopLevel ? "text-slate-900" : "text-slate-500 group-hover:text-slate-900"
-                              )}>
-                                {(t?.content as any)?.zh || (t as any)?.zh || cat.id}
-                              </span>
-                              {isTopLevel && (
-                                <Badge className={cn(
-                                  "text-[8px] h-4 px-2 uppercase font-bold tracking-widest border-none",
-                                  isSystemPreset ? "bg-primary text-white shadow-lg shadow-primary/20" : "bg-slate-100 text-slate-500"
-                                )}>
-                                  {isSystemPreset ? 'CORE PRESET' : 'TOP TIER'}
-                                </Badge>
-                              )}
-                            </div>
-                            <span className="text-[10px] text-slate-400 font-bold uppercase tracking-widest opacity-60">
-                              {(t?.content as any)?.en || (t as any)?.en || 'UNTRANSLATED'}
-                            </span>
-                          </div>
-                        </div>
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex flex-col space-y-1">
-                        <code className="text-[11px] font-mono font-bold text-primary bg-primary/5 px-2 py-0.5 rounded-md w-fit">{cat.slug}</code>
-                        <span className="text-[9px] font-bold text-slate-400 uppercase tracking-tighter pl-1 opacity-40">REF: {cat.id}</span>
-                      </div>
-                    </TableCell>
-                    <TableCell className="pr-8 text-right">
-                      <div className="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-all duration-300">
-                        <div className="flex items-center bg-slate-100 rounded-xl p-1 mr-2">
-                           <Button 
-                             size="icon" 
-                             variant="ghost" 
-                             className="h-8 w-8 rounded-lg text-slate-400 hover:text-primary hover:bg-white" 
-                             onClick={() => handleMove(cat, 'up')}
-                           >
-                             <ArrowUp className="h-3.5 w-3.5" />
-                           </Button>
-                           <Button 
-                             size="icon" 
-                             variant="ghost" 
-                             className="h-8 w-8 rounded-lg text-slate-400 hover:text-primary hover:bg-white" 
-                             onClick={() => handleMove(cat, 'down')}
-                           >
-                             <ArrowDown className="h-3.5 w-3.5" />
-                           </Button>
-                        </div>
-                        <Button 
-                          size="icon" 
-                          variant="ghost" 
-                          className="h-10 w-10 rounded-xl text-slate-400 hover:text-primary hover:bg-primary/5" 
-                          onClick={() => handleStartEdit(cat)}
-                        >
-                          <Edit2 className="h-4 w-4" />
-                        </Button>
-                        <Button 
-                          size="icon" 
-                          variant="ghost" 
-                          className="h-10 w-10 rounded-xl text-destructive/40 hover:text-destructive hover:bg-destructive/5" 
-                          onClick={() => handleDelete(cat.id)}
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                );
-              })}
-            </TableBody>
-          </Table>
-        </div>
-      </div>
-
-      <div className="bg-white/60 backdrop-blur-md p-8 rounded-[2rem] border border-white/40 shadow-sm flex items-start gap-6 relative z-10">
-         <div className="h-12 w-12 rounded-2xl bg-primary/10 flex items-center justify-center text-primary shrink-0">
-           <Info className="h-6 w-6" />
-         </div>
-         <div className="space-y-2">
-            <p className="text-xs font-bold text-slate-900 uppercase tracking-widest">系统架构说明 (Architecture Guide)</p>
-            <p className="text-[11px] text-slate-500 leading-relaxed font-medium">
-              为了实现最优的用户导向，建议将所有业务子类挂载到 <strong className="text-primary">“批发产品” (WHOLESALE)</strong> 或 <strong className="text-primary">“项目产品” (PROJECT)</strong> 之下。
-              这种“垂直双轨制”架构能够直接与首页的英雄屏按钮联动，确保全球客户能第一时间精准进入其对应的业务板块。
-            </p>
-         </div>
-      </div>
-    </div>
+    </>
   );
 }

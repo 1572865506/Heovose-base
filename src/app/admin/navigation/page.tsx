@@ -76,7 +76,7 @@ export default function NavigationSettingsPage() {
   };
 
   const updateSetting = (key: string, value: any) => {
-    setSettings(prev => ({ ...prev, [key]: value }));
+    setSettings((prev: any) => ({ ...prev, [key]: value }));
   };
 
   if (isLoading) {
@@ -120,7 +120,7 @@ export default function NavigationSettingsPage() {
       </div>
 
       <Tabs defaultValue="navbar" className="w-full">
-        <TabsList className="bg-white/50 backdrop-blur-xl border border-border/40 p-1 rounded-2xl h-14 mb-8">
+        <TabsList className="bg-card/50 backdrop-blur-xl border border-border/40 p-1 rounded-2xl h-14 mb-8">
           <TabsTrigger value="navbar" className="rounded-xl px-8 h-12 data-[state=active]:bg-primary data-[state=active]:text-white font-bold text-[10px] uppercase tracking-widest transition-all">
             <Layers className="mr-2 h-4 w-4" /> 顶栏物理材质
           </TabsTrigger>
@@ -133,7 +133,7 @@ export default function NavigationSettingsPage() {
         </TabsList>
 
         <TabsContent value="navbar" className="space-y-6 outline-none">
-          <Card className="rounded-[2.5rem] border-border/40 bg-white/60 backdrop-blur-xl overflow-hidden shadow-sm">
+          <Card className="rounded-[2.5rem] border-border/40 bg-card/60 backdrop-blur-xl overflow-hidden shadow-sm">
             <CardHeader className="p-10 pb-6">
               <CardTitle className="text-lg font-headline font-bold text-primary flex items-center gap-3">
                 <Layers className="h-5 w-5" /> 材质与深度控制 (Material & Depth)
@@ -149,7 +149,7 @@ export default function NavigationSettingsPage() {
                       <div 
                         className={cn(
                           "p-4 rounded-2xl border-2 transition-all cursor-pointer",
-                          settings.navbarMaterial === 'level-02' ? "border-primary bg-primary/5" : "border-border/40 bg-white/40 opacity-50"
+                          settings.navbarMaterial === 'level-02' ? "border-primary bg-primary/5" : "border-border/40 bg-muted/20 opacity-50"
                         )}
                         onClick={() => updateSetting('navbarMaterial', 'level-02')}
                       >
@@ -159,11 +159,11 @@ export default function NavigationSettingsPage() {
                       <div 
                         className={cn(
                           "p-4 rounded-2xl border-2 transition-all cursor-pointer",
-                          settings.navbarMaterial === 'level-03' ? "border-primary bg-primary/5" : "border-border/40 bg-white/40 opacity-50"
+                          settings.navbarMaterial === 'level-03' ? "border-primary bg-primary/5" : "border-border/40 bg-muted/20 opacity-50"
                         )}
                         onClick={() => updateSetting('navbarMaterial', 'level-03')}
                       >
-                        <p className="text-[10px] font-bold text-slate-600 uppercase">Level 03: Deep</p>
+                        <p className="text-[10px] font-bold text-foreground uppercase">Level 03: Deep</p>
                         <p className="text-[9px] text-muted-foreground mt-1">40px Blur / 80% Opacity</p>
                       </div>
                     </div>
@@ -217,7 +217,7 @@ export default function NavigationSettingsPage() {
         </TabsContent>
 
         <TabsContent value="mega-menu" className="space-y-6 outline-none">
-          <Card className="rounded-[2.5rem] border-border/40 bg-white/60 backdrop-blur-xl overflow-hidden shadow-sm">
+          <Card className="rounded-[2.5rem] border-border/40 bg-card/60 backdrop-blur-xl overflow-hidden shadow-sm">
             <CardHeader className="p-10 pb-6">
               <CardTitle className="text-lg font-headline font-bold text-primary flex items-center gap-3">
                 <LayoutGrid className="h-5 w-5" /> 巨型菜单排版 (Architecture)
@@ -232,7 +232,7 @@ export default function NavigationSettingsPage() {
                        type="number" 
                        value={settings.megaMenuColumns} 
                        onChange={(e) => updateSetting('megaMenuColumns', parseInt(e.target.value))}
-                       className="h-12 rounded-xl bg-white border-border/40 font-bold" 
+                       className="h-12 rounded-xl bg-card border-border/40 font-bold text-foreground" 
                      />
                   </div>
                   <div className="space-y-2">
@@ -241,12 +241,12 @@ export default function NavigationSettingsPage() {
                        type="number" 
                        value={settings.megaMenuGap} 
                        onChange={(e) => updateSetting('megaMenuGap', parseInt(e.target.value))}
-                       className="h-12 rounded-xl bg-white border-border/40 font-bold" 
+                       className="h-12 rounded-xl bg-card border-border/40 font-bold text-foreground" 
                      />
                   </div>
                   <div className="space-y-2">
                      <Label className="text-[10px] font-bold uppercase tracking-widest text-primary/60">比例分配 (Ratio)</Label>
-                     <div className="h-12 rounded-xl bg-white border border-border/40 flex items-center px-4 font-bold text-xs text-primary">8 : 4 (Standard)</div>
+                     <div className="h-12 rounded-xl bg-card border border-border/40 flex items-center px-4 font-bold text-xs text-primary">8 : 4 (Standard)</div>
                   </div>
                </div>
             </CardContent>
@@ -254,7 +254,7 @@ export default function NavigationSettingsPage() {
         </TabsContent>
 
         <TabsContent value="featured" className="space-y-6 outline-none">
-          <Card className="rounded-[2.5rem] border-border/40 bg-white/60 backdrop-blur-xl overflow-hidden shadow-sm">
+          <Card className="rounded-[2.5rem] border-border/40 bg-card/60 backdrop-blur-xl overflow-hidden shadow-sm">
             <CardHeader className="p-10 pb-6">
               <CardTitle className="text-lg font-headline font-bold text-primary flex items-center gap-3">
                 <Sparkles className="h-5 w-5" /> 主推板块设置 (Featured Promo)
@@ -286,7 +286,7 @@ export default function NavigationSettingsPage() {
                             </>
                           ) : (
                             <>
-                              <div className="h-16 w-16 rounded-2xl bg-white shadow-sm flex items-center justify-center text-muted-foreground group-hover:scale-110 transition-transform">
+                              <div className="h-16 w-16 rounded-2xl bg-card shadow-sm flex items-center justify-center text-muted-foreground group-hover:scale-110 transition-transform">
                                 <ImageIcon className="h-8 w-8" />
                               </div>
                               <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">点击上传封面图</p>
@@ -302,7 +302,7 @@ export default function NavigationSettingsPage() {
                       <Input 
                         value={settings.featuredText} 
                         onChange={(e) => updateSetting('featuredText', e.target.value)}
-                        className="h-12 rounded-xl border-border/40 font-bold" 
+                        className="h-12 rounded-xl border-border/40 font-bold bg-card text-foreground" 
                       />
                     </div>
                     <div className="space-y-2">
@@ -311,7 +311,7 @@ export default function NavigationSettingsPage() {
                         <Input 
                           value={settings.featuredDownloadUrl} 
                           onChange={(e) => updateSetting('featuredDownloadUrl', e.target.value)}
-                          className="h-12 rounded-xl border-border/40 font-bold pl-12" 
+                          className="h-12 rounded-xl border-border/40 font-bold pl-12 bg-card text-foreground" 
                         />
                         <ExternalLink className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-primary/40" />
                       </div>
@@ -326,7 +326,7 @@ export default function NavigationSettingsPage() {
                       <div className="absolute top-0 right-0 w-32 h-32 bg-primary/5 rounded-full blur-2xl -mr-16 -mt-16" />
                       
                       <div className="relative z-10 space-y-6 flex flex-col h-full">
-                        <div className="relative aspect-[4/3] rounded-2xl overflow-hidden border border-white/10 shadow-sm bg-white">
+                        <div className="relative aspect-[4/3] rounded-2xl overflow-hidden border border-border/10 shadow-sm bg-muted/20">
                           <Image 
                             src={getAssetUrl(settings.featuredCoverUrl || "/image/catalog-placeholder.png")} 
                             alt="Preview" 

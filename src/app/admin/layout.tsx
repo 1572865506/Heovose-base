@@ -1,6 +1,7 @@
 
 "use client";
 
+
 import { useEffect, useState } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
 import { useSession, signOut } from 'next-auth/react';
@@ -44,8 +45,12 @@ import {
   Star,
   Compass,
   MessageSquare,
-  FolderOpen
+  FolderOpen,
+  User,
+  Bell,
+  Search
 } from 'lucide-react';
+import { ThemeToggle } from '@/components/admin/ThemeToggle';
 import Link from 'next/link';
 import Image from 'next/image';
 import { Button } from '@/components/ui/button';
@@ -149,14 +154,45 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
   if (isDeterminingAccess) {
     return (
-      <div className="h-screen flex items-center justify-center bg-muted/10 relative overflow-hidden">
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-primary/5 via-transparent to-transparent opacity-50" />
-        <div className="flex flex-col items-center gap-4 relative z-10">
-          <div className="relative">
-            <div className="h-12 w-12 rounded-2xl border-2 border-primary/20 animate-[spin_3s_linear_infinite]" />
-            <div className="absolute inset-0 h-12 w-12 rounded-2xl border-t-2 border-primary animate-spin" />
+      <div className="h-screen flex items-center justify-center bg-background relative overflow-hidden">
+        {/* 极光背景 */}
+        <div className="absolute top-[-30%] right-[-10%] w-[700px] h-[700px] rounded-full bg-primary/[0.04] blur-[160px] animate-[pulse_5s_ease-in-out_infinite]" />
+        <div className="absolute bottom-[-30%] left-[-10%] w-[600px] h-[600px] rounded-full bg-accent/[0.03] blur-[140px] animate-[pulse_6s_ease-in-out_infinite_1s]" />
+        <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-[0.012] brightness-100 contrast-150" />
+
+        <div className="flex flex-col items-center gap-10 relative z-10">
+          {/* 7个渐变圆点流光加载动画 */}
+          <div className="flex items-center justify-center gap-3.5 h-12">
+            {[
+              { color: '#3b82f6', shadow: 'rgba(59, 130, 246, 0.6)' }, // 蓝
+              { color: '#6366f1', shadow: 'rgba(99, 102, 241, 0.6)' }, // 蓝紫
+              { color: '#8b5cf6', shadow: 'rgba(139, 92, 246, 0.6)' }, // 紫
+              { color: '#ec4899', shadow: 'rgba(236, 72, 153, 0.6)' }, // 粉
+              { color: '#ef4444', shadow: 'rgba(239, 68, 68, 0.6)' },  // 红
+              { color: '#f97316', shadow: 'rgba(249, 115, 22, 0.6)' },  // 橙
+              { color: '#eab308', shadow: 'rgba(234, 179, 8, 0.6)' },  // 黄
+            ].map((dot, idx) => (
+              <div
+                key={idx}
+                className="admin-dot-loader-item rounded-full"
+                style={{
+                  width: '8px',
+                  height: '8px',
+                  backgroundColor: dot.color,
+                  '--dot-shadow': dot.shadow,
+                  animationDelay: `${idx * 0.15}s`,
+                } as React.CSSProperties}
+              />
+            ))}
           </div>
-          <p className="text-xs font-bold text-primary uppercase tracking-[0.25em] animate-pulse">令牌验证中 / AUTHENTICATING</p>
+
+          {/* 文字 */}
+          <div className="flex flex-col items-center gap-2">
+            <div className="flex items-center gap-2">
+              <p className="text-[10px] font-black text-primary/70 uppercase tracking-[0.4em]">令牌验证中</p>
+            </div>
+            <p className="text-[9px] font-bold uppercase tracking-[0.3em] text-muted-foreground/30">Authenticating Session</p>
+          </div>
         </div>
       </div>
     );
@@ -164,9 +200,9 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
   if (isUnauthorized) {
     return (
-      <div className="h-screen flex items-center justify-center bg-muted/20 p-6 relative overflow-hidden">
+      <div className="h-screen flex items-center justify-center bg-black p-6 relative overflow-hidden admin-interface-dark">
         <div className="absolute inset-0 bg-[conic-gradient(from_0deg_at_50%_50%,rgba(0,91,153,0.03)_0%,transparent_100%)]" />
-        <Alert variant="destructive" className="max-w-xl bg-white/80 backdrop-blur-2xl border-destructive/20 shadow-[0_50px_100px_-20px_rgba(220,38,38,0.1)] rounded-[2.5rem] p-10 relative z-10">
+        <Alert variant="destructive" className="max-w-xl bg-card/80 backdrop-blur-2xl border-destructive/20 shadow-[0_50px_100px_-20px_rgba(220,38,38,0.1)] rounded-[2.5rem] p-10 relative z-10">
           <div className="flex items-center gap-4 mb-8">
             <div className="h-14 w-14 rounded-2xl bg-destructive/10 flex items-center justify-center">
               <ShieldCheck className="h-8 w-8 text-destructive" />
@@ -190,7 +226,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
               <div className="space-y-4">
                 <div className="space-y-2">
                   <span className="text-[9px] text-muted-foreground font-bold uppercase tracking-widest">您的唯一身份标识 (ID)</span>
-                  <div className="flex items-center justify-between bg-white/60 border border-primary/10 p-3 rounded-xl group hover:border-primary/40 transition-all">
+                  <div className="flex items-center justify-between bg-muted/20 border border-primary/10 p-3 rounded-xl group hover:border-primary/40 transition-all">
                     <code className="text-[11px] font-mono text-primary font-bold tracking-tight">{user?.id}</code>
                     <Button 
                       variant="ghost" 
@@ -226,7 +262,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
   return (
     <SidebarProvider>
-      <div className="flex h-screen w-full bg-[#f8fafc] overflow-hidden selection:bg-primary/10">
+      <div className="flex h-screen w-full bg-background overflow-hidden selection:bg-primary/10">
         {/* 背景装饰 */}
         <div className="fixed inset-0 pointer-events-none z-0">
           <div className="absolute top-0 right-0 w-[600px] h-[600px] bg-primary/[0.03] rounded-full blur-[120px] -translate-y-1/2 translate-x-1/3" />
@@ -234,7 +270,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-[0.015] brightness-100 contrast-150" />
         </div>
 
-        <Sidebar collapsible="icon" className="border-r border-border/40 shadow-[20px_0_40px_-20px_rgba(0,0,0,0.03)] bg-white/80 backdrop-blur-xl shrink-0 z-40">
+        <Sidebar collapsible="icon" className="border-r border-border/40 shadow-[20px_0_40px_-20px_rgba(0,0,0,0.03)] bg-background/80 backdrop-blur-xl shrink-0 z-40">
           <SidebarHeader className="h-16 flex items-center justify-center border-b border-border/40">
             <Link href="/admin" className="flex items-center justify-center gap-3 w-full px-4 overflow-hidden">
               <div className="flex-shrink-0 flex items-center justify-center">
@@ -251,8 +287,8 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                 )}
               </div>
               <div className="flex flex-col justify-center leading-tight">
-                <span className="text-[13px] font-bold text-slate-900 whitespace-nowrap tracking-wider">后台</span>
-                <span className="text-[13px] font-bold text-slate-900 whitespace-nowrap tracking-wider">系统</span>
+                <span className="text-[13px] font-bold text-foreground whitespace-nowrap tracking-wider">后台</span>
+                <span className="text-[13px] font-bold text-foreground whitespace-nowrap tracking-wider">系统</span>
               </div>
             </Link>
           </SidebarHeader>
@@ -281,14 +317,14 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                             <Link href={item.href} className={cn(
                               "flex items-center gap-3 px-4 py-2.5 transition-all duration-500 rounded-xl relative group/item overflow-hidden",
                               "group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:px-0 group-data-[collapsible=icon]:gap-0",
-                              isActive
+                               isActive
                                 ? "!bg-primary !text-white shadow-xl shadow-primary/30 font-bold translate-x-1 group-data-[collapsible=icon]:translate-x-0" 
-                                : "text-slate-600 hover:bg-primary/5 hover:text-primary hover:translate-x-1 group-data-[collapsible=icon]:hover:translate-x-0"
+                                : "text-foreground/70 hover:bg-primary/5 hover:text-primary hover:translate-x-1 group-data-[collapsible=icon]:hover:translate-x-0"
                             )}>
                               {isActive && (
                                 <div className="absolute left-0 top-2 bottom-2 w-1 bg-accent rounded-r-full shadow-[0_0_10px_rgba(252,220,0,0.8)]" />
                               )}
-                              <item.icon className={cn("h-4 w-4 shrink-0 transition-all duration-500 group-hover/item:scale-110", isActive ? "!text-white drop-shadow-sm" : "text-slate-400 group-hover/item:text-primary")} />
+                              <item.icon className={cn("h-4 w-4 shrink-0 transition-all duration-500 group-hover/item:scale-110", isActive ? "!text-white drop-shadow-sm" : "text-muted-foreground group-hover/item:text-primary")} />
                               <span className="text-sm font-medium tracking-tight group-data-[collapsible=icon]:hidden">{item.title}</span>
                               {isActive && (
                                 <div className="absolute right-3 h-1 w-1 rounded-full bg-accent animate-pulse shadow-[0_0_8px_rgba(252,220,0,0.6)] group-data-[collapsible=icon]:hidden" />
@@ -313,7 +349,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         </Sidebar>
 
         <main className="flex-1 flex flex-col min-w-0 w-full h-screen overflow-hidden relative z-10">
-          <header className="h-16 border-b border-border/40 bg-white/60 backdrop-blur-xl flex items-center justify-between px-8 shrink-0 z-50">
+          <header className="h-16 border-b border-border/40 bg-background/60 backdrop-blur-xl flex items-center justify-between px-8 shrink-0 z-50">
             <div className="flex items-center gap-5">
               <SidebarTrigger className="h-10 w-10 rounded-xl hover:bg-primary/5 text-primary transition-colors" />
               <div className="h-6 w-px bg-border/60" />
@@ -330,7 +366,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                   aiStatus === 'success' ? "bg-green-50/50 border-green-200/50 text-green-700 hover:bg-green-100/50 shadow-sm" : 
                   aiStatus === 'quota' ? "bg-orange-50/50 border-orange-200/50 text-orange-700 hover:bg-orange-100/50" : 
                   aiStatus === 'failed' ? "bg-destructive/5 border-destructive/10 text-destructive" : 
-                  "bg-white/50 border-border/40 text-muted-foreground hover:bg-white hover:shadow-md"
+                  "bg-background/50 border-border/40 text-muted-foreground hover:bg-background hover:shadow-md"
                 )}>
                   {aiStatus === 'success' ? (
                     <div className="relative">
@@ -346,7 +382,10 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                   </span>
                 </Button>
               </Link>
-
+              <div className="h-6 w-px bg-border/60 hidden md:block" />
+              
+              <ThemeToggle />
+              
               <div className="h-6 w-px bg-border/60 hidden md:block" />
 
               <DropdownMenu modal={false}>
@@ -357,17 +396,17 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                       <span className="text-xs text-muted-foreground uppercase tracking-[0.15em] font-bold opacity-40">{(adminData as any).role === 'superadmin' ? 'SuperAdmin' : 'Editor'}</span>
                     </div>
                     <div className="relative">
-                      <Avatar className="h-10 w-10 rounded-2xl shadow-lg border border-border/40 ring-0 group-data-[state=open]:ring-4 group-data-[state=open]:ring-primary/10 transition-all overflow-hidden bg-white">
+                      <Avatar className="h-10 w-10 rounded-2xl shadow-lg border border-border/40 ring-0 group-data-[state=open]:ring-4 group-data-[state=open]:ring-primary/10 transition-all overflow-hidden bg-background">
                         {adminData.image ? <AvatarImage src={getAssetUrl(adminData.image)} className="object-cover" /> : null}
                         <AvatarFallback className="bg-primary/5 text-primary text-xs font-bold uppercase">
                           {(adminData.name || user?.email)?.[0]}
                         </AvatarFallback>
                       </Avatar>
-                      <div className="absolute -bottom-1 -right-1 h-3 w-3 bg-green-500 border-2 border-white rounded-full shadow-sm" />
+                      <div className="absolute -bottom-1 -right-1 h-3 w-3 bg-green-500 border-2 border-background rounded-full shadow-sm" />
                     </div>
                   </button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" sideOffset={16} className="w-64 p-2 rounded-2xl shadow-[0_30px_60px_-15px_rgba(0,0,0,0.15)] border-border/40 bg-white/90 backdrop-blur-2xl ring-1 ring-black/5">
+                <DropdownMenuContent align="end" sideOffset={16} className="w-64 p-2 rounded-2xl shadow-[0_30px_60px_-15px_rgba(0,0,0,0.15)] border-border/40 bg-background/90 backdrop-blur-2xl ring-1 ring-black/5">
                   <DropdownMenuLabel className="px-4 py-4">
                     <div className="flex flex-col space-y-1">
                       <p className="text-[12px] font-bold text-primary">{adminData.name || 'Administrator'}</p>
@@ -375,20 +414,20 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                     </div>
                   </DropdownMenuLabel>
                   <DropdownMenuSeparator className="mx-2 bg-border/40" />
-                  <DropdownMenuItem asChild className="rounded-xl px-4 py-3 cursor-pointer focus:bg-primary/5 focus:text-primary transition-colors">
+                  <DropdownMenuItem asChild className="rounded-xl px-4 py-3 cursor-pointer transition-colors">
                     <Link href="/admin/profile" className="flex items-center gap-4">
                       <UserCircle className="h-4 w-4" />
                       <span className="text-xs font-bold uppercase tracking-widest">个人资料</span>
                     </Link>
                   </DropdownMenuItem>
-                  <DropdownMenuItem asChild className="rounded-xl px-4 py-3 cursor-pointer focus:bg-primary/5 focus:text-primary transition-colors">
+                  <DropdownMenuItem asChild className="rounded-xl px-4 py-3 cursor-pointer transition-colors">
                     <Link href="/admin/settings" className="flex items-center gap-4">
                       <Settings className="h-4 w-4" />
                       <span className="text-xs font-bold uppercase tracking-widest">系统运维</span>
                     </Link>
                   </DropdownMenuItem>
                   <DropdownMenuSeparator className="mx-2 bg-border/40" />
-                  <DropdownMenuItem className="rounded-xl px-4 py-3 cursor-pointer text-destructive focus:bg-destructive/5 focus:text-destructive transition-colors" onClick={() => signOut()}>
+                  <DropdownMenuItem className="rounded-xl px-4 py-3 cursor-pointer text-destructive focus:bg-destructive/15 data-[highlighted]:bg-destructive/15 focus:text-destructive data-[highlighted]:text-destructive transition-colors" onClick={() => signOut()}>
                     <div className="flex items-center gap-4">
                       <LogOut className="h-4 w-4" />
                       <span className="text-xs font-bold uppercase tracking-widest">注销登录</span>

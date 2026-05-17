@@ -89,6 +89,15 @@ export function ShinyButton({
           transition-property: --gradient-angle-offset, --gradient-percent, --gradient-shine, border-radius;
         }
 
+        :global(.admin-interface-dark) .shiny-cta,
+        :global(.dark) .shiny-cta {
+          --shiny-cta-bg: #090e16;
+          --shiny-cta-bg-subtle: #121824;
+          --shiny-cta-fg: #38bdf8;
+          --shiny-cta-highlight: #818cf8;
+          --shiny-cta-highlight-subtle: #6366f1;
+        }
+
         .shiny-cta.shape-capsule {
           border-radius: 360px;
         }
@@ -106,6 +115,15 @@ export function ShinyButton({
             linear-gradient(#e5e7eb, #e5e7eb) border-box;
           box-shadow: none;
           opacity: 0.8;
+        }
+
+        :global(.admin-interface-dark) .shiny-cta:disabled,
+        :global(.dark) .shiny-cta:disabled {
+          --shiny-cta-bg: #111827;
+          --shiny-cta-bg-subtle: #1f2937;
+          --shiny-cta-fg: #4b5563;
+          background: linear-gradient(var(--shiny-cta-bg), var(--shiny-cta-bg)) padding-box,
+            linear-gradient(#1f2937, #1f2937) border-box;
         }
 
         .shiny-cta::before,

@@ -97,7 +97,7 @@ export default function ProfilePage() {
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
         <div className="lg:col-span-8 space-y-6">
-          <Card className="rounded-2xl border-border/40 shadow-sm overflow-hidden bg-white">
+          <Card className="rounded-2xl border-border/40 shadow-sm overflow-hidden bg-card">
             <div className="bg-primary/5 p-6 border-b border-border/20">
                <div className="flex items-center gap-6">
                  <div 
@@ -105,7 +105,7 @@ export default function ProfilePage() {
                    onClick={() => setIsLibraryOpen(true)}
                    title="从素材库选择头像"
                  >
-                    <Avatar className="h-20 w-20 rounded-2xl border-2 border-white shadow-xl transition-transform group-hover:scale-95">
+                    <Avatar className="h-20 w-20 rounded-2xl border-2 border-card shadow-xl transition-transform group-hover:scale-95">
                       {formData.avatarUrl ? <AvatarImage src={getAssetUrl(formData.avatarUrl)} className="object-cover" /> : null}
                       <AvatarFallback className="bg-primary/10 text-primary text-xl font-bold uppercase">
                         {(formData.displayName || user?.email)?.[0]}
@@ -176,7 +176,7 @@ export default function ProfilePage() {
         </div>
 
         <div className="lg:col-span-4 space-y-6">
-          <Card className="rounded-2xl border-border/40 shadow-sm bg-white">
+          <Card className="rounded-2xl border-border/40 shadow-sm bg-card">
             <CardHeader className="pb-2">
               <CardTitle className="text-xs font-bold text-primary uppercase tracking-widest flex items-center gap-2">
                 <Info className="h-4 w-4" /> 头像更换方式
@@ -184,8 +184,8 @@ export default function ProfilePage() {
             </CardHeader>
             <CardContent className="space-y-4 pt-2">
                <div className="flex gap-3">
-                  <div className="h-8 w-8 rounded-full bg-blue-50 flex items-center justify-center shrink-0">
-                    <ImageIcon className="h-4 w-4 text-blue-600" />
+                  <div className="h-8 w-8 rounded-full bg-blue-500/10 flex items-center justify-center shrink-0">
+                    <ImageIcon className="h-4 w-4 text-blue-400" />
                   </div>
                   <div className="space-y-1">
                      <p className="text-[10px] font-bold">统一素材库</p>
@@ -193,8 +193,8 @@ export default function ProfilePage() {
                   </div>
                </div>
                <div className="flex gap-3">
-                  <div className="h-8 w-8 rounded-full bg-orange-50 flex items-center justify-center shrink-0">
-                    <Camera className="h-4 w-4 text-orange-600" />
+                  <div className="h-8 w-8 rounded-full bg-orange-500/10 flex items-center justify-center shrink-0">
+                    <Camera className="h-4 w-4 text-orange-400" />
                   </div>
                   <div className="space-y-1">
                      <p className="text-[10px] font-bold">即时同步</p>

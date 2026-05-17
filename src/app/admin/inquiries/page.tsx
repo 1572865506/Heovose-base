@@ -216,8 +216,8 @@ export default function InquiriesPage() {
     <div className="space-y-8 animate-in fade-in duration-700">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
         <div>
-          <h2 className="text-3xl font-headline font-bold text-slate-900">询盘管理</h2>
-          <p className="text-sm text-slate-500 font-medium mt-1">查看并处理来自全球客户的商务咨询与采购需求。</p>
+          <h2 className="text-3xl font-headline font-bold text-slate-900 admin-interface-dark:text-white">询盘管理</h2>
+          <p className="text-sm text-slate-500 font-medium mt-1 admin-interface-dark:text-slate-400">查看并处理来自全球客户的商务咨询与采购需求。</p>
         </div>
         
         <div className="flex items-center gap-4">
@@ -230,27 +230,27 @@ export default function InquiriesPage() {
                 setSearchTerm(e.target.value);
                 setCurrentPage(1); // Reset to first page on search
               }}
-              className="pl-11 h-12 rounded-2xl bg-white border-slate-200 shadow-sm focus-visible:ring-primary/20 transition-all"
+              className="pl-11 h-12 rounded-2xl bg-white border-slate-200 shadow-sm focus-visible:ring-primary/20 transition-all admin-interface-dark:bg-slate-900/50 admin-interface-dark:border-slate-800 admin-interface-dark:text-white admin-interface-dark:placeholder:text-slate-500"
             />
           </div>
           <Button 
             variant="outline" 
             onClick={handleExport}
-            className="h-12 rounded-2xl gap-2 font-bold px-6 border-slate-200 hover:bg-slate-50 transition-all text-slate-600"
+            className="h-12 rounded-2xl gap-2 font-bold px-6 border-slate-200 hover:bg-slate-50 transition-all text-slate-600 admin-interface-dark:border-slate-800 admin-interface-dark:hover:bg-slate-800/50 admin-interface-dark:text-slate-300"
           >
             <Download className="h-4 w-4" /> 导出 Excel
           </Button>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="outline" className={cn(
-                "h-12 rounded-2xl gap-2 font-bold px-6 border-slate-200 hover:bg-slate-50 transition-all",
+                "h-12 rounded-2xl gap-2 font-bold px-6 border-slate-200 hover:bg-slate-50 transition-all admin-interface-dark:border-slate-800 admin-interface-dark:hover:bg-slate-800/50 admin-interface-dark:text-slate-300",
                 statusFilter !== 'all' && "border-primary text-primary bg-primary/5"
               )}>
                 <Filter className="h-4 w-4" />
                 {statusFilter === 'all' ? '筛选' : statusFilter === 'pending' ? '待处理' : '已处理'}
               </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-48 rounded-2xl p-2 border-slate-100 shadow-xl">
+            <DropdownMenuContent align="end" className="w-48 rounded-2xl p-2 border-slate-100 shadow-xl admin-interface-dark:bg-slate-950 admin-interface-dark:border-slate-900">
               <DropdownMenuCheckboxItem 
                 checked={statusFilter === 'all'}
                 onCheckedChange={() => {
@@ -261,14 +261,14 @@ export default function InquiriesPage() {
               >
                 全部询盘
               </DropdownMenuCheckboxItem>
-              <DropdownMenuSeparator className="bg-slate-50" />
+              <DropdownMenuSeparator className="bg-slate-50 admin-interface-dark:bg-slate-900" />
               <DropdownMenuCheckboxItem 
                 checked={statusFilter === 'pending'}
                 onCheckedChange={() => {
                   setStatusFilter('pending');
                   setCurrentPage(1);
                 }}
-                className="rounded-xl font-medium text-orange-600 focus:text-orange-600"
+                className="rounded-xl font-medium text-orange-600 focus:text-orange-600 admin-interface-dark:text-orange-400 admin-interface-dark:focus:text-orange-400"
               >
                 待处理
               </DropdownMenuCheckboxItem>
@@ -278,7 +278,7 @@ export default function InquiriesPage() {
                   setStatusFilter('processed');
                   setCurrentPage(1);
                 }}
-                className="rounded-xl font-medium text-green-600 focus:text-green-600"
+                className="rounded-xl font-medium text-green-600 focus:text-green-600 admin-interface-dark:text-green-400 admin-interface-dark:focus:text-green-400"
               >
                 已处理
               </DropdownMenuCheckboxItem>
@@ -287,23 +287,23 @@ export default function InquiriesPage() {
           <Button 
             variant="outline" 
             onClick={() => setIsSettingsOpen(true)}
-            className="h-12 w-12 rounded-2xl p-0 border-slate-200 hover:bg-slate-50 transition-all"
+            className="h-12 w-12 rounded-2xl p-0 border-slate-200 hover:bg-slate-50 transition-all admin-interface-dark:border-slate-800 admin-interface-dark:hover:bg-slate-800/50 admin-interface-dark:text-slate-300"
           >
             <Settings className="h-4 w-4" />
           </Button>
         </div>
       </div>
 
-      <div className="bg-white rounded-[2.5rem] border border-slate-100 shadow-[0_32px_64px_-12px_rgba(0,0,0,0.05)] overflow-hidden">
+      <div className="bg-white rounded-[2.5rem] border border-slate-100 shadow-[0_32px_64px_-12px_rgba(0,0,0,0.05)] overflow-hidden admin-interface-dark:bg-slate-950/40 admin-interface-dark:border-slate-900">
         <Table>
-          <TableHeader className="bg-slate-50/50">
-            <TableRow className="hover:bg-transparent border-slate-100">
-              <TableHead className="w-[240px] py-4 px-8 text-[10px] font-bold uppercase tracking-widest text-slate-400">客户信息</TableHead>
-              <TableHead className="max-w-[300px] py-4 text-[10px] font-bold uppercase tracking-widest text-slate-400">公司/主题</TableHead>
-              <TableHead className="py-4 text-[10px] font-bold uppercase tracking-widest text-slate-400 text-center">状态</TableHead>
-              <TableHead className="py-4 text-[10px] font-bold uppercase tracking-widest text-slate-400 text-center">邮件状态</TableHead>
-              <TableHead className="py-4 text-[10px] font-bold uppercase tracking-widest text-slate-400">日期</TableHead>
-              <TableHead className="w-[100px] py-4 px-8 text-right text-[10px] font-bold uppercase tracking-widest text-slate-400">操作</TableHead>
+          <TableHeader className="bg-slate-50/50 admin-interface-dark:bg-slate-900/30">
+            <TableRow className="hover:bg-transparent border-slate-100 admin-interface-dark:border-slate-900">
+              <TableHead className="w-[240px] py-4 px-8 text-[10px] font-bold uppercase tracking-widest text-slate-400 admin-interface-dark:text-slate-500">客户信息</TableHead>
+              <TableHead className="max-w-[300px] py-4 text-[10px] font-bold uppercase tracking-widest text-slate-400 admin-interface-dark:text-slate-500">公司/主题</TableHead>
+              <TableHead className="py-4 text-[10px] font-bold uppercase tracking-widest text-slate-400 admin-interface-dark:text-slate-500 text-center">状态</TableHead>
+              <TableHead className="py-4 text-[10px] font-bold uppercase tracking-widest text-slate-400 admin-interface-dark:text-slate-500 text-center">邮件状态</TableHead>
+              <TableHead className="py-4 text-[10px] font-bold uppercase tracking-widest text-slate-400 admin-interface-dark:text-slate-500">日期</TableHead>
+              <TableHead className="w-[100px] py-4 px-8 text-right text-[10px] font-bold uppercase tracking-widest text-slate-400 admin-interface-dark:text-slate-500">操作</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -312,7 +312,7 @@ export default function InquiriesPage() {
                 <TableCell colSpan={5} className="h-64 text-center">
                   <div className="flex flex-col items-center justify-center gap-4">
                     <Loader2 className="h-8 w-8 animate-spin text-primary/20" />
-                    <p className="text-xs font-bold text-slate-300 uppercase tracking-widest">数据加载中...</p>
+                    <p className="text-xs font-bold text-slate-300 uppercase tracking-widest admin-interface-dark:text-slate-700">数据加载中...</p>
                   </div>
                 </TableCell>
               </TableRow>
@@ -320,33 +320,33 @@ export default function InquiriesPage() {
               <TableRow>
                 <TableCell colSpan={5} className="h-64 text-center">
                   <div className="flex flex-col items-center justify-center gap-4">
-                    <div className="h-16 w-16 rounded-3xl bg-slate-50 flex items-center justify-center">
-                      <MessageSquare className="h-8 w-8 text-slate-200" />
+                    <div className="h-16 w-16 rounded-3xl bg-slate-50 flex items-center justify-center admin-interface-dark:bg-slate-900/50">
+                      <MessageSquare className="h-8 w-8 text-slate-200 admin-interface-dark:text-slate-800" />
                     </div>
-                    <p className="text-sm font-medium text-slate-400">暂无询盘记录</p>
+                    <p className="text-sm font-medium text-slate-400 admin-interface-dark:text-slate-600">暂无询盘记录</p>
                   </div>
                 </TableCell>
               </TableRow>
             ) : (
               paginatedInquiries.map((inquiry: any) => (
-                <TableRow key={inquiry.id} className="group hover:bg-slate-50/50 transition-colors border-slate-100">
+                <TableRow key={inquiry.id} className="group hover:bg-slate-50/50 transition-colors border-slate-100 admin-interface-dark:hover:bg-slate-900/20 admin-interface-dark:border-slate-900">
                   <TableCell className="py-4 px-8">
                     <div className="flex flex-col">
-                      <span className="text-sm font-bold text-slate-900 group-hover:text-primary transition-colors">{inquiry.name}</span>
-                      <span className="text-xs text-slate-400 mt-1">{inquiry.email}</span>
+                      <span className="text-sm font-bold text-slate-900 group-hover:text-primary transition-colors admin-interface-dark:text-slate-100">{inquiry.name}</span>
+                      <span className="text-xs text-slate-400 mt-1 admin-interface-dark:text-slate-500">{inquiry.email}</span>
                     </div>
                   </TableCell>
                   <TableCell className="py-4">
                     <div className="flex flex-col max-w-[300px]">
-                      <span className="text-sm font-medium text-slate-700 truncate">{inquiry.company || '个人客户'}</span>
-                      <span className="text-xs text-slate-400 mt-1 truncate">{inquiry.message}</span>
+                      <span className="text-sm font-medium text-slate-700 truncate admin-interface-dark:text-slate-300">{inquiry.company || '个人客户'}</span>
+                      <span className="text-xs text-slate-400 mt-1 truncate admin-interface-dark:text-slate-500">{inquiry.message}</span>
                     </div>
                   </TableCell>
                   <TableCell className="py-4 text-center">
                     <Badge className={cn(
                       "rounded-full px-3 py-1 text-[10px] font-bold uppercase tracking-wider border-none shadow-sm pointer-events-none",
-                      inquiry.status === 'pending' ? "bg-orange-50 text-orange-600" :
-                      inquiry.status === 'processed' ? "bg-green-50 text-green-600" : "bg-slate-50 text-slate-400"
+                      inquiry.status === 'pending' ? "bg-orange-50 text-orange-600 admin-interface-dark:bg-orange-950/30 admin-interface-dark:text-orange-400" :
+                      inquiry.status === 'processed' ? "bg-green-50 text-green-600 admin-interface-dark:bg-green-950/30 admin-interface-dark:text-green-400" : "bg-slate-50 text-slate-400 admin-interface-dark:bg-slate-900/50 admin-interface-dark:text-slate-400"
                     )}>
                       {inquiry.status === 'pending' ? '待处理' : '已处理'}
                     </Badge>
@@ -354,13 +354,13 @@ export default function InquiriesPage() {
                   <TableCell className="py-4 text-center">
                     <Badge className={cn(
                       "rounded-full px-3 py-1 text-[10px] font-bold uppercase tracking-wider border-none shadow-sm",
-                      inquiry.emailViewedAt ? "bg-blue-50 text-blue-600 animate-pulse" : "bg-slate-50 text-slate-400"
+                      inquiry.emailViewedAt ? "bg-blue-50 text-blue-600 animate-pulse admin-interface-dark:bg-blue-950/30 admin-interface-dark:text-blue-400" : "bg-slate-50 text-slate-400 admin-interface-dark:bg-slate-900/50 admin-interface-dark:text-slate-400"
                     )}>
                       {inquiry.emailViewedAt ? '邮件已阅' : '尚未查阅'}
                     </Badge>
                   </TableCell>
                   <TableCell className="py-4">
-                    <span className="text-xs font-medium text-slate-400">
+                    <span className="text-xs font-medium text-slate-400 admin-interface-dark:text-muted-foreground">
                       {format(new Date(inquiry.createdAt), 'yyyy-MM-dd HH:mm')}
                     </span>
                   </TableCell>
@@ -372,7 +372,7 @@ export default function InquiriesPage() {
                         setSelectedInquiry(inquiry);
                         setIsDetailOpen(true);
                       }}
-                      className="h-10 w-10 rounded-xl hover:bg-primary/10 hover:text-primary transition-all"
+                      className="h-10 w-10 rounded-xl hover:bg-primary/15 hover:text-primary transition-all"
                     >
                       <Eye className="h-4 w-4" />
                     </Button>
@@ -385,8 +385,8 @@ export default function InquiriesPage() {
 
         {/* Pagination Controls */}
         {!isLoading && filteredInquiries.length > 0 && (
-          <div className="px-8 py-4 bg-slate-50/50 border-t border-slate-100 flex items-center justify-between">
-            <p className="text-xs font-bold text-slate-400 uppercase tracking-widest">
+          <div className="px-8 py-4 bg-slate-50/50 border-t border-slate-100 flex items-center justify-between admin-interface-dark:bg-slate-950/50 admin-interface-dark:border-slate-900">
+            <p className="text-xs font-bold text-slate-400 uppercase tracking-widest admin-interface-dark:text-slate-500">
               显示 {(currentPage - 1) * itemsPerPage + 1} - {Math.min(currentPage * itemsPerPage, filteredInquiries.length)} 共 {filteredInquiries.length} 条
             </p>
             <div className="flex items-center gap-2">
@@ -395,21 +395,21 @@ export default function InquiriesPage() {
                 size="icon"
                 disabled={currentPage === 1}
                 onClick={() => setCurrentPage(p => p - 1)}
-                className="h-10 w-10 rounded-xl border-slate-200 disabled:opacity-30"
+                className="h-10 w-10 rounded-xl border-slate-200 disabled:opacity-30 admin-interface-dark:border-slate-800 admin-interface-dark:hover:bg-slate-800/50 admin-interface-dark:text-slate-300"
               >
                 <ChevronLeft className="h-4 w-4" />
               </Button>
               <div className="flex items-center gap-1 px-2">
-                <span className="text-xs font-bold text-slate-900">{currentPage}</span>
-                <span className="text-xs font-bold text-slate-400">/</span>
-                <span className="text-xs font-bold text-slate-400">{totalPages}</span>
+                <span className="text-xs font-bold text-slate-900 admin-interface-dark:text-white">{currentPage}</span>
+                <span className="text-xs font-bold text-slate-400 admin-interface-dark:text-slate-600">/</span>
+                <span className="text-xs font-bold text-slate-400 admin-interface-dark:text-slate-600">{totalPages}</span>
               </div>
               <Button 
                 variant="outline" 
                 size="icon"
                 disabled={currentPage === totalPages}
                 onClick={() => setCurrentPage(p => p + 1)}
-                className="h-10 w-10 rounded-xl border-slate-200 disabled:opacity-30"
+                className="h-10 w-10 rounded-xl border-slate-200 disabled:opacity-30 admin-interface-dark:border-slate-800 admin-interface-dark:hover:bg-slate-800/50 admin-interface-dark:text-slate-300"
               >
                 <ChevronRight className="h-4 w-4" />
               </Button>
@@ -419,7 +419,7 @@ export default function InquiriesPage() {
       </div>
 
       <Dialog open={isDetailOpen} onOpenChange={setIsDetailOpen}>
-        <DialogContent className="max-w-3xl rounded-[2.5rem] p-0 overflow-hidden border-none shadow-2xl">
+        <DialogContent className="max-w-3xl rounded-[2.5rem] p-0 overflow-hidden border-none shadow-2xl admin-interface-dark:bg-slate-950 admin-interface-dark:border admin-interface-dark:border-slate-900">
           {selectedInquiry && (
             <div className="flex flex-col">
               <div className="bg-slate-900 p-10 text-white relative">
@@ -445,15 +445,15 @@ export default function InquiriesPage() {
                 </div>
               </div>
 
-              <div className="p-10 space-y-10 bg-white max-h-[70vh] overflow-y-auto scrollbar-minimal">
+              <div className="p-10 space-y-10 bg-white max-h-[70vh] overflow-y-auto scrollbar-minimal admin-interface-dark:bg-slate-950">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                   <div className="space-y-6">
                     <div className="space-y-3">
-                      <label className="text-[10px] font-bold uppercase tracking-widest text-slate-400 flex items-center gap-2 px-1">
+                      <label className="text-[10px] font-bold uppercase tracking-widest text-slate-400 flex items-center gap-2 px-1 admin-interface-dark:text-slate-500">
                         <Mail className="h-3 w-3 text-primary" /> 电子邮箱
                       </label>
-                      <div className="h-14 px-4 bg-slate-50 rounded-lg border border-slate-100 flex items-center justify-between group">
-                        <span className="text-sm font-medium text-slate-700 truncate mr-2">{selectedInquiry.email}</span>
+                      <div className="h-14 px-4 bg-slate-50 rounded-lg border border-slate-100 flex items-center justify-between group admin-interface-dark:bg-slate-900/50 admin-interface-dark:border-slate-800">
+                        <span className="text-sm font-medium text-slate-700 truncate mr-2 admin-interface-dark:text-slate-300">{selectedInquiry.email}</span>
                         <Button variant="ghost" size="icon" className="h-8 w-8 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0" onClick={() => window.open(`mailto:${selectedInquiry.email}`)}>
                           <ExternalLink className="h-3 w-3" />
                         </Button>
@@ -461,16 +461,16 @@ export default function InquiriesPage() {
                     </div>
 
                     <div className="space-y-3">
-                      <label className="text-[10px] font-bold uppercase tracking-widest text-slate-400 flex items-center gap-2 px-1">
+                      <label className="text-[10px] font-bold uppercase tracking-widest text-slate-400 flex items-center gap-2 px-1 admin-interface-dark:text-slate-500">
                         <Eye className="h-3 w-3 text-primary" /> 邮件查阅状态
                       </label>
                       <div className={cn(
                         "h-14 px-4 rounded-lg border flex items-center justify-between",
-                        selectedInquiry.emailViewedAt ? "bg-green-50 border-green-100" : "bg-slate-50 border-slate-100"
+                        selectedInquiry.emailViewedAt ? "bg-green-50 border-green-100 admin-interface-dark:bg-green-950/20 admin-interface-dark:border-green-900/30" : "bg-slate-50 border-slate-100 admin-interface-dark:bg-slate-900/50 admin-interface-dark:border-slate-800"
                       )}>
                         <div className="flex items-center gap-2">
                           <div className={cn("w-2 h-2 rounded-full", selectedInquiry.emailViewedAt ? "bg-green-500 animate-pulse" : "bg-slate-300")} />
-                          <span className={cn("text-sm font-bold uppercase tracking-tight", selectedInquiry.emailViewedAt ? "text-green-700" : "text-slate-400")}>
+                          <span className={cn("text-sm font-bold uppercase tracking-tight", selectedInquiry.emailViewedAt ? "text-green-700 admin-interface-dark:text-green-400" : "text-slate-400 admin-interface-dark:text-slate-500")}>
                             {selectedInquiry.emailViewedAt ? '邮件已查阅' : '邮件未查阅'}
                           </span>
                         </div>
@@ -485,29 +485,29 @@ export default function InquiriesPage() {
 
                   <div className="space-y-6">
                     <div className="space-y-3">
-                      <label className="text-[10px] font-bold uppercase tracking-widest text-slate-400 flex items-center gap-2 px-1">
+                      <label className="text-[10px] font-bold uppercase tracking-widest text-slate-400 flex items-center gap-2 px-1 admin-interface-dark:text-slate-500">
                         <Phone className="h-3 w-3 text-primary" /> 联系电话
                       </label>
-                      <div className="h-14 px-4 bg-slate-50 rounded-lg border border-slate-100 flex items-center">
-                        <span className="text-sm font-medium text-slate-700">{selectedInquiry.phone || '未提供'}</span>
+                      <div className="h-14 px-4 bg-slate-50 rounded-lg border border-slate-100 flex items-center admin-interface-dark:bg-slate-900/50 admin-interface-dark:border-slate-800">
+                        <span className="text-sm font-medium text-slate-700 admin-interface-dark:text-slate-300">{selectedInquiry.phone || '未提供'}</span>
                       </div>
                     </div>
 
                     <div className="space-y-3">
-                      <label className="text-[10px] font-bold uppercase tracking-widest text-slate-400 flex items-center gap-2 px-1">
+                      <label className="text-[10px] font-bold uppercase tracking-widest text-slate-400 flex items-center gap-2 px-1 admin-interface-dark:text-slate-500">
                         <Building2 className="h-3 w-3 text-primary" /> 公司名称
                       </label>
-                      <div className="h-14 px-4 bg-slate-50 rounded-lg border border-slate-100 flex items-center">
-                        <span className="text-sm font-medium text-slate-700 truncate">{selectedInquiry.company || '个人客户'}</span>
+                      <div className="h-14 px-4 bg-slate-50 rounded-lg border border-slate-100 flex items-center admin-interface-dark:bg-slate-900/50 admin-interface-dark:border-slate-800">
+                        <span className="text-sm font-medium text-slate-700 truncate admin-interface-dark:text-slate-300">{selectedInquiry.company || '个人客户'}</span>
                       </div>
                     </div>
 
                     <div className="space-y-3">
-                      <label className="text-[10px] font-bold uppercase tracking-widest text-slate-400 flex items-center gap-2 px-1">
+                      <label className="text-[10px] font-bold uppercase tracking-widest text-slate-400 flex items-center gap-2 px-1 admin-interface-dark:text-slate-500">
                         <Calendar className="h-3 w-3 text-primary" /> 提交时间
                       </label>
-                      <div className="h-14 px-4 bg-slate-50 rounded-lg border border-slate-100 flex items-center">
-                        <span className="text-sm font-medium text-slate-700">
+                      <div className="h-14 px-4 bg-slate-50 rounded-lg border border-slate-100 flex items-center admin-interface-dark:bg-slate-900/50 admin-interface-dark:border-slate-800">
+                        <span className="text-sm font-medium text-slate-700 admin-interface-dark:text-slate-300">
                           {format(new Date(selectedInquiry.createdAt), 'yyyy-MM-dd HH:mm:ss')}
                         </span>
                       </div>
@@ -515,26 +515,26 @@ export default function InquiriesPage() {
                   </div>
                 </div>
 
-                <div className="space-y-4 pt-4 border-t border-slate-100">
-                  <label className="text-[10px] font-bold uppercase tracking-widest text-slate-400 flex items-center gap-2 px-1">
+                <div className="space-y-4 pt-4 border-t border-slate-100 admin-interface-dark:border-slate-900">
+                  <label className="text-[10px] font-bold uppercase tracking-widest text-slate-400 flex items-center gap-2 px-1 admin-interface-dark:text-slate-500">
                     <MessageSquare className="h-3 w-3 text-primary" /> 咨询内容
                   </label>
-                  <div className="p-8 bg-slate-50 rounded-lg border border-slate-100">
-                    <p className="text-sm text-slate-600 leading-loose font-medium whitespace-pre-wrap">
+                  <div className="p-8 bg-slate-50 rounded-lg border border-slate-100 admin-interface-dark:bg-slate-900/50 admin-interface-dark:border-slate-800">
+                    <p className="text-sm text-slate-600 leading-loose font-medium whitespace-pre-wrap admin-interface-dark:text-slate-300">
                       {selectedInquiry.message}
                     </p>
                   </div>
                 </div>
 
                 {selectedInquiry.productId && (
-                  <div className="p-6 bg-primary/5 rounded-2xl border border-primary/10 flex items-center justify-between">
+                  <div className="p-6 bg-primary/5 rounded-2xl border border-primary/10 flex items-center justify-between admin-interface-dark:bg-primary/10 admin-interface-dark:border-primary/20">
                     <div className="flex items-center gap-4">
-                      <div className="h-10 w-10 rounded-xl bg-white flex items-center justify-center shadow-sm">
+                      <div className="h-10 w-10 rounded-xl bg-white flex items-center justify-center shadow-sm admin-interface-dark:bg-slate-900">
                         <Package className="h-5 w-5 text-primary" />
                       </div>
                       <div>
                         <p className="text-[10px] font-bold text-primary uppercase tracking-widest">关联产品 (Linked Product)</p>
-                        <p className="text-sm font-bold text-slate-900 mt-0.5">ID: {selectedInquiry.productId}</p>
+                        <p className="text-sm font-bold text-slate-900 mt-0.5 admin-interface-dark:text-slate-300">ID: {selectedInquiry.productId}</p>
                       </div>
                     </div>
                     <Button variant="ghost" size="sm" className="rounded-full text-[10px] font-bold uppercase tracking-widest hover:bg-primary/10 text-primary">
@@ -544,7 +544,7 @@ export default function InquiriesPage() {
                 )}
               </div>
 
-              <div className="p-10 border-t border-slate-100 bg-slate-50/50 flex flex-col md:flex-row items-center justify-between gap-6">
+              <div className="p-10 border-t border-slate-100 bg-slate-50/50 flex flex-col md:flex-row items-center justify-between gap-6 admin-interface-dark:border-slate-900 admin-interface-dark:bg-slate-950/50">
                 <Button 
                   variant="ghost" 
                   onClick={() => handleDelete(selectedInquiry.id)}
@@ -567,7 +567,7 @@ export default function InquiriesPage() {
                     <Button 
                       variant="outline"
                       onClick={() => handleStatusChange(selectedInquiry.id, 'pending')}
-                      className="h-12 px-8 rounded-full border-slate-200 text-slate-600 gap-2 font-bold uppercase tracking-widest text-[10px]"
+                      className="h-12 px-8 rounded-full border-slate-200 text-slate-600 gap-2 font-bold uppercase tracking-widest text-[10px] admin-interface-dark:border-slate-800 admin-interface-dark:text-slate-300 admin-interface-dark:hover:bg-slate-900"
                     >
                       <Clock className="h-4 w-4" />
                       设为待处理
@@ -581,7 +581,7 @@ export default function InquiriesPage() {
       </Dialog>
 
       <Dialog open={isSettingsOpen} onOpenChange={setIsSettingsOpen}>
-        <DialogContent className="max-w-2xl rounded-[2.5rem] p-0 overflow-hidden border-none shadow-2xl">
+        <DialogContent className="max-w-2xl rounded-[2.5rem] p-0 overflow-hidden border-none shadow-2xl admin-interface-dark:bg-slate-950 admin-interface-dark:border admin-interface-dark:border-slate-900">
           <div className="bg-slate-900 p-8 text-white relative overflow-hidden">
             <div className="absolute top-0 right-0 w-64 h-64 bg-primary/20 blur-[80px] rounded-full translate-x-32 -translate-y-32" />
             <div className="relative z-10 flex items-center gap-3">
@@ -595,23 +595,23 @@ export default function InquiriesPage() {
             </div>
           </div>
           
-          <div className="p-8 space-y-8 bg-white max-h-[60vh] overflow-y-auto scrollbar-minimal">
+          <div className="p-8 space-y-8 bg-white max-h-[60vh] overflow-y-auto scrollbar-minimal admin-interface-dark:bg-slate-950">
             {/* 转发设置 */}
             <div className="space-y-4">
               <div className="flex items-center gap-2 px-1">
                 <div className="h-5 w-5 rounded-lg bg-primary/10 flex items-center justify-center">
                   <Mail className="h-3 w-3 text-primary" />
                 </div>
-                <h3 className="text-xs font-bold text-slate-900 uppercase tracking-widest">通知转发 (Forwarding)</h3>
+                <h3 className="text-xs font-bold text-slate-900 uppercase tracking-widest admin-interface-dark:text-slate-200">通知转发 (Forwarding)</h3>
               </div>
-              <div className="space-y-3 p-6 bg-slate-50 rounded-3xl border border-slate-100">
+              <div className="space-y-3 p-6 bg-slate-50 rounded-3xl border border-slate-100 admin-interface-dark:bg-slate-900/50 admin-interface-dark:border-slate-800">
                 <div className="space-y-2">
-                  <Label className="text-[10px] font-bold uppercase tracking-widest text-slate-500 ml-1">管理员接收邮箱</Label>
+                  <Label className="text-[10px] font-bold uppercase tracking-widest text-slate-500 ml-1 admin-interface-dark:text-slate-400">管理员接收邮箱</Label>
                   <Input 
                     placeholder="admin@example.com"
                     value={settings.inquiry_forward_email}
                     onChange={(e) => setSettings(s => ({ ...s, inquiry_forward_email: e.target.value }))}
-                    className="h-11 rounded-xl bg-white border-slate-200 focus-visible:ring-primary/20"
+                    className="h-11 rounded-xl bg-white border-slate-200 focus-visible:ring-primary/20 admin-interface-dark:bg-slate-900 admin-interface-dark:border-slate-800 admin-interface-dark:text-slate-100"
                   />
                 </div>
               </div>
@@ -625,59 +625,59 @@ export default function InquiriesPage() {
                     <div className="h-5 w-5 rounded-lg bg-blue-500/10 flex items-center justify-center">
                       <Server className="h-3 w-3 text-blue-500" />
                     </div>
-                    <h3 className="text-xs font-bold text-slate-900 uppercase tracking-widest">发信服务器 (SMTP)</h3>
+                    <h3 className="text-xs font-bold text-slate-900 uppercase tracking-widest admin-interface-dark:text-slate-200">发信服务器 (SMTP)</h3>
                   </div>
                 </AccordionTrigger>
                 
                 <AccordionContent className="pt-4 pb-0">
-                  <div className="space-y-6 p-6 bg-slate-50 rounded-3xl border border-slate-100">
+                  <div className="space-y-6 p-6 bg-slate-50 rounded-3xl border border-slate-100 admin-interface-dark:bg-slate-900/50 admin-interface-dark:border-slate-800">
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div className="space-y-2">
-                        <Label className="text-[10px] font-bold uppercase tracking-widest text-slate-500 ml-1">SMTP 主机</Label>
+                        <Label className="text-[10px] font-bold uppercase tracking-widest text-slate-500 ml-1 admin-interface-dark:text-slate-400">SMTP 主机</Label>
                         <Input 
                           placeholder="smtp.example.com"
                           value={settings.smtp_host}
                           onChange={(e) => setSettings(s => ({ ...s, smtp_host: e.target.value }))}
-                          className="h-11 rounded-xl bg-white border-slate-200"
+                          className="h-11 rounded-xl bg-white border-slate-200 admin-interface-dark:bg-slate-900 admin-interface-dark:border-slate-800 admin-interface-dark:text-slate-100"
                         />
                       </div>
                       <div className="space-y-2">
-                        <Label className="text-[10px] font-bold uppercase tracking-widest text-slate-500 ml-1">端口</Label>
+                        <Label className="text-[10px] font-bold uppercase tracking-widest text-slate-500 ml-1 admin-interface-dark:text-slate-400">端口</Label>
                         <Input 
                           placeholder="587"
                           value={settings.smtp_port}
                           onChange={(e) => setSettings(s => ({ ...s, smtp_port: e.target.value }))}
-                          className="h-11 rounded-xl bg-white border-slate-200"
+                          className="h-11 rounded-xl bg-white border-slate-200 admin-interface-dark:bg-slate-900 admin-interface-dark:border-slate-800 admin-interface-dark:text-slate-100"
                         />
                       </div>
                     </div>
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div className="space-y-2">
-                        <Label className="text-[10px] font-bold uppercase tracking-widest text-slate-500 ml-1">SMTP 用户名</Label>
+                        <Label className="text-[10px] font-bold uppercase tracking-widest text-slate-500 ml-1 admin-interface-dark:text-slate-400">SMTP 用户名</Label>
                         <Input 
                           placeholder="user@example.com"
                           value={settings.smtp_user}
                           onChange={(e) => setSettings(s => ({ ...s, smtp_user: e.target.value }))}
-                          className="h-11 rounded-xl bg-white border-slate-200"
+                          className="h-11 rounded-xl bg-white border-slate-200 admin-interface-dark:bg-slate-900 admin-interface-dark:border-slate-800 admin-interface-dark:text-slate-100"
                         />
                       </div>
                       <div className="space-y-2">
-                        <Label className="text-[10px] font-bold uppercase tracking-widest text-slate-500 ml-1">SMTP 密码</Label>
+                        <Label className="text-[10px] font-bold uppercase tracking-widest text-slate-500 ml-1 admin-interface-dark:text-slate-400">SMTP 密码</Label>
                         <Input 
                           type="password"
                           placeholder="••••••••"
                           value={settings.smtp_password}
                           onChange={(e) => setSettings(s => ({ ...s, smtp_password: e.target.value }))}
-                          className="h-11 rounded-xl bg-white border-slate-200"
+                          className="h-11 rounded-xl bg-white border-slate-200 admin-interface-dark:bg-slate-900 admin-interface-dark:border-slate-800 admin-interface-dark:text-slate-100"
                         />
                       </div>
                     </div>
 
-                    <div className="flex items-center justify-between p-4 bg-white rounded-2xl border border-slate-200">
+                    <div className="flex items-center justify-between p-4 bg-white rounded-2xl border border-slate-200 admin-interface-dark:bg-slate-900 admin-interface-dark:border-slate-800">
                       <div className="space-y-0.5">
-                        <Label className="text-xs font-bold text-slate-700">SSL/TLS 安全连接</Label>
-                        <p className="text-[10px] text-slate-400">开启后将使用 465 端口或强制加密</p>
+                        <Label className="text-xs font-bold text-slate-700 admin-interface-dark:text-slate-300">SSL/TLS 安全连接</Label>
+                        <p className="text-[10px] text-slate-400 admin-interface-dark:text-slate-500">开启后将使用 465 端口或强制加密</p>
                       </div>
                       <Switch 
                         checked={settings.smtp_secure === 'true'}
@@ -690,7 +690,7 @@ export default function InquiriesPage() {
             </Accordion>
           </div>
 
-          <div className="p-8 border-t border-slate-100 bg-slate-50/50 flex justify-between items-center gap-3">
+          <div className="p-8 border-t border-slate-100 bg-slate-50/50 flex justify-between items-center gap-3 admin-interface-dark:border-slate-900 admin-interface-dark:bg-slate-950/50">
             <Button 
               variant="outline" 
               onClick={async () => {
@@ -726,7 +726,7 @@ export default function InquiriesPage() {
                 }
               }}
               id="test-smtp-btn"
-              className="rounded-2xl font-bold h-12 px-6 border-slate-200 text-slate-600 hover:bg-slate-100"
+              className="rounded-2xl font-bold h-12 px-6 border-slate-200 text-slate-600 hover:bg-slate-100 admin-interface-dark:border-slate-800 admin-interface-dark:text-slate-300 admin-interface-dark:hover:bg-slate-900"
             >
               测试连接并发送邮件
             </Button>

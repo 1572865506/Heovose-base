@@ -140,7 +140,7 @@ const CategoryMenu = React.memo(({
           onClick={() => onSelect(cat.id)}
           className={cn(
             "rounded-xl px-3 py-2 text-xs font-bold transition-colors cursor-pointer",
-            depth === 0 ? "text-slate-900" : "text-slate-500",
+            depth === 0 ? "text-foreground" : "text-muted-foreground",
             "hover:bg-primary/5 focus:bg-primary/5 focus:text-primary"
           )}
         >
@@ -176,10 +176,9 @@ const AssetResolution = ({ id, initialW, initialH }: { id: string, initialW?: nu
 
   if (!dim.w || !dim.h) return null;
   return (
-    <>
-      <span>•</span>
-      <span className="text-primary/70">{dim.w}×{dim.h}</span>
-    </>
+    <span className="text-[9px] font-black text-primary/70 uppercase tracking-widest shrink-0">
+      {dim.w}×{dim.h}
+    </span>
   );
 };
 
@@ -352,89 +351,111 @@ export default function GalleryPage() {
     return filteredAssets.slice(start, start + ITEMS_PER_PAGE);
   }, [filteredAssets, currentPage]);
 
-  const handleMouseDown = useCallback((e: React.MouseEvent) => {
-    const target = e.target as HTMLElement;
+  useEffect(() => {
+    const handleGlobalMouseDown = (e: MouseEvent) => {
+      const target = e.target as HTMLElement;
 
-    // 如果点击的是交互元素，或者是弹窗/下拉菜单内部，则不触发框选
-    if (
-      target.closest('button') ||
-      target.closest('input') ||
-      target.closest('label') ||
-      target.closest('[role="combobox"]') ||
-      target.closest('[role="listbox"]') ||
-      target.closest('[role="dialog"]') ||
-      target.closest('[role="menu"]') ||
-      target.closest('[role="menuitem"]') ||
-      target.closest('[data-radix-popper-content-wrapper]') ||
-      target.closest('.group')
-    ) return;
+      const main = target.closest('main');
+      const header = target.closest('header');
+      if (!main || header) return;
 
-    const rect = e.currentTarget.getBoundingClientRect();
-    const x = e.clientX - rect.left;
-    const y = e.clientY - rect.top;
+      if (
+        target.closest('button') ||
+        target.closest('input') ||
+        target.closest('label') ||
+        target.closest('[role="combobox"]') ||
+        target.closest('[role="listbox"]') ||
+        target.closest('[role="dialog"]') ||
+        target.closest('[role="menu"]') ||
+        target.closest('[role="menuitem"]') ||
+        target.closest('[data-radix-popper-content-wrapper]')
+      ) return;
 
-    setSelectionBox({
-      startX: x,
-      startY: y,
-      currentX: x,
-      currentY: y
-    });
+      const container = containerRef.current;
+      if (!container) return;
 
-    if (!e.shiftKey) {
-      setSelectedIds(new Set());
-    }
-  }, []);
+      const rect = container.getBoundingClientRect();
+      const x = e.clientX - rect.left;
+      const y = e.clientY - rect.top;
 
-  const handleMouseMove = useCallback((e: React.MouseEvent) => {
-    if (!selectionBox) return;
+      setSelectionBox({
+        startX: x,
+        startY: y,
+        currentX: x,
+        currentY: y
+      });
 
-    const rect = e.currentTarget.getBoundingClientRect();
-    const nextX = e.clientX - rect.left;
-    const nextY = e.clientY - rect.top;
-
-    const nextBox = {
-      ...selectionBox,
-      currentX: nextX,
-      currentY: nextY
+      if (!e.shiftKey) {
+        setSelectedIds(new Set());
+      }
     };
-    setSelectionBox(nextBox);
 
-    const boxX = Math.min(nextBox.startX, nextBox.currentX);
-    const boxY = Math.min(nextBox.startY, nextBox.currentY);
-    const boxWidth = Math.abs(nextBox.startX - nextBox.currentX);
-    const boxHeight = Math.abs(nextBox.startY - nextBox.currentY);
+    const handleGlobalMouseMove = (e: MouseEvent) => {
+      if (!selectionBox) return;
 
-    const newSelected = new Set(e.shiftKey ? selectedIds : []);
+      const container = containerRef.current;
+      if (!container) return;
 
-    filteredAssets.forEach(asset => {
-      const el = itemRefs.current.get(asset.id);
-      if (!el) return;
+      const rect = container.getBoundingClientRect();
+      const nextX = e.clientX - rect.left;
+      const nextY = e.clientY - rect.top;
 
-      const rect = el.getBoundingClientRect();
-      const containerRect = e.currentTarget.getBoundingClientRect();
-
-      const elRect = {
-        left: rect.left - containerRect.left,
-        top: rect.top - containerRect.top,
-        right: rect.right - containerRect.left,
-        bottom: rect.bottom - containerRect.top
+      const nextBox = {
+        ...selectionBox,
+        currentX: nextX,
+        currentY: nextY
       };
+      setSelectionBox(nextBox);
 
-      const intersects = !(
-        elRect.left > boxX + boxWidth ||
-        elRect.right < boxX ||
-        elRect.top > boxY + boxHeight ||
-        elRect.bottom < boxY
-      );
+      const boxX = Math.min(nextBox.startX, nextBox.currentX);
+      const boxY = Math.min(nextBox.startY, nextBox.currentY);
+      const boxWidth = Math.abs(nextBox.startX - nextBox.currentX);
+      const boxHeight = Math.abs(nextBox.startY - nextBox.currentY);
 
-      if (intersects) newSelected.add(asset.id);
-    });
-    setSelectedIds(newSelected);
+      const newSelected = new Set(e.shiftKey ? selectedIds : []);
+
+      filteredAssets.forEach(asset => {
+        const el = itemRefs.current.get(asset.id);
+        if (!el) return;
+
+        const rect = el.getBoundingClientRect();
+        const containerRect = container.getBoundingClientRect();
+
+        const elRect = {
+          left: rect.left - containerRect.left,
+          top: rect.top - containerRect.top,
+          right: rect.right - containerRect.left,
+          bottom: rect.bottom - containerRect.top
+        };
+
+        const intersects = !(
+          elRect.left > boxX + boxWidth ||
+          elRect.right < boxX ||
+          elRect.top > boxY + boxHeight ||
+          elRect.bottom < boxY
+        );
+
+        if (intersects) newSelected.add(asset.id);
+      });
+      setSelectedIds(newSelected);
+    };
+
+    const handleGlobalMouseUp = () => {
+      setSelectionBox(null);
+    };
+
+    window.addEventListener('mousedown', handleGlobalMouseDown);
+    if (selectionBox) {
+      window.addEventListener('mousemove', handleGlobalMouseMove);
+      window.addEventListener('mouseup', handleGlobalMouseUp);
+    }
+
+    return () => {
+      window.removeEventListener('mousedown', handleGlobalMouseDown);
+      window.removeEventListener('mousemove', handleGlobalMouseMove);
+      window.removeEventListener('mouseup', handleGlobalMouseUp);
+    };
   }, [selectionBox, selectedIds, filteredAssets]);
-
-  const handleMouseUp = useCallback(() => {
-    setSelectionBox(null);
-  }, []);
 
   const handleFileUpload = (files: FileList | null) => {
     if (!files) return;
@@ -641,6 +662,22 @@ export default function GalleryPage() {
     }
   };
 
+  const handleDeleteAsset = async (asset: any) => {
+    if (!confirm(`永久移除素材 "${asset.title}"？`)) return;
+    try {
+      const res = await fetch(`/api/galleryAssets/${asset.id}`, { method: 'DELETE' });
+      if (!res.ok) throw new Error("删除失败");
+      mutateAssets();
+      // Remove from selected list if present
+      const newSelected = new Set(selectedIds);
+      newSelected.delete(asset.id);
+      setSelectedIds(newSelected);
+      toast({ title: "已删除素材" });
+    } catch (e) {
+      toast({ variant: "destructive", title: "删除失败" });
+    }
+  };
+
   const handleBatchUpdateCategory = async () => {
     if (selectedIds.size === 0 || !batchTargetCategoryId) return;
     try {
@@ -750,9 +787,6 @@ export default function GalleryPage() {
   return (
     <div
       className="space-y-10 animate-in fade-in duration-700 relative min-h-[80vh] select-none pb-20"
-      onMouseUp={handleMouseUp}
-      onMouseMove={handleMouseMove}
-      onMouseDown={handleMouseDown}
       onDragOver={(e) => { e.preventDefault(); e.stopPropagation(); }}
       onDrop={(e) => { 
         e.preventDefault(); 
@@ -772,57 +806,57 @@ export default function GalleryPage() {
 
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 relative z-10">
         <div className="space-y-1">
-          <h2 className="text-2xl font-headline font-bold text-slate-900 flex items-center gap-4">
+          <h2 className="text-2xl font-headline font-bold text-foreground flex items-center gap-4">
             <div className="h-10 w-10 rounded-2xl bg-primary/10 flex items-center justify-center text-primary shadow-sm">
               <FolderOpen className="h-5 w-5" />
             </div>
             全球资源管理中心
           </h2>
-          <p className="text-[10px] text-slate-400 font-bold uppercase tracking-[0.2em] pl-14">Management / Digital Assets / Resources</p>
+          <p className="text-[10px] text-muted-foreground/60 font-bold uppercase tracking-[0.2em] pl-14">Management / Digital Assets / Resources</p>
         </div>
         <div className="flex gap-3">
           <Dialog open={isCategoryDialogOpen} onOpenChange={(o) => { setIsCategoryDialogOpen(o); if (!o) resetCatForm(); }}>
             <DialogTrigger asChild>
-              <Button variant="outline" className="rounded-2xl h-14 px-8 gap-3 text-xs font-bold uppercase tracking-widest border-slate-200 bg-white/50 backdrop-blur-sm hover:bg-white transition-all shadow-sm">
+              <Button variant="outline" className="rounded-2xl h-14 px-8 gap-3 text-xs font-bold uppercase tracking-widest border-border/40 bg-card/40 backdrop-blur-sm hover:bg-card/70 text-foreground/80 hover:text-primary hover:border-primary/20 transition-all shadow-sm">
                 <Settings2 className="h-4 w-4" /> 架构管理
               </Button>
             </DialogTrigger>
-            <DialogContent className="rounded-[2.5rem] max-w-2xl p-0 overflow-hidden border-none shadow-[0_50px_100px_-20px_rgba(0,0,0,0.15)] bg-white">
+            <DialogContent className="rounded-[2.5rem] max-w-2xl p-0 overflow-hidden border border-border/10 shadow-[0_50px_100px_-20px_rgba(0,0,0,0.15)] bg-background">
               <div className="p-10 space-y-8">
                 <DialogHeader className="flex flex-row items-center gap-4 space-y-0">
                   <div className="h-10 w-10 rounded-xl bg-primary/10 flex items-center justify-center text-primary shrink-0">
                     <Layers className="h-5 w-5" />
                   </div>
                   <div>
-                    <DialogTitle className="text-xl font-headline font-bold text-slate-900 tracking-tight">树状分类管理</DialogTitle>
-                    <DialogDescription className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Digital Asset Hierarchy Configuration</DialogDescription>
+                    <DialogTitle className="text-xl font-headline font-bold text-foreground tracking-tight">树状分类管理</DialogTitle>
+                    <DialogDescription className="text-[9px] font-bold text-muted-foreground uppercase tracking-widest">Digital Asset Hierarchy Configuration</DialogDescription>
                   </div>
                 </DialogHeader>
-                <div className={cn("space-y-4 p-6 rounded-[1.5rem] border transition-all duration-500", editingCatId ? "bg-primary/[0.02] border-primary/20" : "bg-slate-500/[0.03] border-slate-200")}>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <Label className="text-[9px] font-bold uppercase text-slate-400 tracking-widest pl-1">分类名称</Label>
-                      <Input value={catForm.name} onChange={e => setCatForm({ ...catForm, name: e.target.value })} className="rounded-xl h-10 bg-white border-slate-200 text-xs font-medium" placeholder="例如：产品外观" />
+                <div className={cn("space-y-4 p-8 rounded-[2.5rem] border transition-all duration-700", editingCatId ? "bg-primary/5 border-primary/20 shadow-[0_0_50px_-12px_rgba(var(--primary),0.1)]" : "bg-muted/10 border-border/10")}>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div className="space-y-3">
+                      <Label className="text-[10px] font-bold uppercase text-muted-foreground/40 tracking-[0.2em] pl-1">架构节点名称 (Title)</Label>
+                      <Input value={catForm.name} onChange={e => setCatForm({ ...catForm, name: e.target.value })} className="rounded-2xl h-12 bg-muted/10 border-transparent focus:bg-muted/20 text-sm font-bold shadow-inner" placeholder="例如：产品实拍 / 宣发素材" />
                     </div>
-                    <div className="space-y-2">
-                      <Label className="text-[9px] font-bold uppercase text-slate-400 tracking-widest pl-1">上级分类</Label>
+                    <div className="space-y-3">
+                      <Label className="text-[10px] font-bold uppercase text-muted-foreground/40 tracking-[0.2em] pl-1">逻辑上级 (Parent)</Label>
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
-                          <Button variant="outline" className="w-full h-10 rounded-xl bg-white border-slate-200 text-xs justify-between px-4 font-medium transition-all group">
+                          <Button variant="outline" className="w-full h-12 rounded-2xl bg-muted/10 border-transparent text-sm justify-between px-5 font-bold transition-all group shadow-inner">
                             <span className="truncate">
-                              {catForm.parentId === 'none' ? '无 (顶级分类)' : getDisplayName(categories?.find(c => c.id === catForm.parentId))}
+                              {catForm.parentId === 'none' ? '无 (顶级分类 ROOT)' : getDisplayName(categories?.find(c => c.id === catForm.parentId))}
                             </span>
-                            <ChevronDown className="h-4 w-4 opacity-40 group-hover:opacity-100 transition-all" />
+                            <ChevronDown className="h-4 w-4 opacity-30 group-hover:opacity-100 transition-all" />
                           </Button>
                         </DropdownMenuTrigger>
-                        <DropdownMenuContent align="start" sideOffset={4} className="min-w-[12rem] p-1.5 rounded-2xl shadow-2xl border-none bg-white/95 backdrop-blur-xl animate-in fade-in zoom-in-95 duration-200 z-[1100]">
-                          <DropdownMenuLabel className="text-[10px] uppercase font-bold opacity-40 px-3 py-2">父级节点选择</DropdownMenuLabel>
-                          <DropdownMenuSeparator className="bg-slate-100/50 my-1" />
+                        <DropdownMenuContent align="start" sideOffset={8} className="min-w-[14rem] p-2 rounded-3xl shadow-2xl border border-white/5 bg-card/95 backdrop-blur-2xl animate-in fade-in zoom-in-95 duration-200 z-[1100]">
+                          <DropdownMenuLabel className="text-[10px] uppercase font-black opacity-20 px-4 py-3 tracking-[0.2em]">Hierarchy Select</DropdownMenuLabel>
+                          <DropdownMenuSeparator className="bg-border/10 my-1" />
                           <DropdownMenuItem
                             onClick={() => setCatForm({ ...catForm, parentId: 'none' })}
-                            className="rounded-xl px-3 py-2 text-xs font-bold hover:bg-primary/5 focus:bg-primary/5 focus:text-primary transition-colors cursor-pointer"
+                            className="rounded-2xl px-4 py-3 text-xs font-bold hover:bg-primary/10 focus:bg-primary/10 focus:text-primary transition-all cursor-pointer mb-1"
                           >
-                            无 (顶级分类)
+                            无 (顶级分类 ROOT)
                           </DropdownMenuItem>
                           <CategoryMenu
                             categories={categoryTree}
@@ -833,28 +867,28 @@ export default function GalleryPage() {
                       </DropdownMenu>
                     </div>
                   </div>
-                  <div className="flex gap-3">
+                  <div className="flex gap-4 pt-2">
                     {editingCatId && (
-                      <Button variant="outline" onClick={resetCatForm} className="flex-1 rounded-xl h-11 font-bold uppercase text-[10px] tracking-widest border-slate-200">
-                        取消
+                      <Button variant="ghost" onClick={resetCatForm} className="flex-1 rounded-2xl h-12 font-bold uppercase text-[10px] tracking-widest text-muted-foreground/40 hover:text-foreground">
+                        放弃当前操作
                       </Button>
                     )}
-                    <Button onClick={handleSaveCategory} className="flex-[2] rounded-xl h-11 font-bold uppercase text-[10px] tracking-widest shadow-lg shadow-primary/5">
-                      {editingCatId ? '保存变更' : '确认添加分类'}
+                    <Button onClick={handleSaveCategory} className="flex-[2] rounded-2xl h-12 font-bold uppercase text-[10px] tracking-[0.2em] shadow-2xl shadow-primary/20">
+                      {editingCatId ? '同步架构变更' : '确认注入分类节点'}
                     </Button>
                   </div>
                 </div>
 
-                <div className="space-y-4">
-                  <div className="flex items-center justify-between px-2">
-                    <Label className="text-[10px] font-bold uppercase text-slate-400 tracking-[0.2em]">当前架构概览</Label>
-                    <Badge variant="outline" className="text-[9px] border-slate-200 text-slate-400 rounded-full">{categories?.length || 0} 个分类</Badge>
+                <div className="space-y-5">
+                  <div className="flex items-center justify-between px-4">
+                    <Label className="text-[10px] font-bold uppercase text-muted-foreground/30 tracking-[0.3em]">Infrastructure Map</Label>
+                    <Badge variant="outline" className="text-[9px] border-border/10 text-muted-foreground/60 rounded-full px-3 h-5 font-black">{categories?.length || 0} NODES</Badge>
                   </div>
-                  <div className="max-h-[350px] overflow-y-auto pr-2 custom-scrollbar space-y-2">
+                  <div className="max-h-[380px] overflow-y-auto pr-3 custom-scrollbar space-y-2.5">
                     {categoryTree.length === 0 ? (
-                      <div className="py-12 text-center border-2 border-dashed border-slate-100 rounded-[2rem]">
-                        <Layers className="h-8 w-8 text-slate-200 mx-auto mb-3" />
-                        <p className="text-[10px] font-bold text-slate-300 uppercase tracking-widest">暂无分类架构 / Empty Hierarchy</p>
+                      <div className="py-20 text-center border-2 border-dashed border-border/5 rounded-[3rem]">
+                        <Layers className="h-10 w-10 text-muted-foreground/10 mx-auto mb-4" />
+                        <p className="text-[10px] font-black text-muted-foreground/20 uppercase tracking-[0.4em] italic">暂无资产架构 / Void</p>
                       </div>
                     ) : (
                       categoryTree.map((cat, idx) => {
@@ -863,36 +897,36 @@ export default function GalleryPage() {
                         const isLast = sameLevel[sameLevel.length - 1]?.id === cat.id;
 
                         return (
-                          <div key={cat.id} className="group flex items-center justify-between p-2.5 px-4 bg-slate-50/50 hover:bg-white hover:shadow-lg hover:shadow-slate-200/40 rounded-xl transition-all duration-300 border border-transparent hover:border-slate-100">
-                            <div className="flex items-center gap-3">
-                              <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
-                                <Button size="icon" variant="ghost" disabled={isFirst} onClick={() => handleMoveCategory(cat, 'up')} className="h-7 w-7 rounded-lg hover:bg-primary/10 hover:text-primary disabled:opacity-10">
-                                  <ChevronUp className="h-3 w-3" />
+                          <div key={cat.id} className="group flex items-center justify-between p-3.5 px-6 bg-muted/5 hover:bg-muted/10 rounded-[1.25rem] transition-all duration-500 border border-transparent hover:border-border/5">
+                            <div className="flex items-center gap-4">
+                              <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-all duration-300">
+                                <Button size="icon" variant="ghost" disabled={isFirst} onClick={() => handleMoveCategory(cat, 'up')} className="h-8 w-8 rounded-xl hover:bg-primary/10 hover:text-primary disabled:opacity-5">
+                                  <ChevronUp className="h-4 w-4" />
                                 </Button>
-                                <Button size="icon" variant="ghost" disabled={isLast} onClick={() => handleMoveCategory(cat, 'down')} className="h-7 w-7 rounded-lg hover:bg-primary/10 hover:text-primary disabled:opacity-10">
-                                  <ChevronDown className="h-3 w-3" />
+                                <Button size="icon" variant="ghost" disabled={isLast} onClick={() => handleMoveCategory(cat, 'down')} className="h-8 w-8 rounded-xl hover:bg-primary/10 hover:text-primary disabled:opacity-5">
+                                  <ChevronDown className="h-4 w-4" />
                                 </Button>
                               </div>
                               <div className="flex flex-col">
-                                <div className="flex items-center gap-2">
-                                  <div style={{ width: `${cat.depth * 1.2}rem` }} className="h-px bg-slate-200 flex-shrink-0" />
-                                  <span className={cn("text-xs font-bold tracking-tight", cat.depth === 0 ? "text-slate-900" : "text-slate-500")}>
+                                <div className="flex items-center gap-3">
+                                  <div style={{ width: `${cat.depth * 1.5}rem` }} className="h-[2px] bg-primary/20 shrink-0 rounded-full" />
+                                  <span className={cn("text-[13px] font-bold tracking-tight transition-colors", cat.depth === 0 ? "text-foreground" : "text-muted-foreground group-hover:text-foreground")}>
                                     {cat.name}
                                   </span>
                                 </div>
                                 {cat.parentId && (
-                                  <span className="text-[7px] font-bold text-slate-300 uppercase tracking-widest" style={{ marginLeft: `${cat.depth * 1.2 + 0.5}rem` }}>
-                                    {categories?.find(c => c.id === cat.parentId)?.name}
+                                  <span className="text-[8px] font-black text-muted-foreground/20 uppercase tracking-[0.2em] mt-0.5" style={{ marginLeft: `${cat.depth * 1.5 + 0.8}rem` }}>
+                                    Parent: {categories?.find(c => c.id === cat.parentId)?.name}
                                   </span>
                                 )}
                               </div>
                             </div>
-                            <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-all">
-                              <Button size="icon" variant="ghost" onClick={() => { setEditingCatId(cat.id); setCatForm({ name: cat.name, parentId: cat.parentId || 'none' }); }} className="h-8 w-8 rounded-lg hover:bg-primary/10 hover:text-primary">
-                                <Edit3 className="h-3.5 w-3.5" />
+                            <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-all duration-300">
+                              <Button size="icon" variant="ghost" onClick={() => { setEditingCatId(cat.id); setCatForm({ name: cat.name, parentId: cat.parentId || 'none' }); }} className="h-9 w-9 rounded-xl hover:bg-primary/15 hover:text-primary transition-all">
+                                <Edit3 className="h-4 w-4" />
                               </Button>
-                              <Button size="icon" variant="ghost" onClick={() => handleDeleteCategory(cat.id)} className="h-8 w-8 rounded-lg hover:bg-destructive/10 hover:text-destructive">
-                                <Trash2 className="h-3.5 w-3.5" />
+                              <Button size="icon" variant="ghost" onClick={() => handleDeleteCategory(cat.id)} className="h-9 w-9 rounded-xl hover:bg-destructive/15 hover:text-destructive transition-all">
+                                <Trash2 className="h-4 w-4" />
                               </Button>
                             </div>
                           </div>
@@ -907,53 +941,53 @@ export default function GalleryPage() {
 
           <Dialog open={isUploadDialogOpen} onOpenChange={setIsUploadDialogOpen}>
             <DialogTrigger asChild>
-              <Button className="rounded-2xl h-14 px-8 font-bold uppercase tracking-widest gap-3 text-xs shadow-xl shadow-primary/20 hover:scale-105 transition-all">
-                <CloudUpload className="h-4 w-4" /> 批量上传
+              <Button className="rounded-2xl h-14 px-8 font-black uppercase tracking-[0.25em] gap-4 text-[10px] shadow-2xl shadow-primary/20 hover:scale-[1.03] active:scale-[0.98] transition-all">
+                <CloudUpload className="h-5 w-5" /> 批量上传 / UPLOAD
               </Button>
             </DialogTrigger>
-            <DialogContent className="rounded-[2.5rem] max-w-4xl p-0 overflow-hidden border-none shadow-[0_50px_100px_-20px_rgba(0,0,0,0.15)]">
-              <div className="bg-slate-900 p-10 text-white relative overflow-hidden">
-                <div className="absolute top-0 right-0 p-10 opacity-10">
-                  <CloudUpload className="h-32 w-32" />
+            <DialogContent className="rounded-[3.5rem] max-w-5xl p-0 overflow-hidden border border-white/5 shadow-[0_50px_100px_-20px_rgba(0,0,0,0.6)] bg-card/40 backdrop-blur-3xl">
+              <div className="bg-slate-950 p-12 text-white relative overflow-hidden border-b border-white/5">
+                <div className="absolute top-0 right-0 p-12 opacity-5 scale-150">
+                  <CloudUpload className="h-40 w-40" />
                 </div>
-                <DialogHeader className="relative z-10 space-y-2">
-                  <DialogTitle className="text-2xl font-headline font-bold flex items-center gap-4">
-                    <div className="h-10 w-10 rounded-xl bg-white/10 flex items-center justify-center">
-                      <CloudUpload className="h-5 w-5" />
+                <DialogHeader className="relative z-10 space-y-3">
+                  <DialogTitle className="text-3xl font-headline font-black flex items-center gap-5">
+                    <div className="h-14 w-14 rounded-2xl bg-white/10 flex items-center justify-center border border-white/5">
+                      <CloudUpload className="h-7 w-7" />
                     </div>
-                    上传资产中心
+                    素材注入中心
                   </DialogTitle>
-                  <DialogDescription className="text-[10px] font-bold text-white/40 uppercase tracking-widest">Global Asset Ingestion Hub</DialogDescription>
+                  <DialogDescription className="text-[11px] font-black text-white/40 uppercase tracking-[0.4em]">Advanced Digital Asset Ingestion Interface</DialogDescription>
                 </DialogHeader>
-                <div className="absolute top-10 right-10">
+                <div className="absolute top-12 right-12">
                   <Button
                     variant="outline"
                     onClick={handleDeepCleanup}
                     disabled={isCleaning}
-                    className="h-14 rounded-2xl px-6 border-slate-700 bg-white/5 hover:border-primary/40 hover:bg-primary/10 transition-all group shrink-0"
+                    className="h-16 rounded-[1.5rem] px-8 border-white/10 bg-white/5 hover:border-white/30 hover:bg-white/10 transition-all group shrink-0"
                   >
                     {isCleaning ? (
-                      <Loader2 className="h-4 w-4 animate-spin text-primary" />
+                      <Loader2 className="h-5 w-5 animate-spin text-white" />
                     ) : (
                       <div className="flex flex-col items-start">
-                        <div className="flex items-center gap-2">
-                          <Eraser className="h-4 w-4 text-slate-400 group-hover:text-primary transition-colors" />
-                          <span className="text-xs font-bold text-white">深度清理</span>
+                        <div className="flex items-center gap-3">
+                          <Eraser className="h-4 w-4 text-white/40 group-hover:text-white transition-colors" />
+                          <span className="text-sm font-black text-white uppercase tracking-tight">深度净化</span>
                         </div>
-                        <span className="text-[8px] font-bold text-slate-400 uppercase tracking-widest mt-0.5">PURGE ORPHANS</span>
+                        <span className="text-[8px] font-black text-white/30 uppercase tracking-widest mt-1">PURGE ORPHAN BLOCKS</span>
                       </div>
                     )}
                   </Button>
                 </div>
               </div>
-              <div className="p-10 grid grid-cols-1 md:grid-cols-12 gap-10 bg-white/90 backdrop-blur-2xl">
+              <div className="p-12 grid grid-cols-1 md:grid-cols-12 gap-12">
                 <div className="md:col-span-7">
                   <div
                     onDragOver={e => e.preventDefault()}
                     onDrop={e => { e.preventDefault(); handleFileUpload(e.dataTransfer.files); }}
                     className={cn(
-                      "h-80 border-2 border-dashed rounded-[2rem] flex flex-col items-center justify-center transition-all cursor-pointer group relative overflow-hidden bg-white",
-                      pendingFiles.length > 0 ? "border-primary/40" : "border-slate-200 hover:bg-primary/[0.02] hover:border-primary/40"
+                      "h-[450px] border-2 border-dashed rounded-[3rem] flex flex-col items-center justify-center transition-all cursor-pointer group relative overflow-hidden bg-muted/5 shadow-inner",
+                      pendingFiles.length > 0 ? "border-primary/40 bg-primary/[0.02]" : "border-border/10 hover:bg-primary/[0.02] hover:border-primary/40"
                     )}
                     onClick={(e) => {
                       if (pendingFiles.length === 0) fileInputRef.current?.click();
@@ -961,56 +995,60 @@ export default function GalleryPage() {
                   >
                     {pendingFiles.length === 0 ? (
                       <>
-                        <div className="h-16 w-16 rounded-2xl bg-slate-50 flex items-center justify-center mb-4 group-hover:scale-110 group-hover:bg-primary/10 transition-all duration-500">
-                          <Upload className="h-7 w-7 text-slate-400 group-hover:text-primary" />
+                        <div className="h-24 w-24 rounded-[2rem] bg-background shadow-2xl flex items-center justify-center mb-8 group-hover:scale-110 transition-transform duration-700">
+                          <Upload className="h-10 w-10 text-muted-foreground/20 group-hover:text-primary transition-colors" />
                         </div>
-                        <p className="text-sm font-bold text-slate-900">点击或拖拽素材至此处</p>
-                        <p className="text-[10px] text-slate-400 mt-2 uppercase font-bold tracking-widest">DRAG & DROP YOUR ASSETS HERE</p>
-                        <div className="mt-6 px-4 py-2 bg-primary/5 rounded-full flex flex-col items-center gap-1">
-                          <div className="flex items-center gap-2">
-                            <CloudUpload className="h-3 w-3 text-primary" />
-                            <span className="text-[9px] font-bold text-primary uppercase">全类型支持 (最大 20MB)</span>
-                            <span className="text-[9px] font-bold text-slate-300">|</span>
-                            <Archive className="h-3 w-3 text-primary" />
-                            <span className="text-[9px] font-bold text-primary uppercase">支持 ZIP/RAR/PDF</span>
+                        <p className="text-lg font-black text-foreground tracking-tight">点击或投递素材至此</p>
+                        <p className="text-[10px] text-muted-foreground/40 mt-3 uppercase font-black tracking-[0.3em]">SECURE ASSET DROP ZONE</p>
+                        <div className="mt-10 px-8 py-4 bg-primary/5 rounded-[1.5rem] flex flex-col items-center gap-3 border border-primary/5">
+                          <div className="flex items-center gap-4">
+                            <div className="flex items-center gap-2">
+                              <CloudUpload className="h-3.5 w-3.5 text-primary/60" />
+                              <span className="text-[10px] font-black text-primary/80 uppercase tracking-wider">MAX 20MB / FILE</span>
+                            </div>
+                            <div className="h-4 w-px bg-primary/20" />
+                            <div className="flex items-center gap-2">
+                              <Archive className="h-3.5 w-3.5 text-primary/60" />
+                              <span className="text-[10px] font-black text-primary/80 uppercase tracking-wider">ARCHIVE SUPPORTED</span>
+                            </div>
                           </div>
                         </div>
                       </>
                     ) : (
-                      <div className="w-full h-full flex flex-col p-6" onClick={e => e.stopPropagation()}>
-                        <div className="flex items-center justify-between mb-4">
-                          <div className="flex items-center gap-2">
-                            <Badge className="bg-primary text-white border-none">{pendingFiles.length}</Badge>
-                            <span className="text-xs font-bold uppercase tracking-widest text-slate-400">待上传队列</span>
+                      <div className="w-full h-full flex flex-col p-10" onClick={e => e.stopPropagation()}>
+                        <div className="flex items-center justify-between mb-8">
+                          <div className="flex items-center gap-4">
+                            <Badge className="bg-primary text-white border-none h-7 px-4 rounded-full font-black text-xs shadow-xl shadow-primary/30">{pendingFiles.length}</Badge>
+                            <span className="text-[11px] font-black uppercase tracking-[0.2em] text-muted-foreground/40">待处理队列 / QUEUED</span>
                           </div>
                           <Button
                             variant="outline"
                             size="sm"
-                            className="h-8 rounded-lg text-[10px] font-bold uppercase tracking-widest"
+                            className="h-10 rounded-xl px-6 text-[10px] font-black uppercase tracking-widest border-border/10 bg-muted/10 hover:bg-muted/20"
                             onClick={() => fileInputRef.current?.click()}
                           >
-                            继续添加
+                            继续追加
                           </Button>
                         </div>
-                        <div className="flex-1 overflow-y-auto pr-2 space-y-2 custom-scrollbar">
+                        <div className="flex-1 overflow-y-auto pr-4 space-y-3 custom-scrollbar">
                           {pendingFiles.map((file, i) => (
-                            <div key={`${file.name}-${i}`} className="flex items-center justify-between p-3 bg-slate-50 rounded-xl group/item">
-                              <div className="flex items-center gap-3 overflow-hidden">
-                                <div className="h-8 w-8 rounded-lg bg-white flex items-center justify-center shrink-0 border border-slate-100">
-                                  <ImageIcon className="h-4 w-4 text-slate-400" />
+                            <div key={`${file.name}-${i}`} className="flex items-center justify-between p-4 bg-muted/10 rounded-2xl group/item border border-transparent hover:border-border/10 transition-all">
+                              <div className="flex items-center gap-4 overflow-hidden">
+                                <div className="h-11 w-11 rounded-xl bg-background flex items-center justify-center shrink-0 border border-border/5 shadow-sm">
+                                  <ImageIcon className="h-5 w-5 text-muted-foreground/20" />
                                 </div>
-                                <div className="flex flex-col overflow-hidden">
-                                  <span className="text-[11px] font-bold text-slate-700 truncate">{file.name}</span>
-                                  <span className="text-[9px] font-bold text-slate-400 uppercase">{(file.size / 1024).toFixed(0)}KB</span>
+                                <div className="flex flex-col overflow-hidden gap-0.5">
+                                  <span className="text-xs font-bold text-foreground truncate">{file.name}</span>
+                                  <span className="text-[9px] font-black text-muted-foreground/40 uppercase tracking-tighter">{(file.size / 1024).toFixed(0)} KB / RAW DATA</span>
                                 </div>
                               </div>
                               <Button
                                 size="icon"
                                 variant="ghost"
-                                className="h-7 w-7 rounded-lg text-slate-300 hover:text-destructive hover:bg-destructive/10 opacity-0 group-hover/item:opacity-100 transition-all"
+                                className="h-9 w-9 rounded-xl text-muted-foreground/20 hover:text-destructive hover:bg-destructive/10 opacity-0 group-hover/item:opacity-100 transition-all"
                                 onClick={() => setPendingFiles(prev => prev.filter((_, idx) => idx !== i))}
                               >
-                                <X className="h-3.5 w-3.5" />
+                                <X className="h-4 w-4" />
                               </Button>
                             </div>
                           ))}
@@ -1020,22 +1058,22 @@ export default function GalleryPage() {
                     <input type="file" ref={fileInputRef} multiple accept="image/*,video/*,.pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.zip,.rar,.7z" className="hidden" onChange={e => handleFileUpload(e.target.files)} />
                   </div>
                 </div>
-                <div className="md:col-span-5 space-y-8">
-                  <div className="space-y-6">
-                    <div className="space-y-2.5">
-                      <Label className="text-[10px] font-bold uppercase text-slate-400 tracking-widest pl-1">上传目标分类</Label>
+                <div className="md:col-span-5 space-y-10">
+                  <div className="space-y-8">
+                    <div className="space-y-3.5">
+                      <Label className="text-[11px] font-black uppercase text-muted-foreground/40 tracking-[0.2em] pl-1">目标分类层级 (Target Node)</Label>
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
-                          <Button variant="outline" className="w-full h-12 rounded-xl bg-slate-500/5 border-transparent focus:ring-4 focus:ring-primary/5 justify-between px-4 font-medium transition-all group">
-                            <span className="text-sm truncate">
-                              {targetUploadCategoryId ? getDisplayName(categories?.find(c => c.id === targetUploadCategoryId)) : '请选择目标分类'}
+                          <Button variant="outline" className="w-full h-16 rounded-[1.5rem] bg-muted/10 border-transparent focus:ring-4 focus:ring-primary/5 justify-between px-6 font-bold transition-all group shadow-inner">
+                            <span className="text-[15px] tracking-tight truncate">
+                              {targetUploadCategoryId ? getDisplayName(categories?.find(c => c.id === targetUploadCategoryId)) : '请选择目标分类架构'}
                             </span>
-                            <ChevronDown className="h-4 w-4 opacity-40 group-hover:opacity-100 transition-all" />
+                            <ChevronDown className="h-5 w-5 opacity-20 group-hover:opacity-100 transition-all" />
                           </Button>
                         </DropdownMenuTrigger>
-                        <DropdownMenuContent align="start" sideOffset={8} className="min-w-[12rem] p-1.5 rounded-2xl shadow-2xl border-none bg-white/95 backdrop-blur-xl animate-in fade-in slide-in-from-top-2 duration-300 z-[1100]">
-                          <DropdownMenuLabel className="text-[10px] uppercase font-bold opacity-40 px-3 py-2">可用分类架构</DropdownMenuLabel>
-                          <DropdownMenuSeparator className="bg-slate-100/50 my-1" />
+                        <DropdownMenuContent align="start" sideOffset={12} className="min-w-[18rem] p-3 rounded-[2rem] shadow-2xl border border-white/5 bg-card/95 backdrop-blur-3xl animate-in fade-in slide-in-from-top-2 duration-300 z-[1100]">
+                          <DropdownMenuLabel className="text-[10px] uppercase font-black opacity-20 px-4 py-3 tracking-[0.3em]">Taxonomy Architecture</DropdownMenuLabel>
+                          <DropdownMenuSeparator className="bg-border/10 my-1" />
                           <CategoryMenu
                             categories={categoryTree}
                             onSelect={setTargetUploadCategoryId}
@@ -1044,50 +1082,53 @@ export default function GalleryPage() {
                         </DropdownMenuContent>
                       </DropdownMenu>
                     </div>
-                    <div className="space-y-2.5">
-                      <Label className="text-[10px] font-bold uppercase text-slate-400 tracking-widest pl-1">重名冲突处理策略</Label>
+                    <div className="space-y-3.5">
+                      <Label className="text-[11px] font-black uppercase text-muted-foreground/40 tracking-[0.2em] pl-1">冲突处理协议 (Conflict Protocol)</Label>
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
-                          <Button variant="outline" className="w-full h-12 rounded-xl bg-slate-500/5 border-transparent focus:ring-4 focus:ring-primary/5 justify-between px-4 font-medium transition-all group text-left">
-                            <span className={cn("text-sm truncate", duplicateStrategy === 'overwrite' && "text-orange-600 font-bold")}>
-                              {duplicateStrategy === 'rename' ? '自动重命名 (生成副本)' : '覆盖现有文件 (全站同步)'}
+                          <Button variant="outline" className="w-full h-16 rounded-[1.5rem] bg-muted/10 border-transparent focus:ring-4 focus:ring-primary/5 justify-between px-6 font-bold transition-all group text-left shadow-inner">
+                            <span className={cn("text-[15px] tracking-tight truncate", duplicateStrategy === 'overwrite' && "text-amber-500 font-black")}>
+                              {duplicateStrategy === 'rename' ? '自动重命名 (生成独立副本)' : '覆盖现有资源 (全站映射同步)'}
                             </span>
-                            <ChevronDown className="h-4 w-4 opacity-40 group-hover:opacity-100 transition-all" />
+                            <ChevronDown className="h-5 w-5 opacity-20 group-hover:opacity-100 transition-all" />
                           </Button>
                         </DropdownMenuTrigger>
-                        <DropdownMenuContent align="start" sideOffset={8} className="min-w-[12rem] p-1.5 rounded-2xl shadow-2xl border-none bg-white/95 backdrop-blur-xl animate-in fade-in slide-in-from-top-2 duration-300 z-[1200]">
+                        <DropdownMenuContent align="start" sideOffset={12} className="min-w-[18rem] p-3 rounded-[2rem] shadow-2xl border border-white/5 bg-card/95 backdrop-blur-3xl animate-in fade-in slide-in-from-top-2 duration-300 z-[1200]">
                           <DropdownMenuItem
                             onClick={() => setDuplicateStrategy('rename')}
-                            className="rounded-xl text-xs py-3 px-4 font-medium focus:bg-primary/5 cursor-pointer"
+                            className="rounded-2xl text-[13px] py-4 px-5 font-bold focus:bg-primary/10 transition-all cursor-pointer mb-1"
                           >
-                            自动重命名 (生成副本)
+                            自动重命名 (生成独立副本)
                           </DropdownMenuItem>
                           <DropdownMenuItem
                             onClick={() => setDuplicateStrategy('overwrite')}
-                            className="rounded-xl text-xs py-3 px-4 text-orange-600 font-bold focus:bg-orange-50 cursor-pointer"
+                            className="rounded-2xl text-[13px] py-4 px-5 text-amber-500 font-black focus:bg-amber-500/10 transition-all cursor-pointer"
                           >
-                            覆盖现有文件 (全站同步)
+                            覆盖现有资源 (全站映射同步)
                           </DropdownMenuItem>
                         </DropdownMenuContent>
                       </DropdownMenu>
-                      <p className="text-[9px] text-slate-400 leading-relaxed mt-4 italic font-medium">
-                        重要提示：系统会根据文件名自动识别。如果选择覆盖，同名文件将被新版本替换。
-                      </p>
+                      <div className="p-6 rounded-2xl bg-amber-500/5 border border-amber-500/10 mt-6">
+                        <p className="text-[10px] text-amber-500/80 leading-relaxed font-bold uppercase tracking-tight italic">
+                          <AlertTriangle className="h-3.5 w-3.5 inline mr-2 -mt-0.5" />
+                          注意：覆盖策略会立即同步更新所有引用该素材的前台页面，请谨慎操作。
+                        </p>
+                      </div>
                     </div>
                   </div>
                 </div>
               </div>
-              <DialogFooter className="bg-slate-50 p-6 border-t border-slate-200 flex items-center justify-between gap-4">
-                <Button variant="ghost" onClick={() => { setIsUploadDialogOpen(false); setPendingFiles([]); }} className="rounded-xl h-12 px-8 text-xs font-bold uppercase tracking-widest text-slate-400">放弃并关闭</Button>
+              <DialogFooter className="bg-muted/5 p-10 border-t border-border/5 flex items-center justify-between gap-6">
+                <Button variant="ghost" onClick={() => { setIsUploadDialogOpen(false); setPendingFiles([]); }} className="rounded-[1.5rem] h-16 px-10 text-[11px] font-black uppercase tracking-[0.2em] text-muted-foreground/30 hover:text-foreground">放弃本次同步</Button>
                 <Button
                   onClick={startUpload}
                   disabled={pendingFiles.length === 0 || isUploading}
-                  className="rounded-xl h-12 px-12 text-xs font-bold uppercase tracking-widest shadow-xl shadow-primary/20 flex-1 md:flex-none"
+                  className="rounded-[1.5rem] h-16 px-16 text-[11px] font-black uppercase tracking-[0.3em] shadow-[0_20px_50px_-10px_rgba(var(--primary),0.3)] flex-1 md:flex-none active:scale-[0.98] transition-all"
                 >
                   {isUploading ? (
-                    <><Loader2 className="h-4 w-4 animate-spin mr-2" /> 正在上传...</>
+                    <><Loader2 className="h-5 w-5 animate-spin mr-3" /> 处理中 / PROCESSING...</>
                   ) : (
-                    <><CloudUpload className="h-4 w-4 mr-2" /> 立即开始上传 ({pendingFiles.length})</>
+                    <><CloudUpload className="h-5 w-5 mr-3" /> 立即启动同步 ({pendingFiles.length})</>
                   )}
                 </Button>
               </DialogFooter>
@@ -1096,42 +1137,42 @@ export default function GalleryPage() {
         </div>
       </div>
 
-      <div className="flex flex-col md:flex-row items-center gap-4 bg-white/60 backdrop-blur-md p-4 rounded-[2rem] border border-white/40 shadow-[0_8px_30px_rgb(0,0,0,0.04)] relative z-10">
+      <div className="flex flex-col md:flex-row items-center gap-4 bg-card/40 backdrop-blur-3xl p-5 rounded-[2.5rem] border border-border/10 shadow-2xl relative z-10 shadow-black/5">
         <div className="relative flex-1 w-full group">
-          <Search className="absolute left-5 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 group-focus-within:text-primary transition-colors" />
+          <Search className="absolute left-6 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground/20 group-focus-within:text-primary transition-all duration-500" />
           <Input
-            placeholder="搜索素材标题 / SEARCH ASSETS..."
-            className="pl-12 border-none bg-slate-500/5 focus-visible:ring-0 rounded-[1.25rem] h-12 text-xs font-medium placeholder:text-slate-400 placeholder:font-bold placeholder:uppercase"
+            placeholder="搜索素材标识或标题 / SEARCH ASSETS INDEX..."
+            className="pl-14 border-none bg-muted/10 focus-visible:ring-0 rounded-[1.5rem] h-14 text-sm font-bold placeholder:text-muted-foreground/20 placeholder:font-black placeholder:uppercase tracking-tight shadow-inner"
             value={searchQuery}
             onChange={e => setSearchQuery(e.target.value)}
           />
         </div>
-        <div className="flex items-center gap-3 px-4 bg-slate-500/5 rounded-[1.25rem] border border-transparent focus-within:border-primary/20 transition-all w-full md:w-72 h-12">
-          <Layers className="h-4 w-4 text-primary/40 shrink-0" />
+        <div className="flex items-center gap-4 px-6 bg-muted/10 rounded-[1.5rem] border border-transparent focus-within:border-primary/20 transition-all w-full md:w-80 h-14 shadow-inner">
+          <Layers className="h-5 w-5 text-primary/40 shrink-0" />
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button
                 variant="ghost"
-                className="flex-1 border-none bg-transparent h-full px-2 shadow-none focus:ring-0 text-[10px] font-bold uppercase tracking-[0.1em] text-slate-600 flex items-center justify-between group hover:bg-primary/5 rounded-xl transition-all"
+                className="flex-1 border-none bg-transparent h-full px-2 shadow-none focus:ring-0 text-[11px] font-black uppercase tracking-[0.2em] text-muted-foreground/60 flex items-center justify-between group hover:bg-primary/5 rounded-xl transition-all"
               >
                 <span className="truncate max-w-[160px]">
-                  {filterCategory === 'all' ? '全部分类 (ALL)' : getDisplayName(categories?.find(c => c.id === filterCategory))}
+                  {filterCategory === 'all' ? '全部分类架构 (ALL)' : getDisplayName(categories?.find(c => c.id === filterCategory))}
                 </span>
-                <ChevronDown className="h-3.5 w-3.5 opacity-30 group-hover:opacity-100 group-hover:text-primary transition-all ml-2" />
+                <ChevronDown className="h-4 w-4 opacity-20 group-hover:opacity-100 group-hover:text-primary transition-all ml-2" />
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent
               align="end"
-              sideOffset={4}
-              className="min-w-[12rem] p-1.5 rounded-2xl shadow-2xl border-none bg-white/95 backdrop-blur-xl animate-in fade-in zoom-in-95 duration-200 z-[1001]"
+              sideOffset={10}
+              className="min-w-[16rem] p-3 rounded-[2rem] shadow-2xl border border-white/5 bg-card/95 backdrop-blur-3xl animate-in fade-in zoom-in-95 duration-200 z-[1001]"
             >
-              <DropdownMenuLabel className="text-[10px] uppercase font-bold opacity-40 px-3 py-2">资产目录架构</DropdownMenuLabel>
-              <DropdownMenuSeparator className="bg-slate-100/50 my-1" />
+              <DropdownMenuLabel className="text-[10px] uppercase font-black opacity-20 px-4 py-3 tracking-[0.3em]">Asset Tree Index</DropdownMenuLabel>
+              <DropdownMenuSeparator className="bg-border/10 my-1" />
               <DropdownMenuItem
                 onClick={() => setFilterCategory('all')}
-                className="rounded-xl px-3 py-2 text-xs font-bold hover:bg-primary/5 focus:bg-primary/5 focus:text-primary transition-colors cursor-pointer"
+                className="rounded-2xl px-4 py-3 text-xs font-bold hover:bg-primary/10 focus:bg-primary/10 focus:text-primary transition-all cursor-pointer mb-1"
               >
-                全部分类 (ALL)
+                全部分类架构 (ALL)
               </DropdownMenuItem>
               <CategoryMenu
                 categories={categoryTree}
@@ -1141,34 +1182,14 @@ export default function GalleryPage() {
             </DropdownMenuContent>
           </DropdownMenu>
         </div>
-        <div className="flex bg-slate-500/5 p-1 rounded-2xl border border-slate-500/5">
-          {['all', 'image', 'video', 'document'].map((t) => (
-            <Button 
-              key={t}
-              variant="ghost" 
-              size="sm" 
-              onClick={() => setFilterType(t as any)}
-              className={cn(
-                "h-10 rounded-xl px-6 text-[10px] font-bold uppercase transition-all duration-300",
-                filterType === t 
-                  ? "bg-white text-primary shadow-xl shadow-slate-200/50 translate-y-[-1px]" 
-                  : "text-slate-400 hover:text-slate-600"
-              )}
-            >
-              {t === 'all' ? '全部素材' : t === 'image' ? '高清图片' : t === 'video' ? '视频矩阵' : '文档/压缩包'}
-            </Button>
-          ))}
-        </div>
       </div>
 
-      {isLoading ? (
-        <div className="py-24 text-center relative z-10">
-          <Loader2 className="h-10 w-10 animate-spin text-primary opacity-20 mx-auto mb-4" />
-          <p className="text-[10px] font-bold uppercase tracking-[0.25em] text-slate-400">正在同步云端媒体库 / Syncing Repository...</p>
-        </div>
-      ) : (
-        <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-8 relative z-10">
-          {paginatedAssets.map((asset) => {
+      {/* 资产网格展示 */}
+      <div className="relative z-10 flex-1 overflow-y-auto scrollbar-minimal px-2">
+        {filteredAssets.length > 0 ? (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-8 pb-32">
+            {filteredAssets.map((asset) => {
+            const isSelected = selectedIds.has(asset.id);
             const fileExt = asset.fileName?.toLowerCase().split('.').pop() || '';
             const isVideoFile = ['mp4', 'webm', 'ogg', 'mov'].includes(fileExt);
             const isDocFile = DOCUMENT_EXTS.includes(fileExt) || ARCHIVE_EXTS.includes(fileExt);
@@ -1178,163 +1199,158 @@ export default function GalleryPage() {
             if (isDocFile) actualType = 'DOCUMENT';
 
             return (
-            <div
-              key={asset.id}
-              ref={el => { if (el) itemRefs.current.set(asset.id, el); else itemRefs.current.delete(asset.id); }}
-              className={cn(
-                "group relative bg-white/60 backdrop-blur-md rounded-[2rem] border transition-all duration-500 overflow-hidden",
-                selectedIds.has(asset.id)
-                  ? "border-primary ring-4 ring-primary/10 shadow-[0_20px_40px_-15px_rgba(0,91,153,0.2)]"
-                  : "border-white/40 hover:shadow-[0_30px_60px_-15px_rgba(0,0,0,0.1) ] hover:-translate-y-1 hover:bg-white"
-              )}
-            >
-              <div className="absolute top-4 left-4 z-20">
-                <Checkbox
-                  checked={selectedIds.has(asset.id)}
-                  onCheckedChange={() => toggleSelectAsset(asset.id)}
-                  className={cn(
-                    "h-5 w-5 rounded-lg bg-white/80 backdrop-blur-md border-slate-200 shadow-sm transition-all duration-300",
-                    selectedIds.has(asset.id) ? "opacity-100 scale-110" : "opacity-0 group-hover:opacity-100"
-                  )}
-                />
-              </div>
-
-              <div className="relative aspect-square bg-slate-500/5 overflow-hidden flex items-center justify-center m-2 rounded-[1.5rem]">
-                {actualType === 'VIDEO' ? (
-                  <div className="w-full h-full flex items-center justify-center bg-slate-900 overflow-hidden">
-                    <video 
-                      src={getAssetUrl(asset.url)} 
-                      className="max-w-full max-h-full object-contain opacity-60"
-                      muted
-                      playsInline
-                    />
-                    {/* 选中状态 */}
-                    {selectedIds.has(asset.id) && (
-                      <div className="absolute inset-0 bg-primary/5 flex items-center justify-center backdrop-blur-[1px] animate-in fade-in duration-300 z-10 rounded-2xl">
-                      </div>
-                    )}
-                    <div className="absolute inset-0 flex items-center justify-center">
-                      <div className="h-12 w-12 rounded-full bg-white/20 backdrop-blur-md flex items-center justify-center text-white border border-white/30 shadow-2xl transition-transform group-hover:scale-110 duration-500">
-                        <Play className="h-6 w-6 fill-white ml-1" />
-                      </div>
-                    </div>
-                    {asset.duration && (
-                      <div className="absolute bottom-2 right-2 px-1.5 py-0.5 rounded bg-black/60 text-[8px] font-mono text-white">
-                        {Math.floor(asset.duration / 60)}:{(asset.duration % 60).toFixed(0).padStart(2, '0')}
-                      </div>
-                    )}
-                  </div>
-                ) : actualType === 'DOCUMENT' ? (
-                  <div className="w-full h-full flex flex-col items-center justify-center text-slate-300">
-                     {isArchive ? <Archive className="h-16 w-16 mb-4 opacity-40" /> : <FileText className="h-16 w-16 mb-4 opacity-40" />}
-                     <span className="text-[10px] font-bold uppercase tracking-widest">{fileExt.toUpperCase()}</span>
-                  </div>
-                ) : (
-                  <Image
-                    src={getAssetUrl(asset.url)}
-                    alt={asset.title}
-                    fill
-                    className="object-cover group-hover:scale-110 transition-transform duration-1000 ease-out"
-                    unoptimized
-                    onLoad={(e) => {
-                      const img = e.currentTarget as HTMLImageElement;
-                      if (img.naturalWidth && !asset.width) {
-                        window.dispatchEvent(new CustomEvent('asset-loaded', { 
-                          detail: { id: asset.id, w: img.naturalWidth, h: img.naturalHeight } 
-                        }));
-                      }
-                    }}
-                  />
+              <div
+                key={asset.id}
+                ref={el => { if (el) itemRefs.current.set(asset.id, el); else itemRefs.current.delete(asset.id); }}
+                className={cn(
+                  "group relative bg-card/20 backdrop-blur-3xl rounded-[2.25rem] border transition-all duration-700 overflow-hidden",
+                  isSelected
+                    ? "border-primary/40 ring-4 ring-primary/10 shadow-[0_0_60px_-15px_rgba(var(--primary),0.3)] scale-[0.98]"
+                    : "border-border/5 hover:border-primary/20 hover:bg-card/40 hover:shadow-2xl hover:shadow-black/60 hover:-translate-y-1"
                 )}
-                <div className="absolute inset-0 bg-slate-900/40 opacity-0 group-hover:opacity-100 transition-all duration-500 flex items-center justify-center gap-3 backdrop-blur-[2px] rounded-[1.5rem]">
-                  <Button
-                    size="icon"
-                    variant="secondary"
-                    className="h-11 w-11 rounded-2xl shadow-2xl bg-white hover:bg-primary group/btn transition-all scale-75 group-hover:scale-100 duration-500"
-                    onClick={(e) => { e.stopPropagation(); setPreviewAsset(asset); setPreviewZoom('fit'); }}
-                  >
-                    <Maximize className="h-5 w-5 text-primary group-hover/btn:text-white transition-colors" />
-                  </Button>
+                onClick={() => toggleSelectAsset(asset.id)}
+              >
+                <div className="absolute top-5 left-5 z-20">
+                  <Checkbox
+                    checked={isSelected}
+                    onCheckedChange={(e) => {
+                      toggleSelectAsset(asset.id);
+                    }}
+                    className={cn(
+                      "h-6 w-6 rounded-lg bg-background/40 backdrop-blur-2xl border-white/10 shadow-2xl transition-all duration-500",
+                      isSelected ? "opacity-100 scale-110 bg-primary border-primary shadow-primary/40" : "opacity-0 group-hover:opacity-100"
+                    )}
+                  />
                 </div>
-                <div className="absolute bottom-3 left-3 pointer-events-none">
-                  <Badge className="text-[8px] bg-black/40 backdrop-blur-md border-none px-2.5 py-0.5 h-5 font-bold uppercase tracking-widest text-white/90">
-                    {getDisplayName(categories?.find(c => c.id === asset.categoryId))}
-                  </Badge>
-                </div>
-              </div>
 
-              <div className="p-4 pt-1 space-y-3">
-                <div className="space-y-0.5">
-                  <p className="text-[11px] font-bold text-slate-900 truncate tracking-tight">{asset.title}</p>
-                  <p className="text-[8px] font-bold text-slate-400 uppercase tracking-widest flex items-center gap-1.5">
-                    <span>{((asset.fileSize || 0) / 1024).toFixed(0)}KB</span>
-                    <span>•</span>
-                    <span>{asset.fileName.split('.').pop()?.toUpperCase()}</span>
-                    {actualType === 'IMAGE' && <AssetResolution id={asset.id} initialW={asset.width} initialH={asset.height} />}
-                  </p>
-                </div>
-                <div className="flex items-center justify-between border-t border-slate-100 pt-3">
-                  <div className="flex gap-1">
+                <div className="relative aspect-square bg-muted/5 overflow-hidden flex items-center justify-center m-2.5 rounded-[1.75rem] border border-white/5">
+                  <div className="absolute inset-0 bg-[url('/checkerboard.png')] bg-repeat opacity-[0.03] pointer-events-none" />
+                  
+                  {actualType === 'VIDEO' ? (
+                    <div className="w-full h-full flex items-center justify-center bg-black/40 overflow-hidden">
+                      <video 
+                        src={getAssetUrl(asset.url)} 
+                        className="max-w-full max-h-full object-contain opacity-60 transition-transform duration-1000 group-hover:scale-110"
+                        muted
+                        playsInline
+                      />
+                      {isSelected && (
+                        <div className="absolute inset-0 bg-primary/5 flex items-center justify-center backdrop-blur-[1px] z-10" />
+                      )}
+                      <div className="absolute inset-0 flex items-center justify-center">
+                        <div className="h-14 w-14 rounded-full bg-white/5 backdrop-blur-xl flex items-center justify-center text-white border border-white/10 shadow-2xl transition-all group-hover:scale-110 duration-700 group-hover:bg-primary/20">
+                          <Play className="h-6 w-6 fill-white ml-1" />
+                        </div>
+                      </div>
+                      {asset.duration && (
+                        <div className="absolute bottom-3 right-3 px-2 py-1 rounded-lg bg-black/60 text-[9px] font-black font-mono text-white/80 uppercase tracking-tighter">
+                          {Math.floor(asset.duration / 60)}:{(asset.duration % 60).toFixed(0).padStart(2, '0')}
+                        </div>
+                      )}
+                    </div>
+                  ) : actualType === 'DOCUMENT' ? (
+                    <div className="w-full h-full flex flex-col items-center justify-center text-muted-foreground/20">
+                       {isArchive ? <Archive className="h-16 w-16 mb-4 opacity-40 transition-transform group-hover:scale-110" /> : <FileText className="h-16 w-16 mb-4 opacity-40 transition-transform group-hover:scale-110" />}
+                       <span className="text-[10px] font-black uppercase tracking-[0.3em] group-hover:text-primary transition-colors">{fileExt.toUpperCase()}</span>
+                    </div>
+                  ) : (
+                    <Image
+                      src={getAssetUrl(asset.url)}
+                      alt={asset.title}
+                      fill
+                      className="object-contain p-4 group-hover:scale-110 transition-transform duration-1000 ease-out"
+                      unoptimized
+                    />
+                  )}
+                  
+                  <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-all duration-700 flex items-center justify-center gap-4 backdrop-blur-[4px]">
                     <Button
                       size="icon"
-                      variant="ghost"
-                      className="h-8 w-8 rounded-xl text-slate-400 hover:text-primary hover:bg-primary/5"
-                      onClick={(e) => { e.stopPropagation(); handleCopy(asset.url); }}
-                      title="复制地址"
+                      variant="secondary"
+                      className="h-12 w-12 rounded-2xl shadow-2xl bg-white/10 hover:bg-primary border border-white/10 group/btn transition-all scale-75 group-hover:scale-100 duration-500"
+                      onClick={(e) => { e.stopPropagation(); setPreviewAsset(asset); setPreviewZoom('fit'); }}
                     >
-                      <Copy className="h-4 w-4" />
-                    </Button>
-                    <Button
-                      size="icon"
-                      variant="ghost"
-                      className="h-8 w-8 rounded-xl text-slate-400 hover:text-primary hover:bg-primary/5"
-                      onClick={() => setEditingAsset(asset)}
-                      title="编辑属性"
-                    >
-                      <Edit3 className="h-4 w-4" />
+                      <Maximize className="h-5 w-5 text-white group-hover/btn:scale-110 transition-all" />
                     </Button>
                   </div>
-                  <Button
-                    size="icon"
-                    variant="ghost"
-                    className="h-8 w-8 rounded-xl text-destructive/40 hover:text-destructive hover:bg-destructive/5"
-                    onClick={async () => {
-                      if (confirm('永久移除该文件？')) {
-                        try {
-                          await fetch(`/api/galleryAssets/${asset.id}`, { method: 'DELETE' });
-                          mutateAssets();
-                          toast({ title: "文件已删除" });
-                        } catch (e) {
-                          toast({ variant: "destructive", title: "删除失败" });
-                        }
-                      }
-                    }}
-                    title="删除素材"
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
+                  <div className="absolute bottom-4 left-4 pointer-events-none">
+                    <Badge className="text-[8px] bg-black/40 backdrop-blur-md border border-white/5 px-3 py-1 h-6 font-black uppercase tracking-[0.2em] text-white/70">
+                      {getDisplayName(categories?.find(c => c.id === asset.categoryId))}
+                    </Badge>
+                  </div>
+                </div>
+
+                <div className="p-5 pt-2 space-y-4">
+                  <div className="space-y-1">
+                    <p className="text-[11px] font-black text-foreground truncate tracking-tight uppercase group-hover:text-primary transition-colors">{asset.title}</p>
+                    <div className="flex items-center gap-2">
+                      <p className="text-[9px] font-black text-muted-foreground/40 uppercase tracking-widest flex items-center gap-1.5 shrink-0">
+                        <span>{((asset.fileSize || 0) / 1024).toFixed(0)} KB</span>
+                        <span>•</span>
+                        <span className="text-primary/40">{asset.fileName.split('.').pop()?.toUpperCase()}</span>
+                      </p>
+                      {actualType === 'IMAGE' && (
+                        <div className="h-3 w-px bg-border/10" />
+                      )}
+                      {actualType === 'IMAGE' && <AssetResolution id={asset.id} initialW={asset.width} initialH={asset.height} />}
+                    </div>
+                  </div>
+                  <div className="flex items-center justify-between border-t border-border/10 pt-4">
+                    <div className="flex gap-2">
+                      <Button
+                        size="icon"
+                        variant="ghost"
+                        className="h-9 w-9 rounded-xl text-muted-foreground hover:text-primary hover:bg-primary/15 transition-all"
+                        onClick={(e) => { e.stopPropagation(); handleCopy(asset.url); }}
+                        title="复制标识 ID / COPY ASSET URL"
+                      >
+                        <Copy className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        size="icon"
+                        variant="ghost"
+                        className="h-9 w-9 rounded-xl text-muted-foreground hover:text-amber-500 hover:bg-amber-500/15 transition-all"
+                        onClick={(e) => { e.stopPropagation(); setEditingAsset(asset); }}
+                        title="元数据修正 / EDIT METADATA"
+                      >
+                        <Edit3 className="h-4 w-4" />
+                      </Button>
+                    <Button
+                      size="icon"
+                      variant="ghost"
+                      className="h-9 w-9 rounded-xl text-muted-foreground hover:text-destructive hover:bg-destructive/15 transition-all"
+                      onClick={(e) => { e.stopPropagation(); handleDeleteAsset(asset); }}
+                      title="永久粉碎 / PERMANENT DELETE"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                    </div>
+                  </div>
                 </div>
               </div>
-            </div>
             );
           })}
         </div>
+      ) : (
+        /* 空状态处理可以放在这里，或者保持原样 */
+        null
       )}
+      </div>
 
-      {/* 分页控制 */}
+      {/* 高密度分页控制 / HD PAGINATION CONTROL */}
       {totalPages > 1 && (
-        <div className="flex items-center justify-center gap-2 relative z-10 pt-10">
+        <div className="flex items-center justify-center gap-4 relative z-10 pt-16">
           <Button
             variant="outline"
             size="icon"
             disabled={currentPage === 1}
             onClick={() => { setCurrentPage(prev => Math.max(1, prev - 1)); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
-            className="rounded-xl h-10 w-10 border-white/40 bg-white/60 backdrop-blur-md"
+            className="rounded-2xl h-12 w-12 border-border/10 bg-card/40 backdrop-blur-3xl hover:bg-primary/10 hover:text-primary transition-all shadow-2xl"
           >
-            <ChevronLeft className="h-4 w-4" />
+            <ChevronLeft className="h-5 w-5" />
           </Button>
 
-          <div className="flex items-center gap-1 bg-white/60 backdrop-blur-md p-1 rounded-xl border border-white/40">
+          <div className="flex items-center gap-2 bg-card/40 backdrop-blur-3xl p-2 rounded-2xl border border-border/10 shadow-2xl">
             {Array.from({ length: totalPages }, (_, i) => i + 1).map(page => (
               <Button
                 key={page}
@@ -1342,8 +1358,10 @@ export default function GalleryPage() {
                 size="sm"
                 onClick={() => { setCurrentPage(page); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
                 className={cn(
-                  "h-8 w-8 rounded-lg text-[10px] font-bold",
-                  currentPage === page ? "shadow-lg shadow-primary/20" : "text-slate-400 hover:text-primary"
+                  "h-10 min-w-[2.5rem] rounded-xl text-[11px] font-black uppercase tracking-widest transition-all",
+                  currentPage === page 
+                    ? "shadow-[0_10px_25px_-5px_rgba(var(--primary),0.4)] scale-110" 
+                    : "text-muted-foreground/40 hover:text-primary hover:bg-primary/5"
                 )}
               >
                 {page}
@@ -1356,13 +1374,138 @@ export default function GalleryPage() {
             size="icon"
             disabled={currentPage === totalPages}
             onClick={() => { setCurrentPage(prev => Math.min(totalPages, prev + 1)); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
-            className="rounded-xl h-10 w-10 border-white/40 bg-white/60 backdrop-blur-md"
+            className="rounded-2xl h-12 w-12 border-border/10 bg-card/40 backdrop-blur-3xl hover:bg-primary/10 hover:text-primary transition-all shadow-2xl"
           >
-            <ChevronRight className="h-4 w-4" />
+            <ChevronRight className="h-5 w-5" />
           </Button>
         </div>
       )}
 
+      {/* 高级批量操作栏 / PREMIUM BATCH ACTIONS BAR */}
+      {selectedIds.size > 0 && (
+        <div className="fixed bottom-10 left-1/2 -translate-x-1/2 z-[100] animate-in slide-in-from-bottom-10 duration-700">
+          <div className="bg-primary/[0.08] backdrop-blur-3xl border border-primary/20 p-2.5 px-3 rounded-[2.5rem] shadow-[0_30px_100px_-20px_rgba(var(--primary),0.3)] flex items-center gap-2.5">
+            <div className="px-5 h-11 flex items-center bg-primary rounded-full shadow-[0_0_30px_-5px_rgba(var(--primary),0.5)]">
+              <span className="text-[11px] font-black uppercase tracking-[0.2em] text-background">
+                已选中 {selectedIds.size} 项资产
+              </span>
+            </div>
+            
+            <div className="h-10 w-px bg-primary/10 mx-1" />
+
+            <Dialog open={isBatchCategoryDialogOpen} onOpenChange={setIsBatchCategoryDialogOpen}>
+              <DialogTrigger asChild>
+                <Button variant="ghost" className="h-11 rounded-full px-6 text-[10px] font-black uppercase tracking-widest text-foreground hover:bg-primary/10 hover:text-primary transition-all gap-2">
+                  <Layers className="h-4 w-4" /> 架构迁移
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="bg-card/95 backdrop-blur-3xl border-border/10 rounded-[2.5rem] max-w-md shadow-2xl p-0 overflow-hidden">
+                <DialogHeader className="p-8 pb-4">
+                  <DialogTitle className="text-xl font-black uppercase tracking-tighter text-primary">批量架构迁移</DialogTitle>
+                  <DialogDescription className="text-[11px] font-medium text-muted-foreground/60 uppercase tracking-widest">正在将选中的资产重定向至新的逻辑分类节点</DialogDescription>
+                </DialogHeader>
+                <div className="px-8 py-6 space-y-4">
+                  <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/40 pl-1">目标节点 / TARGET NODE</Label>
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button variant="outline" className="w-full h-14 rounded-2xl bg-muted/10 border-border/5 hover:border-primary/20 justify-between px-5 font-black transition-all group">
+                        <span className="text-xs uppercase tracking-tight truncate">
+                          {batchTargetCategoryId ? getDisplayName(categories?.find(c => c.id === batchTargetCategoryId)) : '请选择目标分类...'}
+                        </span>
+                        <ChevronDown className="h-4 w-4 opacity-40 group-hover:opacity-100 transition-all" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="start" sideOffset={12} className="min-w-[18rem] p-2 rounded-[2rem] shadow-2xl border border-border/5 bg-card/95 backdrop-blur-3xl z-[1100]">
+                      <DropdownMenuLabel className="text-[10px] uppercase font-black tracking-widest text-muted-foreground/40 px-4 py-3">可用节点目录</DropdownMenuLabel>
+                      <DropdownMenuSeparator className="bg-border/10 my-1.5" />
+                      <div className="max-h-[300px] overflow-y-auto custom-scrollbar">
+                        <CategoryMenu
+                          categories={categoryTree}
+                          onSelect={setBatchTargetCategoryId}
+                          getDisplayName={getDisplayName}
+                        />
+                      </div>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                </div>
+                <DialogFooter className="p-8 pt-4 bg-muted/5 flex gap-3">
+                  <Button variant="ghost" onClick={() => setIsBatchCategoryDialogOpen(false)} className="rounded-2xl h-12 flex-1 text-[10px] font-black uppercase tracking-widest hover:bg-muted/10">取消操作</Button>
+                  <Button onClick={handleBatchUpdateCategory} disabled={!batchTargetCategoryId} className="rounded-2xl h-12 flex-1 text-[10px] font-black uppercase tracking-widest bg-primary text-background shadow-lg shadow-primary/20">确认迁移</Button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
+
+            <Button variant="ghost" className="h-11 rounded-full px-6 text-[10px] font-black uppercase tracking-widest text-destructive hover:bg-destructive/10 transition-all gap-2" onClick={handleBatchDelete}>
+              <Trash2 className="h-4 w-4" /> 批量粉碎
+            </Button>
+
+            <div className="h-10 w-px bg-primary/10 mx-1" />
+
+            <Button variant="ghost" size="icon" className="h-11 w-11 rounded-full hover:bg-foreground/5 text-muted-foreground/40 hover:text-foreground transition-all" onClick={() => setSelectedIds(new Set())}>
+              <X className="h-5 w-5" />
+            </Button>
+          </div>
+        </div>
+      )}
+
+      {/* 极光任务中心 / AURORA TASK HUB */}
+      {isTasksPanelOpen && (
+        <div className={cn(
+          "fixed bottom-10 right-10 z-[1000] w-96 bg-card/60 backdrop-blur-3xl border border-border/10 shadow-[0_50px_100px_-20px_rgba(0,0,0,0.5)] rounded-[2.5rem] overflow-hidden transition-all duration-700 ease-in-out", 
+          isTasksPanelMinimized ? "h-16" : "h-[480px]"
+        )}>
+          <div className="bg-primary px-7 h-16 flex items-center justify-between text-background shadow-lg">
+            <div className="flex items-center gap-4">
+              <div className="h-2 w-2 rounded-full bg-background animate-pulse shadow-[0_0_10px_rgba(255,255,255,1)]" />
+              <span className="text-[11px] font-black uppercase tracking-[0.3em]">任务队列中心 / TASK HUB</span>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <Button variant="ghost" size="icon" className="h-9 w-9 rounded-full hover:bg-background/10 transition-all" onClick={() => setIsTasksPanelMinimized(!isTasksPanelMinimized)}>
+                {isTasksPanelMinimized ? <Maximize2 className="h-4 w-4" /> : <Minimize2 className="h-4 w-4" />}
+              </Button>
+              <Button variant="ghost" size="icon" className="h-9 w-9 rounded-full hover:bg-background/10 transition-all" onClick={() => { setIsTasksPanelOpen(false); setUploadTasks([]); }}>
+                <X className="h-4 w-4" />
+              </Button>
+            </div>
+          </div>
+          {!isTasksPanelMinimized && (
+            <div className="flex flex-col h-[calc(480px-64px)] p-8 space-y-6 overflow-y-auto custom-scrollbar bg-muted/5">
+              {uploadTasks.map(task => (
+                <div key={task.id} className="group space-y-3">
+                  <div className="flex justify-between items-end">
+                    <div className="space-y-1 max-w-[70%]">
+                      <p className="text-[11px] font-black text-foreground truncate uppercase tracking-tight group-hover:text-primary transition-colors">{task.fileName}</p>
+                      <p className="text-[9px] font-bold text-muted-foreground/40 uppercase tracking-widest">
+                        {task.status === 'completed' ? '处理完成' : task.status === 'error' ? '任务失败' : task.isUpdate ? '同步更新中' : '资产上传中'}
+                      </p>
+                    </div>
+                    {task.status === 'completed' ? (
+                      <div className="h-6 w-6 rounded-full bg-primary/10 flex items-center justify-center">
+                        <CheckCircle2 className="h-3.5 w-3.5 text-primary shadow-primary" />
+                      </div>
+                    ) : task.status === 'error' ? (
+                      <span className="text-[9px] font-black text-destructive uppercase tracking-tighter bg-destructive/5 px-2 py-1 rounded-md">{task.error}</span>
+                    ) : (
+                      <div className="h-6 w-6 flex items-center justify-center">
+                        <Loader2 className="h-3.5 w-3.5 text-primary/40 animate-spin" />
+                      </div>
+                    )}
+                  </div>
+                  <div className="relative h-1.5 w-full bg-muted/10 rounded-full overflow-hidden border border-white/5">
+                    <div 
+                      className={cn(
+                        "absolute inset-y-0 left-0 transition-all duration-700 ease-out rounded-full",
+                        task.status === 'error' ? "bg-destructive shadow-[0_0_10px_rgba(var(--destructive),0.5)]" : "bg-primary shadow-[0_0_10px_rgba(var(--primary),0.5)]"
+                      )}
+                      style={{ width: `${task.progress}%` }}
+                    />
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
 
       {selectionBox && (
         <div
@@ -1376,120 +1519,53 @@ export default function GalleryPage() {
         />
       )}
 
-      {selectedIds.size > 0 && (
-        <div className="fixed top-[72px] left-1/2 -translate-x-1/2 z-[200] bg-white border border-primary/20 shadow-[0_20px_50px_rgba(0,0,0,0.15)] rounded-full px-5 py-2 flex items-center gap-5 animate-in slide-in-from-top-4 duration-300">
-          <div className="flex items-center gap-3">
-            <Checkbox
-              checked={paginatedAssets.length > 0 && paginatedAssets.every(a => selectedIds.has(a.id))}
-              onCheckedChange={(v) => {
-                const next = new Set(selectedIds);
-                if (v) {
-                  paginatedAssets.forEach(a => next.add(a.id));
-                } else {
-                  paginatedAssets.forEach(a => next.delete(a.id));
-                }
-                setSelectedIds(next);
-              }}
-              className="rounded"
-            />
-            <span className="text-xs font-bold text-primary whitespace-nowrap">已选中 {selectedIds.size} 项</span>
-          </div>
-          <div className="h-6 w-px bg-border/60" />
-          <div className="flex items-center gap-2">
-            <Dialog open={isBatchCategoryDialogOpen} onOpenChange={setIsBatchCategoryDialogOpen}>
-              <DialogTrigger asChild>
-                <Button variant="outline" size="sm" className="rounded-full h-8 px-4 gap-2 text-[10px] font-bold uppercase tracking-wider">
-                  <Layers className="h-3 w-3" /> 修改分类
-                </Button>
-              </DialogTrigger>
-              <DialogContent className="rounded-2xl max-w-sm">
-                <DialogHeader>
-                  <DialogTitle className="text-base font-bold">批量移动至分类</DialogTitle>
-                  <DialogDescription>将选中的素材移动到指定的架构分类下。</DialogDescription>
-                </DialogHeader>
-                <div className="py-4 space-y-3">
-                  <Label className="text-[10px] font-bold uppercase opacity-60 pl-1">目标分类</Label>
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <Button variant="outline" className="w-full h-11 rounded-xl bg-muted/20 border-transparent focus:ring-4 focus:ring-primary/5 justify-between px-4 font-bold transition-all group">
-                        <span className="text-xs truncate">
-                          {batchTargetCategoryId ? getDisplayName(categories?.find(c => c.id === batchTargetCategoryId)) : '请选择目标分类...'}
-                        </span>
-                        <ChevronDown className="h-3.5 w-3.5 opacity-40 group-hover:opacity-100 transition-all" />
-                      </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="start" sideOffset={4} className="min-w-[12rem] p-1.5 rounded-2xl shadow-2xl border-none bg-white/95 backdrop-blur-xl animate-in fade-in zoom-in-95 duration-200 z-[1100]">
-                      <DropdownMenuLabel className="text-[10px] uppercase font-bold opacity-40 px-3 py-2">所有分类</DropdownMenuLabel>
-                      <DropdownMenuSeparator className="bg-slate-100/50 my-1" />
-                      <CategoryMenu
-                        categories={categoryTree}
-                        onSelect={setBatchTargetCategoryId}
-                        getDisplayName={getDisplayName}
-                      />
-                    </DropdownMenuContent>
-                  </DropdownMenu>
-                </div>
-                <DialogFooter className="flex gap-2">
-                  <Button variant="outline" onClick={() => setIsBatchCategoryDialogOpen(false)} className="rounded-xl h-10 flex-1 text-xs">取消</Button>
-                  <Button onClick={handleBatchUpdateCategory} disabled={!batchTargetCategoryId} className="rounded-xl h-10 flex-1 text-xs">确认移动</Button>
-                </DialogFooter>
-              </DialogContent>
-            </Dialog>
-            <Button variant="destructive" size="sm" className="rounded-full h-8 px-4 text-[10px] font-bold uppercase tracking-wider" onClick={handleBatchDelete}>
-              <Trash2 className="h-3.5 w-3.5 mr-1.5" /> 批量删除
-            </Button>
-            <Button variant="ghost" size="icon" className="rounded-full h-8 w-8 hover:bg-muted" onClick={() => setSelectedIds(new Set())}>
-              <X className="h-4 w-4" />
-            </Button>
-          </div>
-        </div>
-      )}
-
-      {isTasksPanelOpen && (
-        <div className={cn("fixed bottom-6 right-6 z-[1000] w-80 bg-white border border-border/60 shadow-2xl rounded-2xl overflow-hidden transition-all duration-500", isTasksPanelMinimized ? "h-14" : "h-[400px]")}>
-          <div className="bg-primary px-5 h-14 flex items-center justify-between text-white"><div className="flex items-center gap-3"><PanelTop className="h-4 w-4" /><span className="text-[10px] font-bold uppercase tracking-[0.2em]">任务队列</span></div><div className="flex items-center gap-1"><Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-white/10" onClick={() => setIsTasksPanelMinimized(!isTasksPanelMinimized)}>{isTasksPanelMinimized ? <Maximize2 className="h-4 w-4" /> : <Minimize2 className="h-4 w-4" />}</Button><Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-white/10" onClick={() => { setIsTasksPanelOpen(false); setUploadTasks([]); }}><X className="h-4 w-4" /></Button></div></div>
-          {!isTasksPanelMinimized && (<div className="flex flex-col h-[calc(400px-56px)] p-5 space-y-5 overflow-y-auto bg-white/50 backdrop-blur-sm">{uploadTasks.map(task => (<div key={task.id} className="space-y-2"><div className="flex justify-between text-[10px] font-bold"><span className="truncate max-w-[180px]">{task.fileName}</span>{task.status === 'completed' ? <CheckCircle2 className="h-4 w-4 text-green-500" /> : task.status === 'error' ? <span className="text-destructive font-mono">{task.error}</span> : <span className="opacity-40 animate-pulse">{task.isUpdate ? '同步更新中' : '上传入库中'}</span>}</div><Progress value={task.progress} className={cn("h-1.5 rounded-full bg-muted/40", task.isUpdate ? "[&>div]:bg-orange-500" : "[&>div]:bg-primary")} /></div>))}</div>)}
-        </div>
-      )}
-
       <Dialog open={!!editingAsset} onOpenChange={o => !o && setEditingAsset(null)}>
-        <DialogContent className="rounded-2xl max-w-sm p-0 overflow-hidden border-none shadow-2xl">
-          <DialogHeader className="p-6 bg-muted/10 border-b border-border/40">
-            <DialogTitle className="text-lg font-bold flex items-center gap-2 text-primary">编辑素材属性</DialogTitle>
-            <DialogDescription>修改素材的显示标题或归属分类。</DialogDescription>
+        <DialogContent className="bg-card/95 backdrop-blur-3xl border-border/10 rounded-[2.5rem] max-w-md shadow-2xl p-0 overflow-hidden">
+          <DialogHeader className="p-8 pb-4 bg-primary/[0.03] border-b border-white/5">
+            <DialogTitle className="text-xl font-black uppercase tracking-tighter text-primary flex items-center gap-3">
+              <div className="h-2 w-2 rounded-full bg-primary animate-pulse" />
+              属性元数据修正
+            </DialogTitle>
+            <DialogDescription className="text-[11px] font-medium text-muted-foreground/60 uppercase tracking-widest mt-1">正在对核心资产的逻辑属性进行非破坏性修正</DialogDescription>
           </DialogHeader>
           {editingAsset && (
-            <div className="p-6 space-y-5 bg-white">
-              <div className="space-y-2">
-                <Label className="text-[10px] font-bold uppercase opacity-60 pl-1">素材标题</Label>
-                <Input value={editingAsset.title} onChange={e => setEditingAsset({ ...editingAsset, title: e.target.value })} className="rounded-xl h-11 border-slate-200 focus:ring-4 focus:ring-primary/5 focus:border-primary transition-all" />
+            <div className="p-8 space-y-6">
+              <div className="space-y-3">
+                <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/40 pl-1">显示名称 / DISPLAY TITLE</Label>
+                <Input 
+                  value={editingAsset.title} 
+                  onChange={e => setEditingAsset({ ...editingAsset, title: e.target.value })} 
+                  className="h-14 rounded-2xl bg-muted/10 border-border/5 focus:ring-4 focus:ring-primary/5 focus:border-primary/40 transition-all font-black uppercase tracking-tight" 
+                />
               </div>
-              <div className="space-y-2">
-                <Label className="text-[10px] font-bold uppercase opacity-60 pl-1">归属分类</Label>
+              <div className="space-y-3">
+                <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/40 pl-1">逻辑节点 / LOGICAL CATEGORY</Label>
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
-                    <Button variant="outline" className="w-full h-11 rounded-xl bg-muted/20 border-transparent focus:ring-4 focus:ring-primary/5 justify-between px-4 font-bold transition-all group">
-                      <span className="text-xs truncate">
-                        {editingAsset.categoryId ? getDisplayName(categories?.find(c => c.id === editingAsset.categoryId)) : '未设置分类'}
+                    <Button variant="outline" className="w-full h-14 rounded-2xl bg-muted/10 border-border/5 hover:border-primary/20 justify-between px-5 font-black transition-all group text-foreground">
+                      <span className="text-xs uppercase tracking-tight truncate">
+                        {editingAsset.categoryId ? getDisplayName(categories?.find(c => c.id === editingAsset.categoryId)) : '未分配节点'}
                       </span>
-                      <ChevronDown className="h-3.5 w-3.5 opacity-40 group-hover:opacity-100 transition-all" />
+                      <ChevronDown className="h-4 w-4 opacity-40 group-hover:opacity-100 transition-all" />
                     </Button>
                   </DropdownMenuTrigger>
-                  <DropdownMenuContent align="start" sideOffset={8} className="min-w-[12rem] p-1.5 rounded-2xl shadow-2xl border-none bg-white/95 backdrop-blur-xl animate-in fade-in slide-in-from-top-2 duration-300 z-[1100]">
-                    <DropdownMenuLabel className="text-[10px] uppercase font-bold opacity-40 px-3 py-2">分类目录</DropdownMenuLabel>
-                    <DropdownMenuSeparator className="bg-slate-100/50 my-1" />
-                    <CategoryMenu
-                      categories={categoryTree}
-                      onSelect={(id: string) => setEditingAsset({ ...editingAsset, categoryId: id })}
-                      getDisplayName={getDisplayName}
-                    />
+                  <DropdownMenuContent align="start" sideOffset={12} className="min-w-[18rem] p-2 rounded-[2rem] shadow-2xl border border-border/5 bg-card/95 backdrop-blur-3xl z-[1100]">
+                    <DropdownMenuLabel className="text-[10px] uppercase font-black tracking-widest text-muted-foreground/40 px-4 py-3">节点树目录</DropdownMenuLabel>
+                    <DropdownMenuSeparator className="bg-border/10 my-1.5" />
+                    <div className="max-h-[300px] overflow-y-auto custom-scrollbar">
+                      <CategoryMenu
+                        categories={categoryTree}
+                        onSelect={(id: string) => setEditingAsset({ ...editingAsset, categoryId: id })}
+                        getDisplayName={getDisplayName}
+                      />
+                    </div>
                   </DropdownMenuContent>
                 </DropdownMenu>
               </div>
             </div>
           )}
-          <DialogFooter className="p-6 bg-muted/5 flex gap-2 border-t border-border/40">
-            <Button variant="outline" onClick={() => setEditingAsset(null)} className="rounded-xl h-11 flex-1 text-xs">放弃修改</Button>
+          <DialogFooter className="p-8 pt-4 bg-muted/5 flex gap-3 border-t border-white/5">
+            <Button variant="ghost" onClick={() => setEditingAsset(null)} className="rounded-2xl h-12 flex-1 text-[10px] font-black uppercase tracking-widest hover:bg-muted/10">放弃变更</Button>
             <Button onClick={async () => {
               if (editingAsset) {
                 try {
@@ -1500,12 +1576,12 @@ export default function GalleryPage() {
                   });
                   mutateAssets();
                   setEditingAsset(null);
-                  toast({ title: "属性已保存" });
+                  toast({ title: "元数据同步成功" });
                 } catch (e) {
-                  toast({ variant: "destructive", title: "保存失败" });
+                  toast({ variant: "destructive", title: "同步失败" });
                 }
               }
-            }} className="rounded-xl h-11 flex-1 text-xs">保存变更</Button>
+            }} className="rounded-2xl h-12 flex-1 text-[10px] font-black uppercase tracking-widest bg-primary text-background shadow-lg shadow-primary/20">保存资产状态</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -1517,45 +1593,54 @@ export default function GalleryPage() {
           setPreviewZoom('fit');
         }
       }}>
-        <DialogContent className="max-w-[95vw] w-full h-[90vh] p-0 overflow-hidden bg-black/95 border-none shadow-2xl rounded-2xl flex flex-col [&>button:last-child]:hidden">
+        <DialogContent className="max-w-[98vw] w-full h-[95vh] p-0 overflow-hidden bg-black/95 backdrop-blur-3xl border-none shadow-[0_0_150px_rgba(0,0,0,0.8)] rounded-[3rem] flex flex-col [&>button:last-child]:hidden outline-none">
           <DialogHeader className="sr-only">
-            <DialogTitle>图片预览: {previewAsset?.title}</DialogTitle>
-            <DialogDescription>查看全屏高清素材详情。</DialogDescription>
+            <DialogTitle>极光预览: {previewAsset?.title}</DialogTitle>
+            <DialogDescription>高保真高清素材全景预览</DialogDescription>
           </DialogHeader>
 
-          <div className="absolute top-4 right-4 z-50 flex gap-2">
-            <div className="flex bg-white/10 backdrop-blur-md rounded-full border border-white/10 overflow-hidden p-1 mr-4">
+          {/* 悬浮工具栏 / FLOATING TOOLBAR */}
+          <div className="absolute top-8 left-1/2 -translate-x-1/2 z-50 flex items-center gap-3 bg-white/5 backdrop-blur-3xl p-2 px-3 rounded-full border border-white/10 shadow-2xl">
+            <div className="flex bg-white/[0.03] rounded-full p-1 border border-white/5">
               <Button
                 variant="ghost"
                 size="sm"
                 onClick={() => setPreviewZoom('fit')}
-                className={cn("h-8 rounded-full px-3 gap-2 text-[10px] font-bold uppercase transition-all", previewZoom === 'fit' ? "bg-white text-black" : "text-white hover:bg-white/10")}
+                className={cn(
+                  "h-10 rounded-full px-5 gap-2 text-[10px] font-black uppercase tracking-widest transition-all", 
+                  previewZoom === 'fit' ? "bg-white text-black shadow-xl" : "text-white/60 hover:text-white hover:bg-white/10"
+                )}
               >
-                <FitIcon className="h-3 w-3" /> 适合窗口
+                <FitIcon className="h-4 w-4" /> 适应窗口
               </Button>
               <Button
                 variant="ghost"
                 size="sm"
                 onClick={() => setPreviewZoom('1:1')}
-                className={cn("h-8 rounded-full px-3 gap-2 text-[10px] font-bold uppercase transition-all", previewZoom === '1:1' ? "bg-white text-black" : "text-white hover:bg-white/10")}
+                className={cn(
+                  "h-10 rounded-full px-5 gap-2 text-[10px] font-black uppercase tracking-widest transition-all", 
+                  previewZoom === '1:1' ? "bg-white text-black shadow-xl" : "text-white/60 hover:text-white hover:bg-white/10"
+                )}
               >
-                <ZoomIn className="h-3 w-3" /> 1:1 像素
+                <ZoomIn className="h-4 w-4" /> 原始比例
               </Button>
             </div>
+
+            <div className="h-8 w-px bg-white/10 mx-1" />
 
             <Button 
               variant="secondary" 
               size="icon" 
-              className="h-10 w-10 rounded-full bg-white/10 hover:bg-white/20 text-white border-white/10 backdrop-blur-md" 
+              className="h-10 w-10 rounded-full bg-white/5 hover:bg-primary hover:text-background text-white border-white/5 backdrop-blur-md transition-all duration-500" 
               onClick={() => { window.open(previewAsset?.url, '_blank'); }} 
-              title="下载原图"
             >
               <Download className="h-4 w-4" />
             </Button>
+            
             <Button 
               variant="secondary" 
               size="icon" 
-              className="h-10 w-10 rounded-full bg-white/10 hover:bg-white/20 text-white border-white/10 backdrop-blur-md" 
+              className="h-10 w-10 rounded-full bg-white/5 hover:bg-destructive hover:text-white text-white border-white/5 backdrop-blur-md transition-all duration-500" 
               onClick={() => {
                 setPreviewAsset(null);
                 setPreviewDimensions(null);
@@ -1570,19 +1655,21 @@ export default function GalleryPage() {
             ref={previewScrollContainerRef}
             onMouseDown={handlePreviewMouseDown}
             className={cn(
-              "relative flex-1 overflow-auto flex items-center justify-center p-4", 
-              previewZoom === '1:1' ? "cursor-move" : "p-12"
+              "relative flex-1 overflow-auto flex items-center justify-center custom-scrollbar p-0", 
+              previewZoom === '1:1' ? "cursor-move" : "p-24"
             )}
           >
             {previewAsset && (
-              <div className={cn("relative transition-all duration-500", previewZoom === '1:1' ? "w-auto h-auto" : "w-full h-full flex items-center justify-center")}>
+              <div className={cn("relative transition-all duration-700 ease-out", previewZoom === '1:1' ? "w-auto h-auto" : "w-full h-full flex items-center justify-center")}>
+                <div className="absolute inset-0 bg-[url('/checkerboard.png')] bg-repeat opacity-[0.05] pointer-events-none rounded-xl" />
+                
                 {previewAsset.type === 'VIDEO' ? (
                   <video
                     src={getAssetUrl(previewAsset.url)}
                     controls
                     autoPlay
                     className={cn(
-                      "shadow-2xl rounded-sm transition-all duration-300",
+                      "shadow-[0_50px_100px_rgba(0,0,0,0.8)] border border-white/10 rounded-2xl transition-all duration-700",
                       previewZoom === 'fit' ? "max-w-full max-h-full" : "max-w-none w-auto h-auto"
                     )}
                     onLoadedMetadata={(e) => {
@@ -1599,7 +1686,7 @@ export default function GalleryPage() {
                       setPreviewDimensions({ width: img.naturalWidth, height: img.naturalHeight });
                     }}
                     className={cn(
-                      "shadow-2xl rounded-sm transition-all duration-300",
+                      "shadow-[0_50px_100px_rgba(0,0,0,0.8)] border border-white/10 rounded-2xl transition-all duration-700",
                       previewZoom === 'fit' ? "max-w-full max-h-full object-contain" : "max-w-none w-auto h-auto"
                     )}
                   />
@@ -1608,23 +1695,33 @@ export default function GalleryPage() {
             )}
           </div>
 
-          <div className="bg-white/10 backdrop-blur-md p-5 border-t border-white/10 flex items-center justify-between text-white shrink-0">
-            <div className="space-y-1">
-              <h4 className="font-bold text-sm">{previewAsset?.title}</h4>
-              <p className="text-[10px] opacity-60 uppercase tracking-widest">
-                {previewAsset?.fileName} • {((previewAsset?.fileSize || 0) / 1024).toFixed(1)} KB 
-                {previewDimensions && ` • ${previewDimensions.width} × ${previewDimensions.height} PX`}
+          {/* 底部信息面板 / BOTTOM INFO BAR */}
+          <div className="bg-white/5 backdrop-blur-3xl p-8 px-10 border-t border-white/5 flex items-center justify-between text-white shrink-0">
+            <div className="space-y-2">
+              <div className="flex items-center gap-3">
+                <Badge className="bg-primary/20 text-primary border-primary/20 h-6 px-3 text-[9px] font-black uppercase tracking-widest">
+                  {previewAsset?.type || 'ASSET'}
+                </Badge>
+                <h4 className="font-black text-lg uppercase tracking-tight">{previewAsset?.title}</h4>
+              </div>
+              <p className="text-[10px] font-bold opacity-40 uppercase tracking-[0.2em]">
+                {previewAsset?.fileName} <span className="mx-2">•</span> 
+                {((previewAsset?.fileSize || 0) / 1024).toFixed(1)} KB <span className="mx-2">•</span> 
+                {previewDimensions ? `${previewDimensions.width} × ${previewDimensions.height} PX` : 'CALCULATING...'}
               </p>
             </div>
-            <div className="flex gap-3">
-              {previewZoom === '1:1' && <span className="flex items-center gap-2 text-[10px] font-bold text-accent animate-pulse uppercase tracking-widest"><Move className="h-3 w-3" /> 拖动或滚动以查看细节</span>}
+            <div className="flex items-center gap-6">
+              {previewZoom === '1:1' && (
+                <span className="flex items-center gap-2.5 text-[10px] font-black text-primary animate-pulse uppercase tracking-[0.2em]">
+                  <Move className="h-4 w-4" /> 自由拖动预览细节
+                </span>
+              )}
               <Button 
                 variant="outline" 
-                size="sm" 
-                className="rounded-full border-white/20 text-white bg-transparent hover:bg-white/10 text-[10px] uppercase font-bold px-5" 
+                className="rounded-2xl h-14 px-10 border-white/10 text-white bg-white/5 hover:bg-white/10 hover:border-primary/40 text-[11px] uppercase font-black tracking-widest transition-all" 
                 onClick={() => handleCopy(previewAsset?.url || '')}
               >
-                复制图片地址
+                复制原始引用地址
               </Button>
             </div>
           </div>

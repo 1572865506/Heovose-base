@@ -182,13 +182,13 @@ export default function AdminProductsPage() {
     <div className="space-y-10 animate-in fade-in slide-in-from-bottom-4 duration-700">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
         <div className="space-y-1">
-          <h2 className="text-2xl font-headline font-bold text-slate-900 flex items-center gap-4">
+          <h2 className="text-2xl font-headline font-bold text-foreground flex items-center gap-4">
             <div className="h-10 w-10 rounded-2xl bg-primary/10 flex items-center justify-center text-primary">
               <Package className="h-5 w-5" />
             </div>
             产品资源中心
           </h2>
-          <p className="text-xs text-slate-400 font-bold uppercase tracking-[0.2em] pl-14">Management / Product Catalog</p>
+          <p className="text-xs text-muted-foreground font-bold uppercase tracking-[0.2em] pl-14">Management / Product Catalog</p>
         </div>
         
         <Link href="/admin/products/editor">
@@ -199,153 +199,154 @@ export default function AdminProductsPage() {
       </div>
 
       {/* 高级搜索与筛选栏 - Glassmorphism */}
-      <div className="flex flex-col lg:flex-row items-center gap-4 bg-white/60 backdrop-blur-md p-4 rounded-[2rem] border border-white/40 shadow-[0_8px_30px_rgb(0,0,0,0.04)]">
+      <div className="flex flex-col lg:flex-row items-center gap-4 bg-card/40 backdrop-blur-3xl p-5 rounded-[2.5rem] border border-border/10 shadow-2xl shadow-black/20">
         <div className="relative flex-1 w-full group">
-          <Search className="absolute left-5 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 group-focus-within:text-primary transition-colors" />
+          <Search className="absolute left-6 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground/40 group-focus-within:text-primary transition-all" />
           <Input 
             placeholder="按名称、型号或序列号搜索 / SEARCH PRODUCTS..." 
-            className="pl-12 border-none bg-slate-500/5 focus-visible:ring-0 rounded-[1.25rem] h-12 text-xs font-medium placeholder:text-slate-400 placeholder:font-bold placeholder:uppercase placeholder:tracking-widest"
+            className="pl-14 border-none bg-muted/10 focus-visible:ring-0 rounded-2xl h-14 text-xs font-bold placeholder:text-muted-foreground/20 placeholder:font-bold placeholder:uppercase placeholder:tracking-[0.2em] transition-all"
             value={searchQuery}
             onChange={e => setSearchQuery(e.target.value)}
           />
         </div>
           <div className="flex items-center gap-3 w-full lg:w-auto">
             {/* 排序选择器 */}
-            <div className="h-12 flex items-center gap-3 px-5 bg-slate-500/5 rounded-[1.25rem] border border-transparent focus-within:border-primary/20 transition-all w-full lg:w-56 relative">
-               <BarChart3 className="h-3.5 w-3.5 text-slate-400 shrink-0" />
+            <div className="h-14 flex items-center gap-3 px-6 bg-muted/10 rounded-2xl border border-transparent focus-within:border-primary/20 transition-all w-full lg:w-64 relative">
+               <BarChart3 className="h-4 w-4 text-muted-foreground/40 shrink-0" />
                <Select value={`${sortConfig.key}-${sortConfig.order}`} onValueChange={(v) => {
                  const [key, order] = v.split('-');
                  setSortConfig({ key, order: order as any });
                }}>
-                  <SelectTrigger className="border-none bg-transparent h-full p-0 shadow-none focus:ring-0 text-xs font-bold uppercase tracking-widest text-slate-600">
+                  <SelectTrigger className="border-none bg-transparent h-full p-0 shadow-none focus:ring-0 text-[10px] font-bold uppercase tracking-widest text-foreground/60">
                     <SelectValue placeholder="排序方式" />
                   </SelectTrigger>
-                  <SelectContent className="rounded-2xl border-border/40 shadow-2xl">
-                    <SelectItem value="updatedAt-desc" className="text-xs font-bold uppercase tracking-widest py-3">最近修改 (LATEST EDIT)</SelectItem>
-                    <SelectItem value="updatedAt-asc" className="text-xs font-bold uppercase tracking-widest py-3">最早修改 (OLDEST EDIT)</SelectItem>
-                    <SelectItem value="createdAt-desc" className="text-xs font-bold uppercase tracking-widest py-3">最近发布 (NEWEST)</SelectItem>
-                    <SelectItem value="createdAt-asc" className="text-xs font-bold uppercase tracking-widest py-3">最早发布 (OLDEST)</SelectItem>
-                    <SelectItem value="name-asc" className="text-xs font-bold uppercase tracking-widest py-3">名称 A-Z (NAME A-Z)</SelectItem>
-                    <SelectItem value="name-desc" className="text-xs font-bold uppercase tracking-widest py-3">名称 Z-A (NAME Z-A)</SelectItem>
+                  <SelectContent className="rounded-2xl border-border/10 bg-card/90 backdrop-blur-xl shadow-2xl">
+                    <SelectItem value="updatedAt-desc" className="text-[10px] font-bold uppercase tracking-widest py-3">最近修改 (LATEST EDIT)</SelectItem>
+                    <SelectItem value="updatedAt-asc" className="text-[10px] font-bold uppercase tracking-widest py-3">最早修改 (OLDEST EDIT)</SelectItem>
+                    <SelectItem value="createdAt-desc" className="text-[10px] font-bold uppercase tracking-widest py-3">最近发布 (NEWEST)</SelectItem>
+                    <SelectItem value="createdAt-asc" className="text-[10px] font-bold uppercase tracking-widest py-3">最早发布 (OLDEST)</SelectItem>
+                    <SelectItem value="name-asc" className="text-[10px] font-bold uppercase tracking-widest py-3">名称 A-Z (NAME A-Z)</SelectItem>
+                    <SelectItem value="name-desc" className="text-[10px] font-bold uppercase tracking-widest py-3">名称 Z-A (NAME Z-A)</SelectItem>
                   </SelectContent>
                </Select>
             </div>
 
             {/* 分类筛选器 */}
-            <div className="h-12 flex items-center gap-3 px-5 bg-slate-500/5 rounded-[1.25rem] border border-transparent focus-within:border-primary/20 transition-all w-full lg:w-56 relative">
-               <Filter className="h-3.5 w-3.5 text-slate-400 shrink-0" />
+            <div className="h-14 flex items-center gap-3 px-6 bg-muted/10 rounded-2xl border border-transparent focus-within:border-primary/20 transition-all w-full lg:w-64 relative">
+               <Filter className="h-4 w-4 text-muted-foreground/40 shrink-0" />
                <Select value={filterCategory} onValueChange={setFilterCategory}>
-                  <SelectTrigger className="border-none bg-transparent h-full p-0 shadow-none focus:ring-0 text-xs font-bold uppercase tracking-widest text-slate-600">
+                  <SelectTrigger className="border-none bg-transparent h-full p-0 shadow-none focus:ring-0 text-[10px] font-bold uppercase tracking-widest text-foreground/60">
                     <SelectValue placeholder="分类筛选" />
                   </SelectTrigger>
-                  <SelectContent className="rounded-2xl border-border/40 shadow-2xl">
-                    <SelectItem value="all" className="text-xs font-bold uppercase tracking-widest py-3">全部分类 (ALL)</SelectItem>
+                  <SelectContent className="rounded-2xl border-border/10 bg-card/90 backdrop-blur-xl shadow-2xl">
+                    <SelectItem value="all" className="text-[10px] font-bold uppercase tracking-widest py-3">全部分类 (ALL)</SelectItem>
                     {categories?.map(cat => (
-                      <SelectItem key={cat.id} value={cat.id} className="text-xs font-bold uppercase tracking-widest py-3">{getTranslation(cat.nameTextId)}</SelectItem>
+                      <SelectItem key={cat.id} value={cat.id} className="text-[10px] font-bold uppercase tracking-widest py-3">{getTranslation(cat.nameTextId)}</SelectItem>
                     ))}
                   </SelectContent>
                </Select>
             </div>
 
-            <Button variant="ghost" size="icon" className="h-12 w-12 rounded-[1.25rem] bg-slate-500/5 hover:bg-destructive/5 text-slate-400 hover:text-destructive transition-all" onClick={() => {setSearchQuery(''); setFilterCategory('all'); setSortConfig({ key: 'updatedAt', order: 'desc' });}}>
+            <Button variant="ghost" size="icon" className="h-14 w-14 rounded-2xl bg-muted/10 hover:bg-destructive/10 text-muted-foreground/40 hover:text-destructive transition-all" onClick={() => {setSearchQuery(''); setFilterCategory('all'); setSortConfig({ key: 'updatedAt', order: 'desc' });}}>
                <X className="h-4 w-4" />
             </Button>
           </div>
       </div>
 
-      <div className="bg-white/80 backdrop-blur-xl rounded-[2.5rem] border border-white/40 shadow-[0_30px_60px_-15px_rgba(0,0,0,0.05)] overflow-hidden">
+      <div className="bg-card/40 backdrop-blur-3xl rounded-[2.5rem] border border-border/10 shadow-2xl shadow-black/10 overflow-hidden">
         <Table>
-          <TableHeader className="bg-slate-500/[0.03] border-b border-border/40">
-            <TableRow className="hover:bg-transparent border-none h-14">
-              <TableHead className="w-20 pl-8 text-xs font-bold uppercase tracking-[0.2em] text-slate-400">预览 / PREVIEW</TableHead>
-              <TableHead className="text-xs font-bold uppercase tracking-[0.2em] text-slate-400">产品识别 / IDENTITY</TableHead>
-              <TableHead className="text-xs font-bold uppercase tracking-[0.2em] text-slate-400 text-center">业务分类 / CATEGORY</TableHead>
-              <TableHead className="text-xs font-bold uppercase tracking-[0.2em] text-slate-400 text-center">发布状态 / STATUS</TableHead>
-              <TableHead className="text-xs font-bold uppercase tracking-[0.2em] text-slate-400 text-center">语言可见性 / VISIBILITY</TableHead>
-              <TableHead className="text-right pr-8 text-xs font-bold uppercase tracking-[0.2em] text-slate-400">操作 / ACTIONS</TableHead>
+          <TableHeader className="bg-muted/30 border-b border-border/10">
+            <TableRow className="hover:bg-transparent border-none h-16">
+              <TableHead className="w-24 pl-10 text-[10px] font-bold uppercase tracking-[0.25em] text-muted-foreground/60">预览 / PREVIEW</TableHead>
+              <TableHead className="text-[10px] font-bold uppercase tracking-[0.25em] text-muted-foreground/60">产品识别 / IDENTITY</TableHead>
+              <TableHead className="text-[10px] font-bold uppercase tracking-[0.25em] text-muted-foreground/60 text-center">业务分类 / CATEGORY</TableHead>
+              <TableHead className="text-[10px] font-bold uppercase tracking-[0.25em] text-muted-foreground/60 text-center">发布状态 / STATUS</TableHead>
+              <TableHead className="text-[10px] font-bold uppercase tracking-[0.25em] text-muted-foreground/60 text-center">语言可见性 / VISIBILITY</TableHead>
+              <TableHead className="text-right pr-10 text-[10px] font-bold uppercase tracking-[0.25em] text-muted-foreground/60">操作 / ACTIONS</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {isProdsLoading ? (
-              <TableRow><TableCell colSpan={6} className="h-64 text-center"><div className="flex flex-col items-center justify-center gap-3"><Loader2 className="h-8 w-8 animate-spin text-primary opacity-20" /><p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">正在拉取资源库...</p></div></TableCell></TableRow>
+              <TableRow><TableCell colSpan={6} className="h-80 text-center"><div className="flex flex-col items-center justify-center gap-4"><Loader2 className="h-10 w-10 animate-spin text-primary opacity-20" /><p className="text-[10px] font-bold text-muted-foreground/30 uppercase tracking-[0.3em]">正在拉取资源库...</p></div></TableCell></TableRow>
             ) : filteredProducts.length === 0 ? (
-              <TableRow><TableCell colSpan={6} className="h-64 text-center"><div className="flex flex-col items-center justify-center gap-3 opacity-30"><Package className="h-10 w-10 text-slate-300" /><p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">未找到符合条件的硬件资源</p></div></TableCell></TableRow>
+              <TableRow><TableCell colSpan={6} className="h-80 text-center"><div className="flex flex-col items-center justify-center gap-6 opacity-20"><Package className="h-14 w-14 text-muted-foreground" /><p className="text-[10px] font-bold text-muted-foreground uppercase tracking-[0.4em]">未找到符合条件的硬件资源</p></div></TableCell></TableRow>
             ) : filteredProducts.map((p) => {
               const enabledLangs = p.enabledLanguages || ['zh', 'en'];
               return (
-                <TableRow key={p.id} className="group hover:bg-primary/[0.015] transition-all duration-300 border-b border-border/40 last:border-0 min-h-24">
-                  <TableCell className="pl-8">
-                    <div className="relative h-14 w-14 rounded-2xl border border-border/40 bg-white shadow-sm overflow-hidden group-hover:scale-110 transition-transform duration-500">
+                <TableRow key={p.id} className="group hover:bg-primary/[0.02] transition-all duration-500 border-b border-border/10 last:border-0 relative">
+                  <TableCell className="pl-10 py-6">
+                    <div className="absolute left-0 top-4 bottom-4 w-1 bg-primary scale-y-0 group-hover:scale-y-100 transition-transform duration-500 rounded-r-full" />
+                    <div className="relative h-16 w-16 rounded-2xl border border-border/10 bg-background shadow-inner overflow-hidden group-hover:scale-105 transition-transform duration-500">
                       {p.mainImageUrl ? (
-                        <Image src={getAssetUrl(p.mainImageUrl)} alt="" fill className="object-contain p-2" unoptimized />
+                        <Image src={getAssetUrl(p.mainImageUrl)} alt="" fill className="object-contain p-2.5" unoptimized />
                       ) : (
-                        <div className="absolute inset-0 bg-slate-50 flex items-center justify-center text-slate-300"><Package className="h-6 w-6" /></div>
+                        <div className="absolute inset-0 bg-muted/5 flex items-center justify-center text-muted-foreground/10"><Package className="h-8 w-8" /></div>
                       )}
                     </div>
                   </TableCell>
                   <TableCell>
-                    <div className="flex flex-col gap-1">
+                    <div className="flex flex-col gap-1.5">
                       <div className="flex items-center gap-3">
                         <a 
                           href={`/products/${p.id}`} 
                           target="_blank" 
                           rel="noopener noreferrer"
-                          className="font-headline font-bold text-[14px] text-slate-900 hover:text-primary transition-colors flex items-center gap-2 group/link"
+                          className="font-headline font-bold text-[15px] text-foreground hover:text-primary transition-colors flex items-center gap-2 group/link"
                         >
                           {getTranslation(p.nameTextId, 'zh')}
                           <ExternalLink className="h-3 w-3 opacity-0 group-hover/link:opacity-100 transition-opacity" />
                         </a>
-                        <span className="text-[9px] font-mono bg-slate-100 text-slate-400 px-1.5 py-0.5 rounded uppercase">{p.id.slice(-9)}</span>
+                        <span className="text-[9px] font-bold bg-primary/5 text-primary px-2 py-0.5 rounded-lg uppercase tracking-tighter">ID: {p.id.slice(-6)}</span>
                       </div>
-                      <span className="text-xs font-bold text-slate-400 uppercase tracking-widest line-clamp-1">{getTranslation(p.nameTextId, 'en')}</span>
+                      <span className="text-[10px] font-bold text-muted-foreground/40 uppercase tracking-[0.15em] line-clamp-1">{getTranslation(p.nameTextId, 'en')}</span>
                     </div>
                   </TableCell>
                   <TableCell className="text-center">
-                    <span className="inline-flex items-center h-7 px-3 rounded-full bg-slate-100 text-xs font-bold text-slate-600 uppercase tracking-tighter ring-1 ring-slate-200">{getCategoryName(p.categoryId)}</span>
+                    <span className="inline-flex items-center h-8 px-4 rounded-xl bg-muted/10 text-[10px] font-bold text-muted-foreground/60 uppercase tracking-widest border border-border/5">{getCategoryName(p.categoryId)}</span>
                   </TableCell>
                   <TableCell>
-                    <div className="flex items-center justify-center gap-4">
+                    <div className="flex items-center justify-center gap-5">
                       <div className={cn(
                         "h-2 w-2 rounded-full",
-                        p.status === 'published' ? "bg-emerald-500 shadow-[0_0_10px_rgba(16,185,129,0.4)]" : "bg-slate-300"
+                        p.status === 'published' ? "bg-emerald-500 shadow-[0_0_15px_rgba(16,185,129,0.5)] animate-pulse" : "bg-muted-foreground/20"
                       )} />
                       <span className={cn(
-                        "text-xs font-bold uppercase tracking-[0.15em]",
-                        p.status === 'published' ? "text-emerald-600" : "text-slate-400"
+                        "text-[10px] font-bold uppercase tracking-[0.2em] w-24 text-left",
+                        p.status === 'published' ? "text-emerald-500" : "text-muted-foreground/30"
                       )}>
                         {p.status === 'published' ? 'Active / 发布' : 'Draft / 草稿'}
                       </span>
-                      <button className="h-8 w-8 rounded-xl hover:bg-slate-100 flex items-center justify-center transition-all opacity-0 group-hover:opacity-100" onClick={() => toggleStatus(p)}>
-                        {p.status === 'published' ? <EyeOff className="h-4 w-4 text-slate-400" /> : <Eye className="h-4 w-4 text-emerald-600" />}
+                      <button className="h-9 w-9 rounded-xl hover:bg-primary/15 flex items-center justify-center transition-all opacity-0 group-hover:opacity-100" onClick={() => toggleStatus(p)}>
+                        {p.status === 'published' ? <EyeOff className="h-4.5 w-4.5 text-muted-foreground/60 hover:text-primary" /> : <Eye className="h-4.5 w-4.5 text-emerald-500" />}
                       </button>
                     </div>
                   </TableCell>
                   <TableCell>
-                    <div className="flex items-center justify-center gap-5">
+                    <div className="flex items-center justify-center gap-6">
                       {activeLanguages.map(lang => {
                         const isEnabled = enabledLangs.includes(lang.code);
                         return (
                           <div key={lang.code} className="flex flex-col items-center gap-2">
-                            <span className={cn("text-xs font-bold uppercase transition-colors", isEnabled ? "text-primary" : "text-slate-300")}>{lang.code}</span>
+                            <span className={cn("text-[9px] font-bold uppercase transition-colors tracking-widest", isEnabled ? "text-primary" : "text-muted-foreground/20")}>{lang.code}</span>
                             <Switch 
                               checked={isEnabled}
                               onCheckedChange={() => handleToggleLanguage(p, lang.code, enabledLangs)}
-                              className="scale-75"
+                              className="scale-[0.65] data-[state=checked]:bg-primary/40"
                             />
                           </div>
                         );
                       })}
                     </div>
                   </TableCell>
-                  <TableCell className="pr-8 text-right">
-                    <div className="flex justify-end items-center gap-2">
+                  <TableCell className="pr-10 text-right">
+                    <div className="flex justify-end items-center gap-3">
                       <Link href={`/admin/products/editor?id=${p.id}`}>
-                        <Button size="icon" variant="ghost" className="h-10 w-10 rounded-xl hover:bg-primary/5 hover:text-primary transition-all">
-                          <Edit2 className="h-4 w-4" />
+                        <Button size="icon" variant="ghost" className="h-11 w-11 rounded-2xl hover:bg-primary/15 hover:text-primary transition-all">
+                          <Edit2 className="h-4.5 w-4.5" />
                         </Button>
                       </Link>
-                      <Button size="icon" variant="ghost" className="h-10 w-10 rounded-xl text-destructive hover:bg-destructive/5 transition-all" onClick={() => handleDelete(p)}>
-                        <Trash2 className="h-4 w-4" />
+                      <Button size="icon" variant="ghost" className="h-11 w-11 rounded-2xl text-destructive hover:bg-destructive/15 transition-all" onClick={() => handleDelete(p)}>
+                        <Trash2 className="h-4.5 w-4.5" />
                       </Button>
                     </div>
                   </TableCell>
@@ -356,10 +357,10 @@ export default function AdminProductsPage() {
         </Table>
 
         {/* 底部信息提示 */}
-        <div className="px-8 py-5 bg-slate-50/50 border-t border-border/40 flex items-center justify-between">
-           <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Total Hardware: {filteredProducts.length}</p>
-           <div className="flex items-center gap-2 text-[10px] font-bold text-slate-400 uppercase tracking-widest">
-              <Globe className="h-3 w-3" /> System: Multi-language Enabled
+        <div className="px-10 py-6 bg-muted/5 border-t border-border/10 flex items-center justify-between">
+           <p className="text-[10px] font-bold text-muted-foreground/20 uppercase tracking-[0.3em]">Total Hardware Index: {filteredProducts.length}</p>
+           <div className="flex items-center gap-3 text-[10px] font-bold text-muted-foreground/20 uppercase tracking-[0.3em]">
+              <Globe className="h-3.5 w-3.5 opacity-50" /> System: Multi-language Node Active
            </div>
         </div>
       </div>

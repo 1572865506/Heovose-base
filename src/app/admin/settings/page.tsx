@@ -39,7 +39,7 @@ interface StorageConfig {
 }
 
 const GlassCard = ({ children, className }: { children: React.ReactNode, className?: string }) => (
-  <div className={cn("bg-white/70 backdrop-blur-xl border border-white/40 shadow-2xl rounded-3xl overflow-hidden", className)}>
+  <div className={cn("bg-card/70 backdrop-blur-xl border border-border/40 shadow-2xl rounded-3xl overflow-hidden", className)}>
     {children}
   </div>
 );
@@ -242,12 +242,12 @@ export default function AdminSettingsPage() {
       <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
         <div className="space-y-2">
           <div className="flex items-center gap-3">
-            <div className="h-12 w-12 rounded-2xl bg-slate-900 flex items-center justify-center text-white shadow-xl shadow-slate-200">
+            <div className="h-12 w-12 rounded-2xl bg-foreground flex items-center justify-center text-background shadow-xl">
               <Settings2 className="h-6 w-6" />
             </div>
-            <h2 className="text-3xl font-headline font-bold text-slate-900">核心系统设定</h2>
+            <h2 className="text-3xl font-headline font-bold text-foreground">核心系统设定</h2>
           </div>
-          <p className="text-sm text-slate-500 font-medium max-w-2xl pl-1">配置全站基础参数、语言降级策略以及底层基础设施连接状态。</p>
+          <p className="text-sm text-muted-foreground font-medium max-w-2xl pl-1">配置全站基础参数、语言降级策略以及底层基础设施连接状态。</p>
         </div>
         <Button 
           onClick={handleSave} 
@@ -259,39 +259,39 @@ export default function AdminSettingsPage() {
         </Button>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-10">
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
         {/* Main Content Area (Left) */}
-        <div className="lg:col-span-8 space-y-10">
-          <GlassCard className="border-none shadow-[0_32px_64px_-12px_rgba(0,0,0,0.12)]">
-            <div className="bg-slate-900 p-8 text-white relative overflow-hidden">
-               <div className="absolute top-0 right-0 w-64 h-64 bg-primary/20 blur-[100px] rounded-full translate-x-32 -translate-y-32" />
+        <div className="lg:col-span-8 space-y-6">
+          <GlassCard className="shadow-[0_32px_64px_-12px_rgba(0,0,0,0.12)]">
+            <div className="p-6 md:p-8 border-b border-border flex items-center justify-between relative overflow-hidden">
+               <div className="absolute top-0 right-0 w-64 h-64 bg-primary/5 blur-[80px] rounded-full translate-x-32 -translate-y-32" />
                <div className="relative z-10 flex items-center gap-4">
-                  <div className="h-12 w-12 rounded-2xl bg-white/10 backdrop-blur-md flex items-center justify-center border border-white/10">
-                    <Globe className="h-6 w-6 text-primary" />
+                  <div className="h-12 w-12 rounded-2xl bg-primary/10 flex items-center justify-center text-primary border border-primary/20">
+                    <Globe className="h-6 w-6" />
                   </div>
                   <div>
-                    <CardTitle className="text-xl font-headline font-bold">全局本地化引擎</CardTitle>
-                    <CardDescription className="text-white/40 text-[10px] uppercase tracking-[0.2em] mt-1 font-bold">Site Connectivity & Fallback</CardDescription>
+                    <CardTitle className="text-xl font-headline font-bold text-foreground">全局本地化引擎</CardTitle>
+                    <CardDescription className="text-[10px] uppercase tracking-[0.2em] mt-1 font-bold text-muted-foreground">Site Connectivity & Fallback</CardDescription>
                   </div>
                </div>
             </div>
-            <CardContent className="p-10 space-y-10">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
-                <div className="space-y-4">
-                  <Label className="text-[11px] font-bold uppercase tracking-[0.2em] text-slate-400 flex items-center gap-2 pl-1">
+            <CardContent className="p-6 md:p-8 space-y-8">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="space-y-3">
+                  <Label className="text-[11px] font-bold uppercase tracking-[0.2em] text-muted-foreground flex items-center gap-2 pl-1">
                     <Globe className="h-4 w-4 text-primary" /> 站点默认语种 (Fallback)
                   </Label>
                   <Select 
                     value={formData.defaultLanguage} 
                     onValueChange={(v) => setFormData({...formData, defaultLanguage: v})}
                   >
-                    <SelectTrigger className="h-14 rounded-2xl bg-slate-50 border-none font-bold text-slate-700 shadow-inner">
+                    <SelectTrigger className="h-10 rounded-xl bg-muted/10 border border-border/60 font-bold text-foreground/80 focus:ring-1 focus:ring-primary/30">
                       <SelectValue placeholder="选择默认语种" />
                     </SelectTrigger>
-                    <SelectContent className="rounded-2xl border-none shadow-2xl p-2">
+                    <SelectContent className="rounded-xl border-border/40 shadow-2xl p-1 bg-card/90 backdrop-blur-xl">
                       {formData.supportedLanguages.length > 0 ? (
                         formData.supportedLanguages.map(lang => (
-                          <SelectItem key={lang.code} value={lang.code} className="rounded-xl h-10 text-xs font-bold my-1">
+                          <SelectItem key={lang.code} value={lang.code} className="rounded-lg h-9 text-xs font-bold my-0.5">
                             {lang.label} ({lang.code.toUpperCase()})
                           </SelectItem>
                         ))
@@ -300,114 +300,114 @@ export default function AdminSettingsPage() {
                       )}
                     </SelectContent>
                   </Select>
-                  <p className="text-[10px] text-slate-400 italic font-medium leading-relaxed px-1">
+                  <p className="text-[10px] text-muted-foreground italic font-medium leading-relaxed px-1">
                     若 URL 未指定语种或特定内容缺失翻译，系统将强制回退至此锚点。
                   </p>
                 </div>
                 
-                <div className="space-y-4">
-                   <Label className="text-[11px] font-bold uppercase tracking-[0.2em] text-slate-400 flex items-center gap-2 pl-1">
+                <div className="space-y-3">
+                   <Label className="text-[11px] font-bold uppercase tracking-[0.2em] text-muted-foreground flex items-center gap-2 pl-1">
                      <ShieldCheck className="h-4 w-4 text-primary" /> 访问控制协议
                    </Label>
-                   <div className="h-14 flex items-center justify-between px-6 bg-slate-50 rounded-2xl border border-slate-100 shadow-inner">
-                      <span className="text-xs font-bold text-slate-900">生产环境流量拦截</span>
-                      <div className="flex items-center gap-2 text-green-600 bg-green-50 px-3 py-1 rounded-full border border-green-100">
-                        <div className="h-1.5 w-1.5 rounded-full bg-green-600 animate-pulse" />
-                        <span className="text-[10px] font-bold uppercase tracking-wider">LIVE</span>
+                   <div className="h-10 flex items-center justify-between px-4 bg-muted/10 rounded-xl border border-border/60">
+                      <span className="text-xs font-bold text-foreground">生产环境流量拦截</span>
+                      <div className="flex items-center gap-2 text-emerald-500 bg-emerald-500/10 px-2.5 py-0.5 rounded-full border border-emerald-500/20">
+                        <div className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                        <span className="text-[9px] font-bold uppercase tracking-wider">LIVE</span>
                       </div>
                    </div>
-                   <p className="text-[10px] text-slate-400 italic font-medium leading-relaxed px-1">
+                   <p className="text-[10px] text-muted-foreground italic font-medium leading-relaxed px-1">
                     当前正在监听外部公共请求。权限由 <b>Auth.js</b> 与后端路由守卫共同保障。
                   </p>
                 </div>
               </div>
 
               {/* 基础设施存储配置 */}
-              <div className="pt-10 border-t border-slate-100 space-y-4">
-                <Label className="text-[11px] font-bold uppercase tracking-[0.2em] text-slate-400 flex items-center gap-2 pl-1">
+              <div className="pt-6 border-t border-border/40 space-y-3">
+                <Label className="text-[11px] font-bold uppercase tracking-[0.2em] text-muted-foreground flex items-center gap-2 pl-1">
                   <Database className="h-4 w-4 text-primary" /> 存储资产分发前缀 (Storage Base URL)
                 </Label>
-                <div className="flex gap-4">
+                <div className="flex gap-3">
                   <input 
                     type="text"
                     value={storageData.baseUrl}
                     onChange={(e) => setStorageData({ ...storageData, baseUrl: e.target.value })}
                     placeholder="例如: /storage 或 http://192.168.1.190:9000/heovose-assets"
-                    className="flex-1 h-14 rounded-2xl bg-slate-50 border-none px-6 font-mono text-xs font-bold text-slate-700 shadow-inner focus:ring-2 focus:ring-primary/20 outline-none"
+                    className="flex-1 h-10 rounded-xl bg-muted/10 border border-border/60 px-4 font-mono text-xs font-bold text-foreground placeholder:text-muted-foreground/50 focus:ring-1 focus:ring-primary/30 outline-none transition-all"
                   />
                   <Button 
                     variant="outline" 
                     onClick={() => setStorageData({ baseUrl: '/storage' })}
-                    className="h-14 px-6 rounded-2xl border-dashed border-slate-200 text-[10px] font-bold uppercase tracking-widest text-slate-400 hover:text-primary"
+                    className="h-10 px-4 rounded-xl border-dashed border-border/60 text-[10px] font-bold uppercase tracking-widest text-muted-foreground hover:text-primary transition-all"
                   >
                     恢复默认
                   </Button>
                 </div>
-                <p className="text-[10px] text-slate-400 italic font-medium leading-relaxed px-1">
-                  <b>提示：</b>默认建议使用 <code className="text-primary">/storage</code>（内网/公网自适应模式）。若使用独立 CDN，请填入完整 URL。
+                <p className="text-[10px] text-muted-foreground italic font-medium leading-relaxed px-1">
+                  <b>提示：</b>默认建议使用 <code className="text-primary bg-primary/5 px-1 py-0.5 rounded border border-primary/10">/storage</code>（内网/公网自适应模式）。若使用独立 CDN，请填入完整 URL。
                 </p>
               </div>
             </CardContent>
           </GlassCard>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
-            <GlassCard className="border-none shadow-xl">
-              <CardHeader className="p-8 border-b border-slate-50">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <GlassCard className="shadow-xl">
+              <CardHeader className="p-6 border-b border-border/40">
                 <div className="flex items-center gap-4">
-                  <div className="h-12 w-12 rounded-2xl bg-accent/10 text-accent flex items-center justify-center shadow-inner">
-                    <Cloud className="h-6 w-6" />
+                  <div className="h-10 w-10 rounded-xl bg-accent/10 text-accent flex items-center justify-center border border-accent/20">
+                    <Cloud className="h-5 w-5" />
                   </div>
                   <div>
-                    <CardTitle className="text-lg font-headline font-bold text-slate-900">基础设施架构</CardTitle>
-                    <CardDescription className="text-[10px] uppercase font-bold text-slate-400 tracking-widest mt-1">Cloud Infra</CardDescription>
+                    <CardTitle className="text-base font-headline font-bold text-foreground">基础设施架构</CardTitle>
+                    <CardDescription className="text-[10px] uppercase font-bold text-muted-foreground tracking-widest mt-0.5">Cloud Infra</CardDescription>
                   </div>
                 </div>
               </CardHeader>
-              <CardContent className="p-8 space-y-6">
-                <div className="space-y-4">
-                  <div className="flex justify-between items-center pb-3 border-b border-slate-100">
-                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Database</span>
-                    <code className="text-xs font-mono font-bold text-slate-900">PostgreSQL</code>
+              <CardContent className="p-6 space-y-4">
+                <div className="space-y-3">
+                  <div className="flex justify-between items-center pb-2.5 border-b border-border/30">
+                    <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Database</span>
+                    <code className="text-xs font-mono font-bold text-foreground bg-muted/10 px-1.5 py-0.5 rounded border border-border/40">PostgreSQL</code>
                   </div>
-                  <div className="flex justify-between items-center pb-3 border-b border-slate-100">
-                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Storage</span>
-                    <span className="text-xs font-mono font-bold text-slate-900">MinIO S3</span>
+                  <div className="flex justify-between items-center pb-2.5 border-b border-border/30">
+                    <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Storage</span>
+                    <span className="text-xs font-mono font-bold text-foreground">MinIO S3</span>
                   </div>
                   <div className="flex justify-between items-center">
-                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Runtime</span>
-                    <span className="text-xs font-bold text-slate-900">Next.js 15.x</span>
+                    <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Runtime</span>
+                    <span className="text-xs font-bold text-foreground">Next.js 15.x</span>
                   </div>
                 </div>
               </CardContent>
             </GlassCard>
 
-            <GlassCard className="border-none shadow-xl border-t-4 border-t-primary">
-              <CardHeader className="p-8 border-b border-slate-50">
+            <GlassCard className="shadow-xl border-t border-t-primary/80">
+              <CardHeader className="p-6 border-b border-border/40">
                 <div className="flex items-center gap-4">
-                  <div className="h-12 w-12 rounded-2xl bg-primary/10 text-primary flex items-center justify-center shadow-inner">
-                    <ShieldCheck className="h-6 w-6" />
+                  <div className="h-10 w-10 rounded-xl bg-primary/10 text-primary flex items-center justify-center border border-primary/20">
+                    <ShieldCheck className="h-5 w-5" />
                   </div>
                   <div>
-                    <CardTitle className="text-lg font-headline font-bold text-slate-900">维护与安全中心</CardTitle>
-                    <CardDescription className="text-[10px] uppercase font-bold text-slate-400 tracking-widest mt-1">Maintenance & Security</CardDescription>
+                    <CardTitle className="text-base font-headline font-bold text-foreground">维护与安全中心</CardTitle>
+                    <CardDescription className="text-[10px] uppercase font-bold text-muted-foreground tracking-widest mt-0.5">Maintenance & Security</CardDescription>
                   </div>
                 </div>
               </CardHeader>
-              <CardContent className="p-8 space-y-6">
+              <CardContent className="p-6 space-y-4">
                 <div className="flex flex-col gap-4">
-                  <div className="space-y-2">
-                    <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">状态摘要</p>
-                    <p className="text-xs font-medium text-slate-700">
+                  <div className="space-y-1">
+                    <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-widest">状态摘要</p>
+                    <p className="text-xs font-medium text-foreground/80">
                       {sysStatus?.lastBackup ? `最近备份: ${new Date(sysStatus.lastBackup.time).toLocaleString()}` : '暂无备份记录'}
                     </p>
                   </div>
                   
-                  <div className="grid grid-cols-2 gap-3">
+                  <div className="grid grid-cols-2 gap-2.5">
                     <Button 
                       variant="outline" 
                       onClick={handleBackup}
                       disabled={isBackingUp}
-                      className="rounded-xl h-12 border-slate-200 text-xs font-bold hover:bg-slate-50 gap-2"
+                      className="rounded-xl h-10 border-border/60 text-xs font-bold hover:bg-muted/10 gap-2"
                     >
                       {isBackingUp ? <Loader2 className="h-4 w-4 animate-spin" /> : <Database className="h-4 w-4" />}
                       立即备份
@@ -417,7 +417,7 @@ export default function AdminSettingsPage() {
                         variant="default"
                         onClick={handleUpdate}
                         disabled={isUpdating}
-                        className="rounded-xl h-12 bg-primary text-white text-xs font-bold shadow-lg shadow-primary/20 gap-2 animate-bounce"
+                        className="rounded-xl h-10 bg-primary text-white text-xs font-bold shadow-lg shadow-primary/20 gap-2 animate-bounce hover:scale-105 transition-all"
                       >
                         {isUpdating ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}
                         立即安装 ({updateInfo.count})
@@ -427,7 +427,7 @@ export default function AdminSettingsPage() {
                         variant="outline"
                         onClick={handleCheckUpdate}
                         disabled={isChecking}
-                        className="rounded-xl h-12 border-primary/20 text-primary text-xs font-bold hover:bg-primary/5 gap-2"
+                        className="rounded-xl h-10 border-primary/30 text-primary text-xs font-bold hover:bg-primary/5 gap-2"
                       >
                         {isChecking ? <Loader2 className="h-4 w-4 animate-spin" /> : <Cpu className="h-4 w-4" />}
                         检查更新
@@ -442,18 +442,18 @@ export default function AdminSettingsPage() {
                       </p>
                       <div className="space-y-1">
                         {updateInfo.logs.map((log: string, idx: number) => (
-                          <p key={idx} className="text-[10px] text-slate-600 font-mono truncate">{log}</p>
+                          <p key={idx} className="text-[10px] text-foreground/60 font-mono truncate">{log}</p>
                         ))}
                       </div>
                     </div>
                   )}
 
                   {sysStatus?.updateLog && (
-                    <div className="p-4 bg-slate-900 rounded-xl overflow-hidden">
-                      <p className="text-[9px] text-primary font-bold uppercase tracking-widest mb-2 flex items-center gap-2">
+                    <div className="p-4 bg-black/60 border border-border/40 rounded-xl overflow-hidden">
+                      <p className="text-[9px] text-primary font-bold uppercase tracking-widest mb-1.5 flex items-center gap-2">
                         <Terminal className="h-3 w-3" /> 维护日志摘要
                       </p>
-                      <pre className="text-[9px] text-white/60 font-mono leading-relaxed whitespace-pre-wrap max-h-24 overflow-y-auto">
+                      <pre className="text-[9px] text-emerald-400/90 font-mono leading-relaxed whitespace-pre-wrap max-h-24 overflow-y-auto">
                         {sysStatus.updateLog}
                       </pre>
                     </div>
@@ -464,57 +464,57 @@ export default function AdminSettingsPage() {
           </div>
 
           {/* Backup History Table */}
-          <GlassCard className="border-none shadow-xl">
-             <CardHeader className="p-8 border-b border-slate-50 flex flex-row items-center justify-between">
+          <GlassCard className="shadow-xl">
+             <CardHeader className="p-6 md:p-8 border-b border-border/40 flex flex-row items-center justify-between">
                 <div className="flex items-center gap-4">
-                  <div className="h-12 w-12 rounded-2xl bg-slate-100 text-slate-500 flex items-center justify-center shadow-inner">
-                    <History className="h-6 w-6" />
+                  <div className="h-10 w-10 rounded-xl bg-muted/20 text-muted-foreground flex items-center justify-center border border-border/40">
+                    <History className="h-5 w-5" />
                   </div>
                   <div>
-                    <CardTitle className="text-lg font-headline font-bold text-slate-900">备份档案库</CardTitle>
-                    <CardDescription className="text-[10px] uppercase font-bold text-slate-400 tracking-widest mt-1">Backup History & Recovery</CardDescription>
+                    <CardTitle className="text-lg font-headline font-bold text-foreground">备份档案库</CardTitle>
+                    <CardDescription className="text-[10px] uppercase font-bold text-muted-foreground tracking-widest mt-0.5">Backup History & Recovery</CardDescription>
                   </div>
                 </div>
-                <Button variant="ghost" size="sm" onClick={fetchBackups} className="text-[10px] font-bold uppercase tracking-widest text-primary hover:bg-primary/5">刷新列表</Button>
+                <Button variant="ghost" size="sm" onClick={fetchBackups} className="text-[10px] font-bold uppercase tracking-widest text-primary hover:bg-primary/5 h-8 rounded-lg">刷新列表</Button>
              </CardHeader>
              <CardContent className="p-0">
                 <div className="overflow-x-auto">
                    <table className="w-full text-left">
-                      <thead className="bg-slate-50/50">
+                      <thead className="bg-muted/10">
                          <tr>
-                            <th className="px-8 py-4 text-[10px] font-bold uppercase text-slate-400 tracking-widest">文件名称</th>
-                            <th className="px-8 py-4 text-[10px] font-bold uppercase text-slate-400 tracking-widest text-center">类型</th>
-                            <th className="px-8 py-4 text-[10px] font-bold uppercase text-slate-400 tracking-widest text-center">大小</th>
-                            <th className="px-8 py-4 text-[10px] font-bold uppercase text-slate-400 tracking-widest text-right">操作</th>
+                            <th className="px-8 py-3.5 text-[10px] font-bold uppercase text-muted-foreground tracking-widest">文件名称</th>
+                            <th className="px-8 py-3.5 text-[10px] font-bold uppercase text-muted-foreground tracking-widest text-center">类型</th>
+                            <th className="px-8 py-3.5 text-[10px] font-bold uppercase text-muted-foreground tracking-widest text-center">大小</th>
+                            <th className="px-8 py-3.5 text-[10px] font-bold uppercase text-muted-foreground tracking-widest text-right">操作</th>
                          </tr>
                       </thead>
-                      <tbody className="divide-y divide-slate-50">
+                      <tbody className="divide-y divide-border/40">
                          {backups.filter(b => b.type === "DATABASE").length > 0 ? (
                            backups.filter(b => b.type === "DATABASE").map((backup, idx) => (
-                              <tr key={idx} className="group hover:bg-slate-50/50 transition-colors">
-                                 <td className="px-8 py-6">
+                              <tr key={idx} className="group hover:bg-muted/10 transition-colors">
+                                 <td className="px-8 py-4.5">
                                     <div className="flex items-center gap-3">
-                                       <FileText className="h-4 w-4 text-slate-300" />
+                                       <FileText className="h-4 w-4 text-muted-foreground/60" />
                                        <div>
-                                          <p className="text-xs font-bold text-slate-700">{backup.filename}</p>
-                                          <p className="text-[10px] text-slate-400 mt-0.5">{new Date(backup.time).toLocaleString()}</p>
+                                          <p className="text-xs font-bold text-foreground/90">{backup.filename}</p>
+                                          <p className="text-[10px] text-muted-foreground/80 mt-0.5">{new Date(backup.time).toLocaleString()}</p>
                                        </div>
                                     </div>
                                  </td>
-                                 <td className="px-8 py-6 text-center">
-                                    <Badge variant="outline" className="text-[9px] font-bold uppercase bg-blue-50 text-blue-600 border-blue-100">SQL DATA</Badge>
+                                 <td className="px-8 py-4.5 text-center">
+                                    <Badge variant="outline" className="text-[9px] font-bold uppercase bg-blue-500/10 text-blue-500 border-blue-500/20">SQL DATA</Badge>
                                  </td>
-                                 <td className="px-8 py-6 text-center text-[10px] font-bold text-slate-500">
+                                 <td className="px-8 py-4.5 text-center text-[10px] font-bold text-muted-foreground">
                                     {(backup.size / 1024 / 1024).toFixed(2)} MB
                                  </td>
-                                 <td className="px-8 py-6 text-right">
-                                    <div className="flex justify-end gap-2">
+                                 <td className="px-8 py-4.5 text-right">
+                                    <div className="flex justify-end gap-1.5">
                                        <Button 
                                          variant="ghost" 
                                          size="sm" 
                                          onClick={() => handleDownload(backup.filename)}
                                          title="下载备份"
-                                         className="h-8 w-8 p-0 rounded-lg text-slate-400 hover:text-primary hover:bg-primary/5"
+                                         className="h-8 w-8 p-0 rounded-lg text-muted-foreground hover:text-primary hover:bg-primary/5"
                                        >
                                           <Download className="h-4 w-4" />
                                        </Button>
@@ -524,7 +524,7 @@ export default function AdminSettingsPage() {
                                          disabled={isRestoring}
                                          onClick={() => handleRestore(backup.filename)}
                                          title="还原此版本"
-                                         className="h-8 w-8 p-0 rounded-lg text-slate-400 hover:text-red-500 hover:bg-red-50"
+                                         className="h-8 w-8 p-0 rounded-lg text-muted-foreground hover:text-red-500 hover:bg-red-500/10"
                                        >
                                           {isRestoring ? <Loader2 className="h-4 w-4 animate-spin" /> : <RotateCcw className="h-4 w-4" />}
                                        </Button>
@@ -537,7 +537,7 @@ export default function AdminSettingsPage() {
                              <td colSpan={4} className="px-8 py-12 text-center">
                                <div className="flex flex-col items-center gap-2 opacity-30">
                                  <Database className="h-8 w-8" />
-                                 <p className="text-xs font-bold uppercase tracking-widest">暂无备份档案</p>
+                                 <p className="text-xs font-bold uppercase tracking-widest text-muted-foreground">暂无备份档案</p>
                                </div>
                              </td>
                            </tr>
@@ -550,47 +550,50 @@ export default function AdminSettingsPage() {
         </div>
 
         {/* Sidebar (Right) */}
-        <div className="lg:col-span-4 space-y-8">
-          <GlassCard className="border-none bg-slate-900 text-white shadow-2xl">
-            <CardHeader className="p-8 border-b border-white/5">
-               <div className="flex items-center gap-3">
-                  <div className="h-2 w-2 rounded-full bg-green-500 animate-pulse" />
-                  <CardTitle className="text-[11px] font-bold uppercase tracking-[0.2em] text-primary">系统内核状态监控</CardTitle>
+        <div className="lg:col-span-4 space-y-6">
+          <GlassCard className="shadow-2xl">
+            <CardHeader className="p-6 border-b border-border/40">
+               <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                     <div className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
+                     <CardTitle className="text-xs font-bold uppercase tracking-wider text-primary">系统内核状态监控</CardTitle>
+                  </div>
+                  <Badge variant="outline" className="text-[9px] font-bold uppercase bg-emerald-500/10 text-emerald-500 border-emerald-500/20">Active</Badge>
                </div>
             </CardHeader>
-            <CardContent className="p-8 space-y-8">
-               <div className="space-y-6">
-                  <div className="flex justify-between items-center border-b border-white/5 pb-4">
-                     <span className="text-[10px] font-bold text-white/30 uppercase tracking-widest">Version</span>
+            <CardContent className="p-6 space-y-6">
+               <div className="space-y-4">
+                  <div className="flex justify-between items-center border-b border-border/40 pb-3">
+                     <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Version</span>
                      <span className="font-mono font-bold text-primary">v2.1.0-gold</span>
                   </div>
-                  <div className="flex justify-between items-center border-b border-white/5 pb-4">
-                     <span className="text-[10px] font-bold text-white/30 uppercase tracking-widest">Stability</span>
-                     <span className="font-bold text-xs uppercase text-green-400">99.9% Uptime</span>
+                  <div className="flex justify-between items-center border-b border-border/40 pb-3">
+                     <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Stability</span>
+                     <span className="font-bold text-xs uppercase text-emerald-400">99.9% Uptime</span>
                   </div>
                   <div className="flex justify-between items-center">
-                     <span className="text-[10px] font-bold text-white/30 uppercase tracking-widest">DB Cluster</span>
-                     <Badge className="bg-primary text-white border-none h-6 px-3 text-[9px] font-bold uppercase shadow-lg shadow-primary/20">POSTGRESQL CONNECTED</Badge>
+                     <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">DB Cluster</span>
+                     <span className="text-[10px] font-bold text-primary bg-primary/5 px-2 py-0.5 rounded border border-primary/20 uppercase">POSTGRESQL CONNECTED</span>
                   </div>
                </div>
 
-               <div className="p-6 bg-white/5 rounded-[2rem] border border-white/5 flex gap-4">
-                  <div className="mt-1">
-                    <Info className="h-5 w-5 text-primary shrink-0" />
+               <div className="p-4 bg-muted/10 rounded-2xl border border-border/40 flex gap-3">
+                  <div className="mt-0.5">
+                    <Info className="h-4 w-4 text-primary shrink-0" />
                   </div>
-                  <p className="text-[10px] text-white/40 leading-relaxed font-medium italic">
+                  <p className="text-[10px] text-muted-foreground leading-relaxed font-medium italic">
                     <b>节点提示：</b>此面板展示当前容器的硬件拓扑与连接池状态。若出现离线报警，请检查 GCP 密钥存续期。
                   </p>
                </div>
             </CardContent>
           </GlassCard>
 
-          <GlassCard className="border-none shadow-sm opacity-60 hover:opacity-100 transition-opacity">
-            <div className="p-8 text-center space-y-4">
-               <p className="text-[10px] text-slate-400 leading-relaxed font-bold uppercase tracking-[0.1em]">
+          <GlassCard className="opacity-80 hover:opacity-100 transition-opacity">
+            <div className="p-6 text-center space-y-3">
+               <p className="text-[10px] text-muted-foreground leading-relaxed font-bold uppercase tracking-[0.1em]">
                  需要增减支持的本地化语言？
                </p>
-               <Button variant="outline" className="w-full h-14 rounded-2xl border-primary/20 text-primary font-bold uppercase text-[10px] tracking-widest hover:bg-primary/5" asChild>
+               <Button variant="outline" className="w-full h-10 rounded-xl border-primary/30 text-primary font-bold uppercase text-[10px] tracking-widest hover:bg-primary/5 h-10 rounded-xl" asChild>
                  <a href="/admin/translations">进入翻译资产治理</a>
                </Button>
             </div>

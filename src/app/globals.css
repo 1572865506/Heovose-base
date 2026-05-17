@@ -52,6 +52,48 @@
     --sidebar-border: 210 10% 85%;
     --sidebar-ring: 204 100% 30%;
   }
+
+  /* Aurora Admin Dark Mode System - Mandatory Isolation */
+  .admin-interface-dark {
+    --background: 210 20% 3.5%;
+    --foreground: 0 0% 98%;
+    
+    --card: 210 20% 7%;
+    --card-foreground: 0 0% 98%;
+    
+    --popover: 210 20% 6%;
+    --popover-foreground: 0 0% 98%;
+    
+    --primary: 204 100% 48%;
+    --primary-foreground: 0 0% 100%;
+    
+    --secondary: 210 15% 15%;
+    --secondary-foreground: 0 0% 98%;
+    
+    --muted: 210 15% 12%;
+    --muted-foreground: 210 10% 65%;
+    
+    --accent: 204 100% 12%;
+    --accent-foreground: 204 100% 90%;
+    
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 98%;
+    
+    --border: 210 15% 14%;
+    --input: 210 15% 14%;
+    --ring: 204 100% 48%;
+
+    --sidebar-background: 210 20% 5%;
+    --sidebar-foreground: 0 0% 98%;
+    --sidebar-primary: 204 100% 48%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 204 100% 12%;
+    --sidebar-accent-foreground: 0 0% 98%;
+    --sidebar-border: 210 15% 12%;
+    --sidebar-ring: 204 100% 48%;
+
+    color-scheme: dark;
+  }
 }
 
 @layer base {
@@ -86,6 +128,8 @@
     background-size: 400% 400%;
     animation: ai-gradient-shift 5s linear infinite;
     -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+    -webkit-mask-composite: xor;
+    mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
     mask-composite: exclude;
   }
 
@@ -319,3 +363,73 @@
 .cursor-zoom-out-custom {
   cursor: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='32' height='32' viewBox='0 0 24 24'%3E%3Cpath d='M8 3v3a2 2 0 0 1-2 2H3m18 0h-3a2 2 0 0 1-2-2V3m0 18v-3a2 2 0 0 1 2-2h3M3 16h3a2 2 0 0 1 2 2v3' fill='none' stroke='black' stroke-width='4' stroke-linecap='round' stroke-linejoin='round'/%3E%3Cpath d='M8 3v3a2 2 0 0 1-2 2H3m18 0h-3a2 2 0 0 1-2-2V3m0 18v-3a2 2 0 0 1 2-2h3M3 16h3a2 2 0 0 1 2 2v3' fill='none' stroke='white' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") 16 16, auto;
 }
+
+/* Aurora Admin Dark Mode - Rich Text & Design Specification Adjustments */
+.admin-interface-dark strong,
+.admin-interface-dark .prose strong {
+  color: hsl(var(--foreground)) !important;
+  font-weight: 800 !important;
+}
+
+.admin-interface-dark td,
+.admin-interface-dark .prose td {
+  color: hsl(var(--foreground) / 0.85) !important;
+}
+
+/* Refined Table Headings and borders under Admin Dark Mode */
+.admin-interface-dark th,
+.admin-interface-dark .prose th {
+  color: hsl(var(--foreground)) !important;
+  background-color: hsl(var(--muted) / 0.8) !important;
+}
+
+.admin-interface-dark tr,
+.admin-interface-dark .prose tr {
+  border-bottom-color: hsl(var(--border) / 0.6) !important;
+}
+
+.admin-interface-dark tr:nth-child(even),
+.admin-interface-dark .prose tr:nth-child(even) {
+  background-color: hsl(var(--muted) / 0.15) !important;
+}
+
+/* Inline Code Styles under Admin Dark Mode */
+.admin-interface-dark code,
+.admin-interface-dark .prose code {
+  color: #38bdf8 !important; /* Premium Sky Blue for highly readable developer feel */
+  background-color: hsl(var(--muted) / 0.8) !important;
+  padding: 0.15rem 0.35rem !important;
+  border-radius: 0.375rem !important;
+  font-size: 0.85em !important;
+  font-family: var(--font-mono, monospace) !important;
+  border: 1px solid hsl(var(--border) / 0.5) !important;
+}
+
+/* Eliminate anti-pattern markdown backticks in prose container */
+.prose code::before,
+.prose code::after,
+.admin-interface-dark .prose code::before,
+.admin-interface-dark .prose code::after {
+  content: "" !important;
+}
+
+/* Custom Dot Flow Loading Animation */
+@keyframes admin-dot-flow {
+  0%, 100% {
+    transform: scale(0.65);
+    opacity: 0.35;
+    filter: drop-shadow(0 0 2px var(--dot-shadow, currentColor));
+  }
+  50% {
+    transform: scale(1.45);
+    opacity: 1;
+    filter: drop-shadow(0 0 10px var(--dot-shadow, currentColor));
+  }
+}
+
+.admin-dot-loader-item {
+  animation: admin-dot-flow 1.5s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+  will-change: transform, opacity, filter;
+}
+
+

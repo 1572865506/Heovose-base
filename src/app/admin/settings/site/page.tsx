@@ -78,7 +78,7 @@ const GlassCard = ({ children, className }: { children: React.ReactNode, classNa
   <motion.div 
     initial={{ opacity: 0, y: 20 }}
     animate={{ opacity: 1, y: 0 }}
-    className={cn("bg-white/80 backdrop-blur-2xl border border-white/40 shadow-[0_8px_32px_rgba(0,0,0,0.04)] rounded-[2.5rem] overflow-hidden", className)}
+    className={cn("bg-card backdrop-blur-xl border border-border shadow-sm rounded-3xl overflow-hidden", className)}
   >
     {children}
   </motion.div>
@@ -87,7 +87,7 @@ const GlassCard = ({ children, className }: { children: React.ReactNode, classNa
 const SectionLabel = ({ children, icon: Icon }: { children: React.ReactNode, icon?: any }) => (
   <div className="flex items-center gap-2 mb-4">
     {Icon && <Icon className="w-3.5 h-3.5 text-primary/50" />}
-    <span className="text-[11px] font-bold text-slate-400 uppercase tracking-[0.2em]">{children}</span>
+    <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-[0.2em]">{children}</span>
   </div>
 );
 
@@ -190,26 +190,26 @@ export default function SiteSettingsPage() {
       {/* Header Area */}
       <div className="flex flex-col md:flex-row md:items-end justify-between gap-8">
         <div className="space-y-4">
-          <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-primary/5 border border-primary/10">
+          <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-primary/5 admin-interface-dark:bg-primary/10 border border-primary/10">
             <Sparkles className="w-4 h-4 text-primary animate-pulse" />
-            <span className="text-[10px] font-black uppercase tracking-widest text-primary">Brand Engine v2.0</span>
+            <span className="text-[10px] font-black uppercase tracking-widest text-primary admin-interface-dark:text-primary-foreground">Brand Engine v2.0</span>
           </div>
-          <h1 className="text-5xl font-black text-slate-900 tracking-tight font-headline">站点与品牌设置</h1>
-          <p className="text-slate-500 max-w-xl leading-relaxed">
-            在此管理您的全球品牌资产、联系矩阵以及智能 SEO 引擎。
+          <h1 className="text-5xl font-black text-slate-900 admin-interface-dark:text-white tracking-tight font-headline">站点与品牌设置</h1>
+          <p className="text-slate-500 admin-interface-dark:text-slate-400 max-w-xl leading-relaxed">
+            在此管理您的全球 brand 资产、联系矩阵以及智能 SEO 引擎。
             所有更改将实时同步至全球 20+ 个边缘节点。
           </p>
         </div>
 
-        <div className="flex items-center gap-6 p-2 bg-white/50 backdrop-blur-xl border border-white/40 rounded-[2rem] shadow-sm">
-          <div className="flex p-1 bg-slate-100/50 rounded-full">
+        <div className="flex items-center gap-6 p-2 bg-card border border-border rounded-2xl shadow-sm backdrop-blur-xl">
+          <div className="flex p-1 bg-muted/20 border border-border/40 rounded-xl">
             {activeLanguages.map((l: any) => (
               <button
                 key={l.code}
                 onClick={() => setActiveLang(l.code)}
                 className={cn(
-                  "px-6 py-2 rounded-full text-xs font-bold transition-all duration-300",
-                  activeLang === l.code ? "bg-white text-primary shadow-lg scale-105" : "text-slate-400 hover:text-slate-600"
+                  "px-6 py-2 rounded-lg text-xs font-bold transition-all duration-300",
+                  activeLang === l.code ? "bg-card text-primary shadow-md scale-105 border border-border/60" : "text-muted-foreground hover:text-foreground"
                 )}
               >
                 {l.label}
@@ -219,7 +219,7 @@ export default function SiteSettingsPage() {
           <Button 
             onClick={handleSave} 
             disabled={isSaving}
-            className="h-12 px-10 rounded-full bg-primary hover:bg-primary/90 text-white font-bold gap-3 shadow-xl shadow-primary/20 transition-all active:scale-95"
+            className="rounded-xl h-10 px-8 gap-2 font-bold uppercase tracking-widest text-[10px] shadow-lg shadow-primary/10 hover:scale-105 transition-all"
           >
             {isSaving ? <Loader2 className="w-5 h-5 animate-spin" /> : <Save className="w-5 h-5" />}
             签署并部署
@@ -227,45 +227,45 @@ export default function SiteSettingsPage() {
         </div>
       </div>
 
-      <div className="grid grid-cols-12 gap-12">
+      <div className="grid grid-cols-12 gap-8">
         {/* Left Column: Config Matrix */}
-        <div className="col-span-12 lg:col-span-8 space-y-12">
-          <Tabs defaultValue="identity" className="space-y-10">
-            <TabsList className="bg-slate-100/50 p-1.5 rounded-[2rem] h-14 border border-slate-200/50 w-full md:w-fit backdrop-blur-md">
-              <TabsTrigger value="identity" className="rounded-full px-10 h-full data-[state=active]:bg-white data-[state=active]:shadow-lg text-[11px] font-black uppercase tracking-widest transition-all">品牌身份</TabsTrigger>
-              <TabsTrigger value="contact" className="rounded-full px-10 h-full data-[state=active]:bg-white data-[state=active]:shadow-lg text-[11px] font-black uppercase tracking-widest transition-all">联系矩阵</TabsTrigger>
-              <TabsTrigger value="seo" className="rounded-full px-10 h-full data-[state=active]:bg-white data-[state=active]:shadow-lg text-[11px] font-black uppercase tracking-widest transition-all">智能 SEO</TabsTrigger>
-              <TabsTrigger value="about" className="rounded-full px-10 h-full data-[state=active]:bg-white data-[state=active]:shadow-lg text-[11px] font-black uppercase tracking-widest transition-all">关于内容</TabsTrigger>
+        <div className="col-span-12 lg:col-span-8 space-y-8">
+          <Tabs defaultValue="identity" className="space-y-8">
+            <TabsList className="bg-muted/20 border border-border/40 p-1.5 rounded-2xl mb-2 h-14 inline-flex gap-1 shadow-inner backdrop-blur-sm">
+              <TabsTrigger value="identity" className="rounded-xl px-8 h-11 text-xs font-bold uppercase tracking-wider gap-2 transition-all duration-300 data-[state=active]:bg-card data-[state=active]:text-primary data-[state=active]:shadow-[0_4px_12px_rgba(0,0,0,0.05)] data-[state=active]:border-border/60 border border-transparent text-muted-foreground hover:text-foreground">品牌身份</TabsTrigger>
+              <TabsTrigger value="contact" className="rounded-xl px-8 h-11 text-xs font-bold uppercase tracking-wider gap-2 transition-all duration-300 data-[state=active]:bg-card data-[state=active]:text-primary data-[state=active]:shadow-[0_4px_12px_rgba(0,0,0,0.05)] data-[state=active]:border-border/60 border border-transparent text-muted-foreground hover:text-foreground">联系矩阵</TabsTrigger>
+              <TabsTrigger value="seo" className="rounded-xl px-8 h-11 text-xs font-bold uppercase tracking-wider gap-2 transition-all duration-300 data-[state=active]:bg-card data-[state=active]:text-primary data-[state=active]:shadow-[0_4px_12px_rgba(0,0,0,0.05)] data-[state=active]:border-border/60 border border-transparent text-muted-foreground hover:text-foreground">智能 SEO</TabsTrigger>
+              <TabsTrigger value="about" className="rounded-xl px-8 h-11 text-xs font-bold uppercase tracking-wider gap-2 transition-all duration-300 data-[state=active]:bg-card data-[state=active]:text-primary data-[state=active]:shadow-[0_4px_12px_rgba(0,0,0,0.05)] data-[state=active]:border-border/60 border border-transparent text-muted-foreground hover:text-foreground">关于内容</TabsTrigger>
             </TabsList>
 
-            <TabsContent value="identity" className="mt-0 space-y-10 focus-visible:outline-none">
+            <TabsContent value="identity" className="mt-0 space-y-8 focus-visible:outline-none">
               <GlassCard>
-                <div className="p-10 border-b border-slate-100 flex items-center justify-between">
+                <div className="p-6 md:p-8 border-b border-border flex items-center justify-between">
                   <div>
-                    <CardTitle className="text-2xl font-bold font-headline text-slate-900">核心身份信息</CardTitle>
+                    <CardTitle className="text-lg font-bold text-foreground">核心身份信息</CardTitle>
                     <CardDescription className="mt-1">定义站点在全球搜索结果中的第一印象。</CardDescription>
                   </div>
-                  <div className="p-3 bg-primary/5 rounded-2xl"><Globe className="w-6 h-6 text-primary" /></div>
+                  <div className="p-2 bg-primary/5 rounded-xl text-primary"><Globe className="w-5 h-5" /></div>
                 </div>
-                <div className="p-12 space-y-10">
+                <div className="p-6 md:p-8 space-y-6">
                   <div className="space-y-4">
                     <SectionLabel icon={Info}>站点标题 (Meta Title)</SectionLabel>
                     <Input 
                       value={transEdits[SITE_KEYS.TITLE]?.[activeLang] || ''} 
                       onChange={e => handleTransChange(SITE_KEYS.TITLE, activeLang, e.target.value)}
                       placeholder="例如: Heovose - 全球领先的 IT 解决方案提供商"
-                      className="h-16 rounded-2xl bg-slate-50/50 border-slate-100 focus:bg-white focus:ring-4 focus:ring-primary/5 transition-all text-lg font-bold"
+                      className="h-11 rounded-xl text-sm font-bold"
                     />
                   </div>
 
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div className="space-y-4">
                       <SectionLabel icon={Search}>关键词 (Keywords)</SectionLabel>
                       <Input 
                         value={transEdits[SITE_KEYS.KEYWORDS]?.[activeLang] || ''} 
                         onChange={e => handleTransChange(SITE_KEYS.KEYWORDS, activeLang, e.target.value)}
                         placeholder="关键词, 多个, 以逗号分隔"
-                        className="h-14 rounded-xl bg-slate-50/50 border-slate-100"
+                        className="h-10 rounded-xl"
                       />
                     </div>
                     <div className="space-y-4">
@@ -274,7 +274,7 @@ export default function SiteSettingsPage() {
                         value={localConfig.primaryDomain || ''} 
                         onChange={e => setLocalConfig({...localConfig, primaryDomain: e.target.value})}
                         placeholder="https://heovose.com"
-                        className="h-14 rounded-xl bg-slate-50/50 border-slate-100 font-mono text-sm"
+                        className="h-10 rounded-xl font-mono text-xs"
                       />
                     </div>
                   </div>
@@ -285,23 +285,23 @@ export default function SiteSettingsPage() {
                       value={transEdits[SITE_KEYS.DESC]?.[activeLang] || ''} 
                       onChange={e => handleTransChange(SITE_KEYS.DESC, activeLang, e.target.value)}
                       placeholder="简明扼要地描述您的品牌，字数建议在 160 字以内。"
-                      className="min-h-[120px] rounded-2xl bg-slate-50/50 border-slate-100 focus:bg-white p-6 resize-none leading-relaxed"
+                      className="min-h-[120px] rounded-xl p-4 leading-relaxed"
                     />
                   </div>
                 </div>
               </GlassCard>
 
               <GlassCard>
-                <div className="p-10 border-b border-slate-100 flex items-center justify-between">
+                <div className="p-6 md:p-8 border-b border-border flex items-center justify-between">
                   <div>
-                    <CardTitle className="text-2xl font-bold font-headline text-slate-900">社交媒体矩阵</CardTitle>
+                    <CardTitle className="text-lg font-bold text-foreground">社交媒体矩阵</CardTitle>
                     <CardDescription className="mt-1">配置页脚展示的全球社交平台链接。</CardDescription>
                   </div>
-                  <Button onClick={addSocial} variant="outline" className="rounded-full gap-2 border-primary/20 text-primary hover:bg-primary/5">
-                    <Plus className="w-4 h-4" /> 添加平台
+                  <Button onClick={addSocial} variant="outline" size="sm" className="rounded-xl gap-2 border-border h-9 px-4 text-[10px] font-bold uppercase tracking-wider hover:bg-muted/10">
+                    <Plus className="w-3.5 h-3.5" /> 添加平台
                   </Button>
                 </div>
-                <div className="p-10">
+                <div className="p-6 md:p-8">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <AnimatePresence mode="popLayout">
                       {(localConfig.socialLinks || []).map((link, idx) => (
@@ -310,25 +310,25 @@ export default function SiteSettingsPage() {
                           initial={{ opacity: 0, scale: 0.95 }}
                           animate={{ opacity: 1, scale: 1 }}
                           exit={{ opacity: 0, scale: 0.95 }}
-                          className="group flex items-center gap-4 p-5 bg-slate-50/50 rounded-2xl border border-slate-100 hover:border-primary/20 hover:bg-white transition-all shadow-sm hover:shadow-md"
+                          className="group flex items-center gap-4 p-5 bg-muted/10 hover:bg-muted/20 border border-border/60 hover:border-primary/30 rounded-2xl transition-all duration-300 shadow-sm"
                         >
                           <div className="space-y-2 flex-1">
                             <Input 
                               value={link.platform} 
                               onChange={e => updateSocial(idx, 'platform', e.target.value)}
                               placeholder="平台名称"
-                              className="h-8 bg-transparent border-none p-0 text-xs font-black uppercase tracking-widest text-primary focus:ring-0"
+                              className="h-8 bg-transparent border-none p-0 text-xs font-black uppercase tracking-widest text-primary focus-visible:bg-transparent focus-visible:ring-0 focus-visible:border-none"
                             />
                             <Input 
                               value={link.url} 
                               onChange={e => updateSocial(idx, 'url', e.target.value)}
                               placeholder="URL 链接"
-                              className="h-10 bg-white rounded-lg border-slate-100 text-sm font-medium"
+                              className="h-9 rounded-lg"
                             />
                           </div>
                           <button 
                             onClick={() => removeSocial(idx)}
-                            className="p-3 text-slate-300 hover:text-red-500 hover:bg-red-50 rounded-xl transition-all opacity-0 group-hover:opacity-100"
+                            className="p-3 text-muted-foreground hover:text-red-500 hover:bg-red-500/10 rounded-xl transition-all opacity-0 group-hover:opacity-100"
                           >
                             <Trash2 className="w-4 h-4" />
                           </button>
@@ -337,91 +337,92 @@ export default function SiteSettingsPage() {
                     </AnimatePresence>
                   </div>
                   {(!localConfig.socialLinks || localConfig.socialLinks.length === 0) && (
-                    <div className="py-20 text-center border-2 border-dashed border-slate-100 rounded-[2rem]">
-                      <Share2 className="w-12 h-12 text-slate-200 mx-auto mb-4" />
-                      <p className="text-slate-400 font-medium">暂无社交媒体配置，点击右上角添加。</p>
+                    <div className="py-12 text-center border border-dashed border-border rounded-2xl bg-muted/5">
+                      <Share2 className="w-10 h-10 text-muted-foreground/30 mx-auto mb-4" />
+                      <p className="text-muted-foreground/60 text-xs font-medium">暂无社交媒体配置，点击右上角添加。</p>
                     </div>
                   )}
                 </div>
               </GlassCard>
             </TabsContent>
 
-            <TabsContent value="contact" className="mt-0 space-y-10 focus-visible:outline-none">
+
+            <TabsContent value="contact" className="mt-0 space-y-8 focus-visible:outline-none">
               <GlassCard>
-                <div className="p-10 border-b border-slate-100 flex items-center justify-between">
+                <div className="p-6 md:p-8 border-b border-border flex items-center justify-between">
                   <div>
-                    <CardTitle className="text-2xl font-bold font-headline text-slate-900">企业联系信息</CardTitle>
+                    <CardTitle className="text-lg font-bold text-foreground">企业联系信息</CardTitle>
                     <CardDescription className="mt-1">用于展示在页脚与联系我们页面的全球通用信息。</CardDescription>
                   </div>
-                  <div className="p-3 bg-accent/5 rounded-2xl"><Building2 className="w-6 h-6 text-accent" /></div>
+                  <div className="p-2 bg-accent/5 rounded-xl text-accent"><Building2 className="w-5 h-5" /></div>
                 </div>
-                <div className="p-12">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-8">
+                <div className="p-6 md:p-8">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div className="space-y-4">
                       <SectionLabel>官方公司名称</SectionLabel>
-                      <Input value={transEdits[SITE_KEYS.COMPANY_NAME]?.[activeLang] || ''} onChange={e => handleTransChange(SITE_KEYS.COMPANY_NAME, activeLang, e.target.value)} className="h-14 rounded-xl" />
+                      <Input value={transEdits[SITE_KEYS.COMPANY_NAME]?.[activeLang] || ''} onChange={e => handleTransChange(SITE_KEYS.COMPANY_NAME, activeLang, e.target.value)} className="h-10 rounded-xl" />
                     </div>
                     <div className="space-y-4">
                       <SectionLabel>总部地址</SectionLabel>
-                      <Input value={transEdits[SITE_KEYS.COMPANY_ADDR]?.[activeLang] || ''} onChange={e => handleTransChange(SITE_KEYS.COMPANY_ADDR, activeLang, e.target.value)} className="h-14 rounded-xl" />
+                      <Input value={transEdits[SITE_KEYS.COMPANY_ADDR]?.[activeLang] || ''} onChange={e => handleTransChange(SITE_KEYS.COMPANY_ADDR, activeLang, e.target.value)} className="h-10 rounded-xl" />
                     </div>
                     <div className="space-y-4">
                       <SectionLabel icon={Phone}>全球客服热线</SectionLabel>
-                      <Input value={transEdits[SITE_KEYS.COMPANY_PHONE]?.[activeLang] || ''} onChange={e => handleTransChange(SITE_KEYS.COMPANY_PHONE, activeLang, e.target.value)} className="h-14 rounded-xl" />
+                      <Input value={transEdits[SITE_KEYS.COMPANY_PHONE]?.[activeLang] || ''} onChange={e => handleTransChange(SITE_KEYS.COMPANY_PHONE, activeLang, e.target.value)} className="h-10 rounded-xl" />
                     </div>
                     <div className="space-y-4">
                       <SectionLabel icon={Mail}>官方联络邮箱</SectionLabel>
-                      <Input value={transEdits[SITE_KEYS.COMPANY_EMAIL]?.[activeLang] || ''} onChange={e => handleTransChange(SITE_KEYS.COMPANY_EMAIL, activeLang, e.target.value)} className="h-14 rounded-xl" />
+                      <Input value={transEdits[SITE_KEYS.COMPANY_EMAIL]?.[activeLang] || ''} onChange={e => handleTransChange(SITE_KEYS.COMPANY_EMAIL, activeLang, e.target.value)} className="h-10 rounded-xl" />
                     </div>
                     <div className="space-y-4">
                       <SectionLabel icon={MessagesSquare}>WeChat ID</SectionLabel>
-                      <Input value={transEdits[SITE_KEYS.COMPANY_WECHAT]?.[activeLang] || ''} onChange={e => handleTransChange(SITE_KEYS.COMPANY_WECHAT, activeLang, e.target.value)} className="h-14 rounded-xl" />
+                      <Input value={transEdits[SITE_KEYS.COMPANY_WECHAT]?.[activeLang] || ''} onChange={e => handleTransChange(SITE_KEYS.COMPANY_WECHAT, activeLang, e.target.value)} className="h-10 rounded-xl" />
                     </div>
                     <div className="space-y-4">
                       <SectionLabel icon={GlobeIcon}>WhatsApp 号码</SectionLabel>
-                      <Input value={transEdits[SITE_KEYS.COMPANY_WHATSAPP]?.[activeLang] || ''} onChange={e => handleTransChange(SITE_KEYS.COMPANY_WHATSAPP, activeLang, e.target.value)} className="h-14 rounded-xl" />
+                      <Input value={transEdits[SITE_KEYS.COMPANY_WHATSAPP]?.[activeLang] || ''} onChange={e => handleTransChange(SITE_KEYS.COMPANY_WHATSAPP, activeLang, e.target.value)} className="h-10 rounded-xl" />
                     </div>
                   </div>
                 </div>
               </GlassCard>
             </TabsContent>
 
-            <TabsContent value="seo" className="mt-0 space-y-10 focus-visible:outline-none">
+            <TabsContent value="seo" className="mt-0 space-y-8 focus-visible:outline-none">
               <GlassCard>
-                <div className="p-10 border-b border-slate-100 flex items-center justify-between">
+                <div className="p-6 md:p-8 border-b border-border flex items-center justify-between">
                   <div>
-                    <CardTitle className="text-2xl font-bold font-headline text-slate-900">智能 SEO 模板引擎</CardTitle>
+                    <CardTitle className="text-lg font-bold text-foreground">智能 SEO 模板引擎</CardTitle>
                     <CardDescription className="mt-1">自动为成千上万个产品和文章页生成高度优化的 SEO 标题。</CardDescription>
                   </div>
-                  <div className="p-3 bg-blue-500/5 rounded-2xl"><Hash className="w-6 h-6 text-blue-500" /></div>
+                  <div className="p-2 bg-blue-500/5 rounded-xl text-blue-500"><Hash className="w-5 h-5" /></div>
                 </div>
-                <div className="p-12 space-y-10">
+                <div className="p-6 md:p-8 space-y-6">
                   <div className="space-y-4">
                     <SectionLabel icon={Database}>产品详情页模板 (Product Template)</SectionLabel>
                     <Input 
                       value={transEdits[SITE_KEYS.PRODUCT_SEO_TEMPLATE]?.[activeLang] || ''} 
                       onChange={e => handleTransChange(SITE_KEYS.PRODUCT_SEO_TEMPLATE, activeLang, e.target.value)}
                       placeholder="示例: {{title}} | {{category}} | Heovose Tech"
-                      className="h-16 rounded-2xl bg-slate-50/50 border-slate-100 font-mono text-primary"
+                      className="h-10 rounded-xl font-mono text-xs text-primary"
                     />
                     <div className="flex flex-wrap gap-2">
                       {['{{title}}', '{{category}}', '{{brand}}', '{{sku}}'].map(tag => (
-                        <span key={tag} className="px-3 py-1 bg-slate-100 text-[10px] font-bold text-slate-400 rounded-full border border-slate-200">{tag}</span>
+                        <span key={tag} className="px-3 py-1 bg-muted/20 text-[10px] font-bold text-muted-foreground rounded-full border border-border/40">{tag}</span>
                       ))}
                     </div>
                   </div>
 
-                  <div className="space-y-4 pt-6 border-t border-slate-50">
+                  <div className="space-y-4 pt-6 border-t border-border/60">
                     <SectionLabel icon={Database}>内容文章页模板 (Article Template)</SectionLabel>
                     <Input 
                       value={transEdits[SITE_KEYS.ARTICLE_SEO_TEMPLATE]?.[activeLang] || ''} 
                       onChange={e => handleTransChange(SITE_KEYS.ARTICLE_SEO_TEMPLATE, activeLang, e.target.value)}
                       placeholder="示例: {{title}} - 行业洞察 - Heovose"
-                      className="h-16 rounded-2xl bg-slate-50/50 border-slate-100 font-mono text-blue-600"
+                      className="h-10 rounded-xl font-mono text-xs text-blue-600 dark:text-blue-400"
                     />
                     <div className="flex flex-wrap gap-2">
                       {['{{title}}', '{{author}}', '{{brand}}'].map(tag => (
-                        <span key={tag} className="px-3 py-1 bg-slate-100 text-[10px] font-bold text-slate-400 rounded-full border border-slate-200">{tag}</span>
+                        <span key={tag} className="px-3 py-1 bg-muted/20 text-[10px] font-bold text-muted-foreground rounded-full border border-border/40">{tag}</span>
                       ))}
                     </div>
                   </div>
@@ -429,29 +430,33 @@ export default function SiteSettingsPage() {
               </GlassCard>
             </TabsContent>
 
-            <TabsContent value="about" className="mt-0 space-y-10 focus-visible:outline-none">
+            <TabsContent value="about" className="mt-0 space-y-8 focus-visible:outline-none">
               <GlassCard>
-                <div className="p-10 border-b border-slate-100">
-                  <CardTitle className="text-2xl font-bold font-headline text-slate-900">“关于我们” 页面核心文案</CardTitle>
+                <div className="p-6 md:p-8 border-b border-border flex items-center justify-between">
+                  <div>
+                    <CardTitle className="text-lg font-bold text-foreground">“关于我们” 页面核心文案</CardTitle>
+                    <CardDescription className="mt-1">在此管理前台企业介绍及大事记的文字描述。</CardDescription>
+                  </div>
+                  <div className="p-2 bg-primary/5 rounded-xl text-primary"><Sparkles className="w-5 h-5" /></div>
                 </div>
-                <div className="p-12 space-y-10">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
+                <div className="p-6 md:p-8 space-y-6">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div className="space-y-4">
                       <SectionLabel>Hero 顶部标题</SectionLabel>
-                      <Input value={transEdits[SITE_KEYS.ABOUT_HERO_TITLE]?.[activeLang] || ''} onChange={e => handleTransChange(SITE_KEYS.ABOUT_HERO_TITLE, activeLang, e.target.value)} className="h-14 font-bold" />
+                      <Input value={transEdits[SITE_KEYS.ABOUT_HERO_TITLE]?.[activeLang] || ''} onChange={e => handleTransChange(SITE_KEYS.ABOUT_HERO_TITLE, activeLang, e.target.value)} className="h-10 rounded-xl font-bold" />
                     </div>
                     <div className="space-y-4">
                       <SectionLabel>Hero 顶部副标题</SectionLabel>
-                      <Input value={transEdits[SITE_KEYS.ABOUT_HERO_SUBTITLE]?.[activeLang] || ''} onChange={e => handleTransChange(SITE_KEYS.ABOUT_HERO_SUBTITLE, activeLang, e.target.value)} className="h-14" />
+                      <Input value={transEdits[SITE_KEYS.ABOUT_HERO_SUBTITLE]?.[activeLang] || ''} onChange={e => handleTransChange(SITE_KEYS.ABOUT_HERO_SUBTITLE, activeLang, e.target.value)} className="h-10 rounded-xl" />
                     </div>
                   </div>
                   <div className="space-y-4">
                     <SectionLabel>品牌简介标题</SectionLabel>
-                    <Input value={transEdits[SITE_KEYS.ABOUT_INTRO_TITLE]?.[activeLang] || ''} onChange={e => handleTransChange(SITE_KEYS.ABOUT_INTRO_TITLE, activeLang, e.target.value)} className="h-14 font-bold" />
+                    <Input value={transEdits[SITE_KEYS.ABOUT_INTRO_TITLE]?.[activeLang] || ''} onChange={e => handleTransChange(SITE_KEYS.ABOUT_INTRO_TITLE, activeLang, e.target.value)} className="h-10 rounded-xl font-bold" />
                   </div>
                   <div className="space-y-4">
                     <SectionLabel>品牌详细介绍 (支持换行)</SectionLabel>
-                    <Textarea value={transEdits[SITE_KEYS.ABOUT_INTRO_TEXT]?.[activeLang] || ''} onChange={e => handleTransChange(SITE_KEYS.ABOUT_INTRO_TEXT, activeLang, e.target.value)} className="min-h-[200px] leading-relaxed p-6" />
+                    <Textarea value={transEdits[SITE_KEYS.ABOUT_INTRO_TEXT]?.[activeLang] || ''} onChange={e => handleTransChange(SITE_KEYS.ABOUT_INTRO_TEXT, activeLang, e.target.value)} className="min-h-[160px] rounded-xl p-4 leading-relaxed" />
                   </div>
                 </div>
               </GlassCard>
@@ -460,28 +465,28 @@ export default function SiteSettingsPage() {
         </div>
 
         {/* Right Column: Brand Assets & Preview */}
-        <div className="col-span-12 lg:col-span-4 space-y-12">
+        <div className="col-span-12 lg:col-span-4 space-y-8">
           {/* Logo Matrix */}
           <GlassCard>
-            <div className="p-8 border-b border-slate-100 flex items-center gap-3">
+            <div className="p-6 md:p-8 border-b border-border flex items-center gap-3">
               <ImageIcon className="w-5 h-5 text-primary" />
-              <CardTitle className="text-lg">品牌视觉资产 (Logo)</CardTitle>
+              <CardTitle className="text-base font-bold text-foreground">品牌视觉资产 (Logo)</CardTitle>
             </div>
-            <div className="p-8 space-y-8">
+            <div className="p-6 md:p-8 space-y-6">
               {/* Standard Logo */}
               <div className="space-y-4">
                 <div className="flex items-center justify-between">
                   <SectionLabel>标准 LOGO (Light Mode)</SectionLabel>
                   <TooltipProvider>
                     <Tooltip>
-                      <TooltipTrigger><Info className="w-4 h-4 text-slate-300" /></TooltipTrigger>
+                      <TooltipTrigger><Info className="w-4 h-4 text-muted-foreground/40" /></TooltipTrigger>
                       <TooltipContent><p className="w-48 text-xs">用于浅色背景，通常出现在导航栏和常规文档中。</p></TooltipContent>
                     </Tooltip>
                   </TooltipProvider>
                 </div>
                 <div 
                   onClick={() => {setMediaTarget('logoStandard'); setIsMediaOpen(true);}}
-                  className="group relative aspect-[3/1] bg-slate-50 border-2 border-dashed border-slate-200 rounded-3xl flex items-center justify-center cursor-pointer hover:border-primary/50 hover:bg-white transition-all overflow-hidden shadow-inner"
+                  className="group relative aspect-[3/1] bg-muted/10 hover:bg-muted/20 border-2 border-dashed border-border/60 hover:border-primary/50 rounded-2xl flex items-center justify-center cursor-pointer transition-all duration-300 overflow-hidden shadow-inner"
                 >
                   {localConfig.logoStandard ? (
                     <div className="relative w-full h-full p-6 transition-transform duration-500 group-hover:scale-105">
@@ -489,8 +494,8 @@ export default function SiteSettingsPage() {
                     </div>
                   ) : (
                     <div className="text-center space-y-2">
-                      <ImageIcon className="w-8 h-8 text-slate-300 mx-auto" />
-                      <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">点击上传</p>
+                      <ImageIcon className="w-8 h-8 text-muted-foreground/30 mx-auto" />
+                      <p className="text-[10px] text-muted-foreground/60 font-bold uppercase tracking-widest">点击上传</p>
                     </div>
                   )}
                   <div className="absolute inset-0 bg-primary/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
@@ -506,7 +511,7 @@ export default function SiteSettingsPage() {
                 </div>
                 <div 
                   onClick={() => {setMediaTarget('logoInverted'); setIsMediaOpen(true);}}
-                  className="group relative aspect-[3/1] bg-slate-900 border-2 border-slate-800 rounded-3xl flex items-center justify-center cursor-pointer hover:border-primary/50 transition-all overflow-hidden shadow-2xl"
+                  className="group relative aspect-[3/1] bg-black hover:bg-black/90 border-2 border-dashed border-border/60 hover:border-primary/50 rounded-2xl flex items-center justify-center cursor-pointer transition-all duration-300 overflow-hidden shadow-inner"
                 >
                   {localConfig.logoInverted ? (
                     <div className="relative w-full h-full p-6 transition-transform duration-500 group-hover:scale-105">
@@ -514,8 +519,8 @@ export default function SiteSettingsPage() {
                     </div>
                   ) : (
                     <div className="text-center space-y-2">
-                      <ImageIcon className="w-8 h-8 text-white/20 mx-auto" />
-                      <p className="text-[10px] text-white/40 font-bold uppercase tracking-widest">点击上传</p>
+                      <ImageIcon className="w-8 h-8 text-white/10 mx-auto" />
+                      <p className="text-[10px] text-white/30 font-bold uppercase tracking-widest">点击上传</p>
                     </div>
                   )}
                   <div className="absolute inset-0 bg-primary/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
@@ -527,24 +532,24 @@ export default function SiteSettingsPage() {
               {/* Favicon */}
               <div className="space-y-4">
                 <SectionLabel>网站图标 (Favicon)</SectionLabel>
-                <div className="flex items-center gap-6 p-6 bg-slate-50/50 rounded-2xl border border-slate-100">
-                  <div className="h-16 w-16 bg-white rounded-2xl border border-slate-100 shadow-sm flex items-center justify-center overflow-hidden">
+                <div className="flex items-center gap-4 p-4 bg-muted/10 border border-border/40 rounded-2xl">
+                  <div className="h-12 w-12 bg-card rounded-xl border border-border/60 shadow-sm flex items-center justify-center overflow-hidden">
                     {localConfig.favicon ? (
-                      <Image src={getAssetUrl(localConfig.favicon)} alt="Favicon" width={32} height={32} />
+                      <Image src={getAssetUrl(localConfig.favicon)} alt="Favicon" width={28} height={28} />
                     ) : (
-                      <Globe className="w-8 h-8 text-slate-200" />
+                      <Globe className="w-6 h-6 text-muted-foreground/30" />
                     )}
                   </div>
-                  <div className="space-y-2">
+                  <div className="space-y-1">
                     <Button 
                       variant="outline" 
                       size="sm" 
                       onClick={() => {setMediaTarget('favicon'); setIsMediaOpen(true);}}
-                      className="rounded-full h-10 px-6 font-bold"
+                      className="rounded-xl h-8 px-4 text-xs font-bold"
                     >
                       更换图标
                     </Button>
-                    <p className="text-[10px] text-slate-400">建议尺寸: 32x32 或 64x64px (ICO/PNG)</p>
+                    <p className="text-[9px] text-muted-foreground/50">建议尺寸: 32x32 或 64x64px (ICO/PNG)</p>
                   </div>
                 </div>
               </div>
@@ -552,26 +557,26 @@ export default function SiteSettingsPage() {
           </GlassCard>
 
           {/* Quick Health Status */}
-          <GlassCard className="bg-primary shadow-2xl shadow-primary/20 border-none relative overflow-hidden group">
+          <GlassCard className="bg-primary/95 shadow-2xl shadow-primary/20 border-none relative overflow-hidden group">
             <div className="absolute top-0 right-0 p-8 opacity-10 group-hover:scale-150 transition-transform duration-1000 rotate-12">
               <ShieldCheck className="w-40 h-40 text-white" />
             </div>
-            <div className="p-10 text-white space-y-6 relative z-10">
+            <div className="p-6 md:p-8 text-white space-y-4 relative z-10">
               <div className="flex items-center gap-3">
-                <CheckCircle2 className="w-6 h-6 text-white" />
-                <span className="text-sm font-black uppercase tracking-widest">系统合规性就绪</span>
+                <CheckCircle2 className="w-5 h-5 text-white animate-pulse" />
+                <span className="text-xs font-black uppercase tracking-widest">系统合规性就绪</span>
               </div>
-              <p className="text-white/80 text-sm leading-relaxed font-medium italic">
+              <p className="text-white/80 text-xs leading-relaxed font-medium italic">
                 “您的品牌配置符合国际 SEO 最佳实践。签署并部署后，系统将自动刷新边缘 CDN 缓存，确保全球一致性体验。”
               </p>
-              <div className="pt-4 flex gap-6">
+              <div className="pt-2 flex gap-6">
                 <div className="space-y-1">
-                  <p className="text-[10px] font-bold text-white/40 uppercase tracking-widest">TLS 加密</p>
-                  <p className="text-lg font-bold">已启用</p>
+                  <p className="text-[9px] font-bold text-white/40 uppercase tracking-widest">TLS 加密</p>
+                  <p className="text-sm font-bold">已启用</p>
                 </div>
                 <div className="space-y-1">
-                  <p className="text-[10px] font-bold text-white/40 uppercase tracking-widest">多语言同步</p>
-                  <p className="text-lg font-bold">100%</p>
+                  <p className="text-[9px] font-bold text-white/40 uppercase tracking-widest">多语言同步</p>
+                  <p className="text-sm font-bold">100%</p>
                 </div>
               </div>
             </div>

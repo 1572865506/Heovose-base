@@ -538,11 +538,11 @@ function ProductEditorContent() {
       <div className="relative z-10 max-w-7xl mx-auto px-4 md:px-0">
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-10">
           <div className="flex justify-center">
-            <TabsList className="bg-white/60 backdrop-blur-md p-1.5 h-16 rounded-[1.5rem] border border-white/40 shadow-sm inline-flex items-center gap-1">
-              <TabsTrigger value="basic" className="rounded-2xl h-12 px-8 text-[11px] font-bold uppercase tracking-[0.15em] data-[state=active]:bg-slate-900 data-[state=active]:text-white hover:bg-slate-100 hover:text-slate-900"><Settings className="h-4 w-4 mr-2" /> 基础配置</TabsTrigger>
-              <TabsTrigger value="media" className="rounded-2xl h-12 px-8 text-[11px] font-bold uppercase tracking-[0.15em] data-[state=active]:bg-slate-900 data-[state=active]:text-white hover:bg-slate-100 hover:text-slate-900"><ImageIcon className="h-4 w-4 mr-2" /> 媒体矩阵</TabsTrigger>
-              <TabsTrigger value="specs" className="rounded-2xl h-12 px-8 text-[11px] font-bold uppercase tracking-[0.15em] data-[state=active]:bg-slate-900 data-[state=active]:text-white hover:bg-slate-100 hover:text-slate-900"><TableProperties className="h-4 w-4 mr-2" /> 规格参数</TabsTrigger>
-              <TabsTrigger value="details" className="rounded-2xl h-12 px-8 text-[11px] font-bold uppercase tracking-[0.15em] data-[state=active]:bg-slate-900 data-[state=active]:text-white hover:bg-slate-100 hover:text-slate-900"><Library className="h-4 w-4 mr-2" /> 详细介绍</TabsTrigger>
+            <TabsList className="bg-card/60 backdrop-blur-md p-1.5 h-16 rounded-[1.5rem] border border-border/30 shadow-sm inline-flex items-center gap-1">
+              <TabsTrigger value="basic" className="rounded-2xl h-12 px-8 text-[11px] font-bold uppercase tracking-[0.15em] data-[state=active]:bg-foreground data-[state=active]:text-background hover:bg-muted/40 hover:text-foreground"><Settings className="h-4 w-4 mr-2" /> 基础配置</TabsTrigger>
+              <TabsTrigger value="media" className="rounded-2xl h-12 px-8 text-[11px] font-bold uppercase tracking-[0.15em] data-[state=active]:bg-foreground data-[state=active]:text-background hover:bg-muted/40 hover:text-foreground"><ImageIcon className="h-4 w-4 mr-2" /> 媒体矩阵</TabsTrigger>
+              <TabsTrigger value="specs" className="rounded-2xl h-12 px-8 text-[11px] font-bold uppercase tracking-[0.15em] data-[state=active]:bg-foreground data-[state=active]:text-background hover:bg-muted/40 hover:text-foreground"><TableProperties className="h-4 w-4 mr-2" /> 规格参数</TabsTrigger>
+              <TabsTrigger value="details" className="rounded-2xl h-12 px-8 text-[11px] font-bold uppercase tracking-[0.15em] data-[state=active]:bg-foreground data-[state=active]:text-background hover:bg-muted/40 hover:text-foreground"><Library className="h-4 w-4 mr-2" /> 详细介绍</TabsTrigger>
             </TabsList>
           </div>
 

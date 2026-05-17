@@ -60,7 +60,7 @@ export function getAssetUrl(path: string | null | undefined): string {
           const parts = path.split('://');
           if (parts.length > 1) {
             const pathMatch = parts[1].match(/^[^\/]+\/(.+)$/);
-            if (pathMatch) relativePart = pathMatch[1];
+            if (pathMatch) relativePath = pathMatch[1];
           }
         }
       }
