@@ -81,15 +81,75 @@ export default function AboutContent({ initialLocale }: AboutContentProps) {
   const section4Ref = useRef(null);
 
   // Lab Data
-  const labEquipment = [
-    { id: 'xray', name: 'X-RAY Tester', desc: 'Precision internal structure analysis', icon: Search, standard: 'IPC-A-610G' },
-    { id: 'drop', name: 'Drop Tester', desc: 'Impact and durability simulation', icon: TrendingUp, standard: 'GB/T 2423.8' },
-    { id: 'salt', name: 'Salt Spray Tester', desc: 'Corrosion resistance evaluation', icon: FlaskConical, standard: 'ASTM B117' },
-    { id: 'vibration', name: 'Vibration Tester', desc: 'Transportation environment simulation', icon: Zap, standard: 'IEC 60068' },
-    { id: 'temp', name: 'High/Low Temp', desc: 'Extreme environment stability', icon: Shield, standard: 'MIL-STD-810H' }
-  ];
+  const labEquipment = useMemo(() => {
+    const items = [
+      {
+        id: 'XRAY_2_5D',
+        icon: Search,
+        image: '/image/equip_xray_2_5d.png',
+        defaultStandard: 'IPC-A-610G'
+      },
+      {
+        id: 'HORIZONTAL_VERTICAL_VIBRATION',
+        icon: Zap,
+        image: '/image/equip_horiz_vert_vib.png',
+        defaultStandard: 'GB/T 2423.10'
+      },
+      {
+        id: 'VARIABLE_FREQUENCY_VIBRATION',
+        icon: TrendingUp,
+        image: '/image/equip_var_freq_vib.png',
+        defaultStandard: 'IEC 60068-2-6'
+      },
+      {
+        id: 'SALT_SPRAY',
+        icon: FlaskConical,
+        image: '/image/equip_salt_spray.png',
+        defaultStandard: 'ASTM B117'
+      },
+      {
+        id: 'SIMULATED_CAR_VIBRATION',
+        icon: Boxes,
+        image: '/image/equip_sim_car_vib.png',
+        defaultStandard: 'ASTM D999'
+      },
+      {
+        id: 'TRI_5DX',
+        icon: Cpu,
+        image: '/image/equip_tri_5dx.png',
+        defaultStandard: 'IPC-7095C'
+      },
+      {
+        id: 'DROP_TEST',
+        icon: ShieldCheck,
+        image: '/image/equip_drop_tester.png',
+        defaultStandard: 'GB/T 2423.8'
+      }
+    ];
 
-  const [activeLab, setActiveLab] = useState(0);
+    return items.map(item => ({
+      ...item,
+      name: t(`ABOUT_LAB_NAME_${item.id}`) || item.id,
+      desc: t(`ABOUT_LAB_DESC_${item.id}`) || '',
+      standard: t(`ABOUT_LAB_STANDARD_${item.id}`) || item.defaultStandard,
+      detail: t(`ABOUT_LAB_DETAIL_${item.id}`) || ''
+    }));
+  }, [t]);
+
+  const scrollTrackRef = useRef<HTMLDivElement>(null);
+
+  const scrollLeft = () => {
+    if (scrollTrackRef.current) {
+      scrollTrackRef.current.scrollBy({ left: -440, behavior: "smooth" });
+    }
+  };
+
+  const scrollRight = () => {
+    if (scrollTrackRef.current) {
+      scrollTrackRef.current.scrollBy({ left: 440, behavior: "smooth" });
+    }
+  };
+
   const [activeCultureIndex, setActiveCultureIndex] = useState<number | null>(0);
 
   // Cert Marquee Infinite Loop State & Refs
@@ -210,7 +270,7 @@ export default function AboutContent({ initialLocale }: AboutContentProps) {
           className="absolute inset-0 z-0"
         >
           <img
-            src="/home/anthony/.gemini/antigravity/brain/18d52c97-fd15-46ee-91ea-9b6f8afd7edc/heovose_corporate_building_1778920630336.png"
+            src="/image/heovose_corporate_building.png"
             alt="Heovose Building"
             className="w-full h-full object-cover opacity-60"
           />
@@ -425,90 +485,78 @@ export default function AboutContent({ initialLocale }: AboutContentProps) {
 
       {/* 4. Quality Control Lab */}
       <section className="py-32 bg-slate-950 text-white relative overflow-hidden">
-        <div className="absolute inset-0 bg-[url('/home/anthony/.gemini/antigravity/brain/18d52c97-fd15-46ee-91ea-9b6f8afd7edc/qc_lab_equipment_1778920655750.png')] opacity-20 grayscale brightness-50" />
+        <div className="absolute inset-0 bg-[url('/image/qc_lab_equipment.png')] opacity-15 grayscale brightness-50" />
 
         <div className="container mx-auto px-6 relative z-10">
-          <div className="text-center max-w-3xl mx-auto mb-24">
-            <div className="inline-block px-4 py-1 rounded-lg bg-primary/20 border border-primary/30 text-[10px] font-black uppercase tracking-widest text-primary mb-6">Laboratory Grade</div>
-            <h2 className="text-4xl md:text-6xl font-black tracking-tight font-headline mb-8">
-              {locale === 'zh' ? '严苛品质实验室' : 'Quality Control Lab'}
-            </h2>
-            <p className="text-xl text-slate-400 font-light leading-relaxed">
-              {locale === 'zh' ? '通过“实验室级别”的极端环境测试，彻底打消客户对电子产品稳定性的疑虑。' : 'Eliminating stability concerns through laboratory-grade extreme environmental testing.'}
-            </p>
+          {/* Section Header with Premium Scrolling Navigation Buttons */}
+          <div className="flex flex-col md:flex-row md:items-end justify-between gap-8 mb-20">
+            <div className="max-w-3xl">
+              <h2 className="text-4xl md:text-6xl font-black tracking-tight font-headline">
+                {t('ABOUT_LAB_TITLE')}
+              </h2>
+              <p className="text-xl text-slate-400 font-light leading-relaxed mt-6">
+                {t('ABOUT_LAB_SUBTITLE')}
+              </p>
+            </div>
+            
+            {/* Apple-style smooth horizontal track nav controls */}
+            <div className="flex gap-4 self-start md:self-end">
+              <button 
+                onClick={scrollLeft}
+                className="w-14 h-14 rounded-full border border-white/10 bg-white/5 flex items-center justify-center hover:bg-primary hover:border-primary hover:scale-105 transition-all duration-300 active:scale-95 group"
+                aria-label="Scroll Left"
+              >
+                <ChevronLeft className="w-6 h-6 text-white group-hover:text-white transition-colors" />
+              </button>
+              <button 
+                onClick={scrollRight}
+                className="w-14 h-14 rounded-full border border-white/10 bg-white/5 flex items-center justify-center hover:bg-primary hover:border-primary hover:scale-105 transition-all duration-300 active:scale-95 group"
+                aria-label="Scroll Right"
+              >
+                <ChevronRight className="w-6 h-6 text-white group-hover:text-white transition-colors" />
+              </button>
+            </div>
           </div>
 
-          <div className="relative">
-            <div className="flex flex-col lg:flex-row gap-12 items-center">
-              <div className="w-full lg:w-1/2 space-y-4">
-                {labEquipment.map((item, i) => (
-                  <motion.div
-                    key={item.id}
-                    onClick={() => setActiveLab(i)}
-                    className={cn(
-                      "p-8 rounded-[32px] cursor-pointer transition-all duration-500 flex items-center justify-between group",
-                      activeLab === i ? "bg-primary shadow-2xl shadow-primary/20 scale-[1.02]" : "bg-white/5 hover:bg-white/10"
-                    )}
-                  >
-                    <div className="flex items-center gap-6">
-                      <div className={cn("w-12 h-12 rounded-2xl flex items-center justify-center transition-colors", activeLab === i ? "bg-white/20" : "bg-white/10 group-hover:bg-primary")}>
-                        <item.icon className="w-6 h-6 text-white" />
-                      </div>
-                      <div>
-                        <h4 className="text-xl font-bold">{item.name}</h4>
-                        <p className={cn("text-xs transition-colors", activeLab === i ? "text-white/70" : "text-slate-500")}>{item.desc}</p>
-                      </div>
-                    </div>
-                    {activeLab === i && <ArrowRight className="w-5 h-5 text-white/50" />}
-                  </motion.div>
-                ))}
-              </div>
+          {/* Horizontal scroll track of gorgeous bento-style testing items cards */}
+          <div 
+            ref={scrollTrackRef}
+            className="relative w-full overflow-x-auto pb-10 flex gap-8 scrollbar-minimal snap-x snap-mandatory scroll-smooth"
+          >
+            {labEquipment.map((item, i) => (
+              <motion.div
+                key={item.id}
+                initial={{ opacity: 0, y: 40 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true, margin: "-50px" }}
+                transition={{ duration: 0.8, delay: i * 0.05 }}
+                className="snap-start w-[300px] sm:w-[350px] md:w-[380px] shrink-0 relative overflow-hidden p-8 md:p-10 rounded-[32px] bg-slate-900/60 border border-white/10 backdrop-blur-md flex flex-col justify-start h-[380px] hover:border-primary/50 transition-all duration-500 group"
+              >
+                {/* Dynamic soft radial background glow on hover */}
+                <div className="absolute -inset-px bg-gradient-to-br from-primary/15 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-700 pointer-events-none" />
 
-              <div className="w-full lg:w-1/2 relative aspect-video lg:aspect-auto lg:h-[600px]">
-                <AnimatePresence mode="wait">
-                  <motion.div
-                    key={activeLab}
-                    initial={{ opacity: 0, x: 50 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    exit={{ opacity: 0, x: -50 }}
-                    className="w-full h-full rounded-[40px] bg-white/10 backdrop-blur-3xl p-12 border border-white/10 flex flex-col justify-between"
-                  >
-                    <div className="space-y-8">
-                      <div className="flex justify-between items-start">
-                        <div className="w-20 h-20 rounded-3xl bg-primary/20 flex items-center justify-center">
-                          {(() => {
-                            const Icon = labEquipment[activeLab].icon;
-                            return <Icon className="w-10 h-10 text-primary" />;
-                          })()}
-                        </div>
-                        <div className="text-right">
-                          <div className="text-[10px] font-black uppercase tracking-widest text-slate-500 mb-1">Testing Standard</div>
-                          <div className="text-xl font-black font-headline text-primary">{labEquipment[activeLab].standard}</div>
-                        </div>
-                      </div>
-                      <div>
-                        <h3 className="text-4xl font-black mb-4">{labEquipment[activeLab].name}</h3>
-                        <p className="text-lg text-slate-400 font-light leading-relaxed">
-                          {t(`ABOUT_LAB_DESC_${labEquipment[activeLab].id.toUpperCase()}`) || (locale === 'zh' 
-                            ? '该测试旨在通过模拟极端运输震动、高温高湿或高空跌落等极端工况，验证产品在各种严苛环境下的物理结构强度与电路连接稳定性。' 
-                            : 'Designed to simulate extreme transportation vibration, high humidity, or high-altitude drops to verify structural integrity and circuit stability under harsh conditions.')}
-                        </p>
-                      </div>
-                    </div>
-                    <div className="grid grid-cols-2 gap-8 pt-8 border-t border-white/10">
-                      <div>
-                        <div className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-2">{t('ABOUT_LAB_CONFIDENCE')}</div>
-                        <div className="text-3xl font-black">99.9%</div>
-                      </div>
-                      <div>
-                        <div className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-2">{t('ABOUT_LAB_DURATION')}</div>
-                        <div className="text-3xl font-black">72H+</div>
-                      </div>
-                    </div>
-                  </motion.div>
-                </AnimatePresence>
-              </div>
-            </div>
+                {/* Icon (Header) */}
+                <div className="w-14 h-14 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center group-hover:bg-primary/20 group-hover:border-primary/30 transition-colors duration-500 mb-6 shrink-0 relative z-10">
+                  {(() => {
+                    const Icon = item.icon || Search;
+                    return <Icon className="w-7 h-7 text-primary" />;
+                  })()}
+                </div>
+
+                {/* Card Body */}
+                <div className="space-y-3 relative z-10">
+                  <h3 className="text-xl md:text-2xl font-black text-white tracking-tight group-hover:text-primary transition-colors duration-300">
+                    {item.name}
+                  </h3>
+                  <p className="text-xs font-bold text-primary uppercase tracking-widest block">
+                    {item.desc}
+                  </p>
+                  <p className="text-sm text-slate-400 font-light leading-relaxed text-justify line-clamp-5 group-hover:text-slate-300 transition-colors duration-300">
+                    {item.detail}
+                  </p>
+                </div>
+              </motion.div>
+            ))}
           </div>
         </div>
       </section>
