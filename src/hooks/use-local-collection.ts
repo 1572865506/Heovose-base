@@ -35,11 +35,15 @@ export function useLocalCollection<T = any>(path: string | null, options?: { ena
 
     setIsLoading(true);
     
-    // REMOVED cache-busting timestamp to allow browser caching
+    // Restored stable URL to leverage local memory caching and protect server load
     const url = `/api/${currentPath}`;
 
     const fetchPromise = (async () => {
-      const res = await fetch(url);
+      const res = await fetch(url, {
+        headers: {
+          'Cache-Control': 'no-cache'
+        }
+      });
       if (!res.ok) {
         let errorMessage = res.statusText;
         try {

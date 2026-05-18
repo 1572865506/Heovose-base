@@ -1,13 +1,17 @@
 "use client";
 
 import { motion, useScroll, useTransform, AnimatePresence } from "framer-motion";
+import { gsap } from "gsap";
+import { ScrollTrigger } from "gsap/ScrollTrigger";
+import { useGSAP } from "@gsap/react";
 import { Locale } from "@/lib/translations";
 import { useTranslations } from "@/hooks/use-translations";
 import {
   Building2, Target, Users, Zap, ShieldCheck, Microchip, Factory,
   Globe2, Award, CheckCircle2, FlaskConical, Search, Cpu,
   Lightbulb, Handshake, Heart, Shield, TrendingUp, Boxes,
-  ArrowRight, FileText, ChevronRight, ChevronLeft, MapPin
+  ArrowRight, FileText, ChevronRight, ChevronLeft, MapPin, ChevronDown, BookOpen,
+  Settings, ClipboardCheck
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useRef, useState, useEffect, useMemo } from "react";
@@ -22,11 +26,21 @@ interface AboutContentProps {
   initialLocale: Locale;
 }
 
+const CERT_ICONS: Record<string, any> = {
+  Award,
+  ShieldCheck,
+  CheckCircle2,
+  Shield,
+  Boxes,
+  Zap
+};
+
 export default function AboutContent({ initialLocale }: AboutContentProps) {
   const [locale, setLocale] = useState<Locale>(initialLocale);
   const { openInquiry } = useInquiry();
   const searchParams = useSearchParams();
   const { data: langSettings } = useLocalDoc<any>('settings', 'languages');
+  const { data: siteConfig } = useLocalDoc<any>('settings', 'site');
   const { t } = useTranslations(locale);
 
   useEffect(() => {
@@ -76,9 +90,117 @@ export default function AboutContent({ initialLocale }: AboutContentProps) {
   ];
 
   const [activeLab, setActiveLab] = useState(0);
+  const [activeCultureIndex, setActiveCultureIndex] = useState<number | null>(0);
+
+  // Cert Marquee Infinite Loop State & Refs
+  const [isCertHovered, setIsCertHovered] = useState(false);
+  const certTrackRef = useRef<HTMLDivElement>(null);
+  const certOffsetRef = useRef(0);
+  const certSpeedRef = useRef(1.2);
+
+  useEffect(() => {
+    const targetSpeed = isCertHovered ? 0.25 : 1.2;
+    let animationFrameId: number;
+
+    const animate = () => {
+      // Exponential smoothing (LERP) for dynamic deceleration and acceleration
+      certSpeedRef.current += (targetSpeed - certSpeedRef.current) * 0.08;
+      certOffsetRef.current -= certSpeedRef.current;
+
+      if (certTrackRef.current) {
+        const trackWidth = certTrackRef.current.scrollWidth / 3;
+        if (trackWidth > 0 && Math.abs(certOffsetRef.current) >= trackWidth) {
+          // Seamless reset of offset
+          certOffsetRef.current = 0;
+        }
+        certTrackRef.current.style.transform = `translateX(${certOffsetRef.current}px)`;
+      }
+      animationFrameId = requestAnimationFrame(animate);
+    };
+
+    animationFrameId = requestAnimationFrame(animate);
+    return () => cancelAnimationFrame(animationFrameId);
+  }, [isCertHovered]);
+  const qualityContainerRef = useRef<HTMLDivElement>(null);
+
+  useGSAP(() => {
+    // Register GSAP ScrollTrigger in the client side hook
+    gsap.registerPlugin(ScrollTrigger);
+
+    const container = qualityContainerRef.current;
+    if (!container) return;
+
+    const panels = container.querySelectorAll(".quality-panel");
+    if (panels.length === 0) return;
+
+    // Responsive initialization: Stack all panels absolute-inset and hide non-first panels offscreen bottom (yPercent: 100)
+    gsap.set(panels, {
+      yPercent: (i) => (i === 0 ? 0 : 100),
+      scale: 1,
+      opacity: 1
+    });
+
+    // Build the layered panels pinning timeline
+    const tl = gsap.timeline({
+      scrollTrigger: {
+        trigger: container,
+        pin: true,
+        start: "top top",
+        end: `+=${(panels.length - 1) * 120}%`, // Scroll distance (120% per overlay for spacious timing)
+        scrub: 1, // Smooth scrub to bind the animation speed to scroll wheel/touch
+        invalidateOnRefresh: true
+      }
+    });
+
+    // Configure the GSAP timelines for each panel slide-up and scale-down transitions
+    panels.forEach((panel, index) => {
+      if (index === 0) return; // Keep the base panel (IQC) as static underneath initially
+
+      const prevPanel = panels[index - 1];
+      const currentContent = panel.querySelector(".quality-content");
+
+      // Slide up the current panel from bottom (yPercent: 100 -> 0)
+      // while previous panel remains completely static underneath at scale 1
+      tl.to(panel, {
+        yPercent: 0,
+        ease: "none"
+      }, `panel-${index}`)
+      .fromTo(currentContent, {
+        y: 80
+      }, {
+        y: 0,
+        duration: 0.5,
+        ease: "power2.out"
+      }, `panel-${index}+=0.15`);
+    });
+
+    // Recalibrate ScrollTrigger positions after all page images/styles hydrate and settle
+    const refreshTimer = setTimeout(() => {
+      ScrollTrigger.refresh();
+    }, 450);
+
+    return () => clearTimeout(refreshTimer);
+  }, { scope: qualityContainerRef });
+  const cultureSectionRef = useRef<HTMLDivElement>(null);
+  const { scrollYProgress: cultureScrollYProgress } = useScroll({
+    target: cultureSectionRef,
+    offset: ["start start", "end end"]
+  });
+
+  useEffect(() => {
+    return cultureScrollYProgress.on("change", (latest) => {
+      if (latest < 0.33) {
+        setActiveCultureIndex(0);
+      } else if (latest < 0.66) {
+        setActiveCultureIndex(1);
+      } else {
+        setActiveCultureIndex(2);
+      }
+    });
+  }, [cultureScrollYProgress]);
 
   return (
-    <main ref={containerRef} className="relative min-h-screen bg-slate-50 overflow-hidden font-body selection:bg-primary selection:text-white">
+    <main ref={containerRef} className="relative min-h-screen bg-slate-50 overflow-x-clip font-body selection:bg-primary selection:text-white">
       <Navbar locale={locale} setLocale={setLocale} />
 
       {/* 1. Brand Prologue: Hero Section */}
@@ -391,137 +513,290 @@ export default function AboutContent({ initialLocale }: AboutContentProps) {
         </div>
       </section>
 
-      {/* 5. Quality Management Process */}
-      <section className="py-32 bg-white overflow-hidden">
-        <div className="container mx-auto px-6">
-          <div className="flex flex-col items-center text-center mb-24">
-            <h2 className="text-4xl md:text-6xl font-black text-slate-900 tracking-tight font-headline mb-8">
+      {/* 5. Quality Management Process (Sticky Panels Layering via GSAP ScrollTrigger) */}
+      <section ref={qualityContainerRef} className="relative w-full h-screen overflow-hidden bg-slate-950">
+        
+        {/* Global floating header outside the sliding panels */}
+        <div className="absolute top-12 left-6 md:left-12 lg:left-16 z-40 flex items-center gap-4">
+          <div className="w-1.5 h-8 bg-primary rounded-full shadow-[0_0_8px_rgba(59,130,246,0.5)] animate-pulse" />
+          <div>
+            <h2 className="text-3xl md:text-4xl font-black text-white font-headline tracking-tight uppercase">
               {t('ABOUT_QUALITY_TITLE')}
             </h2>
-            <div className="inline-block px-8 py-3 rounded-2xl bg-slate-900 text-white text-lg font-bold">
-              {t('ABOUT_QUALITY_SUBTITLE')}
-            </div>
+            <div className="h-0.5 w-16 bg-primary/50 mt-1" />
+          </div>
+        </div>
+
+        {/* IQC Section Panel (Base layer, fully visible initially) */}
+        <div className="quality-panel w-full h-full absolute inset-0 z-10 overflow-hidden bg-slate-950">
+          {/* Panel background image covers the entire screen */}
+          <div className="absolute inset-0 z-0">
+            <img src="/image/quality_bg.png" alt="IQC Facility" className="w-full h-full object-cover opacity-30" />
+            {/* Dark premium gradient underlay to guarantee left-aligned text legibility */}
+            <div className="absolute inset-0 bg-gradient-to-r from-slate-950 via-slate-950/70 to-transparent pointer-events-none" />
           </div>
 
-          <div className="relative max-w-5xl mx-auto">
-            <div className="absolute top-1/2 left-0 w-full h-1 bg-slate-100 -translate-y-1/2 hidden lg:block" />
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-12 relative z-10">
-              {[
-                { step: '01', key: 'IQC' },
-                { step: '02', key: 'IPQC' },
-                { step: '03', key: 'OQA' }
-              ].map((item, i) => (
-                <motion.div
-                  key={i}
-                  initial={{ opacity: 0, scale: 0.8 }}
-                  whileInView={{ opacity: 1, scale: 1 }}
-                  transition={{ delay: i * 0.2 }}
-                  className="bg-white p-10 rounded-[40px] shadow-xl border border-slate-100 text-center space-y-4 hover:translate-y-[-10px] transition-transform duration-500"
-                >
-                  <div className="text-[40px] font-black text-slate-100 mb-[-20px]">{item.step}</div>
-                  <h3 className="text-4xl font-black text-primary">{t(`ABOUT_QUALITY_${item.key}_TITLE`)}</h3>
-                  <div className="text-[10px] font-black uppercase tracking-widest text-slate-400">
-                    {t(`ABOUT_QUALITY_${item.key}_LABEL`)}
-                  </div>
-                  <p className="text-slate-500 font-light">
-                    {t(`ABOUT_QUALITY_${item.key}_DESC`)}
-                  </p>
-                </motion.div>
-              ))}
+          {/* Left-Aligned Frameless Typography Block */}
+          <div className="container mx-auto px-6 md:px-16 lg:px-24 relative z-10 w-full h-full flex items-center max-w-7xl">
+            <div className="quality-content max-w-xl md:max-w-2xl text-left space-y-6">
+              <div className="flex items-center gap-3">
+                <span className="text-xs font-black tracking-widest text-primary uppercase bg-primary/10 px-3 py-1 rounded border border-primary/20">
+                  STAGE 01
+                </span>
+                <span className="text-xs font-bold tracking-widest text-slate-400 uppercase">
+                  {t('ABOUT_QUALITY_IQC_LABEL')}
+                </span>
+              </div>
+              <h3 className="text-4xl md:text-5xl lg:text-6xl font-black text-white font-headline tracking-tighter leading-none">
+                {t('ABOUT_QUALITY_IQC_TITLE')}
+              </h3>
+              <div className="h-[3px] w-24 bg-gradient-to-r from-primary to-transparent" />
+              <p className="text-slate-300 text-base md:text-lg leading-relaxed font-light text-justify max-w-2xl border-l-2 border-primary/30 pl-6">
+                {t('ABOUT_QUALITY_IQC_DESC')}
+              </p>
             </div>
           </div>
         </div>
+
+        {/* IPQC Section Panel (Second layer, overlays IQC) */}
+        <div className="quality-panel w-full h-full absolute inset-0 z-20 overflow-hidden bg-slate-950">
+          <div className="absolute inset-0 z-0">
+            <img src="/image/ipqc_bg.png" alt="IPQC Facility" className="w-full h-full object-cover opacity-30" />
+            <div className="absolute inset-0 bg-gradient-to-r from-slate-950 via-slate-950/70 to-transparent pointer-events-none" />
+          </div>
+
+          {/* Left-Aligned Frameless Typography Block */}
+          <div className="container mx-auto px-6 md:px-16 lg:px-24 relative z-10 w-full h-full flex items-center max-w-7xl">
+            <div className="quality-content max-w-xl md:max-w-2xl text-left space-y-6">
+              <div className="flex items-center gap-3">
+                <span className="text-xs font-black tracking-widest text-primary uppercase bg-primary/10 px-3 py-1 rounded border border-primary/20">
+                  STAGE 02
+                </span>
+                <span className="text-xs font-bold tracking-widest text-slate-400 uppercase">
+                  {t('ABOUT_QUALITY_IPQC_LABEL')}
+                </span>
+              </div>
+              <h3 className="text-4xl md:text-5xl lg:text-6xl font-black text-white font-headline tracking-tighter leading-none">
+                {t('ABOUT_QUALITY_IPQC_TITLE')}
+              </h3>
+              <div className="h-[3px] w-24 bg-gradient-to-r from-primary to-transparent" />
+              <p className="text-slate-300 text-base md:text-lg leading-relaxed font-light text-justify max-w-2xl border-l-2 border-primary/30 pl-6">
+                {t('ABOUT_QUALITY_IPQC_DESC')}
+              </p>
+            </div>
+          </div>
+        </div>
+
+        {/* OQA Section Panel (Third layer, overlays IPQC) */}
+        <div className="quality-panel w-full h-full absolute inset-0 z-30 overflow-hidden bg-slate-950">
+          <div className="absolute inset-0 z-0">
+            <img src="/image/oqa_bg.png" alt="OQA Facility" className="w-full h-full object-cover opacity-30" />
+            <div className="absolute inset-0 bg-gradient-to-r from-slate-950 via-slate-950/70 to-transparent pointer-events-none" />
+          </div>
+
+          {/* Left-Aligned Frameless Typography Block */}
+          <div className="container mx-auto px-6 md:px-16 lg:px-24 relative z-10 w-full h-full flex items-center max-w-7xl">
+            <div className="quality-content max-w-xl md:max-w-2xl text-left space-y-6">
+              <div className="flex items-center gap-3">
+                <span className="text-xs font-black tracking-widest text-primary uppercase bg-primary/10 px-3 py-1 rounded border border-primary/20">
+                  STAGE 03
+                </span>
+                <span className="text-xs font-bold tracking-widest text-slate-400 uppercase">
+                  {t('ABOUT_QUALITY_OQA_LABEL')}
+                </span>
+              </div>
+              <h3 className="text-4xl md:text-5xl lg:text-6xl font-black text-white font-headline tracking-tighter leading-none">
+                {t('ABOUT_QUALITY_OQA_TITLE')}
+              </h3>
+              <div className="h-[3px] w-24 bg-gradient-to-r from-primary to-transparent" />
+              <p className="text-slate-300 text-base md:text-lg leading-relaxed font-light text-justify max-w-2xl border-l-2 border-primary/30 pl-6">
+                {t('ABOUT_QUALITY_OQA_DESC')}
+              </p>
+            </div>
+          </div>
+        </div>
+
       </section>
 
       {/* 6. Certification Wall */}
-      <section className="py-32 bg-slate-50">
-        <div className="container mx-auto px-6">
-          <div className="text-center mb-24">
+      <section className="py-32 bg-slate-50 relative overflow-hidden">
+        <div className="container mx-auto px-6 mb-16">
+          <div className="text-center">
             <h2 className="text-4xl font-black text-slate-900 mb-6 font-headline">
               {t('ABOUT_CERT_TITLE')}
             </h2>
             <p className="text-slate-500 uppercase tracking-widest text-xs font-bold">{t('ABOUT_CERT_SUBTITLE')}</p>
           </div>
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-8">
-            {[
-              { key: 'ISO', icon: Award },
-              { key: '3C', icon: ShieldCheck },
-              { key: 'CE', icon: CheckCircle2 },
-              { key: 'FCC', icon: Shield },
-              { key: 'ROHS', icon: Boxes },
-              { key: 'ENERGY', icon: Zap }
-            ].map((cert, idx) => (
-              <motion.div
-                key={cert.key}
-                whileHover={{ scale: 1.05, y: -5 }}
-                className="group p-8 rounded-3xl bg-white border border-slate-100 shadow-sm flex flex-col items-center gap-6 hover:shadow-2xl transition-all duration-500 cursor-pointer"
-              >
-                <div className="w-16 h-16 rounded-2xl bg-slate-50 flex items-center justify-center group-hover:bg-primary/10 transition-colors">
-                  <cert.icon className="w-8 h-8 text-slate-300 group-hover:text-primary transition-colors" />
-                </div>
-                <span className="text-[10px] font-black uppercase tracking-widest text-center text-slate-400 group-hover:text-slate-900">{t(`ABOUT_CERT_${cert.key}`)}</span>
-              </motion.div>
-            ))}
+        </div>
+
+        {/* Dynamic Horizontal Infinite Scrolling Loop with JS requestAnimationFrame deceleration */}
+        <div className="relative w-full overflow-hidden py-4">
+          {/* Fading Mask Overlay on both sides for premium look */}
+          <div className="absolute inset-y-0 left-0 w-24 sm:w-48 bg-gradient-to-r from-slate-50 to-transparent z-10 pointer-events-none" />
+          <div className="absolute inset-y-0 right-0 w-24 sm:w-48 bg-gradient-to-l from-slate-50 to-transparent z-10 pointer-events-none" />
+
+          {/* Scrolling Track Container */}
+          <div 
+            onMouseEnter={() => setIsCertHovered(true)}
+            onMouseLeave={() => setIsCertHovered(false)}
+            className="logo-loop-container flex overflow-hidden select-none"
+          >
+            <div ref={certTrackRef} className="logo-loop-track flex gap-8 py-4 px-4 will-change-transform">
+              {(siteConfig?.certifications || [
+                { key: 'ISO', image: '' },
+                { key: '3C', image: '' },
+                { key: 'CE', image: '' },
+                { key: 'FCC', image: '' },
+                { key: 'ROHS', image: '' },
+                { key: 'ENERGY', image: '' }
+              ]).concat(
+                siteConfig?.certifications || [
+                  { key: 'ISO', image: '' },
+                  { key: '3C', image: '' },
+                  { key: 'CE', image: '' },
+                  { key: 'FCC', image: '' },
+                  { key: 'ROHS', image: '' },
+                  { key: 'ENERGY', image: '' }
+                ]
+              ).concat(
+                siteConfig?.certifications || [
+                  { key: 'ISO', image: '' },
+                  { key: '3C', image: '' },
+                  { key: 'CE', image: '' },
+                  { key: 'FCC', image: '' },
+                  { key: 'ROHS', image: '' },
+                  { key: 'ENERGY', image: '' }
+                ]
+              ).map((cert: any, idx: number) => {
+                return (
+                  <div
+                    key={`${cert.key}-${idx}`}
+                    className="p-5 rounded-3xl bg-white border border-slate-100/80 shadow-sm flex flex-col items-center gap-4 w-48 shrink-0 select-none"
+                  >
+                    <div className="w-full aspect-[3/4] rounded-2xl bg-slate-50 overflow-hidden relative border border-slate-100/60 flex items-center justify-center shrink-0">
+                      {cert.image ? (
+                        <img 
+                          src={getAssetUrl(cert.image)} 
+                          alt={t(`ABOUT_CERT_${cert.key}`)} 
+                          className="w-full h-full object-contain p-2 transition-transform duration-500" 
+                        />
+                      ) : (
+                        <div className="flex flex-col items-center gap-2 text-slate-300 transition-colors">
+                          <Award className="w-10 h-10" />
+                          <span className="text-[8px] font-bold uppercase tracking-wider text-slate-400">暂无证书图</span>
+                        </div>
+                      )}
+                    </div>
+                    <span className="text-[10px] font-bold text-center text-slate-500 transition-colors line-clamp-1">
+                      {t(`ABOUT_CERT_${cert.key}`)}
+                    </span>
+                  </div>
+                );
+              })}
+            </div>
           </div>
         </div>
       </section>
 
       {/* 7. Corporate Culture & Values */}
-      <section className="relative py-24 bg-slate-900 overflow-hidden">
-        <div className="absolute inset-0 z-0">
-          <img src="/image/hero-bg.png" alt="Team Culture" className="w-full h-full object-cover opacity-40" />
-          <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/20 to-transparent" />
-        </div>
-        <div className="container mx-auto px-6 relative z-10">
-          <motion.div 
-            initial={{ y: 100, opacity: 0 }}
-            whileInView={{ y: 0, opacity: 1 }}
-            viewport={{ once: true, margin: "-100px" }}
-            transition={{ duration: 0.8, ease: "easeOut" }}
-            className="bg-white/95 backdrop-blur-2xl rounded-[40px] lg:rounded-[60px] p-10 lg:p-20 shadow-2xl border border-white/20 max-w-6xl mx-auto"
-          >
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
-              <div className="space-y-8">
-                <div className="inline-flex items-center gap-3 px-5 py-2 rounded-full bg-primary/10 border border-primary/20">
-                  <span className="w-2 h-2 rounded-full bg-primary animate-pulse" />
-                  <span className="text-[10px] font-black uppercase tracking-[0.3em] text-primary">{t('ABOUT_CULTURE_LABEL')}</span>
+      <section ref={cultureSectionRef} className="relative h-[220vh] bg-slate-950">
+        <div className="sticky top-0 h-screen w-full flex items-center justify-center overflow-hidden z-10">
+          <div className="absolute inset-0 z-0">
+            <img src="/image/Corporate Culture bg.jpg" alt="Team Culture" className="w-full h-full object-cover opacity-90" />
+            <div className="absolute inset-0 bg-slate-950/60 backdrop-blur-[2px]" />
+          </div>
+          <div className="container mx-auto px-6 relative z-10 w-full">
+            <motion.div 
+              initial={{ y: 100, opacity: 0 }}
+              whileInView={{ y: 0, opacity: 1 }}
+              viewport={{ once: true, margin: "-100px" }}
+              transition={{ duration: 0.8, ease: "easeOut" }}
+              className="bg-white/95 backdrop-blur-2xl rounded-[40px] lg:rounded-[60px] p-10 lg:p-20 shadow-2xl border border-white/20 max-w-6xl mx-auto w-full"
+            >
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
+                <div className="space-y-8">
+                  <h2 className="text-4xl md:text-6xl font-black text-slate-900 font-headline leading-tight">
+                    {t('ABOUT_CULTURE_TITLE')}
+                  </h2>
+                  <p className="text-xl text-slate-500 font-light leading-relaxed">
+                    {t('ABOUT_CULTURE_SUBTITLE')}
+                  </p>
                 </div>
-                <h2 className="text-4xl md:text-6xl font-black text-slate-900 font-headline leading-tight">
-                  {t('ABOUT_CULTURE_TITLE')}
-                </h2>
-                <p className="text-xl text-slate-500 font-light leading-relaxed">
-                  {t('ABOUT_CULTURE_SUBTITLE')}
-                </p>
+                <div className="grid gap-6 min-h-[380px] sm:min-h-[420px] lg:min-h-[460px] content-start">
+                  {[
+                    { icon: CheckCircle2, key: 'VAL1' },
+                    { icon: BookOpen, key: 'VAL2' },
+                    { icon: BookOpen, key: 'VAL3' }
+                  ].map((val, i) => {
+                    const isActive = activeCultureIndex === i;
+                    return (
+                      <motion.div
+                        key={i}
+                        initial={{ opacity: 0, x: 20 }}
+                        whileInView={{ opacity: 1, x: 0 }}
+                        viewport={{ once: true }}
+                        transition={{ delay: 0.2 + i * 0.1, duration: 0.6 }}
+                        onClick={() => setActiveCultureIndex(isActive ? null : i)}
+                        className={cn(
+                          "relative overflow-hidden p-6 rounded-[2.5rem] border transition-all duration-500 cursor-pointer select-none group flex flex-col justify-center",
+                          isActive
+                            ? "bg-primary border-primary shadow-xl shadow-primary/20 scale-[1.02]"
+                            : "bg-slate-50/60 backdrop-blur-md border-slate-100/50 hover:bg-[#f8fafc]/90"
+                        )}
+                      >
+                        {/* Subtle bottom lighting gradient */}
+                        {isActive && (
+                          <div className="absolute inset-x-0 bottom-0 h-full bg-gradient-to-t from-white/10 via-white/0 to-transparent pointer-events-none z-0" />
+                        )}
+                        
+                        <div className="flex items-center justify-between w-full relative z-10">
+                          <div className="flex items-center gap-6">
+                            <div className={cn(
+                              "w-14 h-14 rounded-2xl flex items-center justify-center shrink-0 shadow-sm transition-all duration-500",
+                              isActive ? "bg-white/20" : "bg-white"
+                            )}>
+                              <val.icon className={cn(
+                                "w-7 h-7 transition-colors duration-500",
+                                isActive ? "text-white" : "text-primary"
+                              )} />
+                            </div>
+                            <h4 className={cn(
+                              "text-xl font-bold font-headline transition-colors duration-500",
+                              isActive ? "text-white" : "text-slate-900"
+                            )}>
+                              {t(`ABOUT_CULTURE_${val.key}_TITLE`)}
+                            </h4>
+                          </div>
+                          <ChevronDown className={cn(
+                            "w-6 h-6 transition-all duration-500 shrink-0",
+                            isActive ? "text-white rotate-180" : "text-slate-400"
+                          )} />
+                        </div>
+                        
+                        <motion.div
+                          initial={false}
+                          animate={{
+                            height: isActive ? "auto" : 0,
+                            opacity: isActive ? 1 : 0,
+                            marginTop: isActive ? 16 : 0
+                          }}
+                          transition={{ duration: 0.4, ease: [0.25, 1, 0.5, 1] }}
+                          className="overflow-hidden lg:pl-20 pl-0 relative z-10"
+                        >
+                          <p className={cn(
+                            "text-sm font-light leading-relaxed transition-colors duration-500",
+                            isActive ? "text-white/80" : "text-slate-500"
+                          )}>
+                            {t(`ABOUT_CULTURE_${val.key}_DESC`)}
+                          </p>
+                        </motion.div>
+                      </motion.div>
+                    );
+                  })}
+                </div>
               </div>
-              <div className="grid gap-6">
-                {[
-                  { icon: Handshake, key: 'VAL1' },
-                  { icon: Lightbulb, key: 'VAL2' },
-                  { icon: Heart, key: 'VAL3' }
-                ].map((val, i) => (
-                  <motion.div
-                    key={i}
-                    initial={{ opacity: 0, x: 20 }}
-                    whileInView={{ opacity: 1, x: 0 }}
-                    transition={{ delay: 0.2 + i * 0.1 }}
-                    className="flex gap-6 p-6 rounded-3xl bg-slate-50 border border-slate-100 group hover:bg-primary transition-all duration-500"
-                  >
-                    <div className="w-14 h-14 rounded-2xl bg-white flex items-center justify-center shrink-0 shadow-sm group-hover:bg-white/20">
-                      <val.icon className="w-7 h-7 text-primary group-hover:text-white" />
-                    </div>
-                    <div>
-                      <h4 className="text-xl font-bold text-slate-900 group-hover:text-white mb-1">
-                        {t(`ABOUT_CULTURE_${val.key}_TITLE`)}
-                      </h4>
-                      <p className="text-sm text-slate-500 group-hover:text-white/70 font-light leading-relaxed">
-                        {t(`ABOUT_CULTURE_${val.key}_DESC`)}
-                      </p>
-                    </div>
-                  </motion.div>
-                ))}
-              </div>
-            </div>
-          </motion.div>
+            </motion.div>
+          </div>
         </div>
       </section>
 

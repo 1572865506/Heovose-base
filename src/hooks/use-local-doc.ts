@@ -42,8 +42,12 @@ export function useLocalDoc<T = any>(path: string | null, id: string | null = ''
     
     const fetchPromise = (async () => {
       const url = currentId ? `/api/${currentPath}/${currentId}` : `/api/${currentPath}`;
-      // REMOVED cache-busting timestamp to allow browser caching
-      const res = await fetch(url);
+      // Restored stable URL to leverage local memory caching and protect server load
+      const res = await fetch(url, {
+        headers: {
+          'Cache-Control': 'no-cache'
+        }
+      });
       if (!res.ok) throw new Error(`Failed to fetch doc "${key}": ${res.statusText} (Status: ${res.status})`);
       return await res.json();
     })();

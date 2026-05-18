@@ -31,7 +31,11 @@ import {
   CheckCircle2,
   Mail,
   Phone,
-  Share2
+  Share2,
+  Award,
+  Shield,
+  Boxes,
+  Zap
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { getAssetUrl } from '@/lib/image-utils';
@@ -48,6 +52,7 @@ interface SiteConfig {
   logoInverted?: string;
   favicon?: string;
   socialLinks?: { platform: string; url: string }[];
+  certifications?: { key: string; image?: string }[];
 }
 
 interface LocalizedString {
@@ -97,6 +102,7 @@ export default function SiteSettingsPage() {
   const [isSaving, setIsSaving] = useState(false);
   const [isMediaOpen, setIsMediaOpen] = useState(false);
   const [mediaTarget, setMediaTarget] = useState<'logoStandard' | 'logoInverted' | 'favicon' | null>(null);
+  const [activeCertIndexForMedia, setActiveCertIndexForMedia] = useState<number | null>(null);
 
   const { data: siteConfig, mutate: mutateConfig } = useLocalDoc<SiteConfig>('settings', 'site');
   const { data: translations, mutate: mutateTrans } = useLocalCollection<LocalizedString>('localizedStrings?full=true');
@@ -125,9 +131,21 @@ export default function SiteSettingsPage() {
           initialEdits[key] = {};
         }
       });
-      setTransEdits(initialEdits);
+      // Dynamically initialize certification translations
+      if (localConfig.certifications) {
+        localConfig.certifications.forEach((cert: any) => {
+          const tKey = `ABOUT_CERT_${cert.key}`;
+          const entry = translations.find(t => t.id === tKey);
+          if (entry) {
+            initialEdits[tKey] = (entry.content as any) || {};
+          } else {
+            initialEdits[tKey] = {};
+          }
+        });
+      }
+      setTransEdits(prev => ({ ...initialEdits, ...prev }));
     }
-  }, [translations]);
+  }, [translations, localConfig.certifications]);
 
   const handleTransChange = (key: string, lang: string, value: string) => {
     setTransEdits(prev => ({
@@ -185,6 +203,42 @@ export default function SiteSettingsPage() {
     setLocalConfig({ ...localConfig, socialLinks: current });
   };
 
+  const addCert = () => {
+    const key = prompt("请输入证书唯一标识 (例如: UL, FDA, TUV):");
+    if (!key) return;
+    const uppercaseKey = key.trim().toUpperCase();
+    if (!/^[A-Z0-9_]+$/.test(uppercaseKey)) {
+      alert("标识只能包含大写字母、数字 and 下划线！");
+      return;
+    }
+    const current = [...(localConfig.certifications || [])];
+    if (current.some((c: any) => c.key === uppercaseKey)) {
+      alert("该标识已存在！");
+      return;
+    }
+    const newCert = { key: uppercaseKey, image: '' };
+    setLocalConfig({
+      ...localConfig,
+      certifications: [...current, newCert]
+    });
+    setTransEdits(prev => ({
+      ...prev,
+      [`ABOUT_CERT_${uppercaseKey}`]: { zh: uppercaseKey, en: uppercaseKey }
+    }));
+  };
+
+  const removeCert = (index: number) => {
+    if (!confirm("确定要删除此证书吗？")) return;
+    const current = [...(localConfig.certifications || [])];
+    current.splice(index, 1);
+    setLocalConfig({ ...localConfig, certifications: current });
+  };
+
+  const openCertImageSelect = (index: number) => {
+    setActiveCertIndexForMedia(index);
+    setIsMediaOpen(true);
+  };
+
   return (
     <div className="max-w-[1600px] mx-auto space-y-12 pb-32">
       {/* Header Area */}
@@ -236,6 +290,7 @@ export default function SiteSettingsPage() {
               <TabsTrigger value="contact" className="rounded-xl px-8 h-11 text-xs font-bold uppercase tracking-wider gap-2 transition-all duration-300 data-[state=active]:bg-card data-[state=active]:text-primary data-[state=active]:shadow-[0_4px_12px_rgba(0,0,0,0.05)] data-[state=active]:border-border/60 border border-transparent text-muted-foreground hover:text-foreground">联系矩阵</TabsTrigger>
               <TabsTrigger value="seo" className="rounded-xl px-8 h-11 text-xs font-bold uppercase tracking-wider gap-2 transition-all duration-300 data-[state=active]:bg-card data-[state=active]:text-primary data-[state=active]:shadow-[0_4px_12px_rgba(0,0,0,0.05)] data-[state=active]:border-border/60 border border-transparent text-muted-foreground hover:text-foreground">智能 SEO</TabsTrigger>
               <TabsTrigger value="about" className="rounded-xl px-8 h-11 text-xs font-bold uppercase tracking-wider gap-2 transition-all duration-300 data-[state=active]:bg-card data-[state=active]:text-primary data-[state=active]:shadow-[0_4px_12px_rgba(0,0,0,0.05)] data-[state=active]:border-border/60 border border-transparent text-muted-foreground hover:text-foreground">关于内容</TabsTrigger>
+              <TabsTrigger value="certs" className="rounded-xl px-8 h-11 text-xs font-bold uppercase tracking-wider gap-2 transition-all duration-300 data-[state=active]:bg-card data-[state=active]:text-primary data-[state=active]:shadow-[0_4px_12px_rgba(0,0,0,0.05)] data-[state=active]:border-border/60 border border-transparent text-muted-foreground hover:text-foreground">证书管理</TabsTrigger>
             </TabsList>
 
             <TabsContent value="identity" className="mt-0 space-y-8 focus-visible:outline-none">
@@ -461,6 +516,106 @@ export default function SiteSettingsPage() {
                 </div>
               </GlassCard>
             </TabsContent>
+
+            <TabsContent value="certs" className="mt-0 space-y-8 focus-visible:outline-none">
+              <GlassCard>
+                <div className="p-6 md:p-8 border-b border-border flex items-center justify-between">
+                  <div>
+                    <CardTitle className="text-lg font-bold text-foreground">企业证书设置</CardTitle>
+                    <CardDescription className="mt-1">配置在“关于我们”页面动态展示的证书及其图片和多语言翻译。</CardDescription>
+                  </div>
+                  <Button onClick={addCert} variant="outline" size="sm" className="rounded-xl gap-2 border-border h-9 px-4 text-[10px] font-bold uppercase tracking-wider hover:bg-muted/10">
+                    <Plus className="w-3.5 h-3.5" /> 添加证书
+                  </Button>
+                </div>
+                <div className="p-6 md:p-8 space-y-6">
+                  <div className="grid grid-cols-1 gap-6">
+                    <AnimatePresence mode="popLayout">
+                      {(localConfig.certifications || []).map((cert, idx) => {
+                        const tKey = `ABOUT_CERT_${cert.key}`;
+                        return (
+                          <motion.div 
+                            key={cert.key}
+                            initial={{ opacity: 0, y: 10 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            exit={{ opacity: 0, y: -10 }}
+                            className="group flex flex-col md:flex-row items-start md:items-center gap-6 p-6 bg-muted/10 hover:bg-muted/20 border border-border/60 hover:border-primary/30 rounded-2xl transition-all duration-300 shadow-sm"
+                          >
+                            {/* Certificate Image Selector & Preview */}
+                            <div className="flex items-center gap-4 shrink-0">
+                              <div 
+                                onClick={() => openCertImageSelect(idx)}
+                                className="h-20 w-16 rounded-xl bg-card border border-border/80 hover:border-primary flex items-center justify-center text-muted-foreground shadow-sm cursor-pointer overflow-hidden group/thumb relative transition-all"
+                              >
+                                {cert.image ? (
+                                  <img 
+                                    src={getAssetUrl(cert.image)} 
+                                    alt={cert.key} 
+                                    className="w-full h-full object-contain p-1 group-hover/thumb:scale-105 transition-transform" 
+                                  />
+                                ) : (
+                                  <div className="flex flex-col items-center justify-center p-2 text-center text-[8px] font-bold text-muted-foreground/60 gap-1">
+                                    <ImageIcon className="w-5 h-5 text-muted-foreground/40" />
+                                    <span>未上传</span>
+                                  </div>
+                                )}
+                                <div className="absolute inset-0 bg-black/40 opacity-0 group-hover/thumb:opacity-100 flex items-center justify-center text-white text-[8px] font-black uppercase tracking-wider transition-opacity">
+                                  选择图片
+                                </div>
+                              </div>
+                              <div className="space-y-1">
+                                <Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest block">证书图片</Label>
+                                <Button 
+                                  onClick={() => openCertImageSelect(idx)} 
+                                  variant="outline" 
+                                  size="sm" 
+                                  className="h-7 px-3 text-[9px] font-bold rounded-lg border-border hover:bg-muted/10"
+                                >
+                                  {cert.image ? '更换图片' : '上传/选择'}
+                                </Button>
+                              </div>
+                            </div>
+
+                            {/* Key info & input */}
+                            <div className="flex-1 space-y-2 w-full">
+                              <div className="flex items-center justify-between">
+                                <span className="text-xs font-black uppercase tracking-widest text-primary flex items-center gap-1.5">
+                                  <Hash className="w-3.5 h-3.5 text-primary/50" /> {cert.key}
+                                </span>
+                                <span className="text-[9px] font-bold text-muted-foreground/60 uppercase tracking-widest">翻译键值: {tKey}</span>
+                              </div>
+                              <div className="space-y-1">
+                                <Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-[0.1em]">证书展示名称 ({activeLanguages.find((l: any) => l.code === activeLang)?.label || activeLang.toUpperCase()})</Label>
+                                <Input 
+                                  value={transEdits[tKey]?.[activeLang] || ''} 
+                                  onChange={e => handleTransChange(tKey, activeLang, e.target.value)}
+                                  placeholder={`在当前语言下显示的名称，如: ISO 9001 质量认证`}
+                                  className="h-9 rounded-xl text-xs font-bold"
+                                />
+                              </div>
+                            </div>
+
+                            {/* Delete button */}
+                            <button 
+                              onClick={() => removeCert(idx)}
+                              className="p-3 text-muted-foreground hover:text-red-500 hover:bg-red-500/10 rounded-xl transition-all self-end md:self-center opacity-0 group-hover:opacity-100 shrink-0"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          </motion.div>
+                        );
+                      })}
+                    </AnimatePresence>
+                  </div>
+                  {(!localConfig.certifications || localConfig.certifications.length === 0) && (
+                    <div className="py-12 text-center border border-dashed border-border rounded-2xl bg-muted/5">
+                      <Award className="w-10 h-10 text-muted-foreground/30 mx-auto mb-4" />
+                      <p className="text-muted-foreground/60 text-xs font-medium">暂无证书配置，点击右上角“添加证书”以初始化。</p>
+                    </div>
+                  )}
+                </div>
+              </GlassCard>
+            </TabsContent>
           </Tabs>
         </div>
 
@@ -588,7 +743,15 @@ export default function SiteSettingsPage() {
         open={isMediaOpen} 
         onOpenChange={setIsMediaOpen} 
         onSelect={(assets) => {
-          if (mediaTarget && assets[0]) {
+          if (activeCertIndexForMedia !== null && assets[0]) {
+            const current = [...(localConfig.certifications || [])];
+            current[activeCertIndexForMedia] = { 
+              ...current[activeCertIndexForMedia], 
+              image: assets[0].url 
+            };
+            setLocalConfig({ ...localConfig, certifications: current });
+            setActiveCertIndexForMedia(null);
+          } else if (mediaTarget && assets[0]) {
             setLocalConfig({...localConfig, [mediaTarget]: assets[0].url});
           }
           setIsMediaOpen(false);
