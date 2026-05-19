@@ -12,7 +12,29 @@ export default function CookieConsent() {
   const [isVisible, setIsVisible] = useState(false);
   const pathname = usePathname();
   const { locale, isReady } = useLanguage();
-  const { t } = useTranslations(locale);
+  const { t, isLoading } = useTranslations(locale);
+
+  // Local fallback dictionary to shield against ad-blockers blocking translation APIs
+  const fallbackMessage: Record<string, string> = {
+    en: 'We use cookies to improve your experience. By continuing to visit this site you agree to our use of cookies.',
+    zh: '我们使用 Cookie 来改善您的浏览体验。继续访问本网站即表示您同意我们使用 Cookie。',
+    id: 'Kami menggunakan cookie untuk meningkatkan pengalaman Anda. Dengan terus mengunjungi situs ini, Anda menyetujui penggunaan cookie kami.',
+    vi: 'Chúng tôi sử dụng cookie để cải thiện trải nghiệm của bạn. Bằng cách tiếp tục truy cập trang web này, bạn đồng ý với việc chúng tôi sử dụng cookie.'
+  };
+
+  const fallbackAccept: Record<string, string> = {
+    en: 'Accept',
+    zh: '接受',
+    id: 'Terima',
+    vi: 'Chấp nhận'
+  };
+
+  const fallbackPrivacy: Record<string, string> = {
+    en: 'Privacy Policy',
+    zh: '隐私政策',
+    id: 'Kebijakan Privasi',
+    vi: 'Chính sách bảo mật'
+  };
 
   useEffect(() => {
     // 禁用后台路由弹出
@@ -32,7 +54,7 @@ export default function CookieConsent() {
     setIsVisible(false);
   };
 
-  if (!isReady || pathname?.startsWith('/admin')) return null;
+  if (!isReady || isLoading || pathname?.startsWith('/admin')) return null;
 
   return (
     <AnimatePresence>
@@ -57,7 +79,7 @@ export default function CookieConsent() {
                 <div className="space-y-1">
                   <h4 className="text-sm font-bold text-slate-900 uppercase tracking-widest">Cookie Privacy</h4>
                   <p className="text-xs text-slate-500 leading-relaxed font-medium">
-                    {t('COOKIE_CONSENT_MESSAGE')}
+                    {t('COOKIE_CONSENT_MESSAGE') || fallbackMessage[locale] || fallbackMessage['en']}
                   </p>
                 </div>
                 
@@ -66,13 +88,13 @@ export default function CookieConsent() {
                     onClick={handleAccept}
                     className="rounded-full bg-slate-900 text-white hover:bg-primary hover:shadow-lg hover:shadow-primary/20 transition-all font-bold text-[10px] uppercase tracking-widest px-6 h-10"
                   >
-                    {t('COOKIE_CONSENT_ACCEPT')}
+                    {t('COOKIE_CONSENT_ACCEPT') || fallbackAccept[locale] || fallbackAccept['en']}
                   </Button>
                   <Button 
                     variant="ghost"
                     className="rounded-full text-slate-400 hover:text-slate-900 font-bold text-[10px] uppercase tracking-widest h-10"
                   >
-                    {t('COOKIE_CONSENT_PRIVACY')}
+                    {t('COOKIE_CONSENT_PRIVACY') || fallbackPrivacy[locale] || fallbackPrivacy['en']}
                   </Button>
                 </div>
               </div>

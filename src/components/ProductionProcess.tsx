@@ -30,7 +30,7 @@ interface StepData {
 
 export function ProductionProcess({ locale }: { locale: Locale }) {
   const [activeStep, setActiveStep] = useState(0);
-  const [carouselState, setCarouselState] = useState({ subIndex: 0, progress: 0 });
+  const [subIndex, setSubIndex] = useState(0);
   const [isPlaying, setIsPlaying] = useState(true);
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
   const [isVisible, setIsVisible] = useState(false);
@@ -128,40 +128,24 @@ export function ProductionProcess({ locale }: { locale: Locale }) {
   }, [steps]);
 
   const activeImages = useMemo(() => steps[activeStep]?.images || [], [steps, activeStep]);
-  const imagesKey = useMemo(() => JSON.stringify(activeImages), [activeImages]);
-  const imagesRef = useRef(activeImages);
-  const keyRef = useRef(imagesKey);
 
-  useEffect(() => { imagesRef.current = activeImages; }, [activeImages]);
-
+  // Reset subIndex when images change
   useEffect(() => {
-    if (!isPlaying || !isVisible) return;
-    let lastTick = Date.now();
-    let timerId: NodeJS.Timeout;
-    const tick = () => {
-      const now = Date.now();
-      const delta = now - lastTick;
-      lastTick = now;
-      setCarouselState((prev) => {
-        if (keyRef.current !== imagesKey) {
-          keyRef.current = imagesKey;
-          return { subIndex: 0, progress: 0 };
-        }
-        const len = imagesRef.current.length;
-        if (len <= 1) return { subIndex: 0, progress: 0 };
-        const increment = (delta / AUTOPLAY_DELAY) * 100;
-        const nextProgress = prev.progress + increment;
-        if (nextProgress >= 100) return { subIndex: (prev.subIndex + 1) % len, progress: 0 };
-        return { ...prev, progress: nextProgress };
-      });
-      timerId = setTimeout(tick, 50);
-    };
-    timerId = setTimeout(tick, 50);
-    return () => clearTimeout(timerId);
-  }, [imagesKey, isPlaying, isVisible]);
+    setSubIndex(0);
+  }, [activeImages]);
 
-  const subImageIndex = carouselState.subIndex;
-  const progress = carouselState.progress;
+  // CUSTOM TIMER: Low-frequency slide switching
+  useEffect(() => {
+    if (!isPlaying || !isVisible || activeImages.length <= 1) return;
+
+    const timer = setInterval(() => {
+      setSubIndex((prev) => (prev + 1) % activeImages.length);
+    }, AUTOPLAY_DELAY);
+
+    return () => clearInterval(timer);
+  }, [isPlaying, isVisible, activeImages, subIndex]);
+
+  const subImageIndex = subIndex;
 
   // 渲染逻辑拆分
   const renderLoading = () => (
@@ -221,7 +205,7 @@ export function ProductionProcess({ locale }: { locale: Locale }) {
                     {activeImages.map((_: any, i: number) => (
                       <button 
                         key={i} 
-                        onClick={() => setCarouselState({ subIndex: i, progress: 0 })} 
+                        onClick={() => setSubIndex(i)} 
                         className={cn(
                           "relative h-1 rounded-full transition-all duration-500 overflow-hidden bg-white/30", 
                           i === subImageIndex ? "w-6 lg:w-8" : "w-1.5 lg:w-2 hover:bg-white/50"
@@ -229,10 +213,11 @@ export function ProductionProcess({ locale }: { locale: Locale }) {
                       >
                         {i === subImageIndex && (
                           <div 
+                            key={subImageIndex} // Reset key to restart animation on slide change
                             className="absolute inset-0 bg-accent origin-left" 
                             style={{ 
-                              width: isPlaying ? `${progress}%` : '100%', 
-                              transition: (progress === 0 && isPlaying) ? 'none' : 'width 50ms linear' 
+                              animation: 'hero-progress-gpu 4000ms linear forwards',
+                              animationPlayState: isPlaying ? 'running' : 'paused'
                             }} 
                           />
                         )}
@@ -277,8 +262,17 @@ export function ProductionProcess({ locale }: { locale: Locale }) {
                   <div className="absolute bottom-3 right-3 z-30 flex items-center gap-2 animate-in fade-in duration-500">
                     <div className="flex gap-1 items-center">
                       {step.images.map((_: any, i: number) => (
-                        <div key={i} className={cn("h-0.5 rounded-full bg-white/30 overflow-hidden transition-all duration-500", i === subImageIndex ? "w-4" : "w-1")}>
-                          {i === subImageIndex && <div className="h-full bg-accent origin-left" style={{ width: isPlaying ? `${progress}%` : '100%' }} />}
+                        <div key={i} className={cn("h-0.5 rounded-full bg-white/30 overflow-hidden transition-all duration-500 relative", i === subImageIndex ? "w-4" : "w-1")}>
+                          {i === subImageIndex && (
+                            <div 
+                              key={subImageIndex}
+                              className="absolute inset-0 bg-accent origin-left" 
+                              style={{ 
+                                animation: 'hero-progress-gpu 4000ms linear forwards',
+                                animationPlayState: isPlaying ? 'running' : 'paused'
+                              }} 
+                            />
+                          )}
                         </div>
                       ))}
                     </div>

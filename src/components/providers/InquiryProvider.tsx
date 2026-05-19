@@ -1,8 +1,28 @@
 'use client';
 
-import React, { createContext, useContext, useState, ReactNode } from 'react';
-import { InquiryDialog } from '@/components/InquiryDialog';
+import React, { createContext, useContext, useState, ReactNode, Suspense } from 'react';
+import nextDynamic from 'next/dynamic';
 import { Locale } from '@/lib/translations';
+
+const InquiryDialog = nextDynamic(
+  () => import('@/components/InquiryDialog').then(mod => mod.InquiryDialog),
+  { ssr: false }
+);
+
+const CookieConsent = nextDynamic(
+  () => import('@/components/CookieConsent'),
+  { ssr: false }
+);
+
+const AnalyticsTracker = nextDynamic(
+  () => import('@/components/AnalyticsTracker').then(mod => mod.AnalyticsTracker),
+  { ssr: false }
+);
+
+const LanguageIntelligence = nextDynamic(
+  () => import('@/components/LanguageIntelligence').then(mod => mod.LanguageIntelligence),
+  { ssr: false }
+);
 
 interface InquiryContextType {
   openInquiry: (options?: { productId?: string; productName?: string }) => void;
@@ -37,14 +57,21 @@ export function InquiryProvider({ children, locale: propLocale }: InquiryProvide
 
   return (
     <InquiryContext.Provider value={{ openInquiry }}>
+      <Suspense fallback={null}>
+        <LanguageIntelligence />
+      </Suspense>
+      <AnalyticsTracker />
       {children}
-      <InquiryDialog
-        isOpen={isOpen}
-        onOpenChange={setIsOpen}
-        locale={locale}
-        productId={inquiryOptions.productId}
-        productName={inquiryOptions.productName}
-      />
+      {isOpen && (
+        <InquiryDialog
+          isOpen={isOpen}
+          onOpenChange={setIsOpen}
+          locale={locale}
+          productId={inquiryOptions.productId}
+          productName={inquiryOptions.productName}
+        />
+      )}
+      <CookieConsent />
     </InquiryContext.Provider>
   );
 }

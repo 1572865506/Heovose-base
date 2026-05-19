@@ -104,7 +104,6 @@ export function ProductGallery({ locale }: { locale: Locale }) {
   const [count, setCount] = useState(0);
   const [isPlaying, setIsPlaying] = useState(true);
   const isPlayingRef = useRef(true);
-  const [progress, setProgress] = useState(0);
   const AUTOPLAY_DELAY = 5000;
 
   // Sync ref with state
@@ -219,13 +218,7 @@ export function ProductGallery({ locale }: { locale: Locale }) {
 
     const onSelect = () => {
       const snapIndex = api.selectedScrollSnap();
-      setCurrent((prev) => {
-        if (prev !== snapIndex) {
-          setProgress(0);
-          return snapIndex;
-        }
-        return prev;
-      });
+      setCurrent(snapIndex);
     };
 
     const onReInit = () => {
@@ -257,30 +250,16 @@ export function ProductGallery({ locale }: { locale: Locale }) {
     return () => observer.disconnect();
   }, []);
 
-  // CUSTOM TIMER: Manages both progress and slide switching
+  // CUSTOM TIMER: Manages slide switching
   useEffect(() => {
-    if (!api || !isVisible) return; // 不可见时不运行计时器
-
-    const intervalTime = 50;
-    const step = (intervalTime / AUTOPLAY_DELAY) * 100;
+    if (!api || !isVisible || !isPlaying) return;
 
     const timer = setInterval(() => {
-      if (isPlayingRef.current) {
-        setProgress((prev) => {
-          if (prev >= 100) return 100;
-
-          const next = prev + step;
-          if (next >= 100) {
-            api.scrollNext();
-            return 100;
-          }
-          return next;
-        });
-      }
-    }, intervalTime);
+      api.scrollNext();
+    }, AUTOPLAY_DELAY);
 
     return () => clearInterval(timer);
-  }, [api, isVisible]);
+  }, [api, isVisible, isPlaying, current]);
 
   const toggleAutoplay = useCallback(() => {
     setIsPlaying(prev => !prev);
@@ -330,8 +309,12 @@ export function ProductGallery({ locale }: { locale: Locale }) {
                 >
                   {i === current && (
                     <div
-                      className="absolute inset-0 bg-primary origin-left transition-all duration-[50ms] linear"
-                      style={{ width: `${progress}%` }}
+                      key={current}
+                      className="absolute inset-0 bg-primary origin-left"
+                      style={{
+                        animation: 'hero-progress-gpu 5000ms linear forwards',
+                        animationPlayState: isPlaying ? 'running' : 'paused'
+                      }}
                     />
                   )}
                 </button>

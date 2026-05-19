@@ -384,9 +384,9 @@ export function Hero({ locale, homeConfig, isLoading, onThemeChange }: HeroProps
                   {selectedIndex === index && (
                     <div
                       key={`progress-${index}`}
-                      className="absolute inset-y-0 left-0 bg-white rounded-full"
+                      className="absolute inset-y-0 left-0 right-0 bg-white rounded-full origin-left"
                       style={{
-                        animation: 'hero-progress 6000ms linear forwards'
+                        animation: 'hero-progress-gpu 6000ms linear forwards'
                       }}
                     />
                   )}

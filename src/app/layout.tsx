@@ -46,13 +46,8 @@ export async function generateMetadata(): Promise<Metadata> {
 
 import { AuthProvider } from '@/components/providers/session-provider';
 import { SystemConfigProvider } from '@/components/providers/system-config-provider';
-import { LanguageIntelligence } from '@/components/LanguageIntelligence';
-import { AnalyticsTracker } from '@/components/AnalyticsTracker';
 import { InquiryProvider } from '@/components/providers/InquiryProvider';
-import CookieConsent from '@/components/CookieConsent';
-import SmoothScrollProvider from '@/components/providers/SmoothScrollProvider';
 import { AdminThemeProvider } from '@/components/admin/AdminThemeProvider';
-import { Suspense } from 'react';
 
 import { cookies } from "next/headers";
 
@@ -76,15 +71,10 @@ export default async function RootLayout({
       <body className="font-body antialiased" suppressHydrationWarning>
         <AuthProvider>
           <SystemConfigProvider>
-            <Suspense fallback={null}>
-              <LanguageIntelligence />
-            </Suspense>
             <AdminThemeProvider>
               <InquiryProvider>
-                <AnalyticsTracker />
                 {children}
               </InquiryProvider>
-              <CookieConsent />
               <Toaster />
             </AdminThemeProvider>
           </SystemConfigProvider>

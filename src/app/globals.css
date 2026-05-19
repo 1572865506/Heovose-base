@@ -258,6 +258,10 @@
   from { width: 0%; }
   to { width: 100%; }
 }
+@keyframes hero-progress-gpu {
+  from { transform: scaleX(0); }
+  to { transform: scaleX(1); }
+}
 
 /* Fix for SplitText line overlap */
 .split-line {

@@ -50,3 +50,7 @@ firestore-debug.log
 *.tar.gz
 *.old
 server.log
+
+# playwright
+/playwright-report/
+/test-results/
