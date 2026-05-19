@@ -120,6 +120,7 @@ export function Footer({ locale }: { locale: Locale }) {
             <h4 className="font-bold mb-10 text-white uppercase tracking-[0.2em] text-[14px] opacity-100">{tr('nav_company')}</h4>
             <ul className="space-y-4 text-[13px] mt-[30px]">
               <li className="opacity-60 hover:opacity-100 hover:text-accent cursor-pointer transition-colors"><a href="/about">{tr('nav_about')}</a></li>
+              <li className="opacity-60 hover:opacity-100 hover:text-accent cursor-pointer transition-colors"><a href="/service-centers">{tr('NAV_SERVICE_CENTERS')}</a></li>
               <li className="opacity-60 hover:opacity-100 hover:text-accent cursor-pointer transition-colors"><a href="/#cases">{tr('nav_cases')}</a></li>
               <li className="opacity-60 hover:opacity-100 hover:text-accent cursor-pointer transition-colors">{tr('nav_career')}</li>
               <li className="opacity-60 hover:opacity-100 hover:text-accent cursor-pointer transition-colors">{tr('nav_contact')}</li>

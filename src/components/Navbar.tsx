@@ -340,6 +340,14 @@ export function Navbar({ locale, setLocale, headerTheme = 'dark', themeLine }: N
               )}>
                 {tr('NAV_CASES')}
               </Link>
+              <Link href="/service-centers" className={cn(
+                "px-4 py-2 rounded-full transition-all duration-300 text-sm font-medium whitespace-nowrap",
+                (isNavbarActive || headerTheme === 'light')
+                  ? "text-slate-800 hover:bg-slate-100"
+                  : "text-white hover:bg-white/10"
+              )}>
+                {tr('NAV_SERVICE_CENTERS')}
+              </Link>
               <Link href="/about" className={cn(
                 "px-4 py-2 rounded-full transition-all duration-300 text-sm font-medium whitespace-nowrap",
                 (isNavbarActive || headerTheme === 'light')
@@ -406,6 +414,7 @@ export function Navbar({ locale, setLocale, headerTheme = 'dark', themeLine }: N
                 </div>
               </div>
               <Link href="/#cases" onClick={() => setMobileMenuOpen(false)} className="text-lg font-bold text-primary">{tr('NAV_CASES')}</Link>
+              <Link href="/service-centers" onClick={() => setMobileMenuOpen(false)} className="text-lg font-bold text-primary">{tr('NAV_SERVICE_CENTERS')}</Link>
               <Link href="/about" onClick={() => setMobileMenuOpen(false)} className="text-lg font-bold text-primary">{tr('NAV_ABOUT')}</Link>
 
               <div className="pt-6 border-t border-slate-100 mt-auto">

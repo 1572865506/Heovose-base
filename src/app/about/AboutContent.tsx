@@ -1,39 +1,28 @@
 "use client";
 
-import { motion, useScroll, useTransform, AnimatePresence } from "framer-motion";
+import { motion, useScroll, useTransform } from "framer-motion";
 import { gsap } from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { useGSAP } from "@gsap/react";
 import { Locale } from "@/lib/translations";
 import { useTranslations } from "@/hooks/use-translations";
+import { useLocalDoc } from "@/hooks/use-local-doc";
 import {
-  Building2, Target, Users, Zap, ShieldCheck, Microchip, Factory,
-  Globe2, Award, CheckCircle2, FlaskConical, Search, Cpu,
-  Lightbulb, Handshake, Heart, Shield, TrendingUp, Boxes,
-  ArrowRight, FileText, ChevronRight, ChevronLeft, MapPin, ChevronDown, BookOpen,
-  Settings, ClipboardCheck
+  Zap, ShieldCheck, Award, CheckCircle2, FlaskConical, Search, Cpu,
+  TrendingUp, Boxes, ArrowRight, MapPin, ChevronDown, BookOpen,
+  Microchip, Factory, Globe2, ChevronLeft, ChevronRight
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useRef, useState, useEffect, useMemo } from "react";
 import { useSearchParams } from "next/navigation";
 import { Navbar } from "@/components/Navbar";
 import { Footer } from "@/components/Footer";
-import { useLocalDoc } from "@/hooks/use-local-doc";
 import { getAssetUrl } from "@/lib/image-utils";
 import { useInquiry } from "@/components/providers/InquiryProvider";
 
 interface AboutContentProps {
   initialLocale: Locale;
 }
-
-const CERT_ICONS: Record<string, any> = {
-  Award,
-  ShieldCheck,
-  CheckCircle2,
-  Shield,
-  Boxes,
-  Zap
-};
 
 export default function AboutContent({ initialLocale }: AboutContentProps) {
   const [locale, setLocale] = useState<Locale>(initialLocale);
@@ -73,12 +62,6 @@ export default function AboutContent({ initialLocale }: AboutContentProps) {
   // Parallax for Hero
   const heroOpacity = useTransform(scrollYProgress, [0, 0.2], [1, 0]);
   const heroScale = useTransform(scrollYProgress, [0, 0.2], [1, 1.1]);
-
-  // Section Refs for scroll reveal
-  const section1Ref = useRef(null);
-  const section2Ref = useRef(null);
-  const section3Ref = useRef(null);
-  const section4Ref = useRef(null);
 
   // Lab Data
   const labEquipment = useMemo(() => {
@@ -200,7 +183,7 @@ export default function AboutContent({ initialLocale }: AboutContentProps) {
       opacity: 1
     });
 
-    // Build the layered panels pinning timeline
+    // Build the layered panels pinning timeline with anticipatePin to prevent overlap
     const tl = gsap.timeline({
       scrollTrigger: {
         trigger: container,
@@ -208,6 +191,7 @@ export default function AboutContent({ initialLocale }: AboutContentProps) {
         start: "top top",
         end: `+=${(panels.length - 1) * 120}%`, // Scroll distance (120% per overlay for spacious timing)
         scrub: 1, // Smooth scrub to bind the animation speed to scroll wheel/touch
+        anticipatePin: 1, // Prevent pinning jitter and content overlap
         invalidateOnRefresh: true
       }
     });
@@ -225,13 +209,13 @@ export default function AboutContent({ initialLocale }: AboutContentProps) {
         yPercent: 0,
         ease: "none"
       }, `panel-${index}`)
-      .fromTo(currentContent, {
-        y: 80
-      }, {
-        y: 0,
-        duration: 0.5,
-        ease: "power2.out"
-      }, `panel-${index}+=0.15`);
+        .fromTo(currentContent, {
+          y: 80
+        }, {
+          y: 0,
+          duration: 0.5,
+          ease: "power2.out"
+        }, `panel-${index}+=0.15`);
     });
 
     // Recalibrate ScrollTrigger positions after all page images/styles hydrate and settle
@@ -239,7 +223,25 @@ export default function AboutContent({ initialLocale }: AboutContentProps) {
       ScrollTrigger.refresh();
     }, 450);
 
-    return () => clearTimeout(refreshTimer);
+    // Watch for image loads to prevent layout shifts throwing off ScrollTrigger calculations
+    const images = document.querySelectorAll("img");
+    images.forEach(img => {
+      if (img.complete) return;
+      img.addEventListener("load", () => {
+        ScrollTrigger.refresh();
+      });
+    });
+
+    // Body ResizeObserver to dynamically update pin positions during runtime layout changes
+    const resizeObserver = new ResizeObserver(() => {
+      ScrollTrigger.refresh();
+    });
+    resizeObserver.observe(document.body);
+
+    return () => {
+      clearTimeout(refreshTimer);
+      resizeObserver.disconnect();
+    };
   }, { scope: qualityContainerRef });
   const cultureSectionRef = useRef<HTMLDivElement>(null);
   const { scrollYProgress: cultureScrollYProgress } = useScroll({
@@ -249,12 +251,14 @@ export default function AboutContent({ initialLocale }: AboutContentProps) {
 
   useEffect(() => {
     return cultureScrollYProgress.on("change", (latest) => {
-      if (latest < 0.33) {
-        setActiveCultureIndex(0);
-      } else if (latest < 0.66) {
-        setActiveCultureIndex(1);
-      } else {
-        setActiveCultureIndex(2);
+      if (typeof window !== 'undefined' && window.innerWidth >= 1024) {
+        if (latest < 0.33) {
+          setActiveCultureIndex(0);
+        } else if (latest < 0.66) {
+          setActiveCultureIndex(1);
+        } else {
+          setActiveCultureIndex(2);
+        }
       }
     });
   }, [cultureScrollYProgress]);
@@ -286,29 +290,27 @@ export default function AboutContent({ initialLocale }: AboutContentProps) {
           >
             <div className="inline-flex items-center gap-3 px-6 py-2 rounded-full bg-white/10 border border-white/20 backdrop-blur-xl shadow-2xl">
               <span className="w-2 h-2 rounded-full bg-primary animate-pulse" />
-              <span className="text-[10px] font-black uppercase tracking-[0.4em] text-white/90">Intelligence & Display Leader</span>
+              <span className="text-[10px] font-black uppercase tracking-[0.4em] text-white/90">{t('ABOUT_HERO_BADGE')}</span>
             </div>
 
             <h1 className="text-5xl md:text-8xl font-black text-white tracking-tighter leading-[0.95] font-headline max-w-5xl mx-auto">
               <span className="block text-transparent bg-clip-text bg-gradient-to-r from-white via-white to-white/60">
-                {locale === 'zh' ? '智能计算与显示的' : 'Leader in Intelligent'}
+                {t('ABOUT_HERO_TITLE_1')}
               </span>
               <span className="block text-primary">
-                {locale === 'zh' ? '全球引领者' : 'Computing & Display'}
+                {t('ABOUT_HERO_TITLE_2')}
               </span>
             </h1>
 
             <p className="text-lg md:text-xl text-slate-300 font-light max-w-2xl mx-auto leading-relaxed border-l border-white/10 pl-8 italic">
-              {locale === 'zh'
-                ? 'Heovose：从传统制造向“高新科技制造企业”的蜕变，致力于打造精品国货，让中国制造走向世界。'
-                : 'Heovose: Transformed from traditional manufacturing to a high-tech enterprise, committed to premium products that bring Chinese manufacturing to the world.'}
+              {t('ABOUT_HERO_SUBTITLE')}
             </p>
 
             <div className="flex flex-wrap justify-center gap-8 pt-8">
               {[
-                { label: locale === 'zh' ? '专业' : 'Professional', desc: 'Expertise' },
-                { label: locale === 'zh' ? '专注' : 'Focused', desc: 'Dedication' },
-                { label: locale === 'zh' ? '创新' : 'Innovative', desc: 'Evolution' }
+                { label: t('ABOUT_HERO_VAL1_LABEL'), desc: t('ABOUT_HERO_VAL1_DESC') },
+                { label: t('ABOUT_HERO_VAL2_LABEL'), desc: t('ABOUT_HERO_VAL2_DESC') },
+                { label: t('ABOUT_HERO_VAL3_LABEL'), desc: t('ABOUT_HERO_VAL3_DESC') }
               ].map((item, i) => (
                 <motion.div
                   key={i}
@@ -325,14 +327,18 @@ export default function AboutContent({ initialLocale }: AboutContentProps) {
           </motion.div>
         </div>
 
-        <motion.div
-          animate={{ y: [0, 15, 0] }}
-          transition={{ duration: 2.5, repeat: Infinity, ease: "easeInOut" }}
-          className="absolute bottom-12 left-1/2 -translate-x-1/2 flex flex-col items-center gap-3"
-        >
-          <div className="w-px h-16 bg-gradient-to-b from-primary to-transparent" />
-          <span className="text-[9px] font-bold text-white/20 uppercase tracking-[0.3em]">Discover More</span>
-        </motion.div>
+        <div className="absolute bottom-12 left-1/2 -translate-x-1/2 z-20">
+          <motion.div
+            animate={{ y: [0, 15, 0] }}
+            transition={{ duration: 2.5, repeat: Infinity, ease: "easeInOut" }}
+            className="flex flex-col items-center gap-3"
+          >
+            <div className="w-px h-16 bg-gradient-to-b from-primary to-transparent" />
+            <span className="text-[9px] font-bold text-white/20 uppercase tracking-[0.3em] whitespace-nowrap">
+              {t('ABOUT_HERO_SCROLL')}
+            </span>
+          </motion.div>
+        </div>
       </section>
 
       {/* 2. Global Manufacturing Infrastructure */}
@@ -341,16 +347,16 @@ export default function AboutContent({ initialLocale }: AboutContentProps) {
           <div className="flex flex-col lg:flex-row justify-between items-end mb-24 gap-8">
             <div className="max-w-2xl">
               <h2 className="text-4xl md:text-6xl font-black text-slate-900 tracking-tight mb-8 font-headline">
-                {locale === 'zh' ? '全球制造版图' : 'Global Manufacturing'}
+                {t('ABOUT_MAP_TITLE')}
               </h2>
               <p className="text-xl text-slate-500 font-light leading-relaxed">
-                {locale === 'zh' ? '布局三厂联动体系，展示强大的全球交付与服务保证能力。' : 'Strategic three-factory ecosystem ensuring global delivery and service excellence.'}
+                {t('ABOUT_MAP_SUBTITLE')}
               </p>
             </div>
             <div className="flex gap-4">
               <div className="px-6 py-3 bg-slate-100 rounded-2xl flex items-center gap-3">
                 <MapPin className="w-5 h-5 text-primary" />
-                <span className="text-xs font-bold text-slate-700 uppercase tracking-widest">3 Production Bases</span>
+                <span className="text-xs font-bold text-slate-700 uppercase tracking-widest">{t('ABOUT_MAP_BADGE')}</span>
               </div>
             </div>
           </div>
@@ -358,24 +364,30 @@ export default function AboutContent({ initialLocale }: AboutContentProps) {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-10">
             {[
               {
-                location: locale === 'zh' ? '中国·深圳' : 'Shenzhen, China',
-                title: locale === 'zh' ? '智能研发中心' : 'Intelligent R&D Center',
-                tags: locale === 'zh' ? ['一体机', '笔记本', 'Mini PC'] : ['AIO', 'Laptop', 'Mini PC'],
-                focus: locale === 'zh' ? '专注小尺寸设备，走专业化、精细化路线。' : 'Precision small-size device engineering.',
+                location: t('ABOUT_MAP_BASE1_LOC'),
+                title: t('ABOUT_MAP_BASE1_TITLE'),
+                focus: t('ABOUT_MAP_BASE1_FOCUS'),
+                tags: t('ABOUT_MAP_BASE1_TAGS') && !t('ABOUT_MAP_BASE1_TAGS').startsWith('ABOUT_')
+                  ? t('ABOUT_MAP_BASE1_TAGS').split(',').map(s => s.trim()).filter(Boolean)
+                  : [],
                 icon: Microchip
               },
               {
-                location: locale === 'zh' ? '中国·广东' : 'Guangdong, China',
-                title: locale === 'zh' ? '大尺寸商显基地' : 'Display Base',
-                tags: locale === 'zh' ? ['会议机', '教育机', '人机交互'] : ['Conference', 'Education', 'Interaction'],
-                focus: locale === 'zh' ? '专注规模化、高端化商用显示系统。' : 'High-end commercial display systems.',
+                location: t('ABOUT_MAP_BASE2_LOC'),
+                title: t('ABOUT_MAP_BASE2_TITLE'),
+                focus: t('ABOUT_MAP_BASE2_FOCUS'),
+                tags: t('ABOUT_MAP_BASE2_TAGS') && !t('ABOUT_MAP_BASE2_TAGS').startsWith('ABOUT_')
+                  ? t('ABOUT_MAP_BASE2_TAGS').split(',').map(s => s.trim()).filter(Boolean)
+                  : [],
                 icon: Factory
               },
               {
-                location: locale === 'zh' ? '印尼·东南亚' : 'Indonesia, SE Asia',
-                title: locale === 'zh' ? '区域生产中心' : 'Regional Production',
-                tags: locale === 'zh' ? ['本地化制造', '快速响应'] : ['Local Mfg', 'Fast Response'],
-                focus: locale === 'zh' ? '全球化战略布局，实现本地化服务响应。' : 'Strategic global localized manufacturing.',
+                location: t('ABOUT_MAP_BASE3_LOC'),
+                title: t('ABOUT_MAP_BASE3_TITLE'),
+                focus: t('ABOUT_MAP_BASE3_FOCUS'),
+                tags: t('ABOUT_MAP_BASE3_TAGS') && !t('ABOUT_MAP_BASE3_TAGS').startsWith('ABOUT_')
+                  ? t('ABOUT_MAP_BASE3_TAGS').split(',').map(s => s.trim()).filter(Boolean)
+                  : [],
                 icon: Globe2
               }
             ].map((item, idx) => (
@@ -385,17 +397,17 @@ export default function AboutContent({ initialLocale }: AboutContentProps) {
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
                 transition={{ duration: 0.8, delay: idx * 0.15 }}
-                className="group relative p-10 rounded-[40px] bg-slate-50 border border-slate-100 hover:bg-slate-900 hover:border-slate-800 transition-all duration-500"
+                className="group relative p-10 rounded-[40px] bg-slate-50 border border-slate-100 hover:bg-primary hover:border-primary transition-all duration-500"
               >
-                <div className="mb-8 w-16 h-16 rounded-3xl bg-white shadow-xl flex items-center justify-center group-hover:bg-primary transition-colors">
+                <div className="mb-8 w-16 h-16 rounded-3xl bg-white shadow-xl flex items-center justify-center group-hover:bg-white/20 transition-colors">
                   <item.icon className="w-8 h-8 text-primary group-hover:text-white" />
                 </div>
-                <div className="text-[10px] font-black uppercase tracking-widest text-primary mb-2">{item.location}</div>
+                <div className="text-[10px] font-black uppercase tracking-widest text-primary group-hover:text-white/90 mb-2">{item.location}</div>
                 <h3 className="text-2xl font-bold text-slate-900 group-hover:text-white mb-6">{item.title}</h3>
-                <p className="text-slate-500 group-hover:text-slate-400 mb-8 font-light">{item.focus}</p>
+                <p className="text-slate-500 group-hover:text-white/80 mb-8 font-light">{item.focus}</p>
                 <div className="flex flex-wrap gap-2">
                   {item.tags.map(tag => (
-                    <span key={tag} className="px-3 py-1 rounded-lg bg-white group-hover:bg-white/10 text-[10px] font-bold text-slate-600 group-hover:text-white/60">
+                    <span key={tag} className="px-3 py-1 rounded-lg bg-white group-hover:bg-white/20 text-[10px] font-bold text-slate-600 group-hover:text-white">
                       {tag}
                     </span>
                   ))}
@@ -423,17 +435,17 @@ export default function AboutContent({ initialLocale }: AboutContentProps) {
                 {t('ABOUT_LAB_SUBTITLE')}
               </p>
             </div>
-            
+
             {/* Apple-style smooth horizontal track nav controls */}
             <div className="flex gap-4 self-start md:self-end">
-              <button 
+              <button
                 onClick={scrollLeft}
                 className="w-14 h-14 rounded-full border border-white/10 bg-white/5 flex items-center justify-center hover:bg-primary hover:border-primary hover:scale-105 transition-all duration-300 active:scale-95 group"
                 aria-label="Scroll Left"
               >
                 <ChevronLeft className="w-6 h-6 text-white group-hover:text-white transition-colors" />
               </button>
-              <button 
+              <button
                 onClick={scrollRight}
                 className="w-14 h-14 rounded-full border border-white/10 bg-white/5 flex items-center justify-center hover:bg-primary hover:border-primary hover:scale-105 transition-all duration-300 active:scale-95 group"
                 aria-label="Scroll Right"
@@ -444,17 +456,13 @@ export default function AboutContent({ initialLocale }: AboutContentProps) {
           </div>
 
           {/* Horizontal scroll track of gorgeous bento-style testing items cards */}
-          <div 
+          <div
             ref={scrollTrackRef}
             className="relative w-full overflow-x-auto pb-10 flex gap-8 scrollbar-minimal snap-x snap-mandatory scroll-smooth"
           >
             {labEquipment.map((item, i) => (
-              <motion.div
+              <div
                 key={item.id}
-                initial={{ opacity: 0, y: 40 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true, margin: "-50px" }}
-                transition={{ duration: 0.8, delay: i * 0.05 }}
                 className="snap-start w-[300px] sm:w-[350px] md:w-[380px] shrink-0 relative overflow-hidden p-8 md:p-10 rounded-[32px] bg-slate-900/60 border border-white/10 backdrop-blur-md flex flex-col justify-start h-[380px] hover:border-primary/50 transition-all duration-500 group"
               >
                 {/* Dynamic soft radial background glow on hover */}
@@ -476,11 +484,11 @@ export default function AboutContent({ initialLocale }: AboutContentProps) {
                   <p className="text-xs font-bold text-primary uppercase tracking-widest block">
                     {item.desc}
                   </p>
-                  <p className="text-sm text-slate-400 font-light leading-relaxed text-justify line-clamp-5 group-hover:text-slate-300 transition-colors duration-300">
+                  <p className="text-sm text-slate-400 font-light leading-relaxed text-left line-clamp-5 group-hover:text-slate-300 transition-colors duration-300">
                     {item.detail}
                   </p>
                 </div>
-              </motion.div>
+              </div>
             ))}
           </div>
         </div>
@@ -488,7 +496,7 @@ export default function AboutContent({ initialLocale }: AboutContentProps) {
 
       {/* 5. Quality Management Process (Sticky Panels Layering via GSAP ScrollTrigger) */}
       <section ref={qualityContainerRef} className="relative w-full h-screen overflow-hidden bg-slate-950">
-        
+
         {/* Global floating header outside the sliding panels */}
         <div className="absolute top-12 left-6 md:left-12 lg:left-16 z-40 flex items-center gap-4">
           <div className="w-1.5 h-8 bg-primary rounded-full shadow-[0_0_8px_rgba(59,130,246,0.5)] animate-pulse" />
@@ -523,7 +531,6 @@ export default function AboutContent({ initialLocale }: AboutContentProps) {
               <h3 className="text-4xl md:text-5xl lg:text-6xl font-black text-white font-headline tracking-tighter leading-none">
                 {t('ABOUT_QUALITY_IQC_TITLE')}
               </h3>
-              <div className="h-[3px] w-24 bg-gradient-to-r from-primary to-transparent" />
               <p className="text-slate-300 text-base md:text-lg leading-relaxed font-light text-justify max-w-2xl border-l-2 border-primary/30 pl-6">
                 {t('ABOUT_QUALITY_IQC_DESC')}
               </p>
@@ -552,7 +559,6 @@ export default function AboutContent({ initialLocale }: AboutContentProps) {
               <h3 className="text-4xl md:text-5xl lg:text-6xl font-black text-white font-headline tracking-tighter leading-none">
                 {t('ABOUT_QUALITY_IPQC_TITLE')}
               </h3>
-              <div className="h-[3px] w-24 bg-gradient-to-r from-primary to-transparent" />
               <p className="text-slate-300 text-base md:text-lg leading-relaxed font-light text-justify max-w-2xl border-l-2 border-primary/30 pl-6">
                 {t('ABOUT_QUALITY_IPQC_DESC')}
               </p>
@@ -581,7 +587,6 @@ export default function AboutContent({ initialLocale }: AboutContentProps) {
               <h3 className="text-4xl md:text-5xl lg:text-6xl font-black text-white font-headline tracking-tighter leading-none">
                 {t('ABOUT_QUALITY_OQA_TITLE')}
               </h3>
-              <div className="h-[3px] w-24 bg-gradient-to-r from-primary to-transparent" />
               <p className="text-slate-300 text-base md:text-lg leading-relaxed font-light text-justify max-w-2xl border-l-2 border-primary/30 pl-6">
                 {t('ABOUT_QUALITY_OQA_DESC')}
               </p>
@@ -609,7 +614,7 @@ export default function AboutContent({ initialLocale }: AboutContentProps) {
           <div className="absolute inset-y-0 right-0 w-24 sm:w-48 bg-gradient-to-l from-slate-50 to-transparent z-10 pointer-events-none" />
 
           {/* Scrolling Track Container */}
-          <div 
+          <div
             onMouseEnter={() => setIsCertHovered(true)}
             onMouseLeave={() => setIsCertHovered(false)}
             className="logo-loop-container flex overflow-hidden select-none"
@@ -648,15 +653,15 @@ export default function AboutContent({ initialLocale }: AboutContentProps) {
                   >
                     <div className="w-full aspect-[3/4] rounded-2xl bg-slate-50 overflow-hidden relative border border-slate-100/60 flex items-center justify-center shrink-0">
                       {cert.image ? (
-                        <img 
-                          src={getAssetUrl(cert.image)} 
-                          alt={t(`ABOUT_CERT_${cert.key}`)} 
-                          className="w-full h-full object-contain p-2 transition-transform duration-500" 
+                        <img
+                          src={getAssetUrl(cert.image)}
+                          alt={t(`ABOUT_CERT_${cert.key}`)}
+                          className="w-full h-full object-contain p-2 transition-transform duration-500"
                         />
                       ) : (
                         <div className="flex flex-col items-center gap-2 text-slate-300 transition-colors">
                           <Award className="w-10 h-10" />
-                          <span className="text-[8px] font-bold uppercase tracking-wider text-slate-400">暂无证书图</span>
+                          <span className="text-[8px] font-bold uppercase tracking-wider text-slate-400">{t('ABOUT_CERT_NO_IMAGE')}</span>
                         </div>
                       )}
                     </div>
@@ -672,30 +677,30 @@ export default function AboutContent({ initialLocale }: AboutContentProps) {
       </section>
 
       {/* 7. Corporate Culture & Values */}
-      <section ref={cultureSectionRef} className="relative h-[220vh] bg-slate-950">
-        <div className="sticky top-0 h-screen w-full flex items-center justify-center overflow-hidden z-10">
+      <section ref={cultureSectionRef} className="relative h-auto lg:h-[220vh] bg-slate-950">
+        <div className="relative lg:sticky lg:top-0 h-auto min-h-screen lg:h-screen w-full flex items-center justify-center overflow-hidden z-10 py-12 sm:py-20 lg:py-0">
           <div className="absolute inset-0 z-0">
             <img src="/image/Corporate Culture bg.jpg" alt="Team Culture" className="w-full h-full object-cover opacity-90" />
             <div className="absolute inset-0 bg-slate-950/60 backdrop-blur-[2px]" />
           </div>
           <div className="container mx-auto px-6 relative z-10 w-full">
-            <motion.div 
-              initial={{ y: 100, opacity: 0 }}
+            <motion.div
+              initial={{ y: 50, opacity: 0 }}
               whileInView={{ y: 0, opacity: 1 }}
-              viewport={{ once: true, margin: "-100px" }}
+              viewport={{ once: true, margin: "-50px" }}
               transition={{ duration: 0.8, ease: "easeOut" }}
-              className="bg-white/95 backdrop-blur-2xl rounded-[40px] lg:rounded-[60px] p-10 lg:p-20 shadow-2xl border border-white/20 max-w-6xl mx-auto w-full"
+              className="bg-white/95 backdrop-blur-2xl rounded-[32px] sm:rounded-[40px] lg:rounded-[60px] p-6 sm:p-10 lg:p-20 shadow-2xl border border-white/20 max-w-6xl mx-auto w-full"
             >
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
-                <div className="space-y-8">
-                  <h2 className="text-4xl md:text-6xl font-black text-slate-900 font-headline leading-tight">
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 sm:gap-12 lg:gap-16 items-center">
+                <div className="space-y-6 sm:space-y-8">
+                  <h2 className="text-3xl sm:text-4xl lg:text-6xl font-black text-slate-900 font-headline leading-tight">
                     {t('ABOUT_CULTURE_TITLE')}
                   </h2>
-                  <p className="text-xl text-slate-500 font-light leading-relaxed">
+                  <p className="text-base sm:text-lg lg:text-xl text-slate-500 font-light leading-relaxed">
                     {t('ABOUT_CULTURE_SUBTITLE')}
                   </p>
                 </div>
-                <div className="grid gap-6 min-h-[380px] sm:min-h-[420px] lg:min-h-[460px] content-start">
+                <div className="grid gap-4 sm:gap-6 min-h-0 content-start">
                   {[
                     { icon: CheckCircle2, key: 'VAL1' },
                     { icon: BookOpen, key: 'VAL2' },
@@ -711,9 +716,9 @@ export default function AboutContent({ initialLocale }: AboutContentProps) {
                         transition={{ delay: 0.2 + i * 0.1, duration: 0.6 }}
                         onClick={() => setActiveCultureIndex(isActive ? null : i)}
                         className={cn(
-                          "relative overflow-hidden p-6 rounded-[2.5rem] border transition-all duration-500 cursor-pointer select-none group flex flex-col justify-center",
+                          "relative overflow-hidden p-4 sm:p-6 rounded-[1.5rem] sm:rounded-[2.5rem] border transition-all duration-500 cursor-pointer select-none group flex flex-col justify-center",
                           isActive
-                            ? "bg-primary border-primary shadow-xl shadow-primary/20 scale-[1.02]"
+                            ? "bg-primary border-primary shadow-xl shadow-primary/20 scale-[1.01]"
                             : "bg-slate-50/60 backdrop-blur-md border-slate-100/50 hover:bg-[#f8fafc]/90"
                         )}
                       >
@@ -721,40 +726,40 @@ export default function AboutContent({ initialLocale }: AboutContentProps) {
                         {isActive && (
                           <div className="absolute inset-x-0 bottom-0 h-full bg-gradient-to-t from-white/10 via-white/0 to-transparent pointer-events-none z-0" />
                         )}
-                        
+
                         <div className="flex items-center justify-between w-full relative z-10">
-                          <div className="flex items-center gap-6">
+                          <div className="flex items-center gap-4 sm:gap-6">
                             <div className={cn(
-                              "w-14 h-14 rounded-2xl flex items-center justify-center shrink-0 shadow-sm transition-all duration-500",
+                              "w-12 h-12 sm:w-14 sm:h-14 rounded-xl sm:rounded-2xl flex items-center justify-center shrink-0 shadow-sm transition-all duration-500",
                               isActive ? "bg-white/20" : "bg-white"
                             )}>
                               <val.icon className={cn(
-                                "w-7 h-7 transition-colors duration-500",
+                                "w-5 h-5 sm:w-7 sm:h-7 transition-colors duration-500",
                                 isActive ? "text-white" : "text-primary"
                               )} />
                             </div>
                             <h4 className={cn(
-                              "text-xl font-bold font-headline transition-colors duration-500",
+                              "text-lg sm:text-xl font-bold font-headline transition-colors duration-500",
                               isActive ? "text-white" : "text-slate-900"
                             )}>
                               {t(`ABOUT_CULTURE_${val.key}_TITLE`)}
                             </h4>
                           </div>
                           <ChevronDown className={cn(
-                            "w-6 h-6 transition-all duration-500 shrink-0",
+                            "w-5 h-5 sm:w-6 sm:h-6 transition-all duration-500 shrink-0",
                             isActive ? "text-white rotate-180" : "text-slate-400"
                           )} />
                         </div>
-                        
+
                         <motion.div
                           initial={false}
                           animate={{
                             height: isActive ? "auto" : 0,
                             opacity: isActive ? 1 : 0,
-                            marginTop: isActive ? 16 : 0
+                            marginTop: isActive ? 12 : 0
                           }}
                           transition={{ duration: 0.4, ease: [0.25, 1, 0.5, 1] }}
-                          className="overflow-hidden lg:pl-20 pl-0 relative z-10"
+                          className="overflow-hidden sm:pl-20 pl-0 relative z-10"
                         >
                           <p className={cn(
                             "text-sm font-light leading-relaxed transition-colors duration-500",

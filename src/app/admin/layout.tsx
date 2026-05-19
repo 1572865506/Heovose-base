@@ -48,7 +48,8 @@ import {
   FolderOpen,
   User,
   Bell,
-  Search
+  Search,
+  Landmark
 } from 'lucide-react';
 import { ThemeToggle } from '@/components/admin/ThemeToggle';
 import Link from 'next/link';
@@ -110,6 +111,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         { title: "制造流程", icon: ClipboardList, href: "/admin/steps", permission: 'steps_manage' },
         { title: "成功案例", icon: Star, href: "/admin/cases", permission: 'cases_manage' },
         { title: "全球网点", icon: MapPin, href: "/admin/map", permission: 'map_manage' },
+        { title: "服务中心", icon: Landmark, href: "/admin/service-centers", permission: 'settings_manage' },
         { title: "询盘管理", icon: MessageSquare, href: "/admin/inquiries", permission: 'inquiries_view' },
       ]
     },
