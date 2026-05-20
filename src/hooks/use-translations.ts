@@ -23,8 +23,7 @@ export function useTranslations(locale: Locale) {
     return (key: string | null | undefined) => {
       if (!key) return '';
       
-      // If we are still loading, you might want to wait, but usually we return the fallback
-      let result: string = key;
+      const isSystemId = /^[A-Z0-9_]{5,40}$/i.test(key) || /^(psl|psg|psv|prod|cat|hero|slide|case|step)_/i.test(key);
 
       // 1. Try remote Database translation (Case-insensitive match)
       const normalizedKey = key.trim().toLowerCase();
@@ -36,14 +35,12 @@ export function useTranslations(locale: Locale) {
           })
         : null;
       
+      let val: string | undefined = undefined;
       if (remote) {
         const content = (remote.content as any) || {};
-        // Strictly return the requested locale's translation if it exists.
-        // DO NOT fallback to other languages here, let the component handle its own fallback logic.
-        const val = content[locale];
-        
-        if (val !== undefined && val !== null && typeof val === 'string') {
-          return val;
+        const localVal = content[locale];
+        if (localVal !== undefined && localVal !== null && typeof localVal === 'string') {
+          val = localVal;
         }
       }
 
@@ -63,20 +60,24 @@ export function useTranslations(locale: Locale) {
         }
       }
 
-      if (hardcoded !== undefined) return hardcoded;
-      
-      // 3. Loading Guard: If we are still loading remote data, return empty to avoid flicker or crashes
-      if (isLoading) return '';
-      
-      // Final safeguard: Avoid showing ugly system IDs in the UI
-      const isSystemId = /^[A-Z0-9_]{5,40}$/i.test(key) || /^(psl|psg|psv|prod|cat|hero|slide|case|step)_/i.test(key);
-      if (isSystemId) return '';
+      // Calculate translation result
+      let finalResult = '';
+      if (val !== undefined) {
+        finalResult = val;
+      } else if (hardcoded !== undefined) {
+        finalResult = hardcoded;
+      } else if (isLoading) {
+        finalResult = '';
+      } else if (isSystemId) {
+        finalResult = '';
+      } else {
+        finalResult = typeof key === 'string' ? key : '';
+      }
 
-      // Final result MUST be a string to avoid React "Object as child" error
-      return typeof key === 'string' ? key : '';
+      return finalResult;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [remoteTranslations, locale, defaultLanguage, isTranslationsLoading]);
+  }, [remoteTranslations, locale, defaultLanguage, isTranslationsLoading, isSettingsLoading, isLoading]);
 
   return { t, isLoading, defaultLanguage, count: Array.isArray(remoteTranslations) ? remoteTranslations.length : 0 };
 }

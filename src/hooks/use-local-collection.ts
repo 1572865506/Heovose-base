@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 
 // Simple global cache to deduplicate simultaneous requests
 const pendingRequests = new Map<string, Promise<any>>();
@@ -13,15 +13,23 @@ export function useLocalCollection<T = any>(path: string | null, options?: { ena
   const [isLoading, setIsLoading] = useState(!cached);
   const [error, setError] = useState<Error | null>(null);
 
+  const latestPathRef = useRef(path);
+
+  useEffect(() => {
+    latestPathRef.current = path;
+  }, [path]);
+
   const fetchData = useCallback(async (currentPath: string) => {
     if (pendingRequests.has(currentPath)) {
       try {
         const result = await pendingRequests.get(currentPath);
+        if (currentPath !== latestPathRef.current) return;
         setData(result);
         setError(null);
         setIsLoading(false);
         return;
       } catch (err: any) {
+        if (currentPath !== latestPathRef.current) return;
         setError(err);
         setIsLoading(false);
         return;
@@ -33,7 +41,11 @@ export function useLocalCollection<T = any>(path: string | null, options?: { ena
       return;
     }
 
-    setIsLoading(true);
+    // Only transition to loading state if we have no cached data to show,
+    // achieving smooth Stale-While-Revalidate without flash/whiteout.
+    if (!currentCached) {
+      setIsLoading(true);
+    }
     
     // Restored stable URL to leverage local memory caching and protect server load
     const url = `/api/${currentPath}`;
@@ -65,15 +77,19 @@ export function useLocalCollection<T = any>(path: string | null, options?: { ena
 
     try {
       const json = await fetchPromise;
+      if (currentPath !== latestPathRef.current) return;
       globalCache.set(currentPath, { data: json, timestamp: Date.now() });
       setData(json);
       setError(null);
     } catch (err: any) {
+      if (currentPath !== latestPathRef.current) return;
       console.error(`CRITICAL: Failed to fetch "${currentPath}":`, err);
       setError(err);
     } finally {
       pendingRequests.delete(currentPath);
-      setIsLoading(false);
+      if (currentPath === latestPathRef.current) {
+        setIsLoading(false);
+      }
     }
   }, []);
 

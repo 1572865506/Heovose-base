@@ -12,7 +12,7 @@ import { useLocalDoc } from '@/hooks/use-local-doc';
 import { Locale } from '@/lib/translations';
 import { Navbar } from '@/components/Navbar';
 import { Footer } from '@/components/Footer';
-import { Search, ArrowRight, ChevronRight, ChevronLeft, Package, LayoutGrid, Loader2, ShoppingBag, Building2, ExternalLink, MessageSquare } from 'lucide-react';
+import { Search, ArrowRight, ChevronRight, ChevronLeft, Package, LayoutGrid, Loader2, ShoppingBag, Building2, ExternalLink, MessageSquare, ChevronDown } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -76,6 +76,10 @@ function ProductListContent() {
   const [activeLine, setActiveLine] = useState<BusinessLine>('wholesale');
   const [selectedCategoryId, setSelectedCategoryId] = useState<string | null>(null);
   
+  const [isMobileCatOpen, setIsMobileCatOpen] = useState(false);
+  const ITEMS_PER_PAGE = 12;
+  const [playingProductId, setPlayingProductId] = useState<string | null>(null);
+  
   // Navigation visibility tracking for sticky alignment
   const [isNavVisible, setIsNavVisible] = useState(true);
   const lastScrollY = useRef(0);
@@ -96,7 +100,6 @@ function ProductListContent() {
   
   const categoryParam = searchParams.get('category');
   const lineParam = searchParams.get('line') as BusinessLine;
-  const ITEMS_PER_PAGE = 9;
   const [currentPage, setCurrentPage] = useState(1);
 
   const { data: products, isLoading: isProdsLoading, mutate: mutateProducts } = useLocalCollection<Product>('products');
@@ -110,9 +113,11 @@ function ProductListContent() {
 
   // 1. 智能判定语种
   useEffect(() => {
+    if (!langSettings) return;
+    
     const detectLocale = () => {
-      const activeLangs = langSettings?.supportedLanguages?.map(l => l.code) || ['en', 'zh', 'id', 'vi'];
-      const defaultLang = (langSettings?.defaultLanguage as Locale) || 'en';
+      const activeLangs = langSettings.supportedLanguages?.map(l => l.code) || ['en', 'zh', 'id', 'vi'];
+      const defaultLang = (langSettings.defaultLanguage as Locale) || 'en';
 
       const langParam = searchParams.get('lang');
       if (langParam && activeLangs.includes(langParam)) return langParam as Locale;
@@ -335,7 +340,8 @@ function ProductListContent() {
               </div>
             </div>
 
-            <div className="space-y-4">
+            {/* PC 端分类列表 */}
+            <div className="hidden lg:block space-y-4">
               <h3 className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground flex items-center gap-2">
                 <LayoutGrid className="h-3 w-3" /> {tr('products_categories')}
               </h3>
@@ -366,11 +372,67 @@ function ProductListContent() {
               </div>
             </div>
 
-            <div className="p-8 rounded-[2rem] bg-primary text-white space-y-4 shadow-xl relative overflow-hidden">
+            {/* 移动端分类折叠面板 */}
+            <div className="block lg:hidden space-y-2">
+              <h3 className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground flex items-center gap-2">
+                <LayoutGrid className="h-3 w-3" /> {tr('products_categories')}
+              </h3>
+              <button
+                onClick={() => setIsMobileCatOpen(!isMobileCatOpen)}
+                className="w-full bg-white px-5 py-4 rounded-2xl shadow-sm border border-border/20 flex items-center justify-between font-bold text-sm text-slate-800 transition-all hover:bg-slate-50"
+              >
+                <span className="flex items-center gap-2">
+                  <span className="text-muted-foreground text-xs font-normal">{tr('products_categories')}:</span>
+                  <span className="text-primary font-bold">{activeCategoryName}</span>
+                </span>
+                <ChevronDown className={cn("h-4 w-4 text-slate-500 transition-transform duration-300", isMobileCatOpen ? "rotate-180" : "")} />
+              </button>
+              
+              {isMobileCatOpen && (
+                <div className="bg-white p-2 rounded-2xl shadow-sm border border-border/20 space-y-1 mt-1 animate-in fade-in slide-in-from-top-2 duration-200">
+                  <button
+                    onClick={() => {
+                      updateCategoryFilter(null);
+                      setIsMobileCatOpen(false);
+                    }}
+                    className={cn(
+                      "w-full text-left px-5 py-3 rounded-xl transition-all text-sm font-bold flex items-center justify-between",
+                      selectedCategoryId === null ? "bg-primary text-white" : "hover:bg-muted text-muted-foreground"
+                    )}
+                  >
+                    <span>{tr('products_allCategories')}</span>
+                  </button>
+                  {filteredCategories.map((cat) => (
+                    <button
+                      key={cat.id}
+                      onClick={() => {
+                        updateCategoryFilter(cat.id);
+                        setIsMobileCatOpen(false);
+                      }}
+                      className={cn(
+                        "w-full flex items-center justify-between px-5 py-3 rounded-xl transition-all text-sm font-bold text-left",
+                        selectedCategoryId === cat.id ? "bg-primary text-white font-bold" : "hover:bg-muted text-muted-foreground"
+                      )}
+                    >
+                      <span>{getT(cat.nameTextId)}</span>
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* PC 端侧栏报价卡片 */}
+            <div className="hidden lg:block p-8 rounded-[2rem] bg-primary text-white space-y-4 shadow-xl relative overflow-hidden">
               <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -mr-16 -mt-16 blur-2xl" />
               <h4 className="font-bold text-lg leading-tight">{tr('products_needQuote')}</h4>
               <p className="text-xs opacity-70 leading-relaxed">{tr('products_expertHelp')}</p>
-              <Button variant="secondary" className="w-full rounded-xl h-12 bg-white text-primary hover:bg-accent border-none font-bold uppercase text-[10px] tracking-widest">{tr('products_contactSales')}</Button>
+              <Button 
+                onClick={() => openInquiry()}
+                variant="secondary" 
+                className="w-full rounded-xl h-12 bg-white text-primary hover:bg-accent border-none font-bold uppercase text-[10px] tracking-widest"
+              >
+                {tr('products_contactSales')}
+              </Button>
             </div>
           </aside>
 
@@ -382,40 +444,43 @@ function ProductListContent() {
               </div>
             ) : filteredProducts.length > 0 ? (
               <div className="space-y-16">
-                <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-8 animate-in fade-in duration-700">
+                <div className="grid grid-cols-2 md:grid-cols-2 xl:grid-cols-3 gap-3 md:gap-8 animate-in fade-in duration-700">
                   {paginatedProducts.map((product) => {
                     const videoSrc = product.videoUrl || product.galleryImageUrls?.find(url => /\.(mp4|webm|ogg|mov|m4v)$/i.test(url)) || '';
                     return (
                       <div 
                         key={product.id}
-                        className="group relative bg-white rounded-2xl border border-border/20 overflow-hidden hover:shadow-2xl hover:shadow-primary/10 hover:-translate-y-2 transition-[transform,box-shadow] duration-500 flex flex-col shadow-sm min-h-[440px] transform-gpu backface-hidden"
+                        className="group relative bg-white rounded-xl md:rounded-2xl border border-border/20 overflow-hidden hover:shadow-2xl hover:shadow-primary/10 hover:-translate-y-2 transition-[transform,box-shadow] duration-500 flex flex-col shadow-sm min-h-[300px] md:min-h-[440px] transform-gpu backface-hidden"
                         style={{ transform: 'translateZ(0)' }}
                       >
                         <Link href={`/products/${product.id}`} className="block">
                           <div className="relative aspect-[11/9] bg-muted/20 overflow-hidden">
                             <HoverVideoPlayer
+                              productId={product.id}
+                              playingProductId={playingProductId}
+                              setPlayingProductId={setPlayingProductId}
                               videoUrl={videoSrc}
                               mainImageUrl={product.mainImageUrl}
                               alt={getT(product.nameTextId) || 'Product Image'}
                             />
                           </div>
-                        <div className="px-8 pt-8 pb-24 space-y-4 flex flex-col">
+                        <div className="px-3 md:px-8 pt-3 md:pt-8 pb-20 md:pb-24 space-y-2 md:space-y-4 flex flex-col flex-1">
                           <div className="space-y-1">
-                            <h3 className="text-xl font-headline font-bold text-slate-900 transition-colors leading-tight line-clamp-2 group-hover:text-primary">
+                            <h3 className="text-xs md:text-xl font-headline font-bold text-slate-900 transition-colors leading-tight line-clamp-2 group-hover:text-primary">
                               {(getT(product.nameTextId) || '').length > 22 
                                 ? (getT(product.nameTextId) || '').substring(0, 22) + '...' 
                                 : getT(product.nameTextId)}
                             </h3>
                           </div>
-                          <p className="text-xs text-muted-foreground line-clamp-3 leading-relaxed opacity-60 whitespace-pre-line">
+                          <p className="text-[10px] md:text-xs text-muted-foreground line-clamp-2 md:line-clamp-3 leading-relaxed opacity-60 whitespace-pre-line">
                             {getT(product.descriptionTextId)}
                           </p>
                         </div>
                       </Link>
                       
                       {/* Action Area - Homepage Style */}
-                      <div className="absolute bottom-0 left-0 right-0 px-8 pb-8">
-                        <div className="flex items-center justify-between gap-4">
+                      <div className="absolute bottom-0 left-0 right-0 px-3 md:px-8 pb-3 md:pb-8">
+                        <div className="flex items-center justify-between gap-2 md:gap-4">
                           <Button 
                             variant="outline"
                             size="sm"
@@ -423,22 +488,36 @@ function ProductListContent() {
                               e.preventDefault();
                               openInquiry({ productId: product.id, productName: getT(product.nameTextId) });
                             }}
-                            className="rounded-full px-5 text-[10px] font-bold uppercase tracking-wider border-primary/20 text-primary hover:bg-primary hover:text-white transition-all duration-500 gap-2 flex-1 h-10"
+                            className="rounded-full px-2 md:px-5 text-[9px] md:text-[10px] font-bold uppercase tracking-wider border-primary/20 text-primary hover:bg-primary hover:text-white transition-all duration-500 gap-1 md:gap-2 flex-1 h-8 md:h-10 justify-center"
                           >
-                            <MessageSquare className="h-3 w-3" />
-                            {tr('products_requestQuote')}
+                            <MessageSquare className="h-3 w-3 shrink-0" />
+                            <span className="hidden sm:inline">{tr('products_requestQuote')}</span>
                           </Button>
                           <Link 
                             href={`/products/${product.id}`}
-                            className="h-10 w-10 rounded-full bg-slate-50 border border-slate-100 flex items-center justify-center text-slate-400 hover:bg-primary/10 hover:text-primary hover:border-primary/20 transition-all duration-500 shrink-0"
+                            className="h-8 w-8 md:h-10 md:w-10 rounded-full bg-slate-50 border border-slate-100 flex items-center justify-center text-slate-400 hover:bg-primary/10 hover:text-primary hover:border-primary/20 transition-all duration-500 shrink-0"
                           >
-                            <ArrowRight className="h-4 w-4" />
+                            <ArrowRight className="h-3 w-3 md:h-4 md:w-4" />
                           </Link>
                         </div>
                       </div>
                     </div>
                   );
                 })}
+              </div>
+
+              {/* 移动端定制报价卡片 */}
+              <div className="block lg:hidden mt-8 p-8 rounded-[2rem] bg-primary text-white space-y-4 shadow-xl relative overflow-hidden">
+                <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -mr-16 -mt-16 blur-2xl" />
+                <h4 className="font-bold text-lg leading-tight">{tr('products_needQuote')}</h4>
+                <p className="text-xs opacity-70 leading-relaxed">{tr('products_expertHelp')}</p>
+                <Button 
+                  variant="secondary" 
+                  onClick={() => openInquiry()}
+                  className="w-full rounded-xl h-12 bg-white text-primary hover:bg-accent border-none font-bold uppercase text-[10px] tracking-widest"
+                >
+                  {tr('products_contactSales')}
+                </Button>
               </div>
 
               {/* 前台标准形态分页器 (符合规范 9.1 & 9.2) */}

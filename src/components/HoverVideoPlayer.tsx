@@ -4,28 +4,44 @@ import React, { useState, useRef, useEffect } from 'react';
 import Image from 'next/image';
 import { getAssetUrl } from '@/lib/image-utils';
 import { cn } from '@/lib/utils';
-import { Play } from 'lucide-react';
+import { Play, Pause } from 'lucide-react';
 
 interface HoverVideoPlayerProps {
   videoUrl?: string;
   mainImageUrl: string;
   alt: string;
   className?: string;
+  productId: string;
+  playingProductId: string | null;
+  setPlayingProductId: (id: string | null) => void;
 }
 
-export function HoverVideoPlayer({ videoUrl, mainImageUrl, alt, className }: HoverVideoPlayerProps) {
+export function HoverVideoPlayer({ 
+  videoUrl, 
+  mainImageUrl, 
+  alt, 
+  className,
+  productId,
+  playingProductId,
+  setPlayingProductId
+}: HoverVideoPlayerProps) {
   console.log("=== [HoverVideoPlayer Component Props] ===", { alt, videoUrl });
-  const [isHovered, setIsHovered] = useState(false);
+  const isPlaying = playingProductId === productId;
   const [isVideoLoaded, setIsVideoLoaded] = useState(false);
+  const [isTouchDevice, setIsTouchDevice] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
-    if (!isHovered) {
+    setIsTouchDevice('ontouchstart' in window || navigator.maxTouchPoints > 0);
+  }, []);
+
+  useEffect(() => {
+    if (!isPlaying) {
       setIsVideoLoaded(false);
     }
-  }, [isHovered]);
+  }, [isPlaying]);
 
   useEffect(() => {
     return () => {
@@ -34,14 +50,19 @@ export function HoverVideoPlayer({ videoUrl, mainImageUrl, alt, className }: Hov
   }, []);
 
   const handleMouseEnter = () => {
-    setIsHovered(true);
+    if (isTouchDevice) return;
+    setPlayingProductId(productId);
   };
 
   const handleMouseLeave = () => {
-    setIsHovered(false);
+    if (isTouchDevice) return;
+    if (playingProductId === productId) {
+      setPlayingProductId(null);
+    }
   };
 
   const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (isTouchDevice) return;
     const video = videoRef.current;
     const container = containerRef.current;
     if (!video || !container || isNaN(video.duration) || video.duration === 0) return;
@@ -68,11 +89,11 @@ export function HoverVideoPlayer({ videoUrl, mainImageUrl, alt, className }: Hov
         sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
         className={cn(
           "object-cover transition-all duration-[1000ms] ease-[cubic-bezier(0.23,1,0.32,1)]",
-          isHovered && isVideoLoaded ? "opacity-0 scale-105" : "opacity-100 scale-100"
+          isPlaying && isVideoLoaded ? "opacity-0 scale-105" : "opacity-100 scale-100"
         )}
       />
 
-      {videoUrl && isHovered && (
+      {videoUrl && isPlaying && (
         <video
           ref={videoRef}
           src={getAssetUrl(videoUrl)}
@@ -94,10 +115,24 @@ export function HoverVideoPlayer({ videoUrl, mainImageUrl, alt, className }: Hov
         />
       )}
 
-      {videoUrl && !isHovered && (
-        <div className="absolute top-4 left-4 h-6 w-6 rounded-full bg-black/40 backdrop-blur-md flex items-center justify-center text-white border border-white/20 shadow-lg pointer-events-none">
-          <Play className="h-2.5 w-2.5 fill-white ml-0.5 animate-pulse" />
-        </div>
+      {videoUrl && (
+        <button
+          onClick={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            setPlayingProductId(isPlaying ? null : productId);
+          }}
+          className={cn(
+            "absolute top-3 left-3 h-8 w-8 rounded-full backdrop-blur-md flex items-center justify-center text-white border shadow-lg transition-all duration-300 active:scale-90 z-20",
+            isPlaying ? "bg-primary/90 border-primary/30" : "bg-black/60 border-white/20 hover:bg-black/80"
+          )}
+        >
+          {isPlaying ? (
+            <Pause className="h-3 w-3 fill-white" />
+          ) : (
+            <Play className="h-3 w-3 fill-white ml-0.5 animate-pulse" />
+          )}
+        </button>
       )}
     </div>
   );

@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 
 // Simple global cache to deduplicate simultaneous requests
 const pendingRequests = new Map<string, Promise<any>>();
@@ -14,17 +14,25 @@ export function useLocalDoc<T = any>(path: string | null, id: string | null = ''
   const [isLoading, setIsLoading] = useState(!cached);
   const [error, setError] = useState<Error | null>(null);
 
+  const latestKeyRef = useRef(cacheKey);
+
+  useEffect(() => {
+    latestKeyRef.current = cacheKey;
+  }, [cacheKey]);
+
   const fetchData = useCallback(async (currentPath: string, currentId: string) => {
     const key = `${currentPath}/${currentId}`;
 
     if (pendingRequests.has(key)) {
       try {
         const result = await pendingRequests.get(key);
+        if (key !== latestKeyRef.current) return;
         setData(result);
         setError(null);
         setIsLoading(false);
         return;
       } catch (err: any) {
+        if (key !== latestKeyRef.current) return;
         setError(err);
         setIsLoading(false);
         return;
@@ -38,7 +46,11 @@ export function useLocalDoc<T = any>(path: string | null, id: string | null = ''
        return;
     }
 
-    setIsLoading(true);
+    // Only transition to loading state if we have no cached data to show,
+    // achieving smooth Stale-While-Revalidate without flash/whiteout.
+    if (!currentCached) {
+      setIsLoading(true);
+    }
     
     const fetchPromise = (async () => {
       const url = currentId ? `/api/${currentPath}/${currentId}` : `/api/${currentPath}`;
@@ -56,15 +68,19 @@ export function useLocalDoc<T = any>(path: string | null, id: string | null = ''
 
     try {
       const json = await fetchPromise;
+      if (key !== latestKeyRef.current) return;
       globalCache.set(key, { data: json, timestamp: Date.now() });
       setData(json);
       setError(null);
     } catch (err: any) {
+      if (key !== latestKeyRef.current) return;
       console.error(`CRITICAL: Failed to fetch "${key}":`, err);
       setError(err);
     } finally {
       pendingRequests.delete(key);
-      setIsLoading(false);
+      if (key === latestKeyRef.current) {
+        setIsLoading(false);
+      }
     }
   }, []);
 

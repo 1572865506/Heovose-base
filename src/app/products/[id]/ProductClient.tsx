@@ -46,36 +46,23 @@ export default function ProductClient({ product, initialLocale }: { product: any
   const [locale, setLocale] = useState<Locale>(initialLocale);
   const [isLocaleReady, setIsLocaleReady] = useState(false);
   const [activeMedia, setActiveMedia] = useState<{ url: string; type: 'image' | 'video' }>(() => {
-    if (product?.videoUrl) {
-      return { url: product.videoUrl, type: 'video' };
-    }
-    const galleryVideo = product?.galleryImageUrls?.find((url: string) => isVideoUrl(url));
-    if (galleryVideo) {
-      return { url: galleryVideo, type: 'video' };
-    }
     return {
       url: product?.mainImageUrl || '',
-      type: isVideoUrl(product?.mainImageUrl) ? 'video' : 'image'
+      type: isVideoUrl(product?.mainImageUrl || '') ? 'video' : 'image'
     };
   });
   const [isZoomOpen, setIsZoomOpen] = useState(false);
   const [zoomScale, setZoomScale] = useState(1);
+  const [playingProductId, setPlayingProductId] = useState<string | null>(null);
 
   useEffect(() => {
-    if (product?.videoUrl) {
-      setActiveMedia({ url: product.videoUrl, type: 'video' });
-    } else {
-      const galleryVideo = product?.galleryImageUrls?.find((url: string) => isVideoUrl(url));
-      if (galleryVideo) {
-        setActiveMedia({ url: galleryVideo, type: 'video' });
-      } else if (product?.mainImageUrl) {
-        setActiveMedia({ 
-          url: product.mainImageUrl, 
-          type: isVideoUrl(product.mainImageUrl) ? 'video' : 'image' 
-        });
-      }
+    if (product?.mainImageUrl) {
+      setActiveMedia({ 
+        url: product.mainImageUrl, 
+        type: isVideoUrl(product.mainImageUrl) ? 'video' : 'image' 
+      });
     }
-  }, [product?.mainImageUrl, product?.videoUrl, product?.galleryImageUrls]);
+  }, [product?.mainImageUrl]);
 
   const { data: categories } = useLocalCollection<any>('productCategories');
   const { data: langSettings } = useLocalDoc<any>('settings', 'languages');
@@ -435,6 +422,9 @@ export default function ProductClient({ product, initialLocale }: { product: any
                     <Link key={p.id} href={`/products/${p.id}?lang=${locale}`} className="group space-y-4">
                       <div className="relative aspect-[11/9] bg-slate-50 rounded-2xl overflow-hidden border border-slate-100 transition-all duration-500 group-hover:shadow-2xl group-hover:shadow-primary/10">
                         <HoverVideoPlayer
+                          productId={p.id}
+                          playingProductId={playingProductId}
+                          setPlayingProductId={setPlayingProductId}
                           videoUrl={p.videoUrl}
                           mainImageUrl={p.mainImageUrl}
                           alt={tr(p.nameTextId)}
