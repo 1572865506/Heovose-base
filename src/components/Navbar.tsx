@@ -192,22 +192,21 @@ export function Navbar({ locale, setLocale, headerTheme = 'dark', themeLine }: N
   return (
     <>
       {/* 1. Top Scrim & Gradient Blur Layer - The "Advanced Glass" Layer */}
-      {!isNavbarActive && isTransparentHeaderPage && (
+      <div className={cn(
+        "fixed top-0 left-0 right-0 z-[105] h-48 pointer-events-none transition-all duration-700 ease-out",
+        (!isNavbarActive && isTransparentHeaderPage && isVisible)
+          ? (headerTheme === 'light' ? "opacity-60 translate-y-0" : "opacity-80 translate-y-0")
+          : "opacity-0 -translate-y-full"
+      )}>
+        {/* The Scrim: Suble gradient to ensure contrast */}
         <div className={cn(
-          "fixed top-0 left-0 right-0 z-[105] h-48 pointer-events-none transition-all duration-700",
-          headerTheme === 'light' ? "opacity-60" : "opacity-80",
-          !isVisible && "opacity-0 -translate-y-full"
-        )}>
-          {/* The Scrim: Suble gradient to ensure contrast */}
-          <div className={cn(
-            "absolute inset-0 bg-gradient-to-b from-black/40 via-black/10 to-transparent",
-            headerTheme === 'light' && "from-white/60 via-white/20"
-          )} />
+          "absolute inset-0 bg-gradient-to-b from-black/40 via-black/10 to-transparent transition-all duration-700",
+          headerTheme === 'light' && "from-white/60 via-white/20"
+        )} />
 
-          {/* The Gradient Blur: Frosted glass that fades out */}
-          <div className="absolute inset-0 backdrop-blur-xl [mask-image:linear-gradient(to_bottom,black_0%,black_30%,transparent_100%)]" />
-        </div>
-      )}
+        {/* The Gradient Blur: Frosted glass that fades out */}
+        <div className="absolute inset-0 backdrop-blur-xl [mask-image:linear-gradient(to_bottom,black_0%,black_30%,transparent_100%)]" />
+      </div>
 
       <nav 
         style={{ transform: isVisible ? 'translateY(0)' : 'translateY(-100%)' }}
@@ -488,7 +487,7 @@ function MegaMenuContent({
           }}
         >
           {items.map((item) => (
-            <DropdownMenuItem key={item.id} asChild className="p-0 bg-transparent hover:bg-transparent focus:bg-transparent transition-all duration-300">
+            <DropdownMenuItem key={item.id} asChild className="p-0 bg-transparent hover:bg-transparent focus:bg-transparent data-[highlighted]:bg-transparent data-[highlighted]:text-initial transition-all duration-300">
               <Link
                 href={item.href}
                 className={cn(

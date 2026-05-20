@@ -25,7 +25,6 @@ export function HoverVideoPlayer({
   playingProductId,
   setPlayingProductId
 }: HoverVideoPlayerProps) {
-  console.log("=== [HoverVideoPlayer Component Props] ===", { alt, videoUrl });
   const isPlaying = playingProductId === productId;
   const [isVideoLoaded, setIsVideoLoaded] = useState(false);
   const [isTouchDevice, setIsTouchDevice] = useState(false);
