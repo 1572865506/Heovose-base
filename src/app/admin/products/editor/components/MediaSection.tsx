@@ -31,6 +31,11 @@ interface MediaSectionProps {
   onMoveItem: (idx: number, dir: 'left' | 'right') => void;
 }
 
+const isVideoUrl = (url: string) => {
+  if (!url) return false;
+  return /\.(mp4|webm|ogg|mov|m4v)$/i.test(url);
+};
+
 const SortableImageCard = memo(({ url, idx, onDelete, onMove }: { 
   url: string; 
   idx: number; 
@@ -62,7 +67,23 @@ const SortableImageCard = memo(({ url, idx, onDelete, onMove }: {
         isDragging ? "shadow-2xl scale-105 ring-4 ring-primary/20 opacity-90 cursor-grabbing" : "hover:shadow-2xl hover:-translate-y-1"
       )}
     >
-      <Image src={getAssetUrl(url)} alt={`Gallery ${idx}`} fill className="object-cover transition-transform duration-1000 group-hover/card:scale-110 rounded-[2rem]" unoptimized />
+      {isVideoUrl(url) ? (
+        <video 
+          src={getAssetUrl(url)} 
+          className="w-full h-full object-cover rounded-[2rem] transition-transform duration-1000 group-hover/card:scale-110" 
+          muted 
+          playsInline 
+          onMouseEnter={(e) => {
+            e.currentTarget.play().catch(() => {});
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.pause();
+            e.currentTarget.currentTime = 0;
+          }}
+        />
+      ) : (
+        <Image src={getAssetUrl(url)} alt={`Gallery ${idx}`} fill className="object-cover transition-transform duration-1000 group-hover/card:scale-110 rounded-[2rem]" unoptimized />
+      )}
       
       {/* 底部交互层 (毛玻璃) */}
       <div className="absolute inset-0 bg-slate-900/60 opacity-0 group-hover/card:opacity-100 transition-all duration-500 flex flex-col items-center justify-end pb-6 z-10 rounded-[2rem]">
@@ -98,6 +119,13 @@ const SortableImageCard = memo(({ url, idx, onDelete, onMove }: {
       <div className="absolute top-4 left-4 h-8 w-8 rounded-xl bg-black/50 backdrop-blur-md flex items-center justify-center text-white font-headline font-bold text-[10px] shadow-sm z-20 border border-white/10">
         #{idx + 1}
       </div>
+
+      {/* 视频专属标签 */}
+      {isVideoUrl(url) && (
+        <div className="absolute top-4 left-14 h-8 px-2.5 rounded-xl bg-primary/80 backdrop-blur-md flex items-center justify-center text-white font-headline font-bold text-[8px] uppercase tracking-widest shadow-sm z-20 border border-white/10 animate-fade-in">
+          Video
+        </div>
+      )}
 
       {/* 拖拽手柄 */}
       <div

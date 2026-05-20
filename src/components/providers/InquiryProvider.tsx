@@ -1,6 +1,6 @@
 'use client';
 
-import React, { createContext, useContext, useState, ReactNode, Suspense } from 'react';
+import React, { createContext, useContext, useState, useEffect, ReactNode, Suspense } from 'react';
 import nextDynamic from 'next/dynamic';
 import { Locale } from '@/lib/translations';
 
@@ -50,6 +50,22 @@ export function InquiryProvider({ children, locale: propLocale }: InquiryProvide
   // Use prop locale if provided, otherwise fallback to 'en' (it will be updated by page logic anyway)
   const locale = propLocale || 'en';
 
+  const [showAnalytics, setShowAnalytics] = useState(false);
+
+  useEffect(() => {
+    if ('requestIdleCallback' in window) {
+      const idleId = window.requestIdleCallback(() => {
+        setShowAnalytics(true);
+      });
+      return () => window.cancelIdleCallback(idleId);
+    } else {
+      const timer = setTimeout(() => {
+        setShowAnalytics(true);
+      }, 2000);
+      return () => clearTimeout(timer);
+    }
+  }, []);
+
   const openInquiry = (options: { productId?: string; productName?: string } = {}) => {
     setInquiryOptions(options);
     setIsOpen(true);
@@ -60,7 +76,7 @@ export function InquiryProvider({ children, locale: propLocale }: InquiryProvide
       <Suspense fallback={null}>
         <LanguageIntelligence />
       </Suspense>
-      <AnalyticsTracker />
+      {showAnalytics && <AnalyticsTracker />}
       {children}
       {isOpen && (
         <InquiryDialog

@@ -151,6 +151,7 @@ model Product {
   galleryImageUrls         String[]
   localizedDetails         Json?
   mainImageUrl             String?
+  videoUrl                 String?
   specGroups               Json?
   updatedAt                DateTime         @updatedAt
   galleryImageBrightnesses Float[]

@@ -45,6 +45,23 @@ async function main() {
     }
   })
 
+  // Details Page & Navigation Global Translation Keys
+  const transKeys = [
+    { id: 'related_products_title', content: { en: 'Related Products', zh: '相关产品', id: 'Produk Terkait', vi: 'Sản phẩm liên quan' } },
+    { id: 'explore_more_tech', content: { en: 'Explore more high-end technology', zh: '探索更多高端科技', id: 'Jelajahi teknologi kelas atas lainnya', vi: 'Khám phá thêm công nghệ cao cấp' } },
+    { id: 'view_all', content: { en: 'View All', zh: '查看全部', id: 'Lihat Semua', vi: 'Xem tất cả' } },
+    { id: 'nav_home', content: { en: 'Home', zh: '首页', id: 'Beranda', vi: 'Trang chủ' } },
+    { id: 'nav_products', content: { en: 'Products', zh: '产品中心', id: 'Produk', vi: 'Sản phẩm' } }
+  ];
+
+  for (const tKey of transKeys) {
+    await prisma.localizedString.upsert({
+      where: { id: tKey.id },
+      update: { content: tKey.content },
+      create: { id: tKey.id, content: tKey.content }
+    });
+  }
+
   const nameL2 = await prisma.localizedString.create({
     data: {
       content: {

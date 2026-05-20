@@ -33,7 +33,22 @@ interface HomeContentProps {
 export default function HomeContent({ initialLocale }: HomeContentProps) {
   const [locale, setLocale] = useState<Locale>(initialLocale);
   const [headerTheme, setHeaderTheme] = useState<'light' | 'dark'>('dark');
+  const [mountHeavyComponents, setMountHeavyComponents] = useState(false);
   const searchParams = useSearchParams();
+
+  useEffect(() => {
+    if ('requestIdleCallback' in window) {
+      const idleId = window.requestIdleCallback(() => {
+        setMountHeavyComponents(true);
+      }, { timeout: 2000 });
+      return () => window.cancelIdleCallback(idleId);
+    } else {
+      const timer = setTimeout(() => {
+        setMountHeavyComponents(true);
+      }, 1500);
+      return () => clearTimeout(timer);
+    }
+  }, []);
   
   // 使用本地 Doc Hook 获取配置
   const { data: heroConfig, isLoading: isHeroLoading } = useLocalDoc<any>('homepageContent', 'hero');
@@ -92,15 +107,15 @@ export default function HomeContent({ initialLocale }: HomeContentProps) {
         <ProductGallery locale={locale} />
         
         {/* 动态开关：视频/品牌故事模块 */}
-        {(isVideoLoading || videoConfig?.isVideoEnabled !== false) && (
+        {mountHeavyComponents && (isVideoLoading || videoConfig?.isVideoEnabled !== false) && (
           <VideoSection locale={locale} homeConfig={videoConfig} isLoading={isVideoLoading} />
         )}
         
-        <ProductionProcess locale={locale} />
+        {mountHeavyComponents && <ProductionProcess locale={locale} />}
         
-        <CaseStudies locale={locale} />
+        {mountHeavyComponents && <CaseStudies locale={locale} />}
         
-        <GlobalMap locale={locale} homeConfig={mapConfig} isLoading={isMapLoading} />
+        {mountHeavyComponents && <GlobalMap locale={locale} homeConfig={mapConfig} isLoading={isMapLoading} />}
         
         <Footer locale={locale} />
       </main>

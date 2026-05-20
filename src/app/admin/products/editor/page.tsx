@@ -44,6 +44,7 @@ interface ProductFormData {
   descZh: string;
   descEn: string;
   mainImageUrl: string;
+  videoUrl: string;
   galleryUrls: string[];
   specGroups: ProductSpecGroup[];
   localizedDetails: Record<string, string>;
@@ -109,7 +110,7 @@ function ProductEditorContent() {
   const targetEditorRef = useRef<any>(null);
 
   const [formData, setFormData] = useState<ProductFormData>({
-    id: '', categoryId: '', mainImageUrl: '', galleryUrls: [],
+    id: '', categoryId: '', mainImageUrl: '', videoUrl: '', galleryUrls: [],
     nameEn: '', nameZh: '', descEn: '', descZh: '',
     localizedDetails: { zh: '', en: '' },
     specGroups: [], status: 'published'
@@ -121,7 +122,7 @@ function ProductEditorContent() {
   const [processingItems, setProcessingItems] = useState<Set<string>>(new Set());
   const [idConflict, setIdConflict] = useState(false);
   const [isPickerOpen, setIsPickerOpen] = useState(false);
-  const [pickerTarget, setPickerTarget] = useState<'main' | 'gallery' | 'richtext-zh' | 'richtext-target'>('main');
+  const [pickerTarget, setPickerTarget] = useState<'main' | 'video' | 'gallery' | 'richtext-zh' | 'richtext-target'>('main');
 
   const { data: product, isLoading: isProdLoading } = useLocalDoc<any>('products', productId || 'new');
   const { data: categories } = useLocalCollection<any>('productCategories');
@@ -180,6 +181,7 @@ function ProductEditorContent() {
       }));
       setFormData({
         id: product.id, categoryId: product.categoryId, mainImageUrl: product.mainImageUrl,
+        videoUrl: product.videoUrl || '',
         galleryUrls: product.galleryImageUrls || [],
         nameEn: getT(product.nameTextId).en, nameZh: getT(product.nameTextId).zh,
         descEn: getT(product.descriptionTextId).en, descZh: getT(product.descriptionTextId).zh,
@@ -585,6 +587,7 @@ function ProductEditorContent() {
         onSelect={(assets) => {
           const urls = assets.map(a => a.url);
           if (pickerTarget === 'main') handleUpdateField('mainImageUrl', urls[0]);
+          else if (pickerTarget === 'video') handleUpdateField('videoUrl', urls[0]);
           else if (pickerTarget === 'gallery') handleUpdateField('galleryUrls', Array.from(new Set([...formData.galleryUrls, ...urls])).slice(0, 10));
           else if (pickerTarget === 'richtext-zh') zhEditorRef.current?.editor?.commands.setImage({ src: urls[0] });
           else if (pickerTarget === 'richtext-target') targetEditorRef.current?.editor?.commands.setImage({ src: urls[0] });

@@ -22,47 +22,57 @@ export function AnalyticsTracker() {
   }
 
   useEffect(() => {
-    // 1. Initialize or retrieve Session & Visitor ID
-    let visitorId = localStorage.getItem('heovose-analytics-visitor');
-    if (!visitorId) {
-      visitorId = `vis_${Math.random().toString(36).substring(2)}_${Date.now()}`;
-      localStorage.setItem('heovose-analytics-visitor', visitorId);
-    }
-    visitorIdRef.current = visitorId;
-
-    let sessionId = sessionStorage.getItem('heovose-analytics-session');
-    if (!sessionId) {
-      sessionId = `sess_${Math.random().toString(36).substring(2)}_${Date.now()}`;
-      sessionStorage.setItem('heovose-analytics-session', sessionId);
-    }
-    sessionIdRef.current = sessionId;
-
-    // 2. Track Page View
-    const trackPageView = async () => {
-      try {
-        await fetch('/api/analytics/track', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            type: 'pageview',
-            sessionId: sessionIdRef.current,
-            visitorId: visitorIdRef.current,
-            path: pathname,
-            referrer: document.referrer,
-            userAgent: navigator.userAgent,
-          }),
-        });
-      } catch (e) {
-        // Silent fail
+    const runTracking = () => {
+      // 1. Initialize or retrieve Session & Visitor ID
+      let visitorId = localStorage.getItem('heovose-analytics-visitor');
+      if (!visitorId) {
+        visitorId = `vis_${Math.random().toString(36).substring(2)}_${Date.now()}`;
+        localStorage.setItem('heovose-analytics-visitor', visitorId);
       }
+      visitorIdRef.current = visitorId;
+
+      let sessionId = sessionStorage.getItem('heovose-analytics-session');
+      if (!sessionId) {
+        sessionId = `sess_${Math.random().toString(36).substring(2)}_${Date.now()}`;
+        sessionStorage.setItem('heovose-analytics-session', sessionId);
+      }
+      sessionIdRef.current = sessionId;
+
+      // 2. Track Page View
+      const trackPageView = async () => {
+        try {
+          await fetch('/api/analytics/track', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              type: 'pageview',
+              sessionId: sessionIdRef.current,
+              visitorId: visitorIdRef.current,
+              path: pathname,
+              referrer: document.referrer,
+              userAgent: navigator.userAgent,
+            }),
+          });
+        } catch (e) {
+          // Silent fail
+        }
+      };
+
+      trackPageView();
     };
 
-    trackPageView();
+    if (typeof window !== 'undefined') {
+      if ('requestIdleCallback' in window) {
+        (window as any).requestIdleCallback(() => runTracking());
+      } else {
+        setTimeout(runTracking, 1000);
+      }
+    }
   }, [pathname]);
 
   useEffect(() => {
     // 3. Track Clicks (Heatmap Data)
-    const handleGlobalClick = async (e: MouseEvent) => {
+    const handleGlobalClick = (e: MouseEvent) => {
       // Avoid tracking clicks on admin panel or sensitive elements
       if (pathname.startsWith('/admin')) return;
 
@@ -88,15 +98,24 @@ export function AnalyticsTracker() {
         }
       };
 
-      try {
-        // Debounce or batch these in production, but for now send directly
-        await fetch('/api/analytics/track', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(clickData),
-        });
-      } catch (e) {
-        // Silent fail
+      const sendClickData = async () => {
+        try {
+          await fetch('/api/analytics/track', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(clickData),
+          });
+        } catch (e) {
+          // Silent fail
+        }
+      };
+
+      if (typeof window !== 'undefined') {
+        if ('requestIdleCallback' in window) {
+          (window as any).requestIdleCallback(() => sendClickData());
+        } else {
+          setTimeout(sendClickData, 0);
+        }
       }
     };
 

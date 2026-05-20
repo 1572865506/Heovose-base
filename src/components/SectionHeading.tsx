@@ -1,7 +1,9 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { cn } from "@/lib/utils";
-import SplitText from "./ui/SplitText";
+import dynamic from 'next/dynamic';
+
+const SplitText = dynamic(() => import('./ui/SplitText'), { ssr: false });
 
 interface SectionHeadingProps {
   title: string;

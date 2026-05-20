@@ -7,11 +7,12 @@ export async function GET(request: Request) {
   try {
     const { searchParams } = new URL(request.url);
     const status = searchParams.get('status');
-    const limit = parseInt(searchParams.get('limit') || '100'); // Increased default limit for admin
+    const limitParam = searchParams.get('limit');
+    const limit = limitParam ? parseInt(limitParam) : undefined;
 
     const products = await db.product.findMany({
       where: status ? { status } : {},
-      take: limit,
+      ...(limit !== undefined ? { take: limit } : {}),
       orderBy: { updatedAt: 'desc' } // Recently edited products appear at the top
     });
     

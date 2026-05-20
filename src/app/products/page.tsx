@@ -12,7 +12,7 @@ import { useLocalDoc } from '@/hooks/use-local-doc';
 import { Locale } from '@/lib/translations';
 import { Navbar } from '@/components/Navbar';
 import { Footer } from '@/components/Footer';
-import { Search, ArrowRight, ChevronRight, Package, LayoutGrid, Loader2, ShoppingBag, Building2, ExternalLink, MessageSquare } from 'lucide-react';
+import { Search, ArrowRight, ChevronRight, ChevronLeft, Package, LayoutGrid, Loader2, ShoppingBag, Building2, ExternalLink, MessageSquare } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -20,12 +20,15 @@ import { cn } from '@/lib/utils';
 import { getAssetUrl } from '@/lib/image-utils';
 import { useTranslations } from '@/hooks/use-translations';
 import { useInquiry } from '@/components/providers/InquiryProvider';
+import { HoverVideoPlayer } from '@/components/HoverVideoPlayer';
 
 interface Product {
   id: string;
   nameTextId: string;
   descriptionTextId: string;
   mainImageUrl: string;
+  videoUrl?: string;
+  galleryImageUrls?: string[];
   categoryId: string;
   tags?: string[];
   status?: 'published' | 'draft';
@@ -93,11 +96,17 @@ function ProductListContent() {
   
   const categoryParam = searchParams.get('category');
   const lineParam = searchParams.get('line') as BusinessLine;
+  const ITEMS_PER_PAGE = 9;
+  const [currentPage, setCurrentPage] = useState(1);
 
-  const { data: products, isLoading: isProdsLoading } = useLocalCollection<Product>('products');
+  const { data: products, isLoading: isProdsLoading, mutate: mutateProducts } = useLocalCollection<Product>('products');
   const { data: categories, isLoading: isCatsLoading } = useLocalCollection<Category>('productCategories');
   const { data: langSettings } = useLocalDoc<LanguageSettings>('settings', 'languages');
   const { t: tr, isLoading: isTrLoading } = useTranslations(locale);
+
+  useEffect(() => {
+    mutateProducts();
+  }, [mutateProducts]);
 
   // 1. 智能判定语种
   useEffect(() => {
@@ -176,6 +185,17 @@ function ProductListContent() {
     });
   }, [products, categories, activeLine, selectedCategoryId, searchQuery, locale, isLocaleReady]);
 
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [selectedCategoryId, searchQuery, activeLine]);
+
+  const paginatedProducts = useMemo(() => {
+    const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
+    return filteredProducts.slice(startIndex, startIndex + ITEMS_PER_PAGE);
+  }, [filteredProducts, currentPage]);
+
+  const totalPages = Math.ceil(filteredProducts.length / ITEMS_PER_PAGE);
+
   const rootCategory = useMemo(() => {
     if (!categories) return null;
     const rootId = activeLine === 'wholesale' ? 'WHOLESALE' : 'PROJECT';
@@ -192,9 +212,31 @@ function ProductListContent() {
     return <div className="min-h-screen flex items-center justify-center bg-background"><Loader2 className="h-10 w-10 animate-spin opacity-20 text-primary" /></div>;
   }
 
+  const updateCategoryFilter = (catId: string | null) => {
+    setSelectedCategoryId(catId);
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search);
+      if (catId) {
+        const cat = categories?.find(c => c.id === catId);
+        params.set('category', cat?.slug || catId);
+      } else {
+        params.delete('category');
+      }
+      const newUrl = `${window.location.pathname}?${params.toString()}`;
+      router.replace(newUrl, { scroll: false });
+    }
+  };
+
   const handleLineSwitch = (line: BusinessLine) => {
     setActiveLine(line);
     setSelectedCategoryId(null);
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search);
+      params.set('line', line);
+      params.delete('category');
+      const newUrl = `${window.location.pathname}?${params.toString()}`;
+      router.replace(newUrl, { scroll: false });
+    }
   };
 
   const isLoading = isProdsLoading || isCatsLoading || isTrLoading;
@@ -299,7 +341,7 @@ function ProductListContent() {
               </h3>
               <div className="space-y-1 bg-white p-2 rounded-2xl shadow-sm border border-border/20">
                 <button
-                  onClick={() => setSelectedCategoryId(null)}
+                  onClick={() => updateCategoryFilter(null)}
                   className={cn(
                     "w-full text-left px-5 py-3.5 rounded-xl transition-all text-sm font-bold flex items-center justify-between group",
                     selectedCategoryId === null ? "bg-primary text-white" : "hover:bg-muted text-muted-foreground"
@@ -311,7 +353,7 @@ function ProductListContent() {
                 {filteredCategories.map((cat) => (
                   <button
                     key={cat.id}
-                    onClick={() => setSelectedCategoryId(cat.id)}
+                    onClick={() => updateCategoryFilter(cat.id)}
                     className={cn(
                       "w-full flex items-center justify-between px-5 py-3.5 rounded-xl transition-all text-sm font-bold text-left group",
                       selectedCategoryId === cat.id ? "bg-primary text-white shadow-lg" : "hover:bg-muted text-muted-foreground"
@@ -339,63 +381,139 @@ function ProductListContent() {
                 <p className="text-[10px] font-bold uppercase tracking-widest opacity-40">{tr('products_syncing')}</p>
               </div>
             ) : filteredProducts.length > 0 ? (
-              <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-8 animate-in fade-in duration-700">
-                {filteredProducts.map((product) => (
-                  <div 
-                    key={product.id}
-                    className="group relative bg-white rounded-2xl border border-border/20 overflow-hidden hover:shadow-2xl hover:shadow-primary/10 hover:-translate-y-2 transition-[transform,box-shadow] duration-500 flex flex-col shadow-sm min-h-[440px] transform-gpu backface-hidden"
-                    style={{ transform: 'translateZ(0)' }}
-                  >
-                    <Link href={`/products/${product.id}`} className="block">
-                      <div className="relative aspect-[11/9] bg-muted/20 overflow-hidden">
-                        <Image
-                          src={getAssetUrl(product.mainImageUrl || '/image/product-placeholder.png')}
-                          alt={getT(product.nameTextId) || 'Product Image'}
-                          fill
-                          className="object-cover hover:scale-110 transition-transform duration-[1000ms] ease-[cubic-bezier(0.23,1,0.32,1)]"
-                          unoptimized={product.mainImageUrl?.startsWith('data:')}
-                        />
-                      </div>
-                      <div className="px-8 pt-8 pb-24 space-y-4 flex flex-col">
-                        <div className="space-y-1">
-                          <h3 className="text-xl font-headline font-bold text-slate-900 transition-colors leading-tight line-clamp-2 group-hover:text-primary">
-                            {(getT(product.nameTextId) || '').length > 22 
-                              ? (getT(product.nameTextId) || '').substring(0, 22) + '...' 
-                              : getT(product.nameTextId)}
-                          </h3>
+              <div className="space-y-16">
+                <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-8 animate-in fade-in duration-700">
+                  {paginatedProducts.map((product) => {
+                    const videoSrc = product.videoUrl || product.galleryImageUrls?.find(url => /\.(mp4|webm|ogg|mov|m4v)$/i.test(url)) || '';
+                    return (
+                      <div 
+                        key={product.id}
+                        className="group relative bg-white rounded-2xl border border-border/20 overflow-hidden hover:shadow-2xl hover:shadow-primary/10 hover:-translate-y-2 transition-[transform,box-shadow] duration-500 flex flex-col shadow-sm min-h-[440px] transform-gpu backface-hidden"
+                        style={{ transform: 'translateZ(0)' }}
+                      >
+                        <Link href={`/products/${product.id}`} className="block">
+                          <div className="relative aspect-[11/9] bg-muted/20 overflow-hidden">
+                            <HoverVideoPlayer
+                              videoUrl={videoSrc}
+                              mainImageUrl={product.mainImageUrl}
+                              alt={getT(product.nameTextId) || 'Product Image'}
+                            />
+                          </div>
+                        <div className="px-8 pt-8 pb-24 space-y-4 flex flex-col">
+                          <div className="space-y-1">
+                            <h3 className="text-xl font-headline font-bold text-slate-900 transition-colors leading-tight line-clamp-2 group-hover:text-primary">
+                              {(getT(product.nameTextId) || '').length > 22 
+                                ? (getT(product.nameTextId) || '').substring(0, 22) + '...' 
+                                : getT(product.nameTextId)}
+                            </h3>
+                          </div>
+                          <p className="text-xs text-muted-foreground line-clamp-3 leading-relaxed opacity-60 whitespace-pre-line">
+                            {getT(product.descriptionTextId)}
+                          </p>
                         </div>
-                        <p className="text-xs text-muted-foreground line-clamp-3 leading-relaxed opacity-60 whitespace-pre-line">
-                          {getT(product.descriptionTextId)}
-                        </p>
-                      </div>
-                    </Link>
-                    
-                    {/* Action Area - Homepage Style */}
-                    <div className="absolute bottom-0 left-0 right-0 px-8 pb-8">
-                      <div className="flex items-center justify-between gap-4">
-                        <Button 
-                          variant="outline"
-                          size="sm"
-                          onClick={(e) => {
-                            e.preventDefault();
-                            openInquiry({ productId: product.id, productName: getT(product.nameTextId) });
-                          }}
-                          className="rounded-full px-5 text-[10px] font-bold uppercase tracking-wider border-primary/20 text-primary hover:bg-primary hover:text-white transition-all duration-500 gap-2 flex-1 h-10"
-                        >
-                          <MessageSquare className="h-3 w-3" />
-                          {tr('products_requestQuote')}
-                        </Button>
-                        <Link 
-                          href={`/products/${product.id}`}
-                          className="h-10 w-10 rounded-full bg-slate-50 border border-slate-100 flex items-center justify-center text-slate-400 hover:bg-primary/10 hover:text-primary hover:border-primary/20 transition-all duration-500 shrink-0"
-                        >
-                          <ArrowRight className="h-4 w-4" />
-                        </Link>
+                      </Link>
+                      
+                      {/* Action Area - Homepage Style */}
+                      <div className="absolute bottom-0 left-0 right-0 px-8 pb-8">
+                        <div className="flex items-center justify-between gap-4">
+                          <Button 
+                            variant="outline"
+                            size="sm"
+                            onClick={(e) => {
+                              e.preventDefault();
+                              openInquiry({ productId: product.id, productName: getT(product.nameTextId) });
+                            }}
+                            className="rounded-full px-5 text-[10px] font-bold uppercase tracking-wider border-primary/20 text-primary hover:bg-primary hover:text-white transition-all duration-500 gap-2 flex-1 h-10"
+                          >
+                            <MessageSquare className="h-3 w-3" />
+                            {tr('products_requestQuote')}
+                          </Button>
+                          <Link 
+                            href={`/products/${product.id}`}
+                            className="h-10 w-10 rounded-full bg-slate-50 border border-slate-100 flex items-center justify-center text-slate-400 hover:bg-primary/10 hover:text-primary hover:border-primary/20 transition-all duration-500 shrink-0"
+                          >
+                            <ArrowRight className="h-4 w-4" />
+                          </Link>
+                        </div>
                       </div>
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
+
+              {/* 前台标准形态分页器 (符合规范 9.1 & 9.2) */}
+              {totalPages > 1 && (
+                <div className="mt-16 flex flex-col sm:flex-row items-center justify-between gap-6 border-t border-primary/10 pt-8">
+                  <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-[0.2em]">
+                    {locale === 'zh' 
+                      ? `显示第 ${Math.min((currentPage - 1) * ITEMS_PER_PAGE + 1, filteredProducts.length)} - ${Math.min(currentPage * ITEMS_PER_PAGE, filteredProducts.length)} 个产品，共 ${filteredProducts.length} 个`
+                      : `SHOWING ${Math.min((currentPage - 1) * ITEMS_PER_PAGE + 1, filteredProducts.length)} - ${Math.min(currentPage * ITEMS_PER_PAGE, filteredProducts.length)} OF ${filteredProducts.length} PRODUCTS`}
+                  </p>
+                  <div className="flex items-center gap-2">
+                    <Button
+                      variant="outline"
+                      size="icon"
+                      disabled={currentPage === 1}
+                      onClick={() => {
+                        setCurrentPage(prev => Math.max(prev - 1, 1));
+                        window.scrollTo({ top: 400, behavior: 'smooth' });
+                      }}
+                      className={cn(
+                        "h-10 w-10 rounded-xl transition-all duration-300",
+                        currentPage === 1 
+                          ? "text-muted-foreground/30 border-border/40 cursor-not-allowed opacity-50" 
+                          : "text-primary border-border/60 hover:bg-primary/5 hover:text-primary"
+                      )}
+                    >
+                      <ChevronLeft className="h-4 w-4" />
+                    </Button>
+                    
+                    <div className="flex items-center gap-1">
+                      {Array.from({ length: totalPages }).map((_, idx) => {
+                        const pageNum = idx + 1;
+                        const isSelected = currentPage === pageNum;
+                        return (
+                          <Button
+                            key={pageNum}
+                            variant={isSelected ? "outline" : "ghost"}
+                            onClick={() => {
+                              setCurrentPage(pageNum);
+                              window.scrollTo({ top: 400, behavior: 'smooth' });
+                            }}
+                            className={cn(
+                              "h-10 w-10 p-0 rounded-xl transition-all duration-300",
+                              isSelected 
+                                ? "border-primary/20 bg-primary/10 text-primary font-bold shadow-sm hover:bg-primary/20 hover:text-primary" 
+                                : "text-muted-foreground hover:bg-primary/5 hover:text-primary font-medium"
+                            )}
+                          >
+                            {pageNum}
+                          </Button>
+                        );
+                      })}
+                    </div>
+
+                    <Button
+                      variant="outline"
+                      size="icon"
+                      disabled={currentPage === totalPages}
+                      onClick={() => {
+                        setCurrentPage(prev => Math.min(prev + 1, totalPages));
+                        window.scrollTo({ top: 400, behavior: 'smooth' });
+                      }}
+                      className={cn(
+                        "h-10 w-10 rounded-xl transition-all duration-300",
+                        currentPage === totalPages 
+                          ? "text-muted-foreground/30 border-border/40 cursor-not-allowed opacity-50" 
+                          : "text-primary border-border/60 hover:bg-primary/5 hover:text-primary"
+                      )}
+                    >
+                      <ChevronRight className="h-4 w-4" />
+                    </Button>
+                  </div>
+                </div>
+              )}
+            </div>
             ) : (
               <div className="py-40 text-center flex flex-col items-center justify-center gap-6 bg-white rounded-[3rem] border border-dashed border-border/60">
                 <div className="h-20 w-20 rounded-full bg-muted/20 flex items-center justify-center">
@@ -405,7 +523,7 @@ function ProductListContent() {
                   <p className="font-bold text-primary">{tr('products_noResults')}</p>
                   <p className="text-xs text-muted-foreground">{tr('products_listSubtitle')}</p>
                 </div>
-                <Button onClick={() => { setSelectedCategoryId(null); setSearchQuery(''); }} variant="outline" className="rounded-xl px-8">{tr('products_resetFilters')}</Button>
+                <Button onClick={() => { updateCategoryFilter(null); setSearchQuery(''); }} variant="outline" className="rounded-xl px-8">{tr('products_resetFilters')}</Button>
               </div>
             )}
           </div>

@@ -436,4 +436,221 @@
   will-change: transform, opacity, filter;
 }
 
+/* Performance Optimization: Skip layout/paint for offscreen content */
+.content-visibility-auto {
+  content-visibility: auto;
+  contain-intrinsic-size: auto 440px;
+}
+
+/* Print optimization for professional PDF specifications */
+@media print {
+  /* Hide UI elements and interactive widgets */
+  .no-print,
+  header,
+  footer,
+  nav,
+  button,
+  .tabs-list,
+  [role="tablist"],
+  .related-products-section,
+  [class*="CookieConsent"],
+  [class*="cookie"],
+  .no-print * {
+    display: none !important;
+  }
+
+  /* Reset layout structure for paper page boundaries */
+  body, html {
+    background: #ffffff !important;
+    color: #0d131e !important;
+    font-size: 11pt !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  /* Ensure main wrapper has no pt/pb clipping */
+  main {
+    padding-top: 0 !important;
+    padding-bottom: 0 !important;
+    min-height: auto !important;
+  }
+
+  .container {
+    max-width: 100% !important;
+    width: 100% !important;
+    padding: 0 !important;
+    margin: 0 !important;
+  }
+
+  /* Override desktop spacing to compact print layout */
+  .pt-32 { padding-top: 15px !important; }
+  .pb-20 { padding-bottom: 0 !important; }
+  .mt-24 { margin-top: 20px !important; }
+  .py-24 { padding-top: 15px !important; padding-bottom: 15px !important; }
+  .mt-40 { margin-top: 25px !important; }
+  .gap-16 { gap: 24px !important; }
+
+  /* Professional Header */
+  .print-header {
+    display: flex !important;
+    border-bottom: 2px solid #005b99 !important;
+    padding-bottom: 6px !important;
+    margin-bottom: 20px !important;
+  }
+
+  /* Force block layout on main grid container to allow page breaks */
+  .grid-cols-1.lg\:grid-cols-12 {
+    display: block !important;
+  }
+
+  /* Page 1: Image section spans full page width */
+  .lg\:col-span-7 {
+    display: block !important;
+    width: 100% !important;
+    margin-bottom: 0 !important;
+  }
+
+  /* Page 2: Info section spans full page width and starts on a new page */
+  .lg\:col-span-5 {
+    display: block !important;
+    width: 100% !important;
+    page-break-before: always !important;
+    break-before: page !important;
+    margin-top: 0 !important;
+    margin-bottom: 0 !important;
+  }
+
+  /* Page 3: Tabs section starts on a new page */
+  .bg-white.border-t.border-slate-100.mt-24 {
+    page-break-before: always !important;
+    break-before: page !important;
+    margin-top: 0 !important;
+  }
+
+  /* Image aspect ratio and sizing in print (Page 1) */
+  .lg\:col-span-7 .aspect-\[11\/9\] {
+    aspect-ratio: 16/10 !important;
+    max-height: 380px !important;
+    border-radius: 1rem !important;
+    border: 1px solid #e2e8f0 !important;
+    margin-bottom: 16px !important;
+  }
+
+  /* Gallery grid in print (Page 1) */
+  .hidden.print\:grid {
+    display: grid !important;
+    grid-template-columns: repeat(3, 1fr) !important;
+    gap: 12px !important;
+    margin-top: 12px !important;
+  }
+  .hidden.print\:grid .aspect-\[11\/9\] {
+    max-height: 90px !important;
+    border-radius: 0.5rem !important;
+  }
+
+  /* Core advantages cards layout on Page 2 */
+  .bg-muted\/20 {
+    background-color: #f8fafc !important;
+    border: 1px solid #e2e8f0 !important;
+    padding: 14px 20px !important;
+    border-radius: 0.75rem !important;
+    margin-bottom: 16px !important;
+    display: flex !important;
+    align-items: center !important;
+    page-break-inside: avoid !important;
+    break-inside: avoid !important;
+  }
+  .bg-muted\/20 svg {
+    height: 20px !important;
+    width: 20px !important;
+    margin-top: 0 !important;
+    color: #005b99 !important;
+  }
+  .bg-muted\/20 span {
+    font-size: 11pt !important;
+  }
+
+  /* Make both tabs content visible simultaneously in print (Page 3+) */
+  [role="tabpanel"] {
+    display: block !important;
+    opacity: 1 !important;
+    transform: none !important;
+    visibility: visible !important;
+    margin-top: 15px !important;
+    padding-top: 0 !important;
+  }
+
+  /* Force 2-column TABLE grid layout for spec items in print (Page 3+) */
+  [role="tabpanel"] .grid {
+    display: grid !important;
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 0 !important;
+    border-top: 1px solid #e2e8f0 !important;
+    border-left: 1px solid #e2e8f0 !important;
+    margin-top: 12px !important;
+  }
+
+  [role="tabpanel"] .grid > div {
+    border-bottom: 1px solid #e2e8f0 !important;
+    border-right: 1px solid #e2e8f0 !important;
+    border-radius: 0 !important;
+    background: transparent !important;
+    padding: 10px 16px !important;
+    display: flex !important;
+    flex-direction: row !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    page-break-inside: avoid !important;
+    break-inside: avoid !important;
+    box-shadow: none !important;
+    height: auto !important;
+  }
+
+  [role="tabpanel"] .grid > div span:first-child {
+    font-weight: bold !important;
+    color: #475569 !important;
+    font-size: 9pt !important;
+  }
+
+  [role="tabpanel"] .grid > div span:last-child {
+    color: #0f172a !important;
+    font-size: 9pt !important;
+    text-align: right !important;
+  }
+
+  /* Ensure divider lines render nicely in print */
+  .h-px {
+    border-bottom: 1px solid #cbd5e1 !important;
+    height: 0 !important;
+    background-color: transparent !important;
+  }
+
+  /* Prose text styles in print */
+  .prose {
+    color: #1e293b !important;
+    max-width: 100% !important;
+    font-size: 10pt !important;
+  }
+
+  /* Heading sizing for print */
+  h1 { font-size: 26pt !important; margin-bottom: 16px !important; }
+  h2 { font-size: 16pt !important; margin-top: 24px !important; margin-bottom: 12px !important; }
+  h3 { font-size: 13pt !important; margin-top: 18px !important; margin-bottom: 8px !important; }
+
+  /* Avoid breaking section headers */
+  h1, h2, h3, h4, h5, h6 {
+    page-break-after: avoid !important;
+    break-after: avoid !important;
+    color: #005b99 !important;
+  }
+
+  /* Allow page breaks in outer containers, only prevent on items */
+  .space-y-16, .space-y-8 {
+    page-break-inside: auto !important;
+    break-inside: auto !important;
+  }
+}
+
 

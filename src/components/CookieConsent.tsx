@@ -64,7 +64,7 @@ export default function CookieConsent() {
           animate={{ y: 0, opacity: 1 }}
           exit={{ y: 100, opacity: 0 }}
           transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-          className="fixed bottom-6 left-6 right-6 md:left-auto md:right-8 md:max-w-md z-[100]"
+          className="fixed bottom-6 left-6 right-6 md:left-auto md:right-8 md:max-w-md z-[100] no-print"
         >
           <div className="bg-white/80 backdrop-blur-2xl border border-white/40 shadow-2xl rounded-[2.5rem] p-6 md:p-8 relative overflow-hidden group">
             {/* Background Accent */}

@@ -11,7 +11,9 @@ import { getAssetUrl } from '@/lib/image-utils';
 import useEmblaCarousel from 'embla-carousel-react';
 import Autoplay from 'embla-carousel-autoplay';
 import Fade from 'embla-carousel-fade';
-import SplitText from './ui/SplitText';
+import dynamic from 'next/dynamic';
+
+const SplitText = dynamic(() => import('./ui/SplitText'), { ssr: false });
 
 interface HeroSlide {
   id: string;
