@@ -168,7 +168,7 @@ export function ProductionProcess({ locale }: { locale: Locale }) {
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-16 lg:gap-24 relative">
         <div className="lg:col-span-7 lg:sticky lg:top-32 h-fit space-y-16 pb-12">
           <div className="space-y-4">
-            <h2 className="text-4xl md:text-5xl lg:text-6xl font-headline font-bold text-slate-900 tracking-tight leading-none">
+            <h2 className="text-2xl xs:text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-headline font-bold text-slate-900 tracking-tight leading-none break-words whitespace-normal">
               {displayTitle}
             </h2>
             {displaySubtitle && (
@@ -243,7 +243,7 @@ export function ProductionProcess({ locale }: { locale: Locale }) {
                 {step.tag}
               </span>
               <div className="relative z-10 space-y-8">
-                <h3 className={cn("text-4xl lg:text-5xl font-headline font-bold text-slate-900 tracking-tight transition-all duration-700", activeStep === index ? "translate-x-0" : "-translate-x-4")}>
+                <h3 className={cn("text-xl xs:text-2xl sm:text-3xl lg:text-5xl font-headline font-bold text-slate-900 tracking-tight transition-all duration-700 break-words whitespace-normal", activeStep === index ? "translate-x-0" : "-translate-x-4")}>
                   {step.label}
                 </h3>
                 <div className={cn("flex gap-6 transition-all duration-1000 delay-100", activeStep === index ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8")}>

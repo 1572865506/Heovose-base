@@ -40,7 +40,7 @@ export function CompanyIntro({ locale }: CompanyIntroProps) {
               viewport={{ once: true }}
               transition={{ duration: 0.8 }}
             >
-              <h2 className="text-4xl lg:text-5xl font-bold text-slate-900 mb-6 font-headline">
+              <h2 className="text-2xl xs:text-3xl sm:text-4xl lg:text-5xl font-bold text-slate-900 mb-6 font-headline break-words whitespace-normal">
                 {introTitle}
               </h2>
               <div className="w-20 h-1.5 bg-accent mb-8 rounded-full" />

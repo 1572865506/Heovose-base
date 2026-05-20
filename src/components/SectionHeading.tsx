@@ -46,7 +46,7 @@ export function SectionHeading({ title, subtitle, centered = false, className }:
       <SplitText
         text={title}
         tag="h2"
-        className="text-4xl md:text-5xl lg:text-6xl font-headline font-bold text-slate-900 tracking-tight block drop-shadow-[0_5px_5px_rgba(255,255,255,0.5)]"
+        className="text-2xl xs:text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-headline font-bold text-slate-900 tracking-tight block drop-shadow-[0_5px_5px_rgba(255,255,255,0.5)] break-words whitespace-normal"
         textAlign={centered ? "center" : "left"}
         delay={30}
         duration={0.8}

@@ -39,7 +39,7 @@ export function QualityLabs({ locale }: QualityLabsProps) {
               <ShieldCheck className="w-6 h-6" />
               <span className="text-sm font-bold uppercase tracking-[0.3em]">{t('ABOUT_QUALITY_TITLE')}</span>
             </div>
-            <h2 className="text-4xl lg:text-6xl font-bold font-headline leading-tight">
+            <h2 className="text-2xl xs:text-3xl sm:text-4xl lg:text-6xl font-bold font-headline leading-tight break-words whitespace-normal">
               {locale === 'zh' ? '品质是生产出来的，不是检验出来的' : 'Quality is Built, Not Just Inspected'}
             </h2>
           </motion.div>

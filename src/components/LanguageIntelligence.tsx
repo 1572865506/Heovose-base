@@ -27,7 +27,6 @@ export function LanguageIntelligence() {
     // Wait for settings to load and ensure we only prompt once per session/mount
     if (!langSettings || hasPrompted) return;
 
-    // 1. Determine the actual active locale (matching logic in HomeContent)
     const getActiveLocale = () => {
       const activeLangs = langSettings?.supportedLanguages?.map((l: any) => l.code) || ['en', 'zh', 'id', 'vi'];
       const defaultLang = langSettings?.defaultLanguage || 'en';
@@ -39,7 +38,11 @@ export function LanguageIntelligence() {
       const saved = typeof window !== 'undefined' ? localStorage.getItem('heovose-locale') : null;
       if (saved && activeLangs.includes(saved)) return saved;
       
-      const browserLang = typeof navigator !== 'undefined' ? navigator.language.split('-')[0] : 'en';
+      const browserLang = typeof navigator !== 'undefined' 
+        ? (navigator.languages && navigator.languages.length > 0 
+           ? navigator.languages[0].split('-')[0].toLowerCase() 
+           : navigator.language.split('-')[0].toLowerCase())
+        : 'en';
       if (activeLangs.includes(browserLang)) return browserLang;
       
       return defaultLang;

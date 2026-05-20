@@ -147,7 +147,7 @@ export function VideoSection({ locale, homeConfig, isLoading }: VideoSectionProp
             {/* First Segment */}
             <h2 
               className={cn(
-                "absolute text-5xl md:text-8xl lg:text-9xl font-headline font-bold text-white tracking-tighter leading-none transition-all duration-1000 ease-in-out uppercase gpu-accelerated",
+                "absolute text-3xl xs:text-4xl sm:text-5xl md:text-8xl lg:text-9xl font-headline font-bold text-white tracking-tighter leading-none transition-all duration-1000 ease-in-out uppercase gpu-accelerated break-words whitespace-normal px-4 w-full",
                 isFirstTextVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-20"
               )}
             >
@@ -157,7 +157,7 @@ export function VideoSection({ locale, homeConfig, isLoading }: VideoSectionProp
             {/* Second Segment */}
             <h2 
               className={cn(
-                "absolute text-5xl md:text-8xl lg:text-9xl font-headline font-bold text-white tracking-tighter leading-none transition-all duration-1000 ease-in-out uppercase gpu-accelerated",
+                "absolute text-3xl xs:text-4xl sm:text-5xl md:text-8xl lg:text-9xl font-headline font-bold text-white tracking-tighter leading-none transition-all duration-1000 ease-in-out uppercase gpu-accelerated break-words whitespace-normal px-4 w-full",
                 isSecondTextVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-20"
               )}
             >

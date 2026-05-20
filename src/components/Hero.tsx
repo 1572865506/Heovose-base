@@ -241,6 +241,35 @@ export function Hero({ locale, homeConfig, isLoading, onThemeChange }: HeroProps
                         padding-bottom: 0.1em;
                         justify-content: center !important;
                       }
+                      @keyframes arrow-slide-out-in {
+                        0% {
+                          transform: translate(0, 0);
+                          opacity: 1;
+                        }
+                        8% {
+                          transform: translate(160%, -160%);
+                          opacity: 0;
+                        }
+                        9% {
+                          transform: translate(-160%, 160%);
+                          opacity: 0;
+                        }
+                        17% {
+                          transform: translate(0, 0);
+                          opacity: 1;
+                        }
+                        100% {
+                          transform: translate(0, 0);
+                          opacity: 1;
+                        }
+                      }
+                      .animate-arrow-loop {
+                        animation: arrow-slide-out-in 4s infinite cubic-bezier(0.25, 1, 0.5, 1);
+                      }
+                      .animate-arrow-loop-delay {
+                        animation: arrow-slide-out-in 4s infinite cubic-bezier(0.25, 1, 0.5, 1);
+                        animation-delay: 2s;
+                      }
                     `}} />
                     <SplitText
                       key={`subheadline-${slide.id}-${selectedIndex === index}-${locale}-v1.35`}
@@ -270,14 +299,14 @@ export function Hero({ locale, homeConfig, isLoading, onThemeChange }: HeroProps
 
       {/* --- ABSOLUTE HERO OVERLAY --- */}
       <div className="pointer-events-none absolute inset-0 z-40">
-        <div className="max-w-[1600px] mx-auto px-6 h-full relative">
+        <div className="max-w-[1600px] mx-auto px-6 absolute inset-0">
 
           {/* Entry Cards - Responsive & Balanced with Enhanced Hover */}
           {showEntryCards && (
             <div className={cn(
-              "absolute bottom-10 md:bottom-[60px] left-1/2 -translate-x-1/2 px-10 md:px-0 w-full md:max-w-3xl pointer-events-auto transform translate-z-0 z-50",
+              "absolute bottom-10 md:bottom-[60px] left-1/2 -translate-x-1/2 px-4 md:px-0 w-full md:max-w-[44rem] pointer-events-auto transform translate-z-0 z-50",
               (hasWholesaleConfig && hasProjectConfig) 
-                ? "grid grid-cols-1 sm:grid-cols-2 gap-4 md:gap-8" 
+                ? "grid grid-cols-2 gap-3 md:gap-8" 
                 : "flex justify-center"
             )}>
               {/* Wholesale Card */}
@@ -285,7 +314,7 @@ export function Hero({ locale, homeConfig, isLoading, onThemeChange }: HeroProps
                 <Link
                   href={wholesaleHref}
                   className={cn(
-                    "group relative h-32 md:h-40 rounded-[2rem] md:rounded-[2.5rem] transition-all duration-700 ease-[cubic-bezier(0.23,1,0.32,1)] cursor-pointer overflow-hidden shadow-2xl border border-white/10 hover:-translate-y-3 hover:scale-[1.02] hover:shadow-primary/30 hover:border-primary/30 gpu-accelerated w-full isolate",
+                    "group relative h-24 sm:h-32 md:h-[9rem] rounded-[1.25rem] sm:rounded-[2rem] md:rounded-[2.5rem] transition-all duration-700 ease-[cubic-bezier(0.23,1,0.32,1)] cursor-pointer overflow-hidden shadow-2xl border border-white/10 hover:-translate-y-3 hover:scale-[1.02] hover:shadow-primary/30 hover:border-primary/30 gpu-accelerated w-full isolate",
                     (!hasProjectConfig) && "sm:max-w-[calc(50%-1rem)]"
                   )}
                   style={{ maskImage: 'radial-gradient(white, white)', WebkitMaskImage: '-webkit-radial-gradient(white, white)' }}
@@ -306,18 +335,18 @@ export function Hero({ locale, homeConfig, isLoading, onThemeChange }: HeroProps
                       <div className="absolute inset-0 bg-gradient-to-br from-primary via-primary/80 to-primary/60" />
                     )}
                   </div>
-                  <div className="relative z-20 h-full p-6 md:p-8 flex flex-col justify-end">
+                  <div className="relative z-20 h-full p-4 sm:p-6 md:p-8 flex flex-col justify-end">
                     <div className="flex items-end justify-between">
-                      <div className="space-y-1 transform transition-transform duration-500 group-hover:-translate-y-1">
-                        <h3 className="text-xl md:text-2xl font-headline font-bold text-white leading-tight tracking-tight">
+                      <div className="space-y-0.5 sm:space-y-1 transform transition-transform duration-500 group-hover:-translate-y-1">
+                        <h3 className="text-sm xs:text-base sm:text-xl md:text-2xl font-headline font-bold text-white leading-tight tracking-tight">
                           {displayWholesaleButton}
                         </h3>
-                        <p className="text-white/50 text-[8px] md:text-[10px] uppercase tracking-[0.2em] font-bold group-hover:text-white transition-colors">
+                        <p className="text-white/50 text-[6px] xs:text-[8px] md:text-[10px] uppercase tracking-[0.2em] font-bold group-hover:text-white transition-colors">
                           {displayWholesaleDesc}
                         </p>
                       </div>
-                      <div className="w-10 h-10 md:w-12 md:h-12 rounded-full glass-frosted flex items-center justify-center text-slate-900 border border-white/20 group-hover:bg-primary group-hover:text-white group-hover:border-transparent transition-all duration-500 shadow-xl group-hover:scale-110 group-hover:rotate-45 shrink-0 aspect-square">
-                        <ArrowUpRight className="h-5 w-5 md:h-6 md:w-6" />
+                      <div className="w-7 h-7 xs:w-8 xs:h-8 sm:w-10 sm:h-10 md:w-12 md:h-12 rounded-full glass-frosted flex items-center justify-center text-slate-900 border border-white/20 group-hover:bg-primary group-hover:text-white group-hover:border-transparent transition-all duration-500 shadow-xl group-hover:scale-110 group-hover:rotate-45 shrink-0 aspect-square overflow-hidden transform-gpu will-change-transform">
+                        <ArrowUpRight className="h-3.5 w-3.5 xs:h-4 xs:w-4 sm:h-5 sm:w-5 md:h-6 md:w-6 animate-arrow-loop transform-gpu will-change-transform" />
                       </div>
                     </div>
                   </div>
@@ -331,12 +360,12 @@ export function Hero({ locale, homeConfig, isLoading, onThemeChange }: HeroProps
                 <Link
                   href={projectHref}
                   className={cn(
-                    "group relative h-32 md:h-40 rounded-[2rem] md:rounded-[2.5rem] transition-all duration-700 ease-[cubic-bezier(0.23,1,0.32,1)] cursor-pointer overflow-hidden shadow-2xl border border-white/10 hover:-translate-y-3 hover:scale-[1.02] hover:shadow-accent/30 hover:border-accent/30 gpu-accelerated w-full isolate",
+                    "group relative h-24 sm:h-32 md:h-[9rem] rounded-[1.25rem] sm:rounded-[2rem] md:rounded-[2.5rem] transition-all duration-700 ease-[cubic-bezier(0.23,1,0.32,1)] cursor-pointer overflow-hidden shadow-2xl border border-white/10 hover:-translate-y-3 hover:scale-[1.02] hover:shadow-primary/30 hover:border-primary/30 gpu-accelerated w-full isolate",
                     (!hasWholesaleConfig) && "sm:max-w-[calc(50%-1rem)]"
                   )}
                   style={{ maskImage: 'radial-gradient(white, white)', WebkitMaskImage: '-webkit-radial-gradient(white, white)' }}
                 >
-                  <div className={cn("absolute inset-0 z-0", !projectBg && "bg-accent")}>
+                  <div className={cn("absolute inset-0 z-0", !projectBg && "bg-primary")}>
                     {projectBg ? (
                       <>
                         <Image
@@ -346,24 +375,24 @@ export function Hero({ locale, homeConfig, isLoading, onThemeChange }: HeroProps
                           className="object-cover transition-transform duration-1000 ease-out group-hover:scale-110"
                           sizes="(max-width: 768px) 100vw, 50vw"
                         />
-                        <div className="absolute inset-0 group-hover:bg-accent/10 transition-colors duration-700" />
+                        <div className="absolute inset-0 group-hover:bg-primary/10 transition-colors duration-700" />
                       </>
                     ) : (
-                      <div className="absolute inset-0 bg-gradient-to-br from-accent via-accent/80 to-accent/60" />
+                      <div className="absolute inset-0 bg-gradient-to-br from-primary via-primary/80 to-primary/60" />
                     )}
                   </div>
-                  <div className="relative z-20 h-full p-6 md:p-8 flex flex-col justify-end">
+                  <div className="relative z-20 h-full p-4 sm:p-6 md:p-8 flex flex-col justify-end">
                     <div className="flex items-end justify-between">
-                      <div className="space-y-1 transform transition-transform duration-500 group-hover:-translate-y-1">
-                        <h3 className="text-xl md:text-2xl font-headline font-bold text-white leading-tight tracking-tight">
+                      <div className="space-y-0.5 sm:space-y-1 transform transition-transform duration-500 group-hover:-translate-y-1">
+                        <h3 className="text-sm xs:text-base sm:text-xl md:text-2xl font-headline font-bold text-white leading-tight tracking-tight">
                           {displayProjectButton}
                         </h3>
-                        <p className="text-white/50 text-[8px] md:text-[10px] uppercase tracking-[0.2em] font-bold group-hover:text-white transition-colors">
+                        <p className="text-white/50 text-[6px] xs:text-[8px] md:text-[10px] uppercase tracking-[0.2em] font-bold group-hover:text-white transition-colors">
                           {displayProjectDesc}
                         </p>
                       </div>
-                      <div className="w-10 h-10 md:w-12 md:h-12 rounded-full glass-frosted flex items-center justify-center text-slate-900 border border-white/20 group-hover:bg-accent group-hover:text-white group-hover:border-transparent transition-all duration-500 shadow-xl group-hover:scale-110 group-hover:rotate-45 shrink-0 aspect-square">
-                        <ArrowUpRight className="h-5 w-5 md:h-6 md:w-6" />
+                      <div className="w-7 h-7 xs:w-8 xs:h-8 sm:w-10 sm:h-10 md:w-12 md:h-12 rounded-full glass-frosted flex items-center justify-center text-slate-900 border border-white/20 group-hover:bg-primary group-hover:text-white group-hover:border-transparent transition-all duration-500 shadow-xl group-hover:scale-110 group-hover:rotate-45 shrink-0 aspect-square overflow-hidden transform-gpu will-change-transform">
+                        <ArrowUpRight className="h-3.5 w-3.5 xs:h-4 xs:w-4 sm:h-5 sm:w-5 md:h-6 md:w-6 animate-arrow-loop-delay transform-gpu will-change-transform" />
                       </div>
                     </div>
                   </div>
@@ -374,9 +403,9 @@ export function Hero({ locale, homeConfig, isLoading, onThemeChange }: HeroProps
             </div>
           )}
 
-          {/* Minimalist Progress Indicators - Positioned at Bottom Right */}
+          {/* Minimalist Progress Indicators - Positioned Horizontally Centered Above Entry Cards */}
           {slides.length > 1 && (
-            <div className="absolute bottom-10 md:bottom-[60px] right-6 md:right-12 flex items-center gap-3 pointer-events-auto transform translate-z-0 z-50">
+            <div className="absolute bottom-[148px] sm:bottom-[180px] md:bottom-[216px] left-1/2 -translate-x-1/2 flex items-center gap-3 pointer-events-auto transform translate-z-0 z-50">
               {slides.map((_, index) => (
                 <button
                   key={index}

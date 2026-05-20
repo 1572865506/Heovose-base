@@ -22,28 +22,38 @@ import { useLocalDoc } from '@/hooks/use-local-doc';
 import { useTranslations } from '@/hooks/use-translations';
 import { useInquiry } from '@/hooks/../components/providers/InquiryProvider';
 import { MessageSquare } from 'lucide-react';
+import { HoverVideoPlayer } from '@/components/HoverVideoPlayer';
 
-function GalleryCard({ product, locale }: { product: any, locale: Locale }) {
+function GalleryCard({ 
+  product, 
+  locale,
+  playingProductId,
+  setPlayingProductId
+}: { 
+  product: any, 
+  locale: Locale,
+  playingProductId: string | null,
+  setPlayingProductId: (id: string | null) => void
+}) {
   const { openInquiry } = useInquiry();
   const { t: tr } = useTranslations(locale);
 
   return (
-    <div className="group relative flex flex-col h-full bg-white rounded-[2.5rem] shadow-sm hover:shadow-xl hover:-translate-y-2 transition-all duration-500 border border-border/5 overflow-hidden transform-gpu">
+    <div className="group relative flex flex-col h-full max-w-[400px] mx-auto w-full bg-white rounded-[2.5rem] shadow-sm hover:shadow-xl hover:-translate-y-2 transition-all duration-500 border border-border/5 overflow-hidden transform-gpu">
       <Link
-        href={`/products?category=${encodeURIComponent(product.slug)}`}
+        href={`/products/${product.id}`}
         className="block"
       >
-        {/* Product Image - 11:9 Ratio at the top */}
-        <div className="relative w-full aspect-[11/9] overflow-hidden bg-muted/5 shrink-0">
-          {product.imageUrl && (
-            <Image
-              src={getAssetUrl(product.imageUrl)}
-              alt={product.label}
-              fill
-              className="object-cover transition-transform duration-700 group-hover:scale-110"
-              sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 25vw"
-            />
-          )}
+        {/* Product Image - 11:9 Ratio at the top with Video Preview */}
+        <div className="relative w-full aspect-[11/9] overflow-hidden rounded-t-[2.5rem] bg-muted/5 shrink-0 isolate">
+          <HoverVideoPlayer
+            productId={product.id}
+            playingProductId={playingProductId}
+            setPlayingProductId={setPlayingProductId}
+            videoUrl={product.videoUrl}
+            mainImageUrl={product.imageUrl}
+            alt={product.label}
+          />
 
           {/* Floating Badge */}
           {product.badge && (
@@ -87,7 +97,7 @@ function GalleryCard({ product, locale }: { product: any, locale: Locale }) {
           {tr('products_requestQuote')}
         </Button>
         <Link 
-          href={`/products?category=${encodeURIComponent(product.slug)}`}
+          href={`/products/${product.id}`}
           className="h-9 w-9 rounded-full bg-slate-50 border border-slate-100 flex items-center justify-center text-slate-400 hover:bg-primary/10 hover:text-primary hover:border-primary/20 transition-all duration-500 shrink-0"
         >
           <ArrowRight className="h-4 w-4" />
@@ -103,6 +113,7 @@ export function ProductGallery({ locale }: { locale: Locale }) {
   const [current, setCurrent] = useState(0);
   const [count, setCount] = useState(0);
   const [isPlaying, setIsPlaying] = useState(true);
+  const [playingProductId, setPlayingProductId] = useState<string | null>(null);
   const isPlayingRef = useRef(true);
   const AUTOPLAY_DELAY = 5000;
 
@@ -177,6 +188,7 @@ export function ProductGallery({ locale }: { locale: Locale }) {
           category: product.categoryId || '',
           slug: product.categoryId || product.id,
           imageUrl: product.mainImageUrl || '/image/product-placeholder.png',
+          videoUrl: product.videoUrl || '',
           badge: badgeLabel,
           badgeType: item.badge // Pass raw type for color logic
         };
@@ -202,6 +214,7 @@ export function ProductGallery({ locale }: { locale: Locale }) {
           label: getT(p.nameTextId),
           desc: getT(p.descriptionTextId),
           imageUrl: p.mainImageUrl || '/image/product-placeholder.png',
+          videoUrl: p.videoUrl || '',
           slug: p.categoryId || p.id,
           category: p.categoryId || '',
           badge: badge,
@@ -252,21 +265,21 @@ export function ProductGallery({ locale }: { locale: Locale }) {
 
   // CUSTOM TIMER: Manages slide switching
   useEffect(() => {
-    if (!api || !isVisible || !isPlaying) return;
+    if (!api || !isVisible || !isPlaying || playingProductId !== null) return;
 
     const timer = setInterval(() => {
       api.scrollNext();
     }, AUTOPLAY_DELAY);
 
     return () => clearInterval(timer);
-  }, [api, isVisible, isPlaying, current]);
+  }, [api, isVisible, isPlaying, playingProductId, current]);
 
   const toggleAutoplay = useCallback(() => {
     setIsPlaying(prev => !prev);
   }, []);
 
   return (
-    <section ref={containerRef} id="products" className="relative z-20 py-24 bg-background overflow-hidden shadow-[0_50px_100px_rgba(0,0,0,0.05)] group/carousel">
+    <section ref={containerRef} id="products" className="relative z-20 -mt-px py-24 bg-background overflow-hidden shadow-[0_50px_100px_rgba(0,0,0,0.05)] group/carousel">
       <div className="container mx-auto px-6">
         <SectionHeading
           key={count}
@@ -286,8 +299,13 @@ export function ProductGallery({ locale }: { locale: Locale }) {
         >
           <CarouselContent className="-ml-8" viewportClassName="py-8 overflow-visible">
             {products.map((product: any) => (
-              <CarouselItem key={product.id} className="pl-8 md:basis-1/2 lg:basis-1/3 xl:basis-1/4">
-                <GalleryCard product={product} locale={locale} />
+              <CarouselItem key={product.id} className="pl-8 shrink-0 basis-auto w-[290px] xs:w-[320px] sm:w-[350px] md:w-[380px] lg:w-[400px]">
+                <GalleryCard 
+                  product={product} 
+                  locale={locale} 
+                  playingProductId={playingProductId}
+                  setPlayingProductId={setPlayingProductId}
+                />
               </CarouselItem>
             ))}
           </CarouselContent>

@@ -20,7 +20,7 @@ function BentoCard({ item, index, locale, isVisible }: { item: any, index: numbe
   
   return (
     <Link
-      href={item.slug.startsWith('http') ? item.slug : (item.slug.startsWith('/') ? item.slug : `/${locale}/${item.slug}`)}
+      href={item.slug.startsWith('http') ? item.slug : (item.slug.startsWith('/') ? item.slug : `/${item.slug}`)}
       className={cn(
         "group relative rounded-[2.5rem] overflow-hidden border border-border/40 bg-muted/5 transition-all duration-700 transform-gpu translate-z-0",
         "opacity-0 translate-y-12",
@@ -135,10 +135,10 @@ export function ProductBento({ locale }: { locale: Locale }) {
     }
 
     return [
-      { label: tr('nav_sub_aio'), id: 'product-aio', grid: 'col-span-2 row-span-2', category: tr('nav_wholesale'), slug: `/${locale}/products?category=AIO`, imageUrl: PlaceHolderImages[0].imageUrl },
-      { label: tr('nav_sub_minipc'), id: 'product-minipc', grid: 'col-span-1 row-span-2', category: tr('nav_wholesale'), slug: `/${locale}/products?category=Mini%20PC`, imageUrl: PlaceHolderImages[1].imageUrl },
-      { label: tr('nav_sub_monitor'), id: 'product-monitor', grid: 'col-span-1 row-span-1', category: tr('nav_wholesale'), slug: `/${locale}/products?category=Monitor`, imageUrl: PlaceHolderImages[2].imageUrl },
-      { label: tr('nav_sub_laptop'), id: 'product-laptop', grid: 'col-span-1 row-span-1', category: tr('nav_wholesale'), slug: `/${locale}/products?category=Laptop`, imageUrl: PlaceHolderImages[3].imageUrl },
+      { label: tr('nav_sub_aio'), id: 'product-aio', grid: 'col-span-2 row-span-2', category: tr('nav_wholesale'), slug: `/products?category=AIO`, imageUrl: PlaceHolderImages[0].imageUrl },
+      { label: tr('nav_sub_minipc'), id: 'product-minipc', grid: 'col-span-1 row-span-2', category: tr('nav_wholesale'), slug: `/products?category=Mini%20PC`, imageUrl: PlaceHolderImages[1].imageUrl },
+      { label: tr('nav_sub_monitor'), id: 'product-monitor', grid: 'col-span-1 row-span-1', category: tr('nav_wholesale'), slug: `/products?category=Monitor`, imageUrl: PlaceHolderImages[2].imageUrl },
+      { label: tr('nav_sub_laptop'), id: 'product-laptop', grid: 'col-span-1 row-span-1', category: tr('nav_wholesale'), slug: `/products?category=Laptop`, imageUrl: PlaceHolderImages[3].imageUrl },
     ];
   }, [bentoItems, locale, tr, langSettings]);
 
@@ -186,7 +186,7 @@ export function ProductBento({ locale }: { locale: Locale }) {
     <section 
       id="portfolio" 
       ref={sectionRef}
-      className="py-24 bg-background overflow-hidden"
+      className="relative z-20 py-24 bg-background overflow-hidden"
     >
       <div className="container mx-auto px-6">
         <SectionHeading 

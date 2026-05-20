@@ -38,11 +38,19 @@ export default function AboutContent({ initialLocale }: AboutContentProps) {
       const defaultLang = (langSettings?.defaultLanguage as Locale) || 'en';
       const langParam = searchParams.get('lang');
       if (langParam && activeLangs.includes(langParam)) return langParam as Locale;
-      if (initialLocale && activeLangs.includes(initialLocale)) return initialLocale;
+      
       const saved = typeof window !== 'undefined' ? localStorage.getItem('heovose-locale') as Locale : null;
       if (saved && activeLangs.includes(saved)) return saved;
-      const browserLang = typeof navigator !== 'undefined' ? navigator.language.split('-')[0] as Locale : 'en';
+      
+      if (initialLocale && activeLangs.includes(initialLocale)) return initialLocale;
+      
+      const browserLang = typeof navigator !== 'undefined' 
+        ? (navigator.languages && navigator.languages.length > 0 
+           ? navigator.languages[0].split('-')[0].toLowerCase() 
+           : navigator.language.split('-')[0].toLowerCase()) as Locale
+        : 'en';
       if (activeLangs.includes(browserLang)) return browserLang;
+      
       return defaultLang;
     };
     const detected = detectLocale();

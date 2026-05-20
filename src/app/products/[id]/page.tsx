@@ -9,6 +9,8 @@ interface Props {
   searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
 }
 
+import { getServerLocale } from "@/lib/server-locale";
+
 export async function generateMetadata({ params, searchParams }: Props): Promise<Metadata> {
   const resolvedParams = await params;
   const resolvedSearchParams = await searchParams;
@@ -19,18 +21,13 @@ export async function generateMetadata({ params, searchParams }: Props): Promise
   if (!product) return { title: 'Product Not Found' };
 
   // 2. Fetch Site Config & SEO Template
-  const [siteConfig, langSettings] = await Promise.all([
-    db.setting.findUnique({ where: { id: 'site' } }),
-    db.setting.findUnique({ where: { id: 'languages' } }),
-  ]);
+  const siteConfig = await db.setting.findUnique({ where: { id: 'site' } });
   
   const config = (siteConfig?.value as any) || {};
   const template = config.productSeoTemplate || '[ProductName] | [SiteTitle]';
-  const defaultLang = (langSettings?.value as any)?.defaultLanguage || 'en';
   
-  // 3. Determine Locale (Best effort on server side)
-  const langParam = resolvedSearchParams.lang;
-  const locale = (typeof langParam === 'string' ? langParam : defaultLang) as Locale;
+  // 3. Determine Locale
+  const locale = await getServerLocale(typeof resolvedSearchParams.lang === 'string' ? resolvedSearchParams.lang : undefined);
 
   // 4. Fetch Translated Strings for Replacement
   const [nameEntry, siteTitleEntry] = await Promise.all([
@@ -64,9 +61,7 @@ export default async function ProductPage({ params, searchParams }: Props) {
   const product = await db.product.findUnique({ where: { id } });
   if (!product) notFound();
 
-  const langSettings = await db.setting.findUnique({ where: { id: 'languages' } });
-  const defaultLang = (langSettings?.value as any)?.defaultLanguage || 'en';
-  const locale = (typeof resolvedSearchParams.lang === 'string' ? resolvedSearchParams.lang : defaultLang) as Locale;
+  const locale = await getServerLocale(typeof resolvedSearchParams.lang === 'string' ? resolvedSearchParams.lang : undefined);
 
   return <ProductClient product={JSON.parse(JSON.stringify(product))} initialLocale={locale} />;
 }

@@ -123,7 +123,7 @@ export function HoverVideoPlayer({
             setPlayingProductId(isPlaying ? null : productId);
           }}
           className={cn(
-            "absolute top-3 left-3 h-8 w-8 rounded-full backdrop-blur-md flex items-center justify-center text-white border shadow-lg transition-all duration-300 active:scale-90 z-20",
+            "absolute top-3 right-3 h-8 w-8 rounded-full backdrop-blur-md flex items-center justify-center text-white border shadow-lg transition-all duration-300 active:scale-90 z-20",
             isPlaying ? "bg-primary/90 border-primary/30" : "bg-black/60 border-white/20 hover:bg-black/80"
           )}
         >

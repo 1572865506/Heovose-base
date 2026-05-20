@@ -42,7 +42,7 @@ export function AboutHero({ locale }: AboutHeroProps) {
           <span className="inline-block px-4 py-1.5 bg-accent/20 text-accent rounded-full text-xs font-bold uppercase tracking-[0.3em] mb-8 backdrop-blur-md border border-accent/30">
             {t('ABOUT_HERO_BADGE')}
           </span>
-          <h1 className="text-5xl lg:text-8xl font-bold text-white mb-8 tracking-tight font-headline">
+          <h1 className="text-3xl xs:text-4xl sm:text-5xl lg:text-8xl font-bold text-white mb-8 tracking-tight font-headline break-words whitespace-normal">
             {t('ABOUT_HERO_TITLE')}
           </h1>
           <p className="text-xl lg:text-2xl text-white/60 max-w-3xl mx-auto leading-relaxed font-light">
