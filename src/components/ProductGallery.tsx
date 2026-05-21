@@ -4,7 +4,7 @@
 import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
-import { Locale, translations } from "@/lib/translations";
+import { Locale } from "@/lib/translations";
 import { PlaceHolderImages } from "@/lib/placeholder-images";
 import { SectionHeading } from "./SectionHeading";
 import { Button } from "@/components/ui/button";

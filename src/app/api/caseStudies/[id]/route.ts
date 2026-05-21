@@ -2,6 +2,17 @@ import { NextResponse } from 'next/server';
 import db from '@/lib/db';
 import { auth } from '@/auth';
 
+import { cleanupOrphanedStrings } from '@/lib/db-gc';
+
+function extractIdsFromCaseStudy(cs: any): string[] {
+  const ids: string[] = [];
+  if (!cs) return ids;
+  if (cs.titleTextId) ids.push(cs.titleTextId);
+  if (cs.tagTextId) ids.push(cs.tagTextId);
+  if (cs.descriptionTextId) ids.push(cs.descriptionTextId);
+  return ids;
+}
+
 export async function GET(
   request: Request,
   { params }: { params: Promise<{ id: string }> }
@@ -30,16 +41,20 @@ export async function PUT(
     const data = await request.json();
     console.log('[API] Updating case study:', id, 'data:', JSON.stringify(data));
     
+    // 获取更新前关联的词条 IDs
+    const existing = await db.caseStudy.findUnique({ where: { id } });
+    const oldIds = existing ? extractIdsFromCaseStudy(existing) : [];
+
     // Clean up data for Prisma
     const { id: _, updatedAt: __, ...updateData } = data;
 
+    let item;
     try {
-      const item = await db.caseStudy.upsert({
+      item = await db.caseStudy.upsert({
         where: { id },
         update: updateData,
         create: { ...updateData, id },
       });
-      return NextResponse.json(item);
     } catch (upsertError: any) {
       if (upsertError.message.includes('Unknown argument')) {
         console.warn('[API] Stale client. Falling back to raw SQL for CaseStudy Text IDs...');
@@ -59,15 +74,24 @@ export async function PUT(
         );
 
         // 2. 安全 upsert
-        const safeItem = await db.caseStudy.upsert({
+        item = await db.caseStudy.upsert({
           where: { id },
           update: safeData,
           create: { ...safeData, id },
         });
-        return NextResponse.json(safeItem);
+      } else {
+        throw upsertError;
       }
-      throw upsertError;
     }
+
+    // 自动物理垃圾回收释放的词条
+    const newIds = extractIdsFromCaseStudy(item);
+    const releasedIds = oldIds.filter(oid => oid && !newIds.includes(oid));
+    if (releasedIds.length > 0) {
+      await cleanupOrphanedStrings(releasedIds);
+    }
+
+    return NextResponse.json(item);
   } catch (error: any) {
     console.error('Failed to update case study:', error);
     return NextResponse.json({ 
@@ -86,12 +110,24 @@ export async function DELETE(
 
   try {
     const { id } = await params;
+
+    // 获取待删除的翻译 IDs
+    const existing = await db.caseStudy.findUnique({ where: { id } });
+    const oldIds = existing ? extractIdsFromCaseStudy(existing) : [];
+
     await db.caseStudy.delete({
       where: { id },
     });
+
+    // 自动物理垃圾回收被释放的词条
+    if (oldIds.length > 0) {
+      await cleanupOrphanedStrings(oldIds);
+    }
+
     return NextResponse.json({ success: true });
   } catch (error) {
     console.error('Failed to delete case study:', error);
     return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
   }
 }
+

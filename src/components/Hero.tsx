@@ -4,7 +4,7 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
-import { Locale, translations } from "@/lib/translations";
+import { Locale } from "@/lib/translations";
 import { ArrowUpRight, ChevronLeft, ChevronRight } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { getAssetUrl } from '@/lib/image-utils';

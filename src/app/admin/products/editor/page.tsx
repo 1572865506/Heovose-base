@@ -25,6 +25,7 @@ interface ProductSpecEntry {
   labelEn: string;
   valueZh: string;
   valueEn: string;
+  labelId?: string;
   valueId?: string;
 }
 
@@ -170,13 +171,24 @@ function ProductEditorContent() {
           en: content.en || (t as any)?.en || '' 
         };
       };
-      const sGroups = (product.specGroups || []).map((g: any, gIdx: number) => ({
+      let rawGroups = product.specGroups;
+      if (typeof rawGroups === 'string') {
+        try {
+          rawGroups = JSON.parse(rawGroups);
+        } catch (e) {
+          rawGroups = [];
+        }
+      }
+      const groupsArray = Array.isArray(rawGroups) ? rawGroups : [];
+      const sGroups = groupsArray.map((g: any, gIdx: number) => ({
         uid: `sg_${gIdx}_${Date.now()}`,
         titleEn: getT(g.titleId).en, titleZh: getT(g.titleId).zh,
-        items: g.items.map((i: any, iIdx: number) => ({
+        items: (Array.isArray(g.items) ? g.items : []).map((i: any, iIdx: number) => ({
           uid: `si_${gIdx}_${iIdx}_${Date.now()}`,
           labelEn: getT(i.labelId).en, labelZh: getT(i.labelId).zh,
-          valueEn: getT(i.valueId).en, valueZh: getT(i.valueId).zh
+          valueEn: getT(i.valueId).en, valueZh: getT(i.valueId).zh,
+          labelId: i.labelId,
+          valueId: i.valueId
         }))
       }));
       setFormData({
@@ -213,40 +225,75 @@ function ProductEditorContent() {
     }
   };
 
+  const findLocalTranslation = (zhText: string): string | null => {
+    if (!zhText || !translations) return null;
+    const cleanZh = zhText.trim();
+    const match = translations.find((t: any) => {
+      const zh = (t.zh || t.content?.zh || '').trim();
+      const en = (t.en || t.content?.en || '').trim();
+      return zh === cleanZh && en !== '';
+    });
+    if (match) {
+      return match.en || match.content?.en || null;
+    }
+    return null;
+  };
+
   const handleSave = async () => {
     if (!formData.id || !formData.categoryId || idConflict) {
       toast({ variant: "destructive", title: "无法保存", description: "请检查 ID 或分类是否完整" });
       return;
     }
     
-    setIsAiProcessing(true); // Re-use processing state for saving feedback
+    setIsAiProcessing(true);
     try {
-      const saveL = async (en: any, zh: any, id: string) => {
-        const res = await fetch(`/api/localizedStrings/${encodeURIComponent(id)}`, {
-          method: 'PUT', headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ id, content: { en: String(en || '').trim(), zh: String(zh || '').trim() } })
+      // 1. 整理本产品全部的多语言文案，准备一并提交进行哈希去重
+      const translationsToSync: { zh: string; en: string }[] = [
+        { zh: formData.nameZh, en: formData.nameEn },
+        { zh: formData.descZh, en: formData.descEn }
+      ];
+
+      formData.specGroups.forEach(g => {
+        if (g.titleZh) translationsToSync.push({ zh: g.titleZh, en: g.titleEn || '' });
+        g.items.forEach(i => {
+          if (!i.labelId && i.labelZh) translationsToSync.push({ zh: i.labelZh, en: i.labelEn || '' });
+          if (!i.valueId && i.valueZh) translationsToSync.push({ zh: i.valueZh, en: i.valueEn || '' });
         });
-        if (!res.ok) throw new Error(`翻译数据同步失败 (${id})`);
-        return id;
+      });
+
+      // 2. 调用批量接口，查询/写入，换取哈希 ID 映射表
+      const bulkRes = await fetch('/api/localizedStrings/bulk', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ items: translationsToSync })
+      });
+      if (!bulkRes.ok) throw new Error("批量同步翻译数据失败");
+      
+      const { mapping } = await bulkRes.json() as { mapping: Record<string, string> };
+      
+      const getHashId = (zh: string, en: string) => {
+        const key = `${(zh || '').trim()}::${(en || '').trim()}`;
+        return mapping[key] || '';
       };
 
-      const nId = await saveL(formData.nameEn, formData.nameZh, `prod_name_${formData.id}`);
-      const dId = await saveL(formData.descEn, formData.descZh, `prod_desc_${formData.id}`);
-      
-      const sGroups = await Promise.all(formData.specGroups.map(async (g, gIdx) => ({
-        titleId: await saveL(g.titleEn, g.titleZh, `psg_${formData.id}_${gIdx}`),
-        items: await Promise.all(g.items.map(async (i, iIdx) => ({
-          labelId: await saveL(i.labelEn, i.labelZh, `psl_${formData.id}_${gIdx}_${iIdx}`),
-          valueId: await saveL(i.valueEn, i.valueZh, `psv_${formData.id}_${gIdx}_${iIdx}`)
-        })))
-      })));
+      const nameHashId = getHashId(formData.nameZh, formData.nameEn);
+      const descHashId = getHashId(formData.descZh, formData.descEn);
 
+      const sGroups = formData.specGroups.map(g => ({
+        titleId: getHashId(g.titleZh, g.titleEn),
+        items: g.items.map(i => ({
+          labelId: i.labelId || getHashId(i.labelZh, i.labelEn),
+          valueId: i.valueId || getHashId(i.valueZh, i.valueEn)
+        }))
+      }));
+
+      // 3. 保存产品数据到后台
       const res = await fetch(`/api/products/${formData.id}`, {
         method: 'PUT', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           ...formData, 
-          nameTextId: nId, 
-          descriptionTextId: dId, 
+          nameTextId: nameHashId, 
+          descriptionTextId: descHashId, 
           specGroups: sGroups,
           categoryId: formData.categoryId, 
           galleryImageUrls: formData.galleryUrls
@@ -272,23 +319,44 @@ function ProductEditorContent() {
     if (!aiConfig?.isEnabled) return;
     setIsAiProcessing(true);
     try {
-      const tasks = [];
-      const nameNeedsTranslate = formData.nameZh && !formData.nameEn;
-      const descNeedsTranslate = formData.descZh && !formData.descEn;
+      let localNameEn = null;
+      let localDescEn = null;
 
-      const [nameRes, descRes] = await Promise.all([
-        nameNeedsTranslate ? smartTranslate({ text: formData.nameZh, targetLangs: ['en'], taskType: 'text' }) : null,
-        descNeedsTranslate ? smartTranslate({ text: formData.descZh, targetLangs: ['en'], taskType: 'text' }) : null
-      ]);
-      
+      const nameNeedsTranslate = formData.nameZh && !formData.nameEn;
+      if (nameNeedsTranslate) {
+        localNameEn = findLocalTranslation(formData.nameZh);
+      }
+
+      const descNeedsTranslate = formData.descZh && !formData.descEn;
+      if (descNeedsTranslate) {
+        localDescEn = findLocalTranslation(formData.descZh);
+      }
+
+      const callNameApi = nameNeedsTranslate && !localNameEn;
+      const callDescApi = descNeedsTranslate && !localDescEn;
+
+      let nameRes = null;
+      let descRes = null;
+
+      if (callNameApi || callDescApi) {
+        const [apiNameRes, apiDescRes] = await Promise.all([
+          callNameApi ? smartTranslate({ text: formData.nameZh, targetLangs: ['en'], taskType: 'text' }) : null,
+          callDescApi ? smartTranslate({ text: formData.descZh, targetLangs: ['en'], taskType: 'text' }) : null
+        ]);
+        nameRes = apiNameRes;
+        descRes = apiDescRes;
+      }
+
       setFormData(prev => ({ 
         ...prev, 
-        nameEn: nameRes?.en || prev.nameEn, 
-        descEn: descRes?.en || prev.descEn 
+        nameEn: localNameEn || nameRes?.en || prev.nameEn, 
+        descEn: localDescEn || descRes?.en || prev.descEn 
       }));
       
       if (!nameNeedsTranslate && !descNeedsTranslate) {
         toast({ title: "无需翻译", description: "名称和描述的英文内容已存在" });
+      } else if (localNameEn || localDescEn) {
+        toast({ title: "智能复用成功", description: "部分字段已直接从历史翻译中获取结果" });
       }
     } catch (e: any) {
       console.error("Translate Error:", e);
@@ -346,63 +414,54 @@ function ProductEditorContent() {
 
     setProcessingItems(prev => new Set(prev).add(key));
     try {
-      const res = await smartTranslate({ 
-        text: JSON.stringify({ label: item.labelZh, value: item.valueZh }), 
-        targetLangs: ['en'],
-        taskType: 'spec'
-      });
-      
-      if (res?.en) {
-        const result = robustJsonParse(res.en);
+      let localLabelEn = null;
+      let localValueEn = null;
+
+      if (needsLabel) localLabelEn = findLocalTranslation(item.labelZh);
+      if (needsValue) localValueEn = findLocalTranslation(item.valueZh);
+
+      const callLabelApi = needsLabel && !localLabelEn;
+      const callValueApi = needsValue && !localValueEn;
+
+      let labelEn = localLabelEn || '';
+      let valueEn = localValueEn || '';
+
+      if (callLabelApi || callValueApi) {
+        const apiTask: Record<string, string> = {};
+        if (callLabelApi) apiTask.label = item.labelZh;
+        if (callValueApi) apiTask.value = item.valueZh;
+
+        const res = await smartTranslate({ 
+          text: JSON.stringify(apiTask), 
+          targetLangs: ['en'],
+          taskType: 'spec'
+        });
         
-        let labelEn = '';
-        let valueEn = '';
-
-        if (typeof result === 'object' && result !== null) {
-          if (Array.isArray(result)) {
-            // 策略 A: 数组索引提取
-            labelEn = result[0] || '';
-            valueEn = result[1] || '';
-          } else {
-            // 策略 B: 超级模糊 Key 匹配
-            const keys = Object.keys(result);
-            const findKey = (terms: string[]) => 
-              keys.find(k => terms.some(t => k.toLowerCase().includes(t.toLowerCase())));
-            
-            const lKey = findKey(['label', 'lbl', 'name', 'key', 'l']);
-            const vKey = findKey(['value', 'val', 'content', 'text', 'v', 'res']);
-            
-            labelEn = lKey ? result[lKey] : '';
-            valueEn = vKey ? result[vKey] : '';
-
-            // 策略 C: 兜底逻辑 - 如果没匹配到，按属性顺序取 (第一个是 label, 第二个是 value)
-            if (!labelEn && keys[0]) labelEn = result[keys[0]];
-            if (!valueEn && keys[1]) valueEn = result[keys[1]];
-          }
-        } else if (typeof result === 'string') {
-          // 策略 D: 纯字符串拆分 (处理 AI 没给 JSON 的情况)
-          const parts = result.split(/[\n\r:：]+/).filter(p => p.trim());
-          if (parts.length >= 2) {
-            labelEn = parts[0].trim();
-            valueEn = parts[1].trim();
-          } else {
-            labelEn = result;
+        if (res?.en) {
+          const result = robustJsonParse(res.en);
+          if (typeof result === 'object' && result !== null) {
+            if (callLabelApi) labelEn = result.label || '';
+            if (callValueApi) valueEn = result.value || '';
           }
         }
+      }
 
-        setFormData(prev => {
-          const nextGroups = [...prev.specGroups];
-          nextGroups[gIdx] = {
-            ...nextGroups[gIdx],
-            items: [...nextGroups[gIdx].items]
-          };
-          nextGroups[gIdx].items[iIdx] = { 
-            ...nextGroups[gIdx].items[iIdx], 
-            labelEn: needsLabel ? (labelEn || item.labelEn) : item.labelEn, 
-            valueEn: needsValue ? (valueEn || item.valueEn) : item.valueEn 
-          };
-          return { ...prev, specGroups: nextGroups };
-        });
+      setFormData(prev => {
+        const nextGroups = [...prev.specGroups];
+        nextGroups[gIdx] = {
+          ...nextGroups[gIdx],
+          items: [...nextGroups[gIdx].items]
+        };
+        nextGroups[gIdx].items[iIdx] = { 
+          ...nextGroups[gIdx].items[iIdx], 
+          labelEn: needsLabel ? (labelEn || item.labelEn) : item.labelEn, 
+          valueEn: needsValue ? (valueEn || item.valueEn) : item.valueEn 
+        };
+        return { ...prev, specGroups: nextGroups };
+      });
+
+      if (localLabelEn || localValueEn) {
+        toast({ title: "智能复用成功", description: "部分字段已从历史词库复用填入" });
       }
     } catch (e: any) {
       console.error("Translate Spec Item Error:", e);
@@ -436,71 +495,91 @@ function ProductEditorContent() {
         alert('没有需要翻译的空字段');
         return;
       }
-      
-      const res = await smartTranslate({ 
-        text: JSON.stringify(taskMap), 
-        targetLangs: ['en'],
-        taskType: 'spec'
-      });
-      
-      if (res?.en) {
-        const results = robustJsonParse(res.en);
 
-        if (typeof results !== 'object' || results === null) {
-          throw new Error('AI 返回的数据格式无法解析为对象');
+      // 1. 本地词库缓存拦截
+      const localResults: Record<string, string> = {};
+      const apiTaskMap: Record<string, string> = {};
+
+      Object.keys(taskMap).forEach(key => {
+        const zhText = taskMap[key];
+        const localEn = findLocalTranslation(zhText);
+        if (localEn) {
+          localResults[key] = localEn;
+        } else {
+          apiTaskMap[key] = zhText;
         }
+      });
 
-        setFormData(prev => {
-          const next = [...prev.specGroups];
-          Object.keys(results).forEach(rawKey => {
-            const val = results[rawKey];
-            if (!val) return;
+      const totalApiTasks = Object.keys(apiTaskMap).length;
+      let apiResults: Record<string, string> = {};
 
-            const cleanVal = String(val).replace(/\\n/g, '\n');
-            const key = rawKey.trim().replace(/[：:]/g, '');
-            const parts = key.split('_');
-            const type = parts[0].toLowerCase();
-            
-            let gIdx = -1;
-            let iIdx = -1;
-
-            if (type === 'g') {
-              gIdx = parseInt(parts[1]);
-            } else if (parts.length === 3) {
-              gIdx = parseInt(parts[1]);
-              iIdx = parseInt(parts[2]);
-            } else if (parts.length === 2) {
-              gIdx = 0; 
-              iIdx = parseInt(parts[1]);
-            }
-
-            if (isNaN(gIdx) || gIdx < 0 || gIdx >= next.length) return;
-
-            if (type === 'g') { 
-              next[gIdx] = { ...next[gIdx], titleEn: cleanVal }; 
-              matchCount++;
-            } else if (type === 'l') { 
-              if (isNaN(iIdx) || iIdx < 0) return;
-              next[gIdx] = { ...next[gIdx], items: [...next[gIdx].items] };
-              if (next[gIdx].items[iIdx]) {
-                next[gIdx].items[iIdx] = { ...next[gIdx].items[iIdx], labelEn: cleanVal };
-                matchCount++;
-              }
-            } else if (type === 'v') { 
-              if (isNaN(iIdx) || iIdx < 0) return;
-              next[gIdx] = { ...next[gIdx], items: [...next[gIdx].items] };
-              if (next[gIdx].items[iIdx]) {
-                next[gIdx].items[iIdx] = { ...next[gIdx].items[iIdx], valueEn: cleanVal };
-                matchCount++;
-              }
-            }
-          });
-          return { ...prev, specGroups: next };
+      if (totalApiTasks > 0) {
+        const res = await smartTranslate({ 
+          text: JSON.stringify(apiTaskMap), 
+          targetLangs: ['en'],
+          taskType: 'spec'
         });
-
-        setRenderKey(prev => prev + 1);
-        alert(`✅ 全表智译完成！已回填 ${matchCount} 个字段。`);
+        
+        if (res?.en) {
+          apiResults = robustJsonParse(res.en);
+          if (typeof apiResults !== 'object' || apiResults === null) {
+            throw new Error('AI 返回的数据格式无法解析为对象');
+          }
+        }
       }
+
+      const results = { ...localResults, ...apiResults };
+      
+      setFormData(prev => {
+        const next = [...prev.specGroups];
+        Object.keys(results).forEach(rawKey => {
+          const val = results[rawKey];
+          if (!val) return;
+
+          const cleanVal = String(val).replace(/\\n/g, '\n');
+          const key = rawKey.trim().replace(/[：:]/g, '');
+          const parts = key.split('_');
+          const type = parts[0].toLowerCase();
+          
+          let gIdx = -1;
+          let iIdx = -1;
+
+          if (type === 'g') {
+            gIdx = parseInt(parts[1]);
+          } else if (parts.length === 3) {
+            gIdx = parseInt(parts[1]);
+            iIdx = parseInt(parts[2]);
+          } else if (parts.length === 2) {
+            gIdx = 0; 
+            iIdx = parseInt(parts[1]);
+          }
+
+          if (isNaN(gIdx) || gIdx < 0 || gIdx >= next.length) return;
+
+          if (type === 'g') { 
+            next[gIdx] = { ...next[gIdx], titleEn: cleanVal }; 
+            matchCount++;
+          } else if (type === 'l') { 
+            if (isNaN(iIdx) || iIdx < 0) return;
+            next[gIdx] = { ...next[gIdx], items: [...next[gIdx].items] };
+            if (next[gIdx].items[iIdx]) {
+              next[gIdx].items[iIdx] = { ...next[gIdx].items[iIdx], labelEn: cleanVal };
+              matchCount++;
+            }
+          } else if (type === 'v') { 
+            if (isNaN(iIdx) || iIdx < 0) return;
+            next[gIdx] = { ...next[gIdx], items: [...next[gIdx].items] };
+            if (next[gIdx].items[iIdx]) {
+              next[gIdx].items[iIdx] = { ...next[gIdx].items[iIdx], valueEn: cleanVal };
+              matchCount++;
+            }
+          }
+        });
+        return { ...prev, specGroups: next };
+      });
+
+      setRenderKey(prev => prev + 1);
+      alert(`✅ 全表智译完成！已回填 ${matchCount} 个字段。（其中 ${Object.keys(localResults).length} 个来自历史词库复用）`);
     } catch (err) {
       alert('智译异常：' + (err as Error).message);
     } finally { setIsAiProcessing(false); }

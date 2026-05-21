@@ -4,6 +4,17 @@ import { auth } from '@/auth';
 
 export const dynamic = 'force-dynamic';
 
+import { cleanupOrphanedStrings } from '@/lib/db-gc';
+
+function extractIdsFromMapLocation(loc: any): string[] {
+  const ids: string[] = [];
+  if (!loc) return ids;
+  if (loc.titleTextId) ids.push(loc.titleTextId);
+  if (loc.addressTextId) ids.push(loc.addressTextId);
+  if (loc.descTextId) ids.push(loc.descTextId);
+  return ids;
+}
+
 export async function PUT(
   request: Request,
   { params }: { params: Promise<{ id: string }> }
@@ -22,6 +33,9 @@ export async function PUT(
       console.error('[API] Location not found:', id);
       return NextResponse.json({ error: 'Location not found' }, { status: 404 });
     }
+
+    // 获取更新前关联的 IDs
+    const oldIds = extractIdsFromMapLocation(existing);
 
     const { 
       id: _, 
@@ -67,6 +81,13 @@ export async function PUT(
     // Fetch the final state from DB to ensure response is accurate
     const finalLocation = await db.mapLocation.findUnique({ where: { id } });
 
+    // 计算被释放的翻译 IDs，并触发 GC
+    const newIds = finalLocation ? extractIdsFromMapLocation(finalLocation) : [];
+    const releasedIds = oldIds.filter(oid => oid && !newIds.includes(oid));
+    if (releasedIds.length > 0) {
+      await cleanupOrphanedStrings(releasedIds);
+    }
+
     return NextResponse.json(finalLocation);
   } catch (error: any) {
     console.error('[API] mapLocations PUT Error:', error);
@@ -94,22 +115,17 @@ export async function DELETE(
       select: { titleTextId: true, addressTextId: true, descTextId: true }
     });
 
-    if (location) {
-      // 2. Collect all non-null text IDs
-      const textIds = [location.titleTextId, location.addressTextId, location.descTextId].filter(Boolean) as string[];
-      
-      // 3. Delete associated localized strings
-      if (textIds.length > 0) {
-        await db.localizedString.deleteMany({
-          where: { id: { in: textIds } }
-        });
-      }
-    }
+    const oldIds = location ? [location.titleTextId, location.addressTextId, location.descTextId].filter(Boolean) as string[] : [];
 
-    // 4. Finally delete the location
+    // 2. Finally delete the location
     await db.mapLocation.delete({
       where: { id },
     });
+
+    // 3. 安全引用计数释放翻译词条（取代以前的直接物理强删）
+    if (oldIds.length > 0) {
+      await cleanupOrphanedStrings(oldIds);
+    }
     
     return NextResponse.json({ success: true });
   } catch (error: any) {
@@ -117,3 +133,4 @@ export async function DELETE(
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 }
+

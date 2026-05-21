@@ -1,17 +1,18 @@
 
 "use client";
 
-import { Locale, translations } from "@/lib/translations";
+import { Locale } from "@/lib/translations";
+import { useTranslations } from "@/hooks/use-translations";
 import { Factory, Cpu, Users, Award } from "lucide-react";
 
 export function Stats({ locale }: { locale: Locale }) {
-  const t = translations[locale].stats;
+  const { t } = useTranslations(locale);
 
   const stats = [
-    { icon: Factory, value: '3', label: t.factories, sub: locale === 'en' ? 'CN / ID' : '中国 / 印尼' },
-    { icon: Cpu, value: '30+', label: t.series, sub: locale === 'en' ? 'Models' : '机型' },
-    { icon: Users, value: '500+', label: t.clients, sub: locale === 'en' ? 'Global' : '全球客户' },
-    { icon: Award, value: '15+', label: t.experience, sub: locale === 'en' ? 'Years' : '年行业积淀' },
+    { icon: Factory, value: '3', label: t('SYS_STATS_FACTORIES') || (locale === 'en' ? 'Manufacturing Bases' : '智造基地'), sub: locale === 'en' ? 'CN / ID' : '中国 / 印尼' },
+    { icon: Cpu, value: '30+', label: t('SYS_STATS_SERIES') || (locale === 'en' ? 'Product Series' : '产品系列'), sub: locale === 'en' ? 'Models' : '机型' },
+    { icon: Users, value: '500+', label: t('SYS_STATS_CLIENTS') || (locale === 'en' ? 'Global Clients' : '全球客户'), sub: locale === 'en' ? 'Global' : '全球客户' },
+    { icon: Award, value: '15+', label: t('SYS_STATS_EXPERIENCE') || (locale === 'en' ? 'Years Experience' : '行业经验'), sub: locale === 'en' ? 'Years' : '年行业积淀' },
   ];
 
   return (

@@ -4,7 +4,7 @@ import { checkRole } from '@/lib/auth-utils';
 
 export async function GET(
   request: Request,
-  { params }: { params: Promise<{ id: string }> }
+  { params }: { params: Promise<any> }
 ) {
   try {
     await checkRole('editor');
@@ -23,7 +23,7 @@ export async function GET(
 
 export async function PUT(
   request: Request,
-  { params }: { params: Promise<{ id: string }> }
+  { params }: { params: Promise<any> }
 ) {
   try {
     await checkRole('superadmin');
@@ -46,7 +46,7 @@ export async function PUT(
 
 export async function DELETE(
   request: Request,
-  { params }: { params: Promise<{ id: string }> }
+  { params }: { params: Promise<any> }
 ) {
   try {
     const sessionUser = await checkRole('superadmin');

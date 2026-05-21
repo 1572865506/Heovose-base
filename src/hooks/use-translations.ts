@@ -1,9 +1,32 @@
 'use client';
 
 import { useMemo } from 'react';
-import { Locale, translations as fallbackLibrary } from '@/lib/translations';
+import { Locale } from '@/lib/translations';
 import { useLocalCollection } from '@/hooks/use-local-collection';
 import { useLocalDoc } from '@/hooks/use-local-doc';
+
+const pendingRegistrations = new Set<string>();
+let registrationTimeout: NodeJS.Timeout | null = null;
+
+function registerKey(key: string) {
+  pendingRegistrations.add(key);
+  if (registrationTimeout) clearTimeout(registrationTimeout);
+  registrationTimeout = setTimeout(async () => {
+    const keys = Array.from(pendingRegistrations);
+    pendingRegistrations.clear();
+    if (keys.length === 0) return;
+    
+    try {
+      await fetch('/api/localizedStrings/register', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ keys }),
+      });
+    } catch (err) {
+      console.error('[Translation Autoregister Error]', err);
+    }
+  }, 1500);
+}
 
 export function useTranslations(locale: Locale) {
   const { data: remoteTranslations, isLoading: isTranslationsLoading } = useLocalCollection<any>(`localizedStrings?lang=${locale}`);
@@ -13,13 +36,6 @@ export function useTranslations(locale: Locale) {
   const isLoading = isTranslationsLoading || isSettingsLoading;
 
   const t = useMemo(() => {
-    // console.log('[useTranslations] Re-calculating with count:', Array.isArray(remoteTranslations) ? remoteTranslations.length : 0);
-    
-    // Helper to get nested value from the fallback library
-    const getNested = (obj: any, path: string[]) => {
-      return path.reduce((acc, part) => acc && acc[part], obj);
-    };
-
     return (key: string | null | undefined) => {
       if (!key) return '';
       
@@ -38,24 +54,19 @@ export function useTranslations(locale: Locale) {
       let val: string | undefined = undefined;
       if (remote) {
         const content = (remote.content as any) || {};
-        const localVal = content[locale];
-        if (localVal !== undefined && localVal !== null && typeof localVal === 'string') {
-          val = localVal;
-        }
-      }
-
-      // 2. Fallback to local hardcoded library (if exists)
-      const library = (fallbackLibrary as any)?.[locale] || (fallbackLibrary as any)?.[defaultLanguage] || (fallbackLibrary as any)?.['en'];
-      
-      let hardcoded: string | undefined = undefined;
-      if (library && typeof library === 'object') {
-        if (library[key] && typeof library[key] === 'string') {
-          hardcoded = library[key];
+        // 级联降级策略：目标语种 -> 默认语种 -> 任意第一个非空翻译 -> 空字符串
+        if (content[locale] !== undefined && content[locale] !== null && content[locale] !== '') {
+          val = content[locale];
+        } else if (content[defaultLanguage] !== undefined && content[defaultLanguage] !== null && content[defaultLanguage] !== '') {
+          val = content[defaultLanguage];
         } else {
-          const path = key.split('_');
-          const localNested = getNested(library, path);
-          if (localNested && typeof localNested === 'string') {
-            hardcoded = localNested;
+          const availableLang = Object.keys(content).find(
+            (k) => content[k] !== undefined && content[k] !== null && content[k] !== ''
+          );
+          if (availableLang) {
+            val = content[availableLang];
+          } else {
+            val = '';
           }
         }
       }
@@ -64,15 +75,16 @@ export function useTranslations(locale: Locale) {
       let finalResult = '';
       if (val !== undefined) {
         finalResult = val;
-      } else if (hardcoded !== undefined) {
-        finalResult = hardcoded;
       } else if (isLoading) {
         finalResult = '';
       } else if (isSystemId) {
         finalResult = '';
+        // 发现未注册的系统 ID 词条，触发后台自动注册
+        registerKey(key);
       } else {
         finalResult = typeof key === 'string' ? key : '';
       }
+
 
       return finalResult;
     };

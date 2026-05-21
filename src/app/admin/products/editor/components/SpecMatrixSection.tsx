@@ -48,6 +48,8 @@ interface ProductSpecEntry {
   labelZh: string;
   valueEn: string;
   valueZh: string;
+  labelId?: string;
+  valueId?: string;
 }
 
 interface ProductSpecGroup {
@@ -129,6 +131,11 @@ const SpecItemRow = memo(({
   const [localLabelEn, setLocalLabelEn] = useState(item.labelEn);
   const [localValueEn, setLocalValueEn] = useState(item.valueEn);
 
+  const [labelSuggestions, setLabelSuggestions] = useState<any[]>([]);
+  const [valueSuggestions, setValueSuggestions] = useState<any[]>([]);
+  const labelTimer = React.useRef<any>(null);
+  const valueTimer = React.useRef<any>(null);
+
   React.useEffect(() => {
     setLocalLabelZh(item.labelZh);
     setLocalValueZh(item.valueZh);
@@ -136,15 +143,133 @@ const SpecItemRow = memo(({
     setLocalValueEn(item.valueEn);
   }, [item.labelZh, item.valueZh, item.labelEn, item.valueEn]);
 
+  React.useEffect(() => {
+    return () => {
+      if (labelTimer.current) clearTimeout(labelTimer.current);
+      if (valueTimer.current) clearTimeout(valueTimer.current);
+    };
+  }, []);
+
+  const handleLabelChange = (val: string) => {
+    setLocalLabelZh(val);
+    onUpdate(gIdx, iIdx, 'labelZh', val);
+    onUpdate(gIdx, iIdx, 'labelId', ''); // 手动更改清空已绑定的 ID
+
+    if (val.trim()) {
+      if (labelTimer.current) clearTimeout(labelTimer.current);
+      labelTimer.current = setTimeout(async () => {
+        try {
+          const res = await fetch(`/api/localizedStrings/dictionary?q=${encodeURIComponent(val)}`);
+          if (res.ok) {
+            const data = await res.json();
+            setLabelSuggestions(data);
+          }
+        } catch (e) {
+          console.error(e);
+        }
+      }, 300);
+    } else {
+      setLabelSuggestions([]);
+    }
+  };
+
+  const handleSelectLabelSuggestion = (s: any) => {
+    const zhVal = s.content?.zh || s.zh || '';
+    const enVal = s.content?.en || s.en || '';
+    setLocalLabelZh(zhVal);
+    setLocalLabelEn(enVal);
+    onUpdate(gIdx, iIdx, 'labelZh', zhVal);
+    onUpdate(gIdx, iIdx, 'labelEn', enVal);
+    onUpdate(gIdx, iIdx, 'labelId', s.id);
+    setLabelSuggestions([]);
+  };
+
+  const handleValueChange = (val: string) => {
+    setLocalValueZh(val);
+    onUpdate(gIdx, iIdx, 'valueZh', val);
+    onUpdate(gIdx, iIdx, 'valueId', ''); // 手动更改清空已绑定的 ID
+
+    if (val.trim()) {
+      if (valueTimer.current) clearTimeout(valueTimer.current);
+      valueTimer.current = setTimeout(async () => {
+        try {
+          const res = await fetch(`/api/localizedStrings/dictionary?q=${encodeURIComponent(val)}`);
+          if (res.ok) {
+            const data = await res.json();
+            setValueSuggestions(data);
+          }
+        } catch (e) {
+          console.error(e);
+        }
+      }, 300);
+    } else {
+      setValueSuggestions([]);
+    }
+  };
+
+  const handleSelectValueSuggestion = (s: any) => {
+    const zhVal = s.content?.zh || s.zh || '';
+    const enVal = s.content?.en || s.en || '';
+    setLocalValueZh(zhVal);
+    setLocalValueEn(enVal);
+    onUpdate(gIdx, iIdx, 'valueZh', zhVal);
+    onUpdate(gIdx, iIdx, 'valueEn', enVal);
+    onUpdate(gIdx, iIdx, 'valueId', s.id);
+    setValueSuggestions([]);
+  };
+
   return (
     <div className="grid grid-cols-12 gap-x-4 gap-y-2 items-start group/item border-b border-border/20 pb-4 last:border-0">
-      <div className="col-span-3 space-y-1.5">
+      <div className="col-span-3 space-y-1.5 relative">
         {iIdx === 0 && <Label className="text-[8px] font-bold uppercase tracking-widest text-muted-foreground/50 pl-1">参数名 (中)</Label>}
-        <Input value={localLabelZh} onChange={e => setLocalLabelZh(e.target.value)} onBlur={() => onUpdate(gIdx, iIdx, 'labelZh', localLabelZh)} className="h-11 px-2 rounded-xl bg-muted/20 border-border/30 text-sm font-bold font-mono text-foreground" />
+        <Input 
+          value={localLabelZh} 
+          onChange={e => handleLabelChange(e.target.value)} 
+          onBlur={() => setTimeout(() => setLabelSuggestions([]), 200)}
+          className="h-11 px-2 rounded-xl bg-muted/20 border-border/30 text-sm font-bold font-mono text-foreground" 
+        />
+        {labelSuggestions.length > 0 && (
+          <div className="absolute z-50 w-full max-h-48 overflow-y-auto mt-1 bg-card/95 backdrop-blur-xl border border-border/40 rounded-xl shadow-2xl p-1 divide-y divide-border/10">
+            {labelSuggestions.map((s) => (
+              <button
+                key={s.id}
+                type="button"
+                onMouseDown={(e) => e.preventDefault()}
+                onClick={() => handleSelectLabelSuggestion(s)}
+                className="w-full text-left px-3 py-2 text-xs hover:bg-primary/10 rounded-lg text-foreground font-medium flex justify-between items-center transition-colors"
+              >
+                <span>{s.content?.zh || s.zh}</span>
+                <span className="text-[10px] text-muted-foreground/60 font-mono">{s.content?.en || s.en}</span>
+              </button>
+            ))}
+          </div>
+        )}
       </div>
-      <div className="col-span-7 space-y-1.5">
+      <div className="col-span-7 space-y-1.5 relative">
         {iIdx === 0 && <Label className="text-[8px] font-bold uppercase tracking-widest text-muted-foreground/50 pl-1">参数值 (中)</Label>}
-        <Textarea value={localValueZh} onChange={e => setLocalValueZh(e.target.value)} onBlur={() => onUpdate(gIdx, iIdx, 'valueZh', localValueZh)} onInput={(e: any) => { e.target.style.height = 'auto'; e.target.style.height = `${e.target.scrollHeight}px`; }} className="min-h-[44px] max-h-[100px] h-auto px-2 py-2 rounded-xl bg-muted/20 border-border/30 text-sm font-medium font-mono leading-5 overflow-y-auto resize-none text-foreground" />
+        <Textarea 
+          value={localValueZh} 
+          onChange={e => handleValueChange(e.target.value)} 
+          onBlur={() => setTimeout(() => setValueSuggestions([]), 200)}
+          onInput={(e: any) => { e.target.style.height = 'auto'; e.target.style.height = `${e.target.scrollHeight}px`; }} 
+          className="min-h-[44px] max-h-[100px] h-auto px-2 py-2 rounded-xl bg-muted/20 border-border/30 text-sm font-medium font-mono leading-5 overflow-y-auto resize-none text-foreground" 
+        />
+        {valueSuggestions.length > 0 && (
+          <div className="absolute z-50 w-full max-h-48 overflow-y-auto mt-1 bg-card/95 backdrop-blur-xl border border-border/40 rounded-xl shadow-2xl p-1 divide-y divide-border/10">
+            {valueSuggestions.map((s) => (
+              <button
+                key={s.id}
+                type="button"
+                onMouseDown={(e) => e.preventDefault()}
+                onClick={() => handleSelectValueSuggestion(s)}
+                className="w-full text-left px-3 py-2 text-xs hover:bg-primary/10 rounded-lg text-foreground font-medium flex justify-between items-center transition-colors"
+              >
+                <span>{s.content?.zh || s.zh}</span>
+                <span className="text-[10px] text-muted-foreground/60 font-mono">{s.content?.en || s.en}</span>
+              </button>
+            ))}
+          </div>
+        )}
       </div>
       <div className="col-span-2 row-span-2 self-center flex items-center justify-start gap-6 pl-4 h-full pt-1.5">
         {aiConfig?.isEnabled && <LiteAiButton onClick={() => onAiTranslate(gIdx, iIdx)} disabled={isAiProcessing} isProcessing={isThisProcessing} />}
@@ -156,11 +281,20 @@ const SpecItemRow = memo(({
       </div>
       <div className="col-span-3 space-y-1.5">
         {iIdx === 0 && <Label className="text-[8px] font-bold uppercase tracking-widest text-muted-foreground/50 pl-1">参数名 (En)</Label>}
-        <Input value={localLabelEn} onChange={e => setLocalLabelEn(e.target.value)} onBlur={() => onUpdate(gIdx, iIdx, 'labelEn', localLabelEn)} className="h-11 px-2 rounded-xl bg-muted/10 border-dashed border-border/30 text-sm font-bold font-mono text-foreground" />
+        <Input 
+          value={localLabelEn} 
+          onChange={e => { setLocalLabelEn(e.target.value); onUpdate(gIdx, iIdx, 'labelEn', e.target.value); onUpdate(gIdx, iIdx, 'labelId', ''); }} 
+          className="h-11 px-2 rounded-xl bg-muted/10 border-dashed border-border/30 text-sm font-bold font-mono text-foreground" 
+        />
       </div>
       <div className="col-span-7 space-y-1.5">
         {iIdx === 0 && <Label className="text-[8px] font-bold uppercase tracking-widest text-muted-foreground/50 pl-1">参数值 (En)</Label>}
-        <Textarea value={localValueEn} onChange={e => setLocalValueEn(e.target.value)} onBlur={() => onUpdate(gIdx, iIdx, 'valueEn', localValueEn)} onInput={(e: any) => { e.target.style.height = 'auto'; e.target.style.height = `${e.target.scrollHeight}px`; }} className="min-h-[44px] max-h-[100px] h-auto px-2 py-2 rounded-xl bg-muted/10 border-dashed border-border/30 text-sm font-medium font-mono leading-5 overflow-y-auto resize-none text-foreground" />
+        <Textarea 
+          value={localValueEn} 
+          onChange={e => { setLocalValueEn(e.target.value); onUpdate(gIdx, iIdx, 'valueEn', e.target.value); onUpdate(gIdx, iIdx, 'valueId', ''); }} 
+          onInput={(e: any) => { e.target.style.height = 'auto'; e.target.style.height = `${e.target.scrollHeight}px`; }} 
+          className="min-h-[44px] max-h-[100px] h-auto px-2 py-2 rounded-xl bg-muted/10 border-dashed border-border/30 text-sm font-medium font-mono leading-5 overflow-y-auto resize-none text-foreground" 
+        />
       </div>
     </div>
   );

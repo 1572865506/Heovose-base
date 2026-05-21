@@ -3,8 +3,7 @@ import db from '@/lib/db';
 import { auth } from '@/auth';
 
 export async function GET(
-  request: Request,
-  { params }: { params: Promise<{ id: string }> }
+  request: Request
 ) {
   try {
     const item = await db.setting.findUnique({
@@ -18,8 +17,7 @@ export async function GET(
 }
 
 export async function PUT(
-  request: Request,
-  { params }: { params: Promise<{ id: string }> }
+  request: Request
 ) {
   const session = await auth();
   if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });

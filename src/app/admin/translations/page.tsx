@@ -117,18 +117,25 @@ interface AiConfig {
 export default function TranslationsPage() {
   const { toast } = useToast();
   const [searchQuery, setSearchQuery] = useState('');
-  const [activeTab, setActiveTab] = useState('business');
+  const [activeTab, setActiveTab] = useState('system'); // 默认展示系统库
   const [isAdding, setIsAdding] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [showOnlyDuplicates, setShowOnlyDuplicates] = useState(false);
   const [isCleaning, setIsCleaning] = useState(false);
   const [isMerging, setIsMerging] = useState(false);
+  const [isMergingBatch, setIsMergingBatch] = useState(false);
+  const [isSyncingAI, setIsSyncingAI] = useState(false);
+  const [syncProgress, setSyncProgress] = useState('');
   const [translatingId, setTranslatingId] = useState<string | null>(null);
   const [isSyncingLocal, setIsSyncingLocal] = useState(false);
   const [showSyncConfirm, setShowSyncConfirm] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 25;
+
+  // 编辑冲突警告弹窗状态
+  const [showRefWarning, setShowRefWarning] = useState(false);
+  const [warningInfo, setWarningInfo] = useState<{ id: string; refCount: number; message: string } | null>(null);
   
   interface TranslationForm {
     id: string;
@@ -178,17 +185,49 @@ export default function TranslationsPage() {
       const pName = p.id;
       addRef(p.nameTextId, '产品名称', pName, p.id);
       addRef(p.descriptionTextId, '产品描述', pName, p.id);
-      if (p.localizedDetails) {
-        Object.keys(p.localizedDetails).forEach(k => addRef(p.localizedDetails[k], '详情内容', pName, p.id));
+      
+      let details = p.localizedDetails;
+      if (details) {
+        if (typeof details === 'string') {
+          try { details = JSON.parse(details); } catch (e) {}
+        }
+        if (details && typeof details === 'object') {
+          Object.keys(details).forEach(k => {
+            const val = (details as any)[k];
+            if (val && typeof val === 'string') {
+              addRef(val, '详情内容', pName, p.id);
+            }
+          });
+        }
       }
-      p.advantageTextIds?.forEach((id: string) => addRef(id, '核心优势', pName, p.id));
-      p.specGroups?.forEach((g: any) => {
-        addRef(g.titleId, '规格分组', pName, p.id);
-        g.items?.forEach((i: any) => {
-          addRef(i.labelId, '规格项名', pName, p.id);
-          addRef(i.valueId, '规格内容', pName, p.id);
+
+      let advIds = p.advantageTextIds;
+      if (typeof advIds === 'string') {
+        try { advIds = JSON.parse(advIds); } catch (e) {}
+      }
+      if (Array.isArray(advIds)) {
+        advIds.forEach((id: string) => addRef(id, '核心优势', pName, p.id));
+      }
+
+      let groups = p.specGroups;
+      if (typeof groups === 'string') {
+        try { groups = JSON.parse(groups); } catch (e) {}
+      }
+      if (Array.isArray(groups)) {
+        groups.forEach((g: any) => {
+          if (g) {
+            if (g.titleId) addRef(g.titleId, '规格分组', pName, p.id);
+            if (Array.isArray(g.items)) {
+              g.items.forEach((i: any) => {
+                if (i) {
+                  if (i.labelId) addRef(i.labelId, '规格项名', pName, p.id);
+                  if (i.valueId) addRef(i.valueId, '规格内容', pName, p.id);
+                }
+              });
+            }
+          }
         });
-      });
+      }
     });
     categories?.forEach(c => {
       addRef(c.nameTextId, '产品分类', c.id, c.id, false);
@@ -204,27 +243,32 @@ export default function TranslationsPage() {
   const usedIds = useMemo(() => new Set(referenceMap.keys()), [referenceMap]);
 
   const categorizedTranslations = useMemo(() => {
-    if (!translations) return { business: [], system: [] };
+    if (!translations) return { business: [], system: [], shared: [] };
     
     return translations.reduce((acc, t) => {
-      let category = 'system';
-      const isBusiness = 
-        t.id.startsWith('prod_') || 
+      const isShared = 
         t.id.startsWith('spec_') || 
-        t.id.startsWith('adv_') ||
-        t.id.startsWith('psl_') ||
+        t.id.startsWith('psl_') || 
         t.id.startsWith('psv_') ||
         t.id.startsWith('psg_');
+      
+      const isBusiness = 
+        t.id.startsWith('prod_') || 
+        t.id.startsWith('cat_') ||
+        t.id.startsWith('gal_') ||
+        t.id.startsWith('adv_');
 
-      if (isBusiness) {
+      if (isShared) {
+        acc.shared.push(t);
+      } else if (isBusiness) {
         acc.business.push(t);
       } else {
         acc.system.push(t);
       }
       
       return acc;
-    }, { business: [] as LocalizedString[], system: [] as LocalizedString[] });
-  }, [translations, usedIds]);
+    }, { business: [] as LocalizedString[], system: [] as LocalizedString[], shared: [] as LocalizedString[] });
+  }, [translations]);
 
   const getResourceCategory = (id: string) => {
     if (id.startsWith('prod_')) return { label: '产品内容', color: 'bg-blue-500/10 text-blue-400 border-blue-500/20' };
@@ -337,6 +381,77 @@ export default function TranslationsPage() {
     }
   };
 
+  const handleMergeBatch = async () => {
+    if (!confirm('确认要执行一键合并去重吗？系统会自动检测内容完全重复的公共规格，并重新指向产品引用关系后删除冗余词条。')) return;
+    setIsMergingBatch(true);
+    try {
+      const res = await fetch('/api/localizedStrings/merge/batch', {
+        method: 'POST'
+      });
+      const data = await res.json();
+      if (data.success) {
+        mutateTrans();
+        mutateProducts();
+        toast({
+          title: '一键合并成功',
+          description: data.message || `合并了重复词条，并重定向了引用指针。`
+        });
+      } else {
+        throw new Error(data.error || '请求失败');
+      }
+    } catch (err: any) {
+      toast({
+        variant: 'destructive',
+        title: '合并失败',
+        description: err.message
+      });
+    } finally {
+      setIsMergingBatch(false);
+    }
+  };
+
+  const handleAiSync = async () => {
+    setIsSyncingAI(true);
+    setSyncProgress('正在扫描未翻译词条...');
+    try {
+      let remaining = 1;
+      let totalProcessed = 0;
+      
+      while (remaining > 0) {
+        const res = await fetch('/api/localizedStrings/sync-languages', {
+          method: 'POST'
+        });
+        if (!res.ok) {
+          const errData = await res.json();
+          throw new Error(errData.message || '翻译同步中途出错');
+        }
+        const data = await res.json();
+        remaining = data.remainingCount;
+        totalProcessed += data.processedCount;
+        setSyncProgress(`已补全 ${totalProcessed} 条翻译，剩余 ${remaining} 条待处理...`);
+        if (data.processedCount === 0 && remaining > 0) {
+          break;
+        }
+        await new Promise((resolve) => setTimeout(resolve, 800));
+      }
+      
+      mutateTrans();
+      toast({
+        title: 'AI 增量翻译完成',
+        description: `共补全了 ${totalProcessed} 条翻译记录！`
+      });
+    } catch (err: any) {
+      toast({
+        variant: 'destructive',
+        title: 'AI 翻译同步中断',
+        description: err.message
+      });
+    } finally {
+      setIsSyncingAI(false);
+      setSyncProgress('');
+    }
+  };
+
   const handleAiTranslate = async (t: LocalizedString) => {
     if (!aiConfig?.isEnabled) { toast({ variant: "destructive", title: "AI 未启用" }); return; }
     const content = (t.content as any) || {};
@@ -397,10 +512,12 @@ export default function TranslationsPage() {
     } finally { setTranslatingId(null); }
   };
 
-
-
   const filteredTranslations = useMemo(() => {
-    const list = activeTab === 'business' ? categorizedTranslations.business : categorizedTranslations.system;
+    const list = activeTab === 'business' 
+      ? categorizedTranslations.business 
+      : activeTab === 'shared' 
+        ? categorizedTranslations.shared 
+        : categorizedTranslations.system;
     
     // 1. 过滤
     const filtered = list.filter(t => {
@@ -443,18 +560,44 @@ export default function TranslationsPage() {
 
   const totalPages = Math.ceil(filteredTranslations.length / itemsPerPage);
 
-  const handleSave = async () => {
+  const handleSave = async (force?: boolean) => {
     const entryId = editingId || formData.id;
     if (!entryId) return;
     
     try {
-      await fetch(`/api/localizedStrings/${encodeURIComponent(entryId)}`, {
+      const payload: any = { 
+        id: entryId, 
+        content: formData.translations 
+      };
+      if (force) {
+        payload.forceGlobalUpdate = true;
+      }
+
+      const res = await fetch(`/api/localizedStrings/${encodeURIComponent(entryId)}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ id: entryId, content: formData.translations }),
+        body: JSON.stringify(payload),
       });
+
+      if (!res.ok) {
+        throw new Error('网络响应失败');
+      }
+
+      const resData = await res.json();
+      if (resData.warning === 'MULTIPLE_REFERENCES') {
+        setWarningInfo({
+          id: entryId,
+          refCount: resData.refCount,
+          message: resData.message
+        });
+        setShowRefWarning(true);
+        return;
+      }
+
       setIsAdding(false); 
       setEditingId(null); 
+      setShowRefWarning(false);
+      setWarningInfo(null);
       setFormData({ id: '', translations: {} });
       mutateTrans();
       toast({ title: "词条已保存" });
@@ -510,6 +653,30 @@ export default function TranslationsPage() {
             >
               {isCleaning ? <Loader2 className="h-4 w-4 animate-spin" /> : <Zap className="h-4 w-4" />}
               一键清理冗余 ({duplicatableCount})
+            </Button>
+          )}
+          
+          {activeTab === 'shared' && (
+            <Button 
+              variant="outline" 
+              onClick={handleMergeBatch} 
+              disabled={isMergingBatch} 
+              className="rounded-full h-12 px-6 border-purple-500/20 bg-purple-500/10 text-purple-400 hover:bg-purple-500/20 gap-2 shadow-sm font-bold text-xs uppercase tracking-wider"
+            >
+              {isMergingBatch ? <Loader2 className="h-4 w-4 animate-spin" /> : <GitMerge className="h-4 w-4" />}
+              一键合并去重
+            </Button>
+          )}
+
+          {aiConfig?.isEnabled && (
+            <Button 
+              variant="outline" 
+              onClick={handleAiSync} 
+              disabled={isSyncingAI} 
+              className="rounded-full h-12 px-6 border-blue-500/20 bg-blue-500/10 text-blue-400 hover:bg-blue-500/20 gap-2 shadow-sm font-bold text-xs uppercase tracking-wider"
+            >
+              {isSyncingAI ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
+              AI 增量翻译 {syncProgress && `(${syncProgress})`}
             </Button>
           )}
           
@@ -633,6 +800,10 @@ export default function TranslationsPage() {
               <TabsTrigger value="system" className="rounded-xl h-11 px-8 font-bold text-xs uppercase tracking-wider data-[state=active]:bg-card data-[state=active]:shadow-lg data-[state=active]:text-primary transition-all">
                 <FileText className="h-4 w-4 mr-2" /> 系统库 
                 <span className="ml-2 py-0.5 px-2 bg-muted/40 rounded-full text-[10px]">{categorizedTranslations.system.length}</span>
+              </TabsTrigger>
+              <TabsTrigger value="shared" className="rounded-xl h-11 px-8 font-bold text-xs uppercase tracking-wider data-[state=active]:bg-card data-[state=active]:shadow-lg data-[state=active]:text-primary transition-all">
+                <BookOpen className="h-4 w-4 mr-2" /> 公共规格字典 
+                <span className="ml-2 py-0.5 px-2 bg-muted/40 rounded-full text-[10px]">{categorizedTranslations.shared?.length || 0}</span>
               </TabsTrigger>
             </TabsList>
           </Tabs>
@@ -805,9 +976,24 @@ export default function TranslationsPage() {
                       </TableCell>
                     ))}
                     <TableCell className="pr-6 text-right py-3 sticky right-0 z-30 bg-card group-hover:bg-muted transition-colors border-l border-border/20 shadow-[-4px_0_10px_-4px_rgba(0,0,0,0.05)]">
-                       {editingId === t.id ? (
+                       {activeTab === 'business' ? (
+                         <div className="flex justify-end items-center gap-1">
+                           <TooltipProvider>
+                             <Tooltip>
+                               <TooltipTrigger asChild>
+                                 <Badge variant="outline" className="text-[10px] py-1 px-3 bg-muted border-border text-muted-foreground font-medium rounded-full cursor-help whitespace-nowrap">
+                                   业务只读
+                                 </Badge>
+                               </TooltipTrigger>
+                               <TooltipContent className="p-3 bg-card border-border shadow-xl text-xs rounded-xl text-foreground">
+                                 业务专属词条，请前往对应产品/分类编辑页进行修改。
+                               </TooltipContent>
+                             </Tooltip>
+                           </TooltipProvider>
+                         </div>
+                       ) : editingId === t.id ? (
                          <div className="flex justify-end gap-2">
-                           <Button onClick={handleSave} className="h-10 px-4 rounded-xl bg-green-600 hover:bg-green-700 shadow-lg shadow-green-500/20">
+                           <Button onClick={() => handleSave()} className="h-10 px-4 rounded-xl bg-green-600 hover:bg-green-700 shadow-lg shadow-green-500/20">
                              <Check className="h-4 w-4" />
                            </Button>
                            <Button variant="outline" onClick={() => setEditingId(null)} className="h-10 px-4 rounded-xl border-border/40">
@@ -839,7 +1025,7 @@ export default function TranslationsPage() {
                            }} className="h-10 w-10 rounded-xl opacity-0 group-hover:opacity-100 transition-all hover:bg-primary/15 hover:text-primary">
                              <Edit2 className="h-4 w-4" />
                            </Button>
-                           {refs.length === 0 && (
+                           {activeTab === 'shared' && refs.length === 0 && (
                              <Button 
                                 variant="ghost" 
                                 size="icon" 
@@ -1047,7 +1233,7 @@ export default function TranslationsPage() {
           </div>
           <DialogFooter className="bg-muted/20 p-8 border-t border-border/10 gap-4">
             <Button variant="ghost" onClick={() => setIsAdding(false)} className="h-12 rounded-xl flex-1 font-bold uppercase tracking-widest text-[10px] text-muted-foreground hover:bg-muted/20 transition-colors">取消操作</Button>
-            <Button onClick={handleSave} className="h-12 rounded-xl flex-1 font-bold uppercase tracking-widest text-[10px] shadow-xl shadow-primary/20 bg-primary hover:bg-primary/90 text-white transition-all">签署并同步</Button>
+            <Button onClick={() => handleSave()} className="h-12 rounded-xl flex-1 font-bold uppercase tracking-widest text-[10px] shadow-xl shadow-primary/20 bg-primary hover:bg-primary/90 text-white transition-all">签署并同步</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -1087,6 +1273,48 @@ export default function TranslationsPage() {
             >
               {isDeleting ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Trash2 className="h-4 w-4 mr-2" />}
               确认彻底删除
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+      
+      {/* Multiple References Warning Dialog */}
+      <Dialog open={showRefWarning} onOpenChange={(open) => !open && setShowRefWarning(false)}>
+        <DialogContent className="max-w-md rounded-[2.5rem] overflow-hidden border-none shadow-2xl p-0 bg-card">
+          <div className="bg-amber-500 p-8 text-white relative overflow-hidden">
+            <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 blur-2xl rounded-full translate-x-16 -translate-y-16" />
+            <DialogHeader className="relative z-10">
+              <DialogTitle className="text-xl font-headline font-bold uppercase tracking-wider flex items-center gap-3">
+                <AlertTriangle className="h-6 w-6" /> 检测到多处引用
+              </DialogTitle>
+              <DialogDescription className="text-amber-100 text-xs font-medium uppercase tracking-widest mt-2">
+                Multiple References Detected
+              </DialogDescription>
+            </DialogHeader>
+          </div>
+          <div className="p-8 space-y-4">
+            <p className="text-sm text-muted-foreground leading-relaxed">
+              词条 <span className="font-mono font-bold text-foreground bg-muted/20 px-2 py-0.5 rounded">{warningInfo?.id}</span> 当前正在被全站 <span className="font-bold text-amber-500">{warningInfo?.refCount}</span> 处内容引用。
+            </p>
+            <p className="text-xs text-muted-foreground leading-relaxed">
+              直接修改此内容将同步更新所有引用了它的产品与页面。如果您希望**全局同步修改**，请点击下方确认。
+            </p>
+            <div className="bg-amber-500/10 border border-amber-500/20 p-4 rounded-2xl flex gap-4">
+              <Info className="h-5 w-5 text-amber-500 shrink-0 mt-0.5" />
+              <div className="space-y-1">
+                <p className="text-[11px] font-bold text-amber-500 uppercase">温馨提示</p>
+                <p className="text-[10px] text-amber-600 leading-relaxed">如果不希望影响其他产品，请在具体产品编辑页面为该产品规格创建/绑定一个新的规格词条。</p>
+              </div>
+            </div>
+          </div>
+          <DialogFooter className="bg-muted/20 p-6 border-t border-border/10 gap-3">
+            <Button variant="ghost" onClick={() => setShowRefWarning(false)} className="h-12 rounded-xl flex-1 font-bold uppercase tracking-widest text-[10px] text-muted-foreground">取消</Button>
+            <Button 
+              onClick={() => handleSave(true)} 
+              className="h-12 rounded-xl flex-1 font-bold uppercase tracking-widest text-[10px] bg-amber-500 hover:bg-amber-600 shadow-lg shadow-amber-500/20 text-white"
+            >
+              <Check className="h-4 w-4 mr-2" />
+              确认全局修改
             </Button>
           </DialogFooter>
         </DialogContent>
