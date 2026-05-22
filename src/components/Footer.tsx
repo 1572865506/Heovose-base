@@ -7,8 +7,9 @@ import { useTranslations } from '@/hooks/use-translations';
 import { useInquiry } from '@/components/providers/InquiryProvider';
 import { useLocalDoc } from '@/hooks/use-local-doc';
 import { useLocalCollection } from '@/hooks/use-local-collection';
-import { useMemo } from 'react';
+import { useMemo, useEffect } from 'react';
 import { getAssetUrl } from '@/lib/image-utils';
+import { injectTranslations } from '@/lib/translation-injector';
 
 interface SiteConfig {
   primaryDomain?: string;
@@ -47,6 +48,54 @@ export function Footer({ locale }: { locale: Locale }) {
     if (!locs) return [];
     return [...locs].sort((a, b) => (a.order || 0) - (b.order || 0));
   }, [locs]);
+
+  // 注入全球布局位置的翻译至客户端缓存
+  useEffect(() => {
+    if (locs && Array.isArray(locs)) {
+      const trans: any[] = [];
+      locs.forEach((loc: any) => {
+        if (loc.titleTextId) {
+          trans.push({
+            id: loc.titleTextId,
+            content: {
+              zh: loc.titleZh || '',
+              en: loc.titleEn || ''
+            }
+          });
+        }
+        if (loc.addressTextId) {
+          trans.push({
+            id: loc.addressTextId,
+            content: {
+              zh: loc.addressZh || '',
+              en: loc.addressEn || ''
+            }
+          });
+        }
+        if (loc.descTextId) {
+          trans.push({
+            id: loc.descTextId,
+            content: {
+              zh: loc.descZh || '',
+              en: loc.descEn || ''
+            }
+          });
+        }
+      });
+      if (trans.length > 0) {
+        injectTranslations(locale, trans);
+      }
+    }
+  }, [locs, locale]);
+
+  // 翻译兜底读取方法
+  const getLocalized = (textId: string | null | undefined, zh: string, en: string) => {
+    const translated = textId ? tr(textId) : undefined;
+    if (translated && translated.trim() !== '') return translated;
+    const direct = locale === 'zh' ? zh : en;
+    if (direct && direct.trim() !== '') return direct;
+    return (locale === 'zh' ? en : zh) || '';
+  };
 
   return (
     <footer className="bg-primary text-primary-foreground pt-24 pb-8">
@@ -264,8 +313,8 @@ export function Footer({ locale }: { locale: Locale }) {
                           <span className="text-[9px] font-bold opacity-30 group-hover:opacity-60 uppercase tracking-widest transition-opacity">{countryLabel}</span>
                         </div>
                         <div className="space-y-1">
-                          <p className="font-bold text-sm text-white tracking-wide">{tr(loc.titleTextId)}</p>
-                          <p className="text-[11px] opacity-40 leading-relaxed">{tr(loc.addressTextId)}</p>
+                          <p className="font-bold text-sm text-white tracking-wide">{getLocalized(loc.titleTextId, loc.titleZh, loc.titleEn)}</p>
+                          <p className="text-[11px] opacity-40 leading-relaxed">{getLocalized(loc.addressTextId, loc.addressZh, loc.addressEn)}</p>
                         </div>
                       </div>
                     </div>

@@ -315,7 +315,8 @@ export default function AdminHomePage() {
         updates.heroProjectBg = heroData.heroProjectBg || '';
         
         if (Array.isArray(heroData.heroSlides)) {
-          updates.heroSlides = heroData.heroSlides.map((slide: any) => {
+          const sortedSlides = [...heroData.heroSlides].sort((a, b) => (a.priority || 0) - (b.priority || 0));
+          updates.heroSlides = sortedSlides.map((slide: any) => {
             const sId = slide.id.replace(/^slide_/, '');
             return {
               ...slide,
@@ -559,7 +560,11 @@ export default function AdminHomePage() {
 
   const removeSlide = (index: number) => {
     const newSlides = formData.heroSlides.filter((_: any, i: number) => i !== index);
-    setFormData({ ...formData, heroSlides: newSlides });
+    const updatedSlides = newSlides.map((slide: any, idx: number) => ({
+      ...slide,
+      priority: idx
+    }));
+    setFormData({ ...formData, heroSlides: updatedSlides });
   };
 
   const updateSlide = (index: number, updates: any) => {
@@ -577,7 +582,12 @@ export default function AdminHomePage() {
     newSlides[index] = newSlides[targetIndex];
     newSlides[targetIndex] = temp;
     
-    setFormData({ ...formData, heroSlides: newSlides });
+    const updatedSlides = newSlides.map((slide: any, idx: number) => ({
+      ...slide,
+      priority: idx
+    }));
+    
+    setFormData({ ...formData, heroSlides: updatedSlides });
   };
 
   const getCategoryName = (id: string) => {

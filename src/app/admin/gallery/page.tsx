@@ -279,7 +279,7 @@ export default function GalleryPage() {
   const itemRefs = useRef<Map<string, HTMLDivElement>>(new Map());
 
   const [currentPage, setCurrentPage] = useState(1);
-  const ITEMS_PER_PAGE = 18;
+  const ITEMS_PER_PAGE = 20;
 
   useEffect(() => {
     setSelectedIds(new Set());
@@ -647,6 +647,32 @@ export default function GalleryPage() {
     const newSelected = new Set(selectedIds);
     newSelected.has(id) ? newSelected.delete(id) : newSelected.add(id);
     setSelectedIds(newSelected);
+  };
+
+  const handleSelectCurrentPage = () => {
+    const isAllSelected = paginatedAssets.every(asset => selectedIds.has(asset.id));
+    const newSelected = new Set(selectedIds);
+    if (isAllSelected) {
+      paginatedAssets.forEach(asset => newSelected.delete(asset.id));
+    } else {
+      paginatedAssets.forEach(asset => newSelected.add(asset.id));
+    }
+    setSelectedIds(newSelected);
+  };
+
+  const handleSelectAllFiltered = () => {
+    const isAllSelected = filteredAssets.every(asset => selectedIds.has(asset.id));
+    const newSelected = new Set(selectedIds);
+    if (isAllSelected) {
+      filteredAssets.forEach(asset => newSelected.delete(asset.id));
+    } else {
+      filteredAssets.forEach(asset => newSelected.add(asset.id));
+    }
+    setSelectedIds(newSelected);
+  };
+
+  const handleClearSelection = () => {
+    setSelectedIds(new Set());
   };
 
   const handleBatchDelete = async () => {
@@ -1188,7 +1214,7 @@ export default function GalleryPage() {
       <div className="relative z-10 flex-1 overflow-y-auto scrollbar-minimal px-2">
         {filteredAssets.length > 0 ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-8 pb-32">
-            {filteredAssets.map((asset) => {
+            {paginatedAssets.map((asset) => {
             const isSelected = selectedIds.has(asset.id);
             const fileExt = asset.fileName?.toLowerCase().split('.').pop() || '';
             const isVideoFile = ['mp4', 'webm', 'ogg', 'mov'].includes(fileExt);
@@ -1206,7 +1232,7 @@ export default function GalleryPage() {
                   "group relative bg-card/20 backdrop-blur-3xl rounded-[2.25rem] border transition-all duration-700 overflow-hidden",
                   isSelected
                     ? "border-primary/40 ring-4 ring-primary/10 shadow-[0_0_60px_-15px_rgba(var(--primary),0.3)] scale-[0.98]"
-                    : "border-border/5 hover:border-primary/20 hover:bg-card/40 hover:shadow-2xl hover:shadow-black/60 hover:-translate-y-1"
+                    : "border-border/5 hover:border-primary/20 hover:bg-card/40"
                 )}
                 onClick={() => toggleSelectAsset(asset.id)}
               >
@@ -1391,6 +1417,28 @@ export default function GalleryPage() {
               </span>
             </div>
             
+            <div className="h-10 w-px bg-primary/10 mx-1" />
+
+            <Button 
+              variant="ghost" 
+              className="h-11 rounded-full px-5 text-[10px] font-black uppercase tracking-widest text-foreground hover:bg-primary/10 hover:text-primary transition-all"
+              onClick={handleSelectCurrentPage}
+            >
+              {paginatedAssets.every(asset => selectedIds.has(asset.id))
+                ? "取消本页"
+                : "全选本页"}
+            </Button>
+
+            <Button 
+              variant="ghost" 
+              className="h-11 rounded-full px-5 text-[10px] font-black uppercase tracking-widest text-foreground hover:bg-primary/10 hover:text-primary transition-all"
+              onClick={handleSelectAllFiltered}
+            >
+              {filteredAssets.every(asset => selectedIds.has(asset.id))
+                ? "取消所有"
+                : "全选所有"}
+            </Button>
+
             <div className="h-10 w-px bg-primary/10 mx-1" />
 
             <Dialog open={isBatchCategoryDialogOpen} onOpenChange={setIsBatchCategoryDialogOpen}>

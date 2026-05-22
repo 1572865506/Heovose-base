@@ -42,6 +42,12 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 
+const generateUniqueId = (prefix: string) => {
+  const randomStr = Math.random().toString(36).substring(2, 7);
+  const timeStr = Date.now().toString(36);
+  return `${prefix}${randomStr}${timeStr}`;
+};
+
 interface ProductSpecEntry {
   uid: string;
   labelEn: string;
@@ -65,11 +71,11 @@ interface SpecMatrixSectionProps {
   aiConfig?: { isEnabled: boolean };
   isAiProcessing: boolean;
   processingItems: Set<string>;
-  onAiTranslate: (gIdx: number, iIdx: number) => void;
+  onAiTranslate: (groupUid: string, itemUid: string) => void;
   onAiTranslateAll: () => void;
-  onMoveGroup: (idx: number, dir: 'up' | 'down') => void;
-  onMoveItem: (gIdx: number, iIdx: number, dir: 'up' | 'down') => void;
-  onDeleteGroup: (idx: number) => void;
+  onMoveGroup: (groupUid: string, dir: 'up' | 'down') => void;
+  onMoveItem: (groupUid: string, itemUid: string, dir: 'up' | 'down') => void;
+  onDeleteGroup: (groupUid: string) => void;
   specTemplates?: any[];
   onApplyTemplate: (tpl: any, replace?: boolean) => void;
   onSaveTemplate: (mode: 'create' | 'overwrite', name: string, id: string) => void;
@@ -123,9 +129,9 @@ const LiteAiButton = memo(({ onClick, disabled, isProcessing }: { onClick: () =>
 ));
 
 const SpecItemRow = memo(({ 
-  item, gIdx, iIdx, aiConfig, isAiProcessing, processingItems, onAiTranslate, onUpdate, onMove, onDelete 
+  item, groupUid, isFirst, aiConfig, isAiProcessing, processingItems, onAiTranslate, onUpdate, onMove, onDelete 
 }: any) => {
-  const isThisProcessing = processingItems.has(`i_${gIdx}_${iIdx}_label`);
+  const isThisProcessing = processingItems.has(`item_${item.uid}`);
   const [localLabelZh, setLocalLabelZh] = useState(item.labelZh);
   const [localValueZh, setLocalValueZh] = useState(item.valueZh);
   const [localLabelEn, setLocalLabelEn] = useState(item.labelEn);
@@ -152,7 +158,7 @@ const SpecItemRow = memo(({
 
   const handleLabelChange = (val: string) => {
     setLocalLabelZh(val);
-    onUpdate(gIdx, iIdx, { labelZh: val, labelId: '' });
+    onUpdate(groupUid, item.uid, { labelZh: val, labelId: '' });
 
     if (val.trim()) {
       if (labelTimer.current) clearTimeout(labelTimer.current);
@@ -177,13 +183,13 @@ const SpecItemRow = memo(({
     const enVal = s.content?.en || s.en || '';
     setLocalLabelZh(zhVal);
     setLocalLabelEn(enVal);
-    onUpdate(gIdx, iIdx, { labelZh: zhVal, labelEn: enVal, labelId: s.id });
+    onUpdate(groupUid, item.uid, { labelZh: zhVal, labelEn: enVal, labelId: s.id });
     setLabelSuggestions([]);
   };
 
   const handleValueChange = (val: string) => {
     setLocalValueZh(val);
-    onUpdate(gIdx, iIdx, { valueZh: val, valueId: '' });
+    onUpdate(groupUid, item.uid, { valueZh: val, valueId: '' });
 
     if (val.trim()) {
       if (valueTimer.current) clearTimeout(valueTimer.current);
@@ -208,14 +214,14 @@ const SpecItemRow = memo(({
     const enVal = s.content?.en || s.en || '';
     setLocalValueZh(zhVal);
     setLocalValueEn(enVal);
-    onUpdate(gIdx, iIdx, { valueZh: zhVal, valueEn: enVal, valueId: s.id });
+    onUpdate(groupUid, item.uid, { valueZh: zhVal, valueEn: enVal, valueId: s.id });
     setValueSuggestions([]);
   };
 
   return (
     <div className="grid grid-cols-12 gap-x-4 gap-y-2 items-start group/item border-b border-border/20 pb-4 last:border-0">
       <div className="col-span-3 space-y-1.5 relative">
-        {iIdx === 0 && <Label className="text-[8px] font-bold uppercase tracking-widest text-muted-foreground/50 pl-1">参数名 (中)</Label>}
+        {isFirst && <Label className="text-[8px] font-bold uppercase tracking-widest text-muted-foreground/50 pl-1">参数名 (中)</Label>}
         <Input 
           value={localLabelZh} 
           onChange={e => handleLabelChange(e.target.value)} 
@@ -240,7 +246,7 @@ const SpecItemRow = memo(({
         )}
       </div>
       <div className="col-span-7 space-y-1.5 relative">
-        {iIdx === 0 && <Label className="text-[8px] font-bold uppercase tracking-widest text-muted-foreground/50 pl-1">参数值 (中)</Label>}
+        {isFirst && <Label className="text-[8px] font-bold uppercase tracking-widest text-muted-foreground/50 pl-1">参数值 (中)</Label>}
         <Textarea 
           value={localValueZh} 
           onChange={e => handleValueChange(e.target.value)} 
@@ -266,31 +272,31 @@ const SpecItemRow = memo(({
         )}
       </div>
       <div className="col-span-2 row-span-2 self-center flex items-center justify-start gap-6 pl-4 h-full pt-1.5">
-        {aiConfig?.isEnabled && <LiteAiButton onClick={() => onAiTranslate(gIdx, iIdx)} disabled={isAiProcessing} isProcessing={isThisProcessing} />}
+        {aiConfig?.isEnabled && <LiteAiButton onClick={() => onAiTranslate(groupUid, item.uid)} disabled={isAiProcessing} isProcessing={isThisProcessing} />}
         <div className="flex flex-col items-center gap-1.5">
-          <Button variant="ghost" size="icon" className="h-6 w-10 text-muted-foreground/40 hover:text-foreground" onClick={() => onMove(gIdx, iIdx, 'up')}><ChevronUp className="h-4 w-4" /></Button>
-          <Button variant="ghost" size="icon" className="h-6 w-10 text-muted-foreground/40 hover:text-foreground" onClick={() => onMove(gIdx, iIdx, 'down')}><ChevronDown className="h-4 w-4" /></Button>
+          <Button variant="ghost" size="icon" className="h-6 w-10 text-muted-foreground/40 hover:text-foreground" onClick={() => onMove(groupUid, item.uid, 'up')}><ChevronUp className="h-4 w-4" /></Button>
+          <Button variant="ghost" size="icon" className="h-6 w-10 text-muted-foreground/40 hover:text-foreground" onClick={() => onMove(groupUid, item.uid, 'down')}><ChevronDown className="h-4 w-4" /></Button>
         </div>
-        <Button variant="ghost" size="icon" className="h-10 w-10 text-muted-foreground/40 hover:text-destructive" onClick={() => onDelete(gIdx, iIdx)}><X className="h-5 w-5" /></Button>
+        <Button variant="ghost" size="icon" className="h-10 w-10 text-muted-foreground/40 hover:text-destructive" onClick={() => onDelete(groupUid, item.uid)}><X className="h-5 w-5" /></Button>
       </div>
       <div className="col-span-3 space-y-1.5">
-        {iIdx === 0 && <Label className="text-[8px] font-bold uppercase tracking-widest text-muted-foreground/50 pl-1">参数名 (En)</Label>}
+        {isFirst && <Label className="text-[8px] font-bold uppercase tracking-widest text-muted-foreground/50 pl-1">参数名 (En)</Label>}
         <Input 
           value={localLabelEn} 
           onChange={e => { 
             setLocalLabelEn(e.target.value); 
-            onUpdate(gIdx, iIdx, { labelEn: e.target.value, labelId: '' }); 
+            onUpdate(groupUid, item.uid, { labelEn: e.target.value, labelId: '' }); 
           }} 
           className="h-11 px-2 rounded-xl bg-muted/10 border-dashed border-border/30 text-sm font-bold font-mono text-foreground" 
         />
       </div>
       <div className="col-span-7 space-y-1.5">
-        {iIdx === 0 && <Label className="text-[8px] font-bold uppercase tracking-widest text-muted-foreground/50 pl-1">参数值 (En)</Label>}
+        {isFirst && <Label className="text-[8px] font-bold uppercase tracking-widest text-muted-foreground/50 pl-1">参数值 (En)</Label>}
         <Textarea 
           value={localValueEn} 
           onChange={e => { 
             setLocalValueEn(e.target.value); 
-            onUpdate(gIdx, iIdx, { valueEn: e.target.value, valueId: '' }); 
+            onUpdate(groupUid, item.uid, { valueEn: e.target.value, valueId: '' }); 
           }} 
           onInput={(e: any) => { e.target.style.height = 'auto'; e.target.style.height = `${e.target.scrollHeight}px`; }} 
           className="min-h-[44px] max-h-[100px] h-auto px-2 py-2 rounded-xl bg-muted/10 border-dashed border-border/30 text-sm font-medium font-mono leading-5 overflow-y-auto resize-none text-foreground" 
@@ -307,7 +313,7 @@ const SpecMatrixSection = memo(({
   const [isDeleteGroupOpen, setIsDeleteGroupOpen] = useState(false);
   const [isImportTplOpen, setIsImportTplOpen] = useState(false);
   const [pendingTpl, setPendingTpl] = useState<any>(null);
-  const [groupToDelete, setGroupToDelete] = useState<number | null>(null);
+  const [groupUidToDelete, setGroupUidToDelete] = useState<string | null>(null);
   const [saveMode, setSaveMode] = useState<'create' | 'overwrite'>('create');
   const [newTplName, setNewTplName] = useState('');
   const [selectedTplId, setSelectedTplId] = useState('');
@@ -317,25 +323,33 @@ const SpecMatrixSection = memo(({
   };
 
   const handleAddGroup = () => {
-    setGroups([...groups, { uid: `g_${Date.now()}`, titleEn: '', titleZh: '', items: [{ uid: `i_${Date.now()}`, labelEn: '', labelZh: '', valueEn: '', valueZh: '' }] }]);
+    setGroups([...groups, { uid: generateUniqueId('g'), titleEn: '', titleZh: '', items: [{ uid: generateUniqueId('i'), labelEn: '', labelZh: '', valueEn: '', valueZh: '' }] }]);
   };
 
-  const handleAddItem = (gIdx: number) => {
+  const handleAddItem = (groupUid: string) => {
     const newGroups = [...groups];
-    newGroups[gIdx].items = [...newGroups[gIdx].items, { uid: `i_${Date.now()}`, labelEn: '', labelZh: '', valueEn: '', valueZh: '' }];
+    const gIdx = newGroups.findIndex(g => g.uid === groupUid);
+    if (gIdx === -1) return;
+    newGroups[gIdx].items = [...newGroups[gIdx].items, { uid: generateUniqueId('i'), labelEn: '', labelZh: '', valueEn: '', valueZh: '' }];
     setGroups(newGroups);
   };
 
-  const updateItem = (gIdx: number, iIdx: number, updates: Partial<ProductSpecEntry>) => {
+  const updateItem = (groupUid: string, itemUid: string, updates: Partial<ProductSpecEntry>) => {
     const newGroups = [...groups];
+    const gIdx = newGroups.findIndex(g => g.uid === groupUid);
+    if (gIdx === -1) return;
+    const iIdx = newGroups[gIdx].items.findIndex(i => i.uid === itemUid);
+    if (iIdx === -1) return;
     newGroups[gIdx] = { ...newGroups[gIdx], items: [...newGroups[gIdx].items] };
     newGroups[gIdx].items[iIdx] = { ...newGroups[gIdx].items[iIdx], ...updates };
     setGroups(newGroups);
   };
 
-  const deleteItem = (gIdx: number, iIdx: number) => {
+  const deleteItem = (groupUid: string, itemUid: string) => {
     const newGroups = [...groups];
-    newGroups[gIdx] = { ...newGroups[gIdx], items: newGroups[gIdx].items.filter((_, idx) => idx !== iIdx) };
+    const gIdx = newGroups.findIndex(g => g.uid === groupUid);
+    if (gIdx === -1) return;
+    newGroups[gIdx] = { ...newGroups[gIdx], items: newGroups[gIdx].items.filter(i => i.uid !== itemUid) };
     setGroups(newGroups);
   };
 
@@ -389,21 +403,21 @@ const SpecMatrixSection = memo(({
                   <Layers className="h-5 w-5" />
                 </div>
                 <div className="grid grid-cols-2 gap-4 flex-1">
-                  <Input value={group.titleZh} onChange={e => { const n = [...groups]; n[gIdx] = {...n[gIdx], titleZh: e.target.value}; setGroups(n); }} className="h-12 bg-card/60 border-border/30 rounded-xl font-bold text-sm text-foreground placeholder:text-muted-foreground/30" placeholder="分组标题 (中)" />
-                  <Input value={group.titleEn} onChange={e => { const n = [...groups]; n[gIdx] = {...n[gIdx], titleEn: e.target.value}; setGroups(n); }} className="h-12 bg-card/60 border-border/30 rounded-xl font-bold text-sm text-foreground placeholder:text-muted-foreground/30" placeholder="Group Title (En)" />
+                  <Input value={group.titleZh} onChange={e => { const n = [...groups]; const idx = n.findIndex(g => g.uid === group.uid); if (idx !== -1) { n[idx] = {...n[idx], titleZh: e.target.value}; setGroups(n); } }} className="h-12 bg-card/60 border-border/30 rounded-xl font-bold text-sm text-foreground placeholder:text-muted-foreground/30" placeholder="分组标题 (中)" />
+                  <Input value={group.titleEn} onChange={e => { const n = [...groups]; const idx = n.findIndex(g => g.uid === group.uid); if (idx !== -1) { n[idx] = {...n[idx], titleEn: e.target.value}; setGroups(n); } }} className="h-12 bg-card/60 border-border/30 rounded-xl font-bold text-sm text-foreground placeholder:text-muted-foreground/30" placeholder="Group Title (En)" />
                 </div>
               </div>
               <div className="flex items-center gap-2 ml-6">
-                <Button variant="ghost" size="icon" className="h-10 w-10 rounded-xl hover:bg-muted/40" disabled={gIdx === 0} onClick={() => onMoveGroup(gIdx, 'up')}><ChevronUp className="h-4 w-4" /></Button>
-                <Button variant="ghost" size="icon" className="h-10 w-10 rounded-xl hover:bg-muted/40" disabled={gIdx === groups.length - 1} onClick={() => onMoveGroup(gIdx, 'down')}><ChevronDown className="h-4 w-4" /></Button>
-                <Button variant="ghost" size="icon" className="h-10 w-10 rounded-xl text-destructive/40 hover:text-destructive hover:bg-destructive/10" onClick={() => { setGroupToDelete(gIdx); setIsDeleteGroupOpen(true); }}><Trash2 className="h-4 w-4" /></Button>
+                <Button variant="ghost" size="icon" className="h-10 w-10 rounded-xl hover:bg-muted/40" disabled={gIdx === 0} onClick={() => onMoveGroup(group.uid, 'up')}><ChevronUp className="h-4 w-4" /></Button>
+                <Button variant="ghost" size="icon" className="h-10 w-10 rounded-xl hover:bg-muted/40" disabled={gIdx === groups.length - 1} onClick={() => onMoveGroup(group.uid, 'down')}><ChevronDown className="h-4 w-4" /></Button>
+                <Button variant="ghost" size="icon" className="h-10 w-10 rounded-xl text-destructive/40 hover:text-destructive hover:bg-destructive/10" onClick={() => { setGroupUidToDelete(group.uid); setIsDeleteGroupOpen(true); }}><Trash2 className="h-4 w-4" /></Button>
               </div>
             </div>
             <div className="p-6 space-y-4">
               {group.items.map((item, iIdx) => (
-                <SpecItemRow key={item.uid} item={item} gIdx={gIdx} iIdx={iIdx} aiConfig={aiConfig} isAiProcessing={isAiProcessing} processingItems={processingItems} onAiTranslate={onAiTranslate} onUpdate={updateItem} onMove={onMoveItem} onDelete={deleteItem} />
+                <SpecItemRow key={item.uid} item={item} groupUid={group.uid} isFirst={iIdx === 0} aiConfig={aiConfig} isAiProcessing={isAiProcessing} processingItems={processingItems} onAiTranslate={onAiTranslate} onUpdate={updateItem} onMove={onMoveItem} onDelete={deleteItem} />
               ))}
-              <Button variant="ghost" className="w-full h-14 rounded-2xl border-2 border-dashed border-border/20 text-muted-foreground/50 hover:text-foreground hover:border-primary/30 font-bold uppercase text-[10px] tracking-widest mt-4" onClick={() => handleAddItem(gIdx)}>
+              <Button variant="ghost" className="w-full h-14 rounded-2xl border-2 border-dashed border-border/20 text-muted-foreground/50 hover:text-foreground hover:border-primary/30 font-bold uppercase text-[10px] tracking-widest mt-4" onClick={() => handleAddItem(group.uid)}>
                 <PlusCircle className="h-4 w-4 mr-2" /> 添加参数项
               </Button>
             </div>
@@ -450,7 +464,7 @@ const SpecMatrixSection = memo(({
           <div className="p-8"><p className="text-sm font-bold text-foreground">确定要移除该规格分组吗？此操作将同时删除该组下的所有参数项。</p></div>
           <AlertDialogFooter className="bg-muted/10 p-8 border-t border-border/20 gap-3">
             <AlertDialogCancel className="flex-1 rounded-2xl h-14 font-bold uppercase text-xs border-border/30">取消</AlertDialogCancel>
-            <AlertDialogAction onClick={() => { if (groupToDelete !== null) onDeleteGroup(groupToDelete); setIsDeleteGroupOpen(false); }} className="flex-1 rounded-2xl h-14 font-bold uppercase text-xs bg-red-600 text-white">确定删除</AlertDialogAction>
+            <AlertDialogAction onClick={() => { if (groupUidToDelete !== null) onDeleteGroup(groupUidToDelete); setIsDeleteGroupOpen(false); }} className="flex-1 rounded-2xl h-14 font-bold uppercase text-xs bg-red-600 text-white">确定删除</AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>

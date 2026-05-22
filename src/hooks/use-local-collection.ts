@@ -57,7 +57,8 @@ export function useLocalCollection<T = any>(path: string | null, options?: { ena
       try {
         const result = await pendingRequests.get(currentPath);
         if (currentPath !== latestPathRef.current) return;
-        setData(result);
+        const cachedEntry = globalCache.get(currentPath);
+        setData(cachedEntry ? cachedEntry.data : result);
         setError(null);
         setIsLoading(false);
         return;

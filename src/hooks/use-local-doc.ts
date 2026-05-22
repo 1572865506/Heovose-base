@@ -23,6 +23,20 @@ export function useLocalDoc<T = any>(path: string | null, id: string | null = ''
   const fetchData = useCallback(async (currentPath: string, currentId: string) => {
     const key = `${currentPath}/${currentId}`;
 
+    // 对 settings 中的公开配置做本地劫持，避免发送 AJAX 请求，从根源关闭匿名访问 API 的通道
+    const PUBLIC_SETTINGS = ['site', 'navigation', 'about_page_content', 'service_centers', 'storage', 'languages'];
+    if (currentPath === 'settings' && currentId && PUBLIC_SETTINGS.includes(currentId)) {
+      const publicSettings = typeof window !== 'undefined' ? (window as any).__HEOVOSE_PUBLIC_SETTINGS__ : null;
+      const localData = publicSettings?.[currentId] || {};
+      
+      if (key !== latestKeyRef.current) return;
+      globalCache.set(key, { data: localData, timestamp: Date.now() });
+      setData(localData);
+      setError(null);
+      setIsLoading(false);
+      return;
+    }
+
     if (pendingRequests.has(key)) {
       try {
         const result = await pendingRequests.get(key);

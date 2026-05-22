@@ -7,11 +7,100 @@ const { auth } = NextAuth(authConfig);
 
 const locales = ['en', 'zh', 'id', 'vi'];
 
+// In-memory rate limiting cache
+interface RateLimitTracker {
+  count: number;
+  resetTime: number;
+}
+
+const cache = new Map<string, RateLimitTracker>();
+let lastCleanupTime = Date.now();
+const CLEANUP_INTERVAL_MS = 60000;
+
+function checkRateLimit(ip: string, limit: number, durationMs: number): { success: boolean; remaining: number } {
+  const now = Date.now();
+  
+  // Lazy cleanup to prevent memory leaks in Edge runtime without setInterval
+  if (now - lastCleanupTime > CLEANUP_INTERVAL_MS) {
+    for (const [key, record] of cache.entries()) {
+      if (now > record.resetTime) {
+        cache.delete(key);
+      }
+    }
+    lastCleanupTime = now;
+  }
+
+  const record = cache.get(ip);
+  if (!record) {
+    cache.set(ip, { count: 1, resetTime: now + durationMs });
+    return { success: true, remaining: limit - 1 };
+  }
+
+  if (now > record.resetTime) {
+    record.count = 1;
+    record.resetTime = now + durationMs;
+    return { success: true, remaining: limit - 1 };
+  }
+
+  record.count++;
+  if (record.count > limit) {
+    return { success: false, remaining: 0 };
+  }
+
+  return { success: true, remaining: limit - record.count };
+}
+
 export default auth((request) => {
   const { nextUrl } = request;
   const pathname = nextUrl.pathname;
 
-  // Skip for API and static files
+  // Protect storage endpoint from non-GET / non-OPTIONS requests (CORS & server-side protection)
+  if (pathname.startsWith('/storage')) {
+    if (request.method === 'OPTIONS') {
+      const response = new NextResponse(null, { status: 204 });
+      response.headers.set('Access-Control-Allow-Origin', '*');
+      response.headers.set('Access-Control-Allow-Methods', 'GET,OPTIONS');
+      response.headers.set('Access-Control-Allow-Headers', 'X-CSRF-Token, X-Requested-With, Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version');
+      return response;
+    }
+    if (request.method !== 'GET') {
+      return NextResponse.json(
+        { error: "Method Not Allowed" },
+        { status: 405 }
+      );
+    }
+  }
+
+  // Rate limiting for specific high-risk API endpoints
+  if (pathname.startsWith('/api/auth') || pathname === '/api/inquiries' || pathname === '/api/upload') {
+    // Only rate limit state-changing POST requests (e.g. login attempts, inquiry submissions, file uploads)
+    if (request.method === 'POST') {
+      const ip = (request as any).ip || request.headers.get("x-forwarded-for")?.split(",")[0].trim() || "127.0.0.1";
+      
+      let limit = 10;
+      let duration = 60000; // 1 minute
+      
+      if (pathname === '/api/inquiries') {
+        limit = 5; // max 5 inquiry submissions per minute
+      } else if (pathname === '/api/upload') {
+        limit = 10; // max 10 file uploads per minute
+      } else if (pathname.startsWith('/api/auth')) {
+        limit = 10; // max 10 login / auth POST attempts per minute
+      }
+      
+      const clientKey = `${ip}:${pathname}`;
+      const result = checkRateLimit(clientKey, limit, duration);
+      
+      if (!result.success) {
+        return NextResponse.json(
+          { error: "Too many requests. Please try again later." },
+          { status: 429 }
+        );
+      }
+    }
+  }
+
+  // Skip for all other API and static files
   if (pathname.startsWith('/api') || pathname.includes('.')) {
     return NextResponse.next();
   }
@@ -51,5 +140,9 @@ export default auth((request) => {
 export const config = {
   matcher: [
     '/((?!api|_next/static|_next/image|favicon.ico).*)',
+    '/api/auth/:path*',
+    '/api/inquiries',
+    '/api/upload',
+    '/storage/:path*',
   ],
 };

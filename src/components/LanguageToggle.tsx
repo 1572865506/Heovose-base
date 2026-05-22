@@ -56,6 +56,7 @@ export function LanguageToggle({ currentLocale, setLocale, headerTheme = 'dark',
     // 同时设置 Cookie 以便中间件 (Server-side) 识别
     document.cookie = `NEXT_LOCALE=${code}; path=/; max-age=31536000`; // 1 year
     setLocale(code as Locale);
+    window.location.reload();
   };
 
   // 确保当前显示的 locale 也是合规的

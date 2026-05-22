@@ -59,6 +59,53 @@ export default async function RootLayout({
   const cookieStore = await cookies();
   const locale = cookieStore.get('NEXT_LOCALE')?.value || 'en';
 
+  // 统一在服务端获取公开配置，不再通过 API 终点暴露给外部
+  let publicSettings = {};
+  try {
+    const [siteConfig, navConfig, aboutConfig, serviceConfig, storageConfig, langConfig] = await Promise.all([
+      db.setting.findUnique({ where: { id: 'site' } }),
+      db.setting.findUnique({ where: { id: 'navigation' } }),
+      db.setting.findUnique({ where: { id: 'about_page_content' } }),
+      db.setting.findUnique({ where: { id: 'service_centers' } }),
+      db.setting.findUnique({ where: { id: 'storage' } }),
+      db.setting.findUnique({ where: { id: 'languages' } }),
+    ]);
+
+    const parseSafeJson = (str: string | null) => {
+      if (!str) return null;
+      try {
+        const parsed = JSON.parse(str);
+        if (parsed && typeof parsed === 'object') {
+          // 彻底脱敏防泄漏
+          const { secret, accessKey, secretKey, password, smtp_password, smtp_user, ...rest } = parsed;
+          return rest;
+        }
+        return parsed;
+      } catch {
+        return str;
+      }
+    };
+
+    publicSettings = {
+      site: parseSafeJson(siteConfig?.value ?? null) || {},
+      navigation: parseSafeJson(navConfig?.value ?? null) || {},
+      about_page_content: parseSafeJson(aboutConfig?.value ?? null) || {},
+      service_centers: parseSafeJson(serviceConfig?.value ?? null) || {},
+      storage: parseSafeJson(storageConfig?.value ?? null) || { baseUrl: '/storage' },
+      languages: parseSafeJson(langConfig?.value ?? null) || {
+        supportedLanguages: [
+          { code: 'en', name: 'English' },
+          { code: 'zh', name: '简体中文' },
+          { code: 'id', name: 'Indonesian' },
+          { code: 'vi', name: 'Vietnamese' }
+        ],
+        defaultLanguage: 'zh'
+      },
+    };
+  } catch (e) {
+    console.error('[Layout Error] Failed to load public settings:', e);
+  }
+
   return (
     <html lang={locale}>
       <head>
@@ -67,6 +114,11 @@ export default async function RootLayout({
         <link rel="dns-prefetch" href="https://picsum.photos" />
         <link rel="dns-prefetch" href="https://images.unsplash.com" />
         <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `window.__HEOVOSE_PUBLIC_SETTINGS__ = ${JSON.stringify(publicSettings).replace(/</g, '\\u003c')};`
+          }}
+        />
       </head>
       <body className="font-body antialiased" suppressHydrationWarning>
         <AuthProvider>

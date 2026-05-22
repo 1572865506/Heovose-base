@@ -65,12 +65,18 @@ const AiGradientDef = () => (
   </svg>
 );
 
+const generateUniqueId = (prefix: string) => {
+  const randomStr = Math.random().toString(36).substring(2, 7);
+  const timeStr = Date.now().toString(36);
+  return `${prefix}${randomStr}${timeStr}`;
+};
+
 function robustJsonParse(rawStr: string) {
   let jsonStr = (String(rawStr) || '').trim();
   if (jsonStr.includes('```')) jsonStr = jsonStr.replace(/```json\n?|```/g, '').trim();
   
   // 1. 常规清洗与解析
-  const clean = (s: string) => s.replace(/"\s*[：:]\s*"/g, '": "').replace(/([glv]_\d+_?\d*)\s*[：:]\s*/gi, '"$1": ');
+  const clean = (s: string) => s.replace(/"\s*[：:]\s*"/g, '": "').replace(/([glv]_[a-zA-Z0-9_]+)\s*[：:]\s*/gi, '"$1": ');
   try {
     return JSON.parse(clean(jsonStr));
   } catch (e) {
@@ -82,8 +88,8 @@ function robustJsonParse(rawStr: string) {
       // 3. 终极救命稻草：正则特征抠取
       console.log('⚠️ [SmartTranslate] 标准解析失败，启动正则特征抠取...');
       const pairs: Record<string, string> = {};
-      // 匹配 "l_0_0": "value" 或 l_0_0: "value" 等各种变形
-      const regex = /["']?([glv]_\d+_?\d*)["']?\s*[：:]\s*["']([^"']*)["']/gi;
+      // 匹配 "l_sg_xxx": "value" 或 l_sg_xxx: "value" 等各种变形
+      const regex = /["']?([glv]_[a-zA-Z0-9_]+)["']?\s*[：:]\s*["']([^"']*)["']/gi;
       let match;
       while ((match = regex.exec(jsonStr)) !== null) {
         pairs[match[1]] = match[2];
@@ -180,11 +186,11 @@ function ProductEditorContent() {
         }
       }
       const groupsArray = Array.isArray(rawGroups) ? rawGroups : [];
-      const sGroups = groupsArray.map((g: any, gIdx: number) => ({
-        uid: `sg_${gIdx}_${Date.now()}`,
+      const sGroups = groupsArray.map((g: any) => ({
+        uid: generateUniqueId('sg'),
         titleEn: getT(g.titleId).en, titleZh: getT(g.titleId).zh,
-        items: (Array.isArray(g.items) ? g.items : []).map((i: any, iIdx: number) => ({
-          uid: `si_${gIdx}_${iIdx}_${Date.now()}`,
+        items: (Array.isArray(g.items) ? g.items : []).map((i: any) => ({
+          uid: generateUniqueId('si'),
           labelEn: getT(i.labelId).en, labelZh: getT(i.labelId).zh,
           valueEn: getT(i.valueId).en, valueZh: getT(i.valueId).zh,
           labelId: i.labelId,
@@ -432,10 +438,14 @@ function ProductEditorContent() {
     } finally { setIsAiProcessing(false); }
   };
 
-  const handleAiTranslateSpecItem = async (gIdx: number, iIdx: number) => {
+  const handleAiTranslateSpecItem = async (groupUid: string, itemUid: string) => {
     if (!aiConfig?.isEnabled) return;
+    const gIdx = formData.specGroups.findIndex(g => g.uid === groupUid);
+    if (gIdx === -1) return;
+    const iIdx = formData.specGroups[gIdx].items.findIndex(i => i.uid === itemUid);
+    if (iIdx === -1) return;
     const item = formData.specGroups[gIdx].items[iIdx];
-    const key = `i_${gIdx}_${iIdx}_label`;
+    const key = `item_${itemUid}`;
 
     const needsLabel = !item.labelEn;
     const needsValue = !item.valueEn;
@@ -481,12 +491,17 @@ function ProductEditorContent() {
 
       setFormData(prev => {
         const nextGroups = [...prev.specGroups];
-        nextGroups[gIdx] = {
-          ...nextGroups[gIdx],
-          items: [...nextGroups[gIdx].items]
+        const targetGIdx = nextGroups.findIndex(g => g.uid === groupUid);
+        if (targetGIdx === -1) return prev;
+        const targetIIdx = nextGroups[targetGIdx].items.findIndex(i => i.uid === itemUid);
+        if (targetIIdx === -1) return prev;
+
+        nextGroups[targetGIdx] = {
+          ...nextGroups[targetGIdx],
+          items: [...nextGroups[targetGIdx].items]
         };
-        nextGroups[gIdx].items[iIdx] = { 
-          ...nextGroups[gIdx].items[iIdx], 
+        nextGroups[targetGIdx].items[targetIIdx] = { 
+          ...nextGroups[targetGIdx].items[targetIIdx], 
           labelEn: needsLabel ? (labelEn || item.labelEn) : item.labelEn, 
           valueEn: needsValue ? (valueEn || item.valueEn) : item.valueEn 
         };
@@ -515,11 +530,11 @@ function ProductEditorContent() {
     let matchCount = 0;
     try {
       const taskMap: Record<string, string> = {};
-      formData.specGroups.forEach((g, gIdx) => {
-        if (g.titleZh && !g.titleEn) taskMap[`g_${gIdx}`] = g.titleZh;
-        g.items.forEach((i, iIdx) => {
-          if (i.labelZh && !i.labelEn) taskMap[`l_${gIdx}_${iIdx}`] = i.labelZh;
-          if (i.valueZh && !i.valueEn) taskMap[`v_${gIdx}_${iIdx}`] = i.valueZh;
+      formData.specGroups.forEach((g) => {
+        if (g.titleZh && !g.titleEn) taskMap[`g_${g.uid}`] = g.titleZh;
+        g.items.forEach((i) => {
+          if (i.labelZh && !i.labelEn) taskMap[`l_${g.uid}_${i.uid}`] = i.labelZh;
+          if (i.valueZh && !i.valueEn) taskMap[`v_${g.uid}_${i.uid}`] = i.valueZh;
         });
       });
       
@@ -574,37 +589,29 @@ function ProductEditorContent() {
           const parts = key.split('_');
           const type = parts[0].toLowerCase();
           
-          let gIdx = -1;
-          let iIdx = -1;
-
           if (type === 'g') {
-            gIdx = parseInt(parts[1]);
-          } else if (parts.length === 3) {
-            gIdx = parseInt(parts[1]);
-            iIdx = parseInt(parts[2]);
-          } else if (parts.length === 2) {
-            gIdx = 0; 
-            iIdx = parseInt(parts[1]);
-          }
-
-          if (isNaN(gIdx) || gIdx < 0 || gIdx >= next.length) return;
-
-          if (type === 'g') { 
-            next[gIdx] = { ...next[gIdx], titleEn: cleanVal }; 
-            matchCount++;
-          } else if (type === 'l') { 
-            if (isNaN(iIdx) || iIdx < 0) return;
-            next[gIdx] = { ...next[gIdx], items: [...next[gIdx].items] };
-            if (next[gIdx].items[iIdx]) {
-              next[gIdx].items[iIdx] = { ...next[gIdx].items[iIdx], labelEn: cleanVal };
+            const groupUid = parts[1];
+            const gIdx = next.findIndex(g => g.uid === groupUid);
+            if (gIdx !== -1) {
+              next[gIdx] = { ...next[gIdx], titleEn: cleanVal }; 
               matchCount++;
             }
-          } else if (type === 'v') { 
-            if (isNaN(iIdx) || iIdx < 0) return;
-            next[gIdx] = { ...next[gIdx], items: [...next[gIdx].items] };
-            if (next[gIdx].items[iIdx]) {
-              next[gIdx].items[iIdx] = { ...next[gIdx].items[iIdx], valueEn: cleanVal };
-              matchCount++;
+          } else if (type === 'l' || type === 'v') {
+            const groupUid = parts[1];
+            const itemUid = parts[2];
+            const gIdx = next.findIndex(g => g.uid === groupUid);
+            if (gIdx !== -1) {
+              next[gIdx] = { ...next[gIdx], items: [...next[gIdx].items] };
+              const iIdx = next[gIdx].items.findIndex(i => i.uid === itemUid);
+              if (iIdx !== -1) {
+                if (type === 'l') { 
+                  next[gIdx].items[iIdx] = { ...next[gIdx].items[iIdx], labelEn: cleanVal };
+                  matchCount++;
+                } else if (type === 'v') { 
+                  next[gIdx].items[iIdx] = { ...next[gIdx].items[iIdx], valueEn: cleanVal };
+                  matchCount++;
+                }
+              }
             }
           }
         });
@@ -667,17 +674,46 @@ function ProductEditorContent() {
               key={renderKey}
               groups={formData.specGroups} setGroups={(g) => handleUpdateField('specGroups', g)} aiConfig={aiConfig} isAiProcessing={isAiProcessing} processingItems={processingItems} onAiTranslate={handleAiTranslateSpecItem}
               onAiTranslateAll={handleAiTranslateAllSpecs}
-              onMoveGroup={(idx, dir) => { const next = [...formData.specGroups]; const target = dir === 'up' ? idx - 1 : idx + 1; if (target >= 0 && target < next.length) { [next[idx], next[target]] = [next[target], next[idx]]; handleUpdateField('specGroups', next); } }}
-              onMoveItem={(gIdx, iIdx, dir) => { const next = [...formData.specGroups]; const items = [...next[gIdx].items]; const target = dir === 'up' ? iIdx - 1 : iIdx + 1; if (target >= 0 && target < items.length) { [items[iIdx], items[target]] = [items[target], items[iIdx]]; next[gIdx].items = items; handleUpdateField('specGroups', next); } }}
-              onDeleteGroup={(idx) => { const next = [...formData.specGroups]; next.splice(idx, 1); handleUpdateField('specGroups', next); }}
+              onMoveGroup={(groupUid, dir) => {
+                const next = [...formData.specGroups];
+                const idx = next.findIndex(g => g.uid === groupUid);
+                if (idx === -1) return;
+                const target = dir === 'up' ? idx - 1 : idx + 1;
+                if (target >= 0 && target < next.length) {
+                  [next[idx], next[target]] = [next[target], next[idx]];
+                  handleUpdateField('specGroups', next);
+                }
+              }}
+              onMoveItem={(groupUid, itemUid, dir) => {
+                const next = [...formData.specGroups];
+                const gIdx = next.findIndex(g => g.uid === groupUid);
+                if (gIdx === -1) return;
+                const items = [...next[gIdx].items];
+                const iIdx = items.findIndex(i => i.uid === itemUid);
+                if (iIdx === -1) return;
+                const target = dir === 'up' ? iIdx - 1 : iIdx + 1;
+                if (target >= 0 && target < items.length) {
+                  [items[iIdx], items[target]] = [items[target], items[iIdx]];
+                  next[gIdx].items = items;
+                  handleUpdateField('specGroups', next);
+                }
+              }}
+              onDeleteGroup={(groupUid) => {
+                const next = [...formData.specGroups];
+                const idx = next.findIndex(g => g.uid === groupUid);
+                if (idx !== -1) {
+                  next.splice(idx, 1);
+                  handleUpdateField('specGroups', next);
+                }
+              }}
               specTemplates={specTemplates || []}
               onApplyTemplate={(tpl, replace) => {
-                const newGroups = tpl.specGroups.map((g: any, gIdx: number) => ({
-                  uid: `tg_${Date.now()}_${gIdx}`,
+                const newGroups = tpl.specGroups.map((g: any) => ({
+                  uid: generateUniqueId('tg'),
                   titleEn: g.titleEn,
                   titleZh: g.titleZh,
-                  items: g.items.map((i: any, iIdx: number) => ({
-                    uid: `ti_${Date.now()}_${gIdx}_${iIdx}`,
+                  items: g.items.map((i: any) => ({
+                    uid: generateUniqueId('ti'),
                     labelEn: i.labelEn,
                     labelZh: i.labelZh,
                     valueEn: i.valueEn,

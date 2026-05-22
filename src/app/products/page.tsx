@@ -145,12 +145,16 @@ function ProductListContent() {
   useEffect(() => {
     if (lineParam) setActiveLine(lineParam);
     
-    if (categoryParam && categories) {
-      const found = categories.find(c => c.slug === categoryParam || c.id === categoryParam);
-      if (found) {
-        setSelectedCategoryId(found.id);
-        if (found.parentId === 'PROJECT' || found.id === 'PROJECT') setActiveLine('project');
-        else setActiveLine('wholesale');
+    if (categories) {
+      if (categoryParam) {
+        const found = categories.find(c => c.slug === categoryParam || c.id === categoryParam);
+        if (found) {
+          setSelectedCategoryId(found.id);
+          if (found.parentId === 'PROJECT' || found.id === 'PROJECT') setActiveLine('project');
+          else setActiveLine('wholesale');
+        }
+      } else {
+        setSelectedCategoryId(null);
       }
     }
   }, [categoryParam, lineParam, categories]);
@@ -247,7 +251,7 @@ function ProductListContent() {
     return cat ? getT(cat.nameTextId) : tr('products_allCategories');
   }, [selectedCategoryId, categories, locale, tr]);
 
-  if (isProdsLoading || isCatsLoading || isTrLoading || !isLocaleReady) {
+  if (isCatsLoading || isTrLoading || !isLocaleReady) {
     return <div className="min-h-screen flex items-center justify-center bg-background"><Loader2 className="h-10 w-10 animate-spin opacity-20 text-primary" /></div>;
   }
 
@@ -278,7 +282,6 @@ function ProductListContent() {
     }
   };
 
-  const isLoading = isProdsLoading || isCatsLoading || isTrLoading;
 
   return (
     <main className="relative min-h-screen bg-[#F8F9FA]">
@@ -470,15 +473,26 @@ function ProductListContent() {
             </div>
           </aside>
 
-          <div className="lg:col-span-9 space-y-8 min-h-[600px]">
-            {isLoading ? (
+          <div className="lg:col-span-9 space-y-8 min-h-[600px] relative">
+            {(!productsData && isProdsLoading) ? (
               <div className="py-32 flex flex-col items-center justify-center gap-4 text-muted-foreground">
                 <Loader2 className="h-10 w-10 animate-spin opacity-20 text-primary" />
                 <p className="text-[10px] font-bold uppercase tracking-widest opacity-40">{tr('products_syncing')}</p>
               </div>
             ) : filteredProducts.length > 0 ? (
-              <div className="space-y-16">
-                <div className="grid grid-cols-2 md:grid-cols-2 xl:grid-cols-3 gap-3 md:gap-8 animate-in fade-in duration-700">
+              <div className="space-y-16 relative">
+                {isProdsLoading && (
+                  <div className="absolute inset-0 bg-[#F8F9FA]/40 backdrop-blur-[1px] flex justify-center z-10 rounded-3xl transition-opacity duration-300 pt-20 pointer-events-none">
+                    <div className="bg-white/90 backdrop-blur-md rounded-full px-6 py-3 shadow-xl border border-border/40 flex items-center gap-3 h-fit">
+                      <Loader2 className="h-4 w-4 animate-spin text-primary" />
+                      <span className="text-[10px] font-bold uppercase tracking-widest text-primary">{tr('products_syncing')}</span>
+                    </div>
+                  </div>
+                )}
+                <div className={cn(
+                  "grid grid-cols-2 md:grid-cols-2 xl:grid-cols-3 gap-3 md:gap-8 animate-in fade-in duration-700 transition-opacity duration-300",
+                  isProdsLoading ? "opacity-40 pointer-events-none" : "opacity-100"
+                )}>
                   {paginatedProducts.map((product) => {
                     const videoSrc = product.videoUrl || product.galleryImageUrls?.find(url => /\.(mp4|webm|ogg|mov|m4v)$/i.test(url)) || '';
                     return (
@@ -648,8 +662,7 @@ function ProductListContent() {
   );
 }
 
-export default function ProductListPage({ searchParams }: { searchParams: Promise<any> }) {
-  use(searchParams);
+export default function ProductListPage() {
   return (
     <Suspense fallback={<div className="min-h-screen flex items-center justify-center bg-[#F8F9FA]"><Loader2 className="h-10 w-10 animate-spin opacity-10" /></div>}>
       <ProductListContent />
