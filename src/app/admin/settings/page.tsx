@@ -58,12 +58,12 @@ export default function AdminSettingsPage() {
   const { data: langSettings, isLoading: isLangLoading, mutate: mutateLangs } = useLocalDoc<AppConfig>('settings', 'languages');
   const { data: storageSettings, isLoading: isStorageLoading, mutate: mutateStorage } = useLocalDoc<StorageConfig>('settings', 'storage');
   
-  const [formData, setFormData] = useState<AppConfig>({
+  const [formData, setFormData] = useState<any>({
     supportedLanguages: [],
     defaultLanguage: 'zh'
   });
 
-  const [storageData, setStorageData] = useState<StorageConfig>({
+  const [storageData, setStorageData] = useState<any>({
     baseUrl: '/storage'
   });
 
@@ -71,12 +71,14 @@ export default function AdminSettingsPage() {
     if (langSettings) {
       setFormData({
         supportedLanguages: langSettings.supportedLanguages || [],
-        defaultLanguage: langSettings.defaultLanguage || 'zh'
+        defaultLanguage: langSettings.defaultLanguage || 'zh',
+        _version: (langSettings as any)._version
       });
     }
     if (storageSettings) {
       setStorageData({
-        baseUrl: storageSettings.baseUrl || '/storage'
+        baseUrl: storageSettings.baseUrl || '/storage',
+        _version: (storageSettings as any)._version
       });
     }
     fetchStatus();
@@ -106,23 +108,47 @@ export default function AdminSettingsPage() {
   const handleSave = async () => {
     setIsSaving(true);
     try {
-      await fetch('/api/settings/languages', {
+      const resLangs = await fetch('/api/settings/languages', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(formData),
       });
-      await fetch('/api/settings/storage', {
+      
+      if (!resLangs.ok) {
+        if (resLangs.status === 409) {
+          const errData = await resLangs.json();
+          throw new Error(`语言配置保存失败：${errData.message || "已被他人修改"}`);
+        }
+        throw new Error("语言配置保存失败，请检查网络或重试。");
+      }
+      
+      const savedLangs = await resLangs.json();
+      setFormData(savedLangs);
+
+      const resStorage = await fetch('/api/settings/storage', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(storageData),
       });
+
+      if (!resStorage.ok) {
+        if (resStorage.status === 409) {
+          const errData = await resStorage.json();
+          throw new Error(`存储配置保存失败：${errData.message || "已被他人修改"}`);
+        }
+        throw new Error("存储配置保存失败，请检查网络或重试。");
+      }
+
+      const savedStorage = await resStorage.json();
+      setStorageData(savedStorage);
+
       mutateLangs();
       mutateStorage();
-      setIsSaving(false);
       toast({ title: "系统配置已保存" });
-    } catch (e) {
+    } catch (e: any) {
+      toast({ variant: "destructive", title: "保存失败", description: e.message || "未知错误" });
+    } finally {
       setIsSaving(false);
-      toast({ variant: "destructive", title: "保存失败" });
     }
   };
 
@@ -290,7 +316,7 @@ export default function AdminSettingsPage() {
                     </SelectTrigger>
                     <SelectContent className="rounded-xl border-border/40 shadow-2xl p-1 bg-card/90 backdrop-blur-xl">
                       {formData.supportedLanguages.length > 0 ? (
-                        formData.supportedLanguages.map(lang => (
+                        formData.supportedLanguages.map((lang: any) => (
                           <SelectItem key={lang.code} value={lang.code} className="rounded-lg h-9 text-xs font-bold my-0.5">
                             {lang.label} ({lang.code.toUpperCase()})
                           </SelectItem>

@@ -47,6 +47,7 @@ import { getAssetUrl } from '@/lib/image-utils';
 
 import { useTranslations } from '@/hooks/use-translations';
 import { useInquiry } from '@/components/providers/InquiryProvider';
+import { injectTranslations } from '@/lib/translation-injector';
 
 export function Navbar({ locale, setLocale, headerTheme = 'dark', themeLine }: NavbarProps) {
   const { t: tr } = useTranslations(locale);
@@ -117,6 +118,14 @@ export function Navbar({ locale, setLocale, headerTheme = 'dark', themeLine }: N
 
   // 1. Fetch dynamic categories
   const { data: remoteCats } = useLocalCollection<any>('productCategories');
+
+  // Inject category translations to global cache for dynamic page switching and SSR fallback
+  useEffect(() => {
+    if (remoteCats && Array.isArray(remoteCats)) {
+      const trans = remoteCats.flatMap((c: any) => [c.nameText, c.descriptionText].filter(Boolean));
+      injectTranslations(locale, trans);
+    }
+  }, [remoteCats, locale]);
 
   // 2. Fetch dynamic navigation settings
   const { data: navSettings } = useLocalDoc<any>('settings', 'navigation');

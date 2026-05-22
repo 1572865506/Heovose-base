@@ -53,6 +53,7 @@ interface SiteConfig {
   favicon?: string;
   socialLinks?: { platform: string; url: string }[];
   certifications?: { key: string; image?: string }[];
+  _version?: number;
 }
 
 interface LocalizedString {
@@ -157,11 +158,22 @@ export default function SiteSettingsPage() {
   const handleSave = async () => {
     setIsSaving(true);
     try {
-      await fetch('/api/settings/site', {
+      const res = await fetch('/api/settings/site', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(localConfig),
       });
+
+      if (!res.ok) {
+        if (res.status === 409) {
+          const errData = await res.json();
+          throw new Error(errData.message || "配置已被他人修改，请刷新页面加载最新配置后再重试。");
+        }
+        throw new Error("部署失败，请检查网络或重试。");
+      }
+
+      const updatedConfig = await res.json();
+      setLocalConfig(updatedConfig);
 
       const transPromises = Object.entries(transEdits).map(([id, content]) => {
         return fetch(`/api/localizedStrings/${encodeURIComponent(id)}`, {
@@ -179,8 +191,12 @@ export default function SiteSettingsPage() {
         description: "品牌资产与多语言词库已成功签署部署。",
         className: "bg-primary text-white border-none rounded-2xl"
       });
-    } catch (e) {
-      toast({ variant: "destructive", title: "部署失败", description: "网络通信异常，请检查网关状态。" });
+    } catch (e: any) {
+      toast({ 
+        variant: "destructive", 
+        title: "部署失败", 
+        description: e.message || "网络通信异常，请检查网关状态。" 
+      });
     } finally {
       setIsSaving(false);
     }

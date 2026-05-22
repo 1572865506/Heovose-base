@@ -106,6 +106,7 @@ interface LanguageOption {
 
 interface LanguageSettings {
   supportedLanguages: LanguageOption[];
+  _version?: number;
 }
 
 interface AiConfig {
@@ -250,13 +251,21 @@ export default function TranslationsPage() {
         t.id.startsWith('spec_') || 
         t.id.startsWith('psl_') || 
         t.id.startsWith('psv_') ||
-        t.id.startsWith('psg_');
+        t.id.startsWith('psg_') ||
+        t.id.startsWith('biz_tr_');
       
       const isBusiness = 
         t.id.startsWith('prod_') || 
         t.id.startsWith('cat_') ||
         t.id.startsWith('gal_') ||
-        t.id.startsWith('adv_');
+        t.id.startsWith('adv_') ||
+        t.id.startsWith('case_study_') ||
+        t.id.startsWith('process_step_') ||
+        t.id.toUpperCase().startsWith('MAP_LOC_') ||
+        t.id.startsWith('hero_slide_') ||
+        t.id.startsWith('hero_wholesale_') ||
+        t.id.startsWith('hero_project_') ||
+        t.id.startsWith('slide_');
 
       if (isShared) {
         acc.shared.push(t);
@@ -271,37 +280,76 @@ export default function TranslationsPage() {
   }, [translations]);
 
   const getResourceCategory = (id: string) => {
+    const upperId = id.toUpperCase();
     if (id.startsWith('prod_')) return { label: '产品内容', color: 'bg-blue-500/10 text-blue-400 border-blue-500/20' };
-    if (id.startsWith('psl_') || id.startsWith('psv_') || id.startsWith('psg_') || id.startsWith('spec_')) return { label: '技术规格', color: 'bg-purple-500/10 text-purple-400 border-purple-500/20' };
+    if (id.startsWith('psl_') || id.startsWith('psv_') || id.startsWith('psg_') || id.startsWith('spec_') || id.startsWith('biz_tr_')) {
+      return { label: '公共规格/字典', color: 'bg-purple-500/10 text-purple-400 border-purple-500/20' };
+    }
     if (id.startsWith('cat_')) return { label: '类目名称', color: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' };
     if (id.startsWith('gal_')) return { label: '媒体资产', color: 'bg-pink-500/10 text-pink-400 border-pink-500/20' };
     if (id.startsWith('adv_')) return { label: '卖点优势', color: 'bg-amber-500/10 text-amber-400 border-amber-500/20' };
+    if (id.startsWith('case_study_')) return { label: '成功案例卡片', color: 'bg-indigo-500/10 text-indigo-400 border-indigo-500/20' };
+    if (id.startsWith('process_step_')) return { label: '制造流程卡片', color: 'bg-cyan-500/10 text-cyan-400 border-cyan-500/20' };
+    if (upperId.startsWith('MAP_LOC_')) return { label: '全球网点卡片', color: 'bg-teal-500/10 text-teal-400 border-teal-500/20' };
+    if (id.startsWith('hero_slide_') || id.startsWith('slide_')) return { label: '轮播幻灯卡片', color: 'bg-yellow-500/10 text-yellow-400 border-yellow-500/20' };
+    if (id.startsWith('hero_wholesale_') || id.startsWith('hero_project_')) return { label: '首页卡片数据', color: 'bg-orange-500/10 text-orange-400 border-orange-500/20' };
     if (usedIds.has(id)) return { label: '动态关联', color: 'bg-slate-500/10 text-slate-400 border-slate-500/20' };
-    return { label: '系统文案', color: 'bg-rose-500/10 text-rose-400 border-rose-500/20' };
+    return { label: '系统 UI / 板块标题', color: 'bg-rose-500/10 text-rose-400 border-rose-500/20' };
   };
 
   const semanticDuplicates = useMemo(() => {
     const list = categorizedTranslations.business;
     const groups = new Map<string, string[]>();
     
+    const zhMap = new Map<string, string[]>();
+    const enMap = new Map<string, string[]>();
+    
     list.forEach(t => {
       const zh = (t.zh || '').trim().toLowerCase();
       const en = (t.en || '').trim().toLowerCase();
       
-      list.forEach(other => {
-        if (t.id === other.id) return;
-        const oZh = (other.zh || '').trim().toLowerCase();
-        const oEn = (other.en || '').trim().toLowerCase();
-        
-        if ((en !== '' && en === oEn) || (zh !== '' && zh === oZh)) {
-          const groupKey = en !== '' && en === oEn ? `en:${en}` : `zh:${zh}`;
-          if (!groups.has(groupKey)) groups.set(groupKey, [t.id]);
-          if (!groups.get(groupKey)!.includes(other.id)) groups.get(groupKey)!.push(other.id);
-        }
-      });
+      if (zh !== '') {
+        if (!zhMap.has(zh)) zhMap.set(zh, []);
+        zhMap.get(zh)!.push(t.id);
+      }
+      if (en !== '') {
+        if (!enMap.has(en)) enMap.set(en, []);
+        enMap.get(en)!.push(t.id);
+      }
     });
+
+    zhMap.forEach((ids, zh) => {
+      if (ids.length > 1) {
+        groups.set(`zh:${zh}`, ids);
+      }
+    });
+    
+    enMap.forEach((ids, en) => {
+      if (ids.length > 1) {
+        groups.set(`en:${en}`, ids);
+      }
+    });
+    
     return groups;
   }, [categorizedTranslations.business]);
+
+  const duplicateIdsSet = useMemo(() => {
+    const set = new Set<string>();
+    semanticDuplicates.forEach(ids => {
+      ids.forEach(id => set.add(id));
+    });
+    return set;
+  }, [semanticDuplicates]);
+
+  const idToDuplicatesMap = useMemo(() => {
+    const map = new Map<string, string[]>();
+    semanticDuplicates.forEach(ids => {
+      ids.forEach(id => {
+        map.set(id, ids);
+      });
+    });
+    return map;
+  }, [semanticDuplicates]);
 
   const duplicatableCount = useMemo(() => {
     let count = 0;
@@ -527,8 +575,7 @@ export default function TranslationsPage() {
                  Object.values(t).some(v => typeof v === 'string' && v.toLowerCase().includes(search)) ||
                  contentValues.some(v => typeof v === 'string' && v.toLowerCase().includes(search));
       if (showOnlyDuplicates && activeTab === 'business') {
-        let hasM = false; semanticDuplicates.forEach(ids => { if (ids.includes(t.id)) hasM = true; });
-        return ms && hasM;
+        return ms && duplicateIdsSet.has(t.id);
       }
       return ms;
     });
@@ -551,7 +598,7 @@ export default function TranslationsPage() {
       if (valA > valB) return direction === 'asc' ? 1 : -1;
       return 0;
     });
-  }, [categorizedTranslations, searchQuery, showOnlyDuplicates, semanticDuplicates, activeTab, sortConfig]);
+  }, [categorizedTranslations, searchQuery, showOnlyDuplicates, duplicateIdsSet, activeTab, sortConfig]);
 
   const paginatedTranslations = useMemo(() => {
     const start = (currentPage - 1) * itemsPerPage;
@@ -720,13 +767,26 @@ export default function TranslationsPage() {
                                   const res = await fetch('/api/settings/languages', {
                                     method: 'PUT',
                                     headers: { 'Content-Type': 'application/json' },
-                                    body: JSON.stringify({ supportedLanguages: updated }),
+                                    body: JSON.stringify({ 
+                                      supportedLanguages: updated,
+                                      _version: langSettings?._version
+                                    }),
                                   });
-                                  if (!res.ok) throw new Error();
+                                  if (!res.ok) {
+                                    if (res.status === 409) {
+                                      const errData = await res.json();
+                                      throw new Error(errData.message || "配置已被他人修改，请刷新页面加载最新配置后再重试。");
+                                    }
+                                    throw new Error("移除失败");
+                                  }
                                   mutateLangs();
                                   toast({ title: "语种已移除" });
-                                } catch (e) {
-                                  toast({ variant: "destructive", title: "移除失败" });
+                                } catch (e: any) {
+                                  toast({ 
+                                    variant: "destructive", 
+                                    title: "移除失败", 
+                                    description: e.message || "网络通信异常，请检查网关状态。" 
+                                  });
                                 }
                               }}
                               className="h-9 w-9 rounded-xl text-muted-foreground/40 hover:text-red-400 hover:bg-red-400/10 transition-all"
@@ -760,10 +820,19 @@ export default function TranslationsPage() {
                         const res = await fetch('/api/settings/languages', {
                           method: 'PUT',
                           headers: { 'Content-Type': 'application/json' },
-                          body: JSON.stringify({ supportedLanguages: updated }),
+                          body: JSON.stringify({ 
+                            supportedLanguages: updated,
+                            _version: langSettings?._version
+                          }),
                         });
                         
-                        if (!res.ok) throw new Error('API request failed');
+                        if (!res.ok) {
+                          if (res.status === 409) {
+                            const errData = await res.json();
+                            throw new Error(errData.message || "配置已被他人修改，请刷新页面加载最新配置后再重试。");
+                          }
+                          throw new Error('API request failed');
+                        }
                         
                         mutateLangs();
                         setNewLang({ code: '', label: '' });
@@ -771,9 +840,13 @@ export default function TranslationsPage() {
                           title: "语种已激活", 
                           description: `成功添加 ${newLang.label}，请刷新页面以确保全站同步。`,
                         });
-                      } catch (e) {
+                      } catch (e: any) {
                         console.error('Add Language Error:', e);
-                        toast({ variant: "destructive", title: "添加失败", description: "无法连接到设置服务器" });
+                        toast({ 
+                          variant: "destructive", 
+                          title: "添加失败", 
+                          description: e.message || "无法连接到设置服务器" 
+                        });
                       }
                     }} className="w-full h-12 rounded-xl text-xs font-bold uppercase tracking-widest shadow-lg">确认添加新语种</Button>
                  </div>
@@ -869,8 +942,7 @@ export default function TranslationsPage() {
                 <TableRow><TableCell colSpan={10} className="h-40 text-center text-[10px] text-muted-foreground italic uppercase">暂无数据</TableCell></TableRow>
               ) : paginatedTranslations.map((t) => {
                 const refs = referenceMap.get(t.id) || [];
-                let semanticIds: string[] = [];
-                if (activeTab === 'business') { semanticDuplicates.forEach((ids) => { if (ids.includes(t.id)) semanticIds = ids; }); }
+                const semanticIds = activeTab === 'business' ? (idToDuplicatesMap.get(t.id) || []) : [];
                 const isDuplicate = semanticIds.length > 1;
 
                 return (
@@ -976,22 +1048,7 @@ export default function TranslationsPage() {
                       </TableCell>
                     ))}
                     <TableCell className="pr-6 text-right py-3 sticky right-0 z-30 bg-card group-hover:bg-muted transition-colors border-l border-border/20 shadow-[-4px_0_10px_-4px_rgba(0,0,0,0.05)]">
-                       {activeTab === 'business' ? (
-                         <div className="flex justify-end items-center gap-1">
-                           <TooltipProvider>
-                             <Tooltip>
-                               <TooltipTrigger asChild>
-                                 <Badge variant="outline" className="text-[10px] py-1 px-3 bg-muted border-border text-muted-foreground font-medium rounded-full cursor-help whitespace-nowrap">
-                                   业务只读
-                                 </Badge>
-                               </TooltipTrigger>
-                               <TooltipContent className="p-3 bg-card border-border shadow-xl text-xs rounded-xl text-foreground">
-                                 业务专属词条，请前往对应产品/分类编辑页进行修改。
-                               </TooltipContent>
-                             </Tooltip>
-                           </TooltipProvider>
-                         </div>
-                       ) : editingId === t.id ? (
+                       {editingId === t.id ? (
                          <div className="flex justify-end gap-2">
                            <Button onClick={() => handleSave()} className="h-10 px-4 rounded-xl bg-green-600 hover:bg-green-700 shadow-lg shadow-green-500/20">
                              <Check className="h-4 w-4" />
@@ -1109,8 +1166,8 @@ export default function TranslationsPage() {
             </div>
             <h4 className="text-[11px] font-bold uppercase tracking-widest text-primary mb-2">词条归属划分</h4>
             <ul className="space-y-2 text-[10px] text-muted-foreground leading-relaxed font-medium">
-              <li>• <span className="text-foreground">业务库</span>：包含产品详情、规格、核心优势等动态内容。</li>
-              <li>• <span className="text-foreground">系统库</span>：包含导航、按钮、类目名称、站点基础设施。</li>
+              <li>• <span className="text-foreground">业务库</span>：包含产品详情、分类、案例、网点卡片等业务内容。</li>
+              <li>• <span className="text-foreground">系统库</span>：包含导航菜单、通用按钮、板块标题及副标题。</li>
             </ul>
           </div>
 
@@ -1142,8 +1199,8 @@ export default function TranslationsPage() {
             </div>
             <h4 className="text-[11px] font-bold uppercase tracking-widest text-purple-500 mb-2">命名空间前缀</h4>
             <ul className="space-y-2 text-[10px] text-muted-foreground leading-relaxed font-medium">
-              <li>• <span className="text-foreground">prod_</span>：产品；<span className="text-foreground">spec_</span>：规格参数。</li>
-              <li>• <span className="text-foreground">ui_</span>：界面；<span className="text-foreground">nav_</span>：导航；<span className="text-foreground">cat_</span>：类目。</li>
+              <li>• <span className="text-foreground">业务前缀</span>：prod_ (产品), cat_ (分类), case_study_ (案例), MAP_LOC_ (网点)。</li>
+              <li>• <span className="text-foreground">公共前缀</span>：spec_ / psl_ / psv_ / psg_ / biz_tr_ (公共复用规格)。</li>
             </ul>
           </div>
         </div>

@@ -66,17 +66,18 @@ export async function cleanupOrphanedStrings(releasedIds: string[]) {
   if (targetIds.length === 0) return;
 
   try {
-    // 1. 获取全站产品最新的 specGroups 所引用的全部 ID 集合，只做 1 次数据库拉取
-    const allProducts = await db.product.findMany({
-      select: { specGroups: true }
-    });
+    // 1. 批量确定哪些候选 ID 当前已被任一产品的 specGroups 引用，彻底避免拉取全量产品
+    const activeIdsCheck = await db.$queryRaw<Array<{ id: string; exists: boolean }>>`
+      SELECT t.id, EXISTS (
+        SELECT 1 FROM "Product"
+        WHERE jsonb_path_exists("specGroups", '$.** ? (@ == $id)', jsonb_build_object('id', t.id))
+      ) as "exists"
+      FROM unnest(${targetIds}::text[]) as t(id)
+    `;
     
-    const activeSpecIds = new Set<string>();
-    allProducts.forEach((prod: { specGroups: any }) => {
-      extractIdsFromSpecGroups(prod.specGroups).forEach(specId => {
-        if (specId) activeSpecIds.add(specId);
-      });
-    });
+    const activeSpecIds = new Set<string>(
+      activeIdsCheck.filter((row: { id: string; exists: boolean }) => row.exists).map((row: { id: string; exists: boolean }) => row.id)
+    );
 
     // 2. 依次检查每个候选 ID 是否被其他字段引用
     for (const id of targetIds) {
@@ -202,15 +203,11 @@ export async function cleanupOrphanedStrings(releasedIds: string[]) {
 
 export async function getLocalizedStringRefCount(id: string): Promise<number> {
   try {
-    const allProducts = await db.product.findMany({
-      select: { specGroups: true }
-    });
-    
-    let specRefCount = 0;
-    allProducts.forEach((prod: { specGroups: any }) => {
-      const ids = extractIdsFromSpecGroups(prod.specGroups);
-      specRefCount += ids.filter(x => x === id).length;
-    });
+    const specProductsCount = await db.$queryRaw<Array<{ count: number }>>`
+      SELECT COUNT(*)::int as count FROM "Product"
+      WHERE jsonb_path_exists("specGroups", '$.** ? (@ == $id)', jsonb_build_object('id', ${id}::text))
+    `;
+    const specRefCount = specProductsCount[0]?.count || 0;
 
     const productRefCount = await db.product.count({
       where: {

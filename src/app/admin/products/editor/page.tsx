@@ -124,11 +124,11 @@ function ProductEditorContent() {
   const [idConflict, setIdConflict] = useState(false);
   const [isPickerOpen, setIsPickerOpen] = useState(false);
   const [pickerTarget, setPickerTarget] = useState<'main' | 'video' | 'gallery' | 'richtext-zh' | 'richtext-target'>('main');
+  const [lastUpdatedAt, setLastUpdatedAt] = useState<string | null>(null);
 
   const { data: product, isLoading: isProdLoading } = useLocalDoc<any>('products', productId || 'new');
   const { data: categories } = useLocalCollection<any>('productCategories');
   const { data: translations } = useLocalCollection<any>('localizedStrings?full=true');
-  const { data: allProducts } = useLocalCollection<any>('products');
   const { data: aiConfig } = useLocalDoc<any>('settings', 'ai');
   const { data: langConfig } = useLocalDoc<any>('settings', 'languages');
   const { data: specTemplates, mutate: mutateTemplates } = useLocalCollection<any>('specTemplates');
@@ -200,14 +200,34 @@ function ProductEditorContent() {
         localizedDetails: product.localizedDetails || { zh: '', en: '' },
         specGroups: sGroups, status: product.status || 'published'
       });
+      setLastUpdatedAt(product.updatedAt || null);
     }
   }, [isEditing, product, translations]);
 
   useEffect(() => {
-    if (!isEditing && formData.id && allProducts) {
-      setIdConflict(allProducts.some((p: any) => p.id === formData.id));
+    if (isEditing || !formData.id) {
+      setIdConflict(false);
+      return;
     }
-  }, [formData.id, allProducts, isEditing]);
+
+    const handler = setTimeout(() => {
+      fetch(`/api/products/${encodeURIComponent(formData.id)}`)
+        .then(res => {
+          if (res.status === 200) {
+            setIdConflict(true);
+          } else {
+            setIdConflict(false);
+          }
+        })
+        .catch(() => {
+          setIdConflict(false);
+        });
+    }, 500); // 500ms 防抖
+
+    return () => {
+      clearTimeout(handler);
+    };
+  }, [formData.id, isEditing]);
 
   const handleUpdateField = (field: string, value: any) => setFormData(prev => ({ ...prev, [field]: value }));
 
@@ -296,14 +316,27 @@ function ProductEditorContent() {
           descriptionTextId: descHashId, 
           specGroups: sGroups,
           categoryId: formData.categoryId, 
-          galleryImageUrls: formData.galleryUrls
+          galleryImageUrls: formData.galleryUrls,
+          updatedAt: lastUpdatedAt
         })
       });
 
       if (!res.ok) {
+        if (res.status === 409) {
+          const errorData = await res.json();
+          toast({ 
+            variant: "destructive", 
+            title: "保存失败 (版本冲突)", 
+            description: errorData.message || "该产品已被其他人修改，请备份您的编辑内容并刷新页面后再试" 
+          });
+          return;
+        }
         const errorData = await res.json();
         throw new Error(errorData.error || "产品主数据同步失败");
       }
+
+      const updatedProduct = await res.json();
+      setLastUpdatedAt(updatedProduct.updatedAt || null);
 
       toast({ title: "同步成功", description: "产品数据已持久化至云端" });
       router.push('/admin/products');

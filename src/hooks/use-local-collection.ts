@@ -2,8 +2,41 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 
 // Simple global cache to deduplicate simultaneous requests
 const pendingRequests = new Map<string, Promise<any>>();
-const globalCache = new Map<string, { data: any, timestamp: number }>();
+export const globalCache = new Map<string, { data: any, timestamp: number }>();
 const CACHE_TTL = 300000;
+
+// Global Pub/Sub system for globalCache synchronization
+const cacheListeners = new Map<string, Set<(data: any) => void>>();
+
+export function subscribeToCache(path: string, listener: (data: any) => void) {
+  if (!cacheListeners.has(path)) {
+    cacheListeners.set(path, new Set());
+  }
+  cacheListeners.get(path)!.add(listener);
+  return () => {
+    const listeners = cacheListeners.get(path);
+    if (listeners) {
+      listeners.delete(listener);
+      if (listeners.size === 0) {
+        cacheListeners.delete(path);
+      }
+    }
+  };
+}
+
+export function notifyCacheUpdate(path: string, data: any) {
+  const listeners = cacheListeners.get(path);
+  if (listeners) {
+    listeners.forEach(listener => {
+      try {
+        listener(data);
+      } catch (e) {
+        console.error('Error in cache listener:', e);
+      }
+    });
+  }
+}
+
 
 export function useLocalCollection<T = any>(path: string | null, options?: { enabled?: boolean }) {
   const enabled = options?.enabled !== false;
@@ -78,8 +111,38 @@ export function useLocalCollection<T = any>(path: string | null, options?: { ena
     try {
       const json = await fetchPromise;
       if (currentPath !== latestPathRef.current) return;
-      globalCache.set(currentPath, { data: json, timestamp: Date.now() });
-      setData(json);
+
+      // Merge strategy: to avoid wiping out client-injected business translations (e.g., category, product)
+      // that might have been populated before this fetch resolved, we merge network data with existing cached data.
+      const existing = globalCache.get(currentPath)?.data || [];
+      const dataMap = new Map<string, any>();
+      existing.forEach((item: any) => {
+        if (item && item.id) {
+          dataMap.set(item.id, item);
+        }
+      });
+      json.forEach((item: any) => {
+        if (item && item.id) {
+          const exist = dataMap.get(item.id);
+          if (exist) {
+            dataMap.set(item.id, {
+              ...exist,
+              ...item,
+              content: {
+                ...(exist.content || {}),
+                ...(item.content || {})
+              }
+            });
+          } else {
+            dataMap.set(item.id, item);
+          }
+        }
+      });
+      const merged = Array.from(dataMap.values());
+
+      globalCache.set(currentPath, { data: merged, timestamp: Date.now() });
+      setData(merged);
+      notifyCacheUpdate(currentPath, merged);
       setError(null);
     } catch (err: any) {
       if (currentPath !== latestPathRef.current) return;
@@ -112,6 +175,14 @@ export function useLocalCollection<T = any>(path: string | null, options?: { ena
 
     fetchData(path);
   }, [path, enabled, fetchData]);
+
+  useEffect(() => {
+    if (!path || !enabled) return;
+    const unsubscribe = subscribeToCache(path, (newData) => {
+      setData(newData);
+    });
+    return unsubscribe;
+  }, [path, enabled]);
 
   const mutate = useCallback(() => {
     if (path) {

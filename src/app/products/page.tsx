@@ -21,6 +21,7 @@ import { getAssetUrl } from '@/lib/image-utils';
 import { useTranslations } from '@/hooks/use-translations';
 import { useInquiry } from '@/components/providers/InquiryProvider';
 import { HoverVideoPlayer } from '@/components/HoverVideoPlayer';
+import { injectTranslations } from '@/lib/translation-injector';
 
 interface Product {
   id: string;
@@ -102,14 +103,12 @@ function ProductListContent() {
   const lineParam = searchParams.get('line') as BusinessLine;
   const [currentPage, setCurrentPage] = useState(1);
 
-  const { data: products, isLoading: isProdsLoading, mutate: mutateProducts } = useLocalCollection<Product>('products');
   const { data: categories, isLoading: isCatsLoading } = useLocalCollection<Category>('productCategories');
   const { data: langSettings } = useLocalDoc<LanguageSettings>('settings', 'languages');
   const { t: tr, isLoading: isTrLoading } = useTranslations(locale);
 
-  useEffect(() => {
-    mutateProducts();
-  }, [mutateProducts]);
+  const [productsData, setProductsData] = useState<{ products: Product[], pagination: { total: number, page: number, limit: number, totalPages: number } } | null>(null);
+  const [isProdsLoading, setIsProdsLoading] = useState(true);
 
   // 1. 智能判定语种
   useEffect(() => {
@@ -165,48 +164,76 @@ function ProductListContent() {
     return categories.filter(c => c.parentId === parentId && c.id !== parentId);
   }, [categories, activeLine]);
 
-  // 4. 过滤产品逻辑
-  const filteredProducts = useMemo(() => {
-    if (!products || !categories || !isLocaleReady) return [];
+
+
+  // 当筛选参数或语种改变时，从后端分页拉取产品数据
+  useEffect(() => {
+    if (!isLocaleReady) return;
+    let isMounted = true;
+    setIsProdsLoading(true);
     
-    const getAllDescendantIds = (parentId: string): string[] => {
-      const children = categories.filter(c => c.parentId === parentId);
-      let ids = children.map(c => c.id);
-      children.forEach(child => {
-        ids = [...ids, ...getAllDescendantIds(child.id)];
+    const params = new URLSearchParams();
+    params.set('page', String(currentPage));
+    params.set('limit', String(ITEMS_PER_PAGE));
+    params.set('status', 'published');
+    params.set('lang', locale);
+    
+    if (selectedCategoryId) {
+      params.set('categoryId', selectedCategoryId);
+    } else {
+      const rootId = activeLine === 'wholesale' ? 'WHOLESALE' : 'PROJECT';
+      params.set('categoryId', rootId);
+    }
+    
+    if (searchQuery) {
+      params.set('search', searchQuery);
+    }
+    
+    fetch(`/api/products?${params.toString()}`)
+      .then(res => {
+        if (!res.ok) throw new Error('Failed to fetch paginated products');
+        return res.json();
+      })
+      .then(data => {
+        if (!isMounted) return;
+        setProductsData(data);
+        setIsProdsLoading(false);
+      })
+      .catch(err => {
+        console.error('Failed to fetch paginated products:', err);
+        if (isMounted) setIsProdsLoading(false);
       });
-      return ids;
+      
+    return () => {
+      isMounted = false;
     };
+  }, [currentPage, selectedCategoryId, searchQuery, activeLine, locale, isLocaleReady]);
 
-    const rootId = activeLine === 'wholesale' ? 'WHOLESALE' : 'PROJECT';
-    const subCategoryIds = [rootId, ...getAllDescendantIds(rootId)];
+  // 注入产品翻译到本地全局缓存
+  useEffect(() => {
+    if (productsData?.products) {
+      const trans = productsData.products.flatMap((p: any) => [p.nameText, p.descriptionText].filter(Boolean));
+      injectTranslations(locale, trans);
+    }
+  }, [productsData, locale]);
 
-    return products.filter(p => {
-      if (p.status !== 'published') return false;
-      const isVisibleInCurrentLocale = (p.enabledLanguages || ['zh', 'en']).includes(locale);
-      if (!isVisibleInCurrentLocale) return false;
-      
-      const belongsToActiveLine = p.categoryId ? subCategoryIds.includes(p.categoryId) : true;
-      if (!belongsToActiveLine) return false;
-
-      const matchesCategory = !selectedCategoryId || p.categoryId === selectedCategoryId;
-      const productName = getT(p.nameTextId) || '';
-      const matchSearch = productName.toLowerCase().includes(searchQuery.toLowerCase());
-      
-      return matchesCategory && matchSearch;
-    });
-  }, [products, categories, activeLine, selectedCategoryId, searchQuery, locale, isLocaleReady]);
+  // 注入分类翻译到本地全局缓存
+  useEffect(() => {
+    if (categories && Array.isArray(categories)) {
+      const trans = categories.flatMap((c: any) => [c.nameText, c.descriptionText].filter(Boolean));
+      injectTranslations(locale, trans);
+    }
+  }, [categories, locale]);
 
   useEffect(() => {
     setCurrentPage(1);
   }, [selectedCategoryId, searchQuery, activeLine]);
 
-  const paginatedProducts = useMemo(() => {
-    const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
-    return filteredProducts.slice(startIndex, startIndex + ITEMS_PER_PAGE);
-  }, [filteredProducts, currentPage]);
-
-  const totalPages = Math.ceil(filteredProducts.length / ITEMS_PER_PAGE);
+  const filteredProducts = {
+    length: productsData?.pagination.total || 0
+  };
+  const paginatedProducts = productsData?.products || [];
+  const totalPages = productsData?.pagination.totalPages || 0;
 
   const rootCategory = useMemo(() => {
     if (!categories) return null;

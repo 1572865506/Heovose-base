@@ -44,6 +44,24 @@ export async function PUT(
     const existingProduct = await db.product.findUnique({ where: { id } });
 
     if (existingProduct) {
+      // 乐观并发控制校验
+      if (!data.updatedAt) {
+        return NextResponse.json(
+          { error: 'version_conflict', message: '未提供版本时间戳，无法进行安全更新' },
+          { status: 409 }
+        );
+      }
+
+      const existingTime = new Date(existingProduct.updatedAt).getTime();
+      const clientTime = new Date(data.updatedAt).getTime();
+
+      if (existingTime !== clientTime) {
+        return NextResponse.json(
+          { error: 'version_conflict', message: '该产品已被其他人修改，请备份您的编辑内容并刷新页面后再试' },
+          { status: 409 }
+        );
+      }
+
       // 提取更新前关联的词条 ID
       const oldIds = extractIdsFromProduct(existingProduct);
 

@@ -152,8 +152,7 @@ const SpecItemRow = memo(({
 
   const handleLabelChange = (val: string) => {
     setLocalLabelZh(val);
-    onUpdate(gIdx, iIdx, 'labelZh', val);
-    onUpdate(gIdx, iIdx, 'labelId', ''); // 手动更改清空已绑定的 ID
+    onUpdate(gIdx, iIdx, { labelZh: val, labelId: '' });
 
     if (val.trim()) {
       if (labelTimer.current) clearTimeout(labelTimer.current);
@@ -178,16 +177,13 @@ const SpecItemRow = memo(({
     const enVal = s.content?.en || s.en || '';
     setLocalLabelZh(zhVal);
     setLocalLabelEn(enVal);
-    onUpdate(gIdx, iIdx, 'labelZh', zhVal);
-    onUpdate(gIdx, iIdx, 'labelEn', enVal);
-    onUpdate(gIdx, iIdx, 'labelId', s.id);
+    onUpdate(gIdx, iIdx, { labelZh: zhVal, labelEn: enVal, labelId: s.id });
     setLabelSuggestions([]);
   };
 
   const handleValueChange = (val: string) => {
     setLocalValueZh(val);
-    onUpdate(gIdx, iIdx, 'valueZh', val);
-    onUpdate(gIdx, iIdx, 'valueId', ''); // 手动更改清空已绑定的 ID
+    onUpdate(gIdx, iIdx, { valueZh: val, valueId: '' });
 
     if (val.trim()) {
       if (valueTimer.current) clearTimeout(valueTimer.current);
@@ -212,9 +208,7 @@ const SpecItemRow = memo(({
     const enVal = s.content?.en || s.en || '';
     setLocalValueZh(zhVal);
     setLocalValueEn(enVal);
-    onUpdate(gIdx, iIdx, 'valueZh', zhVal);
-    onUpdate(gIdx, iIdx, 'valueEn', enVal);
-    onUpdate(gIdx, iIdx, 'valueId', s.id);
+    onUpdate(gIdx, iIdx, { valueZh: zhVal, valueEn: enVal, valueId: s.id });
     setValueSuggestions([]);
   };
 
@@ -283,7 +277,10 @@ const SpecItemRow = memo(({
         {iIdx === 0 && <Label className="text-[8px] font-bold uppercase tracking-widest text-muted-foreground/50 pl-1">参数名 (En)</Label>}
         <Input 
           value={localLabelEn} 
-          onChange={e => { setLocalLabelEn(e.target.value); onUpdate(gIdx, iIdx, 'labelEn', e.target.value); onUpdate(gIdx, iIdx, 'labelId', ''); }} 
+          onChange={e => { 
+            setLocalLabelEn(e.target.value); 
+            onUpdate(gIdx, iIdx, { labelEn: e.target.value, labelId: '' }); 
+          }} 
           className="h-11 px-2 rounded-xl bg-muted/10 border-dashed border-border/30 text-sm font-bold font-mono text-foreground" 
         />
       </div>
@@ -291,7 +288,10 @@ const SpecItemRow = memo(({
         {iIdx === 0 && <Label className="text-[8px] font-bold uppercase tracking-widest text-muted-foreground/50 pl-1">参数值 (En)</Label>}
         <Textarea 
           value={localValueEn} 
-          onChange={e => { setLocalValueEn(e.target.value); onUpdate(gIdx, iIdx, 'valueEn', e.target.value); onUpdate(gIdx, iIdx, 'valueId', ''); }} 
+          onChange={e => { 
+            setLocalValueEn(e.target.value); 
+            onUpdate(gIdx, iIdx, { valueEn: e.target.value, valueId: '' }); 
+          }} 
           onInput={(e: any) => { e.target.style.height = 'auto'; e.target.style.height = `${e.target.scrollHeight}px`; }} 
           className="min-h-[44px] max-h-[100px] h-auto px-2 py-2 rounded-xl bg-muted/10 border-dashed border-border/30 text-sm font-medium font-mono leading-5 overflow-y-auto resize-none text-foreground" 
         />
@@ -326,10 +326,10 @@ const SpecMatrixSection = memo(({
     setGroups(newGroups);
   };
 
-  const updateItem = (gIdx: number, iIdx: number, field: keyof ProductSpecEntry, value: string) => {
+  const updateItem = (gIdx: number, iIdx: number, updates: Partial<ProductSpecEntry>) => {
     const newGroups = [...groups];
     newGroups[gIdx] = { ...newGroups[gIdx], items: [...newGroups[gIdx].items] };
-    newGroups[gIdx].items[iIdx] = { ...newGroups[gIdx].items[iIdx], [field]: value };
+    newGroups[gIdx].items[iIdx] = { ...newGroups[gIdx].items[iIdx], ...updates };
     setGroups(newGroups);
   };
 

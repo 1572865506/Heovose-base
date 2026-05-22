@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo, useEffect, useCallback } from 'react';
 import { useLocalCollection } from '@/hooks/use-local-collection';
 import { useLocalDoc } from '@/hooks/use-local-doc';
 import {
@@ -85,10 +85,12 @@ export default function AdminProductsPage() {
   const ITEMS_PER_PAGE = 25;
   const [currentPage, setCurrentPage] = useState(1);
 
-  const { data: products, isLoading: isProdsLoading, mutate: mutateProducts } = useLocalCollection<Product>('products');
   const { data: categories } = useLocalCollection<ProductCategory>('productCategories');
   const { data: translations } = useLocalCollection<LocalizedString>('localizedStrings?full=true');
   const { data: langSettings } = useLocalDoc<LanguageSettings>('settings', 'languages');
+
+  const [productsData, setProductsData] = useState<{ products: Product[], pagination: { total: number, page: number, limit: number, totalPages: number } } | null>(null);
+  const [isProdsLoading, setIsProdsLoading] = useState(true);
 
   const activeLanguages = useMemo(() => langSettings?.supportedLanguages || [
     { code: 'zh', label: '中文' },
@@ -107,48 +109,50 @@ export default function AdminProductsPage() {
     return cat ? getTranslation(cat.nameTextId) : id;
   };
 
-  const filteredProducts = useMemo(() => {
-    if (!products) return [];
-    let result = products.filter(p => {
-      const nameZh = getTranslation(p.nameTextId, 'zh').toLowerCase();
-      const nameEn = getTranslation(p.nameTextId, 'en').toLowerCase();
-      const search = searchQuery.toLowerCase();
+  // 服务端分页拉取产品数据
+  const fetchProducts = useCallback(() => {
+    setIsProdsLoading(true);
+    const params = new URLSearchParams();
+    params.set('page', String(currentPage));
+    params.set('limit', String(ITEMS_PER_PAGE));
+    if (filterCategory !== 'all') {
+      params.set('categoryId', filterCategory);
+    }
+    if (searchQuery) {
+      params.set('search', searchQuery);
+    }
+    params.set('sortBy', sortConfig.key);
+    params.set('sortOrder', sortConfig.order);
 
-      const matchesSearch = nameZh.includes(search) || nameEn.includes(search) || p.id.toLowerCase().includes(search);
-      const matchesCategory = filterCategory === 'all' || p.categoryId === filterCategory;
+    fetch(`/api/products?${params.toString()}`)
+      .then(res => res.json())
+      .then(data => {
+        setProductsData(data);
+        setIsProdsLoading(false);
+      })
+      .catch(err => {
+        console.error('Failed to fetch admin products:', err);
+        setIsProdsLoading(false);
+      });
+  }, [currentPage, filterCategory, searchQuery, sortConfig]);
 
-      return matchesSearch && matchesCategory;
-    });
+  useEffect(() => {
+    fetchProducts();
+  }, [fetchProducts]);
 
-    // 排序逻辑
-    result.sort((a, b) => {
-      let valA: any, valB: any;
-      if (sortConfig.key === 'name') {
-        valA = getTranslation(a.nameTextId, 'zh');
-        valB = getTranslation(b.nameTextId, 'zh');
-      } else {
-        valA = a[sortConfig.key as keyof Product] || '';
-        valB = b[sortConfig.key as keyof Product] || '';
-      }
-
-      if (valA < valB) return sortConfig.order === 'asc' ? -1 : 1;
-      if (valA > valB) return sortConfig.order === 'asc' ? 1 : -1;
-      return 0;
-    });
-
-    return result;
-  }, [products, searchQuery, filterCategory, sortConfig, translations]);
+  const mutateProducts = fetchProducts;
 
   useEffect(() => {
     setCurrentPage(1);
-  }, [searchQuery, filterCategory]);
+  }, [searchQuery, filterCategory, sortConfig.key, sortConfig.order]);
 
-  const paginatedProducts = useMemo(() => {
-    const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
-    return filteredProducts.slice(startIndex, startIndex + ITEMS_PER_PAGE);
-  }, [filteredProducts, currentPage]);
+  const filteredProducts = {
+    length: productsData?.pagination.total || 0
+  };
 
-  const totalPages = Math.ceil(filteredProducts.length / ITEMS_PER_PAGE);
+  const paginatedProducts = productsData?.products || [];
+
+  const totalPages = productsData?.pagination.totalPages || 0;
 
   const handleDelete = async (p: Product) => {
     if (!confirm('确定要删除此产品吗？')) return;

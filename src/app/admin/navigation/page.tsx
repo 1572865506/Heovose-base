@@ -58,7 +58,17 @@ export default function NavigationSettingsPage() {
         body: JSON.stringify(settings),
       });
 
-      if (!res.ok) throw new Error("Failed to save");
+      if (!res.ok) {
+        if (res.status === 409) {
+          const errData = await res.json();
+          throw new Error(errData.message || "配置已被他人修改，请刷新页面加载最新配置后再重试。");
+        }
+        throw new Error("保存失败，请检查网络或重试。");
+      }
+      
+      const savedData = await res.json();
+      setSettings(savedData);
+      
       mutateSettings();
       toast({
         title: "保存成功",

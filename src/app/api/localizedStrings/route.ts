@@ -34,13 +34,33 @@ export async function GET(request: Request) {
       
       // 如果请求的语言在支持列表内，执行过滤以减少传输体积
       if (supportedCodes.includes(lang)) {
-        const prunedStrings = strings.map((item: any) => {
-          const content = (item.content as any) || {};
+        const bizPrefixes = [
+          'prod_', 'cat_', 'spec_', 'biz_tr_', 'psl_', 'psv_', 'psg_', 
+          'adv_', 'case_', 'step_', 'hero_slide_', 'slide_', 
+          'hero_wholesale_', 'hero_project_', 'MAP_LOC_'
+        ];
+
+        const filteredStrings = strings.filter((item: any) => {
+          const itemId = item.id || '';
+          const itemKey = item.key || '';
+          return !bizPrefixes.some(prefix => 
+            itemId.startsWith(prefix) || itemKey.startsWith(prefix)
+          );
+        });
+
+        const prunedStrings = filteredStrings.map((item: any) => {
+          let content = (item.content as any) || {};
+          
+          // Defensively extract nested translation content if present
+          if (content && typeof content === 'object' && 'content' in content && typeof content.content === 'object' && !Array.isArray(content.content)) {
+            content = content.content;
+          }
+          
           return {
             ...item,
             content: {
-              // 仅保留请求的语言，如果缺失则回退到默认语种
-              [lang]: content[lang] || content[defaultLanguage] || content['en'] || content['zh'] || ""
+              // Only retain the requested language translation, never fallback
+              [lang]: content[lang] || ""
             }
           };
         });

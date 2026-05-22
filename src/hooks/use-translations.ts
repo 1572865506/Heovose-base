@@ -50,24 +50,22 @@ export function useTranslations(locale: Locale) {
             return itemId === normalizedKey || itemKey === normalizedKey;
           })
         : null;
+
       
       let val: string | undefined = undefined;
       if (remote) {
-        const content = (remote.content as any) || {};
-        // 级联降级策略：目标语种 -> 默认语种 -> 任意第一个非空翻译 -> 空字符串
-        if (content[locale] !== undefined && content[locale] !== null && content[locale] !== '') {
+        let content = (remote.content as any) || {};
+        
+        // Defensively extract nested translation content if present
+        if (content && typeof content === 'object' && 'content' in content && typeof content.content === 'object' && !Array.isArray(content.content)) {
+          content = content.content;
+        }
+
+        // Direct matching for the target language, no cascading fallback
+        if (content[locale] !== undefined && content[locale] !== null) {
           val = content[locale];
-        } else if (content[defaultLanguage] !== undefined && content[defaultLanguage] !== null && content[defaultLanguage] !== '') {
-          val = content[defaultLanguage];
         } else {
-          const availableLang = Object.keys(content).find(
-            (k) => content[k] !== undefined && content[k] !== null && content[k] !== ''
-          );
-          if (availableLang) {
-            val = content[availableLang];
-          } else {
-            val = '';
-          }
+          val = '';
         }
       }
 
@@ -77,12 +75,21 @@ export function useTranslations(locale: Locale) {
         finalResult = val;
       } else if (isLoading) {
         finalResult = '';
-      } else if (isSystemId) {
-        finalResult = '';
-        // 发现未注册的系统 ID 词条，触发后台自动注册
-        registerKey(key);
       } else {
-        finalResult = typeof key === 'string' ? key : '';
+        const isSystemId = /^[A-Z0-9_]{5,40}$/i.test(key) || /^(psl|psg|psv|prod|cat|hero|slide|case|step)_/i.test(key);
+        if (isSystemId) {
+          finalResult = '';
+          // Discovered unregistered system ID entry, trigger auto-registration
+          registerKey(key);
+        } else {
+          // If not a system ID, but matches typical key naming patterns, treat it as a machine key and return empty
+          const isMachineKey = /^[a-zA-Z0-9_.-]+$/.test(key);
+          if (isMachineKey) {
+            finalResult = '';
+          } else {
+            finalResult = typeof key === 'string' ? key : '';
+          }
+        }
       }
 
 

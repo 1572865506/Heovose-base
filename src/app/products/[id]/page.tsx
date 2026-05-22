@@ -30,13 +30,15 @@ export async function generateMetadata({ params, searchParams }: Props): Promise
   const locale = await getServerLocale(typeof resolvedSearchParams.lang === 'string' ? resolvedSearchParams.lang : undefined);
 
   // 4. Fetch Translated Strings for Replacement
-  const [nameEntry, siteTitleEntry] = await Promise.all([
+  const [nameEntry, siteTitleEntry, descEntry] = await Promise.all([
     db.localizedString.findUnique({ where: { id: product.nameTextId } }),
     db.localizedString.findUnique({ where: { id: 'SITE_TITLE' } }),
+    product.descriptionTextId ? db.localizedString.findUnique({ where: { id: product.descriptionTextId } }) : null,
   ]);
 
   const productName = (nameEntry?.content as any)?.[locale] || nameEntry?.[locale] || product.id;
   const siteTitle = (siteTitleEntry?.content as any)?.[locale] || siteTitleEntry?.[locale] || 'Heovose Elevate';
+  const description = descEntry ? ((descEntry.content as any)?.[locale] || '') : '';
 
   // 5. Build Final Title using Template
   let title = template
@@ -45,10 +47,10 @@ export async function generateMetadata({ params, searchParams }: Props): Promise
 
   return {
     title,
-    description: (await db.localizedString.findUnique({ where: { id: product.descriptionTextId } }))?.[locale] || '',
+    description,
     openGraph: {
       title,
-      images: [product.mainImageUrl],
+      images: product.mainImageUrl ? [product.mainImageUrl] : [],
     }
   };
 }
@@ -58,10 +60,50 @@ export default async function ProductPage({ params, searchParams }: Props) {
   const resolvedSearchParams = await searchParams;
   const id = resolvedParams.id;
 
-  const product = await db.product.findUnique({ where: { id } });
+  const product = await db.product.findUnique({
+    where: { id },
+    include: {
+      nameText: true,
+      descriptionText: true,
+      category: {
+        include: {
+          nameText: true
+        }
+      }
+    }
+  });
   if (!product) notFound();
+
+  // 提取产品包含的规格翻译 IDs
+  const specIds: string[] = [];
+  if (product.specGroups && typeof product.specGroups === 'object') {
+    const groups = product.specGroups as any;
+    const groupArray = Array.isArray(groups) ? groups : [];
+    groupArray.forEach((g: any) => {
+      if (g.titleId) specIds.push(g.titleId);
+      if (Array.isArray(g.items)) {
+        g.items.forEach((item: any) => {
+          if (item.labelId) specIds.push(item.labelId);
+          if (item.valueId) specIds.push(item.valueId);
+        });
+      }
+    });
+  }
+
+  // 批量查出这些 ID 的翻译
+  const specTranslations = specIds.length > 0
+    ? await db.localizedString.findMany({
+        where: { id: { in: specIds } }
+      })
+    : [];
 
   const locale = await getServerLocale(typeof resolvedSearchParams.lang === 'string' ? resolvedSearchParams.lang : undefined);
 
-  return <ProductClient product={JSON.parse(JSON.stringify(product))} initialLocale={locale} />;
+  // 打包产品数据，在客户端进行注入
+  const productWithSpecs = {
+    ...product,
+    specTranslations
+  };
+
+  return <ProductClient product={JSON.parse(JSON.stringify(productWithSpecs))} initialLocale={locale} />;
 }

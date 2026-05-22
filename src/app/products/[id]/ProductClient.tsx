@@ -33,6 +33,7 @@ import { useLocalCollection } from '@/hooks/use-local-collection';
 import { useLocalDoc } from '@/hooks/use-local-doc';
 import { useInquiry } from '@/components/providers/InquiryProvider';
 import { HoverVideoPlayer } from '@/components/HoverVideoPlayer';
+import { injectTranslations } from '@/lib/translation-injector';
 
 const isVideoUrl = (url: string) => {
   if (!url) return false;
@@ -54,6 +55,7 @@ export default function ProductClient({ product, initialLocale }: { product: any
   const [isZoomOpen, setIsZoomOpen] = useState(false);
   const [zoomScale, setZoomScale] = useState(1);
   const [playingProductId, setPlayingProductId] = useState<string | null>(null);
+  const [sanitizedDetails, setSanitizedDetails] = useState('');
 
   useEffect(() => {
     if (product?.mainImageUrl) {
@@ -103,12 +105,40 @@ export default function ProductClient({ product, initialLocale }: { product: any
     setIsLocaleReady(true);
   }, [searchParams, langSettings, initialLocale]);
 
+  // 动态将该产品及其分类和规格的翻译按需注入全局缓存
+  useEffect(() => {
+    if (product) {
+      const translations = [
+        product.nameText,
+        product.descriptionText,
+        product.category?.nameText,
+        product.category?.descriptionText,
+        ...(product.specTranslations || [])
+      ].filter(Boolean);
+      injectTranslations(locale, translations);
+    }
+  }, [product, locale]);
+
   const productDetails = useMemo(() => {
     if (!product?.localizedDetails) return '';
     const content = product.localizedDetails[locale] || product.localizedDetails['en'] || product.localizedDetails['zh'] || '';
     const plainText = content.replace(/<[^>]*>?/gm, '').trim();
     return plainText ? content : '';
   }, [product, locale]);
+
+  useEffect(() => {
+    if (productDetails) {
+      import('dompurify').then((DOMPurifyModule) => {
+        const DOMPurify = DOMPurifyModule.default || DOMPurifyModule;
+        setSanitizedDetails(DOMPurify.sanitize(productDetails));
+      }).catch((err) => {
+        console.error('Failed to load DOMPurify', err);
+        setSanitizedDetails('');
+      });
+    } else {
+      setSanitizedDetails('');
+    }
+  }, [productDetails]);
   
   const categoryName = useMemo(() => {
     if (!product || !categories) return '';
@@ -127,30 +157,19 @@ export default function ProductClient({ product, initialLocale }: { product: any
     return [product.mainImageUrl, ...(product.galleryImageUrls || [])].filter(Boolean) as string[];
   }, [product]);
   
-  const { data: allProducts } = useLocalCollection<any>('products');
+  const { data: relatedProducts } = useLocalCollection<any>(product?.id ? `products/${product.id}/related` : null);
 
-  const relatedProducts = useMemo(() => {
-    if (!product || !allProducts || !categories) return [];
-    
-    const targetCat = categories.find((c: any) => c.id === product.categoryId);
-    const targetParentId = targetCat?.parentId;
+  // 注入推荐产品的翻译数据
+  useEffect(() => {
+    if (relatedProducts && Array.isArray(relatedProducts)) {
+      const trans = relatedProducts.flatMap((p: any) => [p.nameText, p.descriptionText].filter(Boolean));
+      injectTranslations(locale, trans);
+    }
+  }, [relatedProducts, locale]);
 
-    return allProducts
-      .filter((p: any) => p.id !== product.id && p.status === 'published')
-      .map((p: any) => {
-        let score = 0;
-        const pCat = categories.find((c: any) => c.id === p.categoryId);
-        if (p.categoryId === product.categoryId) score += 100;
-        else if (targetParentId && pCat?.parentId === targetParentId) score += 50;
-        
-        const timeDiff = Math.abs(new Date(p.createdAt || 0).getTime() - new Date(product.createdAt || 0).getTime());
-        const timeScore = 10 / (1 + timeDiff / (1000 * 60 * 60 * 24));
-        score += timeScore;
-        return { ...p, score };
-      })
-      .sort((a: any, b: any) => b.score - a.score)
-      .slice(0, 6);
-  }, [product, allProducts, categories]);
+  const displayRelatedProducts = useMemo(() => {
+    return relatedProducts || [];
+  }, [relatedProducts]);
 
   const groupedSpecs = useMemo(() => {
     if (!product?.specGroups) return [];
@@ -384,7 +403,7 @@ export default function ProductClient({ product, initialLocale }: { product: any
               
               {productDetails && (
                 <TabsContent value="desc" forceMount className="max-w-4xl animate-in fade-in slide-in-from-bottom-4 duration-700 data-[state=inactive]:hidden print:data-[state=inactive]:block">
-                  <div className="prose prose-lg dark:prose-invert max-w-none" dangerouslySetInnerHTML={{ __html: productDetails }} />
+                  <div className="prose prose-lg dark:prose-invert max-w-none" dangerouslySetInnerHTML={{ __html: sanitizedDetails }} />
                 </TabsContent>
               )}
               <TabsContent value="specs" forceMount className="animate-in fade-in slide-in-from-bottom-4 duration-700 data-[state=inactive]:hidden print:data-[state=inactive]:block">
@@ -413,7 +432,7 @@ export default function ProductClient({ product, initialLocale }: { product: any
               </TabsContent>
             </Tabs>
 
-            {relatedProducts.length > 0 && (
+            {displayRelatedProducts.length > 0 && (
               <div className="mt-40 space-y-12 no-print">
                 <div className="flex items-center justify-between">
                   <div className="space-y-1">
@@ -428,7 +447,7 @@ export default function ProductClient({ product, initialLocale }: { product: any
                 </div>
 
                 <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-6">
-                  {relatedProducts.map((p: any) => (
+                  {displayRelatedProducts.map((p: any) => (
                     <Link key={p.id} href={`/products/${p.id}?lang=${locale}`} className="group space-y-4">
                       <div className="relative aspect-[11/9] bg-slate-50 rounded-2xl overflow-hidden border border-slate-100 transition-all duration-500 group-hover:shadow-2xl group-hover:shadow-primary/10">
                         <HoverVideoPlayer

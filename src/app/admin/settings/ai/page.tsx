@@ -87,6 +87,7 @@ interface AIConfig {
     timestamp: string;
     message?: string;
   };
+  _version?: number;
 }
 
 const GlassCard = ({ children, className }: { children: React.ReactNode, className?: string }) => (
@@ -122,23 +123,35 @@ export default function AiManagementPage() {
         isEnabled: aiConfig.isEnabled ?? true,
         providers: aiConfig.providers || [],
         fallbackStrategy: aiConfig.fallbackStrategy || 'next-available',
-        systemInstruction: aiConfig.systemInstruction || formData.systemInstruction
+        systemInstruction: aiConfig.systemInstruction || formData.systemInstruction,
+        _version: (aiConfig as any)._version
       });
     }
   }, [aiConfig]);
 
-  const handleSave = async (updatedData: AIConfig = formData) => {
+  const handleSave = async (updatedData: any = formData) => {
     setIsSaving(true);
     try {
-      await fetch('/api/settings/ai', {
+      const res = await fetch('/api/settings/ai', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(updatedData),
       });
+
+      if (!res.ok) {
+        if (res.status === 409) {
+          const errData = await res.json();
+          throw new Error(errData.message || "配置已被他人修改，请刷新页面加载最新配置后再重试。");
+        }
+        throw new Error("保存失败，请检查网络或重试。");
+      }
+
+      const savedData = await res.json();
+      setFormData(savedData);
       mutate();
       toast({ title: "AI 配置已同步", description: "新的调度策略已生效。" });
-    } catch (e) {
-      toast({ variant: "destructive", title: "保存失败", description: "无法持久化 AI 设置。" });
+    } catch (e: any) {
+      toast({ variant: "destructive", title: "保存失败", description: e.message || "无法持久化 AI 设置。" });
     } finally {
       setIsSaving(false);
     }

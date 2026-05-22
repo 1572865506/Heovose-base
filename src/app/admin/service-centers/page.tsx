@@ -62,6 +62,7 @@ interface ServiceCenter {
 
 interface ServiceCentersData {
   centers: ServiceCenter[];
+  _version?: number;
 }
 
 const GlassCard = ({ children, className }: { children: React.ReactNode; className?: string }) => (
@@ -296,10 +297,19 @@ export default function ServiceCentersAdminPage() {
       const response = await fetch('/api/settings/service_centers', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ centers: updatedCenters }),
+        body: JSON.stringify({ 
+          centers: updatedCenters,
+          _version: serviceCentersData?._version
+        }),
       });
 
-      if (!response.ok) throw new Error('Failed to save service centers');
+      if (!response.ok) {
+        if (response.status === 409) {
+          const errData = await response.json();
+          throw new Error(errData.message || "配置已被他人修改，请刷新页面加载最新配置后再重试。");
+        }
+        throw new Error('Failed to save service centers');
+      }
 
       await mutateCenters();
       setIsDialogOpen(false);
@@ -308,12 +318,12 @@ export default function ServiceCentersAdminPage() {
         description: `服务网点「${formName}」已成功签署写入数据库。`,
         className: "bg-primary text-white border-none rounded-2xl animate-in fade-in shadow-xl"
       });
-    } catch (error) {
+    } catch (error: any) {
       console.error(error);
       toast({
         variant: "destructive",
         title: "同步失败",
-        description: "保存失败，请检查数据库连接网关。"
+        description: error.message || "保存失败，请检查数据库连接网关。"
       });
     } finally {
       setIsSaving(false);
@@ -357,10 +367,19 @@ export default function ServiceCentersAdminPage() {
       const response = await fetch('/api/settings/service_centers', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ centers: finalCenters }),
+        body: JSON.stringify({ 
+          centers: finalCenters,
+          _version: serviceCentersData?._version
+        }),
       });
 
-      if (!response.ok) throw new Error('Failed to save imported centers');
+      if (!response.ok) {
+        if (response.status === 409) {
+          const errData = await response.json();
+          throw new Error(errData.message || "配置已被他人修改，请刷新页面加载最新配置后再重试。");
+        }
+        throw new Error('Failed to save imported centers');
+      }
 
       await mutateCenters();
       setIsImportDialogOpen(false);
@@ -370,12 +389,12 @@ export default function ServiceCentersAdminPage() {
         description: `已成功签署录入 ${newItems.length} 家服务中心！目前系统共有 ${finalCenters.length} 家网点。`,
         className: "bg-primary text-white border-none rounded-2xl shadow-xl animate-in fade-in"
       });
-    } catch (err) {
+    } catch (err: any) {
       console.error(err);
       toast({
         variant: "destructive",
         title: "导入同步失败",
-        description: "数据写入错误，请确认 PostgreSQL 连通状况。"
+        description: err.message || "数据写入错误，请确认 PostgreSQL 连通状况。"
       });
     } finally {
       setIsSaving(false);
@@ -392,10 +411,19 @@ export default function ServiceCentersAdminPage() {
       const response = await fetch('/api/settings/service_centers', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ centers: updatedCenters }),
+        body: JSON.stringify({ 
+          centers: updatedCenters,
+          _version: serviceCentersData?._version
+        }),
       });
 
-      if (!response.ok) throw new Error('Failed to delete center');
+      if (!response.ok) {
+        if (response.status === 409) {
+          const errData = await response.json();
+          throw new Error(errData.message || "配置已被他人修改，请刷新页面加载最新配置后再重试。");
+        }
+        throw new Error('Failed to delete center');
+      }
 
       await mutateCenters();
       toast({
@@ -403,12 +431,12 @@ export default function ServiceCentersAdminPage() {
         description: `服务网点「${center.name}」已成功从数据库中移除。`,
         className: "bg-red-600 text-white border-none rounded-2xl animate-in fade-in shadow-xl"
       });
-    } catch (error) {
+    } catch (error: any) {
       console.error(error);
       toast({
         variant: "destructive",
         title: "操作失败",
-        description: "删除失败，请检查数据库通信状态。"
+        description: error.message || "删除失败，请检查数据库通信状态。"
       });
     }
   };

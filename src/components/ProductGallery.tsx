@@ -23,6 +23,7 @@ import { useTranslations } from '@/hooks/use-translations';
 import { useInquiry } from '@/hooks/../components/providers/InquiryProvider';
 import { MessageSquare } from 'lucide-react';
 import { HoverVideoPlayer } from '@/components/HoverVideoPlayer';
+import { injectTranslations } from '@/lib/translation-injector';
 
 function GalleryCard({ 
   product, 
@@ -128,6 +129,14 @@ export function ProductGallery({ locale }: { locale: Locale }) {
   const { data: langSettings } = useLocalDoc<any>('settings', 'languages');
 
   const { data: galleryConfig, mutate: mutateGallery } = useLocalDoc<any>('homepageContent', 'gallery');
+
+  // 注入轮播图产品翻译到本地缓存，让 getT 能通过 lightweight 词典无感读取
+  useEffect(() => {
+    if (remoteProducts && Array.isArray(remoteProducts)) {
+      const trans = remoteProducts.flatMap((p: any) => [p.nameText, p.descriptionText].filter(Boolean));
+      injectTranslations(locale, trans);
+    }
+  }, [remoteProducts, locale]);
 
 
 
