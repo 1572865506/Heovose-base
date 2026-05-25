@@ -86,6 +86,8 @@ model HomepageBentoItem {
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
   brightness Float?
+  linkType   String   @default("custom")
+  categoryId String?
 }
 
 model MapLocation {

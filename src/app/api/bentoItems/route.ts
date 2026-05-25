@@ -29,6 +29,8 @@ export async function POST(request: Request) {
         linkUrl: data.linkUrl,
         gridSize: data.gridSize || 'small',
         order: data.order || 0,
+        linkType: data.linkType || 'custom',
+        categoryId: data.categoryId || null,
       },
     });
     return NextResponse.json(item);

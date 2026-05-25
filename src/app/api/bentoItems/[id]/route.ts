@@ -39,6 +39,8 @@ export async function PUT(
         linkUrl: data.linkUrl,
         gridSize: data.gridSize,
         order: data.order,
+        linkType: data.linkType,
+        categoryId: data.categoryId,
       },
     });
     return NextResponse.json(item);

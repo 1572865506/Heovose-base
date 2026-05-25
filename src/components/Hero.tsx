@@ -204,8 +204,8 @@ export function Hero({ locale, homeConfig, isLoading, onThemeChange }: HeroProps
               </div>
 
               {/* Slide Content */}
-              <div className="max-w-[1600px] mx-auto px-6 relative z-30 h-[calc(100vh-160px)] min-h-[600px] flex items-center justify-center">
-                <div className="max-w-[50rem] flex flex-col gap-4 md:gap-6 animate-fade-in text-center mx-auto mt-20 md:mt-32 items-center">
+              <div className="max-w-[1600px] mx-auto px-6 relative z-30 h-[calc(100vh-160px)] min-h-[600px] flex items-center justify-start">
+                <div className="max-w-[50rem] flex flex-col gap-4 md:gap-6 animate-fade-in text-left mr-auto ml-0 mt-20 md:mt-32 items-start">
                   <SplitText
                     key={`headline-${slide.id}-${selectedIndex === index}-v1.1`}
                     text={tr(`hero_slide_${slide.id.replace(/^slide_/, '')}_headline`) || getFallback(slide.headlineZh, slide.headlineEn)}
@@ -219,7 +219,7 @@ export function Hero({ locale, homeConfig, isLoading, onThemeChange }: HeroProps
                     ease="power4.out"
                     from={headlineAnimateFrom}
                     to={headlineAnimateTo}
-                    textAlign="center"
+                    textAlign="left"
                     threshold={0.1}
                     rootMargin="0px"
                     splitType="chars"
@@ -239,7 +239,7 @@ export function Hero({ locale, homeConfig, isLoading, onThemeChange }: HeroProps
                         line-height: 1.35 !important;
                         height: auto !important;
                         padding-bottom: 0.1em;
-                        justify-content: center !important;
+                        justify-content: flex-start !important;
                       }
                       @keyframes arrow-slide-out-in {
                         0% {
@@ -275,7 +275,7 @@ export function Hero({ locale, homeConfig, isLoading, onThemeChange }: HeroProps
                       key={`subheadline-${slide.id}-${selectedIndex === index}-${locale}-v1.35`}
                       text={tr(`hero_slide_${slide.id.replace(/^slide_/, '')}_subheadline`) || getFallback(slide.subheadlineZh, slide.subheadlineEn)}
                       className={cn(
-                        "hero-subheadline text-xl md:text-2xl lg:text-[2rem] font-body max-w-full leading-[1.35] tracking-tight drop-shadow-[0_2px_15px_rgba(0,0,0,0.4)] block mx-auto gpu-accelerated overflow-visible",
+                        "hero-subheadline text-xl md:text-2xl lg:text-[2rem] font-body max-w-full leading-[1.35] tracking-tight drop-shadow-[0_2px_15px_rgba(0,0,0,0.4)] block mr-auto ml-0 gpu-accelerated overflow-visible",
                         currentTheme === 'light' ? "text-slate-800/80" : "text-white/90"
                       )}
                       tag="h2"
@@ -284,7 +284,7 @@ export function Hero({ locale, homeConfig, isLoading, onThemeChange }: HeroProps
                       ease="power3.out"
                       from={subheadlineAnimateFrom}
                       to={subheadlineAnimateTo}
-                      textAlign="center"
+                      textAlign="left"
                       threshold={0.1}
                       rootMargin="0px"
                       splitType="lines"

@@ -1116,7 +1116,7 @@ export default function AdminHomePage() {
                 <LayoutGrid className="h-4 w-4" /> 首页格位内容管理 (Grid Items)
               </h3>
               <Button 
-                onClick={() => setBentoDialog({ open: true, item: { titleZh: '', titleEn: '', tagZh: '', tagEn: '', imageUrl: '', linkUrl: '', gridSize: 'small', order: (bentoItems?.length || 0) + 1 } })} 
+                onClick={() => setBentoDialog({ open: true, item: { titleZh: '', titleEn: '', tagZh: '', tagEn: '', imageUrl: '', linkUrl: '', gridSize: 'small', order: (bentoItems?.length || 0) + 1, linkType: 'custom', categoryId: null } })} 
                 size="sm" 
                 className="rounded-xl h-9 px-4 gap-2 text-[10px] font-bold uppercase tracking-wider shadow-md"
               >
@@ -1619,7 +1619,13 @@ function BentoItemDialog({ open, onOpenChange, item, onSave, onTranslate, onImag
   const [isTranslating, setIsTranslating] = useState(false);
 
   useEffect(() => {
-    if (item) setLocalItem(item);
+    if (item) {
+      setLocalItem({
+        ...item,
+        linkType: item.linkType || 'custom',
+        categoryId: item.categoryId || null
+      });
+    }
   }, [item]);
 
   if (!localItem) return null;
@@ -1712,30 +1718,68 @@ function BentoItemDialog({ open, onOpenChange, item, onSave, onTranslate, onImag
               <Input value={localItem.titleZh} onChange={e => setLocalItem({ ...localItem, titleZh: e.target.value })} placeholder="主标题" className="h-11 rounded-xl border-border" />
               <Input value={localItem.tagZh} onChange={e => setLocalItem({ ...localItem, tagZh: e.target.value })} placeholder="小标签 (如：批发业务)" className="h-11 rounded-xl border-border" />
               
-              <div className="pt-4 border-t border-dashed border-border/60 space-y-3">
-                <Label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">跳转逻辑 (Navigation)</Label>
-                <Select 
-                  onValueChange={v => {
-                    if (v === 'custom') return;
-                    const cat = categories.find(c => c.id === v);
-                    if (cat) {
-                      setLocalItem({ ...localItem, linkUrl: `products?category=${encodeURIComponent(cat.slug || cat.id)}` });
-                    }
-                  }}
-                >
-                  <SelectTrigger className="h-10 rounded-xl border-border text-xs">
-                    <SelectValue placeholder="快速关联产品分类" />
-                  </SelectTrigger>
-                  <SelectContent className="rounded-xl">
-                    <SelectItem value="custom" className="text-xs font-bold text-primary">手动输入自定义链接</SelectItem>
-                    {categories?.map((cat: any) => {
-                      const trans = translations?.find((t: any) => t.id === cat.nameTextId);
-                      const name = trans?.content?.zh || trans?.zh || cat.id;
-                      return <SelectItem key={cat.id} value={cat.id} className="text-xs">{name}</SelectItem>;
-                    })}
-                  </SelectContent>
-                </Select>
-                <Input value={localItem.linkUrl} onChange={e => setLocalItem({ ...localItem, linkUrl: e.target.value })} placeholder="跳转链接 (如：products?category=...)" className="h-11 rounded-xl border-border font-mono text-[11px]" />
+              <div className="pt-4 border-t border-dashed border-border/60 space-y-4">
+                <div className="space-y-2">
+                  <Label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">链接功能类型 (Link Type)</Label>
+                  <Select 
+                    value={localItem.linkType || 'custom'}
+                    onValueChange={v => {
+                      if (v === 'category') {
+                        setLocalItem({ ...localItem, linkType: v, linkUrl: '' });
+                      } else {
+                        setLocalItem({ ...localItem, linkType: v, categoryId: null });
+                      }
+                    }}
+                  >
+                    <SelectTrigger className="h-10 rounded-xl border-border text-xs">
+                      <SelectValue placeholder="选择链接类型" />
+                    </SelectTrigger>
+                    <SelectContent className="rounded-xl">
+                      <SelectItem value="custom" className="text-xs">自定义链接 (Custom Link)</SelectItem>
+                      <SelectItem value="category" className="text-xs">跳转产品分类 (Product Category)</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                {localItem.linkType === 'category' ? (
+                  <div className="space-y-2">
+                    <Label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">选择产品分类 (Select Category)</Label>
+                    <Select 
+                      value={localItem.categoryId || undefined}
+                      onValueChange={v => {
+                        const cat = categories.find(c => c.id === v);
+                        if (cat) {
+                          setLocalItem({ 
+                            ...localItem, 
+                            categoryId: v, 
+                            linkUrl: `products?category=${encodeURIComponent(cat.slug || cat.id)}` 
+                          });
+                        }
+                      }}
+                    >
+                      <SelectTrigger className="h-10 rounded-xl border-border text-xs">
+                        <SelectValue placeholder="关联一个分类" />
+                      </SelectTrigger>
+                      <SelectContent className="rounded-xl">
+                        {categories?.map((cat: any) => {
+                          const trans = translations?.find((t: any) => t.id === cat.nameTextId);
+                          const name = trans?.content?.zh || trans?.zh || cat.id;
+                          return <SelectItem key={cat.id} value={cat.id} className="text-xs">{name}</SelectItem>;
+                        })}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                ) : (
+                  <div className="space-y-2">
+                    <Label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">自定义链接地址 (Custom Link URL)</Label>
+                    <Input 
+                      value={localItem.linkUrl || ''} 
+                      onChange={e => setLocalItem({ ...localItem, linkUrl: e.target.value })} 
+                      placeholder="例如：/about, /products?line=wholesale 等" 
+                      className="h-11 rounded-xl border-border font-mono text-[11px]" 
+                    />
+                  </div>
+                )}
               </div>
             </div>
 
