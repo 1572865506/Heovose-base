@@ -11,19 +11,32 @@ export async function GET(
     const { id } = await params;
     if (!id) return NextResponse.json({ error: 'Missing ID' }, { status: 400 });
 
-    let item = await db.localizedString.findUnique({
+    const session = await auth();
+
+    let item: any = await db.localizedString.findUnique({
       where: { id },
     });
 
     if (!item) {
       const isSystemUiKey = id.startsWith('SYS_') || id.startsWith('navbar_');
       if (isSystemUiKey) {
-        item = await db.localizedString.create({
-          data: {
+        if (session) {
+          // Only authenticated users (admins) can trigger database-level auto-registration
+          item = await db.localizedString.create({
+            data: {
+              id,
+              content: {}
+            }
+          });
+        } else {
+          // For unauthenticated visitors, return a virtual in-memory record without modifying the DB
+          item = {
             id,
-            content: {}
-          }
-        });
+            content: {},
+            createdAt: new Date(),
+            updatedAt: new Date()
+          };
+        }
       } else {
         return NextResponse.json({ error: 'Not Found' }, { status: 404 });
       }
@@ -31,7 +44,8 @@ export async function GET(
 
     return NextResponse.json(item);
   } catch (error: any) {
-    return NextResponse.json({ error: 'Internal Server Error', message: error.message }, { status: 500 });
+    console.error('[API Error] LocalizedString GET:', error);
+    return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
   }
 }
 

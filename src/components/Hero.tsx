@@ -12,6 +12,7 @@ import useEmblaCarousel from 'embla-carousel-react';
 import Autoplay from 'embla-carousel-autoplay';
 import Fade from 'embla-carousel-fade';
 import dynamic from 'next/dynamic';
+import { useLocalCollection } from '@/hooks/use-local-collection';
 
 const SplitText = dynamic(() => import('./ui/SplitText'), { ssr: false });
 
@@ -22,6 +23,10 @@ interface HeroSlide {
   subheadlineZh: string;
   subheadlineEn: string;
   bgImage: string;
+  mobileBgImage?: string;
+  linkType?: 'custom' | 'category';
+  categoryId?: string | null;
+  linkUrl?: string;
   priority?: number;
 }
 
@@ -38,6 +43,7 @@ import { useTranslations } from '@/hooks/use-translations';
 
 export function Hero({ locale, homeConfig, isLoading, onThemeChange }: HeroProps) {
   const { t: tr, defaultLanguage } = useTranslations(locale);
+  const { data: categories } = useLocalCollection<any>('productCategories');
 
   // 1. Prepare Slides Data
   const slides: HeroSlide[] = React.useMemo(() => {
@@ -141,14 +147,69 @@ export function Hero({ locale, homeConfig, isLoading, onThemeChange }: HeroProps
 
   const displayExploreCTA = ''; // Removed redundant global CTA
 
-  const getEntryHref = (id: string | undefined, defaultLine: string) => {
+  const resolveLinkUrl = useCallback((url: string | undefined | null) => {
+    if (!url) return '';
+    if (url.startsWith('http://') || url.startsWith('https://') || url.startsWith('/')) {
+      return url;
+    }
+    return `/${url}`;
+  }, []);
+
+  const getSlideHref = useCallback((slide: HeroSlide) => {
+    if (slide.linkType === 'category') {
+      if (slide.categoryId && slide.categoryId !== 'none') {
+        const cat = categories?.find((c: any) => c.id === slide.categoryId);
+        if (cat?.slug) {
+          return `/products?category=${encodeURIComponent(cat.slug)}`;
+        }
+      }
+      if (slide.linkUrl) {
+        return resolveLinkUrl(slide.linkUrl);
+      }
+      if (slide.categoryId) {
+        return `/products?category=${encodeURIComponent(slide.categoryId)}`;
+      }
+      return null;
+    }
+    
+    // custom
+    if (!slide.linkUrl) return null;
+    return resolveLinkUrl(slide.linkUrl);
+  }, [categories, resolveLinkUrl]);
+
+  const getEntryHref = useCallback((id: string | undefined, defaultLine: string) => {
     if (!id || id === 'none') return `/products?line=${defaultLine}`;
     if (id === 'WHOLESALE' || id === 'PROJECT') return `/products?line=${id.toLowerCase()}`;
     return `/products?category=${id}`;
-  };
+  }, []);
 
-  const wholesaleHref = getEntryHref(homeConfig?.heroWholesaleCategoryId, 'wholesale');
-  const projectHref = getEntryHref(homeConfig?.heroProjectCategoryId, 'project');
+  const wholesaleHref = React.useMemo(() => {
+    if (homeConfig?.heroWholesaleLinkType === 'custom') {
+      return resolveLinkUrl(homeConfig?.heroWholesaleLinkUrl);
+    }
+    const catId = homeConfig?.heroWholesaleCategoryId;
+    if (catId && catId !== 'none' && catId !== 'WHOLESALE' && catId !== 'PROJECT') {
+      const cat = categories?.find((c: any) => c.id === catId);
+      if (cat?.slug) {
+        return `/products?category=${encodeURIComponent(cat.slug)}`;
+      }
+    }
+    return getEntryHref(catId, 'wholesale');
+  }, [homeConfig, categories, resolveLinkUrl, getEntryHref]);
+
+  const projectHref = React.useMemo(() => {
+    if (homeConfig?.heroProjectLinkType === 'custom') {
+      return resolveLinkUrl(homeConfig?.heroProjectLinkUrl);
+    }
+    const catId = homeConfig?.heroProjectCategoryId;
+    if (catId && catId !== 'none' && catId !== 'WHOLESALE' && catId !== 'PROJECT') {
+      const cat = categories?.find((c: any) => c.id === catId);
+      if (cat?.slug) {
+        return `/products?category=${encodeURIComponent(cat.slug)}`;
+      }
+    }
+    return getEntryHref(catId, 'project');
+  }, [homeConfig, categories, resolveLinkUrl, getEntryHref]);
 
   const wholesaleBg = homeConfig?.heroWholesaleBg || "";
   const projectBg = homeConfig?.heroProjectBg || "";
@@ -186,114 +247,154 @@ export function Hero({ locale, homeConfig, isLoading, onThemeChange }: HeroProps
       {/* --- CAROUSEL LAYER --- */}
       <div className="absolute inset-0 z-0" ref={emblaRef}>
         <div className="flex h-full">
-          {slides.map((slide, index) => (
-            <div key={slide.id} className="relative flex-[0_0_100%] min-w-0 h-full">
-              {/* Slide Background */}
-              <div className="absolute inset-0">
-                <Image
-                  src={getAssetUrl(slide.bgImage)}
-                  alt={getFallback(slide.headlineZh, slide.headlineEn)}
-                  fill
-                  className="object-cover object-[66%_center] md:object-center"
-                  priority={index === 0 || slide.id === 'legacy-default'}
-                  quality={100}
-                  sizes="100vw"
-                />
+          {slides.map((slide, index) => {
+            const slideHref = getSlideHref(slide);
+            return (
+              <div key={slide.id} className="relative flex-[0_0_100%] min-w-0 h-full">
+                {/* Slide Background */}
+                <div className="absolute inset-0">
+                  {slide.mobileBgImage ? (
+                    <>
+                      {/* PC Poster */}
+                      <div className="hidden md:block absolute inset-0">
+                        <Image
+                          src={getAssetUrl(slide.bgImage)}
+                          alt={getFallback(slide.headlineZh, slide.headlineEn)}
+                          fill
+                          className="object-cover md:object-center"
+                          priority={index === 0 || slide.id === 'legacy-default'}
+                          quality={100}
+                          sizes="100vw"
+                        />
+                      </div>
+                      {/* Mobile Poster */}
+                      <div className="block md:hidden absolute inset-0">
+                        <Image
+                          src={getAssetUrl(slide.mobileBgImage)}
+                          alt={getFallback(slide.headlineZh, slide.headlineEn)}
+                          fill
+                          className="object-cover object-[66%_center]"
+                          priority={index === 0 || slide.id === 'legacy-default'}
+                          quality={100}
+                          sizes="100vw"
+                        />
+                      </div>
+                    </>
+                  ) : (
+                    // Default PC Poster
+                    <Image
+                      src={getAssetUrl(slide.bgImage)}
+                      alt={getFallback(slide.headlineZh, slide.headlineEn)}
+                      fill
+                      className="object-cover object-[66%_center] md:object-center"
+                      priority={index === 0 || slide.id === 'legacy-default'}
+                      quality={100}
+                      sizes="100vw"
+                    />
+                  )}
+                </div>
 
-                {/* Visual Enhancements Removed */}
-              </div>
-
-              {/* Slide Content */}
-              <div className="max-w-[1600px] mx-auto px-6 relative z-30 h-[calc(100vh-160px)] min-h-[600px] flex items-center justify-start">
-                <div className="max-w-[50rem] flex flex-col gap-4 md:gap-6 animate-fade-in text-left mr-auto ml-0 mt-20 md:mt-32 items-start">
-                  <SplitText
-                    key={`headline-${slide.id}-${selectedIndex === index}-v1.1`}
-                    text={tr(`hero_slide_${slide.id.replace(/^slide_/, '')}_headline`) || getFallback(slide.headlineZh, slide.headlineEn)}
-                    className={cn(
-                      "hero-headline text-4xl md:text-5xl lg:text-[4rem] font-headline font-black leading-[1.2] tracking-tight drop-shadow-[0_4px_30px_rgba(0,0,0,0.5)] gpu-accelerated overflow-visible",
-                      currentTheme === 'light' ? "text-slate-900" : "text-white"
-                    )}
-                    tag="h1"
-                    delay={40}
-                    duration={0.8}
-                    ease="power4.out"
-                    from={headlineAnimateFrom}
-                    to={headlineAnimateTo}
-                    textAlign="left"
-                    threshold={0.1}
-                    rootMargin="0px"
-                    splitType="chars"
+                {/* Clickable Overlay Link for Slide */}
+                {slideHref && (
+                  <Link 
+                    href={slideHref} 
+                    className="absolute inset-0 z-20 block cursor-pointer" 
+                    aria-label={getFallback(slide.headlineZh, slide.headlineEn)}
                   />
+                )}
 
-                  <div className="relative w-full">
-                    <style dangerouslySetInnerHTML={{
-                      __html: `
-                      .hero-headline {
-                        line-height: 1.2 !important;
-                      }
-                      .hero-headline div {
-                        line-height: 1.2 !important;
-                        height: auto !important;
-                      }
-                      .hero-subheadline .split-line {
-                        line-height: 1.35 !important;
-                        height: auto !important;
-                        padding-bottom: 0.1em;
-                        justify-content: flex-start !important;
-                      }
-                      @keyframes arrow-slide-out-in {
-                        0% {
-                          transform: translate(0, 0);
-                          opacity: 1;
-                        }
-                        8% {
-                          transform: translate(160%, -160%);
-                          opacity: 0;
-                        }
-                        9% {
-                          transform: translate(-160%, 160%);
-                          opacity: 0;
-                        }
-                        17% {
-                          transform: translate(0, 0);
-                          opacity: 1;
-                        }
-                        100% {
-                          transform: translate(0, 0);
-                          opacity: 1;
-                        }
-                      }
-                      .animate-arrow-loop {
-                        animation: arrow-slide-out-in 4s infinite cubic-bezier(0.25, 1, 0.5, 1);
-                      }
-                      .animate-arrow-loop-delay {
-                        animation: arrow-slide-out-in 4s infinite cubic-bezier(0.25, 1, 0.5, 1);
-                        animation-delay: 2s;
-                      }
-                    `}} />
+                {/* Slide Content */}
+                <div className="max-w-[1600px] mx-auto px-6 relative z-10 pointer-events-none h-[calc(100vh-160px)] min-h-[600px] flex items-center justify-start">
+                  <div className="max-w-[50rem] flex flex-col gap-4 md:gap-6 animate-fade-in text-left mr-auto ml-0 mt-20 md:mt-32 items-start">
                     <SplitText
-                      key={`subheadline-${slide.id}-${selectedIndex === index}-${locale}-v1.35`}
-                      text={tr(`hero_slide_${slide.id.replace(/^slide_/, '')}_subheadline`) || getFallback(slide.subheadlineZh, slide.subheadlineEn)}
+                      key={`headline-${slide.id}-${selectedIndex === index}-v1.1`}
+                      text={tr(`hero_slide_${slide.id.replace(/^slide_/, '')}_headline`) || getFallback(slide.headlineZh, slide.headlineEn)}
                       className={cn(
-                        "hero-subheadline text-xl md:text-2xl lg:text-[2rem] font-body max-w-full leading-[1.35] tracking-tight drop-shadow-[0_2px_15px_rgba(0,0,0,0.4)] block mr-auto ml-0 gpu-accelerated overflow-visible",
-                        currentTheme === 'light' ? "text-slate-800/80" : "text-white/90"
+                        "hero-headline text-4xl md:text-5xl lg:text-[4rem] font-headline font-black leading-[1.2] tracking-tight drop-shadow-[0_4px_30px_rgba(0,0,0,0.5)] gpu-accelerated overflow-visible",
+                        currentTheme === 'light' ? "text-slate-900" : "text-white"
                       )}
-                      tag="h2"
-                      delay={20}
-                      duration={1}
-                      ease="power3.out"
-                      from={subheadlineAnimateFrom}
-                      to={subheadlineAnimateTo}
+                      tag="h1"
+                      delay={40}
+                      duration={0.8}
+                      ease="power4.out"
+                      from={headlineAnimateFrom}
+                      to={headlineAnimateTo}
                       textAlign="left"
                       threshold={0.1}
                       rootMargin="0px"
-                      splitType="lines"
+                      splitType="chars"
                     />
+
+                    <div className="relative w-full">
+                      <style dangerouslySetInnerHTML={{
+                        __html: `
+                        .hero-headline {
+                          line-height: 1.2 !important;
+                        }
+                        .hero-headline div {
+                          line-height: 1.2 !important;
+                          height: auto !important;
+                        }
+                        .hero-subheadline .split-line {
+                          line-height: 1.35 !important;
+                          height: auto !important;
+                          padding-bottom: 0.1em;
+                          justify-content: flex-start !important;
+                        }
+                        @keyframes arrow-slide-out-in {
+                          0% {
+                            transform: translate(0, 0);
+                            opacity: 1;
+                          }
+                          8% {
+                            transform: translate(160%, -160%);
+                            opacity: 0;
+                          }
+                          9% {
+                            transform: translate(-160%, 160%);
+                            opacity: 0;
+                          }
+                          17% {
+                            transform: translate(0, 0);
+                            opacity: 1;
+                          }
+                          100% {
+                            transform: translate(0, 0);
+                            opacity: 1;
+                          }
+                        }
+                        .animate-arrow-loop {
+                          animation: arrow-slide-out-in 4s infinite cubic-bezier(0.25, 1, 0.5, 1);
+                        }
+                        .animate-arrow-loop-delay {
+                          animation: arrow-slide-out-in 4s infinite cubic-bezier(0.25, 1, 0.5, 1);
+                          animation-delay: 2s;
+                        }
+                      `}} />
+                      <SplitText
+                        key={`subheadline-${slide.id}-${selectedIndex === index}-${locale}-v1.35`}
+                        text={tr(`hero_slide_${slide.id.replace(/^slide_/, '')}_subheadline`) || getFallback(slide.subheadlineZh, slide.subheadlineEn)}
+                        className={cn(
+                          "hero-subheadline text-xl md:text-2xl lg:text-[2rem] font-body max-w-full leading-[1.35] tracking-tight drop-shadow-[0_2px_15px_rgba(0,0,0,0.4)] block mr-auto ml-0 gpu-accelerated overflow-visible",
+                          currentTheme === 'light' ? "text-slate-800/80" : "text-white/90"
+                        )}
+                        tag="h2"
+                        delay={20}
+                        duration={1}
+                        ease="power3.out"
+                        from={subheadlineAnimateFrom}
+                        to={subheadlineAnimateTo}
+                        textAlign="left"
+                        threshold={0.1}
+                        rootMargin="0px"
+                        splitType="lines"
+                      />
+                    </div>
                   </div>
                 </div>
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       </div>
 

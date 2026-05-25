@@ -6,24 +6,84 @@ export async function POST(request: Request) {
     const body = await request.json();
     const { type, sessionId, visitorId, path, x, y, element, ...rest } = body;
 
-    if (!sessionId || !visitorId) {
-      return NextResponse.json({ error: 'Session ID and Visitor ID required' }, { status: 400 });
+    // 1. Session ID and Visitor ID format & length validation
+    const idRegex = /^[a-zA-Z0-9_\-]+$/;
+    if (!sessionId || !visitorId || typeof sessionId !== 'string' || typeof visitorId !== 'string') {
+      return NextResponse.json({ error: 'Session ID and Visitor ID are required strings' }, { status: 400 });
+    }
+    if (sessionId.length > 128 || visitorId.length > 128 || !idRegex.test(sessionId) || !idRegex.test(visitorId)) {
+      return NextResponse.json({ error: 'Invalid Session ID or Visitor ID format' }, { status: 400 });
     }
 
-    if (type === 'pageview') {
+    // 2. Type validation
+    const allowedTypes = ['pageview', 'click', 'hover', 'scroll', 'video_play', 'video_pause', 'video_ended'];
+    if (!type || typeof type !== 'string' || !allowedTypes.includes(type.toLowerCase())) {
+      return NextResponse.json({ error: 'Invalid or unsupported tracking type' }, { status: 400 });
+    }
+
+    // 3. Path validation
+    if (path && (typeof path !== 'string' || path.length > 500)) {
+      return NextResponse.json({ error: 'Invalid path' }, { status: 400 });
+    }
+
+    // 4. Position validation
+    let valX: number | null = null;
+    let valY: number | null = null;
+    if (x !== undefined && x !== null) {
+      const numX = Number(x);
+      if (isNaN(numX) || numX < -10000 || numX > 10000) return NextResponse.json({ error: 'Invalid X position' }, { status: 400 });
+      valX = numX;
+    }
+    if (y !== undefined && y !== null) {
+      const numY = Number(y);
+      if (isNaN(numY) || numY < -10000 || numY > 10000) return NextResponse.json({ error: 'Invalid Y position' }, { status: 400 });
+      valY = numY;
+    }
+
+    // 5. Element validation
+    if (element && (typeof element !== 'string' || element.length > 255)) {
+      return NextResponse.json({ error: 'Invalid element identifier' }, { status: 400 });
+    }
+
+    // 6. Whitelist filter rest fields into extraData to prevent DB inflation
+    const extraData: Record<string, any> = {};
+    if (rest.userAgent) {
+      extraData.userAgent = String(rest.userAgent).slice(0, 500);
+    }
+    if (rest.referrer) {
+      extraData.referrer = String(rest.referrer).slice(0, 500);
+    }
+    if (rest.screenWidth !== undefined) {
+      const w = Number(rest.screenWidth);
+      if (!isNaN(w) && w >= 0 && w < 10000) extraData.screenWidth = w;
+    }
+    if (rest.screenHeight !== undefined) {
+      const h = Number(rest.screenHeight);
+      if (!isNaN(h) && h >= 0 && h < 10000) extraData.screenHeight = h;
+    }
+    if (rest.duration !== undefined) {
+      const d = Number(rest.duration);
+      if (!isNaN(d) && d >= 0) extraData.duration = d;
+    }
+    if (rest.currentTime !== undefined) {
+      const ct = Number(rest.currentTime);
+      if (!isNaN(ct) && ct >= 0) extraData.currentTime = ct;
+    }
+
+    if (type.toLowerCase() === 'pageview') {
       // Create or Update Session
       await db.visitorSession.upsert({
         where: { id: sessionId },
         update: {
-          lastPath: path,
+          lastPath: path ? path.slice(0, 255) : null,
           updatedAt: new Date(),
         },
         create: {
           id: sessionId,
           visitorId: visitorId,
-          userAgent: rest.userAgent || '',
-          referrer: rest.referrer || '',
-          lastPath: path,
+          userAgent: extraData.userAgent || '',
+          referrer: extraData.referrer || '',
+          lastPath: path ? path.slice(0, 255) : null,
         },
       });
     }
@@ -33,11 +93,11 @@ export async function POST(request: Request) {
       data: {
         sessionId,
         type: type.toUpperCase(), // Normalize to uppercase
-        path,
-        x: x || null,
-        y: y || null,
-        element: element || null,
-        extraData: rest, // Store other info in extraData JSON
+        path: path ? path.slice(0, 255) : '',
+        x: valX,
+        y: valY,
+        element: element ? element.slice(0, 255) : null,
+        extraData: extraData, // Store cleaned info in extraData JSON
       },
     });
 

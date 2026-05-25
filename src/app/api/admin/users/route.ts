@@ -41,7 +41,7 @@ export async function GET() {
   } catch (error: any) {
     console.error('[API] Users GET Error Full:', error);
     return NextResponse.json({ 
-      error: error.message
+      error: 'Internal Server Error'
     }, { status: 500 });
   }
 }
@@ -90,6 +90,6 @@ export async function POST(request: Request) {
     return NextResponse.json(safeUser);
   } catch (error: any) {
     console.error('[API] Users POST Error:', error);
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
   }
 }

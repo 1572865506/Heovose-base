@@ -248,6 +248,10 @@ export default function AdminHomePage() {
     heroProjectCategoryId: '',
     heroWholesaleBg: '',
     heroProjectBg: '',
+    heroWholesaleLinkType: 'category',
+    heroWholesaleLinkUrl: '',
+    heroProjectLinkType: 'category',
+    heroProjectLinkUrl: '',
     heroSlides: [],
     isVideoEnabled: true,
     videoTitleZh: '',
@@ -313,6 +317,10 @@ export default function AdminHomePage() {
         updates.heroProjectCategoryId = heroData.heroProjectCategoryId || '';
         updates.heroWholesaleBg = heroData.heroWholesaleBg || '';
         updates.heroProjectBg = heroData.heroProjectBg || '';
+        updates.heroWholesaleLinkType = heroData.heroWholesaleLinkType || 'category';
+        updates.heroWholesaleLinkUrl = heroData.heroWholesaleLinkUrl || '';
+        updates.heroProjectLinkType = heroData.heroProjectLinkType || 'category';
+        updates.heroProjectLinkUrl = heroData.heroProjectLinkUrl || '';
         
         if (Array.isArray(heroData.heroSlides)) {
           const sortedSlides = [...heroData.heroSlides].sort((a, b) => (a.priority || 0) - (b.priority || 0));
@@ -379,6 +387,10 @@ export default function AdminHomePage() {
           heroProjectCategoryId: formData.heroProjectCategoryId,
           heroWholesaleBg: formData.heroWholesaleBg,
           heroProjectBg: formData.heroProjectBg,
+          heroWholesaleLinkType: formData.heroWholesaleLinkType,
+          heroWholesaleLinkUrl: formData.heroWholesaleLinkUrl,
+          heroProjectLinkType: formData.heroProjectLinkType,
+          heroProjectLinkUrl: formData.heroProjectLinkUrl,
           heroSlides: formData.heroSlides
         }),
       });
@@ -452,12 +464,21 @@ export default function AdminHomePage() {
       const transFailed = transResults.filter(r => !r.ok);
 
       // Check core results
-      if (!heroRes.ok) throw new Error('英雄视觉 (Hero) 保存失败');
-      if (!videoRes.ok) throw new Error('视频模块保存失败');
-      if (!bentoRes.ok) throw new Error('Bento 布局文案保存失败');
+      if (!heroRes.ok) {
+        const err = await heroRes.json().catch(() => ({}));
+        throw new Error(`英雄视觉 (Hero) 保存失败: ${err.details || err.error || heroRes.statusText}`);
+      }
+      if (!videoRes.ok) {
+        const err = await videoRes.json().catch(() => ({}));
+        throw new Error(`视频模块保存失败: ${err.details || err.error || videoRes.statusText}`);
+      }
+      if (!bentoRes.ok) {
+        const err = await bentoRes.json().catch(() => ({}));
+        throw new Error(`Bento 布局文案保存失败: ${err.details || err.error || bentoRes.statusText}`);
+      }
       if (!galleryRes.ok) {
         const err = await galleryRes.json().catch(() => ({}));
-        throw new Error(`轮播板块配置保存失败: ${err.details || galleryRes.statusText}`);
+        throw new Error(`轮播板块配置保存失败: ${err.details || err.error || galleryRes.statusText}`);
       }
 
       mutateHero();
@@ -553,6 +574,10 @@ export default function AdminHomePage() {
       subheadlineZh: '新副标题',
       subheadlineEn: 'New Subheadline',
       bgImage: "/image/hero-bg.png",
+      mobileBgImage: "",
+      linkType: 'custom',
+      categoryId: null,
+      linkUrl: '',
       priority: formData.heroSlides.length
     };
     setFormData({ ...formData, heroSlides: [...formData.heroSlides, newSlide] });
@@ -674,19 +699,48 @@ export default function AdminHomePage() {
                   <Input value={formData.heroWholesaleDescriptionEn} onChange={e => setFormData({...formData, heroWholesaleDescriptionEn: e.target.value})} placeholder="Desc English" className="h-10 rounded-xl border-dashed" />
                 </div>
                 <div className="flex gap-4">
-                  <div className="flex-1 space-y-4">
-                    <Select value={formData.heroWholesaleCategoryId} onValueChange={v => setFormData({...formData, heroWholesaleCategoryId: v})}>
-                      <SelectTrigger className="h-10 rounded-xl"><SelectValue placeholder="选择跳转分类" /></SelectTrigger>
-                      <SelectContent className="rounded-xl">
-                        <SelectItem value="none">全部分类</SelectItem>
-                        {categories?.map((cat: any) => <SelectItem key={cat.id} value={cat.id} className="text-xs">{getCategoryName(cat.id)}</SelectItem>)}
+                  <div className="flex-1 space-y-3">
+                    <Select 
+                      value={formData.heroWholesaleLinkType || 'category'} 
+                      onValueChange={v => {
+                        if (v === 'category') {
+                          setFormData({ ...formData, heroWholesaleLinkType: v, heroWholesaleLinkUrl: '' });
+                        } else {
+                          setFormData({ ...formData, heroWholesaleLinkType: v, heroWholesaleCategoryId: 'none' });
+                        }
+                      }}
+                    >
+                      <SelectTrigger className="h-8 rounded-lg text-[10px]">
+                        <SelectValue placeholder="链接类型" />
+                      </SelectTrigger>
+                      <SelectContent className="rounded-lg">
+                        <SelectItem value="category" className="text-[10px]">跳转产品分类</SelectItem>
+                        <SelectItem value="custom" className="text-[10px]">自定义链接</SelectItem>
                       </SelectContent>
                     </Select>
+
+                    {formData.heroWholesaleLinkType === 'custom' ? (
+                      <Input 
+                        value={formData.heroWholesaleLinkUrl || ''} 
+                        onChange={e => setFormData({ ...formData, heroWholesaleLinkUrl: e.target.value })} 
+                        placeholder="自定义链接 (如 /about)" 
+                        className="h-9 rounded-xl text-xs font-mono" 
+                      />
+                    ) : (
+                      <Select value={formData.heroWholesaleCategoryId} onValueChange={v => setFormData({...formData, heroWholesaleCategoryId: v})}>
+                        <SelectTrigger className="h-9 rounded-xl"><SelectValue placeholder="选择跳转分类" /></SelectTrigger>
+                        <SelectContent className="rounded-xl">
+                          <SelectItem value="none">全部分类</SelectItem>
+                          {categories?.map((cat: any) => <SelectItem key={cat.id} value={cat.id} className="text-xs">{getCategoryName(cat.id)}</SelectItem>)}
+                        </SelectContent>
+                      </Select>
+                    )}
+
                     <Input 
                       value={formData.heroWholesaleBg} 
                       onChange={e => setFormData({...formData, heroWholesaleBg: e.target.value})} 
                       placeholder="背景图 URL" 
-                      className="h-10 rounded-xl text-xs font-mono" 
+                      className="h-9 rounded-xl text-xs font-mono" 
                     />
                   </div>
                   <div 
@@ -718,18 +772,48 @@ export default function AdminHomePage() {
                   <Input value={formData.heroProjectDescriptionEn} onChange={e => setFormData({...formData, heroProjectDescriptionEn: e.target.value})} placeholder="Desc English" className="h-10 rounded-xl border-dashed" />
                 </div>
                 <div className="flex gap-4">
-                  <div className="flex-1 space-y-4">
-                    <Select value={formData.heroProjectCategoryId} onValueChange={v => setFormData({...formData, heroProjectCategoryId: v})}>
-                      <SelectTrigger className="h-10 rounded-xl"><SelectValue placeholder="选择跳转分类" /></SelectTrigger>
-                      <SelectContent className="rounded-xl">
-                        {categories?.map((cat: any) => <SelectItem key={cat.id} value={cat.id} className="text-xs">{getCategoryName(cat.id)}</SelectItem>)}
+                  <div className="flex-1 space-y-3">
+                    <Select 
+                      value={formData.heroProjectLinkType || 'category'} 
+                      onValueChange={v => {
+                        if (v === 'category') {
+                          setFormData({ ...formData, heroProjectLinkType: v, heroProjectLinkUrl: '' });
+                        } else {
+                          setFormData({ ...formData, heroProjectLinkType: v, heroProjectCategoryId: 'none' });
+                        }
+                      }}
+                    >
+                      <SelectTrigger className="h-8 rounded-lg text-[10px]">
+                        <SelectValue placeholder="链接类型" />
+                      </SelectTrigger>
+                      <SelectContent className="rounded-lg">
+                        <SelectItem value="category" className="text-[10px]">跳转产品分类</SelectItem>
+                        <SelectItem value="custom" className="text-[10px]">自定义链接</SelectItem>
                       </SelectContent>
                     </Select>
+
+                    {formData.heroProjectLinkType === 'custom' ? (
+                      <Input 
+                        value={formData.heroProjectLinkUrl || ''} 
+                        onChange={e => setFormData({ ...formData, heroProjectLinkUrl: e.target.value })} 
+                        placeholder="自定义链接 (如 /about)" 
+                        className="h-9 rounded-xl text-xs font-mono" 
+                      />
+                    ) : (
+                      <Select value={formData.heroProjectCategoryId} onValueChange={v => setFormData({...formData, heroProjectCategoryId: v})}>
+                        <SelectTrigger className="h-9 rounded-xl"><SelectValue placeholder="选择跳转分类" /></SelectTrigger>
+                        <SelectContent className="rounded-xl">
+                          <SelectItem value="none">全部分类</SelectItem>
+                          {categories?.map((cat: any) => <SelectItem key={cat.id} value={cat.id} className="text-xs">{getCategoryName(cat.id)}</SelectItem>)}
+                        </SelectContent>
+                      </Select>
+                    )}
+
                     <Input 
                       value={formData.heroProjectBg} 
                       onChange={e => setFormData({...formData, heroProjectBg: e.target.value})} 
                       placeholder="背景图 URL" 
-                      className="h-10 rounded-xl text-xs font-mono" 
+                      className="h-9 rounded-xl text-xs font-mono" 
                     />
                   </div>
                   <div 
@@ -793,53 +877,109 @@ export default function AdminHomePage() {
               {formData.heroSlides.map((slide: any, index: number) => (
                 <div key={slide.id} className="group relative bg-muted/10 border border-border/60 hover:bg-muted/20 hover:border-primary/30 rounded-3xl p-6 transition-all duration-500 shadow-sm">
                   <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-                    <div className="lg:col-span-3 space-y-3">
-                      <Label className="text-[10px] font-bold uppercase opacity-40">背景图片</Label>
-                      <div 
-                        className="relative aspect-[16/9] rounded-2xl overflow-hidden cursor-pointer group/img border-2 border-transparent hover:border-primary transition-all shadow-lg"
-                        onClick={() => setPickerConfig({ open: true, type: 'slide', slideIndex: index })}
-                      >
-                        <Image src={getAssetUrl(slide.bgImage)} alt="Preview" fill className="object-cover" unoptimized />
-                        <div className="absolute inset-0 bg-black/40 opacity-0 group-hover/img:opacity-100 flex items-center justify-center transition-opacity">
-                          <ImageIcon className="text-white h-8 w-8" />
+                    <div className="lg:col-span-4 grid grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <Label className="text-[10px] font-bold uppercase opacity-40 font-semibold">PC端海报 (16:9)</Label>
+                        <div 
+                          className="relative aspect-[16/9] rounded-xl overflow-hidden cursor-pointer group/img border-2 border-transparent hover:border-primary transition-all shadow-md bg-muted/20"
+                          onClick={() => setPickerConfig({ open: true, type: 'slide', slideIndex: index, field: 'bgImage' } as any)}
+                        >
+                          {slide.bgImage ? (
+                            <Image src={getAssetUrl(slide.bgImage)} alt="Preview" fill className="object-cover" unoptimized />
+                          ) : (
+                            <div className="absolute inset-0 flex items-center justify-center text-muted-foreground/30"><ImageIcon className="h-6 w-6" /></div>
+                          )}
+                          <div className="absolute inset-0 bg-black/40 opacity-0 group-hover/img:opacity-100 flex items-center justify-center transition-opacity">
+                            <ImageIcon className="text-white h-5 w-5" />
+                          </div>
                         </div>
+                        <Button 
+                          variant="outline" 
+                          size="sm" 
+                          className="w-full rounded-lg h-7 text-[8px] font-bold"
+                          onClick={() => setPickerConfig({ open: true, type: 'slide', slideIndex: index, field: 'bgImage' } as any)}
+                        >
+                          更改PC端背景
+                        </Button>
                       </div>
-                      <Button 
-                        variant="outline" 
-                        size="sm" 
-                        className="w-full rounded-xl h-9 text-[10px] font-bold"
-                        onClick={() => setPickerConfig({ open: true, type: 'slide', slideIndex: index })}
-                      >
-                        更改背景
-                      </Button>
+
+                      <div className="space-y-2">
+                        <Label className="text-[10px] font-bold uppercase opacity-40 font-semibold">移动端海报 (可选)</Label>
+                        <div 
+                          className="relative aspect-[16/9] rounded-xl overflow-hidden cursor-pointer group/img border-2 border-transparent hover:border-primary transition-all shadow-md bg-muted/20"
+                          onClick={() => setPickerConfig({ open: true, type: 'slide', slideIndex: index, field: 'mobileBgImage' } as any)}
+                        >
+                          {slide.mobileBgImage ? (
+                            <Image src={getAssetUrl(slide.mobileBgImage)} alt="Preview" fill className="object-cover" unoptimized />
+                          ) : (
+                            <div className="absolute inset-0 flex flex-col items-center justify-center gap-1 text-muted-foreground/30 text-[8px] bg-muted/5">
+                              <ImageIcon className="h-4 w-4" />
+                              <span>默认展示PC海报</span>
+                            </div>
+                          )}
+                          <div className="absolute inset-0 bg-black/40 opacity-0 group-hover/img:opacity-100 flex items-center justify-center transition-opacity">
+                            <ImageIcon className="text-white h-5 w-5" />
+                          </div>
+                        </div>
+                        {slide.mobileBgImage ? (
+                          <div className="flex gap-2">
+                            <Button 
+                              variant="outline" 
+                              size="sm" 
+                              className="flex-1 rounded-lg h-7 text-[8px] font-bold"
+                              onClick={() => setPickerConfig({ open: true, type: 'slide', slideIndex: index, field: 'mobileBgImage' } as any)}
+                            >
+                              更改背景
+                            </Button>
+                            <Button 
+                              variant="destructive" 
+                              size="sm" 
+                              className="rounded-lg h-7 px-3 text-[8px] font-bold"
+                              onClick={() => updateSlide(index, { mobileBgImage: '' })}
+                            >
+                              移除
+                            </Button>
+                          </div>
+                        ) : (
+                          <Button 
+                            variant="outline" 
+                            size="sm" 
+                            className="w-full rounded-lg h-7 text-[8px] font-bold"
+                            onClick={() => setPickerConfig({ open: true, type: 'slide', slideIndex: index, field: 'mobileBgImage' } as any)}
+                          >
+                            更改移动端背景
+                          </Button>
+                        )}
+                      </div>
                     </div>
 
-                    <div className="lg:col-span-8 grid grid-cols-1 md:grid-cols-2 gap-6">
-                      <div className="space-y-4">
+                    <div className="lg:col-span-7 grid grid-cols-1 gap-4">
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div className="space-y-2">
                           <Label className="text-[10px] font-bold uppercase opacity-40">主标题 (ZH)</Label>
                           <Input 
                             value={slide.headlineZh} 
                             onChange={e => updateSlide(index, { headlineZh: e.target.value })} 
-                            className="rounded-xl" 
+                            className="rounded-xl h-9" 
                           />
                         </div>
-                        <div className="space-y-2">
-                          <Label className="text-[10px] font-bold uppercase opacity-40">副标题 (ZH)</Label>
-                          <Input 
-                            value={slide.subheadlineZh} 
-                            onChange={e => updateSlide(index, { subheadlineZh: e.target.value })} 
-                            className="rounded-xl" 
-                          />
-                        </div>
-                      </div>
-                      <div className="space-y-4 md:border-l md:pl-6 border-dashed border-border/40">
                         <div className="space-y-2">
                           <Label className="text-[10px] font-bold uppercase opacity-40">HEADLINE (EN)</Label>
                           <Input 
                             value={slide.headlineEn} 
                             onChange={e => updateSlide(index, { headlineEn: e.target.value })} 
-                            className="rounded-xl border-dashed" 
+                            className="rounded-xl border-dashed h-9" 
+                          />
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                          <Label className="text-[10px] font-bold uppercase opacity-40">副标题 (ZH)</Label>
+                          <Input 
+                            value={slide.subheadlineZh} 
+                            onChange={e => updateSlide(index, { subheadlineZh: e.target.value })} 
+                            className="rounded-xl h-9" 
                           />
                         </div>
                         <div className="space-y-2">
@@ -847,9 +987,73 @@ export default function AdminHomePage() {
                           <Input 
                             value={slide.subheadlineEn} 
                             onChange={e => updateSlide(index, { subheadlineEn: e.target.value })} 
-                            className="rounded-xl border-dashed" 
+                            className="rounded-xl border-dashed h-9" 
                           />
                         </div>
+                      </div>
+
+                      {/* 跳转链接配置 */}
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-2 border-t border-dashed border-border/60">
+                        <div className="space-y-1">
+                          <Label className="text-[9px] font-bold uppercase opacity-40">链接类型</Label>
+                          <Select 
+                            value={slide.linkType || 'custom'} 
+                            onValueChange={v => {
+                              if (v === 'category') {
+                                updateSlide(index, { linkType: v, linkUrl: '' });
+                              } else {
+                                updateSlide(index, { linkType: v, categoryId: null });
+                              }
+                            }}
+                          >
+                            <SelectTrigger className="h-8 rounded-lg text-[10px]">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent className="rounded-lg">
+                              <SelectItem value="custom" className="text-[10px]">自定义链接</SelectItem>
+                              <SelectItem value="category" className="text-[10px]">跳转产品分类</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+
+                        { (slide.linkType === 'category') ? (
+                          <div className="space-y-1 md:col-span-2">
+                            <Label className="text-[9px] font-bold uppercase opacity-40">关联产品分类</Label>
+                            <Select 
+                              value={slide.categoryId || undefined} 
+                              onValueChange={v => {
+                                const cat = categories?.find((c: any) => c.id === v);
+                                if (cat) {
+                                  updateSlide(index, { 
+                                    categoryId: v, 
+                                    linkUrl: `products?category=${encodeURIComponent(cat.slug || cat.id)}` 
+                                  });
+                                }
+                              }}
+                            >
+                              <SelectTrigger className="h-8 rounded-lg text-[10px]">
+                                <SelectValue placeholder="关联一个产品分类" />
+                              </SelectTrigger>
+                              <SelectContent className="rounded-lg">
+                                {categories?.map((cat: any) => {
+                                  const trans = translations?.find((t: any) => t.id === cat.nameTextId);
+                                  const name = trans?.content?.zh || trans?.zh || cat.id;
+                                  return <SelectItem key={cat.id} value={cat.id} className="text-xs">{name}</SelectItem>;
+                                })}
+                              </SelectContent>
+                            </Select>
+                          </div>
+                        ) : (
+                          <div className="space-y-1 md:col-span-2">
+                            <Label className="text-[9px] font-bold uppercase opacity-40">自定义链接</Label>
+                            <Input 
+                              value={slide.linkUrl || ''} 
+                              onChange={e => updateSlide(index, { linkUrl: e.target.value })} 
+                              placeholder="如：/about, products?line=wholesale 等"
+                              className="h-8 rounded-lg text-[10px] font-mono" 
+                            />
+                          </div>
+                        )}
                       </div>
                     </div>
 
@@ -1116,7 +1320,7 @@ export default function AdminHomePage() {
                 <LayoutGrid className="h-4 w-4" /> 首页格位内容管理 (Grid Items)
               </h3>
               <Button 
-                onClick={() => setBentoDialog({ open: true, item: { titleZh: '', titleEn: '', tagZh: '', tagEn: '', imageUrl: '', linkUrl: '', gridSize: 'small', order: (bentoItems?.length || 0) + 1, linkType: 'custom', categoryId: null } })} 
+                onClick={() => setBentoDialog({ open: true, item: { titleZh: '', titleEn: '', tagZh: '', tagEn: '', imageUrl: '', linkUrl: '', gridSize: 'small', order: (bentoItems?.length || 0) + 1 } })} 
                 size="sm" 
                 className="rounded-xl h-9 px-4 gap-2 text-[10px] font-bold uppercase tracking-wider shadow-md"
               >
@@ -1427,7 +1631,8 @@ export default function AdminHomePage() {
             } else if (pickerConfig.type === 'project') {
               setFormData({ ...formData, heroProjectBg: url });
             } else if (pickerConfig.type === 'slide' && pickerConfig.slideIndex !== null) {
-              updateSlide(pickerConfig.slideIndex, { bgImage: url });
+              const fieldName = (pickerConfig as any).field || 'bgImage';
+              updateSlide(pickerConfig.slideIndex, { [fieldName]: url });
             } else if (pickerConfig.type === 'bento' && bentoDialog.open) {
               setBentoDialog({ ...bentoDialog, item: { ...bentoDialog.item, imageUrl: url } });
             }
@@ -1619,13 +1824,7 @@ function BentoItemDialog({ open, onOpenChange, item, onSave, onTranslate, onImag
   const [isTranslating, setIsTranslating] = useState(false);
 
   useEffect(() => {
-    if (item) {
-      setLocalItem({
-        ...item,
-        linkType: item.linkType || 'custom',
-        categoryId: item.categoryId || null
-      });
-    }
+    if (item) setLocalItem(item);
   }, [item]);
 
   if (!localItem) return null;
@@ -1718,68 +1917,30 @@ function BentoItemDialog({ open, onOpenChange, item, onSave, onTranslate, onImag
               <Input value={localItem.titleZh} onChange={e => setLocalItem({ ...localItem, titleZh: e.target.value })} placeholder="主标题" className="h-11 rounded-xl border-border" />
               <Input value={localItem.tagZh} onChange={e => setLocalItem({ ...localItem, tagZh: e.target.value })} placeholder="小标签 (如：批发业务)" className="h-11 rounded-xl border-border" />
               
-              <div className="pt-4 border-t border-dashed border-border/60 space-y-4">
-                <div className="space-y-2">
-                  <Label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">链接功能类型 (Link Type)</Label>
-                  <Select 
-                    value={localItem.linkType || 'custom'}
-                    onValueChange={v => {
-                      if (v === 'category') {
-                        setLocalItem({ ...localItem, linkType: v, linkUrl: '' });
-                      } else {
-                        setLocalItem({ ...localItem, linkType: v, categoryId: null });
-                      }
-                    }}
-                  >
-                    <SelectTrigger className="h-10 rounded-xl border-border text-xs">
-                      <SelectValue placeholder="选择链接类型" />
-                    </SelectTrigger>
-                    <SelectContent className="rounded-xl">
-                      <SelectItem value="custom" className="text-xs">自定义链接 (Custom Link)</SelectItem>
-                      <SelectItem value="category" className="text-xs">跳转产品分类 (Product Category)</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                {localItem.linkType === 'category' ? (
-                  <div className="space-y-2">
-                    <Label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">选择产品分类 (Select Category)</Label>
-                    <Select 
-                      value={localItem.categoryId || undefined}
-                      onValueChange={v => {
-                        const cat = categories.find(c => c.id === v);
-                        if (cat) {
-                          setLocalItem({ 
-                            ...localItem, 
-                            categoryId: v, 
-                            linkUrl: `products?category=${encodeURIComponent(cat.slug || cat.id)}` 
-                          });
-                        }
-                      }}
-                    >
-                      <SelectTrigger className="h-10 rounded-xl border-border text-xs">
-                        <SelectValue placeholder="关联一个分类" />
-                      </SelectTrigger>
-                      <SelectContent className="rounded-xl">
-                        {categories?.map((cat: any) => {
-                          const trans = translations?.find((t: any) => t.id === cat.nameTextId);
-                          const name = trans?.content?.zh || trans?.zh || cat.id;
-                          return <SelectItem key={cat.id} value={cat.id} className="text-xs">{name}</SelectItem>;
-                        })}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                ) : (
-                  <div className="space-y-2">
-                    <Label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">自定义链接地址 (Custom Link URL)</Label>
-                    <Input 
-                      value={localItem.linkUrl || ''} 
-                      onChange={e => setLocalItem({ ...localItem, linkUrl: e.target.value })} 
-                      placeholder="例如：/about, /products?line=wholesale 等" 
-                      className="h-11 rounded-xl border-border font-mono text-[11px]" 
-                    />
-                  </div>
-                )}
+              <div className="pt-4 border-t border-dashed border-border/60 space-y-3">
+                <Label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">跳转逻辑 (Navigation)</Label>
+                <Select 
+                  onValueChange={v => {
+                    if (v === 'custom') return;
+                    const cat = categories.find(c => c.id === v);
+                    if (cat) {
+                      setLocalItem({ ...localItem, linkUrl: `products?category=${encodeURIComponent(cat.slug || cat.id)}` });
+                    }
+                  }}
+                >
+                  <SelectTrigger className="h-10 rounded-xl border-border text-xs">
+                    <SelectValue placeholder="快速关联产品分类" />
+                  </SelectTrigger>
+                  <SelectContent className="rounded-xl">
+                    <SelectItem value="custom" className="text-xs font-bold text-primary">手动输入自定义链接</SelectItem>
+                    {categories?.map((cat: any) => {
+                      const trans = translations?.find((t: any) => t.id === cat.nameTextId);
+                      const name = trans?.content?.zh || trans?.zh || cat.id;
+                      return <SelectItem key={cat.id} value={cat.id} className="text-xs">{name}</SelectItem>;
+                    })}
+                  </SelectContent>
+                </Select>
+                <Input value={localItem.linkUrl} onChange={e => setLocalItem({ ...localItem, linkUrl: e.target.value })} placeholder="跳转链接 (如：products?category=...)" className="h-11 rounded-xl border-border font-mono text-[11px]" />
               </div>
             </div>
 

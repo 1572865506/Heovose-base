@@ -125,6 +125,7 @@ export async function PUT(
         'heroHeadlineEn', 'heroHeadlineZh', 'heroSubheadlineEn', 'heroSubheadlineZh',
         'heroWholesaleButtonEn', 'heroWholesaleButtonZh', 'heroProjectButtonEn', 'heroProjectButtonZh',
         'heroWholesaleCategoryId', 'heroProjectCategoryId', 'heroSlides',
+        'heroWholesaleLinkType', 'heroWholesaleLinkUrl', 'heroProjectLinkType', 'heroProjectLinkUrl',
         'heroWholesaleDescriptionEn', 'heroWholesaleDescriptionZh',
         'heroProjectDescriptionEn', 'heroProjectDescriptionZh',
         'heroWholesaleBg', 'heroProjectBg', 'isVideoEnabled',
@@ -176,6 +177,8 @@ export async function PUT(
             casesTitleTextId, casesSubtitleTextId, 
             processTitleTextId, processSubtitleTextId,
             mapTitleTextId, mapSubtitleTextId,
+            heroWholesaleLinkType, heroWholesaleLinkUrl,
+            heroProjectLinkType, heroProjectLinkUrl,
             ...safeData 
           } = filteredData;
           
@@ -201,6 +204,22 @@ export async function PUT(
                 `UPDATE "HomepageContent" SET "mapTitleTextId" = $1, "mapSubtitleTextId" = $2 WHERE id = $3`,
                 mapTitleTextId || 'MAP_TITLE',
                 mapSubtitleTextId || 'MAP_SUBTITLE',
+                id
+              );
+            }
+            if (heroWholesaleLinkType !== undefined || heroWholesaleLinkUrl !== undefined) {
+              await db.$executeRawUnsafe(
+                `UPDATE "HomepageContent" SET "heroWholesaleLinkType" = $1, "heroWholesaleLinkUrl" = $2 WHERE id = $3`,
+                heroWholesaleLinkType || 'category',
+                heroWholesaleLinkUrl || null,
+                id
+              );
+            }
+            if (heroProjectLinkType !== undefined || heroProjectLinkUrl !== undefined) {
+              await db.$executeRawUnsafe(
+                `UPDATE "HomepageContent" SET "heroProjectLinkType" = $1, "heroProjectLinkUrl" = $2 WHERE id = $3`,
+                heroProjectLinkType || 'category',
+                heroProjectLinkUrl || null,
                 id
               );
             }

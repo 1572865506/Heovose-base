@@ -33,8 +33,7 @@ export async function GET() {
   } catch (error: any) {
     console.error('[API] Inquiry GET Error Full:', error);
     return NextResponse.json({ 
-      error: error.message,
-      stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
+      error: 'Internal Server Error'
     }, { status: 500 });
   }
 }
