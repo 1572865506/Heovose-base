@@ -51,14 +51,27 @@ export async function GET(request: Request) {
 
     // 模糊检索（后端通过 translation 辅助进行产品搜索）
     if (search) {
-      const rawSearch = '%' + search.toLowerCase() + '%';
-      // 用 $queryRaw 针对 PostgreSQL 执行模糊检索
-      const matchedStrings: any[] = await db.$queryRaw`
-        SELECT id FROM "LocalizedString" 
-        WHERE (id LIKE 'prod_%' OR id LIKE 'biz_tr_%') 
-        AND LOWER(content::text) LIKE ${rawSearch};
-      `;
-      const matchedIds = matchedStrings.map(item => item.id);
+      // 使用 Prisma 参数化查询替代 $queryRaw，完全防范 SQL 注入风险
+      const matchedStrings = await db.localizedString.findMany({
+        where: {
+          OR: [
+            { id: { startsWith: 'prod_' } },
+            { id: { startsWith: 'biz_tr_' } }
+          ],
+          AND: {
+            OR: [
+              { content: { path: ['zh'], string_contains: search, mode: 'insensitive' } },
+              { content: { path: ['en'], string_contains: search, mode: 'insensitive' } },
+              { content: { path: ['id'], string_contains: search, mode: 'insensitive' } },
+              { content: { path: ['vi'], string_contains: search, mode: 'insensitive' } },
+            ]
+          }
+        },
+        select: {
+          id: true
+        }
+      });
+      const matchedIds = matchedStrings.map((item: { id: string }) => item.id);
       
       where.OR = [
         { nameTextId: { in: matchedIds } },

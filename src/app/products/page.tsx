@@ -74,6 +74,7 @@ function ProductListContent() {
   const [isLocaleReady, setIsLocaleReady] = useState(false);
   
   const [searchQuery, setSearchQuery] = useState('');
+  const [debouncedSearchQuery, setDebouncedSearchQuery] = useState('');
   const [activeLine, setActiveLine] = useState<BusinessLine>('wholesale');
   const [selectedCategoryId, setSelectedCategoryId] = useState<string | null>(null);
   
@@ -103,12 +104,24 @@ function ProductListContent() {
   const lineParam = searchParams.get('line') as BusinessLine;
   const [currentPage, setCurrentPage] = useState(1);
 
-  const { data: categories, isLoading: isCatsLoading } = useLocalCollection<Category>('productCategories');
+  const { data: categories, isLoading: isCatsLoading } = useLocalCollection<Category>(
+    categoryParam 
+      ? 'productCategories' 
+      : `productCategories?parentId=${activeLine === 'wholesale' ? 'WHOLESALE' : 'PROJECT'}`
+  );
   const { data: langSettings } = useLocalDoc<LanguageSettings>('settings', 'languages');
   const { t: tr, isLoading: isTrLoading } = useTranslations(locale);
 
   const [productsData, setProductsData] = useState<{ products: Product[], pagination: { total: number, page: number, limit: number, totalPages: number } } | null>(null);
   const [isProdsLoading, setIsProdsLoading] = useState(true);
+
+  // 快速搜索 300ms 防抖处理
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearchQuery(searchQuery);
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [searchQuery]);
 
   // 1. 智能判定语种
   useEffect(() => {
@@ -189,8 +202,8 @@ function ProductListContent() {
       params.set('categoryId', rootId);
     }
     
-    if (searchQuery) {
-      params.set('search', searchQuery);
+    if (debouncedSearchQuery) {
+      params.set('search', debouncedSearchQuery);
     }
     
     fetch(`/api/products?${params.toString()}`)
@@ -211,7 +224,7 @@ function ProductListContent() {
     return () => {
       isMounted = false;
     };
-  }, [currentPage, selectedCategoryId, searchQuery, activeLine, locale, isLocaleReady]);
+  }, [currentPage, selectedCategoryId, debouncedSearchQuery, activeLine, locale, isLocaleReady]);
 
   // 注入产品翻译到本地全局缓存
   useEffect(() => {
@@ -231,13 +244,53 @@ function ProductListContent() {
 
   useEffect(() => {
     setCurrentPage(1);
-  }, [selectedCategoryId, searchQuery, activeLine]);
+  }, [selectedCategoryId, debouncedSearchQuery, activeLine]);
 
   const filteredProducts = {
     length: productsData?.pagination.total || 0
   };
   const paginatedProducts = productsData?.products || [];
   const totalPages = productsData?.pagination.totalPages || 0;
+
+  const getPageNumbers = () => {
+    const pages: (number | string)[] = [];
+    const maxVisible = 5;
+
+    if (totalPages <= maxVisible + 1) {
+      for (let i = 1; i <= totalPages; i++) {
+        pages.push(i);
+      }
+    } else {
+      pages.push(1);
+
+      if (currentPage > 3) {
+        pages.push('...');
+      }
+
+      const start = Math.max(2, currentPage - 1);
+      const end = Math.min(totalPages - 1, currentPage + 1);
+
+      let adjustedStart = start;
+      let adjustedEnd = end;
+      if (currentPage <= 3) {
+        adjustedEnd = 4;
+      }
+      if (currentPage >= totalPages - 2) {
+        adjustedStart = totalPages - 3;
+      }
+
+      for (let i = Math.max(2, adjustedStart); i <= Math.min(totalPages - 1, adjustedEnd); i++) {
+        pages.push(i);
+      }
+
+      if (currentPage < totalPages - 2) {
+        pages.push('...');
+      }
+
+      pages.push(totalPages);
+    }
+    return pages;
+  };
 
   const rootCategory = useMemo(() => {
     if (!categories) return null;
@@ -596,15 +649,21 @@ function ProductListContent() {
                     </Button>
                     
                     <div className="flex items-center gap-1">
-                      {Array.from({ length: totalPages }).map((_, idx) => {
-                        const pageNum = idx + 1;
+                      {getPageNumbers().map((pageNum, idx) => {
+                        if (pageNum === '...') {
+                          return (
+                            <span key={`dots-${idx}`} className="px-2 text-muted-foreground select-none">
+                              ...
+                            </span>
+                          );
+                        }
                         const isSelected = currentPage === pageNum;
                         return (
                           <Button
-                            key={pageNum}
+                            key={`page-${pageNum}`}
                             variant={isSelected ? "outline" : "ghost"}
                             onClick={() => {
-                              setCurrentPage(pageNum);
+                              setCurrentPage(pageNum as number);
                               window.scrollTo({ top: 400, behavior: 'smooth' });
                             }}
                             className={cn(
@@ -642,7 +701,7 @@ function ProductListContent() {
               )}
             </div>
             ) : (
-              <div className="py-40 text-center flex flex-col items-center justify-center gap-6 bg-white rounded-[3rem] border border-dashed border-border/60">
+              <div className="py-32 text-center flex flex-col items-center justify-center gap-6 bg-white rounded-[3rem] border border-dashed border-border/60 px-6">
                 <div className="h-20 w-20 rounded-full bg-muted/20 flex items-center justify-center">
                    <LayoutGrid className="h-10 w-10 opacity-10" />
                 </div>
@@ -650,7 +709,33 @@ function ProductListContent() {
                   <p className="font-bold text-primary">{tr('products_noResults')}</p>
                   <p className="text-xs text-muted-foreground">{tr('products_listSubtitle')}</p>
                 </div>
-                <Button onClick={() => { updateCategoryFilter(null); setSearchQuery(''); }} variant="outline" className="rounded-xl px-8">{tr('products_resetFilters')}</Button>
+                <div className="flex flex-col items-center gap-4">
+                  <Button onClick={() => { updateCategoryFilter(null); setSearchQuery(''); }} variant="outline" className="rounded-xl px-8">{tr('products_resetFilters')}</Button>
+                  
+                  {filteredCategories && filteredCategories.length > 0 && (
+                    <div className="space-y-3 pt-6 border-t border-dashed border-border/60 w-full max-w-sm">
+                      <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
+                        {tr('products_orTryCategories') || (locale === 'zh' ? '或者尝试以下分类' : 'Or try these categories')}
+                      </p>
+                      <div className="flex flex-wrap justify-center gap-2">
+                        {filteredCategories.slice(0, 4).map((cat) => (
+                          <Button
+                            key={cat.id}
+                            variant="secondary"
+                            size="sm"
+                            onClick={() => {
+                              setSearchQuery('');
+                              updateCategoryFilter(cat.id);
+                            }}
+                            className="rounded-full text-xs font-semibold px-4 py-1.5 bg-muted/40 hover:bg-muted text-muted-foreground hover:text-primary transition-all duration-300"
+                          >
+                            {getT(cat.nameTextId)}
+                          </Button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
               </div>
             )}
           </div>

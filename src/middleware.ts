@@ -71,10 +71,12 @@ export default auth((request) => {
     }
   }
 
-  // Rate limiting for specific high-risk API endpoints
-  if (pathname.startsWith('/api/auth') || pathname === '/api/inquiries' || pathname === '/api/upload') {
-    // Only rate limit state-changing POST requests (e.g. login attempts, inquiry submissions, file uploads)
-    if (request.method === 'POST') {
+  // Rate limiting for specific high-risk API endpoints (including products API to prevent search DoS)
+  if (pathname === '/api/products' || pathname.startsWith('/api/auth') || pathname === '/api/inquiries' || pathname === '/api/upload') {
+    const isGetProducts = pathname === '/api/products' && request.method === 'GET';
+    const isStateChangingPost = request.method === 'POST' && (pathname.startsWith('/api/auth') || pathname === '/api/inquiries' || pathname === '/api/upload');
+    
+    if (isGetProducts || isStateChangingPost) {
       const ip = (request as any).ip || request.headers.get("x-forwarded-for")?.split(",")[0].trim() || "127.0.0.1";
       
       let limit = 10;
@@ -86,6 +88,8 @@ export default auth((request) => {
         limit = 10; // max 10 file uploads per minute
       } else if (pathname.startsWith('/api/auth')) {
         limit = 10; // max 10 login / auth POST attempts per minute
+      } else if (pathname === '/api/products') {
+        limit = 60; // max 60 product search/list requests per minute to prevent DoS
       }
       
       const clientKey = `${ip}:${pathname}`;
@@ -143,6 +147,7 @@ export const config = {
     '/api/auth/:path*',
     '/api/inquiries',
     '/api/upload',
+    '/api/products',
     '/storage/:path*',
   ],
 };
