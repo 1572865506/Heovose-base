@@ -13,7 +13,8 @@ export async function GET(
       where: { id },
     });
     if (!user) return NextResponse.json({});
-    return NextResponse.json(user);
+    const { password, ...userWithoutPassword } = user;
+    return NextResponse.json(userWithoutPassword);
   } catch (error: any) {
     if (error.message === 'Unauthorized') return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     if (error.message.includes('Forbidden')) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
@@ -35,6 +36,10 @@ export async function PUT(
       where: { id },
       data: updateData,
     });
+    if (user) {
+      const { password, ...userWithoutPassword } = user;
+      return NextResponse.json(userWithoutPassword);
+    }
     return NextResponse.json(user);
   } catch (error: any) {
     if (error.message === 'Unauthorized') return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });

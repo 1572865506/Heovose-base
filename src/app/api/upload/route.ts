@@ -106,6 +106,18 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'File signature verification failed' }, { status: 400 });
     }
 
+    // 5. SVG XSS safety scan to prevent malicious scripts, iframes, and onload event handlers
+    if (fileExtension === 'svg' || file.type === 'image/svg+xml') {
+      const svgText = buffer.toString('utf8');
+      const containsScript = /<script/i.test(svgText);
+      const containsIframe = /<iframe/i.test(svgText);
+      const containsEventHandlers = /on\w+\s*=/i.test(svgText);
+
+      if (containsScript || containsIframe || containsEventHandlers) {
+        return NextResponse.json({ error: 'SVG contains malicious content (XSS vector detected)' }, { status: 400 });
+      }
+    }
+
     const fileName = `${pathVal}/${crypto.randomUUID()}.${fileExtension}`;
 
     // Calculate brightness if it's an image

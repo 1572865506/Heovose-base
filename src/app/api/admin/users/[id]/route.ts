@@ -38,6 +38,10 @@ export async function PATCH(
       }
     });
 
+    if (updatedUser) {
+      const { password, ...userWithoutPassword } = updatedUser;
+      return NextResponse.json(userWithoutPassword);
+    }
     return NextResponse.json(updatedUser);
   } catch (error: any) {
     console.error('[API] Users PATCH Error:', error);

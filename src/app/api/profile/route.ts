@@ -10,6 +10,10 @@ export async function GET() {
     const user = await db.user.findUnique({
       where: { id: session.user.id },
     });
+    if (user) {
+      const { password, ...userWithoutPassword } = user;
+      return NextResponse.json(userWithoutPassword);
+    }
     return NextResponse.json(user);
   } catch (error) {
     return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
@@ -28,6 +32,10 @@ export async function PUT(request: Request) {
       where: { id: session.user.id },
       data: { name, image },
     });
+    if (user) {
+      const { password, ...userWithoutPassword } = user;
+      return NextResponse.json(userWithoutPassword);
+    }
     return NextResponse.json(user);
   } catch (error) {
     console.error('Failed to update profile:', error);

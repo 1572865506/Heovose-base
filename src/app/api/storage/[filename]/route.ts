@@ -7,7 +7,19 @@ export async function GET(
 ) {
   const { filename } = await params;
   
-  const url = await getFileUrl(filename);
+  // 对 filename 进行解码，以防 URL 编码绕过
+  const decodedFilename = decodeURIComponent(filename);
+
+  // 防跨越路径检验（拒绝包含 .. 或以 /、. 开头的文件路径）
+  if (
+    decodedFilename.includes('..') || 
+    decodedFilename.startsWith('/') || 
+    decodedFilename.startsWith('.')
+  ) {
+    return NextResponse.json({ error: 'Invalid file path (path traversal detected)' }, { status: 400 });
+  }
+  
+  const url = getFileUrl(decodedFilename);
   
   if (!url) {
     return NextResponse.json({ error: "File not found" }, { status: 404 });

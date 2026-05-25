@@ -2,6 +2,8 @@ import { NextResponse } from 'next/server';
 import { S3Client, ListObjectsV2Command, DeleteObjectCommand } from '@aws-sdk/client-s3';
 import db from '@/lib/db';
 
+import { auth } from '@/auth';
+
 const s3 = new S3Client({
   endpoint: `http://${process.env.STORAGE_ENDPOINT}:${process.env.STORAGE_PORT}`,
   region: 'us-east-1',
@@ -16,6 +18,11 @@ const bucket = process.env.STORAGE_BUCKET || 'heovose-assets';
 
 export async function POST() {
   try {
+    const session = await auth();
+    if (!session) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
     console.log('[Maintenance] Starting Media Cleanup via API');
     
     // 1. 获取数据库中所有引用的文件名

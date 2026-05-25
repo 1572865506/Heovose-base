@@ -5,28 +5,6 @@ import { Locale } from '@/lib/translations';
 import { useLocalCollection } from '@/hooks/use-local-collection';
 import { useLocalDoc } from '@/hooks/use-local-doc';
 
-const pendingRegistrations = new Set<string>();
-let registrationTimeout: NodeJS.Timeout | null = null;
-
-function registerKey(key: string) {
-  pendingRegistrations.add(key);
-  if (registrationTimeout) clearTimeout(registrationTimeout);
-  registrationTimeout = setTimeout(async () => {
-    const keys = Array.from(pendingRegistrations);
-    pendingRegistrations.clear();
-    if (keys.length === 0) return;
-    
-    try {
-      await fetch('/api/localizedStrings/register', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ keys }),
-      });
-    } catch (err) {
-      console.error('[Translation Autoregister Error]', err);
-    }
-  }, 1500);
-}
 
 export function useTranslations(locale: Locale) {
   const { data: remoteTranslations, isLoading: isTranslationsLoading } = useLocalCollection<any>(`localizedStrings?lang=${locale}`);
@@ -79,8 +57,7 @@ export function useTranslations(locale: Locale) {
         const isSystemId = /^[A-Z0-9_]{5,40}$/i.test(key) || /^(psl|psg|psv|prod|cat|hero|slide|case|step)_/i.test(key);
         if (isSystemId) {
           finalResult = '';
-          // Discovered unregistered system ID entry, trigger auto-registration
-          registerKey(key);
+          // Discovered unregistered system ID entry, client-side auto-registration disabled for security
         } else {
           // If not a system ID, but matches typical key naming patterns, treat it as a machine key and return empty
           const isMachineKey = /^[a-zA-Z0-9_.-]+$/.test(key);
