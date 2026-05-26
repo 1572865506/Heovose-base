@@ -159,17 +159,20 @@ export default function HeatmapPage() {
   return (
     <TooltipProvider>
     <div className="space-y-8 animate-in fade-in duration-700">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 relative z-10">
         <div className="space-y-1">
-          <div className="flex items-center gap-3">
+          <h2 className="text-2xl font-headline font-bold text-foreground flex items-center gap-4">
             <Link href="/admin/analytics">
-              <Button variant="outline" size="icon" className="h-8 w-8 rounded-full border-border/20 hover:bg-muted/20">
-                <ArrowLeft className="h-4 w-4" />
+              <Button variant="ghost" size="icon" className="rounded-2xl h-10 w-10 hover:bg-muted/10">
+                <ArrowLeft className="h-5 w-5" />
               </Button>
             </Link>
-            <h2 className="text-2xl font-headline font-bold text-foreground">交互热力图</h2>
-          </div>
-          <p className="text-sm text-muted-foreground ml-11">可视化分析用户在各个页面的点击分布热度。</p>
+            <div className="h-10 w-10 rounded-2xl bg-primary/10 flex items-center justify-center text-primary shadow-sm">
+              <MousePointer2 className="h-5 w-5" />
+            </div>
+            交互热力图
+          </h2>
+          <p className="text-xs text-muted-foreground font-bold uppercase tracking-[0.2em] pl-28">Overview / Analytics / Heatmap</p>
         </div>
       </div>
 

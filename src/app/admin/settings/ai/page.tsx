@@ -298,49 +298,45 @@ export default function AiManagementPage() {
       <div className="absolute top-[-20%] right-[-10%] w-[600px] h-[600px] bg-primary/5 blur-[120px] rounded-full -z-10" />
       <div className="absolute bottom-0 left-[-5%] w-[400px] h-[400px] bg-accent/5 blur-[100px] rounded-full -z-10" />
 
-      <div className="flex flex-col md:flex-row md:items-end justify-between gap-8">
-        <div className="space-y-3">
-          <div className="flex items-center gap-4">
-            <div className="h-14 w-14 rounded-2xl bg-slate-900 flex items-center justify-center text-white shadow-2xl shadow-slate-200 group admin-interface-dark:bg-slate-800 admin-interface-dark:shadow-none">
-              <Bot className={cn("h-7 w-7 transition-transform duration-500", formData.isEnabled ? "group-hover:rotate-12" : "opacity-40")} />
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 relative z-10">
+        <div className="space-y-1">
+          <h2 className="text-2xl font-headline font-bold text-foreground flex items-center gap-4">
+            <div className="h-10 w-10 rounded-2xl bg-primary/10 flex items-center justify-center text-primary shadow-sm">
+              <Bot className="h-5 w-5" />
             </div>
-            <div>
-              <div className="flex items-center gap-3">
-                <h2 className="text-4xl font-headline font-bold text-slate-900 tracking-tight admin-interface-dark:text-white">AI 智译中枢</h2>
-                <Switch 
-                  checked={formData.isEnabled} 
-                  onCheckedChange={v => {
-                    const updated = { ...formData, isEnabled: v };
-                    setFormData(updated);
-                    handleSave(updated);
-                  }}
-                  className="data-[state=checked]:bg-primary"
-                />
-              </div>
-              <div className="flex items-center gap-2 mt-1">
-                <Badge variant="outline" className={cn(
-                  "border-primary/20 text-[10px] font-bold uppercase tracking-widest px-3 py-0.5",
-                  formData.isEnabled ? "bg-primary/5 text-primary" : "bg-slate-100 text-slate-400 admin-interface-dark:bg-slate-900 admin-interface-dark:text-slate-600 admin-interface-dark:border-slate-850"
-                )}>
-                  {formData.isEnabled ? 'Active Gateway' : 'Gateway Offline'}
-                </Badge>
-                <div className="h-1 w-1 rounded-full bg-slate-300 admin-interface-dark:bg-slate-800" />
-                <span className="text-xs text-slate-400 font-medium italic admin-interface-dark:text-slate-500">管理全站算力分发与自动容灾</span>
-              </div>
-            </div>
-          </div>
+            AI 智译中枢
+          </h2>
+          <p className="text-xs text-muted-foreground font-bold uppercase tracking-[0.2em] pl-14">System / AI Hub</p>
         </div>
 
-        <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-          <DialogTrigger asChild>
-            <Button 
-              onClick={() => setEditingProvider({ type: 'google', isActive: true, isPrimary: formData.providers.length === 0 })}
-              className="rounded-2xl h-14 px-8 gap-3 font-bold uppercase tracking-widest text-[10px] shadow-xl shadow-primary/20 hover:scale-105 active:scale-95 transition-all bg-slate-900 text-white admin-interface-dark:bg-white admin-interface-dark:text-slate-900 admin-interface-dark:hover:bg-slate-100 admin-interface-dark:shadow-none"
-            >
-              <Plus className="h-4 w-4" /> 新增算力节点
-            </Button>
-          </DialogTrigger>
-          <DialogContent className="max-w-2xl rounded-[3rem] p-0 border-none bg-slate-50 overflow-hidden max-h-[90vh] flex flex-col admin-interface-dark:bg-slate-950 admin-interface-dark:border admin-interface-dark:border-slate-850">
+        <div className="flex items-center gap-6">
+          <div className="flex items-center gap-3 bg-muted/10 p-2 rounded-2xl border border-border/40">
+            <span className="text-xs text-muted-foreground font-bold uppercase tracking-wider pl-2">网关状态</span>
+            <Switch 
+              checked={formData.isEnabled} 
+              onCheckedChange={v => {
+                const updated = { ...formData, isEnabled: v };
+                setFormData(updated);
+                handleSave(updated);
+              }}
+              className="data-[state=checked]:bg-primary"
+            />
+          </div>
+
+          <Button 
+            onClick={() => {
+              setEditingProvider({ type: 'google', isActive: true, isPrimary: formData.providers.length === 0 });
+              setIsDialogOpen(true);
+            }}
+            className="rounded-2xl h-12 px-6 gap-2.5 font-bold uppercase tracking-widest text-[10px] shadow-xl shadow-primary/20 hover:scale-105 active:scale-95 transition-all bg-slate-900 text-white admin-interface-dark:bg-white admin-interface-dark:text-slate-900 admin-interface-dark:hover:bg-slate-100 admin-interface-dark:shadow-none"
+          >
+            <Plus className="h-4 w-4" /> 新增算力节点
+          </Button>
+        </div>
+      </div>
+
+      <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+        <DialogContent className="max-w-2xl rounded-[3rem] p-0 border-none bg-slate-50 overflow-hidden max-h-[90vh] flex flex-col admin-interface-dark:bg-slate-950 admin-interface-dark:border admin-interface-dark:border-slate-850">
             {/* 固定头部：标题 + 供应商选择 */}
             <div className="p-12 pb-8 bg-white border-b border-slate-100 shadow-sm z-10 admin-interface-dark:bg-slate-900 admin-interface-dark:border-slate-850 admin-interface-dark:shadow-none">
               <DialogHeader className="mb-8">
@@ -464,7 +460,6 @@ export default function AiManagementPage() {
             </DialogFooter>
           </DialogContent>
         </Dialog>
-      </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-10">
         {/* Provider List (Left) */}

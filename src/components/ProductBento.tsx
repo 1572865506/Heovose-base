@@ -41,11 +41,6 @@ function BentoCard({ item, index, locale, isVisible }: { item: any, index: numbe
         />
       )}
       
-      {/* Dynamic Overlay for better contrast */}
-      <div className={cn(
-        "absolute inset-0 transition-opacity duration-500",
-        theme === 'light' ? "bg-white/10" : "bg-black/20"
-      )} />
 
       <div className="absolute inset-0 p-5 pb-5 flex flex-col justify-end transition-transform duration-500 group-hover:-translate-y-1 transform-gpu will-change-transform [backface-visibility:hidden]">
         <div className="space-y-3">

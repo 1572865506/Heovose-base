@@ -224,15 +224,15 @@ export default function UserManagementPage() {
     <div className="space-y-8 animate-in fade-in duration-700 pb-20">
       <AiGradientDef />
       
-      <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
-        <div className="space-y-2">
-          <div className="flex items-center gap-3">
-            <div className="h-12 w-12 rounded-2xl bg-primary flex items-center justify-center text-white shadow-lg shadow-primary/20">
-              <ShieldCheck className="h-6 w-6" />
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 relative z-10">
+        <div className="space-y-1">
+          <h2 className="text-2xl font-headline font-bold text-foreground flex items-center gap-4">
+            <div className="h-10 w-10 rounded-2xl bg-primary/10 flex items-center justify-center text-primary shadow-sm">
+              <Users className="h-5 w-5" />
             </div>
-            <h2 className="text-3xl font-headline font-bold text-foreground">成员与权限管理</h2>
-          </div>
-          <p className="text-sm text-muted-foreground font-medium max-w-2xl pl-1">配置团队成员访问权限，确保业务数据安全。支持基于角色的权限包 (RBAC) 与原子化权限微调。</p>
+            成员与权限管理
+          </h2>
+          <p className="text-xs text-muted-foreground font-bold uppercase tracking-[0.2em] pl-14">System / Team</p>
         </div>
         
         <div className="flex items-center gap-3">

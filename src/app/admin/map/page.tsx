@@ -26,6 +26,7 @@ import {
   Edit2, 
   Plus, 
   Check, 
+  Save,
   Loader2, 
   Sparkles, 
   Image as ImageIcon,
@@ -358,9 +359,30 @@ export default function GlobalMapAdminPage() {
   };
 
   return (
-    <div className="space-y-6 animate-in fade-in duration-500 pb-20">
+    <div className="space-y-10 animate-in fade-in duration-500 pb-20 relative z-10">
       <AiGradientDef />
       
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 relative z-10">
+        <div className="space-y-1">
+          <h2 className="text-2xl font-headline font-bold text-foreground flex items-center gap-4">
+            <div className="h-10 w-10 rounded-2xl bg-primary/10 flex items-center justify-center text-primary shadow-sm">
+              <Globe className="h-5 w-5" />
+            </div>
+            全球网点管理
+          </h2>
+          <p className="text-xs text-muted-foreground font-bold uppercase tracking-[0.2em] pl-14">Management / Content / Map</p>
+        </div>
+        
+        <Button 
+          onClick={handleSaveSectionConfig} 
+          disabled={isSavingConfig}
+          className="rounded-2xl h-12 px-8 gap-2.5 font-bold uppercase tracking-widest text-[10px] shadow-lg shadow-primary/20 hover:scale-105 transition-all"
+        >
+          {isSavingConfig ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
+          保存标题配置
+        </Button>
+      </div>
+
       <div className="bg-card p-8 rounded-3xl border border-border/10 shadow-sm space-y-8">
         <div className="flex items-center justify-between border-b border-border/10 pb-4">
           <div className="space-y-1">
@@ -383,14 +405,6 @@ export default function GlobalMapAdminPage() {
                 </div>
               </ShinyButton>
             )}
-            <Button 
-              onClick={handleSaveSectionConfig} 
-              disabled={isSavingConfig}
-              className="rounded-xl h-9 px-6 gap-2 text-[10px] font-bold uppercase tracking-widest shadow-md"
-            >
-              {isSavingConfig ? <Loader2 className="h-3 w-3 animate-spin" /> : <Check className="h-3 w-3" />}
-              保存标题配置
-            </Button>
           </div>
         </div>
 
@@ -426,11 +440,14 @@ export default function GlobalMapAdminPage() {
             </h3>
             <p className="text-[10px] text-muted-foreground uppercase font-medium">配置地图上显示的交互式 Pins。</p>
           </div>
-          <Button onClick={() => {
-            setLocationForm({ id: '', type: 'Factory', titleZh: '', titleEn: '', addressZh: '', addressEn: '', descZh: '', descEn: '', imageUrl: '', countryCode: 'cn', posTop: '50%', posLeft: '50%' });
-            setEditingLocation(null);
-            setIsLocationDialogOpen(true);
-          }} className="rounded-xl h-10 px-6 gap-2 text-xs font-bold uppercase tracking-widest shadow-md">
+          <Button 
+            onClick={() => {
+              setLocationForm({ id: '', type: 'Factory', titleZh: '', titleEn: '', addressZh: '', addressEn: '', descZh: '', descEn: '', imageUrl: '', countryCode: 'cn', posTop: '50%', posLeft: '50%' });
+              setEditingLocation(null);
+              setIsLocationDialogOpen(true);
+            }} 
+            className="rounded-xl h-9 px-4 font-bold uppercase text-[10px] tracking-widest gap-2 shadow-md hover:scale-105 transition-all"
+          >
             <Plus className="h-4 w-4" /> 新增网点
           </Button>
         </div>
@@ -442,7 +459,7 @@ export default function GlobalMapAdminPage() {
           
           {!isLoadingLocs && (locations || []).length === 0 && (
             <div className="col-span-full py-20 text-center border-2 border-dashed rounded-3xl bg-muted/5">
-              <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest">暂无网点数据，请点击上方按钮添加</p>
+              <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest">暂无网点数据，请点击新增网点添加</p>
             </div>
           )}
 

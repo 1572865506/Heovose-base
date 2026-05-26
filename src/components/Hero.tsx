@@ -16,6 +16,12 @@ import { useLocalCollection } from '@/hooks/use-local-collection';
 
 const SplitText = dynamic(() => import('./ui/SplitText'), { ssr: false });
 
+const isVideoUrl = (url: string | undefined | null) => {
+  if (!url) return false;
+  const ext = url.split('.').pop()?.toLowerCase().split('?')[0] || '';
+  return ['mp4', 'webm', 'ogg', 'mov'].includes(ext);
+};
+
 interface HeroSlide {
   id: string;
   headlineZh: string;
@@ -83,16 +89,22 @@ export function Hero({ locale, homeConfig, isLoading, onThemeChange }: HeroProps
     if (slides.length > 0) {
       const currentSlide = slides[selectedIndex] as any;
 
+      if (isVideoUrl(currentSlide.bgImage)) {
+        setCurrentTheme('dark');
+        if (onThemeChange) onThemeChange('dark');
+        return;
+      }
+
       // 优先使用预计算的明暗度
       if (currentSlide.brightness !== undefined && currentSlide.brightness !== null) {
-        const theme = currentSlide.brightness > 160 ? 'light' : 'dark';
+        const theme = currentSlide.brightness > 140 ? 'light' : 'dark';
         setCurrentTheme(theme);
         if (onThemeChange) onThemeChange(theme);
         return;
       }
 
       analyzeImageBrightness(getAssetUrl(currentSlide.bgImage)).then((brightness) => {
-        const theme = brightness > 160 ? 'light' : 'dark';
+        const theme = brightness > 140 ? 'light' : 'dark';
         setCurrentTheme(theme);
         if (onThemeChange) onThemeChange(theme);
       });
@@ -257,40 +269,73 @@ export function Hero({ locale, homeConfig, isLoading, onThemeChange }: HeroProps
                     <>
                       {/* PC Poster */}
                       <div className="hidden md:block absolute inset-0">
-                        <Image
-                          src={getAssetUrl(slide.bgImage)}
-                          alt={getFallback(slide.headlineZh, slide.headlineEn)}
-                          fill
-                          className="object-cover md:object-center"
-                          priority={index === 0 || slide.id === 'legacy-default'}
-                          quality={100}
-                          sizes="100vw"
-                        />
+                        {isVideoUrl(slide.bgImage) ? (
+                          <video
+                            src={getAssetUrl(slide.bgImage)}
+                            autoPlay
+                            loop
+                            muted
+                            playsInline
+                            className="object-cover w-full h-full"
+                          />
+                        ) : (
+                          <Image
+                            src={getAssetUrl(slide.bgImage)}
+                            alt={getFallback(slide.headlineZh, slide.headlineEn)}
+                            fill
+                            className="object-cover md:object-center"
+                            priority={index === 0 || slide.id === 'legacy-default'}
+                            quality={100}
+                            sizes="100vw"
+                          />
+                        )}
                       </div>
                       {/* Mobile Poster */}
                       <div className="block md:hidden absolute inset-0">
-                        <Image
-                          src={getAssetUrl(slide.mobileBgImage)}
-                          alt={getFallback(slide.headlineZh, slide.headlineEn)}
-                          fill
-                          className="object-cover object-[66%_center]"
-                          priority={index === 0 || slide.id === 'legacy-default'}
-                          quality={100}
-                          sizes="100vw"
-                        />
+                        {isVideoUrl(slide.mobileBgImage) ? (
+                          <video
+                            src={getAssetUrl(slide.mobileBgImage)}
+                            autoPlay
+                            loop
+                            muted
+                            playsInline
+                            className="object-cover w-full h-full"
+                          />
+                        ) : (
+                          <Image
+                            src={getAssetUrl(slide.mobileBgImage)}
+                            alt={getFallback(slide.headlineZh, slide.headlineEn)}
+                            fill
+                            className="object-cover object-[66%_center]"
+                            priority={index === 0 || slide.id === 'legacy-default'}
+                            quality={100}
+                            sizes="100vw"
+                          />
+                        )}
                       </div>
                     </>
                   ) : (
                     // Default PC Poster
-                    <Image
-                      src={getAssetUrl(slide.bgImage)}
-                      alt={getFallback(slide.headlineZh, slide.headlineEn)}
-                      fill
-                      className="object-cover object-[66%_center] md:object-center"
-                      priority={index === 0 || slide.id === 'legacy-default'}
-                      quality={100}
-                      sizes="100vw"
-                    />
+                    isVideoUrl(slide.bgImage) ? (
+                      <video
+                        src={getAssetUrl(slide.bgImage)}
+                        autoPlay
+                        loop
+                        muted
+                        playsInline
+                        className="object-cover w-full h-full"
+                      />
+                    ) : (
+                      <Image
+                        src={getAssetUrl(slide.bgImage)}
+                        alt={getFallback(slide.headlineZh, slide.headlineEn)}
+                        fill
+                        className="object-cover object-[66%_center] md:object-center"
+                        priority={index === 0 || slide.id === 'legacy-default'}
+                        quality={100}
+                        sizes="100vw"
+                      />
+                    )
                   )}
                 </div>
 

@@ -72,17 +72,15 @@ export default function AdminPage() {
 
 
       {/* 顶部欢迎区 */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-8 relative z-10">
-        <div className="space-y-2">
-          <div className="flex items-center gap-4">
-            <div className="h-12 w-12 rounded-2xl bg-primary/10 border border-primary/20 flex items-center justify-center text-primary shadow-[0_0_20px_rgba(0,91,153,0.15)]">
-              <LayoutDashboard className="h-6 w-6" />
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 relative z-10">
+        <div className="space-y-1">
+          <h2 className="text-2xl font-headline font-bold text-foreground flex items-center gap-4">
+            <div className="h-10 w-10 rounded-2xl bg-primary/10 flex items-center justify-center text-primary shadow-sm">
+              <LayoutDashboard className="h-5 w-5" />
             </div>
-            <h2 className="text-3xl font-headline font-bold text-foreground tracking-tight">
-              控制面板 <span className="text-primary/40 font-light ml-2 uppercase tracking-widest text-lg">Overview</span>
-            </h2>
-          </div>
-          <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-[0.4em] pl-16 opacity-40">Operational Intel & System Lifecycle</p>
+            控制面板
+          </h2>
+          <p className="text-xs text-muted-foreground font-bold uppercase tracking-[0.2em] pl-14">Overview / Dashboard</p>
         </div>
 
         <div className="flex items-center gap-4">

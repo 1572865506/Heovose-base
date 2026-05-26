@@ -1,18 +1,13 @@
-import { NextRequest, NextResponse } from "next/server";
-import { auth } from "@/auth";
+import { NextResponse } from "next/server";
+import { withAuth } from "@/lib/auth-utils";
 import fs from "fs";
 import path from "path";
 
-export async function GET(
-  request: NextRequest,
+export const GET = withAuth('superadmin', async (
+  request: Request,
   { params }: { params: Promise<{ filename: string }> }
-) {
-  const session = await auth();
+) => {
   const { filename } = await params;
-
-  if (!session || (session.user as any)?.role !== "admin" && (session.user as any)?.role !== "superadmin") {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
-  }
 
   // Security check: prevent directory traversal
   if (filename.includes("/") || filename.includes("..")) {
@@ -27,14 +22,23 @@ export async function GET(
 
     const fileBuffer = fs.readFileSync(filePath);
     
+    let contentType = "application/octet-stream";
+    if (filename.endsWith(".sql")) {
+      contentType = "application/sql";
+    } else if (filename.endsWith(".tar")) {
+      contentType = "application/x-tar";
+    } else if (filename.endsWith(".gz")) {
+      contentType = "application/gzip";
+    }
+
     return new NextResponse(new Uint8Array(fileBuffer), {
       headers: {
         "Content-Disposition": `attachment; filename="${filename}"`,
-        "Content-Type": filename.endsWith(".sql") ? "application/sql" : "application/x-tar",
+        "Content-Type": contentType,
       },
     });
   } catch (error) {
     console.error("Download failed:", error);
     return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
   }
-}
+});

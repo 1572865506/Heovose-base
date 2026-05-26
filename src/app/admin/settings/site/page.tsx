@@ -35,7 +35,8 @@ import {
   Award,
   Shield,
   Boxes,
-  Zap
+  Zap,
+  Star
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { getAssetUrl } from '@/lib/image-utils';
@@ -258,20 +259,18 @@ export default function SiteSettingsPage() {
   return (
     <div className="max-w-[1600px] mx-auto space-y-12 pb-32">
       {/* Header Area */}
-      <div className="flex flex-col md:flex-row md:items-end justify-between gap-8">
-        <div className="space-y-4">
-          <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-primary/5 admin-interface-dark:bg-primary/10 border border-primary/10">
-            <Sparkles className="w-4 h-4 text-primary animate-pulse" />
-            <span className="text-[10px] font-black uppercase tracking-widest text-primary admin-interface-dark:text-primary-foreground">Brand Engine v2.0</span>
-          </div>
-          <h1 className="text-5xl font-black text-slate-900 admin-interface-dark:text-white tracking-tight font-headline">站点与品牌设置</h1>
-          <p className="text-slate-500 admin-interface-dark:text-slate-400 max-w-xl leading-relaxed">
-            在此管理您的全球 brand 资产、联系矩阵以及智能 SEO 引擎。
-            所有更改将实时同步至全球 20+ 个边缘节点。
-          </p>
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 relative z-10">
+        <div className="space-y-1">
+          <h2 className="text-2xl font-headline font-bold text-foreground flex items-center gap-4">
+            <div className="h-10 w-10 rounded-2xl bg-primary/10 flex items-center justify-center text-primary shadow-sm">
+              <Star className="h-5 w-5" />
+            </div>
+            站点与品牌设置
+          </h2>
+          <p className="text-xs text-muted-foreground font-bold uppercase tracking-[0.2em] pl-14">System / Brand</p>
         </div>
 
-        <div className="flex items-center gap-6 p-2 bg-card border border-border rounded-2xl shadow-sm backdrop-blur-xl">
+        <div className="flex items-center gap-6">
           <div className="flex p-1 bg-muted/20 border border-border/40 rounded-xl">
             {activeLanguages.map((l: any) => (
               <button
@@ -289,9 +288,9 @@ export default function SiteSettingsPage() {
           <Button 
             onClick={handleSave} 
             disabled={isSaving}
-            className="rounded-xl h-10 px-8 gap-2 font-bold uppercase tracking-widest text-[10px] shadow-lg shadow-primary/10 hover:scale-105 transition-all"
+            className="rounded-2xl h-12 px-8 gap-2.5 font-bold uppercase tracking-widest text-[10px] shadow-lg shadow-primary/20 hover:scale-105 transition-all"
           >
-            {isSaving ? <Loader2 className="w-5 h-5 animate-spin" /> : <Save className="w-5 h-5" />}
+            {isSaving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
             签署并部署
           </Button>
         </div>

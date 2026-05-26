@@ -332,7 +332,23 @@ export default function CaseStudiesAdminPage() {
 
 
   return (
-    <div className="space-y-6 animate-in fade-in duration-500 pb-20">
+    <div className="space-y-10 animate-in fade-in duration-500 pb-20">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 relative z-10">
+        <div className="space-y-1">
+          <h2 className="text-2xl font-headline font-bold text-foreground flex items-center gap-4">
+            <div className="h-10 w-10 rounded-2xl bg-primary/10 flex items-center justify-center text-primary shadow-sm">
+              <Star className="h-5 w-5" />
+            </div>
+            成功案例管理
+          </h2>
+          <p className="text-xs text-muted-foreground font-bold uppercase tracking-[0.2em] pl-14">Management / Content / Cases</p>
+        </div>
+        
+        <Button onClick={() => handleOpenDialog()} className="rounded-2xl h-12 px-6 font-bold uppercase text-[10px] tracking-widest gap-2 shadow-lg shadow-primary/20">
+          <Plus className="h-4 w-4" /> 新增案例
+        </Button>
+      </div>
+
       <div className="bg-card p-8 rounded-3xl border border-border/20 shadow-sm space-y-6">
         <div className="flex items-center justify-between border-b border-border/20 pb-4">
           <div className="space-y-1">
@@ -417,17 +433,7 @@ export default function CaseStudiesAdminPage() {
         </div>
       </div>
 
-      <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-xl font-headline font-bold text-foreground flex items-center gap-2">
-            <Star className="h-5 w-5" /> 成功案例管理
-          </h2>
-          <p className="text-xs text-muted-foreground">定义全球各行业的成功交付方案，支持多语言动态展示。</p>
-        </div>
-        <Button onClick={() => handleOpenDialog()} className="rounded-xl h-10 px-6 gap-2 text-xs font-bold uppercase tracking-widest shadow-lg">
-          <Plus className="h-4 w-4" /> 新增案例
-        </Button>
-      </div>
+
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {isLoading ? (

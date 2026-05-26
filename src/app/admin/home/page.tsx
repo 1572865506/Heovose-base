@@ -62,6 +62,12 @@ import { MediaLibraryDialog } from '@/components/admin/media-library-dialog';
 import { getAssetUrl } from '@/lib/image-utils';
 import Image from 'next/image';
 
+const isVideoUrl = (url: string | undefined | null) => {
+  if (!url) return false;
+  const ext = url.split('.').pop()?.toLowerCase().split('?')[0] || '';
+  return ['mp4', 'webm', 'ogg', 'mov'].includes(ext);
+};
+
 // AI 极光渐变定义组件
 const AiGradientDef = () => (
   <svg width="0" height="0" className="absolute">
@@ -637,46 +643,46 @@ export default function AdminHomePage() {
     <div className="space-y-6 animate-in fade-in duration-500 pb-20">
       <AiGradientDef />
       
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 sticky top-[-24px] z-50 bg-background/80 backdrop-blur-xl py-5 border-b border-border/40 -mx-6 px-10 shadow-sm transition-all duration-300">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 relative z-10">
         <div className="space-y-1">
-          <h2 className="text-xl font-headline font-bold text-foreground flex items-center gap-3">
-            <div className="h-9 w-9 rounded-xl bg-primary/10 flex items-center justify-center text-primary">
-              <Home className="h-4.5 w-4.5" />
+          <h2 className="text-2xl font-headline font-bold text-foreground flex items-center gap-4">
+            <div className="h-10 w-10 rounded-2xl bg-primary/10 flex items-center justify-center text-primary shadow-sm">
+              <Home className="h-5 w-5" />
             </div>
             首页视觉配置
           </h2>
-          <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-[0.2em] pl-12">Management / Content / Home Visuals</p>
+          <p className="text-xs text-muted-foreground font-bold uppercase tracking-[0.2em] pl-14">Management / Content / Home Visuals</p>
         </div>
         
-        <Button onClick={handleSave} disabled={isSaving} className="rounded-2xl h-14 px-10 gap-3 font-bold uppercase tracking-widest text-xs shadow-xl shadow-primary/20 hover:scale-105 transition-all">
+        <Button onClick={handleSave} disabled={isSaving} className="rounded-2xl h-12 px-8 gap-2.5 font-bold uppercase tracking-widest text-[10px] shadow-lg shadow-primary/20 hover:scale-105 transition-all">
           {isSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
           发布配置变更
         </Button>
       </div>
 
       <Tabs defaultValue="hero" className="w-full">
-        <TabsList className="bg-muted/20 border border-border/40 p-1.5 rounded-2xl mb-8 h-14 inline-flex gap-1 shadow-inner backdrop-blur-sm">
+        <TabsList className="bg-card/50 backdrop-blur-xl border border-border/40 p-1 rounded-2xl h-14 mb-8">
           <TabsTrigger 
             value="hero" 
-            className="rounded-xl px-8 h-11 text-xs font-bold uppercase tracking-wider gap-2 transition-all duration-300 data-[state=active]:bg-card data-[state=active]:text-primary data-[state=active]:shadow-[0_4px_12px_rgba(0,0,0,0.05)] data-[state=active]:border-border/60 border border-transparent text-muted-foreground hover:text-foreground"
+            className="rounded-xl px-8 h-12 data-[state=active]:bg-primary data-[state=active]:text-white font-bold text-[10px] uppercase tracking-widest transition-all gap-2 text-muted-foreground hover:text-foreground"
           >
             <ImageIcon className="h-4 w-4" /> 英雄视觉 (Hero)
           </TabsTrigger>
           <TabsTrigger 
             value="video" 
-            className="rounded-xl px-8 h-11 text-xs font-bold uppercase tracking-wider gap-2 transition-all duration-300 data-[state=active]:bg-card data-[state=active]:text-primary data-[state=active]:shadow-[0_4px_12px_rgba(0,0,0,0.05)] data-[state=active]:border-border/60 border border-transparent text-muted-foreground hover:text-foreground"
+            className="rounded-xl px-8 h-12 data-[state=active]:bg-primary data-[state=active]:text-white font-bold text-[10px] uppercase tracking-widest transition-all gap-2 text-muted-foreground hover:text-foreground"
           >
             <Film className="h-4 w-4" /> 品牌故事 (Video)
           </TabsTrigger>
           <TabsTrigger 
             value="bento" 
-            className="rounded-xl px-8 h-11 text-xs font-bold uppercase tracking-wider gap-2 transition-all duration-300 data-[state=active]:bg-card data-[state=active]:text-primary data-[state=active]:shadow-[0_4px_12px_rgba(0,0,0,0.05)] data-[state=active]:border-border/60 border border-transparent text-muted-foreground hover:text-foreground"
+            className="rounded-xl px-8 h-12 data-[state=active]:bg-primary data-[state=active]:text-white font-bold text-[10px] uppercase tracking-widest transition-all gap-2 text-muted-foreground hover:text-foreground"
           >
             <LayoutGrid className="h-4 w-4" /> 产品布局 (Bento)
           </TabsTrigger>
           <TabsTrigger 
             value="gallery" 
-            className="rounded-xl px-8 h-11 text-xs font-bold uppercase tracking-wider gap-2 transition-all duration-300 data-[state=active]:bg-card data-[state=active]:text-primary data-[state=active]:shadow-[0_4px_12px_rgba(0,0,0,0.05)] data-[state=active]:border-border/60 border border-transparent text-muted-foreground hover:text-foreground"
+            className="rounded-xl px-8 h-12 data-[state=active]:bg-primary data-[state=active]:text-white font-bold text-[10px] uppercase tracking-widest transition-all gap-2 text-muted-foreground hover:text-foreground"
           >
             <Layers className="h-4 w-4" /> 产品轮播 (Gallery)
           </TabsTrigger>
@@ -885,7 +891,11 @@ export default function AdminHomePage() {
                           onClick={() => setPickerConfig({ open: true, type: 'slide', slideIndex: index, field: 'bgImage' } as any)}
                         >
                           {slide.bgImage ? (
-                            <Image src={getAssetUrl(slide.bgImage)} alt="Preview" fill className="object-cover" unoptimized />
+                            isVideoUrl(slide.bgImage) ? (
+                              <video src={getAssetUrl(slide.bgImage)} className="object-cover w-full h-full" muted playsInline />
+                            ) : (
+                              <Image src={getAssetUrl(slide.bgImage)} alt="Preview" fill className="object-cover" unoptimized />
+                            )
                           ) : (
                             <div className="absolute inset-0 flex items-center justify-center text-muted-foreground/30"><ImageIcon className="h-6 w-6" /></div>
                           )}
@@ -910,7 +920,11 @@ export default function AdminHomePage() {
                           onClick={() => setPickerConfig({ open: true, type: 'slide', slideIndex: index, field: 'mobileBgImage' } as any)}
                         >
                           {slide.mobileBgImage ? (
-                            <Image src={getAssetUrl(slide.mobileBgImage)} alt="Preview" fill className="object-cover" unoptimized />
+                            isVideoUrl(slide.mobileBgImage) ? (
+                              <video src={getAssetUrl(slide.mobileBgImage)} className="object-cover w-full h-full" muted playsInline />
+                            ) : (
+                              <Image src={getAssetUrl(slide.mobileBgImage)} alt="Preview" fill className="object-cover" unoptimized />
+                            )
                           ) : (
                             <div className="absolute inset-0 flex flex-col items-center justify-center gap-1 text-muted-foreground/30 text-[8px] bg-muted/5">
                               <ImageIcon className="h-4 w-4" />
@@ -1623,7 +1637,8 @@ export default function AdminHomePage() {
         onOpenChange={(open) => setPickerConfig({ ...pickerConfig, open })}
         onSelect={(assets) => {
           if (assets.length > 0) {
-            const url = assets[0].url;
+            const asset = assets[0] as any;
+            const url = asset.url;
             if (pickerConfig.type === 'video') {
               setFormData({ ...formData, videoUrl: url });
             } else if (pickerConfig.type === 'wholesale') {
@@ -1632,9 +1647,19 @@ export default function AdminHomePage() {
               setFormData({ ...formData, heroProjectBg: url });
             } else if (pickerConfig.type === 'slide' && pickerConfig.slideIndex !== null) {
               const fieldName = (pickerConfig as any).field || 'bgImage';
-              updateSlide(pickerConfig.slideIndex, { [fieldName]: url });
+              updateSlide(pickerConfig.slideIndex, { 
+                [fieldName]: url,
+                brightness: asset.brightness !== undefined ? asset.brightness : null
+              });
             } else if (pickerConfig.type === 'bento' && bentoDialog.open) {
-              setBentoDialog({ ...bentoDialog, item: { ...bentoDialog.item, imageUrl: url } });
+              setBentoDialog({ 
+                ...bentoDialog, 
+                item: { 
+                  ...bentoDialog.item, 
+                  imageUrl: url,
+                  brightness: asset.brightness !== undefined ? asset.brightness : null
+                } 
+              });
             }
           }
         }}
@@ -1679,6 +1704,13 @@ export default function AdminHomePage() {
             mutateBentoItems();
             setBentoDialog({ open: false, item: null });
             toast({ title: "格位已保存" });
+          } else {
+            const err = await res.json().catch(() => ({}));
+            toast({ 
+              variant: "destructive", 
+              title: "保存失败", 
+              description: err.error || "网络或系统内部错误，请稍后再试" 
+            });
           }
         }}
         onTranslate={async (text) => {

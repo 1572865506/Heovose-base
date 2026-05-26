@@ -87,12 +87,17 @@ export default function ProfilePage() {
   };
 
   return (
-    <div className="max-w-4xl mx-auto space-y-8 animate-in fade-in duration-500">
-      <div className="space-y-1">
-        <h2 className="text-xl font-headline font-bold text-primary flex items-center gap-2">
-          <UserCircle className="h-5 w-5" /> 我的个人资料
-        </h2>
-        <p className="text-xs text-muted-foreground">自定义您的显示身份。头像将存储在加密的管理员配置中。</p>
+    <div className="max-w-4xl mx-auto space-y-8 animate-in fade-in duration-700">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 relative z-10">
+        <div className="space-y-1">
+          <h2 className="text-2xl font-headline font-bold text-foreground flex items-center gap-4">
+            <div className="h-10 w-10 rounded-2xl bg-primary/10 flex items-center justify-center text-primary shadow-sm">
+              <UserCircle className="h-5 w-5" />
+            </div>
+            我的个人资料
+          </h2>
+          <p className="text-xs text-muted-foreground font-bold uppercase tracking-[0.2em] pl-14">Management / Account / Profile</p>
+        </div>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">

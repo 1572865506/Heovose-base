@@ -69,13 +69,13 @@ const EditorHeader = memo(({
             <ArrowLeft className="h-5 w-5" />
           </Button>
           <div className="space-y-1">
-            <span className="text-[8px] font-bold uppercase tracking-widest text-muted-foreground/50 pl-1 block">Heovose Admin / 资源中心</span>
-            <h2 className="text-xl font-headline font-bold text-foreground whitespace-nowrap tracking-tight flex items-center gap-3">
-              <div className="h-8 w-8 rounded-xl bg-primary/10 flex items-center justify-center text-primary">
-                <Settings className="h-4 w-4" />
+            <h2 className="text-2xl font-headline font-bold text-foreground whitespace-nowrap tracking-tight flex items-center gap-4">
+              <div className="h-10 w-10 rounded-2xl bg-primary/10 flex items-center justify-center text-primary shadow-sm">
+                <Settings className="h-5 w-5" />
               </div>
               {isEditing ? '修改产品' : '创建产品'}
             </h2>
+            <p className="text-xs text-muted-foreground font-bold uppercase tracking-[0.2em] pl-28">Management / Product Catalog / Editor</p>
           </div>
         </div>
         <div className="flex items-center gap-4 flex-1 min-w-0 max-w-4xl">

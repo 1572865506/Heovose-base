@@ -1,21 +1,15 @@
 import { NextResponse } from "next/server";
-import { auth } from "@/auth";
-import { exec } from "child_process";
+import { withAuth } from "@/lib/auth-utils";
+import { execFile } from "child_process";
 import { promisify } from "util";
 import path from "path";
 
-const execAsync = promisify(exec);
+const execFileAsync = promisify(execFile);
 
-export async function POST() {
-  const session = await auth();
-
-  if (!session || (session.user as any)?.role !== "admin" && (session.user as any)?.role !== "superadmin") {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
-  }
-
+export const POST = withAuth('superadmin', async () => {
   try {
     const scriptPath = path.join(process.cwd(), "scripts", "check-update.sh");
-    const { stdout } = await execAsync(`bash ${scriptPath}`);
+    const { stdout } = await execFileAsync("bash", [scriptPath]);
     
     const result = stdout.trim();
     if (result === "UP_TO_DATE") {
@@ -34,4 +28,4 @@ export async function POST() {
     console.error("Check update failed:", error);
     return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
   }
-}
+});

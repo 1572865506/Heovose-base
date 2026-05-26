@@ -1,17 +1,30 @@
 import { NextResponse } from "next/server";
-import { auth } from "@/auth";
+import { withAuth } from "@/lib/auth-utils";
 import { spawn } from "child_process";
 import path from "path";
+import fs from "fs";
+import { logAdminAction } from "@/lib/audit";
 
-export async function POST() {
-  const session = await auth();
-
-  if (!session || (session.user as any)?.role !== "admin" && (session.user as any)?.role !== "superadmin") {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
-  }
-
+export const POST = withAuth('superadmin', async (
+  request: Request,
+  context: any,
+  currentUser: { id: string; role: string; email: string }
+) => {
   try {
     const scriptPath = path.join(process.cwd(), "scripts", "update-system.sh");
+    
+    // 开启维护模式：创建标记文件 (问题 4)
+    const maintenanceFile = path.join(process.cwd(), ".maintenance");
+    fs.writeFileSync(maintenanceFile, "true");
+
+    // 记录升级审计日志 (问题 5)
+    logAdminAction(
+      request,
+      currentUser.id,
+      currentUser.email,
+      'UPGRADE_SYSTEM',
+      { script: scriptPath }
+    );
     
     // Use spawn to run in background without waiting for completion
     const child = spawn("bash", [scriptPath], {
@@ -31,4 +44,5 @@ export async function POST() {
       error: "Internal Server Error"
     }, { status: 500 });
   }
-}
+});
+

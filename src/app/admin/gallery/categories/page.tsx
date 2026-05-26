@@ -131,19 +131,21 @@ export default function GalleryCategoriesPage() {
   };
 
   return (
-    <div className="space-y-6 animate-in fade-in duration-500">
-      <div className="flex items-center gap-4">
-        <Link href="/admin/gallery">
-          <Button variant="ghost" size="icon" className="rounded-full h-10 w-10">
-            <ArrowLeft className="h-5 w-5" />
-          </Button>
-        </Link>
-        <div>
-          <h2 className="text-xl font-headline font-bold text-primary flex items-center gap-2">
-            <Layers className="h-5 w-5" />
+    <div className="space-y-8 animate-in fade-in duration-700">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 relative z-10">
+        <div className="space-y-1">
+          <h2 className="text-2xl font-headline font-bold text-foreground flex items-center gap-4">
+            <Link href="/admin/gallery">
+              <Button variant="ghost" size="icon" className="rounded-2xl h-10 w-10 hover:bg-muted/10">
+                <ArrowLeft className="h-5 w-5" />
+              </Button>
+            </Link>
+            <div className="h-10 w-10 rounded-2xl bg-primary/10 flex items-center justify-center text-primary shadow-sm">
+              <Layers className="h-5 w-5" />
+            </div>
             图库分类管理
           </h2>
-          <p className="text-xs text-muted-foreground">定义素材的层级分类，支持多语言自动切换。</p>
+          <p className="text-xs text-muted-foreground font-bold uppercase tracking-[0.2em] pl-28">Management / Digital Assets / Categories</p>
         </div>
       </div>
 

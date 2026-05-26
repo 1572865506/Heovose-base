@@ -172,10 +172,15 @@ export default function AnalyticsPage() {
 
   return (
     <div className="space-y-12 animate-in fade-in duration-1000 pb-20">
-      <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
-        <div>
-          <h2 className="text-4xl font-headline font-bold text-foreground tracking-tight">数据洞察中心</h2>
-          <p className="text-sm text-muted-foreground font-medium mt-1">深度解析全链路访客行为，挖掘多维度业务增长节点。</p>
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 relative z-10">
+        <div className="space-y-1">
+          <h2 className="text-2xl font-headline font-bold text-foreground flex items-center gap-4">
+            <div className="h-10 w-10 rounded-2xl bg-primary/10 flex items-center justify-center text-primary shadow-sm">
+              <BarChart3 className="h-5 w-5" />
+            </div>
+            数据洞察中心
+          </h2>
+          <p className="text-xs text-muted-foreground font-bold uppercase tracking-[0.2em] pl-14">Overview / Analytics</p>
         </div>
         
         <div className="flex items-center gap-4">

@@ -454,24 +454,23 @@ export default function ServiceCentersAdminPage() {
   return (
     <div className="max-w-[1600px] mx-auto space-y-12 pb-32">
       {/* Header Area */}
-      <div className="flex flex-col md:flex-row md:items-end justify-between gap-8">
-        <div className="space-y-4">
-          <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-primary/5 border border-primary/10">
-            <Sparkles className="w-4 h-4 text-primary" />
-            <span className="text-[10px] font-black uppercase tracking-widest text-primary">Service Center Console v1.2</span>
-          </div>
-          <h1 className="text-5xl font-black text-slate-900 admin-interface-dark:text-white tracking-tight font-headline">服务中心管理</h1>
-          <p className="text-slate-500 admin-interface-dark:text-slate-400 max-w-2xl leading-relaxed">
-            在此配置前台展示的全球服务中心网点。系统已完成深度升级，现已支持按 **“国家/所属地区（Region）”** 与 **“二级省份/城市区域（subRegion）”** 双层分类筛选，支持数十个省份的大规模列表秒级检索。
-          </p>
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 relative z-10">
+        <div className="space-y-1">
+          <h2 className="text-2xl font-headline font-bold text-foreground flex items-center gap-4">
+            <div className="h-10 w-10 rounded-2xl bg-primary/10 flex items-center justify-center text-primary shadow-sm">
+              <Landmark className="h-5 w-5" />
+            </div>
+            服务中心管理
+          </h2>
+          <p className="text-xs text-muted-foreground font-bold uppercase tracking-[0.2em] pl-14">Management / Content / Service Centers</p>
         </div>
 
         {/* Action Button Controls Row */}
-        <div className="flex items-center gap-3.5 self-start md:self-end">
+        <div className="flex items-center gap-3.5">
           <Button
             onClick={() => setIsImportDialogOpen(true)}
             variant="outline"
-            className="rounded-2xl h-14 px-7 gap-2.5 font-bold uppercase tracking-widest text-[10px] border-border hover:bg-muted/10 hover:scale-105 transition-all text-slate-700 dark:text-white"
+            className="rounded-2xl h-12 px-6 gap-2.5 font-bold uppercase tracking-widest text-[10px] border-border hover:bg-muted/10 hover:scale-105 transition-all text-slate-700 dark:text-white"
           >
             <Upload className="w-4 h-4 text-slate-500" />
             批量导入 JSON
@@ -479,9 +478,9 @@ export default function ServiceCentersAdminPage() {
 
           <Button
             onClick={handleAddClick}
-            className="rounded-2xl h-14 px-8 gap-2.5 font-bold uppercase tracking-widest text-[10px] shadow-xl shadow-primary/10 hover:scale-105 transition-all bg-primary hover:bg-primary/90 text-white border-none"
+            className="rounded-2xl h-12 px-8 gap-2.5 font-bold uppercase tracking-widest text-[10px] shadow-xl shadow-primary/10 hover:scale-105 transition-all bg-primary hover:bg-primary/90 text-white border-none"
           >
-            <Plus className="w-5 h-5" />
+            <Plus className="w-4 h-4" />
             新增服务中心
           </Button>
         </div>

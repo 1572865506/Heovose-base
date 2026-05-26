@@ -557,19 +557,19 @@ export default function CategoriesPage() {
       </div>
 
       <Dialog open={isDialogOpen} onOpenChange={(open) => { setIsDialogOpen(open); if (!open) resetForm(); }}>
-        <DialogContent className="rounded-[3rem] max-w-2xl p-0 overflow-hidden shadow-[0_50px_100px_-20px_rgba(0,0,0,0.5)] border border-white/5 bg-card/40 backdrop-blur-3xl">
-          <div className="bg-gradient-to-br from-slate-950 to-slate-900 p-10 text-white relative overflow-hidden border-b border-white/5">
+        <DialogContent className="rounded-[3rem] max-w-2xl p-0 overflow-hidden shadow-[0_50px_100px_-20px_rgba(0,0,0,0.15)] admin-interface-dark:shadow-[0_50px_100px_-20px_rgba(0,0,0,0.5)] border border-slate-200/50 admin-interface-dark:border-white/5 bg-card">
+          <div className="bg-gradient-to-br from-slate-50 to-slate-100 admin-interface-dark:from-slate-950 admin-interface-dark:to-slate-900 p-10 text-slate-900 admin-interface-dark:text-white relative overflow-hidden border-b border-slate-200/80 admin-interface-dark:border-white/5">
             <div className="absolute top-0 right-0 p-10 opacity-10">
               <FolderPlus className="h-32 w-32" />
             </div>
             <DialogHeader className="relative z-10 space-y-2">
               <DialogTitle className="text-2xl font-headline font-black flex items-center gap-4">
-                <div className="h-12 w-12 rounded-2xl bg-white/10 flex items-center justify-center border border-white/5">
-                  <FolderPlus className="h-6 w-6" />
+                <div className="h-12 w-12 rounded-2xl bg-slate-200/50 admin-interface-dark:bg-white/10 flex items-center justify-center border border-slate-300/50 admin-interface-dark:border-white/5">
+                  <FolderPlus className="h-6 w-6 text-slate-700 admin-interface-dark:text-white" />
                 </div>
                 {editingCategory ? '编辑分类属性' : '创建新分类层级'}
               </DialogTitle>
-              <DialogDescription className="text-[10px] font-bold text-white/30 uppercase tracking-[0.3em]">Taxonomy Structural Configuration</DialogDescription>
+              <DialogDescription className="text-[10px] font-bold text-slate-500/50 admin-interface-dark:text-white/30 uppercase tracking-[0.3em]">Taxonomy Structural Configuration</DialogDescription>
             </DialogHeader>
           </div>
           <div className="p-8 space-y-8">
@@ -577,20 +577,20 @@ export default function CategoriesPage() {
               <div className="space-y-3">
                 <Label className="text-[10px] font-bold uppercase text-muted-foreground/40 tracking-[0.2em] pl-1">所属上级 (Parent Node)</Label>
                 <Select value={formData.parentId} onValueChange={v => setFormData({...formData, parentId: v})}>
-                   <SelectTrigger className="h-14 rounded-2xl bg-muted/10 border-transparent text-sm font-bold shadow-inner">
+                   <SelectTrigger className="h-14 rounded-2xl bg-muted/20 admin-interface-dark:bg-muted/10 border-transparent text-sm font-bold shadow-inner">
                      <SelectValue placeholder="选择上级分类" />
                    </SelectTrigger>
-                   <SelectContent className="rounded-[1.5rem] border-border/10 bg-card/95 backdrop-blur-2xl shadow-2xl">
+                   <SelectContent className="rounded-[1.5rem] border-border/50 admin-interface-dark:border-border/10 bg-card/95 backdrop-blur-2xl shadow-2xl">
                       <SelectItem value="none" className="text-[10px] font-bold uppercase tracking-widest py-4">无 (顶级分类 ROOT)</SelectItem>
                       {categoryTree.filter(c => c.id !== editingCategory?.id).map(cat => (
-                        <SelectItem key={cat.id} value={cat.id} className="text-[11px] py-4 font-bold uppercase tracking-tight">
-                           <span style={{ paddingLeft: `${cat.depth * 1}rem` }} className={cn(cat.depth > 0 && "opacity-40")}>
-                             {cat.depth > 0 && "↳ "}{getT(cat.nameTextId)}
-                           </span>
-                        </SelectItem>
+                         <SelectItem key={cat.id} value={cat.id} className="text-[11px] py-4 font-bold uppercase tracking-tight">
+                            <span style={{ paddingLeft: `${cat.depth * 1}rem` }} className={cn(cat.depth > 0 && "opacity-40")}>
+                              {cat.depth > 0 && "↳ "}{getT(cat.nameTextId)}
+                            </span>
+                         </SelectItem>
                       ))}
-                   </SelectContent>
-                </Select>
+                    </SelectContent>
+                 </Select>
               </div>
               <div className="space-y-3">
                 <Label className="text-[10px] font-bold uppercase text-muted-foreground/40 tracking-[0.2em] pl-1">唯一标识 (SLUG / ID)</Label>
@@ -599,12 +599,12 @@ export default function CategoriesPage() {
                   placeholder="如: AIO_PRO" 
                   value={formData.id} 
                   onChange={e => setFormData({...formData, id: e.target.value.toUpperCase().replace(/\s+/g, '_'), slug: e.target.value.toLowerCase()})} 
-                  className="h-14 rounded-2xl bg-muted/10 border-transparent font-mono text-sm font-black tracking-tighter placeholder:font-bold placeholder:opacity-20 shadow-inner" 
+                  className="h-14 rounded-2xl bg-muted/20 admin-interface-dark:bg-muted/10 border-transparent font-mono text-sm font-black tracking-tighter placeholder:font-bold placeholder:opacity-20 shadow-inner" 
                 />
               </div>
             </div>
 
-            <div className="space-y-6 pt-8 border-t border-border/5">
+            <div className="space-y-6 pt-8 border-t border-border/40 admin-interface-dark:border-border/5">
               <div className="flex items-center justify-between">
                 <Label className="text-[10px] font-bold uppercase text-muted-foreground/40 tracking-[0.2em] flex items-center gap-3"><Languages className="h-4 w-4 text-primary" /> 多语言元数据配置</Label>
                 <ShinyButton 
@@ -621,50 +621,50 @@ export default function CategoriesPage() {
                 <div className="space-y-4">
                    <div className="space-y-2.5">
                      <Label className="text-[9px] font-bold text-muted-foreground/30 uppercase pl-1 tracking-widest">中文名称 (ZH)</Label>
-                     <Input placeholder="高性能一体机" value={formData.nameZh} onChange={e => setFormData({...formData, nameZh: e.target.value})} className="rounded-2xl h-12 text-sm font-bold bg-muted/5 border-transparent shadow-inner" />
+                     <Input placeholder="高性能一体机" value={formData.nameZh} onChange={e => setFormData({...formData, nameZh: e.target.value})} className="rounded-2xl h-12 text-sm font-bold bg-muted/15 admin-interface-dark:bg-muted/5 border-transparent shadow-inner" />
                    </div>
                    <div className="space-y-2.5">
                      <Label className="text-[9px] font-bold text-muted-foreground/30 uppercase pl-1 tracking-widest">中文简述 (ZH-DESC)</Label>
-                     <Input placeholder="极致性能，为专业办公而生" value={formData.descZh} onChange={e => setFormData({...formData, descZh: e.target.value})} className="rounded-2xl h-12 text-[11px] font-bold bg-muted/5 border-transparent shadow-inner" />
+                     <Input placeholder="极致性能，为专业办公而生" value={formData.descZh} onChange={e => setFormData({...formData, descZh: e.target.value})} className="rounded-2xl h-12 text-[11px] font-bold bg-muted/15 admin-interface-dark:bg-muted/5 border-transparent shadow-inner" />
                    </div>
                 </div>
                 <div className="space-y-4">
                    <div className="space-y-2.5">
                      <Label className="text-[9px] font-bold text-muted-foreground/30 uppercase pl-1 tracking-widest">English Name (EN)</Label>
-                     <Input placeholder="High Performance AIO" value={formData.nameEn} onChange={e => setFormData({...formData, nameEn: e.target.value})} className="rounded-2xl h-12 text-sm font-bold bg-muted/5 border-dashed border-primary/20 shadow-inner" />
+                     <Input placeholder="High Performance AIO" value={formData.nameEn} onChange={e => setFormData({...formData, nameEn: e.target.value})} className="rounded-2xl h-12 text-sm font-bold bg-muted/15 admin-interface-dark:bg-muted/5 border-dashed border-primary/30 admin-interface-dark:border-primary/20 shadow-inner" />
                    </div>
                    <div className="space-y-2.5">
                      <Label className="text-[9px] font-bold text-muted-foreground/30 uppercase pl-1 tracking-widest">English Desc (EN-DESC)</Label>
-                     <Input placeholder="Professional performance for modern workspace" value={formData.descEn} onChange={e => setFormData({...formData, descEn: e.target.value})} className="rounded-2xl h-12 text-[11px] font-bold bg-muted/5 border-dashed border-primary/20 shadow-inner" />
+                     <Input placeholder="Professional performance for modern workspace" value={formData.descEn} onChange={e => setFormData({...formData, descEn: e.target.value})} className="rounded-2xl h-12 text-[11px] font-bold bg-muted/15 admin-interface-dark:bg-muted/5 border-dashed border-primary/30 admin-interface-dark:border-primary/20 shadow-inner" />
                    </div>
                 </div>
               </div>
             </div>
 
-            <div className="space-y-3 pt-6 border-t border-border/5">
+            <div className="space-y-3 pt-6 border-t border-border/40 admin-interface-dark:border-border/5">
               <Label className="text-[10px] font-bold uppercase text-muted-foreground/40 tracking-[0.2em] pl-1">视觉缩略图 (Identity Visual)</Label>
               <div 
-                className="relative aspect-[8/1.5] rounded-2xl bg-muted/5 border-2 border-dashed border-border/10 overflow-hidden flex flex-col items-center justify-center group cursor-pointer hover:bg-primary/[0.02] hover:border-primary/40 transition-all shadow-inner"
+                className="relative aspect-[8/1.5] rounded-2xl bg-muted/15 admin-interface-dark:bg-muted/5 border-2 border-dashed border-border/40 admin-interface-dark:border-border/10 overflow-hidden flex flex-col items-center justify-center group cursor-pointer hover:bg-primary/[0.02] hover:border-primary/40 transition-all shadow-inner"
                 onClick={() => setIsPickerOpen(true)}
               >
                 {formData.thumbnailImageUrl ? (
-                  <>
-                    <Image src={getAssetUrl(formData.thumbnailImageUrl)} alt="Thumbnail" fill className="object-contain p-5 transition-transform duration-700 group-hover:scale-105" unoptimized />
-                    <div className="absolute inset-0 bg-background/60 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-all duration-500 gap-4 backdrop-blur-[4px]">
-                      <Button variant="secondary" size="sm" className="rounded-xl h-10 px-6 text-[10px] font-bold uppercase tracking-wider shadow-2xl bg-background text-foreground border-none">更换视觉资源</Button>
-                      <Button 
-                        variant="destructive" 
-                        size="icon" 
-                        className="h-10 w-10 rounded-xl shadow-2xl" 
-                        onClick={(e) => { e.stopPropagation(); setFormData({...formData, thumbnailImageUrl: ''}); }}
-                      >
-                        <X className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  </>
+                   <>
+                     <Image src={getAssetUrl(formData.thumbnailImageUrl)} alt="Thumbnail" fill className="object-contain p-5 transition-transform duration-700 group-hover:scale-105" unoptimized />
+                     <div className="absolute inset-0 bg-background/60 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-all duration-500 gap-4 backdrop-blur-[4px]">
+                       <Button variant="secondary" size="sm" className="rounded-xl h-10 px-6 text-[10px] font-bold uppercase tracking-wider shadow-2xl bg-background text-foreground border-none">更换视觉资源</Button>
+                       <Button 
+                         variant="destructive" 
+                         size="icon" 
+                         className="h-10 w-10 rounded-xl shadow-2xl" 
+                         onClick={(e) => { e.stopPropagation(); setFormData({...formData, thumbnailImageUrl: ''}); }}
+                       >
+                         <X className="h-4 w-4" />
+                       </Button>
+                     </div>
+                   </>
                 ) : (
-                  <div className="flex flex-col items-center gap-4 text-muted-foreground/20 group-hover:text-primary transition-colors">
-                    <div className="h-14 w-14 rounded-2xl bg-card/20 shadow-inner flex items-center justify-center border border-border/5">
+                  <div className="flex flex-col items-center gap-4 text-muted-foreground/40 admin-interface-dark:text-muted-foreground/20 group-hover:text-primary transition-colors">
+                    <div className="h-14 w-14 rounded-2xl bg-card/50 admin-interface-dark:bg-card/20 shadow-inner flex items-center justify-center border border-border/30 admin-interface-dark:border-border/5">
                       <ImageIcon className="h-6 w-6" />
                     </div>
                     <span className="text-[10px] font-bold uppercase tracking-[0.3em]">从素材库选择媒体资源 / ATTACH MEDIA</span>
@@ -673,8 +673,8 @@ export default function CategoriesPage() {
               </div>
             </div>
           </div>
-          <DialogFooter className="bg-muted/5 p-8 border-t border-border/5 gap-4">
-            <Button variant="ghost" onClick={() => setIsDialogOpen(false)} className="h-14 rounded-2xl flex-1 font-bold uppercase text-[10px] tracking-widest text-muted-foreground/40 hover:text-foreground">放弃当前编辑</Button>
+          <DialogFooter className="bg-muted/10 admin-interface-dark:bg-muted/5 p-8 border-t border-border/40 admin-interface-dark:border-border/5 gap-4">
+            <Button variant="ghost" onClick={() => setIsDialogOpen(false)} className="h-14 rounded-2xl flex-1 font-bold uppercase text-[10px] tracking-widest text-muted-foreground/60 admin-interface-dark:text-muted-foreground/40 hover:text-foreground">放弃当前编辑</Button>
             <Button onClick={handleSave} className="h-14 rounded-2xl flex-1 font-bold uppercase text-[10px] tracking-[0.2em] shadow-2xl shadow-primary/20">确认保存分类架构</Button>
           </DialogFooter>
         </DialogContent>

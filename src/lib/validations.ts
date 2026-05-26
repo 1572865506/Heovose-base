@@ -71,11 +71,12 @@ export const bentoItemSchema = z.object({
   tagEn: z.string().max(100),
   imageUrl: z.string().max(500),
   linkUrl: z.string().max(500),
-  gridSize: z.enum(['small', 'medium', 'large']).default('small'),
+  gridSize: z.enum(['small', 'medium', 'large', 'wide', 'tall']).default('small'),
   order: z.number().int().default(0),
   linkType: z.enum(['category', 'custom']).default('custom'),
   categoryId: z.string().max(50).optional().nullable(),
-}).strict();
+  brightness: z.number().optional().nullable(),
+});
 
 // 5. Case Study Schema
 export const caseStudySchema = z.object({

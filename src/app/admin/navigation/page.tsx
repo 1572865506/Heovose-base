@@ -100,17 +100,17 @@ export default function NavigationSettingsPage() {
   return (
     <div className="space-y-10 pb-20 animate-in fade-in slide-in-from-bottom-4 duration-700">
       {/* Header Area */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
-        <div className="space-y-2">
-          <div className="flex items-center gap-3">
-            <div className="h-10 w-10 rounded-2xl bg-primary/10 flex items-center justify-center text-primary">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 relative z-10">
+        <div className="space-y-1">
+          <h2 className="text-2xl font-headline font-bold text-foreground flex items-center gap-4">
+            <div className="h-10 w-10 rounded-2xl bg-primary/10 flex items-center justify-center text-primary shadow-sm">
               <Compass className="h-5 w-5" />
             </div>
-            <h2 className="text-3xl font-headline font-bold tracking-tight text-primary uppercase">导航设置 / Navigation</h2>
-          </div>
-          <p className="text-xs font-bold text-muted-foreground uppercase tracking-[0.2em] pl-14">配置全局顶栏材质、巨型菜单布局及推荐内容</p>
+            导航设置
+          </h2>
+          <p className="text-xs text-muted-foreground font-bold uppercase tracking-[0.2em] pl-14">Management / Content / Navigation</p>
         </div>
-        <div className="flex items-center gap-3 pl-14 md:pl-0">
+        <div className="flex items-center gap-3">
           <Button 
             variant="outline" 
             className="h-12 rounded-2xl px-6 font-bold uppercase tracking-widest text-[10px] border-border/60"

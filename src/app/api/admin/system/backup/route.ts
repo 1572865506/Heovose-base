@@ -1,11 +1,11 @@
 import { NextResponse } from "next/server";
 import { withAuth } from "@/lib/auth-utils";
-import { exec } from "child_process";
+import { execFile } from "child_process";
 import { promisify } from "util";
 import path from "path";
 import { logAdminAction } from "@/lib/audit";
 
-const execAsync = promisify(exec);
+const execFileAsync = promisify(execFile);
 
 export const POST = withAuth('superadmin', async (
   request: Request,
@@ -15,8 +15,9 @@ export const POST = withAuth('superadmin', async (
   try {
     const scriptPath = path.join(process.cwd(), "scripts", "export-data.sh");
     
-    // Execute the script
-    const { stdout, stderr } = await execAsync(`bash ${scriptPath}`);
+    // Execute the script securely using execFile
+    const { stdout, stderr } = await execFileAsync("bash", [scriptPath]);
+
     
     console.log("Backup stdout:", stdout);
     if (stderr) console.error("Backup stderr:", stderr);

@@ -679,15 +679,15 @@ export default function TranslationsPage() {
       <div className="absolute top-[-10%] right-[-5%] w-[40%] h-[40%] bg-primary/10 blur-[120px] rounded-full -z-10 animate-pulse" />
       <div className="absolute bottom-[20%] left-[-10%] w-[30%] h-[30%] bg-accent/10 blur-[100px] rounded-full -z-10" />
 
-      <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
-        <div className="space-y-2">
-          <div className="flex items-center gap-3">
-            <div className="h-12 w-12 rounded-2xl bg-primary flex items-center justify-center text-white shadow-lg shadow-primary/20">
-              <Languages className="h-6 w-6" />
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
+        <div className="space-y-1">
+          <h2 className="text-2xl font-headline font-bold text-foreground flex items-center gap-4">
+            <div className="h-10 w-10 rounded-2xl bg-primary/10 flex items-center justify-center text-primary shadow-sm">
+              <Globe className="h-5 w-5" />
             </div>
-            <h2 className="text-3xl font-headline font-bold text-foreground">翻译资产管理</h2>
-          </div>
-          <p className="text-sm text-muted-foreground font-medium max-w-2xl pl-1">分域管理业务内容与系统文案。支持 AI 智能批量填充、引用冲突合并及全站一致性诊断。</p>
+            翻译资产管理
+          </h2>
+          <p className="text-xs text-muted-foreground font-bold uppercase tracking-[0.2em] pl-14">System / Translations</p>
         </div>
         
         <div className="flex items-center gap-3">

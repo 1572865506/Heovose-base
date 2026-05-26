@@ -1,15 +1,9 @@
 import { NextResponse } from "next/server";
-import { auth } from "@/auth";
+import { withAuth } from "@/lib/auth-utils";
 import fs from "fs";
 import path from "path";
 
-export async function GET() {
-  const session = await auth();
-
-  if (!session || (session.user as any)?.role !== "admin" && (session.user as any)?.role !== "superadmin") {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
-  }
-
+export const GET = withAuth('superadmin', async () => {
   try {
     const backupDir = path.join(process.cwd(), "backups");
     if (!fs.existsSync(backupDir)) {
@@ -21,11 +15,17 @@ export async function GET() {
       .filter(f => !f.startsWith(".")) // Exclude hidden files like .env.backup
       .map(filename => {
         const stats = fs.statSync(path.join(backupDir, filename));
+        let type = "OTHER";
+        if (filename.endsWith(".sql") || filename.endsWith(".sql.gz")) {
+          type = "DATABASE";
+        } else if (filename.endsWith(".tar") || filename.endsWith(".tar.gz")) {
+          type = "STORAGE";
+        }
         return {
           filename,
           size: stats.size,
           time: stats.mtime,
-          type: filename.endsWith(".sql") ? "DATABASE" : filename.endsWith(".tar") ? "STORAGE" : "OTHER"
+          type
         };
       })
       .sort((a, b) => b.time.getTime() - a.time.getTime());
@@ -35,4 +35,4 @@ export async function GET() {
     console.error("Failed to list backups:", error);
     return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
   }
-}
+});

@@ -50,7 +50,7 @@ function checkRateLimit(ip: string, limit: number, durationMs: number): { succes
   return { success: true, remaining: limit - record.count };
 }
 
-export default auth((request) => {
+export default auth(async (request) => {
   const { nextUrl } = request;
   const pathname = nextUrl.pathname;
 
@@ -59,6 +59,31 @@ export default auth((request) => {
   const isWriteMethod = ['POST', 'PUT', 'DELETE', 'PATCH'].includes(method);
   
   if (isWriteMethod && pathname !== '/api/analytics/track') {
+    // 维护模式拦截 (问题 4)：在还原/升级期间阻止所有非管理性质的写操作，防范数据冲突与不一致
+    if (!pathname.startsWith('/api/admin/system')) {
+      try {
+        const appUrl = process.env.NEXTAUTH_URL || 'http://localhost:9002';
+        const checkRes = await fetch(`${appUrl}/api/admin/system/maintenance-check`, {
+          headers: { 'Cache-Control': 'no-cache' }
+        });
+        if (checkRes.ok) {
+          const checkData = await checkRes.json();
+          if (checkData.maintenance === true) {
+            return NextResponse.json(
+              { error: "System is under maintenance. Write operations are temporarily disabled." },
+              { status: 503 }
+            );
+          }
+        }
+      } catch (e) {
+        // 在数据库重置还原期间，后端可能抛出数据库连接错误，直接视同维护中并予以拦截
+        return NextResponse.json(
+          { error: "System is under maintenance. Write operations are temporarily disabled." },
+          { status: 503 }
+        );
+      }
+    }
+
     const origin = request.headers.get('origin');
     const referer = request.headers.get('referer');
     const secFetchSite = request.headers.get('sec-fetch-site');

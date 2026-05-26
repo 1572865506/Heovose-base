@@ -6,6 +6,9 @@ LOG_FILE="./backups/update_log.txt"
 
 mkdir -p ./backups
 
+# 注册清理钩子，在脚本退出时自动移除维护标记，防止意外崩溃导致卡死在维护模式 (问题 4)
+trap 'rm -f .maintenance' EXIT
+
 echo "🚀 [$(date)] 开始执行系统更新..." | tee -a $LOG_FILE
 
 # 1. 强制备份数据 (安全第一)
@@ -25,9 +28,14 @@ fi
 echo "📦 正在同步依赖项..." | tee -a $LOG_FILE
 npm install | tee -a $LOG_FILE
 
+# 3.1. 数据库 Schema 架构自动同步 (修复问题 6)
+echo "🔄 正在同步数据库 Schema 结构..." | tee -a $LOG_FILE
+npx prisma db push --accept-data-loss | tee -a $LOG_FILE
+
 # 4. 重新构建
 echo "🏗️ 正在重新构建项目 (这可能需要 1-3 分钟)..." | tee -a $LOG_FILE
 npm run build | tee -a $LOG_FILE
+
 
 if [ $? -eq 0 ]; then
     echo "✅ [$(date)] 系统更新构建成功！" | tee -a $LOG_FILE

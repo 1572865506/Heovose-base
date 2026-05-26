@@ -13,6 +13,7 @@ export const POST = withAuth('superadmin', async (
   context: any,
   currentUser: { id: string; role: string; email: string }
 ) => {
+  const maintenanceFile = path.join(process.cwd(), ".maintenance");
   try {
     const { sqlFile, minioFile } = await request.json();
 
@@ -21,8 +22,8 @@ export const POST = withAuth('superadmin', async (
     }
 
     // Strict validation to prevent shell command injection and directory traversal
-    const SQL_FILE_REGEX = /^(db_backup\.sql|db_backup_\d{8}_\d{6}\.sql)$/;
-    const MINIO_FILE_REGEX = /^(minio_backup\.tar|minio_backup_\d{8}_\d{6}\.tar)$/;
+    const SQL_FILE_REGEX = /^(db_backup\.sql(\.gz)?|db_backup_\d{8}_\d{6}\.sql(\.gz)?)$/;
+    const MINIO_FILE_REGEX = /^(minio_backup\.tar(\.gz)?|minio_backup_\d{8}_\d{6}\.tar(\.gz)?)$/;
 
     if (!SQL_FILE_REGEX.test(sqlFile)) {
       return NextResponse.json({ error: "Invalid SQL backup file format" }, { status: 400 });
@@ -40,6 +41,9 @@ export const POST = withAuth('superadmin', async (
     if (!fs.existsSync(sqlPath) || !fs.existsSync(minioPath)) {
       return NextResponse.json({ error: "Backup files not found" }, { status: 404 });
     }
+
+    // 开启维护模式：创建标记文件 (问题 4)
+    fs.writeFileSync(maintenanceFile, "true");
 
     // Execute the restore script securely using execFile
     const { stdout, stderr } = await execFileAsync("bash", [scriptPath, sqlPath, minioPath]);
@@ -66,5 +70,15 @@ export const POST = withAuth('superadmin', async (
     return NextResponse.json({ 
       error: "Internal Server Error"
     }, { status: 500 });
+  } finally {
+    // 无论还原成功还是失败，均安全释放维护状态文件锁，保障服务正常可用 (问题 4)
+    if (fs.existsSync(maintenanceFile)) {
+      try {
+        fs.unlinkSync(maintenanceFile);
+      } catch (err) {
+        console.error("Failed to clean maintenance file:", err);
+      }
+    }
   }
 });
+

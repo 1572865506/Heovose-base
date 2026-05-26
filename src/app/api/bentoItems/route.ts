@@ -22,6 +22,17 @@ export const POST = withAuth('editor', async (request: Request) => {
   }
 
   const data = validation.data;
+  let brightness = data.brightness;
+
+  if (brightness === undefined || brightness === null) {
+    try {
+      const { calculateImageBrightness } = await import('@/lib/server/image-analysis');
+      brightness = await calculateImageBrightness(data.imageUrl);
+    } catch (err) {
+      console.error('Failed to auto-calculate bento item brightness:', err);
+    }
+  }
+
   const item = await db.homepageBentoItem.create({
     data: {
       titleZh: data.titleZh,
@@ -32,8 +43,7 @@ export const POST = withAuth('editor', async (request: Request) => {
       linkUrl: data.linkUrl,
       gridSize: data.gridSize,
       order: data.order,
-      linkType: data.linkType,
-      categoryId: data.categoryId,
+      brightness: brightness,
     },
   });
 

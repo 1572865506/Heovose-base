@@ -302,7 +302,23 @@ export default function ProductionStepsAdminPage() {
   };
 
   return (
-    <div className="space-y-6 animate-in fade-in duration-500 pb-20">
+    <div className="space-y-10 animate-in fade-in duration-500 pb-20">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 relative z-10">
+        <div className="space-y-1">
+          <h2 className="text-2xl font-headline font-bold text-foreground flex items-center gap-4">
+            <div className="h-10 w-10 rounded-2xl bg-primary/10 flex items-center justify-center text-primary shadow-sm">
+              <ClipboardList className="h-5 w-5" />
+            </div>
+            制造流程管理
+          </h2>
+          <p className="text-xs text-muted-foreground font-bold uppercase tracking-[0.2em] pl-14">Management / Content / Steps</p>
+        </div>
+        
+        <Button onClick={() => handleOpenDialog()} className="rounded-2xl h-12 px-6 font-bold uppercase text-[10px] tracking-widest gap-2 shadow-lg shadow-primary/20">
+          <Plus className="h-4 w-4" /> 新增生产环节
+        </Button>
+      </div>
+
       <div className="bg-card p-8 rounded-3xl border border-border/40 shadow-sm space-y-6">
         <div className="flex items-center justify-between border-b pb-4">
           <div className="space-y-1">

@@ -32,6 +32,25 @@ export const PUT = withAuth('editor', async (
     }
 
     const data = validation.data;
+    let brightness = data.brightness;
+
+    const existing = await db.homepageBentoItem.findUnique({
+      where: { id },
+    });
+
+    if (brightness === undefined || brightness === null) {
+      if (existing && existing.imageUrl === data.imageUrl) {
+        brightness = existing.brightness;
+      } else {
+        try {
+          const { calculateImageBrightness } = await import('@/lib/server/image-analysis');
+          brightness = await calculateImageBrightness(data.imageUrl);
+        } catch (err) {
+          console.error('Failed to auto-calculate bento item brightness:', err);
+        }
+      }
+    }
+
     const item = await db.homepageBentoItem.update({
       where: { id },
       data: {
@@ -43,8 +62,7 @@ export const PUT = withAuth('editor', async (
         linkUrl: data.linkUrl,
         gridSize: data.gridSize,
         order: data.order,
-        linkType: data.linkType,
-        categoryId: data.categoryId,
+        brightness: brightness,
       },
     });
     return NextResponse.json(item);

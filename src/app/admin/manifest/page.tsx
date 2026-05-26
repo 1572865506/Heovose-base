@@ -81,15 +81,15 @@ export default function ManifestPage() {
       <div className="absolute top-[-10%] right-[-5%] w-[40%] h-[40%] bg-primary/10 blur-[120px] rounded-full -z-10 animate-pulse" />
       <div className="absolute bottom-[20%] left-[-10%] w-[35%] h-[35%] bg-accent/10 blur-[100px] rounded-full -z-10" />
 
-      <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
-        <div className="space-y-2">
-          <div className="flex items-center gap-3">
-            <div className="h-12 w-12 rounded-2xl bg-slate-950 flex items-center justify-center text-white shadow-xl shadow-primary/5">
-              <FileText className="h-6 w-6" />
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 relative z-10">
+        <div className="space-y-1">
+          <h2 className="text-2xl font-headline font-bold text-foreground flex items-center gap-4">
+            <div className="h-10 w-10 rounded-2xl bg-primary/10 flex items-center justify-center text-primary shadow-sm">
+              <FileText className="h-5 w-5" />
             </div>
-            <h2 className="text-3xl font-headline font-bold text-foreground">设计与架构白皮书</h2>
-          </div>
-          <p className="text-sm text-muted-foreground font-medium max-w-2xl pl-1">治理全站设计语言、业务逻辑约束及跨模块交互协议的元数据中心。</p>
+            设计与架构白皮书
+          </h2>
+          <p className="text-xs text-muted-foreground font-bold uppercase tracking-[0.2em] pl-14">System / Blueprint</p>
         </div>
         
         <div className="flex items-center gap-4">
@@ -100,7 +100,7 @@ export default function ManifestPage() {
           <Button 
             onClick={handleSave} 
             disabled={isSaving}
-            className="rounded-full h-12 px-8 gap-2 font-bold uppercase tracking-widest text-xs shadow-xl shadow-primary/20 transition-all hover:scale-105 active:scale-95"
+            className="rounded-2xl h-12 px-8 gap-2.5 font-bold uppercase tracking-widest text-[10px] shadow-lg shadow-primary/20 hover:scale-105 transition-all"
           >
             {isSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
             签署并同步白皮书

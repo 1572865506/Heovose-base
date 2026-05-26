@@ -1,15 +1,9 @@
 import { NextResponse } from "next/server";
-import { auth } from "@/auth";
+import { withAuth } from "@/lib/auth-utils";
 import fs from "fs";
 import path from "path";
 
-export async function GET() {
-  const session = await auth();
-
-  if (!session || (session.user as any)?.role !== "admin" && (session.user as any)?.role !== "superadmin") {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
-  }
-
+export const GET = withAuth('superadmin', async () => {
   try {
     const backupDir = path.join(process.cwd(), "backups");
     let lastBackup = null;
@@ -18,9 +12,9 @@ export async function GET() {
     if (fs.existsSync(backupDir)) {
       const files = fs.readdirSync(backupDir);
       
-      // Find the latest sql backup
+      // Find the latest sql backup (including compressed ones)
       const backups = files
-        .filter(f => f.startsWith("db_backup_") && f.endsWith(".sql"))
+        .filter(f => f.startsWith("db_backup_") && (f.endsWith(".sql") || f.endsWith(".sql.gz")))
         .sort()
         .reverse();
       
@@ -62,5 +56,4 @@ export async function GET() {
     console.error("Failed to get system status:", error);
     return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
   }
-
-}
+});
