@@ -81,22 +81,24 @@ export async function GET(request: Request) {
 
     // 如果未指定 page，说明是旧版调用，执行不分页的扁平数组查询，保障向下兼容
     if (pageParam === null) {
-      const limit = limitParam ? parseInt(limitParam) : undefined;
+      // 默认最大限制 2000 条，防范无限制全表扫描，完美向下兼容
+      const limit = limitParam ? Math.min(parseInt(limitParam, 10), 2000) : 2000;
       const products = await db.product.findMany({
         where,
         include: {
           nameText: true,
           descriptionText: true,
         },
-        ...(limit !== undefined ? { take: limit } : {}),
+        take: limit,
         orderBy
       });
       return NextResponse.json(products);
     }
 
     // 执行分页逻辑
-    const page = parseInt(pageParam) || 1;
-    const limit = limitParam ? parseInt(limitParam) : 12;
+    const page = parseInt(pageParam, 10) || 1;
+    // 强制限制分页 limit 最大不超过 2000
+    const limit = limitParam ? Math.min(parseInt(limitParam, 10), 2000) : 12;
 
     const total = await db.product.count({ where });
     const products = await db.product.findMany({
@@ -109,6 +111,7 @@ export async function GET(request: Request) {
       skip: (page - 1) * limit,
       orderBy
     });
+
 
     return NextResponse.json({
       products,

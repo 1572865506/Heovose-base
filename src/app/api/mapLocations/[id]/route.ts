@@ -38,37 +38,22 @@ export const PUT = withAuth('editor', async (
     // 获取更新前关联的 IDs
     const oldIds = extractIdsFromMapLocation(existing);
 
-    const updateData = { ...validation.data };
-    
-    // Remove countryCode from updateData to bypass Prisma validation if it's still failing
-    const countryCode = updateData.countryCode;
-    delete updateData.countryCode;
-
-    console.log('[API] Prisma updateData (filtered):', updateData);
+    console.log('[API] Updating location with:', validation.data);
 
     const location = await db.mapLocation.update({
       where: { id },
-      data: updateData,
+      data: validation.data,
     });
 
-    // Manually update countryCode using raw SQL to bypass Prisma validation issues
-    if (countryCode) {
-      console.log('[API] Updating countryCode via raw SQL:', id, '->', countryCode);
-      const affectedRows = await db.$executeRaw`UPDATE "MapLocation" SET "countryCode" = ${countryCode} WHERE id = ${id}`;
-      console.log('[API] Raw SQL affected rows:', affectedRows);
-    }
-
-    // Fetch the final state from DB to ensure response is accurate
-    const finalLocation = await db.mapLocation.findUnique({ where: { id } });
-
     // 计算被释放的翻译 IDs，并触发 GC
-    const newIds = finalLocation ? extractIdsFromMapLocation(finalLocation) : [];
+    const newIds = extractIdsFromMapLocation(location);
     const releasedIds = oldIds.filter(oid => oid && !newIds.includes(oid));
     if (releasedIds.length > 0) {
       await cleanupOrphanedStrings(releasedIds);
     }
 
-    return NextResponse.json(finalLocation);
+    return NextResponse.json(location);
+
   } catch (error: any) {
     console.error('[API] mapLocations PUT Error:', error);
     return NextResponse.json({ 

@@ -65,15 +65,8 @@ export const PUT = withAuth('editor', async (
         const { tagTextId, titleTextId, descriptionTextId, published, ...safeData } = updateData;
         console.log('[API Fallback] published:', published);
         
-        // 1. 原始 SQL 更新
-        await db.$executeRawUnsafe(
-          `UPDATE "CaseStudy" SET "tagTextId" = $1, "titleTextId" = $2, "descriptionTextId" = $3, "published" = $4 WHERE id = $5`,
-          tagTextId || null,
-          titleTextId || null,
-          descriptionTextId || null,
-          published === undefined ? true : published,
-          id
-        );
+        // 1. 原始 SQL 更新，使用 Prisma 安全的参数化 $executeRaw 模板字面量
+        await db.$executeRaw`UPDATE "CaseStudy" SET "tagTextId" = ${tagTextId || null}, "titleTextId" = ${titleTextId || null}, "descriptionTextId" = ${descriptionTextId || null}, "published" = ${published === undefined ? true : published} WHERE id = ${id}`;
 
         // 2. 安全 upsert
         item = await db.caseStudy.upsert({

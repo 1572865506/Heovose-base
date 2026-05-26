@@ -13,6 +13,12 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Invalid items format' }, { status: 400 });
     }
 
+    // 限制单次批量操作最多 500 个条目，防止大载荷内存爆损
+    if (items.length > 500) {
+      return NextResponse.json({ error: 'Payload too large. Max 500 items per request.' }, { status: 400 });
+    }
+
+
     // 1. 去重并计算哈希 ID
     const uniqueItemsMap = new Map<string, { zh: string; en: string; hashId: string }>();
 

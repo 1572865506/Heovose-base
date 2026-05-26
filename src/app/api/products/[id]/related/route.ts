@@ -20,21 +20,35 @@ export async function GET(
       return NextResponse.json({ error: 'Product not found' }, { status: 404 });
     }
 
-    // 2. 查出所有的 published 产品（除自己外），并且包含它们的分类信息及名字/描述翻译
+    const targetParentId = product.category?.parentId;
+
+    // 2. 粗筛候选池：在数据库层面限制最多拉取 200 个潜在关联产品进行打分排序，防止全量大表拉取
     const otherProducts = await db.product.findMany({
       where: {
         id: { not: productId },
-        status: 'published'
+        status: 'published',
+        OR: [
+          // 优先拉取同一分类下的产品
+          ...(product.categoryId ? [{ categoryId: product.categoryId }] : []),
+          // 或者同属一个父分类下的产品
+          ...(targetParentId ? [{ category: { parentId: targetParentId } }] : []),
+          // 兜底匹配，通过 take 200 进行总量限制
+          {}
+        ]
       },
       include: {
         category: true,
         nameText: true,
         descriptionText: true
+      },
+      take: 200, // 核心防御红线：最多拉取 200 个产品参与内存打分
+      orderBy: {
+        updatedAt: 'desc' // 优先拉取最近更新的
       }
     });
 
+
     // 3. 按照相似度打分并排序
-    const targetParentId = product.category?.parentId;
 
     const ratedProducts = otherProducts.map((p: any) => {
       let score = 0;

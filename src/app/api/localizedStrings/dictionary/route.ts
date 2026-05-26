@@ -11,8 +11,28 @@ export async function GET(request: Request) {
 
     const searchLower = q.toLowerCase();
 
-    // 获取所有本地化字符串进行内存过滤以避免复杂 JSON 字段 SQL 检索
-    const strings = await db.localizedString.findMany();
+    const pageStr = searchParams.get('page');
+    const limitStr = searchParams.get('limit');
+
+    const queryOptions: any = {
+      orderBy: { updatedAt: 'desc' }
+    };
+
+    if (pageStr && limitStr) {
+      const page = parseInt(pageStr, 10);
+      const limit = parseInt(limitStr, 10);
+      if (!isNaN(page) && !isNaN(limit) && page > 0 && limit > 0) {
+        queryOptions.skip = (page - 1) * limit;
+        queryOptions.take = limit;
+      }
+    } else {
+      // 默认在无分页参数时，设置最大取 1000 条以防御内存暴涨风险
+      queryOptions.take = 1000;
+    }
+
+    // 获取受限范围的本地化字符串进行内存过滤，防范全表大表加载导致的内存耗尽崩溃
+    const strings = await db.localizedString.findMany(queryOptions);
+
 
     // 过滤：非专属（不以 prod_, cat_, case_ 开头），非系统 UI（不以 SYS_, navbar_ 开头）
     // 且翻译内容中包含查询词

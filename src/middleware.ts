@@ -54,8 +54,51 @@ export default auth((request) => {
   const { nextUrl } = request;
   const pathname = nextUrl.pathname;
 
+  // CSRF 防护 (L-7)：拦截跨站的非安全写操作请求（POST, PUT, DELETE, PATCH）
+  const method = request.method;
+  const isWriteMethod = ['POST', 'PUT', 'DELETE', 'PATCH'].includes(method);
+  
+  if (isWriteMethod && pathname !== '/api/analytics/track') {
+    const origin = request.headers.get('origin');
+    const referer = request.headers.get('referer');
+    const secFetchSite = request.headers.get('sec-fetch-site');
+    const appUrl = process.env.NEXTAUTH_URL || 'http://localhost:9002';
+    
+    // 1. 拦截明确标识的跨站写操作
+    if (secFetchSite === 'cross-site') {
+      return NextResponse.json({ error: 'CSRF Protection: Cross-site write requests are blocked.' }, { status: 403 });
+    }
+    
+    // 2. 校验 Origin 同源域
+    if (origin) {
+      const isAllowedOrigin = origin === appUrl || 
+                              origin.startsWith('http://localhost:') || 
+                              origin.endsWith('.heovose.com') ||
+                              origin.endsWith('.web.app');
+      if (!isAllowedOrigin) {
+        return NextResponse.json({ error: 'CSRF Protection: Origin mismatch.' }, { status: 403 });
+      }
+    } else if (referer) {
+      // 3. 校验 Referer 同源域
+      try {
+        const refererUrl = new URL(referer);
+        const appUrlObj = new URL(appUrl);
+        const isAllowedReferer = refererUrl.origin === appUrlObj.origin ||
+                                 refererUrl.origin.startsWith('http://localhost:') ||
+                                 refererUrl.hostname.endsWith('.heovose.com') ||
+                                 refererUrl.hostname.endsWith('.web.app');
+        if (!isAllowedReferer) {
+          return NextResponse.json({ error: 'CSRF Protection: Referer mismatch.' }, { status: 403 });
+        }
+      } catch (e) {
+        return NextResponse.json({ error: 'CSRF Protection: Invalid Referer.' }, { status: 403 });
+      }
+    }
+  }
+
   // Protect storage endpoint from non-GET / non-OPTIONS requests (CORS & server-side protection)
   if (pathname.startsWith('/storage')) {
+
     const requestOrigin = request.headers.get('origin') || '';
     const appUrl = process.env.NEXTAUTH_URL || 'http://localhost:9002';
     const isAllowedOrigin = requestOrigin === appUrl || 

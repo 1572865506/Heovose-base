@@ -1,11 +1,8 @@
 import { NextResponse } from 'next/server';
 import db from '@/lib/db';
-import { auth } from '@/auth';
+import { withAuth } from '@/lib/auth-utils';
 
-export async function GET() {
-  const session = await auth();
-  if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-
+export const GET = withAuth('editor', async (request) => {
   try {
     const sessions = await db.visitorSession.findMany({
       orderBy: { createdAt: 'desc' },
@@ -25,4 +22,4 @@ export async function GET() {
   } catch (error) {
     return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
   }
-}
+});

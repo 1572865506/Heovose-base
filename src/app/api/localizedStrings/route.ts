@@ -9,7 +9,27 @@ export async function GET(request: Request) {
     const lang = searchParams.get('lang');
     const isFull = searchParams.get('full') === 'true';
 
-    const strings = await db.localizedString.findMany();
+    const pageStr = searchParams.get('page');
+    const limitStr = searchParams.get('limit');
+
+    const queryOptions: any = {
+      orderBy: { id: 'asc' }
+    };
+
+    if (pageStr && limitStr) {
+      const page = parseInt(pageStr, 10);
+      const limit = parseInt(limitStr, 10);
+      if (!isNaN(page) && !isNaN(limit) && page > 0 && limit > 0) {
+        queryOptions.skip = (page - 1) * limit;
+        queryOptions.take = limit;
+      }
+    } else {
+      // 默认在无分页参数时，设置最大取 5000 条以防御内存暴涨，同时兼容老接口
+      queryOptions.take = 5000;
+    }
+
+    const strings = await db.localizedString.findMany(queryOptions);
+
 
     // 如果指定了语言且非全量模式，执行按需裁剪
     if (lang && !isFull) {

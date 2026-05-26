@@ -40,13 +40,27 @@ export async function GET() {
       }
     }
 
+    let version = "v2.1.0-gold";
+    try {
+      const packageJsonPath = path.join(process.cwd(), "package.json");
+      if (fs.existsSync(packageJsonPath)) {
+        const packageJson = JSON.parse(fs.readFileSync(packageJsonPath, "utf-8"));
+        if (packageJson && packageJson.version) {
+          version = `v${packageJson.version}`;
+        }
+      }
+    } catch (e) {
+      console.warn("Failed to read version from package.json:", e);
+    }
+
     return NextResponse.json({
       lastBackup,
       updateLog,
-      version: "v2.1.0-gold", // Could be read from package.json
+      version,
     });
   } catch (error) {
     console.error("Failed to get system status:", error);
     return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
   }
+
 }
