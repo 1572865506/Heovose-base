@@ -104,8 +104,7 @@ export async function PUT(
   } catch (error: any) {
     console.error('[API Error] LocalizedString PUT:', error);
     return NextResponse.json({ 
-      error: 'CRITICAL_DATABASE_ERROR', 
-      message: error.message || 'Unknown database error'
+      error: 'Internal Server Error'
     }, { status: 500 });
   }
 }

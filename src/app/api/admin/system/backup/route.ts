@@ -1,18 +1,17 @@
 import { NextResponse } from "next/server";
-import { auth } from "@/auth";
+import { withAuth } from "@/lib/auth-utils";
 import { exec } from "child_process";
 import { promisify } from "util";
 import path from "path";
+import { logAdminAction } from "@/lib/audit";
 
 const execAsync = promisify(exec);
 
-export async function POST() {
-  const session = await auth();
-
-  if (!session || (session.user as any)?.role !== "admin" && (session.user as any)?.role !== "superadmin") {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
-  }
-
+export const POST = withAuth('superadmin', async (
+  request: Request,
+  context: any,
+  currentUser: { id: string; role: string; email: string }
+) => {
   try {
     const scriptPath = path.join(process.cwd(), "scripts", "export-data.sh");
     
@@ -22,16 +21,26 @@ export async function POST() {
     console.log("Backup stdout:", stdout);
     if (stderr) console.error("Backup stderr:", stderr);
 
+    const latestBackupFile = stdout.split("\n").filter(line => line.includes("db_backup_")).pop();
+
+    // 记录审计日志
+    logAdminAction(
+      request,
+      currentUser.id,
+      currentUser.email,
+      'BACKUP_SYSTEM',
+      { script: scriptPath, outputFile: latestBackupFile || 'unknown' }
+    );
+
     return NextResponse.json({ 
       success: true, 
       message: "备份成功",
-      output: stdout.split("\n").filter(line => line.includes("db_backup_")).pop()
+      output: latestBackupFile
     });
   } catch (error: any) {
     console.error("Backup failed:", error);
     return NextResponse.json({ 
-      error: "备份执行失败", 
-      details: error.message 
+      error: "Internal Server Error"
     }, { status: 500 });
   }
-}
+});

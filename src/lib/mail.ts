@@ -40,6 +40,16 @@ const getTransporter = async () => {
   };
 };
 
+function escapeHtml(str: string): string {
+  return str.replace(/[&<>'"]/g, (tag) => ({
+    '&': '&amp;',
+    '<': '&lt;',
+    '>': '&gt;',
+    "'": '&#39;',
+    '"': '&quot;'
+  }[tag] || tag));
+}
+
 export async function sendInquiryNotification(data: {
   id: string;
   name: string;
@@ -54,7 +64,7 @@ export async function sendInquiryNotification(data: {
   
   // 获取当前基础 URL 用于追踪像素
   const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://heovose.com';
-  const trackingPixelUrl = `${baseUrl}/api/inquiries/track/${data.id}`;
+  const trackingPixelUrl = `${baseUrl}/api/inquiries/track/${encodeURIComponent(data.id)}`;
 
   // 优先从数据库读取转发邮箱
   let adminEmail = process.env.ADMIN_EMAIL;
@@ -76,35 +86,43 @@ export async function sendInquiryNotification(data: {
     return;
   }
 
-  const subject = `【官网询盘】New Inquiry from ${data.name}`;
-  const productLink = data.productId ? `${baseUrl}/products/${data.productId}` : null;
+  const escapedName = escapeHtml(data.name);
+  const escapedEmail = escapeHtml(data.email);
+  const escapedPhone = escapeHtml(data.phone || 'N/A');
+  const escapedCompany = escapeHtml(data.company || 'N/A');
+  const escapedProductId = escapeHtml(data.productId || 'N/A');
+  const escapedProductName = escapeHtml(data.productName || 'General Inquiry');
+  const escapedMessage = escapeHtml(data.message);
+
+  const subject = `【官网询盘】New Inquiry from ${escapedName}`;
+  const productLink = data.productId ? `${baseUrl}/products/${encodeURIComponent(data.productId)}` : null;
   const submissionTime = new Date().toLocaleString('zh-CN', { timeZone: 'Asia/Shanghai' });
 
   const html = `
     <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #eee; border-radius: 10px;">
       <h2 style="color: #2563eb; border-bottom: 2px solid #2563eb; padding-bottom: 10px;">New Customer Inquiry</h2>
       <div style="margin: 20px 0;">
-        <p><strong>Name:</strong> ${data.name}</p>
-        <p><strong>Email:</strong> ${data.email}</p>
-        <p><strong>Phone:</strong> ${data.phone || 'N/A'}</p>
-        <p><strong>Company:</strong> ${data.company || 'N/A'}</p>
-        <p><strong>Product ID:</strong> ${data.productId ? `<a href="${productLink}" style="color: #2563eb; text-decoration: underline;">${data.productId}</a>` : 'N/A'}</p>
-        <p><strong>Product Name:</strong> ${data.productName || 'General Inquiry'}</p>
+        <p><strong>Name:</strong> ${escapedName}</p>
+        <p><strong>Email:</strong> ${escapedEmail}</p>
+        <p><strong>Phone:</strong> ${escapedPhone}</p>
+        <p><strong>Company:</strong> ${escapedCompany}</p>
+        <p><strong>Product ID:</strong> ${data.productId ? `<a href="${productLink}" style="color: #2563eb; text-decoration: underline;">${escapedProductId}</a>` : 'N/A'}</p>
+        <p><strong>Product Name:</strong> ${escapedProductName}</p>
         <p><strong>Submission Time:</strong> ${submissionTime}</p>
       </div>
       <div style="background: #f9fafb; padding: 15px; border-radius: 8px; border-left: 4px solid #d1d5db;">
         <p style="margin-top: 0;"><strong>Message:</strong></p>
-        <p style="white-space: pre-wrap;">${data.message}</p>
+        <p style="white-space: pre-wrap;">${escapedMessage}</p>
       </div>
       
       <div style="margin-top: 30px; padding: 15px; background: #eff6ff; border-radius: 8px; text-align: center;">
         <a href="${baseUrl}/admin/inquiries" style="display: inline-block; padding: 10px 20px; background: #2563eb; color: white; text-decoration: none; border-radius: 6px; font-weight: bold;">在后台查看并回复</a>
       </div>
-
+ 
       <p style="margin-top: 20px; font-size: 12px; color: #6b7280; text-align: center;">
         This is an automated notification from Heovose Elevate.
       </p>
-
+ 
       <!-- 追踪像素 -->
       <img src="${trackingPixelUrl}" width="1" height="1" style="display:none !important;" />
     </div>

@@ -28,8 +28,7 @@ export async function POST() {
   } catch (error: any) {
     console.error("Update failed to start:", error);
     return NextResponse.json({ 
-      error: "更新启动失败", 
-      details: error.message 
+      error: "Internal Server Error"
     }, { status: 500 });
   }
 }

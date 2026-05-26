@@ -212,8 +212,8 @@ export default function AdminPage() {
               </div>
            </div>
 
-           {/* 身份核心卡片 - Black Glass / Obsidian Style */}
-           <div className="bg-black/40 backdrop-blur-[40px] rounded-[3.5rem] p-12 text-white relative overflow-hidden shadow-[0_60px_120px_-20px_rgba(0,0,0,0.6)] border border-white/10 group ring-1 ring-white/5">
+           {/* 身份核心卡片 - Adaptive Obsidian Style */}
+           <div className="bg-card/40 dark:bg-black/40 backdrop-blur-[40px] rounded-[3.5rem] p-12 text-foreground dark:text-white relative overflow-hidden shadow-[0_40px_80px_-20px_rgba(0,0,0,0.05)] dark:shadow-[0_60px_120px_-20px_rgba(0,0,0,0.6)] border border-border/40 dark:border-white/10 group ring-1 ring-black/5 dark:ring-white/5">
               <div className="absolute -top-20 -right-20 w-64 h-64 bg-primary/20 rounded-full blur-[100px] opacity-40 group-hover:scale-125 transition-transform duration-[2000ms]" />
               <div className="absolute top-0 right-0 p-12 opacity-5 group-hover:opacity-10 group-hover:rotate-12 transition-all duration-1000">
                 <ShieldCheck className="h-40 w-40" />
@@ -223,23 +223,23 @@ export default function AdminPage() {
                 <div className="space-y-3">
                   <div className="flex items-center gap-3">
                     <div className="h-1.5 w-1.5 rounded-full bg-primary animate-pulse shadow-[0_0_10px_rgba(0,91,153,1)]" />
-                    <p className="text-[10px] font-bold text-white/40 uppercase tracking-[0.5em]">Identity Verified</p>
+                    <p className="text-[10px] font-bold text-muted-foreground/60 dark:text-white/40 uppercase tracking-[0.5em]">Identity Verified</p>
                   </div>
                   <h4 className="text-3xl font-headline font-black truncate tracking-tighter drop-shadow-2xl">
                     {session?.user?.name || "ADMINISTRATOR"}
                   </h4>
                 </div>
 
-                <div className="space-y-6 pt-6 border-t border-white/5">
+                <div className="space-y-6 pt-6 border-t border-border/40 dark:border-white/5">
                   <div className="flex justify-between items-center text-[10px] font-bold">
-                    <span className="text-white/30 uppercase tracking-[0.2em]">Security Tier</span>
-                    <Badge className="bg-white/10 text-white border-white/10 hover:bg-white/20 uppercase tracking-[0.2em] text-[9px] h-7 px-4 rounded-lg">
+                    <span className="text-muted-foreground/50 dark:text-white/30 uppercase tracking-[0.2em]">Security Tier</span>
+                    <Badge className="bg-muted dark:bg-white/10 text-foreground dark:text-white border-border dark:border-white/10 hover:bg-muted/80 dark:hover:bg-white/20 uppercase tracking-[0.2em] text-[9px] h-7 px-4 rounded-lg">
                       {(session?.user as any)?.role === 'superadmin' ? 'Tier-0 Root' : 'Tier-1 Editor'}
                     </Badge>
                   </div>
                   <div className="flex justify-between items-center text-[10px] font-bold">
-                    <span className="text-white/30 uppercase tracking-[0.2em]">Uplink Status</span>
-                    <span className="text-emerald-400 uppercase tracking-[0.15em] flex items-center gap-3">
+                    <span className="text-muted-foreground/50 dark:text-white/30 uppercase tracking-[0.2em]">Uplink Status</span>
+                    <span className="text-emerald-500 uppercase tracking-[0.15em] flex items-center gap-3">
                       <div className="h-1.5 w-1.5 rounded-full bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.8)]" />
                       ENCRYPTED_ACTIVE
                     </span>

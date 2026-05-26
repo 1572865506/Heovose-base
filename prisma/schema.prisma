@@ -70,6 +70,10 @@ model HomepageContent {
   processTitleTextId         String?       @default("PROCESS_TITLE")
   mapSubtitleTextId          String?       @default("MAP_SUBTITLE")
   mapTitleTextId             String?       @default("MAP_TITLE")
+  heroWholesaleLinkType      String?       @default("category")
+  heroWholesaleLinkUrl       String?
+  heroProjectLinkType        String?       @default("category")
+  heroProjectLinkUrl         String?
   locations                  MapLocation[]
 }
 
@@ -86,8 +90,6 @@ model HomepageBentoItem {
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
   brightness Float?
-  linkType   String   @default("custom")
-  categoryId String?
 }
 
 model MapLocation {
@@ -325,4 +327,31 @@ model SpecTemplate {
   specGroups Json
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
+}
+
+model CleanupJob {
+  id           String    @id @default(cuid())
+  status       String    @default("PENDING") // PENDING, RUNNING, COMPLETED, FAILED
+  startedAt    DateTime  @default(now())
+  completedAt  DateTime?
+  deletedCount Int       @default(0)
+  deletedFiles Json      @default("[]")
+  error        String?
+}
+
+model AuditLog {
+  id        String   @id @default(cuid())
+  userId    String?
+  userEmail String?
+  action    String   // 操作名称 (例如 "UPDATE_SETTINGS", "RESTORE_BACKUP", "CREATE_USER")
+  details   Json     // 操作负载 (脱敏后的更改对象)
+  ip        String?
+  userAgent String?
+  createdAt DateTime @default(now())
+}
+
+model RateLimit {
+  key       String   @id
+  count     Int
+  resetTime DateTime
 }

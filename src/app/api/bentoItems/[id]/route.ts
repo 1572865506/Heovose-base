@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import db from '@/lib/db';
-import { auth } from '@/auth';
+import { withAuth } from '@/lib/auth-utils';
+import { bentoItemSchema } from '@/lib/validations';
 
 export async function GET(
   request: Request,
@@ -18,16 +19,19 @@ export async function GET(
   }
 }
 
-export async function PUT(
+export const PUT = withAuth('editor', async (
   request: Request,
   { params }: { params: Promise<{ id: string }> }
-) {
-  const session = await auth();
-  if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-
+) => {
   try {
     const { id } = await params;
-    const data = await request.json();
+    const body = await request.json();
+    const validation = bentoItemSchema.safeParse(body);
+    if (!validation.success) {
+      return NextResponse.json({ error: validation.error.errors[0].message }, { status: 400 });
+    }
+
+    const data = validation.data;
     const item = await db.homepageBentoItem.update({
       where: { id },
       data: {
@@ -45,17 +49,15 @@ export async function PUT(
     });
     return NextResponse.json(item);
   } catch (error: any) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    console.error('Failed to update bento item:', error);
+    return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
   }
-}
+});
 
-export async function DELETE(
+export const DELETE = withAuth('editor', async (
   request: Request,
   { params }: { params: Promise<{ id: string }> }
-) {
-  const session = await auth();
-  if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-
+) => {
   try {
     const { id } = await params;
     await db.homepageBentoItem.delete({
@@ -63,6 +65,7 @@ export async function DELETE(
     });
     return NextResponse.json({ success: true });
   } catch (error: any) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    console.error('Failed to delete bento item:', error);
+    return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
   }
-}
+});

@@ -605,23 +605,9 @@ function ProductListContent() {
                     </div>
                   );
                 })}
-              </div>
+                </div>
 
-              {/* 移动端定制报价卡片 */}
-              <div className="block lg:hidden mt-8 p-8 rounded-[2rem] bg-primary text-white space-y-4 shadow-xl relative overflow-hidden">
-                <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -mr-16 -mt-16 blur-2xl" />
-                <h4 className="font-bold text-lg leading-tight">{tr('products_needQuote')}</h4>
-                <p className="text-xs opacity-70 leading-relaxed">{tr('products_expertHelp')}</p>
-                <Button 
-                  variant="secondary" 
-                  onClick={() => openInquiry()}
-                  className="w-full rounded-xl h-12 bg-white text-primary hover:bg-accent border-none font-bold uppercase text-[10px] tracking-widest"
-                >
-                  {tr('products_contactSales')}
-                </Button>
-              </div>
-
-              {/* 前台标准形态分页器 (符合规范 9.1 & 9.2) */}
+                {/* 前台标准形态分页器 (符合规范 9.1 & 9.2) */}
               {totalPages > 1 && (
                 <div className="mt-16 flex flex-col sm:flex-row items-center justify-between gap-6 border-t border-primary/10 pt-8">
                   <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-[0.2em]">
@@ -699,6 +685,20 @@ function ProductListContent() {
                   </div>
                 </div>
               )}
+
+              {/* 移动端定制报价卡片 */}
+              <div className="block lg:hidden mt-8 p-8 rounded-[2rem] bg-primary text-white space-y-4 shadow-xl relative overflow-hidden">
+                <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -mr-16 -mt-16 blur-2xl pointer-events-none" />
+                <h4 className="font-bold text-lg leading-tight">{tr('products_needQuote')}</h4>
+                <p className="text-xs opacity-70 leading-relaxed">{tr('products_expertHelp')}</p>
+                <Button 
+                  variant="secondary" 
+                  onClick={() => openInquiry()}
+                  className="w-full rounded-xl h-12 bg-white text-primary hover:bg-accent border-none font-bold uppercase text-[10px] tracking-widest"
+                >
+                  {tr('products_contactSales')}
+                </Button>
+              </div>
             </div>
             ) : (
               <div className="py-32 text-center flex flex-col items-center justify-center gap-6 bg-white rounded-[3rem] border border-dashed border-border/60 px-6">

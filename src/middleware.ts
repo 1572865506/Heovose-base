@@ -56,9 +56,17 @@ export default auth((request) => {
 
   // Protect storage endpoint from non-GET / non-OPTIONS requests (CORS & server-side protection)
   if (pathname.startsWith('/storage')) {
+    const requestOrigin = request.headers.get('origin') || '';
+    const appUrl = process.env.NEXTAUTH_URL || 'http://localhost:9002';
+    const isAllowedOrigin = requestOrigin === appUrl || 
+                            requestOrigin.startsWith('http://localhost:') || 
+                            requestOrigin.endsWith('.heovose.com') ||
+                            requestOrigin.endsWith('.web.app');
+    const allowedOrigin = isAllowedOrigin ? requestOrigin : appUrl;
+
     if (request.method === 'OPTIONS') {
       const response = new NextResponse(null, { status: 204 });
-      response.headers.set('Access-Control-Allow-Origin', '*');
+      response.headers.set('Access-Control-Allow-Origin', allowedOrigin);
       response.headers.set('Access-Control-Allow-Methods', 'GET,OPTIONS');
       response.headers.set('Access-Control-Allow-Headers', 'X-CSRF-Token, X-Requested-With, Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version');
       return response;

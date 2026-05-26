@@ -1,7 +1,8 @@
 import { NextResponse } from 'next/server';
 import { PutObjectCommand } from "@aws-sdk/client-s3";
 import s3Client, { ensureBucketExists } from '@/lib/s3';
-import { auth } from '@/auth';
+import { withAuth } from '@/lib/auth-utils';
+import { dbRateLimit } from '@/lib/rate-limit';
 
 function verifyMagicBytes(buffer: Buffer, type: string, extension: string): boolean {
   if (buffer.length < 4) return false;
@@ -46,10 +47,11 @@ function verifyMagicBytes(buffer: Buffer, type: string, extension: string): bool
   return false;
 }
 
-export async function POST(request: Request) {
-  const session = await auth();
-  if (!session) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+export const POST = withAuth('editor', async (request: Request) => {
+  const ip = (request as any).ip || request.headers.get("x-forwarded-for")?.split(",")[0].trim() || "127.0.0.1";
+  const rateLimitResult = await dbRateLimit(ip, '/api/upload', 10, 60000);
+  if (!rateLimitResult.success) {
+    return NextResponse.json({ error: 'Too many requests. Please try again later.' }, { status: 429 });
   }
 
   const bucketName = process.env.STORAGE_BUCKET || 'heovose-assets';
@@ -148,4 +150,4 @@ export async function POST(request: Request) {
     console.error('Upload error:', error);
     return NextResponse.json({ error: 'Upload failed' }, { status: 500 });
   }
-}
+});

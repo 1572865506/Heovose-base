@@ -1,10 +1,10 @@
 import { NextResponse } from 'next/server';
 import db from '@/lib/db';
-import { auth } from '@/auth';
+import { withAuth } from '@/lib/auth-utils';
+import { cleanupOrphanedStrings } from '@/lib/db-gc';
+import { mapLocationSchema } from '@/lib/validations';
 
 export const dynamic = 'force-dynamic';
-
-import { cleanupOrphanedStrings } from '@/lib/db-gc';
 
 function extractIdsFromMapLocation(loc: any): string[] {
   const ids: string[] = [];
@@ -15,17 +15,18 @@ function extractIdsFromMapLocation(loc: any): string[] {
   return ids;
 }
 
-export async function PUT(
+export const PUT = withAuth('editor', async (
   request: Request,
   { params }: { params: Promise<{ id: string }> }
-) {
-  const session = await auth();
-  if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-
+) => {
   try {
     const { id } = await params;
-    const data = await request.json();
-    console.log('[API] Updating MapLocation:', id, data);
+    const body = await request.json();
+
+    const validation = mapLocationSchema.safeParse(body);
+    if (!validation.success) {
+      return NextResponse.json({ error: validation.error.errors[0].message }, { status: 400 });
+    }
     
     // Ensure the record exists
     const existing = await db.mapLocation.findUnique({ where: { id } });
@@ -37,29 +38,8 @@ export async function PUT(
     // 获取更新前关联的 IDs
     const oldIds = extractIdsFromMapLocation(existing);
 
-    const { 
-      id: _, 
-      homepageId: __, 
-      homepageContent: ___,
-      createdAt: ____,
-      updatedAt: _____,
-      ...rawUpdateData 
-    } = data;
-
-    // Filter to only include fields present in the model
-    const updateData: any = {};
-    const allowedFields = [
-      'type', 'titleZh', 'titleEn', 'addressZh', 'addressEn', 
-      'descZh', 'descEn', 'imageUrl', 'countryCode', 
-      'posTop', 'posLeft', 'order', 'titleTextId', 'addressTextId', 'descTextId'
-    ];
-
-    allowedFields.forEach(field => {
-      if (rawUpdateData[field] !== undefined) {
-        updateData[field] = rawUpdateData[field];
-      }
-    });
-
+    const updateData = { ...validation.data };
+    
     // Remove countryCode from updateData to bypass Prisma validation if it's still failing
     const countryCode = updateData.countryCode;
     delete updateData.countryCode;
@@ -92,20 +72,15 @@ export async function PUT(
   } catch (error: any) {
     console.error('[API] mapLocations PUT Error:', error);
     return NextResponse.json({ 
-      error: 'Update failed', 
-      message: error.message,
-      stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
+      error: 'Internal Server Error'
     }, { status: 500 });
   }
-}
+});
 
-export async function DELETE(
+export const DELETE = withAuth('editor', async (
   request: Request,
   { params }: { params: Promise<{ id: string }> }
-) {
-  const session = await auth();
-  if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-
+) => {
   try {
     const { id } = await params;
     
@@ -130,7 +105,6 @@ export async function DELETE(
     return NextResponse.json({ success: true });
   } catch (error: any) {
     console.error('[API] mapLocations DELETE Error:', error);
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
   }
-}
-
+});

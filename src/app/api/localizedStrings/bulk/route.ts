@@ -67,6 +67,6 @@ export async function POST(request: Request) {
     return NextResponse.json({ mapping });
   } catch (error: any) {
     console.error('[API Error] LocalizedString BULK:', error);
-    return NextResponse.json({ error: 'Internal Server Error', message: error.message }, { status: 500 });
+    return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
   }
 }

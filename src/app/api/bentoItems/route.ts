@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import db from '@/lib/db';
-import { auth } from '@/auth';
+import { withAuth } from '@/lib/auth-utils';
+import { bentoItemSchema } from '@/lib/validations';
 
 export async function GET() {
   try {
@@ -13,28 +14,28 @@ export async function GET() {
   }
 }
 
-export async function POST(request: Request) {
-  const session = await auth();
-  if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-
-  try {
-    const data = await request.json();
-    const item = await db.homepageBentoItem.create({
-      data: {
-        titleZh: data.titleZh,
-        titleEn: data.titleEn,
-        tagZh: data.tagZh,
-        tagEn: data.tagEn,
-        imageUrl: data.imageUrl,
-        linkUrl: data.linkUrl,
-        gridSize: data.gridSize || 'small',
-        order: data.order || 0,
-        linkType: data.linkType || 'custom',
-        categoryId: data.categoryId || null,
-      },
-    });
-    return NextResponse.json(item);
-  } catch (error: any) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+export const POST = withAuth('editor', async (request: Request) => {
+  const body = await request.json();
+  const validation = bentoItemSchema.safeParse(body);
+  if (!validation.success) {
+    return NextResponse.json({ error: validation.error.errors[0].message }, { status: 400 });
   }
-}
+
+  const data = validation.data;
+  const item = await db.homepageBentoItem.create({
+    data: {
+      titleZh: data.titleZh,
+      titleEn: data.titleEn,
+      tagZh: data.tagZh,
+      tagEn: data.tagEn,
+      imageUrl: data.imageUrl,
+      linkUrl: data.linkUrl,
+      gridSize: data.gridSize,
+      order: data.order,
+      linkType: data.linkType,
+      categoryId: data.categoryId,
+    },
+  });
+
+  return NextResponse.json(item);
+});

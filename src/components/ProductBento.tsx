@@ -88,10 +88,8 @@ export function ProductBento({ locale }: { locale: Locale }) {
 
 
 
-  // Fetch independent bento items and categories
-  const { data: bentoItems, isLoading: isBentoLoading } = useLocalCollection<any>('bentoItems');
-  const { data: categories, isLoading: isCategoriesLoading } = useLocalCollection<any>('productCategories');
-  const isLoading = isBentoLoading || isCategoriesLoading;
+  // Fetch independent bento items
+  const { data: bentoItems, isLoading } = useLocalCollection<any>('bentoItems');
 
   const items = useMemo(() => {
     if (bentoItems && bentoItems.length > 0) {
@@ -124,20 +122,11 @@ export function ProductBento({ locale }: { locale: Locale }) {
           return '';
         };
 
-        // 动态路由跳转：如果 linkType === 'category' 且关联了 categoryId
-        let slug = item.linkUrl || '#';
-        if (item.linkType === 'category' && item.categoryId && categories) {
-          const matchedCat = categories.find((c: any) => c.id === item.categoryId);
-          if (matchedCat) {
-            slug = `/products?category=${encodeURIComponent(matchedCat.slug || matchedCat.id)}`;
-          }
-        }
-
         return {
           id: item.id,
           label: getLocalized('title'),
           category: getLocalized('tag'),
-          slug,
+          slug: item.linkUrl || '#',
           imageUrl: item.imageUrl || PlaceHolderImages[0].imageUrl,
           brightness: item.brightness,
           grid
@@ -151,7 +140,7 @@ export function ProductBento({ locale }: { locale: Locale }) {
       { label: tr('nav_sub_monitor'), id: 'product-monitor', grid: 'col-span-1 row-span-1', category: tr('nav_wholesale'), slug: `/products?category=Monitor`, imageUrl: PlaceHolderImages[2].imageUrl },
       { label: tr('nav_sub_laptop'), id: 'product-laptop', grid: 'col-span-1 row-span-1', category: tr('nav_wholesale'), slug: `/products?category=Laptop`, imageUrl: PlaceHolderImages[3].imageUrl },
     ];
-  }, [bentoItems, categories, locale, tr, langSettings]);
+  }, [bentoItems, locale, tr, langSettings]);
 
   const [isVisible, setIsVisible] = useState(false);
   const sectionRef = useRef<HTMLElement>(null);

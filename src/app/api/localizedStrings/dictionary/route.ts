@@ -86,7 +86,7 @@ export async function GET(request: Request) {
   } catch (error: any) {
     console.error('[API Error] Dictionary route GET:', error);
     return NextResponse.json(
-      { error: 'Internal Server Error', message: error.message },
+      { error: 'Internal Server Error' },
       { status: 500 }
     );
   }

@@ -1,48 +1,56 @@
 import { NextResponse } from 'next/server';
 import db from '@/lib/db';
-import { auth } from '@/auth';
+import { withAuth } from '@/lib/auth-utils';
+import { logAdminAction } from '@/lib/audit';
+import { z } from 'zod';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
 
-export async function GET() {
-  try {
-    const session = await auth();
-    if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+export const GET = withAuth('editor', async () => {
+  const settings = await db.setting.findMany();
+  // Convert to a simple key-value object
+  const settingsMap = settings.reduce((acc: any, s: any) => {
+    acc[s.id] = s.value;
+    return acc;
+  }, {});
 
-    const settings = await db.setting.findMany();
-    // Convert to a simple key-value object
-    const settingsMap = settings.reduce((acc: any, s: any) => {
-      acc[s.id] = s.value;
-      return acc;
-    }, {});
+  return NextResponse.json(settingsMap);
+});
 
-    return NextResponse.json(settingsMap);
-  } catch (error: any) {
-    console.error('[API] Settings GET Error:', error);
-    return NextResponse.json({ error: error.message }, { status: 500 });
+const settingSchema = z.object({
+  key: z.string().min(1).max(100),
+  value: z.any()
+}).strict();
+
+export const PATCH = withAuth('editor', async (
+  req: Request,
+  context: any,
+  currentUser: { id: string; role: string; email: string }
+) => {
+  const body = await req.json();
+  const validation = settingSchema.safeParse(body);
+  if (!validation.success) {
+    return NextResponse.json({ error: validation.error.errors[0].message }, { status: 400 });
   }
-}
 
-export async function PATCH(req: Request) {
-  try {
-    const session = await auth();
-    if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  const { key, value } = validation.data;
+  const stringValue = typeof value === 'string' ? value : JSON.stringify(value);
 
-    const body = await req.json();
-    const { key, value } = body;
+  const setting = await db.setting.upsert({
+    where: { id: key },
+    update: { value: stringValue },
+    create: { id: key, value: stringValue },
+  });
 
-    if (!key) return NextResponse.json({ error: 'Key is required' }, { status: 400 });
+  // 记录审计日志
+  logAdminAction(
+    req,
+    currentUser.id,
+    currentUser.email,
+    'UPDATE_SETTINGS',
+    { key, value }
+  );
 
-    const setting = await db.setting.upsert({
-      where: { id: key },
-      update: { value: String(value) },
-      create: { id: key, value: String(value) },
-    });
-
-    return NextResponse.json(setting);
-  } catch (error: any) {
-    console.error('[API] Settings PATCH Error:', error);
-    return NextResponse.json({ error: error.message }, { status: 500 });
-  }
-}
+  return NextResponse.json(setting);
+});

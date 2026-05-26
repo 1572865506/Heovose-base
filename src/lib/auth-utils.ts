@@ -47,7 +47,7 @@ export async function isSuperAdmin() {
  * 角色校验工具函数，如不满足权限则抛出异常
  * @param requiredRole 'superadmin' | 'editor'
  */
-export async function checkRole(requiredRole: string) {
+export async function checkRole(requiredRole: 'editor' | 'superadmin') {
   const session = await auth();
   if (!session?.user?.email) {
     throw new Error('Unauthorized');
@@ -55,20 +55,53 @@ export async function checkRole(requiredRole: string) {
 
   const user = await db.user.findUnique({
     where: { email: session.user.email },
-    select: { id: true, role: true }
+    select: { id: true, role: true, email: true }
   });
 
   if (!user) {
     throw new Error('Unauthorized');
   }
 
+  // 1. superadmin has access to everything
   if (user.role === 'superadmin') {
     return user;
   }
 
-  if (requiredRole === 'superadmin' && user.role !== 'superadmin') {
+  // 2. If superadmin is required but user is not superadmin (and since they aren't superadmin, they are editor or guest)
+  if (requiredRole === 'superadmin') {
+    throw new Error('Forbidden');
+  }
+
+  // 3. If editor is required but user is not editor (and since they aren't superadmin, they have no access)
+  if (requiredRole === 'editor' && user.role !== 'editor') {
     throw new Error('Forbidden');
   }
 
   return user;
+}
+
+import { NextResponse } from 'next/server';
+
+/**
+ * Higher-Order Function (HOF) wrapper to secure Next.js API routes based on roles.
+ */
+export function withAuth(
+  requiredRole: 'editor' | 'superadmin',
+  handler: (request: Request, context: any, user: { id: string; role: string; email: string }) => Promise<Response>
+) {
+  return async (request: Request, context: any) => {
+    try {
+      const user = await checkRole(requiredRole);
+      return await handler(request, context, user);
+    } catch (error: any) {
+      if (error.message === 'Unauthorized') {
+        return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      }
+      if (error.message === 'Forbidden') {
+        return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+      }
+      console.error('[Auth HOF Error]:', error);
+      return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
+    }
+  };
 }

@@ -32,6 +32,6 @@ export async function POST() {
     return NextResponse.json({ hasUpdate: false });
   } catch (error: any) {
     console.error("Check update failed:", error);
-    return NextResponse.json({ error: "检查失败", details: error.message }, { status: 500 });
+    return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
   }
 }

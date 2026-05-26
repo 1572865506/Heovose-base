@@ -304,8 +304,8 @@ export function Hero({ locale, homeConfig, isLoading, onThemeChange }: HeroProps
                 )}
 
                 {/* Slide Content */}
-                <div className="max-w-[1600px] mx-auto px-6 relative z-10 pointer-events-none h-[calc(100vh-160px)] min-h-[600px] flex items-center justify-start">
-                  <div className="max-w-[50rem] flex flex-col gap-4 md:gap-6 animate-fade-in text-left mr-auto ml-0 mt-20 md:mt-32 items-start">
+                <div className="max-w-[1600px] mx-auto px-6 relative z-10 pointer-events-none h-[calc(100vh-160px)] min-h-[600px] flex items-start pt-24 md:pt-0 md:items-center justify-start">
+                  <div className="max-w-[50rem] flex flex-col gap-4 md:gap-6 animate-fade-in text-left mr-auto ml-0 mt-8 md:mt-32 items-start">
                     <SplitText
                       key={`headline-${slide.id}-${selectedIndex === index}-v1.1`}
                       text={tr(`hero_slide_${slide.id.replace(/^slide_/, '')}_headline`) || getFallback(slide.headlineZh, slide.headlineEn)}

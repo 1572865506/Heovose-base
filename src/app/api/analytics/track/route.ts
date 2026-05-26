@@ -69,8 +69,36 @@ export async function POST(request: Request) {
       const ct = Number(rest.currentTime);
       if (!isNaN(ct) && ct >= 0) extraData.currentTime = ct;
     }
-
     if (type.toLowerCase() === 'pageview') {
+      // 获取客户端真实 IP
+      const ip = request.headers.get("x-forwarded-for")?.split(",")[0].trim() || 
+                 request.headers.get("x-real-ip") || 
+                 "127.0.0.1";
+
+      // 提取平台地理位置请求头 (适配 App Hosting / Firebase / Cloudflare / Vercel)
+      let country = request.headers.get("x-appengine-country") || 
+                    request.headers.get("x-vercel-ip-country") || 
+                    request.headers.get("cf-ipcountry") || 
+                    request.headers.get("x-country-code") || 
+                    "";
+                    
+      let city = request.headers.get("x-appengine-city") || 
+                 request.headers.get("x-vercel-ip-city") || 
+                 request.headers.get("cf-ipcity") || 
+                 "";
+
+      // 本地开发友好后备 (无平台头部且为本地/内网 IP 时，模拟为本地来源，防全显示 Unknown)
+      if (!country && (ip === '127.0.0.1' || ip === '::1' || ip.startsWith('192.168.') || ip.startsWith('10.'))) {
+        country = 'CN';
+        city = 'Localhost';
+      }
+
+      if (!country) country = 'UNKNOWN';
+      if (!city) city = 'UNKNOWN';
+
+      // 强制国家代码大写
+      country = country.toUpperCase();
+
       // Create or Update Session
       await db.visitorSession.upsert({
         where: { id: sessionId },
@@ -81,6 +109,9 @@ export async function POST(request: Request) {
         create: {
           id: sessionId,
           visitorId: visitorId,
+          ip: ip,
+          country: country,
+          city: city,
           userAgent: extraData.userAgent || '',
           referrer: extraData.referrer || '',
           lastPath: path ? path.slice(0, 255) : null,

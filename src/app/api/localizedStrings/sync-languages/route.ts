@@ -106,7 +106,7 @@ export async function POST(request: Request) {
   } catch (error: any) {
     console.error('[API Error] sync-languages:', error);
     return NextResponse.json(
-      { error: 'Internal Server Error', message: error.message },
+      { error: 'Internal Server Error' },
       { status: 500 }
     );
   }

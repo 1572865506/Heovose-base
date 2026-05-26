@@ -1,19 +1,18 @@
 import { NextResponse } from "next/server";
-import { auth } from "@/auth";
+import { withAuth } from "@/lib/auth-utils";
 import { execFile } from "child_process";
 import { promisify } from "util";
 import path from "path";
 import fs from "fs";
+import { logAdminAction } from "@/lib/audit";
 
 const execFileAsync = promisify(execFile);
 
-export async function POST(request: Request) {
-  const session = await auth();
-
-  if (!session || (session.user as any)?.role !== "superadmin") {
-    return NextResponse.json({ error: "Only superadmins can perform restore" }, { status: 403 });
-  }
-
+export const POST = withAuth('superadmin', async (
+  request: Request,
+  context: any,
+  currentUser: { id: string; role: string; email: string }
+) => {
   try {
     const { sqlFile, minioFile } = await request.json();
 
@@ -48,6 +47,15 @@ export async function POST(request: Request) {
     console.log("Restore stdout:", stdout);
     if (stderr) console.error("Restore stderr:", stderr);
 
+    // 记录审计日志
+    logAdminAction(
+      request,
+      currentUser.id,
+      currentUser.email,
+      'RESTORE_SYSTEM',
+      { sqlFile, minioFile }
+    );
+
     return NextResponse.json({ 
       success: true, 
       message: "数据还原成功",
@@ -56,8 +64,7 @@ export async function POST(request: Request) {
   } catch (error: any) {
     console.error("Restore failed:", error);
     return NextResponse.json({ 
-      error: "还原执行失败", 
-      details: error.message 
+      error: "Internal Server Error"
     }, { status: 500 });
   }
-}
+});

@@ -81,9 +81,7 @@ export async function GET() {
   } catch (error: any) {
     console.error('[WelcomeBack] Error:', error);
     return NextResponse.json({ 
-      error: 'Internal Server Error', 
-      message: error.message,
-      stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
+      error: 'Internal Server Error'
     }, { status: 500 });
   }
 }

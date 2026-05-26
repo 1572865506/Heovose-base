@@ -62,7 +62,7 @@ export async function POST(request: Request) {
     console.error('AI Test Failure:', error);
     return NextResponse.json({ 
       success: false, 
-      error: error.message || 'Connection failed.' 
+      error: 'Internal Server Error' 
     }, { status: 500 });
   }
 }

@@ -1,19 +1,24 @@
 import { NextResponse } from 'next/server';
 import db from '@/lib/db';
-import { auth } from '@/auth';
+import { withAuth } from '@/lib/auth-utils';
 import { deleteFile } from '@/lib/s3';
+import { galleryAssetSchema } from '@/lib/validations';
 
-export async function PUT(
+export const PUT = withAuth('editor', async (
   request: Request,
   { params }: { params: Promise<{ id: string }> }
-) {
-  const session = await auth();
-  if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-
+) => {
   try {
     const { id } = await params;
     const data = await request.json();
-    const { id: _, updatedAt: __, ...updateData } = data;
+    
+    // Zod validation
+    const validation = galleryAssetSchema.safeParse(data);
+    if (!validation.success) {
+      return NextResponse.json({ error: validation.error.errors[0].message }, { status: 400 });
+    }
+
+    const updateData = validation.data;
 
     console.log(`[GalleryAPI] Upserting asset ${id}:`, updateData);
     const item = await db.galleryAsset.upsert({
@@ -26,19 +31,15 @@ export async function PUT(
   } catch (error: any) {
     console.error('Failed to update gallery asset:', error);
     return NextResponse.json({ 
-      error: error.message || 'Internal Server Error',
-      details: error.code // Prisma error code
+      error: 'Internal Server Error'
     }, { status: 500 });
   }
-}
+});
 
-export async function DELETE(
+export const DELETE = withAuth('editor', async (
   request: Request,
   { params }: { params: Promise<{ id: string }> }
-) {
-  const session = await auth();
-  if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-
+) => {
   try {
     const { id } = await params;
     
@@ -59,4 +60,4 @@ export async function DELETE(
     console.error('Delete error:', error);
     return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
   }
-}
+});

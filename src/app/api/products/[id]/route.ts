@@ -1,7 +1,8 @@
 import { NextResponse } from 'next/server';
 import db from '@/lib/db';
-import { auth } from '@/auth';
+import { withAuth } from '@/lib/auth-utils';
 import { extractIdsFromProduct, cleanupOrphanedStrings } from '@/lib/db-gc';
+import { productSchema } from '@/lib/validations';
 
 export async function GET(
   request: Request,
@@ -29,16 +30,20 @@ export async function GET(
   }
 }
 
-export async function PUT(
+export const PUT = withAuth('editor', async (
   request: Request,
   { params }: { params: Promise<{ id: string }> }
-) {
-  const session = await auth();
-  if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-
+) => {
   try {
     const { id } = await params;
-    const data = await request.json();
+    const body = await request.json();
+    
+    // Zod validation
+    const validation = productSchema.safeParse(body);
+    if (!validation.success) {
+      return NextResponse.json({ error: validation.error.errors[0].message }, { status: 400 });
+    }
+    const data = validation.data;
     
     // Check if product exists for partial update support
     const existingProduct = await db.product.findUnique({ where: { id } });
@@ -119,17 +124,14 @@ export async function PUT(
     }
   } catch (error: any) {
     console.error('Failed to update product:', error);
-    return NextResponse.json({ error: 'Internal Server Error', message: error.message }, { status: 500 });
+    return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
   }
-}
+});
 
-export async function DELETE(
+export const DELETE = withAuth('editor', async (
   request: Request,
   { params }: { params: Promise<{ id: string }> }
-) {
-  const session = await auth();
-  if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-
+) => {
   try {
     const { id } = await params;
 
@@ -147,9 +149,6 @@ export async function DELETE(
     return NextResponse.json({ success: true });
   } catch (error: any) {
     console.error('Failed to delete product:', error);
-    return NextResponse.json({ error: 'Internal Server Error', message: error.message }, { status: 500 });
+    return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
   }
-}
-
-
-
+});

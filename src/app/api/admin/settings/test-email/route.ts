@@ -46,9 +46,7 @@ export async function POST(request: Request) {
     }
 
     return NextResponse.json({ 
-      error: friendlyMessage,
-      technicalDetail: error.message,
-      code: error.code
+      error: friendlyMessage
     }, { status: 500 });
   }
 }

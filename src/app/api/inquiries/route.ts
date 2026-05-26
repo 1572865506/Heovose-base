@@ -6,6 +6,8 @@ import { JSDOM } from 'jsdom';
 
 import { auth } from '@/auth';
 
+import { dbRateLimit } from '@/lib/rate-limit';
+
 // 询盘验证 Schema
 const inquirySchema = z.object({
   name: z.string().min(1, 'Name is required').max(100),
@@ -40,6 +42,12 @@ export async function GET() {
 
 export async function POST(request: Request) {
   try {
+    const ip = (request as any).ip || request.headers.get("x-forwarded-for")?.split(",")[0].trim() || "127.0.0.1";
+    const rateLimitResult = await dbRateLimit(ip, '/api/inquiries', 5, 60000);
+    if (!rateLimitResult.success) {
+      return NextResponse.json({ error: 'Too many requests. Please try again later.' }, { status: 429 });
+    }
+
     const body = await request.json();
     
     // 1. Zod 基础验证

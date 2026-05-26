@@ -266,11 +266,7 @@ export async function PUT(
   } catch (error: any) {
     console.error('CRITICAL ERROR: Failed to update homepage content:', error);
     return NextResponse.json({ 
-      error: 'DATABASE_UPSERT_FAILED', 
-      details: error.message,
-      code: error.code,
-      meta: error.meta,
-      targetFields: Object.keys(filteredData)
+      error: 'Internal Server Error'
     }, { status: 500 });
   }
 }
