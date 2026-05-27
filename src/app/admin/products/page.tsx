@@ -207,14 +207,14 @@ export default function AdminProductsPage() {
             <div className="h-10 w-10 rounded-2xl bg-primary/10 flex items-center justify-center text-primary">
               <Package className="h-5 w-5" />
             </div>
-            产品资源中心
+            产品管理
           </h2>
           <p className="text-xs text-muted-foreground font-bold uppercase tracking-[0.2em] pl-14">Management / Product Catalog</p>
         </div>
 
         <Link href="/admin/products/editor">
           <Button className="rounded-2xl h-14 px-8 font-bold uppercase tracking-widest text-xs gap-2.5 shadow-xl shadow-primary/20 hover:scale-105 transition-all">
-            <Plus className="h-4 w-4" /> 发布新硬件
+            <Plus className="h-4 w-4" /> 发布新产品
           </Button>
         </Link>
       </div>
@@ -408,7 +408,7 @@ export default function AdminProductsPage() {
               >
                 <ChevronLeft className="h-4 w-4" />
               </Button>
-              
+
               {Array.from({ length: totalPages }).map((_, idx) => {
                 const pageNum = idx + 1;
                 const isSelected = currentPage === pageNum;
@@ -444,7 +444,7 @@ export default function AdminProductsPage() {
         <div className="px-10 py-6 bg-muted/5 border-t border-border/10 flex items-center justify-between">
           <p className="text-[10px] font-bold text-muted-foreground/20 uppercase tracking-[0.3em]">Total Hardware Index: {filteredProducts.length}</p>
           <div className="flex items-center gap-3 text-[10px] font-bold text-muted-foreground/20 uppercase tracking-[0.3em]">
-            <Globe className="h-3.5 w-3.5 opacity-50" /> System: Multi-language Node Active
+            <Globe className="h-3.5 w-3.5 opacity-50" /> 系统：多语言节点已激活
           </div>
         </div>
       </div>

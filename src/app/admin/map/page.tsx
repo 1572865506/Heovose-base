@@ -543,13 +543,19 @@ export default function GlobalMapAdminPage() {
       </div>
 
       <Dialog open={isLocationDialogOpen} onOpenChange={setIsLocationDialogOpen}>
-        <DialogContent className="max-w-5xl h-[90vh] p-0 rounded-3xl overflow-hidden border-none shadow-2xl flex flex-col">
-          <div className="bg-primary p-6 text-white flex items-center justify-between flex-shrink-0">
-            <DialogHeader>
-              <DialogTitle className="text-lg font-bold flex items-center gap-2">
-                <MapPin className="h-5 w-5" /> {editingLocation ? '编辑网点' : '新增全球网点'}
+        <DialogContent className="rounded-[3rem] max-w-5xl h-[90vh] p-0 overflow-hidden shadow-[0_50px_100px_-20px_rgba(0,0,0,0.15)] admin-interface-dark:shadow-[0_50px_100px_-20px_rgba(0,0,0,0.5)] border border-slate-200/50 admin-interface-dark:border-white/5 bg-card flex flex-col">
+          <div className="bg-gradient-to-br from-slate-50 to-slate-100 admin-interface-dark:from-slate-950 admin-interface-dark:to-slate-900 p-8 text-slate-900 admin-interface-dark:text-white relative overflow-hidden border-b border-slate-200/80 admin-interface-dark:border-white/5 shrink-0">
+            <div className="absolute top-0 right-0 p-8 opacity-10">
+              <MapPin className="h-24 w-24" />
+            </div>
+            <DialogHeader className="relative z-10 space-y-2">
+              <DialogTitle className="text-xl font-headline font-black flex items-center gap-4 text-slate-900 admin-interface-dark:text-white">
+                <div className="h-10 w-10 rounded-xl bg-slate-200/50 admin-interface-dark:bg-white/10 flex items-center justify-center border border-slate-300/50 admin-interface-dark:border-white/5 text-slate-700 admin-interface-dark:text-white">
+                  <MapPin className="h-5 w-5" />
+                </div>
+                {editingLocation ? '编辑网点' : '新增全球网点'}
               </DialogTitle>
-              <DialogDescription className="text-white/60 text-xs">填写网点详细信息，并从素材库选择展示图片。</DialogDescription>
+              <DialogDescription className="text-[10px] font-bold text-slate-500/50 admin-interface-dark:text-white/30 uppercase tracking-[0.3em]">填写网点详细信息，并从素材库选择展示图片</DialogDescription>
             </DialogHeader>
           </div>
 
@@ -573,7 +579,7 @@ export default function GlobalMapAdminPage() {
                           "flex items-center gap-2 px-3 py-2 rounded-xl border transition-all text-left",
                           locationForm.type === t.id 
                             ? "bg-primary/10 border-primary text-primary shadow-sm" 
-                            : "bg-muted/10 border-transparent hover:border-border/20 text-muted-foreground"
+                            : "bg-muted/5 border-slate-200 admin-interface-dark:border-white/10 hover:border-border/20 text-muted-foreground"
                         )}
                       >
                         <t.icon className={cn("h-4 w-4", locationForm.type === t.id ? "text-primary" : "opacity-40")} />
@@ -589,7 +595,7 @@ export default function GlobalMapAdminPage() {
                     value={locationForm.countryCode || "cn"} 
                     onValueChange={(val) => setLocationForm({ ...locationForm, countryCode: val })}
                   >
-                    <SelectTrigger className="h-10 rounded-xl bg-muted/10 border-transparent flex items-center justify-between w-full">
+                    <SelectTrigger className="h-10 rounded-xl bg-muted/5 border border-slate-200 admin-interface-dark:border-white/10 flex items-center justify-between w-full text-xs font-bold shadow-inner">
                       <SelectValue placeholder="请选择网点所属国家" />
                     </SelectTrigger>
                     <SelectContent>
@@ -648,7 +654,7 @@ export default function GlobalMapAdminPage() {
                   >
                     <div className="flex items-center gap-2">
                       {isAiProcessing ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
-                      <span className="text-[11px] font-bold uppercase tracking-widest">AI 智译右侧信息</span>
+                      <span className="text-[11px] font-bold uppercase tracking-widest">AI 智译</span>
                     </div>
                   </ShinyButton>
                 )}
@@ -658,29 +664,29 @@ export default function GlobalMapAdminPage() {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-x-10 gap-y-6">
               <div className="space-y-2">
                 <Label className="text-[10px] font-bold uppercase opacity-40">网点名称 (ZH)</Label>
-                <Input value={locationForm.titleZh} onChange={e => setLocationForm({...locationForm, titleZh: e.target.value})} className="h-10 rounded-xl" />
+                <Input value={locationForm.titleZh} onChange={e => setLocationForm({...locationForm, titleZh: e.target.value})} className="h-10 rounded-xl bg-muted/5 border border-slate-200 admin-interface-dark:border-white/10 text-xs font-bold shadow-inner" />
               </div>
               <div className="space-y-2">
                 <Label className="text-[10px] font-bold uppercase opacity-40">NAME (EN)</Label>
-                <Input value={locationForm.titleEn} onChange={e => setLocationForm({...locationForm, titleEn: e.target.value})} className="h-10 rounded-xl border-dashed" />
+                <Input value={locationForm.titleEn} onChange={e => setLocationForm({...locationForm, titleEn: e.target.value})} className="h-10 rounded-xl bg-muted/5 border border-dashed border-primary/20 focus:border-primary/40 text-xs font-bold shadow-inner" />
               </div>
 
               <div className="space-y-2">
                 <Label className="text-[10px] font-bold uppercase opacity-40">详细地址 (ZH)</Label>
-                <Input value={locationForm.addressZh} onChange={e => setLocationForm({...locationForm, addressZh: e.target.value})} className="h-10 rounded-xl" />
+                <Input value={locationForm.addressZh} onChange={e => setLocationForm({...locationForm, addressZh: e.target.value})} className="h-10 rounded-xl bg-muted/5 border border-slate-200 admin-interface-dark:border-white/10 text-xs font-bold shadow-inner" />
               </div>
               <div className="space-y-2">
                 <Label className="text-[10px] font-bold uppercase opacity-40">ADDRESS (EN)</Label>
-                <Input value={locationForm.addressEn} onChange={e => setLocationForm({...locationForm, addressEn: e.target.value})} className="h-10 rounded-xl border-dashed" />
+                <Input value={locationForm.addressEn} onChange={e => setLocationForm({...locationForm, addressEn: e.target.value})} className="h-10 rounded-xl bg-muted/5 border border-dashed border-primary/20 focus:border-primary/40 text-xs font-bold shadow-inner" />
               </div>
 
               <div className="space-y-2">
                 <Label className="text-[10px] font-bold uppercase opacity-40">详细介绍 (ZH)</Label>
-                <Textarea value={locationForm.descZh} onChange={e => setLocationForm({...locationForm, descZh: e.target.value})} className="min-h-[100px] rounded-xl resize-none" />
+                <Textarea value={locationForm.descZh} onChange={e => setLocationForm({...locationForm, descZh: e.target.value})} className="min-h-[100px] rounded-xl bg-muted/5 border border-slate-200 admin-interface-dark:border-white/10 text-xs font-bold shadow-inner resize-none" />
               </div>
               <div className="space-y-2">
                 <Label className="text-[10px] font-bold uppercase opacity-40">DESCRIPTION (EN)</Label>
-                <Textarea value={locationForm.descEn} onChange={e => setLocationForm({...locationForm, descEn: e.target.value})} className="min-h-[100px] rounded-xl border-dashed resize-none" />
+                <Textarea value={locationForm.descEn} onChange={e => setLocationForm({...locationForm, descEn: e.target.value})} className="min-h-[100px] rounded-xl bg-muted/5 border border-dashed border-primary/20 focus:border-primary/40 text-xs font-bold shadow-inner resize-none" />
               </div>
             </div>
 
@@ -688,7 +694,7 @@ export default function GlobalMapAdminPage() {
               <div className="space-y-2">
                 <Label className="text-[10px] font-bold uppercase opacity-40">展示图预览</Label>
                 <div 
-                  className="relative aspect-video rounded-xl bg-muted/10 border-2 border-dashed border-border/20 overflow-hidden flex flex-col items-center justify-center group cursor-pointer hover:bg-muted/20 transition-all"
+                  className="relative aspect-video rounded-xl bg-muted/5 border-2 border-dashed border-slate-200 admin-interface-dark:border-white/10 overflow-hidden flex flex-col items-center justify-center group cursor-pointer hover:bg-primary/[0.02] hover:border-primary/40 transition-all shadow-inner"
                   onClick={() => setIsPickerOpen(true)}
                 >
                   {locationForm.imageUrl ? (
@@ -709,9 +715,9 @@ export default function GlobalMapAdminPage() {
             </div>
           </div>
 
-          <DialogFooter className="bg-muted/10 p-6 flex gap-3 border-t flex-shrink-0">
-            <Button variant="outline" onClick={() => setIsLocationDialogOpen(false)} className="rounded-xl h-11 flex-1 font-bold uppercase text-[10px]">取消编辑</Button>
-            <Button onClick={handleLocationSubmit} className="rounded-xl h-11 flex-1 font-bold uppercase text-[10px]">确认并保存</Button>
+          <DialogFooter className="bg-muted/10 admin-interface-dark:bg-muted/5 p-8 border-t border-border/40 admin-interface-dark:border-border/5 gap-4 flex-shrink-0">
+            <Button variant="ghost" onClick={() => setIsLocationDialogOpen(false)} className="h-14 rounded-2xl flex-1 font-bold uppercase text-[10px] tracking-widest text-muted-foreground/60 admin-interface-dark:text-muted-foreground/40 hover:text-foreground">取消编辑</Button>
+            <Button onClick={handleLocationSubmit} className="h-14 rounded-2xl flex-1 font-bold uppercase text-[10px] tracking-[0.2em] shadow-2xl shadow-primary/20">确认并保存</Button>
           </DialogFooter>
 
           <MediaLibraryDialog 
@@ -731,7 +737,7 @@ export default function GlobalMapAdminPage() {
 
       {/* Delete Confirmation Dialog */}
       <Dialog open={!!deletingId} onOpenChange={(open) => !open && setDeletingId(null)}>
-        <DialogContent className="max-w-md rounded-3xl overflow-hidden border-none shadow-2xl p-0">
+        <DialogContent className="max-w-md rounded-[2.5rem] overflow-hidden border border-slate-200/50 admin-interface-dark:border-white/5 bg-card p-0 shadow-2xl">
           <div className="bg-destructive p-6 text-white flex items-center gap-3">
             <Trash2 className="h-6 w-6" />
             <DialogHeader>
@@ -742,7 +748,7 @@ export default function GlobalMapAdminPage() {
           <div className="p-8 bg-card space-y-4">
             <p className="text-sm text-muted-foreground">您确定要永久删除该全球网点标注吗？这会立即从前台地图中移除。</p>
           </div>
-          <DialogFooter className="bg-muted/20 p-6 flex gap-3 border-t border-border/10">
+          <DialogFooter className="bg-muted/10 p-6 flex gap-3 border-t border-border/10">
             <Button variant="outline" onClick={() => setDeletingId(null)} className="rounded-xl flex-1 font-bold uppercase text-[10px]">取消</Button>
             <Button 
               variant="destructive" 

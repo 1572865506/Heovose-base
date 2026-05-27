@@ -1,19 +1,19 @@
 'use client';
 
 import React, { memo } from 'react';
-import { 
-  DndContext, 
-  closestCenter, 
-  KeyboardSensor, 
-  PointerSensor, 
-  useSensor, 
+import {
+  DndContext,
+  closestCenter,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
   useSensors,
   DragEndEvent
 } from '@dnd-kit/core';
-import { 
-  arrayMove, 
-  SortableContext, 
-  sortableKeyboardCoordinates, 
+import {
+  arrayMove,
+  SortableContext,
+  sortableKeyboardCoordinates,
   rectSortingStrategy,
   useSortable
 } from '@dnd-kit/sortable';
@@ -36,9 +36,9 @@ const isVideoUrl = (url: string) => {
   return /\.(mp4|webm|ogg|mov|m4v)$/i.test(url);
 };
 
-const SortableImageCard = memo(({ url, idx, onDelete, onMove }: { 
-  url: string; 
-  idx: number; 
+const SortableImageCard = memo(({ url, idx, onDelete, onMove }: {
+  url: string;
+  idx: number;
   onDelete: (idx: number) => void;
   onMove: (idx: number, dir: 'left' | 'right') => void;
 }) => {
@@ -68,13 +68,13 @@ const SortableImageCard = memo(({ url, idx, onDelete, onMove }: {
       )}
     >
       {isVideoUrl(url) ? (
-        <video 
-          src={getAssetUrl(url)} 
-          className="w-full h-full object-cover rounded-[2rem] transition-transform duration-1000 group-hover/card:scale-110" 
-          muted 
-          playsInline 
+        <video
+          src={getAssetUrl(url)}
+          className="w-full h-full object-cover rounded-[2rem] transition-transform duration-1000 group-hover/card:scale-110"
+          muted
+          playsInline
           onMouseEnter={(e) => {
-            e.currentTarget.play().catch(() => {});
+            e.currentTarget.play().catch(() => { });
           }}
           onMouseLeave={(e) => {
             e.currentTarget.pause();
@@ -84,7 +84,7 @@ const SortableImageCard = memo(({ url, idx, onDelete, onMove }: {
       ) : (
         <Image src={getAssetUrl(url)} alt={`Gallery ${idx}`} fill className="object-cover transition-transform duration-1000 group-hover/card:scale-110 rounded-[2rem]" unoptimized />
       )}
-      
+
       {/* 底部交互层 (毛玻璃) */}
       <div className="absolute inset-0 bg-slate-900/60 opacity-0 group-hover/card:opacity-100 transition-all duration-500 flex flex-col items-center justify-end pb-6 z-10 rounded-[2rem]">
         <div className="flex gap-2" onClick={e => e.stopPropagation()}>
@@ -204,7 +204,7 @@ const MediaSection = memo(({
                 "text-[10px] font-bold uppercase tracking-widest",
                 galleryUrls.length < 10 ? "text-muted-foreground/50" : "text-muted-foreground/30"
               )}>
-                {galleryUrls.length < 10 ? "添加矩阵资产" : `已达上限 (${galleryUrls.length}/10)`}
+                {galleryUrls.length < 10 ? "添加产品图" : `已达上限 (${galleryUrls.length}/10)`}
               </p>
             </div>
           </div>

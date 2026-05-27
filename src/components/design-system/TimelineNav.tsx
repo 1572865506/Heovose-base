@@ -83,6 +83,8 @@ export const TimelineNav = ({ activeSystem }: { activeSystem: string }) => {
     { id: 'admin-18', title: '18. 权限审计', icon: Settings },
     { id: 'admin-19', title: '19. 异常与撤销', icon: AlertCircle },
     { id: 'admin-20', title: '20. 反馈与缺省', icon: Bell },
+    { id: 'admin-21', title: '21. 弹窗规范', icon: Layout },
+    { id: 'admin-22', title: '22. 表单控件', icon: Terminal },
   ];
 
   const sections = activeSystem === 'frontend' ? frontendSections : adminSections;

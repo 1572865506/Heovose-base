@@ -69,10 +69,36 @@ export function LanguageIntelligence() {
 
       const targetLabel = supportedLocales.find((l: any) => l.code.toLowerCase() === browserLang)?.label || browserLang;
 
+      // Define translation table for language suggestion prompt
+      const localizedPrompts: Record<string, { title: string; description: string; action: string }> = {
+        zh: {
+          title: "语种探测 / Language Detected",
+          description: `检测到您的系统环境为 ${targetLabel}，是否切换？`,
+          action: "切换",
+        },
+        en: {
+          title: "Language Detected",
+          description: `We detected your system language is ${targetLabel}. Switch to ${targetLabel}?`,
+          action: "Switch",
+        },
+        id: {
+          title: "Bahasa Terdeteksi",
+          description: `Bahasa sistem Anda terdeteksi sebagai ${targetLabel}. Ubah ke ${targetLabel}?`,
+          action: "Ubah",
+        },
+        vi: {
+          title: "Phát hiện ngôn ngữ",
+          description: `Phát hiện ngôn ngữ hệ thống của bạn là ${targetLabel}. Chuyển sang ${targetLabel}?`,
+          action: "Chuyển",
+        }
+      };
+
+      const prompt = localizedPrompts[browserLang] || localizedPrompts.en;
+
       // Use a non-intrusive toast notification for the suggestion
       toast({
-        title: "Language Detected / 语种探测",
-        description: `Switch to ${targetLabel}? / 检测到您的系统环境为 ${targetLabel}，是否切换？`,
+        title: prompt.title,
+        description: prompt.description,
         action: (
           <div className="flex gap-2">
             <Button 
@@ -88,7 +114,7 @@ export function LanguageIntelligence() {
                 window.location.href = url.toString();
               }}
             >
-              Switch / 切换
+              {prompt.action}
             </Button>
             <Button 
               size="sm" 

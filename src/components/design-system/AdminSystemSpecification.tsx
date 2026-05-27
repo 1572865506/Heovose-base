@@ -6,6 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { Badge } from '@/components/ui/badge';
+import { Textarea } from '@/components/ui/textarea';
 import {
   Select,
   SelectContent,
@@ -1125,6 +1126,217 @@ export const AdminSystemSpecification = React.memo(() => {
                 Admin 系统的 Toast 建议悬浮于右上角，层级设为 z-[120] 以上。
               </p>
            </div>
+        </div>
+      </section>
+
+      {/* 21. 后台弹窗设计标准 (Dialog Design Specification) */}
+      <section id="admin-21" className="space-y-10 pb-40">
+        <div className="flex items-center gap-4 border-b pb-4 border-primary/10">
+          <div className="h-2 w-10 bg-primary rounded-full" />
+          <h2 className="text-2xl font-headline font-bold uppercase tracking-widest text-primary">21. 后台弹窗设计标准 (Dialog Design Specification)</h2>
+        </div>
+
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-10">
+          {/* 弹窗视觉规范静态演示 */}
+          <div className="lg:col-span-7 bg-white p-8 rounded-[3rem] border border-border/40 shadow-sm space-y-8 flex flex-col">
+            <div className="flex items-center justify-between pb-2 border-b border-border/40">
+              <span className="text-[11px] font-bold text-primary uppercase tracking-widest">弹窗效果骨架预览 (Modal Wireframe)</span>
+              <div className="flex gap-2">
+                <span className="h-3 w-3 rounded-full bg-red-400" />
+                <span className="h-3 w-3 rounded-full bg-yellow-400" />
+                <span className="h-3 w-3 rounded-full bg-green-400" />
+              </div>
+            </div>
+
+            {/* 模拟的弹窗容器 */}
+            <div className="rounded-[2.5rem] border border-slate-200/80 bg-card overflow-hidden shadow-2xl flex flex-col text-slate-900">
+              {/* Header Gradient */}
+              <div className="bg-gradient-to-br from-slate-50 to-slate-100 p-6 text-slate-900 relative overflow-hidden border-b border-slate-200/80 shrink-0">
+                <div className="absolute top-2 right-4 text-slate-400 text-xs font-bold font-mono">CLOSE [X]</div>
+                <div className="relative z-10 flex items-center gap-3">
+                  <div className="h-10 w-10 rounded-xl bg-slate-200/60 flex items-center justify-center border border-slate-300/50 text-slate-700">
+                    <Settings className="h-5 w-5" />
+                  </div>
+                  <div>
+                    <h4 className="text-sm font-black flex items-center gap-2 text-slate-900">
+                      新增业务节点配置
+                    </h4>
+                    <p className="text-[8px] font-bold text-slate-400 uppercase tracking-widest">
+                      Standard Structural Dialog Node Configuration
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Body */}
+              <div className="p-6 bg-card space-y-4">
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-1">
+                    <Label className="text-[9px] font-bold uppercase opacity-60">配置名称 (ZH)</Label>
+                    <Input className="h-12 rounded-xl bg-muted/5 border border-slate-200 text-xs font-bold" placeholder="中文标题" disabled />
+                  </div>
+                  <div className="space-y-1">
+                    <Label className="text-[9px] font-bold uppercase opacity-60">Name (EN)</Label>
+                    <Input className="h-12 rounded-xl bg-muted/5 border border-dashed border-primary/20 text-xs font-bold" placeholder="English Title" disabled />
+                  </div>
+                </div>
+              </div>
+
+              {/* Footer */}
+              <div className="bg-muted/10 p-6 border-t border-border/40 gap-4 flex shrink-0">
+                <Button variant="ghost" className="h-12 rounded-xl flex-1 font-bold uppercase text-[9px] tracking-widest text-muted-foreground/60">
+                  放弃当前配置
+                </Button>
+                <Button className="h-12 rounded-xl flex-1 font-bold uppercase text-[9px] tracking-[0.2em] shadow-lg shadow-primary/20">
+                  确认应用更改
+                </Button>
+              </div>
+            </div>
+
+            <div className="bg-primary/5 p-4 rounded-xl border border-primary/10">
+              <p className="text-[9px] text-muted-foreground leading-relaxed uppercase">
+                弹窗容器统一使用 <code className="font-mono text-primary bg-primary/5 px-1 py-0.5 rounded">rounded-[3rem] p-0 overflow-hidden</code> 圆角及溢出裁剪。
+                头部为 <code className="font-mono text-primary bg-primary/5 px-1 py-0.5 rounded">bg-gradient-to-br from-slate-50 to-slate-100</code> 渐变底色，底部操作栏为 <code className="font-mono text-primary bg-primary/5 px-1 py-0.5 rounded">bg-muted/10 p-8 border-t</code> 偏灰底色。
+              </p>
+            </div>
+          </div>
+
+          {/* 弹窗开发规范与代码 */}
+          <div className="lg:col-span-5 bg-muted/10 p-8 rounded-[3rem] border border-dashed border-border/60 flex flex-col justify-between space-y-6">
+            <div className="space-y-4">
+              <div className="flex items-center gap-2">
+                <ShieldCheck className="h-4 w-4 text-primary" />
+                <span className="text-[11px] font-bold uppercase tracking-wider text-primary">弹窗应用标准规范</span>
+              </div>
+              <ul className="text-[10px] text-muted-foreground uppercase leading-relaxed space-y-2 list-disc pl-4">
+                <li><span className="font-bold text-primary">极致圆角与剪裁</span>：容器使用 <code className="font-mono text-[9px]">rounded-[3rem]</code> 配合 <code className="font-mono text-[9px]">p-0 overflow-hidden</code> 结构。</li>
+                <li><span className="font-bold text-primary">头部渐变与图标</span>：强制包含包含独立主色图标的 <code className="font-mono text-[9px]">Icon Box</code> (圆角 <code className="font-mono text-[9px]">rounded-2xl</code>)。</li>
+                <li><span className="font-bold text-primary">底部偏灰操作栏</span>：强制使用偏灰底色以做视觉隔离，按钮高度与输入框呼应。</li>
+                <li><span className="font-bold text-primary">高度按钮一致性</span>：操作按钮和表单级主按钮高度必须统一，保持交互节奏一致。</li>
+              </ul>
+            </div>
+
+            <div className="bg-slate-900 p-4 rounded-2xl border border-slate-800 text-[9px] font-mono text-slate-300 space-y-2 overflow-x-auto">
+              <p className="text-white font-bold opacity-60">// 核心类名规范</p>
+              <p>Container: "rounded-[3rem] p-0 overflow-hidden bg-card border border-slate-200/50 admin-interface-dark:border-white/5"</p>
+              <p>Header: "bg-gradient-to-br from-slate-50 to-slate-100 admin-interface-dark:from-slate-950 admin-interface-dark:to-slate-900 p-8 border-b"</p>
+              <p>Footer: "bg-muted/10 admin-interface-dark:bg-muted/5 p-8 border-t gap-4 flex-shrink-0"</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* 22. 后台基础表单控件规范 (Form Controls Specification) */}
+      <section id="admin-22" className="space-y-10 pb-40">
+        <div className="flex items-center gap-4 border-b pb-4 border-primary/10">
+          <div className="h-2 w-10 bg-primary rounded-full" />
+          <h2 className="text-2xl font-headline font-bold uppercase tracking-widest text-primary">22. 后台基础表单控件规范 (Form Controls Specification)</h2>
+        </div>
+
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-10">
+          {/* 下拉、输入、文本域 */}
+          <div className="bg-white p-10 rounded-[3rem] border border-border/40 shadow-sm space-y-8">
+            <div className="flex items-center gap-3">
+              <Terminal className="h-4 w-4 text-primary" />
+              <span className="text-[11px] font-bold text-primary uppercase tracking-widest">输入框与下拉选择 (Inputs & Selects)</span>
+            </div>
+
+            <div className="space-y-6">
+              {/* 单行输入框 */}
+              <div className="space-y-2">
+                <Label className="text-[10px] font-bold uppercase text-primary">单行输入框 (Input - Standard h-14)</Label>
+                <Input 
+                  className="h-14 rounded-2xl bg-muted/5 border border-slate-200 admin-interface-dark:border-white/10 text-xs font-bold shadow-inner text-slate-900" 
+                  placeholder="请输入内容..." 
+                />
+              </div>
+
+              {/* 多行输入框 */}
+              <div className="space-y-2">
+                <Label className="text-[10px] font-bold uppercase text-primary">多行输入框 (Textarea - h-32)</Label>
+                <Textarea 
+                  className="min-h-[128px] rounded-2xl bg-muted/5 border border-slate-200 admin-interface-dark:border-white/10 text-xs font-bold shadow-inner p-4 leading-relaxed text-slate-900" 
+                  placeholder="请输入多行文本..." 
+                />
+              </div>
+
+              {/* 下拉框 */}
+              <div className="space-y-2">
+                <Label className="text-[10px] font-bold uppercase text-primary">下拉框 (Select - Standard h-14)</Label>
+                <Select defaultValue="val-1">
+                  <SelectTrigger className="h-14 rounded-2xl bg-muted/5 border border-slate-200 admin-interface-dark:border-white/10 text-xs font-bold shadow-inner px-4 text-left text-slate-900">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent className="rounded-2xl shadow-2xl border-none bg-white">
+                    <SelectItem value="val-1" className="text-xs font-bold text-slate-950">标准配置节点 A (Default)</SelectItem>
+                    <SelectItem value="val-2" className="text-xs font-bold text-slate-950">高级配置节点 B</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+          </div>
+
+          {/* 按钮、单选、多选 */}
+          <div className="bg-white p-10 rounded-[3rem] border border-border/40 shadow-sm space-y-8 flex flex-col justify-between">
+            <div className="space-y-8">
+              <div className="flex items-center gap-3">
+                <MousePointer2 className="h-4 w-4 text-primary" />
+                <span className="text-[11px] font-bold text-primary uppercase tracking-widest">单选、多选与统一高度按钮 (Radios, Checkboxes & Buttons)</span>
+              </div>
+
+              {/* 单选框与多选框并排 */}
+              <div className="grid grid-cols-2 gap-6 p-6 bg-muted/5 rounded-2xl border border-border/40">
+                {/* 单选组 */}
+                <div className="space-y-4">
+                  <Label className="text-[9px] font-bold uppercase text-primary tracking-widest">单选框组合 (Radio Group)</Label>
+                  <div className="flex flex-col gap-3">
+                    <div className="flex items-center space-x-2">
+                      <input type="radio" name="demo-radio" id="dr-1" defaultChecked className="h-4 w-4 accent-primary" />
+                      <Label htmlFor="dr-1" className="text-xs font-bold uppercase cursor-pointer text-slate-700">选项 01</Label>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <input type="radio" name="demo-radio" id="dr-2" className="h-4 w-4 accent-primary" />
+                      <Label htmlFor="dr-2" className="text-xs font-bold uppercase cursor-pointer text-slate-700">选项 02</Label>
+                    </div>
+                  </div>
+                </div>
+
+                {/* 多选组 */}
+                <div className="space-y-4">
+                  <Label className="text-[9px] font-bold uppercase text-primary tracking-widest">多选框组合 (Checkboxes)</Label>
+                  <div className="flex flex-col gap-3">
+                    <div className="flex items-center space-x-2">
+                      <input type="checkbox" id="dc-1" defaultChecked className="h-4 w-4 accent-primary rounded" />
+                      <Label htmlFor="dc-1" className="text-xs font-bold uppercase cursor-pointer text-slate-700">同步资源库</Label>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <input type="checkbox" id="dc-2" className="h-4 w-4 accent-primary rounded" />
+                      <Label htmlFor="dc-2" className="text-xs font-bold uppercase cursor-pointer text-slate-700">级联更新子类</Label>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* 统一高度按钮展示 */}
+              <div className="space-y-4">
+                <Label className="text-[10px] font-bold uppercase text-primary">规范按钮尺寸 (Standard Button h-14 / rounded-2xl)</Label>
+                <div className="flex gap-4">
+                  <Button variant="ghost" className="h-14 rounded-2xl flex-1 font-bold uppercase text-[10px] tracking-widest text-muted-foreground/60 border border-slate-200 admin-interface-dark:border-white/10">
+                    次要/取消 (Ghost)
+                  </Button>
+                  <Button className="h-14 rounded-2xl flex-1 font-bold uppercase text-[10px] tracking-[0.2em] shadow-lg shadow-primary/20">
+                    主要/确认 (Primary)
+                  </Button>
+                </div>
+              </div>
+            </div>
+
+            <div className="bg-primary/5 p-4 rounded-xl border border-primary/10 mt-6">
+              <p className="text-[9px] text-muted-foreground leading-relaxed uppercase">
+                后台表单控件核心指导建议：主表单编辑区域（如单行输入、下拉选择、底部核心按钮）统一锁死 <code className="font-mono text-primary bg-primary/5 px-1 py-0.5 rounded">h-14 rounded-2xl</code>，以大圆角与适当高度建立极致的高级工业质感。
+              </p>
+            </div>
+          </div>
         </div>
       </section>
     </div>

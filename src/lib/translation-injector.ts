@@ -42,7 +42,8 @@ export function injectTranslations(locale: string, translations: Array<Localized
       parsedContent = parsedContent.content;
     }
 
-    const value = parsedContent?.[locale] || '';
+    // 动态提取目标语言，若缺失则依次使用 en, zh 或任何非空语种文案作为兜底
+    const value = parsedContent?.[locale] || parsedContent?.en || parsedContent?.zh || Object.values(parsedContent || {}).find(v => typeof v === 'string' && !!v) || '';
     
     // 构造缓存里的翻译条目格式，仅保留该特定语言的值，符合 `/api/localizedStrings` GET 裁剪响应的结构
     dataMap.set(item.id, {

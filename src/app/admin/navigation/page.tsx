@@ -112,13 +112,6 @@ export default function NavigationSettingsPage() {
         </div>
         <div className="flex items-center gap-3">
           <Button 
-            variant="outline" 
-            className="h-12 rounded-2xl px-6 font-bold uppercase tracking-widest text-[10px] border-border/60"
-            onClick={() => remoteSettings && setSettings(remoteSettings)}
-          >
-            <RefreshCw className="mr-2 h-4 w-4" /> 放弃修改
-          </Button>
-          <Button 
             className="h-12 rounded-2xl px-8 font-bold uppercase tracking-widest text-[10px] shadow-lg shadow-primary/20"
             onClick={handleSave}
             disabled={isSaving}

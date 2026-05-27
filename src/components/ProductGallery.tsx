@@ -27,17 +27,16 @@ import { injectTranslations } from '@/lib/translation-injector';
 
 function GalleryCard({ 
   product, 
-  locale,
+  requestQuoteText, 
   playingProductId,
   setPlayingProductId
 }: { 
   product: any, 
-  locale: Locale,
+  requestQuoteText: string, 
   playingProductId: string | null,
   setPlayingProductId: (id: string | null) => void
 }) {
   const { openInquiry } = useInquiry();
-  const { t: tr } = useTranslations(locale);
 
   return (
     <div className="group relative flex flex-col h-full max-w-[400px] mx-auto w-full bg-white rounded-[2.5rem] shadow-sm hover:shadow-xl hover:-translate-y-2 transition-all duration-500 border border-border/5 overflow-hidden transform-gpu">
@@ -95,7 +94,7 @@ function GalleryCard({
           className="rounded-full px-5 text-[10px] font-bold uppercase tracking-wider border-primary/20 text-primary hover:bg-primary hover:text-white transition-all duration-500 gap-2 flex-1"
         >
           <MessageSquare className="h-3 w-3" />
-          {tr('products_requestQuote')}
+          {requestQuoteText}
         </Button>
         <Link 
           href={`/products/${product.id}`}
@@ -140,23 +139,35 @@ export function ProductGallery({ locale }: { locale: Locale }) {
 
 
 
-  // Unified translation helper with multi-level fallback
+  // 1.1 将 flat array translations 转换为以 id 为 key 的 Map，避免 linear O(N) find 并在建立时完成一次性反序列化
+  const translationsMap = useMemo(() => {
+    const map = new Map<string, any>();
+    if (Array.isArray(allTranslations)) {
+      allTranslations.forEach((item: any) => {
+        const key = (item.id || item.key || '').toString().trim().toLowerCase();
+        if (key) {
+          let content = item.content || {};
+          if (typeof content === 'string') {
+            try { content = JSON.parse(content); } catch { content = {}; }
+          }
+          map.set(key, content);
+        }
+      });
+    }
+    return map;
+  }, [allTranslations]);
+
+  // Unified translation helper with O(1) hashmap mapping
   const getT = useCallback((id: string) => {
-    if (!allTranslations) return id;
-    const entry = allTranslations.find((item: any) => item.id === id || item.key === id);
-    if (!entry || !entry.content) return id;
+    const key = (id || '').toString().trim().toLowerCase();
+    const content = translationsMap.get(key);
+    if (!content) return id;
 
-    const content = typeof entry.content === 'string' ? JSON.parse(entry.content) : entry.content;
     const defaultLang = langSettings?.defaultLanguage || 'en';
-    const allLocales: Locale[] = ['en', 'zh', 'id', 'vi'];
-
     if (content[locale]) return content[locale];
     if (content[defaultLang]) return content[defaultLang];
-    for (const l of allLocales) {
-      if (content[l]) return content[l];
-    }
-    return id;
-  }, [allTranslations, locale, langSettings]);
+    return content.en || content.zh || id;
+  }, [translationsMap, locale, langSettings]);
 
   // Helper for dynamic section configuration
   const getSectionConfig = useCallback((prefix: string, fallbackKey: string) => {
@@ -311,7 +322,7 @@ export function ProductGallery({ locale }: { locale: Locale }) {
               <CarouselItem key={product.id} className="pl-8 shrink-0 basis-auto w-[290px] xs:w-[320px] sm:w-[350px] md:w-[380px] lg:w-[400px]">
                 <GalleryCard 
                   product={product} 
-                  locale={locale} 
+                  requestQuoteText={tr('products_requestQuote')}
                   playingProductId={playingProductId}
                   setPlayingProductId={setPlayingProductId}
                 />

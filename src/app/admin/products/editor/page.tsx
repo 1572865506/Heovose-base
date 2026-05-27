@@ -74,7 +74,7 @@ const generateUniqueId = (prefix: string) => {
 function robustJsonParse(rawStr: string) {
   let jsonStr = (String(rawStr) || '').trim();
   if (jsonStr.includes('```')) jsonStr = jsonStr.replace(/```json\n?|```/g, '').trim();
-  
+
   // 1. 常规清洗与解析
   const clean = (s: string) => s.replace(/"\s*[：:]\s*"/g, '": "').replace(/([glv]_[a-zA-Z0-9_]+)\s*[：:]\s*/gi, '"$1": ');
   try {
@@ -94,12 +94,12 @@ function robustJsonParse(rawStr: string) {
       while ((match = regex.exec(jsonStr)) !== null) {
         pairs[match[1]] = match[2];
       }
-      
+
       if (Object.keys(pairs).length > 0) {
         console.log(`✅ [SmartTranslate] 正则抠取成功，抓取到 ${Object.keys(pairs).length} 个字段`);
         return pairs;
       }
-      
+
       if (!jsonStr.startsWith('{') && !jsonStr.startsWith('[')) return jsonStr;
       return null;
     }
@@ -172,9 +172,9 @@ function ProductEditorContent() {
         if (!id) return { zh: '', en: '' };
         const t = translations?.find((tr: any) => tr.id === id);
         const content = (t?.content as any) || {};
-        return { 
-          zh: content.zh || (t as any)?.zh || '', 
-          en: content.en || (t as any)?.en || '' 
+        return {
+          zh: content.zh || (t as any)?.zh || '',
+          en: content.en || (t as any)?.en || ''
         };
       };
       let rawGroups = product.specGroups;
@@ -270,7 +270,7 @@ function ProductEditorContent() {
       toast({ variant: "destructive", title: "无法保存", description: "请检查 ID 或分类是否完整" });
       return;
     }
-    
+
     setIsAiProcessing(true);
     try {
       // 1. 整理本产品全部的多语言文案，准备一并提交进行哈希去重
@@ -294,9 +294,9 @@ function ProductEditorContent() {
         body: JSON.stringify({ items: translationsToSync })
       });
       if (!bulkRes.ok) throw new Error("批量同步翻译数据失败");
-      
+
       const { mapping } = await bulkRes.json() as { mapping: Record<string, string> };
-      
+
       const getHashId = (zh: string, en: string) => {
         const key = `${(zh || '').trim()}::${(en || '').trim()}`;
         return mapping[key] || '';
@@ -317,11 +317,11 @@ function ProductEditorContent() {
       const res = await fetch(`/api/products/${formData.id}`, {
         method: 'PUT', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          ...formData, 
-          nameTextId: nameHashId, 
-          descriptionTextId: descHashId, 
+          ...formData,
+          nameTextId: nameHashId,
+          descriptionTextId: descHashId,
           specGroups: sGroups,
-          categoryId: formData.categoryId, 
+          categoryId: formData.categoryId,
           galleryImageUrls: formData.galleryUrls,
           updatedAt: lastUpdatedAt
         })
@@ -330,10 +330,10 @@ function ProductEditorContent() {
       if (!res.ok) {
         if (res.status === 409) {
           const errorData = await res.json();
-          toast({ 
-            variant: "destructive", 
-            title: "保存失败 (版本冲突)", 
-            description: errorData.message || "该产品已被其他人修改，请备份您的编辑内容并刷新页面后再试" 
+          toast({
+            variant: "destructive",
+            title: "保存失败 (版本冲突)",
+            description: errorData.message || "该产品已被其他人修改，请备份您的编辑内容并刷新页面后再试"
           });
           return;
         }
@@ -346,9 +346,9 @@ function ProductEditorContent() {
 
       toast({ title: "同步成功", description: "产品数据已持久化至云端" });
       router.push('/admin/products');
-    } catch (e: any) { 
+    } catch (e: any) {
       console.error("Save Error:", e);
-      toast({ variant: "destructive", title: "保存失败", description: e.message }); 
+      toast({ variant: "destructive", title: "保存失败", description: e.message });
     } finally {
       setIsAiProcessing(false);
     }
@@ -386,12 +386,12 @@ function ProductEditorContent() {
         descRes = apiDescRes;
       }
 
-      setFormData(prev => ({ 
-        ...prev, 
-        nameEn: localNameEn || nameRes?.en || prev.nameEn, 
-        descEn: localDescEn || descRes?.en || prev.descEn 
+      setFormData(prev => ({
+        ...prev,
+        nameEn: localNameEn || nameRes?.en || prev.nameEn,
+        descEn: localDescEn || descRes?.en || prev.descEn
       }));
-      
+
       if (!nameNeedsTranslate && !descNeedsTranslate) {
         toast({ title: "无需翻译", description: "名称和描述的英文内容已存在" });
       } else if (localNameEn || localDescEn) {
@@ -399,17 +399,17 @@ function ProductEditorContent() {
       }
     } catch (e: any) {
       console.error("Translate Error:", e);
-      toast({ 
-        variant: "destructive", 
-        title: "智译失败", 
-        description: e.message || "请求 AI 翻译时发生未知错误" 
+      toast({
+        variant: "destructive",
+        title: "智译失败",
+        description: e.message || "请求 AI 翻译时发生未知错误"
       });
     } finally { setIsAiProcessing(false); }
   };
 
   const handleAiTranslateDetails = async () => {
     if (!aiConfig?.isEnabled || !formData.localizedDetails.zh) return;
-    
+
     // 如果目标语言已有内容，则跳过
     const existing = String(formData.localizedDetails[targetDetailsLang] || '').replace(/<[^>]*>/g, '').trim();
     if (existing) {
@@ -423,17 +423,17 @@ function ProductEditorContent() {
         text: formData.localizedDetails.zh, sourceLang: 'zh', targetLangs: [targetDetailsLang], taskType: 'rich-text'
       });
       if (res && res[targetDetailsLang]) {
-        handleUpdateField('localizedDetails', { 
-          ...formData.localizedDetails, 
-          [targetDetailsLang]: res[targetDetailsLang] 
+        handleUpdateField('localizedDetails', {
+          ...formData.localizedDetails,
+          [targetDetailsLang]: res[targetDetailsLang]
         });
       }
     } catch (e: any) {
       console.error("Translate Details Error:", e);
-      toast({ 
-        variant: "destructive", 
-        title: "详情智译失败", 
-        description: e.message 
+      toast({
+        variant: "destructive",
+        title: "详情智译失败",
+        description: e.message
       });
     } finally { setIsAiProcessing(false); }
   };
@@ -474,12 +474,12 @@ function ProductEditorContent() {
         if (callLabelApi) apiTask.label = item.labelZh;
         if (callValueApi) apiTask.value = item.valueZh;
 
-        const res = await smartTranslate({ 
-          text: JSON.stringify(apiTask), 
+        const res = await smartTranslate({
+          text: JSON.stringify(apiTask),
           targetLangs: ['en'],
           taskType: 'spec'
         });
-        
+
         if (res?.en) {
           const result = robustJsonParse(res.en);
           if (typeof result === 'object' && result !== null) {
@@ -500,10 +500,10 @@ function ProductEditorContent() {
           ...nextGroups[targetGIdx],
           items: [...nextGroups[targetGIdx].items]
         };
-        nextGroups[targetGIdx].items[targetIIdx] = { 
-          ...nextGroups[targetGIdx].items[targetIIdx], 
-          labelEn: needsLabel ? (labelEn || item.labelEn) : item.labelEn, 
-          valueEn: needsValue ? (valueEn || item.valueEn) : item.valueEn 
+        nextGroups[targetGIdx].items[targetIIdx] = {
+          ...nextGroups[targetGIdx].items[targetIIdx],
+          labelEn: needsLabel ? (labelEn || item.labelEn) : item.labelEn,
+          valueEn: needsValue ? (valueEn || item.valueEn) : item.valueEn
         };
         return { ...prev, specGroups: nextGroups };
       });
@@ -513,10 +513,10 @@ function ProductEditorContent() {
       }
     } catch (e: any) {
       console.error("Translate Spec Item Error:", e);
-      toast({ 
-        variant: "destructive", 
-        title: "规格项翻译失败", 
-        description: e.message 
+      toast({
+        variant: "destructive",
+        title: "规格项翻译失败",
+        description: e.message
       });
     } finally { setProcessingItems(prev => { const n = new Set(prev); n.delete(key); return n; }); }
   };
@@ -526,7 +526,7 @@ function ProductEditorContent() {
   const handleAiTranslateAllSpecs = async () => {
     if (!aiConfig?.isEnabled || formData.specGroups.length === 0) return;
     setIsAiProcessing(true);
-    
+
     let matchCount = 0;
     try {
       const taskMap: Record<string, string> = {};
@@ -537,7 +537,7 @@ function ProductEditorContent() {
           if (i.valueZh && !i.valueEn) taskMap[`v_${g.uid}_${i.uid}`] = i.valueZh;
         });
       });
-      
+
       const totalTasks = Object.keys(taskMap).length;
       if (totalTasks === 0) {
         alert('没有需要翻译的空字段');
@@ -562,12 +562,12 @@ function ProductEditorContent() {
       let apiResults: Record<string, string> = {};
 
       if (totalApiTasks > 0) {
-        const res = await smartTranslate({ 
-          text: JSON.stringify(apiTaskMap), 
+        const res = await smartTranslate({
+          text: JSON.stringify(apiTaskMap),
           targetLangs: ['en'],
           taskType: 'spec'
         });
-        
+
         if (res?.en) {
           apiResults = robustJsonParse(res.en);
           if (typeof apiResults !== 'object' || apiResults === null) {
@@ -577,7 +577,7 @@ function ProductEditorContent() {
       }
 
       const results = { ...localResults, ...apiResults };
-      
+
       setFormData(prev => {
         const next = [...prev.specGroups];
         Object.keys(results).forEach(rawKey => {
@@ -588,12 +588,12 @@ function ProductEditorContent() {
           const key = rawKey.trim().replace(/[：:]/g, '');
           const parts = key.split('_');
           const type = parts[0].toLowerCase();
-          
+
           if (type === 'g') {
             const groupUid = parts[1];
             const gIdx = next.findIndex(g => g.uid === groupUid);
             if (gIdx !== -1) {
-              next[gIdx] = { ...next[gIdx], titleEn: cleanVal }; 
+              next[gIdx] = { ...next[gIdx], titleEn: cleanVal };
               matchCount++;
             }
           } else if (type === 'l' || type === 'v') {
@@ -604,10 +604,10 @@ function ProductEditorContent() {
               next[gIdx] = { ...next[gIdx], items: [...next[gIdx].items] };
               const iIdx = next[gIdx].items.findIndex(i => i.uid === itemUid);
               if (iIdx !== -1) {
-                if (type === 'l') { 
+                if (type === 'l') {
                   next[gIdx].items[iIdx] = { ...next[gIdx].items[iIdx], labelEn: cleanVal };
                   matchCount++;
-                } else if (type === 'v') { 
+                } else if (type === 'v') {
                   next[gIdx].items[iIdx] = { ...next[gIdx].items[iIdx], valueEn: cleanVal };
                   matchCount++;
                 }
@@ -628,24 +628,24 @@ function ProductEditorContent() {
   const handleSaveTemplate = async (mode: 'create' | 'overwrite', name: string, id: string) => {
     const tId = mode === 'create' ? `tpl_${Date.now()}` : id;
     const tName = mode === 'create' ? name : (specTemplates?.find((t: any) => t.id === id)?.name || name);
-    const cleanGroups = formData.specGroups.map(g => ({ 
-      titleEn: g.titleEn, 
-      titleZh: g.titleZh, 
-      items: g.items.map(i => ({ labelEn: i.labelEn, labelZh: i.labelZh, valueEn: i.valueEn, valueZh: i.valueZh })) 
+    const cleanGroups = formData.specGroups.map(g => ({
+      titleEn: g.titleEn,
+      titleZh: g.titleZh,
+      items: g.items.map(i => ({ labelEn: i.labelEn, labelZh: i.labelZh, valueEn: i.valueEn, valueZh: i.valueZh }))
     }));
-    await fetch(`/api/specTemplates/${tId}`, { 
-      method: 'PUT', 
-      headers: { 'Content-Type': 'application/json' }, 
-      body: JSON.stringify({ id: tId, name: tName, specGroups: cleanGroups }) 
+    await fetch(`/api/specTemplates/${tId}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id: tId, name: tName, specGroups: cleanGroups })
     });
     mutateTemplates();
     alert("模板已同步至云端规格库");
   };
 
   const handleDeleteTemplate = async (id: string, name: string) => {
-    if (confirm(`确定要彻底删除模板 "${name}" 吗？`)) { 
-      await fetch(`/api/specTemplates/${id}`, { method: 'DELETE' }); 
-      mutateTemplates(); 
+    if (confirm(`确定要彻底删除模板 "${name}" 吗？`)) {
+      await fetch(`/api/specTemplates/${id}`, { method: 'DELETE' });
+      mutateTemplates();
     }
   };
 
@@ -661,7 +661,7 @@ function ProductEditorContent() {
           <div className="flex justify-center">
             <TabsList className="bg-card/60 backdrop-blur-md p-1.5 h-16 rounded-[1.5rem] border border-border/30 shadow-sm inline-flex items-center gap-1">
               <TabsTrigger value="basic" className="rounded-2xl h-12 px-8 text-[11px] font-bold uppercase tracking-[0.15em] data-[state=active]:bg-foreground data-[state=active]:text-background hover:bg-muted/40 hover:text-foreground"><Settings className="h-4 w-4 mr-2" /> 基础配置</TabsTrigger>
-              <TabsTrigger value="media" className="rounded-2xl h-12 px-8 text-[11px] font-bold uppercase tracking-[0.15em] data-[state=active]:bg-foreground data-[state=active]:text-background hover:bg-muted/40 hover:text-foreground"><ImageIcon className="h-4 w-4 mr-2" /> 媒体矩阵</TabsTrigger>
+              <TabsTrigger value="media" className="rounded-2xl h-12 px-8 text-[11px] font-bold uppercase tracking-[0.15em] data-[state=active]:bg-foreground data-[state=active]:text-background hover:bg-muted/40 hover:text-foreground"><ImageIcon className="h-4 w-4 mr-2" /> 产品图</TabsTrigger>
               <TabsTrigger value="specs" className="rounded-2xl h-12 px-8 text-[11px] font-bold uppercase tracking-[0.15em] data-[state=active]:bg-foreground data-[state=active]:text-background hover:bg-muted/40 hover:text-foreground"><TableProperties className="h-4 w-4 mr-2" /> 规格参数</TabsTrigger>
               <TabsTrigger value="details" className="rounded-2xl h-12 px-8 text-[11px] font-bold uppercase tracking-[0.15em] data-[state=active]:bg-foreground data-[state=active]:text-background hover:bg-muted/40 hover:text-foreground"><Library className="h-4 w-4 mr-2" /> 详细介绍</TabsTrigger>
             </TabsList>

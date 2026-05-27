@@ -134,6 +134,7 @@ export default async function RootLayout({
   return (
     <html lang={locale} suppressHydrationWarning>
       <head>
+        <link rel="icon" href={(publicSettings as any).site?.favicon ? getAssetUrl((publicSettings as any).site.favicon) : '/favicon.ico'} />
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
         <link rel="dns-prefetch" href="https://picsum.photos" />

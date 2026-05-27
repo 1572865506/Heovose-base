@@ -44,7 +44,7 @@ const StorySection = memo(({
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 border-b border-border/20 pb-6">
         <div className="space-y-1">
           <h3 className="text-xl font-headline font-bold text-foreground flex items-center gap-3">
-            全息图文叙述
+            图文介绍编辑器
           </h3>
         </div>
         <div className="flex items-center gap-3 bg-muted/20 p-2 rounded-2xl border border-border/30">
@@ -67,7 +67,7 @@ const StorySection = memo(({
             >
               <div className="flex items-center gap-2">
                 <Sparkles className="h-3.5 w-3.5" />
-                <span className="text-[10px] font-bold uppercase tracking-widest">深度智译同步</span>
+                <span className="text-[10px] font-bold uppercase tracking-widest">AI智译</span>
               </div>
             </ShinyButton>
           )}

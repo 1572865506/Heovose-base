@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { 
+import {
   Select,
   SelectContent,
   SelectItem,
@@ -16,12 +16,12 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Switch } from '@/components/ui/switch';
-import { 
-  Home, 
-  Save, 
-  Sparkles, 
-  Loader2, 
-  Image as ImageIcon, 
+import {
+  Home,
+  Save,
+  Sparkles,
+  Loader2,
+  Image as ImageIcon,
   Film,
   Video,
   Plus,
@@ -38,7 +38,7 @@ import {
   Square
 } from 'lucide-react';
 import {
-  DndContext, 
+  DndContext,
   closestCenter,
   KeyboardSensor,
   PointerSensor,
@@ -109,8 +109,8 @@ function SortableBentoItem({ item, onEdit, onDelete }: { item: any, onEdit: () =
   };
 
   return (
-    <div 
-      ref={setNodeRef} 
+    <div
+      ref={setNodeRef}
       style={style}
       className={cn(
         "group relative bg-card/70 backdrop-blur-md rounded-[2rem] border border-border/60 p-3 hover:border-primary/40 hover:bg-card transition-all duration-500 shadow-sm",
@@ -125,10 +125,10 @@ function SortableBentoItem({ item, onEdit, onDelete }: { item: any, onEdit: () =
             <ImageIcon className="h-8 w-8 opacity-20" />
           </div>
         )}
-        
+
         {/* Drag Handle Overlay */}
-        <div 
-          {...attributes} 
+        <div
+          {...attributes}
           {...listeners}
           className="absolute inset-0 flex items-center justify-center bg-black/0 hover:bg-black/5 opacity-0 group-hover:opacity-100 transition-all cursor-grab active:cursor-grabbing z-20"
         >
@@ -141,7 +141,7 @@ function SortableBentoItem({ item, onEdit, onDelete }: { item: any, onEdit: () =
         <div className="absolute top-2 left-2 w-6 h-6 rounded-full bg-card/95 backdrop-blur-md border border-border flex items-center justify-center text-[9px] font-bold text-primary shadow-sm z-10">
           {item.order}
         </div>
-        
+
         {/* Size Badge */}
         <div className="absolute top-2 right-2 bg-slate-900/90 backdrop-blur-sm text-white text-[8px] font-black px-2 py-1 rounded-lg shadow-lg z-10 flex items-center gap-1.5 border border-white/10 uppercase tracking-tighter">
           {item.gridSize === 'wide' ? (
@@ -155,7 +155,7 @@ function SortableBentoItem({ item, onEdit, onDelete }: { item: any, onEdit: () =
           )}
         </div>
       </div>
-      
+
       <div className="space-y-1.5 px-1">
         <div className="flex items-center justify-between">
           <p className="text-[9px] font-bold text-primary/60 uppercase tracking-widest truncate flex-1">{item.tagZh || '无标签'}</p>
@@ -212,7 +212,7 @@ export default function AdminHomePage() {
     const newIndex = bentoItems.findIndex((item: any) => item.id === over.id);
 
     const newOrder = arrayMove(bentoItems, oldIndex, newIndex);
-    
+
     // Sync with backend using the new batch reorder API
     try {
       const res = await fetch('/api/bentoItems/reorder', {
@@ -286,13 +286,13 @@ export default function AdminHomePage() {
   // 核心数据同步逻辑 - 增加稳定性保护
   useEffect(() => {
     if (!translations || isInitialized) return;
-    
+
     // 只有当所有核心数据都尝试加载过（无论成功与否）才开始同步
-    const coreDataLoaded = (heroData !== null || isHeroLoading === false) && 
-                           (videoData !== null || isVideoLoading === false) &&
-                           (bentoData !== null || isBentoLoading === false) &&
-                           (galleryData !== null || isGalleryLoading === false);
-    
+    const coreDataLoaded = (heroData !== null || isHeroLoading === false) &&
+      (videoData !== null || isVideoLoading === false) &&
+      (bentoData !== null || isBentoLoading === false) &&
+      (galleryData !== null || isGalleryLoading === false);
+
     if (!coreDataLoaded) return;
 
     const getTrans = (id: string, lang: string) => {
@@ -304,7 +304,7 @@ export default function AdminHomePage() {
 
     setFormData((prev: any) => {
       const updates = { ...prev };
-      
+
       // 1. Hero Sync
       if (heroData) {
         updates.heroHeadlineZh = getTrans('hero_slide_default_headline', 'zh') || heroData.heroHeadlineZh || '';
@@ -327,7 +327,7 @@ export default function AdminHomePage() {
         updates.heroWholesaleLinkUrl = heroData.heroWholesaleLinkUrl || '';
         updates.heroProjectLinkType = heroData.heroProjectLinkType || 'category';
         updates.heroProjectLinkUrl = heroData.heroProjectLinkUrl || '';
-        
+
         if (Array.isArray(heroData.heroSlides)) {
           const sortedSlides = [...heroData.heroSlides].sort((a, b) => (a.priority || 0) - (b.priority || 0));
           updates.heroSlides = sortedSlides.map((slide: any) => {
@@ -378,7 +378,7 @@ export default function AdminHomePage() {
 
   const handleSave = async () => {
     setIsSaving(true);
-    
+
     try {
       // 1. Prepare sequential save requests
       const heroRes = await fetch('/api/homepageContent/hero', {
@@ -424,7 +424,7 @@ export default function AdminHomePage() {
           bentoSubtitleEn: formData.bentoSubtitleEn,
         }),
       });
-      
+
       const galleryRes = await fetch('/api/homepageContent/gallery', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
@@ -458,7 +458,7 @@ export default function AdminHomePage() {
       ];
 
       const transResults = await Promise.all(
-        translationUpdates.map(update => 
+        translationUpdates.map(update =>
           fetch(`/api/localizedStrings/${encodeURIComponent(update.id)}`, {
             method: 'PUT', // The API handles upsert internally, but let's be safe
             headers: { 'Content-Type': 'application/json' },
@@ -494,23 +494,23 @@ export default function AdminHomePage() {
       mutateTrans();
 
       if (transFailed.length > 0) {
-        toast({ 
-          title: "配置已发布", 
+        toast({
+          title: "配置已发布",
           description: `核心配置已更新，但有 ${transFailed.length} 个翻译词条未能同步`,
           className: "bg-amber-50 border-amber-200 text-amber-800 rounded-2xl"
         });
       } else {
-        toast({ 
-          title: "发布成功", 
+        toast({
+          title: "发布成功",
           description: "首页配置与翻译资产已全量同步",
           className: "bg-green-50 border-green-200 text-green-800 rounded-2xl"
         });
       }
     } catch (error: any) {
       console.error('Save error:', error);
-      toast({ 
-        variant: "destructive", 
-        title: "发布失败", 
+      toast({
+        variant: "destructive",
+        title: "发布失败",
         description: error.message || "无法连接到服务器",
         className: "rounded-2xl"
       });
@@ -528,7 +528,7 @@ export default function AdminHomePage() {
     setIsAiProcessing(true);
     try {
       const updates: any = { ...localFormData };
-      
+
       for (const field of fields) {
         // 如果中文为空，或者英文已有内容且不是占位符，则跳过
         if (!localFormData[field.source]) continue;
@@ -608,16 +608,16 @@ export default function AdminHomePage() {
     const newSlides = [...formData.heroSlides];
     const targetIndex = direction === 'up' ? index - 1 : index + 1;
     if (targetIndex < 0 || targetIndex >= newSlides.length) return;
-    
+
     const temp = newSlides[index];
     newSlides[index] = newSlides[targetIndex];
     newSlides[targetIndex] = temp;
-    
+
     const updatedSlides = newSlides.map((slide: any, idx: number) => ({
       ...slide,
       priority: idx
     }));
-    
+
     setFormData({ ...formData, heroSlides: updatedSlides });
   };
 
@@ -642,7 +642,7 @@ export default function AdminHomePage() {
   return (
     <div className="space-y-6 animate-in fade-in duration-500 pb-20">
       <AiGradientDef />
-      
+
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 relative z-10">
         <div className="space-y-1">
           <h2 className="text-2xl font-headline font-bold text-foreground flex items-center gap-4">
@@ -653,7 +653,7 @@ export default function AdminHomePage() {
           </h2>
           <p className="text-xs text-muted-foreground font-bold uppercase tracking-[0.2em] pl-14">Management / Content / Home Visuals</p>
         </div>
-        
+
         <Button onClick={handleSave} disabled={isSaving} className="rounded-2xl h-12 px-8 gap-2.5 font-bold uppercase tracking-widest text-[10px] shadow-lg shadow-primary/20 hover:scale-105 transition-all">
           {isSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
           发布配置变更
@@ -662,26 +662,26 @@ export default function AdminHomePage() {
 
       <Tabs defaultValue="hero" className="w-full">
         <TabsList className="bg-card/50 backdrop-blur-xl border border-border/40 p-1 rounded-2xl h-14 mb-8">
-          <TabsTrigger 
-            value="hero" 
+          <TabsTrigger
+            value="hero"
             className="rounded-xl px-8 h-12 data-[state=active]:bg-primary data-[state=active]:text-white font-bold text-[10px] uppercase tracking-widest transition-all gap-2 text-muted-foreground hover:text-foreground"
           >
             <ImageIcon className="h-4 w-4" /> 英雄视觉 (Hero)
           </TabsTrigger>
-          <TabsTrigger 
-            value="video" 
+          <TabsTrigger
+            value="video"
             className="rounded-xl px-8 h-12 data-[state=active]:bg-primary data-[state=active]:text-white font-bold text-[10px] uppercase tracking-widest transition-all gap-2 text-muted-foreground hover:text-foreground"
           >
             <Film className="h-4 w-4" /> 品牌故事 (Video)
           </TabsTrigger>
-          <TabsTrigger 
-            value="bento" 
+          <TabsTrigger
+            value="bento"
             className="rounded-xl px-8 h-12 data-[state=active]:bg-primary data-[state=active]:text-white font-bold text-[10px] uppercase tracking-widest transition-all gap-2 text-muted-foreground hover:text-foreground"
           >
             <LayoutGrid className="h-4 w-4" /> 产品布局 (Bento)
           </TabsTrigger>
-          <TabsTrigger 
-            value="gallery" 
+          <TabsTrigger
+            value="gallery"
             className="rounded-xl px-8 h-12 data-[state=active]:bg-primary data-[state=active]:text-white font-bold text-[10px] uppercase tracking-widest transition-all gap-2 text-muted-foreground hover:text-foreground"
           >
             <Layers className="h-4 w-4" /> 产品轮播 (Gallery)
@@ -697,17 +697,17 @@ export default function AdminHomePage() {
               <div className="p-5 rounded-2xl bg-muted/5 border border-dashed space-y-4">
                 <span className="text-[10px] font-bold uppercase text-primary">批发入口按钮及描述 (ZH / EN)</span>
                 <div className="grid grid-cols-2 gap-3">
-                  <Input value={formData.heroWholesaleButtonZh} onChange={e => setFormData({...formData, heroWholesaleButtonZh: e.target.value})} placeholder="按钮中文" className="h-10 rounded-xl" />
-                  <Input value={formData.heroWholesaleButtonEn} onChange={e => setFormData({...formData, heroWholesaleButtonEn: e.target.value})} placeholder="Button English" className="h-10 rounded-xl border-dashed" />
+                  <Input value={formData.heroWholesaleButtonZh} onChange={e => setFormData({ ...formData, heroWholesaleButtonZh: e.target.value })} placeholder="按钮中文" className="h-10 rounded-xl" />
+                  <Input value={formData.heroWholesaleButtonEn} onChange={e => setFormData({ ...formData, heroWholesaleButtonEn: e.target.value })} placeholder="Button English" className="h-10 rounded-xl border-dashed" />
                 </div>
                 <div className="grid grid-cols-2 gap-3">
-                  <Input value={formData.heroWholesaleDescriptionZh} onChange={e => setFormData({...formData, heroWholesaleDescriptionZh: e.target.value})} placeholder="描述中文" className="h-10 rounded-xl" />
-                  <Input value={formData.heroWholesaleDescriptionEn} onChange={e => setFormData({...formData, heroWholesaleDescriptionEn: e.target.value})} placeholder="Desc English" className="h-10 rounded-xl border-dashed" />
+                  <Input value={formData.heroWholesaleDescriptionZh} onChange={e => setFormData({ ...formData, heroWholesaleDescriptionZh: e.target.value })} placeholder="描述中文" className="h-10 rounded-xl" />
+                  <Input value={formData.heroWholesaleDescriptionEn} onChange={e => setFormData({ ...formData, heroWholesaleDescriptionEn: e.target.value })} placeholder="Desc English" className="h-10 rounded-xl border-dashed" />
                 </div>
                 <div className="flex gap-4">
                   <div className="flex-1 space-y-3">
-                    <Select 
-                      value={formData.heroWholesaleLinkType || 'category'} 
+                    <Select
+                      value={formData.heroWholesaleLinkType || 'category'}
                       onValueChange={v => {
                         if (v === 'category') {
                           setFormData({ ...formData, heroWholesaleLinkType: v, heroWholesaleLinkUrl: '' });
@@ -726,14 +726,14 @@ export default function AdminHomePage() {
                     </Select>
 
                     {formData.heroWholesaleLinkType === 'custom' ? (
-                      <Input 
-                        value={formData.heroWholesaleLinkUrl || ''} 
-                        onChange={e => setFormData({ ...formData, heroWholesaleLinkUrl: e.target.value })} 
-                        placeholder="自定义链接 (如 /about)" 
-                        className="h-9 rounded-xl text-xs font-mono" 
+                      <Input
+                        value={formData.heroWholesaleLinkUrl || ''}
+                        onChange={e => setFormData({ ...formData, heroWholesaleLinkUrl: e.target.value })}
+                        placeholder="自定义链接 (如 /about)"
+                        className="h-9 rounded-xl text-xs font-mono"
                       />
                     ) : (
-                      <Select value={formData.heroWholesaleCategoryId} onValueChange={v => setFormData({...formData, heroWholesaleCategoryId: v})}>
+                      <Select value={formData.heroWholesaleCategoryId} onValueChange={v => setFormData({ ...formData, heroWholesaleCategoryId: v })}>
                         <SelectTrigger className="h-9 rounded-xl"><SelectValue placeholder="选择跳转分类" /></SelectTrigger>
                         <SelectContent className="rounded-xl">
                           <SelectItem value="none">全部分类</SelectItem>
@@ -742,14 +742,14 @@ export default function AdminHomePage() {
                       </Select>
                     )}
 
-                    <Input 
-                      value={formData.heroWholesaleBg} 
-                      onChange={e => setFormData({...formData, heroWholesaleBg: e.target.value})} 
-                      placeholder="背景图 URL" 
-                      className="h-9 rounded-xl text-xs font-mono" 
+                    <Input
+                      value={formData.heroWholesaleBg}
+                      onChange={e => setFormData({ ...formData, heroWholesaleBg: e.target.value })}
+                      placeholder="背景图 URL"
+                      className="h-9 rounded-xl text-xs font-mono"
                     />
                   </div>
-                  <div 
+                  <div
                     className="w-24 h-24 rounded-xl bg-muted/20 border-2 border-dashed border-primary/20 flex flex-col items-center justify-center gap-1 cursor-pointer hover:bg-primary/5 hover:border-primary transition-all overflow-hidden relative group/btn"
                     onClick={() => setPickerConfig({ open: true, type: 'wholesale', slideIndex: null })}
                   >
@@ -770,17 +770,17 @@ export default function AdminHomePage() {
               <div className="p-5 rounded-2xl bg-muted/5 border border-dashed space-y-4">
                 <span className="text-[10px] font-bold uppercase text-primary">项目入口按钮及描述 (ZH / EN)</span>
                 <div className="grid grid-cols-2 gap-3">
-                  <Input value={formData.heroProjectButtonZh} onChange={e => setFormData({...formData, heroProjectButtonZh: e.target.value})} placeholder="按钮中文" className="h-10 rounded-xl" />
-                  <Input value={formData.heroProjectButtonEn} onChange={e => setFormData({...formData, heroProjectButtonEn: e.target.value})} placeholder="Button English" className="h-10 rounded-xl border-dashed" />
+                  <Input value={formData.heroProjectButtonZh} onChange={e => setFormData({ ...formData, heroProjectButtonZh: e.target.value })} placeholder="按钮中文" className="h-10 rounded-xl" />
+                  <Input value={formData.heroProjectButtonEn} onChange={e => setFormData({ ...formData, heroProjectButtonEn: e.target.value })} placeholder="Button English" className="h-10 rounded-xl border-dashed" />
                 </div>
                 <div className="grid grid-cols-2 gap-3">
-                  <Input value={formData.heroProjectDescriptionZh} onChange={e => setFormData({...formData, heroProjectDescriptionZh: e.target.value})} placeholder="描述中文" className="h-10 rounded-xl" />
-                  <Input value={formData.heroProjectDescriptionEn} onChange={e => setFormData({...formData, heroProjectDescriptionEn: e.target.value})} placeholder="Desc English" className="h-10 rounded-xl border-dashed" />
+                  <Input value={formData.heroProjectDescriptionZh} onChange={e => setFormData({ ...formData, heroProjectDescriptionZh: e.target.value })} placeholder="描述中文" className="h-10 rounded-xl" />
+                  <Input value={formData.heroProjectDescriptionEn} onChange={e => setFormData({ ...formData, heroProjectDescriptionEn: e.target.value })} placeholder="Desc English" className="h-10 rounded-xl border-dashed" />
                 </div>
                 <div className="flex gap-4">
                   <div className="flex-1 space-y-3">
-                    <Select 
-                      value={formData.heroProjectLinkType || 'category'} 
+                    <Select
+                      value={formData.heroProjectLinkType || 'category'}
                       onValueChange={v => {
                         if (v === 'category') {
                           setFormData({ ...formData, heroProjectLinkType: v, heroProjectLinkUrl: '' });
@@ -799,14 +799,14 @@ export default function AdminHomePage() {
                     </Select>
 
                     {formData.heroProjectLinkType === 'custom' ? (
-                      <Input 
-                        value={formData.heroProjectLinkUrl || ''} 
-                        onChange={e => setFormData({ ...formData, heroProjectLinkUrl: e.target.value })} 
-                        placeholder="自定义链接 (如 /about)" 
-                        className="h-9 rounded-xl text-xs font-mono" 
+                      <Input
+                        value={formData.heroProjectLinkUrl || ''}
+                        onChange={e => setFormData({ ...formData, heroProjectLinkUrl: e.target.value })}
+                        placeholder="自定义链接 (如 /about)"
+                        className="h-9 rounded-xl text-xs font-mono"
                       />
                     ) : (
-                      <Select value={formData.heroProjectCategoryId} onValueChange={v => setFormData({...formData, heroProjectCategoryId: v})}>
+                      <Select value={formData.heroProjectCategoryId} onValueChange={v => setFormData({ ...formData, heroProjectCategoryId: v })}>
                         <SelectTrigger className="h-9 rounded-xl"><SelectValue placeholder="选择跳转分类" /></SelectTrigger>
                         <SelectContent className="rounded-xl">
                           <SelectItem value="none">全部分类</SelectItem>
@@ -815,14 +815,14 @@ export default function AdminHomePage() {
                       </Select>
                     )}
 
-                    <Input 
-                      value={formData.heroProjectBg} 
-                      onChange={e => setFormData({...formData, heroProjectBg: e.target.value})} 
-                      placeholder="背景图 URL" 
-                      className="h-9 rounded-xl text-xs font-mono" 
+                    <Input
+                      value={formData.heroProjectBg}
+                      onChange={e => setFormData({ ...formData, heroProjectBg: e.target.value })}
+                      placeholder="背景图 URL"
+                      className="h-9 rounded-xl text-xs font-mono"
                     />
                   </div>
-                  <div 
+                  <div
                     className="w-24 h-24 rounded-xl bg-muted/20 border-2 border-dashed border-primary/20 flex flex-col items-center justify-center gap-1 cursor-pointer hover:bg-primary/5 hover:border-primary transition-all overflow-hidden relative group/btn"
                     onClick={() => setPickerConfig({ open: true, type: 'project', slideIndex: null })}
                   >
@@ -851,17 +851,17 @@ export default function AdminHomePage() {
                 </h3>
                 <p className="text-[10px] text-muted-foreground">设置一张或多张背景卡片。多张卡片将自动启用轮播效果。</p>
               </div>
-               <div className="flex gap-3">
+              <div className="flex gap-3">
                 {aiConfig?.isEnabled && (
-                  <ShinyButton 
+                  <ShinyButton
                     onClick={async () => {
                       const updates = await handleTranslate([
-                        {source: 'heroWholesaleButtonZh', targetKey: 'heroWholesaleButtonEn'},
-                        {source: 'heroWholesaleDescriptionZh', targetKey: 'heroWholesaleDescriptionEn'},
-                        {source: 'heroProjectButtonZh', targetKey: 'heroProjectButtonEn'},
-                        {source: 'heroProjectDescriptionZh', targetKey: 'heroProjectDescriptionEn'}
+                        { source: 'heroWholesaleButtonZh', targetKey: 'heroWholesaleButtonEn' },
+                        { source: 'heroWholesaleDescriptionZh', targetKey: 'heroWholesaleDescriptionEn' },
+                        { source: 'heroProjectButtonZh', targetKey: 'heroProjectButtonEn' },
+                        { source: 'heroProjectDescriptionZh', targetKey: 'heroProjectDescriptionEn' }
                       ]);
-                      if(updates) setFormData({...formData, ...updates});
+                      if (updates) setFormData({ ...formData, ...updates });
                     }}
                     disabled={isAiProcessing}
                     className="h-9 px-4"
@@ -869,7 +869,7 @@ export default function AdminHomePage() {
                   >
                     <div className="flex items-center gap-2">
                       {isAiProcessing ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Sparkles className="h-3.5 w-3.5" />}
-                      <span className="text-[10px] font-bold uppercase tracking-widest">AI 智译全部内容</span>
+                      <span className="text-[10px] font-bold uppercase tracking-widest">AI 智译</span>
                     </div>
                   </ShinyButton>
                 )}
@@ -886,7 +886,7 @@ export default function AdminHomePage() {
                     <div className="lg:col-span-4 grid grid-cols-2 gap-4">
                       <div className="space-y-2">
                         <Label className="text-[10px] font-bold uppercase opacity-40 font-semibold">PC端海报 (16:9)</Label>
-                        <div 
+                        <div
                           className="relative aspect-[16/9] rounded-xl overflow-hidden cursor-pointer group/img border-2 border-transparent hover:border-primary transition-all shadow-md bg-muted/20"
                           onClick={() => setPickerConfig({ open: true, type: 'slide', slideIndex: index, field: 'bgImage' } as any)}
                         >
@@ -903,9 +903,9 @@ export default function AdminHomePage() {
                             <ImageIcon className="text-white h-5 w-5" />
                           </div>
                         </div>
-                        <Button 
-                          variant="outline" 
-                          size="sm" 
+                        <Button
+                          variant="outline"
+                          size="sm"
                           className="w-full rounded-lg h-7 text-[8px] font-bold"
                           onClick={() => setPickerConfig({ open: true, type: 'slide', slideIndex: index, field: 'bgImage' } as any)}
                         >
@@ -915,7 +915,7 @@ export default function AdminHomePage() {
 
                       <div className="space-y-2">
                         <Label className="text-[10px] font-bold uppercase opacity-40 font-semibold">移动端海报 (可选)</Label>
-                        <div 
+                        <div
                           className="relative aspect-[16/9] rounded-xl overflow-hidden cursor-pointer group/img border-2 border-transparent hover:border-primary transition-all shadow-md bg-muted/20"
                           onClick={() => setPickerConfig({ open: true, type: 'slide', slideIndex: index, field: 'mobileBgImage' } as any)}
                         >
@@ -937,17 +937,17 @@ export default function AdminHomePage() {
                         </div>
                         {slide.mobileBgImage ? (
                           <div className="flex gap-2">
-                            <Button 
-                              variant="outline" 
-                              size="sm" 
+                            <Button
+                              variant="outline"
+                              size="sm"
                               className="flex-1 rounded-lg h-7 text-[8px] font-bold"
                               onClick={() => setPickerConfig({ open: true, type: 'slide', slideIndex: index, field: 'mobileBgImage' } as any)}
                             >
                               更改背景
                             </Button>
-                            <Button 
-                              variant="destructive" 
-                              size="sm" 
+                            <Button
+                              variant="destructive"
+                              size="sm"
                               className="rounded-lg h-7 px-3 text-[8px] font-bold"
                               onClick={() => updateSlide(index, { mobileBgImage: '' })}
                             >
@@ -955,9 +955,9 @@ export default function AdminHomePage() {
                             </Button>
                           </div>
                         ) : (
-                          <Button 
-                            variant="outline" 
-                            size="sm" 
+                          <Button
+                            variant="outline"
+                            size="sm"
                             className="w-full rounded-lg h-7 text-[8px] font-bold"
                             onClick={() => setPickerConfig({ open: true, type: 'slide', slideIndex: index, field: 'mobileBgImage' } as any)}
                           >
@@ -971,18 +971,18 @@ export default function AdminHomePage() {
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div className="space-y-2">
                           <Label className="text-[10px] font-bold uppercase opacity-40">主标题 (ZH)</Label>
-                          <Input 
-                            value={slide.headlineZh} 
-                            onChange={e => updateSlide(index, { headlineZh: e.target.value })} 
-                            className="rounded-xl h-9" 
+                          <Input
+                            value={slide.headlineZh}
+                            onChange={e => updateSlide(index, { headlineZh: e.target.value })}
+                            className="rounded-xl h-9"
                           />
                         </div>
                         <div className="space-y-2">
                           <Label className="text-[10px] font-bold uppercase opacity-40">HEADLINE (EN)</Label>
-                          <Input 
-                            value={slide.headlineEn} 
-                            onChange={e => updateSlide(index, { headlineEn: e.target.value })} 
-                            className="rounded-xl border-dashed h-9" 
+                          <Input
+                            value={slide.headlineEn}
+                            onChange={e => updateSlide(index, { headlineEn: e.target.value })}
+                            className="rounded-xl border-dashed h-9"
                           />
                         </div>
                       </div>
@@ -990,18 +990,18 @@ export default function AdminHomePage() {
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div className="space-y-2">
                           <Label className="text-[10px] font-bold uppercase opacity-40">副标题 (ZH)</Label>
-                          <Input 
-                            value={slide.subheadlineZh} 
-                            onChange={e => updateSlide(index, { subheadlineZh: e.target.value })} 
-                            className="rounded-xl h-9" 
+                          <Input
+                            value={slide.subheadlineZh}
+                            onChange={e => updateSlide(index, { subheadlineZh: e.target.value })}
+                            className="rounded-xl h-9"
                           />
                         </div>
                         <div className="space-y-2">
                           <Label className="text-[10px] font-bold uppercase opacity-40">SUBHEADLINE (EN)</Label>
-                          <Input 
-                            value={slide.subheadlineEn} 
-                            onChange={e => updateSlide(index, { subheadlineEn: e.target.value })} 
-                            className="rounded-xl border-dashed h-9" 
+                          <Input
+                            value={slide.subheadlineEn}
+                            onChange={e => updateSlide(index, { subheadlineEn: e.target.value })}
+                            className="rounded-xl border-dashed h-9"
                           />
                         </div>
                       </div>
@@ -1010,8 +1010,8 @@ export default function AdminHomePage() {
                       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-2 border-t border-dashed border-border/60">
                         <div className="space-y-1">
                           <Label className="text-[9px] font-bold uppercase opacity-40">链接类型</Label>
-                          <Select 
-                            value={slide.linkType || 'custom'} 
+                          <Select
+                            value={slide.linkType || 'custom'}
                             onValueChange={v => {
                               if (v === 'category') {
                                 updateSlide(index, { linkType: v, linkUrl: '' });
@@ -1030,17 +1030,17 @@ export default function AdminHomePage() {
                           </Select>
                         </div>
 
-                        { (slide.linkType === 'category') ? (
+                        {(slide.linkType === 'category') ? (
                           <div className="space-y-1 md:col-span-2">
                             <Label className="text-[9px] font-bold uppercase opacity-40">关联产品分类</Label>
-                            <Select 
-                              value={slide.categoryId || undefined} 
+                            <Select
+                              value={slide.categoryId || undefined}
                               onValueChange={v => {
                                 const cat = categories?.find((c: any) => c.id === v);
                                 if (cat) {
-                                  updateSlide(index, { 
-                                    categoryId: v, 
-                                    linkUrl: `products?category=${encodeURIComponent(cat.slug || cat.id)}` 
+                                  updateSlide(index, {
+                                    categoryId: v,
+                                    linkUrl: `products?category=${encodeURIComponent(cat.slug || cat.id)}`
                                   });
                                 }
                               }}
@@ -1060,11 +1060,11 @@ export default function AdminHomePage() {
                         ) : (
                           <div className="space-y-1 md:col-span-2">
                             <Label className="text-[9px] font-bold uppercase opacity-40">自定义链接</Label>
-                            <Input 
-                              value={slide.linkUrl || ''} 
-                              onChange={e => updateSlide(index, { linkUrl: e.target.value })} 
+                            <Input
+                              value={slide.linkUrl || ''}
+                              onChange={e => updateSlide(index, { linkUrl: e.target.value })}
                               placeholder="如：/about, products?line=wholesale 等"
-                              className="h-8 rounded-lg text-[10px] font-mono" 
+                              className="h-8 rounded-lg text-[10px] font-mono"
                             />
                           </div>
                         )}
@@ -1072,27 +1072,27 @@ export default function AdminHomePage() {
                     </div>
 
                     <div className="lg:col-span-1 flex flex-row lg:flex-col items-center justify-center gap-2 border-t lg:border-t-0 lg:border-l pt-4 lg:pt-0 lg:pl-4 border-dashed">
-                      <Button 
-                        variant="ghost" 
-                        size="icon" 
+                      <Button
+                        variant="ghost"
+                        size="icon"
                         className="h-8 w-8 rounded-full text-muted-foreground hover:text-primary"
                         onClick={() => moveSlide(index, 'up')}
                         disabled={index === 0}
                       >
                         <ArrowUp className="h-4 w-4" />
                       </Button>
-                      <Button 
-                        variant="ghost" 
-                        size="icon" 
+                      <Button
+                        variant="ghost"
+                        size="icon"
                         className="h-8 w-8 rounded-full text-muted-foreground hover:text-primary"
                         onClick={() => moveSlide(index, 'down')}
                         disabled={index === formData.heroSlides.length - 1}
                       >
                         <ArrowDown className="h-4 w-4" />
                       </Button>
-                      <Button 
-                        variant="ghost" 
-                        size="icon" 
+                      <Button
+                        variant="ghost"
+                        size="icon"
                         className="h-8 w-8 rounded-full text-destructive/40 hover:text-destructive hover:bg-destructive/5"
                         onClick={() => removeSlide(index)}
                         disabled={formData.heroSlides.length <= 1}
@@ -1125,9 +1125,9 @@ export default function AdminHomePage() {
                   <p className="text-[10px] text-muted-foreground font-medium">开启后前台将显示全屏视频品牌板块。</p>
                 </div>
               </div>
-              <Switch 
-                checked={formData.isVideoEnabled} 
-                onCheckedChange={v => setFormData((prev: any) => ({...prev, isVideoEnabled: v}))} 
+              <Switch
+                checked={formData.isVideoEnabled}
+                onCheckedChange={v => setFormData((prev: any) => ({ ...prev, isVideoEnabled: v }))}
               />
             </div>
 
@@ -1137,25 +1137,25 @@ export default function AdminHomePage() {
                   <h3 className="text-xs font-bold text-primary uppercase tracking-widest flex items-center gap-2">
                     <Film className="h-4 w-4" /> 品牌故事滚动文案配置
                   </h3>
-                   {aiConfig?.isEnabled && (
-                    <ShinyButton 
-                    onClick={async () => {
-                      const res = await smartTranslate({
-                        text: formData.videoTitleZh,
-                        targetLangs: ['en'],
-                        taskType: 'text'
-                      });
-                      if(res.en) setFormData((prev: any) => ({...prev, videoTitleEn: res.en}));
-                      
-                      const res2 = await smartTranslate({
-                        text: formData.videoSubtitleZh,
-                        targetLangs: ['en'],
-                        taskType: 'text'
-                      });
-                      if(res2.en) setFormData((prev: any) => ({...prev, videoSubtitleEn: res2.en}));
-                      
-                      toast({ title: "视频文案智译完成" });
-                    }}
+                  {aiConfig?.isEnabled && (
+                    <ShinyButton
+                      onClick={async () => {
+                        const res = await smartTranslate({
+                          text: formData.videoTitleZh,
+                          targetLangs: ['en'],
+                          taskType: 'text'
+                        });
+                        if (res.en) setFormData((prev: any) => ({ ...prev, videoTitleEn: res.en }));
+
+                        const res2 = await smartTranslate({
+                          text: formData.videoSubtitleZh,
+                          targetLangs: ['en'],
+                          taskType: 'text'
+                        });
+                        if (res2.en) setFormData((prev: any) => ({ ...prev, videoSubtitleEn: res2.en }));
+
+                        toast({ title: "视频文案智译完成" });
+                      }}
                       disabled={isAiProcessing}
                       className="h-9 px-4"
                       shape="capsule"
@@ -1170,24 +1170,24 @@ export default function AdminHomePage() {
                 <div className="grid grid-cols-2 gap-10">
                   <div className="space-y-4">
                     <Label className="text-[10px] font-bold uppercase opacity-40">滚动第一段 (ZH)</Label>
-                    <Input value={formData.videoTitleZh} onChange={e => setFormData({...formData, videoTitleZh: e.target.value})} className="h-11 rounded-xl" />
+                    <Input value={formData.videoTitleZh} onChange={e => setFormData({ ...formData, videoTitleZh: e.target.value })} className="h-11 rounded-xl" />
                     <Label className="text-[10px] font-bold uppercase opacity-40">滚动第二段 (ZH)</Label>
-                    <Input value={formData.videoSubtitleZh} onChange={e => setFormData({...formData, videoSubtitleZh: e.target.value})} className="h-11 rounded-xl" />
+                    <Input value={formData.videoSubtitleZh} onChange={e => setFormData({ ...formData, videoSubtitleZh: e.target.value })} className="h-11 rounded-xl" />
                   </div>
                   <div className="space-y-4 border-l pl-10 border-dashed">
                     <Label className="text-[10px] font-bold uppercase opacity-40">FIRST SEGMENT (EN)</Label>
-                    <Input value={formData.videoTitleEn} onChange={e => setFormData({...formData, videoTitleEn: e.target.value})} className="h-11 rounded-xl border-dashed" />
+                    <Input value={formData.videoTitleEn} onChange={e => setFormData({ ...formData, videoTitleEn: e.target.value })} className="h-11 rounded-xl border-dashed" />
                     <Label className="text-[10px] font-bold uppercase opacity-40">SECOND SEGMENT (EN)</Label>
-                    <Input value={formData.videoSubtitleEn} onChange={e => setFormData({...formData, videoSubtitleEn: e.target.value})} className="h-11 rounded-xl border-dashed" />
+                    <Input value={formData.videoSubtitleEn} onChange={e => setFormData({ ...formData, videoSubtitleEn: e.target.value })} className="h-11 rounded-xl border-dashed" />
                   </div>
                 </div>
 
                 <div className="pt-8 border-t border-dashed space-y-4">
                   <div className="flex items-center justify-between">
                     <Label className="text-[10px] font-bold uppercase opacity-40">视频资源地址 (Video Source URL)</Label>
-                    <Button 
-                      variant="ghost" 
-                      size="sm" 
+                    <Button
+                      variant="ghost"
+                      size="sm"
                       className="h-8 px-3 rounded-xl text-[10px] font-bold uppercase text-primary hover:bg-primary/5"
                       onClick={() => setPickerConfig({ open: true, type: 'video', slideIndex: null })}
                     >
@@ -1195,11 +1195,11 @@ export default function AdminHomePage() {
                     </Button>
                   </div>
                   <div className="flex gap-4">
-                    <Input 
-                      value={formData.videoUrl} 
-                      onChange={e => setFormData({...formData, videoUrl: e.target.value})} 
-                      placeholder="https://... 或 /video/..." 
-                      className="h-11 rounded-xl font-mono text-xs" 
+                    <Input
+                      value={formData.videoUrl}
+                      onChange={e => setFormData({ ...formData, videoUrl: e.target.value })}
+                      placeholder="https://... 或 /video/..."
+                      className="h-11 rounded-xl font-mono text-xs"
                     />
                     <div className="w-20 h-11 rounded-xl bg-black flex items-center justify-center overflow-hidden shrink-0 border border-white/10 shadow-lg">
                       <Video className="h-4 w-4 text-white/20" />
@@ -1212,7 +1212,7 @@ export default function AdminHomePage() {
 
             {!formData.isVideoEnabled && (
               <div className="py-12 text-center bg-muted/5 border-2 border-dashed rounded-2xl">
-                 <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest opacity-40">视频模块已禁用，保存后前台将不再显示</p>
+                <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest opacity-40">视频模块已禁用，保存后前台将不再显示</p>
               </div>
             )}
           </div>
@@ -1233,39 +1233,39 @@ export default function AdminHomePage() {
                 <div className="space-y-3">
                   <Label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">板块主标题 (Main Title)</Label>
                   <div className="grid grid-cols-1 gap-3">
-                    <Input 
-                      value={formData.bentoTitleZh} 
-                      onChange={e => setFormData({...formData, bentoTitleZh: e.target.value})} 
-                      placeholder="例如：产品中心" 
+                    <Input
+                      value={formData.bentoTitleZh}
+                      onChange={e => setFormData({ ...formData, bentoTitleZh: e.target.value })}
+                      placeholder="例如：产品中心"
                       className="h-12 rounded-2xl bg-muted/20 border-border focus:bg-background transition-all"
                     />
                     <div className="relative group/input">
-                      <Input 
-                        value={formData.bentoTitleEn} 
-                        onChange={e => setFormData({...formData, bentoTitleEn: e.target.value})} 
-                        placeholder="e.g. OUR PORTFOLIO" 
+                      <Input
+                        value={formData.bentoTitleEn}
+                        onChange={e => setFormData({ ...formData, bentoTitleEn: e.target.value })}
+                        placeholder="e.g. OUR PORTFOLIO"
                         className="h-12 rounded-2xl border-dashed bg-muted/10 border-border/80 pr-12 focus:bg-background/50 transition-all"
                       />
                       {aiConfig?.isEnabled && (
                         <div className="absolute right-1.5 top-1/2 -translate-y-1/2">
-                          <ShinyButton 
-                    onClick={async () => {
-                      const res = await smartTranslate({
-                        text: formData.bentoTitleZh,
-                        targetLangs: ['en'],
-                        taskType: 'text'
-                      });
-                      if(res.en) setFormData((prev: any) => ({...prev, bentoTitleEn: res.en}));
-                      
-                      const res2 = await smartTranslate({
-                        text: formData.bentoSubtitleZh,
-                        targetLangs: ['en'],
-                        taskType: 'text'
-                      });
-                      if(res2.en) setFormData((prev: any) => ({...prev, bentoSubtitleEn: res2.en}));
-                      
-                      toast({ title: "Bento 文案智译完成" });
-                    }}
+                          <ShinyButton
+                            onClick={async () => {
+                              const res = await smartTranslate({
+                                text: formData.bentoTitleZh,
+                                targetLangs: ['en'],
+                                taskType: 'text'
+                              });
+                              if (res.en) setFormData((prev: any) => ({ ...prev, bentoTitleEn: res.en }));
+
+                              const res2 = await smartTranslate({
+                                text: formData.bentoSubtitleZh,
+                                targetLangs: ['en'],
+                                taskType: 'text'
+                              });
+                              if (res2.en) setFormData((prev: any) => ({ ...prev, bentoSubtitleEn: res2.en }));
+
+                              toast({ title: "Bento 文案智译完成" });
+                            }}
                             disabled={isAiProcessing}
                             className="w-9 h-9 p-0 flex items-center justify-center shadow-lg shadow-primary/5"
                             shape="capsule"
@@ -1287,22 +1287,22 @@ export default function AdminHomePage() {
                 <div className="space-y-3">
                   <Label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">板块副标题 (Subtitle)</Label>
                   <div className="grid grid-cols-1 gap-3">
-                    <Input 
-                      value={formData.bentoSubtitleZh} 
-                      onChange={e => setFormData({...formData, bentoSubtitleZh: e.target.value})} 
-                      placeholder="例如：为性能与可靠性而生" 
+                    <Input
+                      value={formData.bentoSubtitleZh}
+                      onChange={e => setFormData({ ...formData, bentoSubtitleZh: e.target.value })}
+                      placeholder="例如：为性能与可靠性而生"
                       className="h-12 rounded-2xl bg-muted/20 border-border focus:bg-background transition-all"
                     />
                     <div className="relative group/input">
-                      <Input 
-                        value={formData.bentoSubtitleEn} 
-                        onChange={e => setFormData({...formData, bentoSubtitleEn: e.target.value})} 
-                        placeholder="e.g. Engineered for Performance" 
+                      <Input
+                        value={formData.bentoSubtitleEn}
+                        onChange={e => setFormData({ ...formData, bentoSubtitleEn: e.target.value })}
+                        placeholder="e.g. Engineered for Performance"
                         className="h-12 rounded-2xl border-dashed bg-muted/10 border-border/80 pr-12 focus:bg-background/50 transition-all"
                       />
                       {aiConfig?.isEnabled && (
                         <div className="absolute right-1.5 top-1/2 -translate-y-1/2">
-                          <ShinyButton 
+                          <ShinyButton
                             onClick={async () => {
                               const res = await smartTranslate({
                                 text: formData.bentoSubtitleZh,
@@ -1333,32 +1333,32 @@ export default function AdminHomePage() {
               <h3 className="text-xs font-bold text-primary uppercase tracking-widest flex items-center gap-2">
                 <LayoutGrid className="h-4 w-4" /> 首页格位内容管理 (Grid Items)
               </h3>
-              <Button 
-                onClick={() => setBentoDialog({ open: true, item: { titleZh: '', titleEn: '', tagZh: '', tagEn: '', imageUrl: '', linkUrl: '', gridSize: 'small', order: (bentoItems?.length || 0) + 1 } })} 
-                size="sm" 
+              <Button
+                onClick={() => setBentoDialog({ open: true, item: { titleZh: '', titleEn: '', tagZh: '', tagEn: '', imageUrl: '', linkUrl: '', gridSize: 'small', order: (bentoItems?.length || 0) + 1 } })}
+                size="sm"
                 className="rounded-xl h-9 px-4 gap-2 text-[10px] font-bold uppercase tracking-wider shadow-md"
               >
                 <Plus className="h-3.5 w-3.5" /> 添加新格位
               </Button>
             </div>
 
-            <DndContext 
+            <DndContext
               sensors={sensors}
               collisionDetection={closestCenter}
               onDragEnd={handleDragEnd}
             >
-              <SortableContext 
+              <SortableContext
                 items={bentoItems?.map((i: any) => i.id) || []}
                 strategy={rectSortingStrategy}
               >
                 <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
                   {bentoItems?.map((item: any) => (
-                    <SortableBentoItem 
-                      key={item.id} 
-                      item={item} 
+                    <SortableBentoItem
+                      key={item.id}
+                      item={item}
                       onEdit={() => setBentoDialog({ open: true, item })}
                       onDelete={async () => {
-                        if(confirm('确定删除此格位吗？')) {
+                        if (confirm('确定删除此格位吗？')) {
                           await fetch(`/api/bentoItems/${item.id}`, { method: 'DELETE' });
                           mutateBentoItems();
                           toast({ title: "已删除格位" });
@@ -1392,7 +1392,7 @@ export default function AdminHomePage() {
             <div className="flex items-center justify-between border-b pb-6">
               <div className="space-y-1">
                 <h3 className="text-sm font-bold text-primary uppercase tracking-widest flex items-center gap-2">
-                  <Layers className="h-4 w-4" /> 产品轮播板块 (Gallery Carousel) 配置
+                  <Layers className="h-4 w-4" /> 产品轮播板块配置
                 </h3>
                 <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Configure titles for the smooth product carousel section</p>
               </div>
@@ -1403,22 +1403,22 @@ export default function AdminHomePage() {
                 <div className="space-y-3">
                   <Label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">板块主标题 (Main Title)</Label>
                   <div className="grid grid-cols-1 gap-3">
-                    <Input 
-                      value={formData.galleryTitleZh} 
-                      onChange={e => setFormData({...formData, galleryTitleZh: e.target.value})} 
-                      placeholder="例如：精选产品" 
+                    <Input
+                      value={formData.galleryTitleZh}
+                      onChange={e => setFormData({ ...formData, galleryTitleZh: e.target.value })}
+                      placeholder="例如：精选产品"
                       className="h-12 rounded-2xl bg-muted/20 border-border focus:bg-background transition-all"
                     />
                     <div className="relative group/input">
-                      <Input 
-                        value={formData.galleryTitleEn} 
-                        onChange={e => setFormData({...formData, galleryTitleEn: e.target.value})} 
-                        placeholder="e.g. FEATURED PRODUCTS" 
+                      <Input
+                        value={formData.galleryTitleEn}
+                        onChange={e => setFormData({ ...formData, galleryTitleEn: e.target.value })}
+                        placeholder="e.g. FEATURED PRODUCTS"
                         className="h-12 rounded-2xl border-dashed bg-muted/10 border-border/80 pr-12 focus:bg-background/50 transition-all"
                       />
                       {aiConfig?.isEnabled && (
                         <div className="absolute right-1.5 top-1/2 -translate-y-1/2">
-                          <ShinyButton 
+                          <ShinyButton
                             onClick={async () => {
                               const res = await smartTranslate({
                                 text: formData.galleryTitleZh,
@@ -1448,22 +1448,22 @@ export default function AdminHomePage() {
                 <div className="space-y-3">
                   <Label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">板块副标题 (Subtitle)</Label>
                   <div className="grid grid-cols-1 gap-3">
-                    <Input 
-                      value={formData.gallerySubtitleZh} 
-                      onChange={e => setFormData({...formData, gallerySubtitleZh: e.target.value})} 
-                      placeholder="例如：于细节处见创新与精密" 
+                    <Input
+                      value={formData.gallerySubtitleZh}
+                      onChange={e => setFormData({ ...formData, gallerySubtitleZh: e.target.value })}
+                      placeholder="例如：于细节处见创新与精密"
                       className="h-12 rounded-2xl bg-muted/20 border-border focus:bg-background transition-all"
                     />
                     <div className="relative group/input">
-                      <Input 
-                        value={formData.gallerySubtitleEn} 
-                        onChange={e => setFormData({...formData, gallerySubtitleEn: e.target.value})} 
-                        placeholder="e.g. Innovation in every detail" 
+                      <Input
+                        value={formData.gallerySubtitleEn}
+                        onChange={e => setFormData({ ...formData, gallerySubtitleEn: e.target.value })}
+                        placeholder="e.g. Innovation in every detail"
                         className="h-12 rounded-2xl border-dashed bg-muted/10 border-border/80 pr-12 focus:bg-background/50 transition-all"
                       />
                       {aiConfig?.isEnabled && (
                         <div className="absolute right-1.5 top-1/2 -translate-y-1/2">
-                          <ShinyButton 
+                          <ShinyButton
                             onClick={async () => {
                               const res = await smartTranslate({
                                 text: formData.gallerySubtitleZh,
@@ -1492,11 +1492,11 @@ export default function AdminHomePage() {
 
             <div className="flex items-center justify-between">
               <h3 className="text-xs font-bold text-primary uppercase tracking-widest flex items-center gap-2">
-                <LayoutGrid className="h-4 w-4" /> 轮播内容管理 (Carousel Items)
+                <LayoutGrid className="h-4 w-4" /> 轮播内容管理
               </h3>
-              <Button 
-                onClick={() => setProductPickerOpen(true)} 
-                size="sm" 
+              <Button
+                onClick={() => setProductPickerOpen(true)}
+                size="sm"
                 className="rounded-xl h-9 px-4 gap-2 text-[10px] font-bold uppercase tracking-wider shadow-md"
               >
                 <Plus className="h-3.5 w-3.5" /> 添加产品到轮播
@@ -1507,7 +1507,7 @@ export default function AdminHomePage() {
               {formData.galleryItems.map((item: any, idx: number) => {
                 const product = allProducts?.find((p: any) => p.id === item.productId);
                 if (!product) return null;
-                
+
                 const productName = translations?.find((t: any) => t.id === product.nameTextId)?.content?.zh || product.id;
 
                 return (
@@ -1520,11 +1520,11 @@ export default function AdminHomePage() {
                           <ImageIcon className="h-8 w-8 opacity-20" />
                         </div>
                       )}
-                      
+
                       <div className="absolute top-2 right-2 flex gap-1">
-                        <Button 
-                          variant="destructive" 
-                          size="icon" 
+                        <Button
+                          variant="destructive"
+                          size="icon"
                           className="h-7 w-7 rounded-full shadow-lg"
                           onClick={() => {
                             const newItems = [...formData.galleryItems];
@@ -1547,13 +1547,13 @@ export default function AdminHomePage() {
                         </div>
                       )}
                     </div>
-                    
+
                     <div className="space-y-3">
                       <h4 className="text-xs font-bold text-foreground line-clamp-1">{productName}</h4>
                       <div className="space-y-1.5 pt-2 border-t border-dashed border-border/60">
                         <Label className="text-[9px] font-bold uppercase opacity-40">设置标签 (Badge)</Label>
-                        <Select 
-                          value={item.badge || 'none'} 
+                        <Select
+                          value={item.badge || 'none'}
                           onValueChange={(v) => {
                             const newItems = [...formData.galleryItems];
                             newItems[idx] = { ...newItems[idx], badge: v === 'none' ? null : v };
@@ -1570,29 +1570,29 @@ export default function AdminHomePage() {
                           </SelectContent>
                         </Select>
                       </div>
-                      
+
                       <div className="flex gap-2 pt-1">
-                        <Button 
-                          variant="ghost" 
-                          size="icon" 
+                        <Button
+                          variant="ghost"
+                          size="icon"
                           className="h-7 w-7 rounded-full bg-muted/40 hover:bg-muted/80 text-muted-foreground hover:text-foreground"
                           disabled={idx === 0}
                           onClick={() => {
                             const newItems = [...formData.galleryItems];
-                            [newItems[idx-1], newItems[idx]] = [newItems[idx], newItems[idx-1]];
+                            [newItems[idx - 1], newItems[idx]] = [newItems[idx], newItems[idx - 1]];
                             setFormData({ ...formData, galleryItems: newItems });
                           }}
                         >
                           <ArrowUp className="h-3 w-3" />
                         </Button>
-                        <Button 
-                          variant="ghost" 
-                          size="icon" 
+                        <Button
+                          variant="ghost"
+                          size="icon"
                           className="h-7 w-7 rounded-full bg-muted/40 hover:bg-muted/80 text-muted-foreground hover:text-foreground"
                           disabled={idx === formData.galleryItems.length - 1}
                           onClick={() => {
                             const newItems = [...formData.galleryItems];
-                            [newItems[idx+1], newItems[idx]] = [newItems[idx], newItems[idx+1]];
+                            [newItems[idx + 1], newItems[idx]] = [newItems[idx], newItems[idx + 1]];
                             setFormData({ ...formData, galleryItems: newItems });
                           }}
                         >
@@ -1606,10 +1606,10 @@ export default function AdminHomePage() {
 
               {formData.galleryItems.length === 0 && (
                 <div className="col-span-full py-16 text-center bg-muted/5 border-2 border-dashed rounded-[2.5rem]">
-                   <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest opacity-40">尚未手动添加产品。前台将默认拉取最新 8 个产品。</p>
-                   <Button 
-                    variant="outline" 
-                    size="sm" 
+                  <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest opacity-40">尚未手动添加产品。前台将默认拉取最新 8 个产品。</p>
+                  <Button
+                    variant="outline"
+                    size="sm"
                     className="mt-4 rounded-xl px-6"
                     onClick={() => setProductPickerOpen(true)}
                   >
@@ -1632,7 +1632,7 @@ export default function AdminHomePage() {
         </TabsContent>
       </Tabs>
 
-      <MediaLibraryDialog 
+      <MediaLibraryDialog
         open={pickerConfig.open}
         onOpenChange={(open) => setPickerConfig({ ...pickerConfig, open })}
         onSelect={(assets) => {
@@ -1647,18 +1647,18 @@ export default function AdminHomePage() {
               setFormData({ ...formData, heroProjectBg: url });
             } else if (pickerConfig.type === 'slide' && pickerConfig.slideIndex !== null) {
               const fieldName = (pickerConfig as any).field || 'bgImage';
-              updateSlide(pickerConfig.slideIndex, { 
+              updateSlide(pickerConfig.slideIndex, {
                 [fieldName]: url,
                 brightness: asset.brightness !== undefined ? asset.brightness : null
               });
             } else if (pickerConfig.type === 'bento' && bentoDialog.open) {
-              setBentoDialog({ 
-                ...bentoDialog, 
-                item: { 
-                  ...bentoDialog.item, 
+              setBentoDialog({
+                ...bentoDialog,
+                item: {
+                  ...bentoDialog.item,
                   imageUrl: url,
                   brightness: asset.brightness !== undefined ? asset.brightness : null
-                } 
+                }
               });
             }
           }
@@ -1668,7 +1668,7 @@ export default function AdminHomePage() {
         subtitle="选择一张高质量图片或一段精彩视频作为首页展示"
       />
 
-      <ProductPicker 
+      <ProductPicker
         open={productPickerOpen}
         onOpenChange={setProductPickerOpen}
         products={allProducts || []}
@@ -1688,7 +1688,7 @@ export default function AdminHomePage() {
         }}
       />
 
-      <BentoItemDialog 
+      <BentoItemDialog
         open={bentoDialog.open}
         onOpenChange={(open) => setBentoDialog({ ...bentoDialog, open })}
         item={bentoDialog.item}
@@ -1706,10 +1706,10 @@ export default function AdminHomePage() {
             toast({ title: "格位已保存" });
           } else {
             const err = await res.json().catch(() => ({}));
-            toast({ 
-              variant: "destructive", 
-              title: "保存失败", 
-              description: err.error || "网络或系统内部错误，请稍后再试" 
+            toast({
+              variant: "destructive",
+              title: "保存失败",
+              description: err.error || "网络或系统内部错误，请稍后再试"
             });
           }
         }}
@@ -1739,7 +1739,7 @@ function ProductPicker({ open, onOpenChange, products, translations, categories,
 }) {
   const [activeCategory, setActiveCategory] = useState<string>('all');
   const [search, setSearch] = useState('');
-  
+
   const filtered = products.filter(p => {
     const matchesCategory = activeCategory === 'all' || p.categoryId === activeCategory;
     const nameEntry = translations.find(t => t.id === p.nameTextId);
@@ -1750,19 +1750,26 @@ function ProductPicker({ open, onOpenChange, products, translations, categories,
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-4xl h-[80vh] rounded-[2.5rem] p-0 overflow-hidden border border-border/40 shadow-2xl flex flex-col">
-        <DialogHeader className="bg-slate-950 text-white p-8 shrink-0 border-b border-border/20">
-          <DialogTitle className="text-xl font-headline font-bold flex items-center gap-3">
-            <LayoutGrid className="h-5 w-5 text-primary" />
-            产品库浏览选择
-          </DialogTitle>
-        </DialogHeader>
-        
+      <DialogContent className="rounded-[3rem] max-w-4xl h-[80vh] p-0 overflow-hidden shadow-[0_50px_100px_-20px_rgba(0,0,0,0.15)] admin-interface-dark:shadow-[0_50px_100px_-20px_rgba(0,0,0,0.5)] border border-slate-200/50 admin-interface-dark:border-white/5 bg-card flex flex-col">
+        <div className="bg-gradient-to-br from-slate-50 to-slate-100 admin-interface-dark:from-slate-950 admin-interface-dark:to-slate-900 p-8 text-slate-900 admin-interface-dark:text-white relative overflow-hidden border-b border-slate-200/80 admin-interface-dark:border-white/5 shrink-0">
+          <div className="absolute top-0 right-0 p-8 opacity-10">
+            <LayoutGrid className="h-24 w-24" />
+          </div>
+          <DialogHeader className="relative z-10 space-y-2">
+            <DialogTitle className="text-xl font-headline font-black flex items-center gap-4 text-slate-900 admin-interface-dark:text-white">
+              <div className="h-10 w-10 rounded-xl bg-slate-200/50 admin-interface-dark:bg-white/10 flex items-center justify-center border border-slate-300/50 admin-interface-dark:border-white/5 text-slate-700 admin-interface-dark:text-white">
+                <LayoutGrid className="h-5 w-5" />
+              </div>
+              产品库浏览选择
+            </DialogTitle>
+          </DialogHeader>
+        </div>
+
         <div className="flex-1 flex overflow-hidden">
           {/* Sidebar - Categories */}
           <div className="w-48 bg-muted/20 border-r border-border/60 p-4 space-y-1 overflow-y-auto shrink-0">
             <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest px-3 mb-3">产品分类</p>
-            <button 
+            <button
               onClick={() => setActiveCategory('all')}
               className={cn(
                 "w-full text-left px-3 py-2 rounded-xl text-xs font-bold transition-all",
@@ -1774,7 +1781,7 @@ function ProductPicker({ open, onOpenChange, products, translations, categories,
             {categories.map(cat => {
               const name = translations.find(t => t.id === cat.nameTextId)?.content?.zh || cat.slug || cat.id;
               return (
-                <button 
+                <button
                   key={cat.id}
                   onClick={() => setActiveCategory(cat.id)}
                   className={cn(
@@ -1791,8 +1798,8 @@ function ProductPicker({ open, onOpenChange, products, translations, categories,
           {/* Main Area - Product List */}
           <div className="flex-1 flex flex-col p-6 space-y-6 overflow-hidden">
             <div className="relative group">
-              <Input 
-                placeholder="在当前分类中筛选..." 
+              <Input
+                placeholder="在当前分类中筛选..."
                 value={search}
                 onChange={e => setSearch(e.target.value)}
                 className="h-11 pl-10 rounded-xl bg-muted/20 border-border focus:bg-background transition-all"
@@ -1801,12 +1808,12 @@ function ProductPicker({ open, onOpenChange, products, translations, categories,
                 <Plus className="h-4 w-4 rotate-45" />
               </div>
             </div>
-            
+
             <div className="flex-1 space-y-2 overflow-y-auto pr-2 custom-scrollbar">
               {filtered.map(p => {
                 const name = translations.find(t => t.id === p.nameTextId)?.content?.zh || p.id;
                 return (
-                  <div 
+                  <div
                     key={p.id}
                     onClick={() => onSelect(p.id)}
                     className="group flex items-center gap-4 bg-card border border-border/60 p-3 rounded-2xl cursor-pointer hover:border-primary/40 hover:bg-primary/5 hover:shadow-sm transition-all duration-300"
@@ -1842,11 +1849,11 @@ function ProductPicker({ open, onOpenChange, products, translations, categories,
 
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 
-function BentoItemDialog({ open, onOpenChange, item, onSave, onTranslate, onImageSelect, categories, translations }: { 
-  open: boolean, 
-  onOpenChange: (open: boolean) => void, 
-  item: any, 
-  onSave: (item: any) => void, 
+function BentoItemDialog({ open, onOpenChange, item, onSave, onTranslate, onImageSelect, categories, translations }: {
+  open: boolean,
+  onOpenChange: (open: boolean) => void,
+  item: any,
+  onSave: (item: any) => void,
   onTranslate: (text: string) => Promise<string>,
   onImageSelect: () => void,
   categories: any[],
@@ -1863,19 +1870,26 @@ function BentoItemDialog({ open, onOpenChange, item, onSave, onTranslate, onImag
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl rounded-[2.5rem] p-0 overflow-hidden border border-border/40 shadow-2xl">
-        <DialogHeader className="bg-slate-950 text-white p-8 border-b border-border/20">
-          <DialogTitle className="text-xl font-headline font-bold flex items-center gap-3">
-            <LayoutGrid className="h-5 w-5 text-primary" />
-            {localItem.id ? '编辑格位' : '新增格位'}
-          </DialogTitle>
-        </DialogHeader>
-        
+      <DialogContent className="rounded-[3rem] max-w-2xl p-0 overflow-hidden shadow-[0_50px_100px_-20px_rgba(0,0,0,0.15)] admin-interface-dark:shadow-[0_50px_100px_-20px_rgba(0,0,0,0.5)] border border-slate-200/50 admin-interface-dark:border-white/5 bg-card flex flex-col">
+        <div className="bg-gradient-to-br from-slate-50 to-slate-100 admin-interface-dark:from-slate-950 admin-interface-dark:to-slate-900 p-8 text-slate-900 admin-interface-dark:text-white relative overflow-hidden border-b border-slate-200/80 admin-interface-dark:border-white/5 shrink-0">
+          <div className="absolute top-0 right-0 p-8 opacity-10">
+            <LayoutGrid className="h-24 w-24" />
+          </div>
+          <DialogHeader className="relative z-10 space-y-2">
+            <DialogTitle className="text-xl font-headline font-black flex items-center gap-4 text-slate-900 admin-interface-dark:text-white">
+              <div className="h-10 w-10 rounded-xl bg-slate-200/50 admin-interface-dark:bg-white/10 flex items-center justify-center border border-slate-300/50 admin-interface-dark:border-white/5 text-slate-700 admin-interface-dark:text-white">
+                <LayoutGrid className="h-5 w-5" />
+              </div>
+              {localItem.id ? '编辑格位' : '新增格位'}
+            </DialogTitle>
+          </DialogHeader>
+        </div>
+
         <div className="p-8 space-y-6 max-h-[70vh] overflow-y-auto text-foreground">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
             <div className="space-y-4">
               <Label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">背景图片</Label>
-              <div 
+              <div
                 className="relative aspect-video rounded-3xl overflow-hidden cursor-pointer group border-2 border-dashed border-border hover:border-primary transition-all bg-muted/20"
                 onClick={onImageSelect}
               >
@@ -1888,8 +1902,8 @@ function BentoItemDialog({ open, onOpenChange, item, onSave, onTranslate, onImag
                   </div>
                 )}
               </div>
-              <Input 
-                value={localItem.imageUrl} 
+              <Input
+                value={localItem.imageUrl}
                 onChange={e => setLocalItem({ ...localItem, imageUrl: e.target.value })}
                 placeholder="图片 URL"
                 className="h-10 rounded-xl text-xs font-mono"
@@ -1933,9 +1947,9 @@ function BentoItemDialog({ open, onOpenChange, item, onSave, onTranslate, onImag
               </div>
               <div className="space-y-3">
                 <Label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">显示顺序</Label>
-                <Input 
+                <Input
                   type="number"
-                  value={localItem.order} 
+                  value={localItem.order}
                   onChange={e => setLocalItem({ ...localItem, order: parseInt(e.target.value) })}
                   className="h-12 rounded-2xl border-border"
                 />
@@ -1948,10 +1962,10 @@ function BentoItemDialog({ open, onOpenChange, item, onSave, onTranslate, onImag
               <Label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">中文内容 (ZH)</Label>
               <Input value={localItem.titleZh} onChange={e => setLocalItem({ ...localItem, titleZh: e.target.value })} placeholder="主标题" className="h-11 rounded-xl border-border" />
               <Input value={localItem.tagZh} onChange={e => setLocalItem({ ...localItem, tagZh: e.target.value })} placeholder="小标签 (如：批发业务)" className="h-11 rounded-xl border-border" />
-              
+
               <div className="pt-4 border-t border-dashed border-border/60 space-y-3">
                 <Label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">跳转逻辑 (Navigation)</Label>
-                <Select 
+                <Select
                   onValueChange={v => {
                     if (v === 'custom') return;
                     const cat = categories.find(c => c.id === v);
@@ -1981,14 +1995,14 @@ function BentoItemDialog({ open, onOpenChange, item, onSave, onTranslate, onImag
                 <Label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">ENGLISH CONTENT (EN)</Label>
               </div>
               <div className="relative group/input">
-                <Input 
-                  value={localItem.titleEn} 
-                  onChange={e => setLocalItem({ ...localItem, titleEn: e.target.value })} 
-                  placeholder="Main Title" 
-                  className="h-11 rounded-xl border-dashed border-border pr-12" 
+                <Input
+                  value={localItem.titleEn}
+                  onChange={e => setLocalItem({ ...localItem, titleEn: e.target.value })}
+                  placeholder="Main Title"
+                  className="h-11 rounded-xl border-dashed border-border pr-12"
                 />
                 <div className="absolute right-1 top-1/2 -translate-y-1/2">
-                  <ShinyButton 
+                  <ShinyButton
                     onClick={async () => {
                       setIsTranslating(true);
                       try {
@@ -2010,16 +2024,16 @@ function BentoItemDialog({ open, onOpenChange, item, onSave, onTranslate, onImag
                   </ShinyButton>
                 </div>
               </div>
-              
+
               <div className="relative group/input">
-                <Input 
-                  value={localItem.tagEn} 
-                  onChange={e => setLocalItem({ ...localItem, tagEn: e.target.value })} 
-                  placeholder="Small Tag (e.g. Wholesale)" 
-                  className="h-11 rounded-xl border-dashed border-border pr-12" 
+                <Input
+                  value={localItem.tagEn}
+                  onChange={e => setLocalItem({ ...localItem, tagEn: e.target.value })}
+                  placeholder="Small Tag (e.g. Wholesale)"
+                  className="h-11 rounded-xl border-dashed border-border pr-12"
                 />
                 <div className="absolute right-1 top-1/2 -translate-y-1/2">
-                  <ShinyButton 
+                  <ShinyButton
                     onClick={async () => {
                       setIsTranslating(true);
                       try {

@@ -40,7 +40,7 @@ const BasicInfoSection = memo(({
         <section className="bg-card/60 backdrop-blur-md rounded-[2.5rem] border border-border/30 p-10 space-y-8 shadow-[0_8px_30px_rgb(0,0,0,0.08)] relative group overflow-hidden">
           <div className="border-b border-border/20 pb-6 relative z-10">
             <h3 className="text-xl font-headline font-bold text-foreground flex items-center gap-3">
-              核心名称与叙述
+              产品名和简介
             </h3>
           </div>
 
@@ -57,7 +57,7 @@ const BasicInfoSection = memo(({
                   >
                     <div className="flex items-center gap-2">
                       {isAiProcessing ? <Loader2 className="h-3 w-3 animate-spin" /> : <Sparkles className="h-3 w-3" />}
-                      <span className="text-[9px] font-bold uppercase tracking-widest">极光智译</span>
+                      <span className="text-[9px] font-bold uppercase tracking-widest">AI智译</span>
                     </div>
                   </ShinyButton>
                 )}
@@ -66,7 +66,7 @@ const BasicInfoSection = memo(({
                 value={formData.nameZh}
                 onChange={e => updateField('nameZh', e.target.value)}
                 className="h-12 rounded-xl bg-muted/20 border-border/30 text-sm font-bold tracking-tight px-5 focus-visible:ring-4 focus-visible:ring-primary/10 placeholder:font-normal placeholder:text-muted-foreground/30 text-foreground"
-                placeholder="例如: Heovose Elevate 全能商用一体机"
+                placeholder="例如: Heovose 全能商用一体机"
               />
               <div className="space-y-2">
                 <Label className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground/60 pl-1">Product Model / Name (English)</Label>
@@ -74,7 +74,7 @@ const BasicInfoSection = memo(({
                   value={formData.nameEn}
                   onChange={e => updateField('nameEn', e.target.value)}
                   className="h-12 rounded-xl bg-muted/10 border-dashed border-border/30 text-sm font-bold tracking-tight px-5 focus-visible:ring-4 focus-visible:ring-primary/10 placeholder:font-normal placeholder:text-muted-foreground/30 text-foreground"
-                  placeholder="e.g. Heovose Elevate Pro AIO Series"
+                  placeholder="e.g. Heovose Pro AIO Series"
                 />
               </div>
             </div>
@@ -111,7 +111,7 @@ const BasicInfoSection = memo(({
         <section className="bg-card/60 backdrop-blur-md rounded-[2.5rem] border border-border/30 p-10 space-y-8 shadow-[0_8px_30px_rgb(0,0,0,0.08)] relative group overflow-hidden">
           <div className="border-b border-border/20 pb-6">
             <h3 className="text-xl font-headline font-bold text-foreground flex items-center gap-3">
-              产品视觉头图
+              产品主图
             </h3>
           </div>
 
@@ -127,7 +127,7 @@ const BasicInfoSection = memo(({
                     <div className="h-14 w-14 rounded-2xl bg-white/10 flex items-center justify-center text-white backdrop-blur-md border border-white/20 scale-50 group-hover:scale-100 transition-transform duration-700">
                       <RotateCcw className="h-6 w-6" />
                     </div>
-                    <p className="text-[10px] font-bold text-white uppercase tracking-[0.3em]">更换主视觉资产</p>
+                    <p className="text-[10px] font-bold text-white uppercase tracking-[0.3em]">更换主图</p>
                   </div>
                 </>
               ) : (
@@ -146,11 +146,11 @@ const BasicInfoSection = memo(({
             <div className="bg-muted/10 p-6 rounded-2xl border border-border/20 space-y-3">
               <div className="flex items-center gap-3 text-muted-foreground/50">
                 <Info className="h-4 w-4 shrink-0" />
-                <p className="text-[10px] font-bold uppercase tracking-widest leading-relaxed">头图建议规格 (Recommended Specs):</p>
+                <p className="text-[10px] font-bold uppercase tracking-widest leading-relaxed">主图建议规格:</p>
               </div>
               <ul className="grid grid-cols-2 gap-x-6 gap-y-2 text-[9px] font-bold text-muted-foreground/50 uppercase tracking-widest pl-7">
                 <li>• PNG/WebP 透明底</li>
-                <li>• 尺寸 1000x1000+</li>
+                <li>• 尺寸 1100x900（11:9）</li>
                 <li>• 居中构图</li>
                 <li>• 体积 {'<'} 700KB</li>
               </ul>
@@ -177,7 +177,7 @@ const BasicInfoSection = memo(({
                     <div className="h-14 w-14 rounded-2xl bg-white/10 flex items-center justify-center text-white backdrop-blur-md border border-white/20 scale-50 group-hover:scale-100 transition-transform duration-700">
                       <RotateCcw className="h-6 w-6" />
                     </div>
-                    <p className="text-[10px] font-bold text-white uppercase tracking-[0.3em]">更换视频资产</p>
+                    <p className="text-[10px] font-bold text-white uppercase tracking-[0.3em]">更换视频</p>
                   </div>
                 </>
               ) : (

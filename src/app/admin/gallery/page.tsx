@@ -133,7 +133,7 @@ const CategoryMenu = React.memo(({
     return levelCats.flatMap(cat => {
       const children = categories.filter(c => c.parentId === cat.id);
       const indent = depth > 0 ? '　'.repeat(depth) + '└ ' : '';
-      
+
       return [
         <DropdownMenuItem
           key={cat.id}
@@ -190,7 +190,7 @@ export default function GalleryPage() {
   // 通用安全复制函数
   const handleCopy = useCallback((text: string) => {
     if (!text) return;
-    
+
     const fallbackCopy = (content: string) => {
       const textArea = document.createElement("textarea");
       textArea.value = content;
@@ -230,7 +230,7 @@ export default function GalleryPage() {
   // 预览拖拽查看细节
   const handlePreviewMouseDown = (e: React.MouseEvent) => {
     if (previewZoom !== '1:1' || !previewScrollContainerRef.current) return;
-    
+
     const container = previewScrollContainerRef.current;
     const startX = e.pageX - container.offsetLeft;
     const startY = e.pageY - container.offsetTop;
@@ -324,22 +324,22 @@ export default function GalleryPage() {
   const filteredAssets = useMemo(() => {
     if (!assets) return [];
     return assets.filter(a => {
-      const matchSearch = a.title.toLowerCase().includes(searchQuery.toLowerCase()) || 
-                         a.fileName.toLowerCase().includes(searchQuery.toLowerCase());
+      const matchSearch = a.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        a.fileName.toLowerCase().includes(searchQuery.toLowerCase());
       const matchCategory = filterCategory === 'all' || a.categoryId === filterCategory;
-      
+
       const fileExt = a.fileName?.toLowerCase().split('.').pop() || '';
       const isVideoFile = ['mp4', 'webm', 'ogg', 'mov'].includes(fileExt);
       const isDocFile = DOCUMENT_EXTS.includes(fileExt) || ARCHIVE_EXTS.includes(fileExt);
-      
+
       let actualType = a.type || 'IMAGE';
       if (isVideoFile) actualType = 'VIDEO';
       if (isDocFile) actualType = 'DOCUMENT';
 
-      const matchType = filterType === 'all' || 
-                        (filterType === 'image' && actualType === 'IMAGE') ||
-                        (filterType === 'video' && actualType === 'VIDEO') ||
-                        (filterType === 'document' && actualType === 'DOCUMENT');
+      const matchType = filterType === 'all' ||
+        (filterType === 'image' && actualType === 'IMAGE') ||
+        (filterType === 'video' && actualType === 'VIDEO') ||
+        (filterType === 'document' && actualType === 'DOCUMENT');
 
       return matchSearch && matchCategory && matchType;
     });
@@ -466,7 +466,7 @@ export default function GalleryPage() {
       const limit = 20 * 1024 * 1024; // 统一 20MB
       return f.size > limit;
     });
-    
+
     if (oversized.length > 0) {
       toast({
         variant: "destructive",
@@ -558,12 +558,12 @@ export default function GalleryPage() {
           h = meta.h;
           duration = meta.d;
         }
-        
+
         updateTask(taskId, { progress: 70 });
 
         const title = file.name.split('.')[0];
         const categoryId = targetUploadCategoryId || categoryTree[0]?.id;
-        
+
         if (!categoryId) {
           throw new Error("请先选择一个素材分类再上传。");
         }
@@ -571,7 +571,7 @@ export default function GalleryPage() {
         // 使用更安全的 ID 生成方式
         const randomString = Math.random().toString(36).substring(2, 7);
         let assetId = `asset_${Date.now()}_${randomString}_${i}`;
-        
+
         // --- Duplicate Handling Strategy ---
         if (duplicateStrategy === 'overwrite' && assets) {
           const existing = assets.find(a => a.title === title && a.categoryId === categoryId);
@@ -610,10 +610,10 @@ export default function GalleryPage() {
       } catch (e: any) {
         console.error('Upload task error:', e);
         updateTask(taskId, { status: 'error', progress: 0, error: e.message });
-        toast({ 
-          variant: "destructive", 
-          title: "上传中断", 
-          description: `${file.name}: ${e.message}` 
+        toast({
+          variant: "destructive",
+          title: "上传中断",
+          description: `${file.name}: ${e.message}`
         });
       }
     }
@@ -814,9 +814,9 @@ export default function GalleryPage() {
     <div
       className="space-y-10 animate-in fade-in duration-700 relative min-h-[80vh] select-none pb-20"
       onDragOver={(e) => { e.preventDefault(); e.stopPropagation(); }}
-      onDrop={(e) => { 
-        e.preventDefault(); 
-        e.stopPropagation(); 
+      onDrop={(e) => {
+        e.preventDefault();
+        e.stopPropagation();
         if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
           handleFileUpload(e.dataTransfer.files);
           setIsUploadDialogOpen(true);
@@ -836,7 +836,7 @@ export default function GalleryPage() {
             <div className="h-10 w-10 rounded-2xl bg-primary/10 flex items-center justify-center text-primary shadow-sm">
               <FolderOpen className="h-5 w-5" />
             </div>
-            全球资源管理中心
+            资源管理中心
           </h2>
           <p className="text-[10px] text-muted-foreground/60 font-bold uppercase tracking-[0.2em] pl-14">Management / Digital Assets / Resources</p>
         </div>
@@ -844,7 +844,7 @@ export default function GalleryPage() {
           <Dialog open={isCategoryDialogOpen} onOpenChange={(o) => { setIsCategoryDialogOpen(o); if (!o) resetCatForm(); }}>
             <DialogTrigger asChild>
               <Button variant="outline" className="rounded-2xl h-14 px-8 gap-3 text-xs font-bold uppercase tracking-widest border-border/40 bg-card/40 backdrop-blur-sm hover:bg-card/70 text-foreground/80 hover:text-primary hover:border-primary/20 transition-all shadow-sm">
-                <Settings2 className="h-4 w-4" /> 架构管理
+                <Settings2 className="h-4 w-4" /> 素材分类
               </Button>
             </DialogTrigger>
             <DialogContent className="rounded-[2.5rem] max-w-2xl p-0 overflow-hidden border border-border/10 shadow-[0_50px_100px_-20px_rgba(0,0,0,0.15)] bg-background">
@@ -907,14 +907,14 @@ export default function GalleryPage() {
 
                 <div className="space-y-5">
                   <div className="flex items-center justify-between px-4">
-                    <Label className="text-[10px] font-bold uppercase text-muted-foreground/30 tracking-[0.3em]">Infrastructure Map</Label>
+                    <Label className="text-[10px] font-bold uppercase text-muted-foreground/30 tracking-[0.3em]">分类层级设置</Label>
                     <Badge variant="outline" className="text-[9px] border-border/10 text-muted-foreground/60 rounded-full px-3 h-5 font-black">{categories?.length || 0} NODES</Badge>
                   </div>
                   <div className="max-h-[380px] overflow-y-auto pr-3 custom-scrollbar space-y-2.5">
                     {categoryTree.length === 0 ? (
                       <div className="py-20 text-center border-2 border-dashed border-border/5 rounded-[3rem]">
                         <Layers className="h-10 w-10 text-muted-foreground/10 mx-auto mb-4" />
-                        <p className="text-[10px] font-black text-muted-foreground/20 uppercase tracking-[0.4em] italic">暂无资产架构 / Void</p>
+                        <p className="text-[10px] font-black text-muted-foreground/20 uppercase tracking-[0.4em] italic">暂无分类</p>
                       </div>
                     ) : (
                       categoryTree.map((cat, idx) => {
@@ -968,52 +968,49 @@ export default function GalleryPage() {
           <Dialog open={isUploadDialogOpen} onOpenChange={setIsUploadDialogOpen}>
             <DialogTrigger asChild>
               <Button className="rounded-2xl h-14 px-8 font-black uppercase tracking-[0.25em] gap-4 text-[10px] shadow-2xl shadow-primary/20 hover:scale-[1.03] active:scale-[0.98] transition-all">
-                <CloudUpload className="h-5 w-5" /> 批量上传 / UPLOAD
+                <CloudUpload className="h-5 w-5" /> 批量上传
               </Button>
             </DialogTrigger>
-            <DialogContent className="rounded-[3.5rem] max-w-5xl p-0 overflow-hidden border border-white/5 shadow-[0_50px_100px_-20px_rgba(0,0,0,0.6)] bg-card/40 backdrop-blur-3xl">
-              <div className="bg-slate-950 p-12 text-white relative overflow-hidden border-b border-white/5">
-                <div className="absolute top-0 right-0 p-12 opacity-5 scale-150">
-                  <CloudUpload className="h-40 w-40" />
+            <DialogContent className="rounded-[3rem] max-w-5xl p-0 overflow-hidden shadow-[0_50px_100px_-20px_rgba(0,0,0,0.15)] admin-interface-dark:shadow-[0_50px_100px_-20px_rgba(0,0,0,0.5)] border border-slate-200/50 admin-interface-dark:border-white/5 bg-card">
+              <div className="bg-gradient-to-br from-slate-50 to-slate-100 admin-interface-dark:from-slate-950 admin-interface-dark:to-slate-900 p-10 text-slate-900 admin-interface-dark:text-white relative overflow-hidden border-b border-slate-200/80 admin-interface-dark:border-white/5">
+                <div className="absolute top-0 right-0 p-10 opacity-10">
+                  <CloudUpload className="h-32 w-32" />
                 </div>
-                <DialogHeader className="relative z-10 space-y-3">
-                  <DialogTitle className="text-3xl font-headline font-black flex items-center gap-5">
-                    <div className="h-14 w-14 rounded-2xl bg-white/10 flex items-center justify-center border border-white/5">
-                      <CloudUpload className="h-7 w-7" />
+                <DialogHeader className="relative z-10 space-y-2">
+                  <DialogTitle className="text-2xl font-headline font-black flex items-center gap-4 text-slate-900 admin-interface-dark:text-white">
+                    <div className="h-12 w-12 rounded-2xl bg-slate-200/50 admin-interface-dark:bg-white/10 flex items-center justify-center border border-slate-300/50 admin-interface-dark:border-white/5 text-slate-700 admin-interface-dark:text-white">
+                      <CloudUpload className="h-6 w-6" />
                     </div>
-                    素材注入中心
+                    素材上传
                   </DialogTitle>
-                  <DialogDescription className="text-[11px] font-black text-white/40 uppercase tracking-[0.4em]">Advanced Digital Asset Ingestion Interface</DialogDescription>
+                  <DialogDescription className="text-[10px] font-bold text-slate-500/50 admin-interface-dark:text-white/30 uppercase tracking-[0.3em]">Advanced Digital Asset Ingestion Interface</DialogDescription>
                 </DialogHeader>
-                <div className="absolute top-12 right-12">
+                <div className="absolute top-1/2 -translate-y-1/2 right-10 z-20">
                   <Button
                     variant="outline"
                     onClick={handleDeepCleanup}
                     disabled={isCleaning}
-                    className="h-16 rounded-[1.5rem] px-8 border-white/10 bg-white/5 hover:border-white/30 hover:bg-white/10 transition-all group shrink-0"
+                    className="h-12 rounded-xl px-6 border-slate-200 admin-interface-dark:border-white/10 bg-slate-200/30 admin-interface-dark:bg-white/5 hover:bg-slate-200/50 admin-interface-dark:hover:bg-white/10 text-slate-700 admin-interface-dark:text-white transition-all group shrink-0"
                   >
                     {isCleaning ? (
-                      <Loader2 className="h-5 w-5 animate-spin text-white" />
+                      <Loader2 className="h-4 w-4 animate-spin text-slate-700 admin-interface-dark:text-white" />
                     ) : (
-                      <div className="flex flex-col items-start">
-                        <div className="flex items-center gap-3">
-                          <Eraser className="h-4 w-4 text-white/40 group-hover:text-white transition-colors" />
-                          <span className="text-sm font-black text-white uppercase tracking-tight">深度净化</span>
-                        </div>
-                        <span className="text-[8px] font-black text-white/30 uppercase tracking-widest mt-1">PURGE ORPHAN BLOCKS</span>
+                      <div className="flex items-center gap-2">
+                        <Eraser className="h-4 w-4 text-slate-500 admin-interface-dark:text-white/40 group-hover:text-slate-700 admin-interface-dark:group-hover:text-white transition-colors" />
+                        <span className="text-xs font-bold uppercase tracking-wider">深度净化</span>
                       </div>
                     )}
                   </Button>
                 </div>
               </div>
-              <div className="p-12 grid grid-cols-1 md:grid-cols-12 gap-12">
+              <div className="p-8 grid grid-cols-1 md:grid-cols-12 gap-8 bg-card">
                 <div className="md:col-span-7">
                   <div
                     onDragOver={e => e.preventDefault()}
                     onDrop={e => { e.preventDefault(); handleFileUpload(e.dataTransfer.files); }}
                     className={cn(
-                      "h-[450px] border-2 border-dashed rounded-[3rem] flex flex-col items-center justify-center transition-all cursor-pointer group relative overflow-hidden bg-muted/5 shadow-inner",
-                      pendingFiles.length > 0 ? "border-primary/40 bg-primary/[0.02]" : "border-border/10 hover:bg-primary/[0.02] hover:border-primary/40"
+                      "h-[400px] border-2 border-dashed rounded-[2rem] flex flex-col items-center justify-center transition-all cursor-pointer group relative overflow-hidden bg-muted/5 shadow-inner",
+                      pendingFiles.length > 0 ? "border-primary/40 bg-primary/[0.02]" : "border-slate-200 admin-interface-dark:border-white/10 hover:bg-primary/[0.02] hover:border-primary/40"
                     )}
                     onClick={(e) => {
                       if (pendingFiles.length === 0) fileInputRef.current?.click();
@@ -1021,57 +1018,57 @@ export default function GalleryPage() {
                   >
                     {pendingFiles.length === 0 ? (
                       <>
-                        <div className="h-24 w-24 rounded-[2rem] bg-background shadow-2xl flex items-center justify-center mb-8 group-hover:scale-110 transition-transform duration-700">
-                          <Upload className="h-10 w-10 text-muted-foreground/20 group-hover:text-primary transition-colors" />
+                        <div className="h-20 w-20 rounded-2xl bg-background shadow-lg flex items-center justify-center mb-6 group-hover:scale-110 transition-transform duration-500">
+                          <Upload className="h-8 w-8 text-muted-foreground/30 group-hover:text-primary transition-colors" />
                         </div>
-                        <p className="text-lg font-black text-foreground tracking-tight">点击或投递素材至此</p>
-                        <p className="text-[10px] text-muted-foreground/40 mt-3 uppercase font-black tracking-[0.3em]">SECURE ASSET DROP ZONE</p>
-                        <div className="mt-10 px-8 py-4 bg-primary/5 rounded-[1.5rem] flex flex-col items-center gap-3 border border-primary/5">
+                        <p className="text-base font-bold text-foreground tracking-tight">点击或拖放素材到这</p>
+                        <p className="text-[9px] text-muted-foreground/40 mt-2 uppercase font-black tracking-[0.2em]">SECURE ASSET DROP ZONE</p>
+                        <div className="mt-8 px-6 py-3.5 bg-primary/5 rounded-2xl flex flex-col items-center gap-3 border border-primary/10">
                           <div className="flex items-center gap-4">
                             <div className="flex items-center gap-2">
                               <CloudUpload className="h-3.5 w-3.5 text-primary/60" />
-                              <span className="text-[10px] font-black text-primary/80 uppercase tracking-wider">MAX 20MB / FILE</span>
+                              <span className="text-[9px] font-bold text-primary/80 uppercase tracking-wider">图片 &lt; 700KB</span>
                             </div>
-                            <div className="h-4 w-px bg-primary/20" />
+                            <div className="h-3 w-px bg-primary/20" />
                             <div className="flex items-center gap-2">
                               <Archive className="h-3.5 w-3.5 text-primary/60" />
-                              <span className="text-[10px] font-black text-primary/80 uppercase tracking-wider">ARCHIVE SUPPORTED</span>
+                              <span className="text-[9px] font-bold text-primary/80 uppercase tracking-wider">视频 &lt; 20MB</span>
                             </div>
                           </div>
                         </div>
                       </>
                     ) : (
-                      <div className="w-full h-full flex flex-col p-10" onClick={e => e.stopPropagation()}>
-                        <div className="flex items-center justify-between mb-8">
-                          <div className="flex items-center gap-4">
-                            <Badge className="bg-primary text-white border-none h-7 px-4 rounded-full font-black text-xs shadow-xl shadow-primary/30">{pendingFiles.length}</Badge>
-                            <span className="text-[11px] font-black uppercase tracking-[0.2em] text-muted-foreground/40">待处理队列 / QUEUED</span>
+                      <div className="w-full h-full flex flex-col p-8" onClick={e => e.stopPropagation()}>
+                        <div className="flex items-center justify-between mb-6">
+                          <div className="flex items-center gap-3">
+                            <Badge className="bg-primary text-white border-none h-6 px-3 rounded-full font-bold text-xs">{pendingFiles.length}</Badge>
+                            <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-muted-foreground/40">待处理队列 / QUEUED</span>
                           </div>
                           <Button
                             variant="outline"
                             size="sm"
-                            className="h-10 rounded-xl px-6 text-[10px] font-black uppercase tracking-widest border-border/10 bg-muted/10 hover:bg-muted/20"
+                            className="h-9 rounded-xl px-4 text-[10px] font-bold uppercase tracking-wider border-slate-200 admin-interface-dark:border-white/10 bg-muted/10 hover:bg-muted/20"
                             onClick={() => fileInputRef.current?.click()}
                           >
                             继续追加
                           </Button>
                         </div>
-                        <div className="flex-1 overflow-y-auto pr-4 space-y-3 custom-scrollbar">
+                        <div className="flex-1 overflow-y-auto pr-2 space-y-2.5 custom-scrollbar">
                           {pendingFiles.map((file, i) => (
-                            <div key={`${file.name}-${i}`} className="flex items-center justify-between p-4 bg-muted/10 rounded-2xl group/item border border-transparent hover:border-border/10 transition-all">
-                              <div className="flex items-center gap-4 overflow-hidden">
-                                <div className="h-11 w-11 rounded-xl bg-background flex items-center justify-center shrink-0 border border-border/5 shadow-sm">
+                            <div key={`${file.name}-${i}`} className="flex items-center justify-between p-3 bg-muted/10 rounded-xl group/item border border-transparent hover:border-slate-200 admin-interface-dark:hover:border-white/5 transition-all">
+                              <div className="flex items-center gap-3 overflow-hidden">
+                                <div className="h-10 w-10 rounded-lg bg-background flex items-center justify-center shrink-0 border border-slate-200/50 admin-interface-dark:border-white/5 shadow-sm">
                                   <ImageIcon className="h-5 w-5 text-muted-foreground/20" />
                                 </div>
-                                <div className="flex flex-col overflow-hidden gap-0.5">
+                                <div className="flex flex-col overflow-hidden">
                                   <span className="text-xs font-bold text-foreground truncate">{file.name}</span>
-                                  <span className="text-[9px] font-black text-muted-foreground/40 uppercase tracking-tighter">{(file.size / 1024).toFixed(0)} KB / RAW DATA</span>
+                                  <span className="text-[9px] font-bold text-muted-foreground/30 uppercase tracking-wider">{(file.size / 1024).toFixed(0)} KB / RAW DATA</span>
                                 </div>
                               </div>
                               <Button
                                 size="icon"
                                 variant="ghost"
-                                className="h-9 w-9 rounded-xl text-muted-foreground/20 hover:text-destructive hover:bg-destructive/10 opacity-0 group-hover/item:opacity-100 transition-all"
+                                className="h-8 w-8 rounded-lg text-muted-foreground/30 hover:text-destructive hover:bg-destructive/10 opacity-0 group-hover/item:opacity-100 transition-all"
                                 onClick={() => setPendingFiles(prev => prev.filter((_, idx) => idx !== i))}
                               >
                                 <X className="h-4 w-4" />
@@ -1084,21 +1081,21 @@ export default function GalleryPage() {
                     <input type="file" ref={fileInputRef} multiple accept="image/*,video/*,.pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.zip,.rar,.7z" className="hidden" onChange={e => handleFileUpload(e.target.files)} />
                   </div>
                 </div>
-                <div className="md:col-span-5 space-y-10">
-                  <div className="space-y-8">
-                    <div className="space-y-3.5">
-                      <Label className="text-[11px] font-black uppercase text-muted-foreground/40 tracking-[0.2em] pl-1">目标分类层级 (Target Node)</Label>
+                <div className="md:col-span-5 space-y-8">
+                  <div className="space-y-6">
+                    <div className="space-y-3">
+                      <Label className="text-[10px] font-bold uppercase text-muted-foreground/40 tracking-[0.2em] pl-1">上传分类</Label>
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
-                          <Button variant="outline" className="w-full h-16 rounded-[1.5rem] bg-muted/10 border-transparent focus:ring-4 focus:ring-primary/5 justify-between px-6 font-bold transition-all group shadow-inner">
-                            <span className="text-[15px] tracking-tight truncate">
-                              {targetUploadCategoryId ? getDisplayName(categories?.find(c => c.id === targetUploadCategoryId)) : '请选择目标分类架构'}
+                          <Button variant="outline" className="w-full h-14 rounded-2xl bg-muted/10 border-transparent focus:ring-4 focus:ring-primary/5 justify-between px-5 font-bold transition-all group shadow-inner">
+                            <span className="text-sm tracking-tight truncate">
+                              {targetUploadCategoryId ? getDisplayName(categories?.find(c => c.id === targetUploadCategoryId)) : '请选择上传分类'}
                             </span>
-                            <ChevronDown className="h-5 w-5 opacity-20 group-hover:opacity-100 transition-all" />
+                            <ChevronDown className="h-4 w-4 opacity-30 group-hover:opacity-100 transition-all" />
                           </Button>
                         </DropdownMenuTrigger>
-                        <DropdownMenuContent align="start" sideOffset={12} className="min-w-[18rem] p-3 rounded-[2rem] shadow-2xl border border-white/5 bg-card/95 backdrop-blur-3xl animate-in fade-in slide-in-from-top-2 duration-300 z-[1100]">
-                          <DropdownMenuLabel className="text-[10px] uppercase font-black opacity-20 px-4 py-3 tracking-[0.3em]">Taxonomy Architecture</DropdownMenuLabel>
+                        <DropdownMenuContent align="start" sideOffset={8} className="min-w-[16rem] p-2 rounded-2xl shadow-2xl border border-slate-200/50 admin-interface-dark:border-white/5 bg-card/95 backdrop-blur-3xl animate-in fade-in slide-in-from-top-2 duration-300 z-[1100]">
+                          <DropdownMenuLabel className="text-[10px] uppercase font-black opacity-20 px-4 py-3 tracking-[0.2em]">Taxonomy Architecture</DropdownMenuLabel>
                           <DropdownMenuSeparator className="bg-border/10 my-1" />
                           <CategoryMenu
                             categories={categoryTree}
@@ -1108,35 +1105,35 @@ export default function GalleryPage() {
                         </DropdownMenuContent>
                       </DropdownMenu>
                     </div>
-                    <div className="space-y-3.5">
-                      <Label className="text-[11px] font-black uppercase text-muted-foreground/40 tracking-[0.2em] pl-1">冲突处理协议 (Conflict Protocol)</Label>
+                    <div className="space-y-3">
+                      <Label className="text-[10px] font-bold uppercase text-muted-foreground/40 tracking-[0.2em] pl-1">冲突处理协议</Label>
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
-                          <Button variant="outline" className="w-full h-16 rounded-[1.5rem] bg-muted/10 border-transparent focus:ring-4 focus:ring-primary/5 justify-between px-6 font-bold transition-all group text-left shadow-inner">
-                            <span className={cn("text-[15px] tracking-tight truncate", duplicateStrategy === 'overwrite' && "text-amber-500 font-black")}>
+                          <Button variant="outline" className="w-full h-14 rounded-2xl bg-muted/10 border-transparent focus:ring-4 focus:ring-primary/5 justify-between px-5 font-bold transition-all group text-left shadow-inner">
+                            <span className={cn("text-sm tracking-tight truncate", duplicateStrategy === 'overwrite' && "text-amber-500 font-bold")}>
                               {duplicateStrategy === 'rename' ? '自动重命名 (生成独立副本)' : '覆盖现有资源 (全站映射同步)'}
                             </span>
-                            <ChevronDown className="h-5 w-5 opacity-20 group-hover:opacity-100 transition-all" />
+                            <ChevronDown className="h-4 w-4 opacity-30 group-hover:opacity-100 transition-all" />
                           </Button>
                         </DropdownMenuTrigger>
-                        <DropdownMenuContent align="start" sideOffset={12} className="min-w-[18rem] p-3 rounded-[2rem] shadow-2xl border border-white/5 bg-card/95 backdrop-blur-3xl animate-in fade-in slide-in-from-top-2 duration-300 z-[1200]">
+                        <DropdownMenuContent align="start" sideOffset={8} className="min-w-[16rem] p-2 rounded-2xl shadow-2xl border border-slate-200/50 admin-interface-dark:border-white/5 bg-card/95 backdrop-blur-3xl animate-in fade-in slide-in-from-top-2 duration-300 z-[1200]">
                           <DropdownMenuItem
                             onClick={() => setDuplicateStrategy('rename')}
-                            className="rounded-2xl text-[13px] py-4 px-5 font-bold focus:bg-primary/10 transition-all cursor-pointer mb-1"
+                            className="rounded-xl text-xs py-3 px-4 font-bold focus:bg-primary/10 transition-all cursor-pointer mb-1"
                           >
                             自动重命名 (生成独立副本)
                           </DropdownMenuItem>
                           <DropdownMenuItem
                             onClick={() => setDuplicateStrategy('overwrite')}
-                            className="rounded-2xl text-[13px] py-4 px-5 text-amber-500 font-black focus:bg-amber-500/10 transition-all cursor-pointer"
+                            className="rounded-xl text-xs py-3 px-4 text-amber-500 font-bold focus:bg-amber-500/10 transition-all cursor-pointer"
                           >
                             覆盖现有资源 (全站映射同步)
                           </DropdownMenuItem>
                         </DropdownMenuContent>
                       </DropdownMenu>
-                      <div className="p-6 rounded-2xl bg-amber-500/5 border border-amber-500/10 mt-6">
-                        <p className="text-[10px] text-amber-500/80 leading-relaxed font-bold uppercase tracking-tight italic">
-                          <AlertTriangle className="h-3.5 w-3.5 inline mr-2 -mt-0.5" />
+                      <div className="p-4 rounded-xl bg-amber-500/5 border border-amber-500/10 mt-4">
+                        <p className="text-[10px] text-amber-500/80 leading-relaxed font-bold tracking-tight">
+                          <AlertTriangle className="h-3.5 w-3.5 inline mr-1.5 -mt-0.5" />
                           注意：覆盖策略会立即同步更新所有引用该素材的前台页面，请谨慎操作。
                         </p>
                       </div>
@@ -1144,17 +1141,17 @@ export default function GalleryPage() {
                   </div>
                 </div>
               </div>
-              <DialogFooter className="bg-muted/5 p-10 border-t border-border/5 flex items-center justify-between gap-6">
-                <Button variant="ghost" onClick={() => { setIsUploadDialogOpen(false); setPendingFiles([]); }} className="rounded-[1.5rem] h-16 px-10 text-[11px] font-black uppercase tracking-[0.2em] text-muted-foreground/30 hover:text-foreground">放弃本次同步</Button>
+              <DialogFooter className="bg-muted/10 admin-interface-dark:bg-muted/5 p-8 border-t border-border/40 admin-interface-dark:border-border/5 gap-4">
+                <Button variant="ghost" onClick={() => { setIsUploadDialogOpen(false); setPendingFiles([]); }} className="h-14 rounded-2xl flex-1 font-bold uppercase text-[10px] tracking-widest text-muted-foreground/60 admin-interface-dark:text-muted-foreground/40 hover:text-foreground">取消</Button>
                 <Button
                   onClick={startUpload}
                   disabled={pendingFiles.length === 0 || isUploading}
-                  className="rounded-[1.5rem] h-16 px-16 text-[11px] font-black uppercase tracking-[0.3em] shadow-[0_20px_50px_-10px_rgba(var(--primary),0.3)] flex-1 md:flex-none active:scale-[0.98] transition-all"
+                  className="h-14 rounded-2xl flex-1 font-bold uppercase text-[10px] tracking-[0.2em] shadow-2xl shadow-primary/20"
                 >
                   {isUploading ? (
-                    <><Loader2 className="h-5 w-5 animate-spin mr-3" /> 处理中 / PROCESSING...</>
+                    <><Loader2 className="h-4 w-4 animate-spin mr-2" /> 处理中...</>
                   ) : (
-                    <><CloudUpload className="h-5 w-5 mr-3" /> 立即启动同步 ({pendingFiles.length})</>
+                    <><CloudUpload className="h-4 w-4 mr-2" /> 立即上传 ({pendingFiles.length})</>
                   )}
                 </Button>
               </DialogFooter>
@@ -1182,7 +1179,7 @@ export default function GalleryPage() {
                 className="flex-1 border-none bg-transparent h-full px-2 shadow-none focus:ring-0 text-[11px] font-black uppercase tracking-[0.2em] text-muted-foreground/60 flex items-center justify-between group hover:bg-primary/5 rounded-xl transition-all"
               >
                 <span className="truncate max-w-[160px]">
-                  {filterCategory === 'all' ? '全部分类架构 (ALL)' : getDisplayName(categories?.find(c => c.id === filterCategory))}
+                  {filterCategory === 'all' ? '全部分类 (ALL)' : getDisplayName(categories?.find(c => c.id === filterCategory))}
                 </span>
                 <ChevronDown className="h-4 w-4 opacity-20 group-hover:opacity-100 group-hover:text-primary transition-all ml-2" />
               </Button>
@@ -1215,152 +1212,152 @@ export default function GalleryPage() {
         {filteredAssets.length > 0 ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-8 pb-32">
             {paginatedAssets.map((asset) => {
-            const isSelected = selectedIds.has(asset.id);
-            const fileExt = asset.fileName?.toLowerCase().split('.').pop() || '';
-            const isVideoFile = ['mp4', 'webm', 'ogg', 'mov'].includes(fileExt);
-            const isDocFile = DOCUMENT_EXTS.includes(fileExt) || ARCHIVE_EXTS.includes(fileExt);
-            const isArchive = ARCHIVE_EXTS.includes(fileExt);
-            let actualType = asset.type || 'IMAGE';
-            if (isVideoFile) actualType = 'VIDEO';
-            if (isDocFile) actualType = 'DOCUMENT';
+              const isSelected = selectedIds.has(asset.id);
+              const fileExt = asset.fileName?.toLowerCase().split('.').pop() || '';
+              const isVideoFile = ['mp4', 'webm', 'ogg', 'mov'].includes(fileExt);
+              const isDocFile = DOCUMENT_EXTS.includes(fileExt) || ARCHIVE_EXTS.includes(fileExt);
+              const isArchive = ARCHIVE_EXTS.includes(fileExt);
+              let actualType = asset.type || 'IMAGE';
+              if (isVideoFile) actualType = 'VIDEO';
+              if (isDocFile) actualType = 'DOCUMENT';
 
-            return (
-              <div
-                key={asset.id}
-                ref={el => { if (el) itemRefs.current.set(asset.id, el); else itemRefs.current.delete(asset.id); }}
-                className={cn(
-                  "group relative bg-card/20 backdrop-blur-3xl rounded-[2.25rem] border transition-all duration-700 overflow-hidden",
-                  isSelected
-                    ? "border-primary/40 ring-4 ring-primary/10 shadow-[0_0_60px_-15px_rgba(var(--primary),0.3)] scale-[0.98]"
-                    : "border-border/5 hover:border-primary/20 hover:bg-card/40"
-                )}
-                onClick={() => toggleSelectAsset(asset.id)}
-              >
-                <div className="absolute top-5 left-5 z-20">
-                  <Checkbox
-                    checked={isSelected}
-                    onCheckedChange={(e) => {
-                      toggleSelectAsset(asset.id);
-                    }}
-                    className={cn(
-                      "h-6 w-6 rounded-lg bg-background/40 backdrop-blur-2xl border-white/10 shadow-2xl transition-all duration-500",
-                      isSelected ? "opacity-100 scale-110 bg-primary border-primary shadow-primary/40" : "opacity-0 group-hover:opacity-100"
-                    )}
-                  />
-                </div>
-
-                <div className="relative aspect-square bg-muted/5 overflow-hidden flex items-center justify-center m-2.5 rounded-[1.75rem] border border-white/5">
-                  <div className="absolute inset-0 bg-[url('/checkerboard.png')] bg-repeat opacity-[0.03] pointer-events-none" />
-                  
-                  {actualType === 'VIDEO' ? (
-                    <div className="w-full h-full flex items-center justify-center bg-black/40 overflow-hidden">
-                      <video 
-                        src={getAssetUrl(asset.url)} 
-                        className="max-w-full max-h-full object-contain opacity-60 transition-transform duration-1000 group-hover:scale-110"
-                        muted
-                        playsInline
-                      />
-                      {isSelected && (
-                        <div className="absolute inset-0 bg-primary/5 flex items-center justify-center backdrop-blur-[1px] z-10" />
-                      )}
-                      <div className="absolute inset-0 flex items-center justify-center">
-                        <div className="h-14 w-14 rounded-full bg-white/5 backdrop-blur-xl flex items-center justify-center text-white border border-white/10 shadow-2xl transition-all group-hover:scale-110 duration-700 group-hover:bg-primary/20">
-                          <Play className="h-6 w-6 fill-white ml-1" />
-                        </div>
-                      </div>
-                      {asset.duration && (
-                        <div className="absolute bottom-3 right-3 px-2 py-1 rounded-lg bg-black/60 text-[9px] font-black font-mono text-white/80 uppercase tracking-tighter">
-                          {Math.floor(asset.duration / 60)}:{(asset.duration % 60).toFixed(0).padStart(2, '0')}
-                        </div>
-                      )}
-                    </div>
-                  ) : actualType === 'DOCUMENT' ? (
-                    <div className="w-full h-full flex flex-col items-center justify-center text-muted-foreground/20">
-                       {isArchive ? <Archive className="h-16 w-16 mb-4 opacity-40 transition-transform group-hover:scale-110" /> : <FileText className="h-16 w-16 mb-4 opacity-40 transition-transform group-hover:scale-110" />}
-                       <span className="text-[10px] font-black uppercase tracking-[0.3em] group-hover:text-primary transition-colors">{fileExt.toUpperCase()}</span>
-                    </div>
-                  ) : (
-                    <Image
-                      src={getAssetUrl(asset.url)}
-                      alt={asset.title}
-                      fill
-                      className="object-contain p-4 group-hover:scale-110 transition-transform duration-1000 ease-out"
-                      unoptimized
-                    />
+              return (
+                <div
+                  key={asset.id}
+                  ref={el => { if (el) itemRefs.current.set(asset.id, el); else itemRefs.current.delete(asset.id); }}
+                  className={cn(
+                    "group relative bg-card/20 backdrop-blur-3xl rounded-[2.25rem] border transition-all duration-700 overflow-hidden",
+                    isSelected
+                      ? "border-primary/40 ring-4 ring-primary/10 shadow-[0_0_60px_-15px_rgba(var(--primary),0.3)] scale-[0.98]"
+                      : "border-border/5 hover:border-primary/20 hover:bg-card/40"
                   )}
-                  
-                  <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-all duration-700 flex items-center justify-center gap-4 backdrop-blur-[4px]">
-                    <Button
-                      size="icon"
-                      variant="secondary"
-                      className="h-12 w-12 rounded-2xl shadow-2xl bg-white/10 hover:bg-primary border border-white/10 group/btn transition-all scale-75 group-hover:scale-100 duration-500"
-                      onClick={(e) => { e.stopPropagation(); setPreviewAsset(asset); setPreviewZoom('fit'); }}
-                    >
-                      <Maximize className="h-5 w-5 text-white group-hover/btn:scale-110 transition-all" />
-                    </Button>
-                  </div>
-                  <div className="absolute bottom-4 left-4 pointer-events-none">
-                    <Badge className="text-[8px] bg-black/40 backdrop-blur-md border border-white/5 px-3 py-1 h-6 font-black uppercase tracking-[0.2em] text-white/70">
-                      {getDisplayName(categories?.find(c => c.id === asset.categoryId))}
-                    </Badge>
-                  </div>
-                </div>
-
-                <div className="p-5 pt-2 space-y-4">
-                  <div className="space-y-1">
-                    <p className="text-[11px] font-black text-foreground truncate tracking-tight uppercase group-hover:text-primary transition-colors">{asset.title}</p>
-                    <div className="flex items-center gap-2">
-                      <p className="text-[9px] font-black text-muted-foreground/40 uppercase tracking-widest flex items-center gap-1.5 shrink-0">
-                        <span>{((asset.fileSize || 0) / 1024).toFixed(0)} KB</span>
-                        <span>•</span>
-                        <span className="text-primary/40">{asset.fileName.split('.').pop()?.toUpperCase()}</span>
-                      </p>
-                      {actualType === 'IMAGE' && (
-                        <div className="h-3 w-px bg-border/10" />
+                  onClick={() => toggleSelectAsset(asset.id)}
+                >
+                  <div className="absolute top-5 left-5 z-20">
+                    <Checkbox
+                      checked={isSelected}
+                      onCheckedChange={(e) => {
+                        toggleSelectAsset(asset.id);
+                      }}
+                      className={cn(
+                        "h-6 w-6 rounded-lg bg-background/40 backdrop-blur-2xl border-white/10 shadow-2xl transition-all duration-500",
+                        isSelected ? "opacity-100 scale-110 bg-primary border-primary shadow-primary/40" : "opacity-0 group-hover:opacity-100"
                       )}
-                      {actualType === 'IMAGE' && <AssetResolution id={asset.id} initialW={asset.width} initialH={asset.height} />}
+                    />
+                  </div>
+
+                  <div className="relative aspect-square bg-muted/5 overflow-hidden flex items-center justify-center m-2.5 rounded-[1.75rem] border border-white/5">
+                    <div className="absolute inset-0 bg-[url('/checkerboard.png')] bg-repeat opacity-[0.03] pointer-events-none" />
+
+                    {actualType === 'VIDEO' ? (
+                      <div className="w-full h-full flex items-center justify-center bg-black/40 overflow-hidden">
+                        <video
+                          src={getAssetUrl(asset.url)}
+                          className="max-w-full max-h-full object-contain opacity-60 transition-transform duration-1000 group-hover:scale-110"
+                          muted
+                          playsInline
+                        />
+                        {isSelected && (
+                          <div className="absolute inset-0 bg-primary/5 flex items-center justify-center backdrop-blur-[1px] z-10" />
+                        )}
+                        <div className="absolute inset-0 flex items-center justify-center">
+                          <div className="h-14 w-14 rounded-full bg-white/5 backdrop-blur-xl flex items-center justify-center text-white border border-white/10 shadow-2xl transition-all group-hover:scale-110 duration-700 group-hover:bg-primary/20">
+                            <Play className="h-6 w-6 fill-white ml-1" />
+                          </div>
+                        </div>
+                        {asset.duration && (
+                          <div className="absolute bottom-3 right-3 px-2 py-1 rounded-lg bg-black/60 text-[9px] font-black font-mono text-white/80 uppercase tracking-tighter">
+                            {Math.floor(asset.duration / 60)}:{(asset.duration % 60).toFixed(0).padStart(2, '0')}
+                          </div>
+                        )}
+                      </div>
+                    ) : actualType === 'DOCUMENT' ? (
+                      <div className="w-full h-full flex flex-col items-center justify-center text-muted-foreground/20">
+                        {isArchive ? <Archive className="h-16 w-16 mb-4 opacity-40 transition-transform group-hover:scale-110" /> : <FileText className="h-16 w-16 mb-4 opacity-40 transition-transform group-hover:scale-110" />}
+                        <span className="text-[10px] font-black uppercase tracking-[0.3em] group-hover:text-primary transition-colors">{fileExt.toUpperCase()}</span>
+                      </div>
+                    ) : (
+                      <Image
+                        src={getAssetUrl(asset.url)}
+                        alt={asset.title}
+                        fill
+                        className="object-contain p-4 group-hover:scale-110 transition-transform duration-1000 ease-out"
+                        unoptimized
+                      />
+                    )}
+
+                    <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-all duration-700 flex items-center justify-center gap-4 backdrop-blur-[4px]">
+                      <Button
+                        size="icon"
+                        variant="secondary"
+                        className="h-12 w-12 rounded-2xl shadow-2xl bg-white/10 hover:bg-primary border border-white/10 group/btn transition-all scale-75 group-hover:scale-100 duration-500"
+                        onClick={(e) => { e.stopPropagation(); setPreviewAsset(asset); setPreviewZoom('fit'); }}
+                      >
+                        <Maximize className="h-5 w-5 text-white group-hover/btn:scale-110 transition-all" />
+                      </Button>
+                    </div>
+                    <div className="absolute bottom-4 left-4 pointer-events-none">
+                      <Badge className="text-[8px] bg-black/40 backdrop-blur-md border border-white/5 px-3 py-1 h-6 font-black uppercase tracking-[0.2em] text-white/70">
+                        {getDisplayName(categories?.find(c => c.id === asset.categoryId))}
+                      </Badge>
                     </div>
                   </div>
-                  <div className="flex items-center justify-between border-t border-border/10 pt-4">
-                    <div className="flex gap-2">
-                      <Button
-                        size="icon"
-                        variant="ghost"
-                        className="h-9 w-9 rounded-xl text-muted-foreground hover:text-primary hover:bg-primary/15 transition-all"
-                        onClick={(e) => { e.stopPropagation(); handleCopy(asset.url); }}
-                        title="复制标识 ID / COPY ASSET URL"
-                      >
-                        <Copy className="h-4 w-4" />
-                      </Button>
-                      <Button
-                        size="icon"
-                        variant="ghost"
-                        className="h-9 w-9 rounded-xl text-muted-foreground hover:text-amber-500 hover:bg-amber-500/15 transition-all"
-                        onClick={(e) => { e.stopPropagation(); setEditingAsset(asset); }}
-                        title="元数据修正 / EDIT METADATA"
-                      >
-                        <Edit3 className="h-4 w-4" />
-                      </Button>
-                    <Button
-                      size="icon"
-                      variant="ghost"
-                      className="h-9 w-9 rounded-xl text-muted-foreground hover:text-destructive hover:bg-destructive/15 transition-all"
-                      onClick={(e) => { e.stopPropagation(); handleDeleteAsset(asset); }}
-                      title="永久粉碎 / PERMANENT DELETE"
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
+
+                  <div className="p-5 pt-2 space-y-4">
+                    <div className="space-y-1">
+                      <p className="text-[11px] font-black text-foreground truncate tracking-tight uppercase group-hover:text-primary transition-colors">{asset.title}</p>
+                      <div className="flex items-center gap-2">
+                        <p className="text-[9px] font-black text-muted-foreground/40 uppercase tracking-widest flex items-center gap-1.5 shrink-0">
+                          <span>{((asset.fileSize || 0) / 1024).toFixed(0)} KB</span>
+                          <span>•</span>
+                          <span className="text-primary/40">{asset.fileName.split('.').pop()?.toUpperCase()}</span>
+                        </p>
+                        {actualType === 'IMAGE' && (
+                          <div className="h-3 w-px bg-border/10" />
+                        )}
+                        {actualType === 'IMAGE' && <AssetResolution id={asset.id} initialW={asset.width} initialH={asset.height} />}
+                      </div>
+                    </div>
+                    <div className="flex items-center justify-between border-t border-border/10 pt-4">
+                      <div className="flex gap-2">
+                        <Button
+                          size="icon"
+                          variant="ghost"
+                          className="h-9 w-9 rounded-xl text-muted-foreground hover:text-primary hover:bg-primary/15 transition-all"
+                          onClick={(e) => { e.stopPropagation(); handleCopy(asset.url); }}
+                          title="复制标识 ID / COPY ASSET URL"
+                        >
+                          <Copy className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          size="icon"
+                          variant="ghost"
+                          className="h-9 w-9 rounded-xl text-muted-foreground hover:text-amber-500 hover:bg-amber-500/15 transition-all"
+                          onClick={(e) => { e.stopPropagation(); setEditingAsset(asset); }}
+                          title="元数据修正 / EDIT METADATA"
+                        >
+                          <Edit3 className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          size="icon"
+                          variant="ghost"
+                          className="h-9 w-9 rounded-xl text-muted-foreground hover:text-destructive hover:bg-destructive/15 transition-all"
+                          onClick={(e) => { e.stopPropagation(); handleDeleteAsset(asset); }}
+                          title="永久粉碎 / PERMANENT DELETE"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
                     </div>
                   </div>
                 </div>
-              </div>
-            );
-          })}
-        </div>
-      ) : (
-        /* 空状态处理可以放在这里，或者保持原样 */
-        null
-      )}
+              );
+            })}
+          </div>
+        ) : (
+          /* 空状态处理可以放在这里，或者保持原样 */
+          null
+        )}
       </div>
 
       {/* 高密度分页控制 / HD PAGINATION CONTROL */}
@@ -1385,8 +1382,8 @@ export default function GalleryPage() {
                 onClick={() => { setCurrentPage(page); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
                 className={cn(
                   "h-10 min-w-[2.5rem] rounded-xl text-[11px] font-black uppercase tracking-widest transition-all",
-                  currentPage === page 
-                    ? "shadow-[0_10px_25px_-5px_rgba(var(--primary),0.4)] scale-110" 
+                  currentPage === page
+                    ? "shadow-[0_10px_25px_-5px_rgba(var(--primary),0.4)] scale-110"
                     : "text-muted-foreground/40 hover:text-primary hover:bg-primary/5"
                 )}
               >
@@ -1416,11 +1413,11 @@ export default function GalleryPage() {
                 已选中 {selectedIds.size} 项资产
               </span>
             </div>
-            
+
             <div className="h-10 w-px bg-primary/10 mx-1" />
 
-            <Button 
-              variant="ghost" 
+            <Button
+              variant="ghost"
               className="h-11 rounded-full px-5 text-[10px] font-black uppercase tracking-widest text-foreground hover:bg-primary/10 hover:text-primary transition-all"
               onClick={handleSelectCurrentPage}
             >
@@ -1429,8 +1426,8 @@ export default function GalleryPage() {
                 : "全选本页"}
             </Button>
 
-            <Button 
-              variant="ghost" 
+            <Button
+              variant="ghost"
               className="h-11 rounded-full px-5 text-[10px] font-black uppercase tracking-widest text-foreground hover:bg-primary/10 hover:text-primary transition-all"
               onClick={handleSelectAllFiltered}
             >
@@ -1444,12 +1441,12 @@ export default function GalleryPage() {
             <Dialog open={isBatchCategoryDialogOpen} onOpenChange={setIsBatchCategoryDialogOpen}>
               <DialogTrigger asChild>
                 <Button variant="ghost" className="h-11 rounded-full px-6 text-[10px] font-black uppercase tracking-widest text-foreground hover:bg-primary/10 hover:text-primary transition-all gap-2">
-                  <Layers className="h-4 w-4" /> 架构迁移
+                  <Layers className="h-4 w-4" /> 修改分类
                 </Button>
               </DialogTrigger>
               <DialogContent className="bg-card/95 backdrop-blur-3xl border-border/10 rounded-[2.5rem] max-w-md shadow-2xl p-0 overflow-hidden">
                 <DialogHeader className="p-8 pb-4">
-                  <DialogTitle className="text-xl font-black uppercase tracking-tighter text-primary">批量架构迁移</DialogTitle>
+                  <DialogTitle className="text-xl font-black uppercase tracking-tighter text-primary">批量修改分类</DialogTitle>
                   <DialogDescription className="text-[11px] font-medium text-muted-foreground/60 uppercase tracking-widest">正在将选中的资产重定向至新的逻辑分类节点</DialogDescription>
                 </DialogHeader>
                 <div className="px-8 py-6 space-y-4">
@@ -1499,7 +1496,7 @@ export default function GalleryPage() {
       {/* 极光任务中心 / AURORA TASK HUB */}
       {isTasksPanelOpen && (
         <div className={cn(
-          "fixed bottom-10 right-10 z-[1000] w-96 bg-card/60 backdrop-blur-3xl border border-border/10 shadow-[0_50px_100px_-20px_rgba(0,0,0,0.5)] rounded-[2.5rem] overflow-hidden transition-all duration-700 ease-in-out", 
+          "fixed bottom-10 right-10 z-[1000] w-96 bg-card/60 backdrop-blur-3xl border border-border/10 shadow-[0_50px_100px_-20px_rgba(0,0,0,0.5)] rounded-[2.5rem] overflow-hidden transition-all duration-700 ease-in-out",
           isTasksPanelMinimized ? "h-16" : "h-[480px]"
         )}>
           <div className="bg-primary px-7 h-16 flex items-center justify-between text-background shadow-lg">
@@ -1540,7 +1537,7 @@ export default function GalleryPage() {
                     )}
                   </div>
                   <div className="relative h-1.5 w-full bg-muted/10 rounded-full overflow-hidden border border-white/5">
-                    <div 
+                    <div
                       className={cn(
                         "absolute inset-y-0 left-0 transition-all duration-700 ease-out rounded-full",
                         task.status === 'error' ? "bg-destructive shadow-[0_0_10px_rgba(var(--destructive),0.5)]" : "bg-primary shadow-[0_0_10px_rgba(var(--primary),0.5)]"
@@ -1580,10 +1577,10 @@ export default function GalleryPage() {
             <div className="p-8 space-y-6">
               <div className="space-y-3">
                 <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/40 pl-1">显示名称 / DISPLAY TITLE</Label>
-                <Input 
-                  value={editingAsset.title} 
-                  onChange={e => setEditingAsset({ ...editingAsset, title: e.target.value })} 
-                  className="h-14 rounded-2xl bg-muted/10 border-border/5 focus:ring-4 focus:ring-primary/5 focus:border-primary/40 transition-all font-black uppercase tracking-tight" 
+                <Input
+                  value={editingAsset.title}
+                  onChange={e => setEditingAsset({ ...editingAsset, title: e.target.value })}
+                  className="h-14 rounded-2xl bg-muted/10 border-border/5 focus:ring-4 focus:ring-primary/5 focus:border-primary/40 transition-all font-black uppercase tracking-tight"
                 />
               </div>
               <div className="space-y-3">
@@ -1655,7 +1652,7 @@ export default function GalleryPage() {
                 size="sm"
                 onClick={() => setPreviewZoom('fit')}
                 className={cn(
-                  "h-10 rounded-full px-5 gap-2 text-[10px] font-black uppercase tracking-widest transition-all", 
+                  "h-10 rounded-full px-5 gap-2 text-[10px] font-black uppercase tracking-widest transition-all",
                   previewZoom === 'fit' ? "bg-white text-black shadow-xl" : "text-white/60 hover:text-white hover:bg-white/10"
                 )}
               >
@@ -1666,7 +1663,7 @@ export default function GalleryPage() {
                 size="sm"
                 onClick={() => setPreviewZoom('1:1')}
                 className={cn(
-                  "h-10 rounded-full px-5 gap-2 text-[10px] font-black uppercase tracking-widest transition-all", 
+                  "h-10 rounded-full px-5 gap-2 text-[10px] font-black uppercase tracking-widest transition-all",
                   previewZoom === '1:1' ? "bg-white text-black shadow-xl" : "text-white/60 hover:text-white hover:bg-white/10"
                 )}
               >
@@ -1676,19 +1673,19 @@ export default function GalleryPage() {
 
             <div className="h-8 w-px bg-white/10 mx-1" />
 
-            <Button 
-              variant="secondary" 
-              size="icon" 
-              className="h-10 w-10 rounded-full bg-white/5 hover:bg-primary hover:text-background text-white border-white/5 backdrop-blur-md transition-all duration-500" 
-              onClick={() => { window.open(previewAsset?.url, '_blank'); }} 
+            <Button
+              variant="secondary"
+              size="icon"
+              className="h-10 w-10 rounded-full bg-white/5 hover:bg-primary hover:text-background text-white border-white/5 backdrop-blur-md transition-all duration-500"
+              onClick={() => { window.open(previewAsset?.url, '_blank'); }}
             >
               <Download className="h-4 w-4" />
             </Button>
-            
-            <Button 
-              variant="secondary" 
-              size="icon" 
-              className="h-10 w-10 rounded-full bg-white/5 hover:bg-destructive hover:text-white text-white border-white/5 backdrop-blur-md transition-all duration-500" 
+
+            <Button
+              variant="secondary"
+              size="icon"
+              className="h-10 w-10 rounded-full bg-white/5 hover:bg-destructive hover:text-white text-white border-white/5 backdrop-blur-md transition-all duration-500"
               onClick={() => {
                 setPreviewAsset(null);
                 setPreviewDimensions(null);
@@ -1699,18 +1696,18 @@ export default function GalleryPage() {
             </Button>
           </div>
 
-          <div 
+          <div
             ref={previewScrollContainerRef}
             onMouseDown={handlePreviewMouseDown}
             className={cn(
-              "relative flex-1 overflow-auto flex items-center justify-center custom-scrollbar p-0", 
+              "relative flex-1 overflow-auto flex items-center justify-center custom-scrollbar p-0",
               previewZoom === '1:1' ? "cursor-move" : "p-24"
             )}
           >
             {previewAsset && (
               <div className={cn("relative transition-all duration-700 ease-out", previewZoom === '1:1' ? "w-auto h-auto" : "w-full h-full flex items-center justify-center")}>
                 <div className="absolute inset-0 bg-[url('/checkerboard.png')] bg-repeat opacity-[0.05] pointer-events-none rounded-xl" />
-                
+
                 {previewAsset.type === 'VIDEO' ? (
                   <video
                     src={getAssetUrl(previewAsset.url)}
@@ -1753,8 +1750,8 @@ export default function GalleryPage() {
                 <h4 className="font-black text-lg uppercase tracking-tight">{previewAsset?.title}</h4>
               </div>
               <p className="text-[10px] font-bold opacity-40 uppercase tracking-[0.2em]">
-                {previewAsset?.fileName} <span className="mx-2">•</span> 
-                {((previewAsset?.fileSize || 0) / 1024).toFixed(1)} KB <span className="mx-2">•</span> 
+                {previewAsset?.fileName} <span className="mx-2">•</span>
+                {((previewAsset?.fileSize || 0) / 1024).toFixed(1)} KB <span className="mx-2">•</span>
                 {previewDimensions ? `${previewDimensions.width} × ${previewDimensions.height} PX` : 'CALCULATING...'}
               </p>
             </div>
@@ -1764,9 +1761,9 @@ export default function GalleryPage() {
                   <Move className="h-4 w-4" /> 自由拖动预览细节
                 </span>
               )}
-              <Button 
-                variant="outline" 
-                className="rounded-2xl h-14 px-10 border-white/10 text-white bg-white/5 hover:bg-white/10 hover:border-primary/40 text-[11px] uppercase font-black tracking-widest transition-all" 
+              <Button
+                variant="outline"
+                className="rounded-2xl h-14 px-10 border-white/10 text-white bg-white/5 hover:bg-white/10 hover:border-primary/40 text-[11px] uppercase font-black tracking-widest transition-all"
                 onClick={() => handleCopy(previewAsset?.url || '')}
               >
                 复制原始引用地址
