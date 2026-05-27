@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { revalidatePath } from 'next/cache';
 import db from '@/lib/db';
 import { withAuth } from '@/lib/auth-utils';
 import { extractIdsFromProduct, cleanupOrphanedStrings } from '@/lib/db-gc';
@@ -99,6 +100,10 @@ export const PUT = withAuth('editor', async (
         await cleanupOrphanedStrings(releasedIds);
       }
 
+      // On-demand revalidation
+      revalidatePath(`/products/${id}`);
+      revalidatePath('/products');
+
       return NextResponse.json(product);
     } else {
       // Full create
@@ -120,6 +125,11 @@ export const PUT = withAuth('editor', async (
           mainImageBrightness: data.mainImageBrightness !== undefined ? data.mainImageBrightness : null
         }
       });
+
+      // On-demand revalidation
+      revalidatePath(`/products/${id}`);
+      revalidatePath('/products');
+
       return NextResponse.json(product);
     }
   } catch (error: any) {
@@ -145,6 +155,10 @@ export const DELETE = withAuth('editor', async (
     if (oldIds.length > 0) {
       await cleanupOrphanedStrings(oldIds);
     }
+
+    // On-demand revalidation
+    revalidatePath(`/products/${id}`);
+    revalidatePath('/products');
 
     return NextResponse.json({ success: true });
   } catch (error: any) {

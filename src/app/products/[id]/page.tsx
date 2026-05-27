@@ -6,14 +6,40 @@ import { Locale } from '@/lib/translations';
 
 interface Props {
   params: Promise<{ id: string }>;
-  searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
 }
 
-import { getServerLocale } from "@/lib/server-locale";
+// Resolve system default language configuration without cookies/headers dependency to enable SSG/ISR
+async function getDefaultLocale(): Promise<Locale> {
+  try {
+    const langSetting = await db.setting.findUnique({ where: { id: 'languages' } });
+    if (langSetting && langSetting.value) {
+      const parsed = JSON.parse(langSetting.value);
+      if (parsed.defaultLanguage && ['en', 'zh', 'id', 'vi'].includes(parsed.defaultLanguage)) {
+        return parsed.defaultLanguage as Locale;
+      }
+    }
+  } catch (_) {}
+  return 'en';
+}
 
-export async function generateMetadata({ params, searchParams }: Props): Promise<Metadata> {
+// Generate static params to statically compile detail pages for all published products
+export async function generateStaticParams() {
+  try {
+    const products = await db.product.findMany({
+      where: { status: 'published' },
+      select: { id: true }
+    });
+    return products.map((p: any) => ({
+      id: p.id
+    }));
+  } catch (error) {
+    console.error('Failed to generate static params for products:', error);
+    return [];
+  }
+}
+
+export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const resolvedParams = await params;
-  const resolvedSearchParams = await searchParams;
   const id = resolvedParams.id;
   
   // 1. Fetch Product
@@ -23,11 +49,15 @@ export async function generateMetadata({ params, searchParams }: Props): Promise
   // 2. Fetch Site Config & SEO Template
   const siteConfig = await db.setting.findUnique({ where: { id: 'site' } });
   
-  const config = (siteConfig?.value as any) || {};
+  let config: any = {};
+  if (siteConfig?.value) {
+    try { config = JSON.parse(siteConfig.value); } catch (_) {}
+  }
   const template = config.productSeoTemplate || '[ProductName] | [SiteTitle]';
+  const siteUrl = config.siteUrl ? config.siteUrl.replace(/\/$/, '') : 'https://www.heovose.com';
   
-  // 3. Determine Locale
-  const locale = await getServerLocale(typeof resolvedSearchParams.lang === 'string' ? resolvedSearchParams.lang : undefined);
+  // 3. Determine Default Locale
+  const locale = await getDefaultLocale();
 
   // 4. Fetch Translated Strings for Replacement
   const [nameEntry, siteTitleEntry, descEntry] = await Promise.all([
@@ -46,18 +76,32 @@ export async function generateMetadata({ params, searchParams }: Props): Promise
     .replace('[SiteTitle]', siteTitle);
 
   return {
+    metadataBase: new URL(siteUrl),
     title,
     description,
+    alternates: {
+      canonical: `${siteUrl}/products/${id}`,
+      languages: {
+        'en': `${siteUrl}/products/${id}?lang=en`,
+        'zh-Hans': `${siteUrl}/products/${id}?lang=zh`,
+        'id': `${siteUrl}/products/${id}?lang=id`,
+        'vi': `${siteUrl}/products/${id}?lang=vi`,
+      }
+    },
     openGraph: {
       title,
+      description,
+      url: `${siteUrl}/products/${id}`,
+      type: 'website',
+      siteName: siteTitle,
+      locale: locale === 'zh' ? 'zh_CN' : 'en_US',
       images: product.mainImageUrl ? [product.mainImageUrl] : [],
     }
   };
 }
 
-export default async function ProductPage({ params, searchParams }: Props) {
+export default async function ProductPage({ params }: Props) {
   const resolvedParams = await params;
-  const resolvedSearchParams = await searchParams;
   const id = resolvedParams.id;
 
   const product = await db.product.findUnique({
@@ -97,7 +141,7 @@ export default async function ProductPage({ params, searchParams }: Props) {
       })
     : [];
 
-  const locale = await getServerLocale(typeof resolvedSearchParams.lang === 'string' ? resolvedSearchParams.lang : undefined);
+  const locale = await getDefaultLocale();
 
   // 打包产品数据，在客户端进行注入
   const productWithSpecs = {

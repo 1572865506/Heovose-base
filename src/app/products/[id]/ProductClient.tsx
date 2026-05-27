@@ -269,8 +269,45 @@ export default function ProductClient({ product, initialLocale }: { product: any
     })).filter((g: any) => g.title);
   }, [product, locale, tr, specTranslationMap]);
 
+  const jsonLd = useMemo(() => {
+    if (!product) return null;
+    const productName = getProductText(product.nameTextId, product.nameText);
+    const productDesc = product.descriptionTextId ? getProductText(product.descriptionTextId, product.descriptionText) : '';
+    const productUrl = typeof window !== 'undefined' ? window.location.href : '';
+    
+    return {
+      "@context": "https://schema.org",
+      "@type": "Product",
+      "name": productName,
+      "image": product.mainImageUrl ? [getAssetUrl(product.mainImageUrl)] : [],
+      "description": productDesc,
+      "sku": product.id,
+      "mpn": product.id,
+      "offers": {
+        "@type": "AggregateOffer",
+        "priceCurrency": "USD",
+        "lowPrice": "0",
+        "highPrice": "0",
+        "offerCount": "1",
+        "price": "0",
+        "url": productUrl,
+        "availability": "https://schema.org/InStock",
+        "seller": {
+          "@type": "Organization",
+          "name": "Heovose Elevate"
+        }
+      }
+    };
+  }, [product, locale]);
+
   return (
     <main className="min-h-screen bg-background">
+      {jsonLd && (
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+        />
+      )}
       <Navbar locale={locale} setLocale={setLocale} />
 
       <div className="pt-32 pb-20">

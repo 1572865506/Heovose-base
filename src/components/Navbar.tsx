@@ -49,8 +49,53 @@ import { useTranslations } from '@/hooks/use-translations';
 import { useInquiry } from '@/components/providers/InquiryProvider';
 import { injectTranslations } from '@/lib/translation-injector';
 
+const SYSTEM_FALLBACKS: Record<string, Record<Locale, string>> = {
+  NAV_WHOLESALE: { zh: '批发业务', en: 'Wholesale Business', id: 'Bisnis Grosir', vi: 'Kinh doanh bán sỉ' },
+  nav_wholesale: { zh: '批发业务', en: 'Wholesale Business', id: 'Bisnis Grosir', vi: 'Kinh doanh bán sỉ' },
+  NAV_PROJECTS: { zh: '项目工程', en: 'Project Solutions', id: 'Solusi Proyek', vi: 'Giải pháp dự án' },
+  nav_projects: { zh: '项目工程', en: 'Project Solutions', id: 'Solusi Proyek', vi: 'Giải pháp dự án' },
+  NAV_CASES: { zh: '成功案例', en: 'Case Studies', id: 'Studi Kasus', vi: 'Trường hợp thực tế' },
+  NAV_SERVICE_CENTERS: { zh: '服务网点', en: 'Service Centers', id: 'Pusat Layanan', vi: 'Trung tâm dịch vụ' },
+  NAV_ABOUT: { zh: '关于我们', en: 'About Us', id: 'Tentang Kami', vi: 'Về chúng tôi' },
+  NAV_CONTACT: { zh: '联系我们', en: 'Contact Us', id: 'Hubungi Kami', vi: 'Liên hệ chúng tôi' },
+  nav_mega_title: { zh: '产品分类', en: 'Product Categories', id: 'Kategori Produk', vi: 'Danh mục sản phẩm' },
+  nav_mega_view_all: { zh: '查看全部', en: 'View All', id: 'Lihat Semua', vi: 'Xem tất cả' },
+  nav_sub_download: { zh: '下载目录', en: 'Download Catalog', id: 'Unduh Katalog', vi: 'Tải tài liệu' },
+  nav_sub_aio: { zh: '一体机', en: 'All-in-One PC', id: 'PC All-in-One', vi: 'Máy tính All-in-One' },
+  nav_sub_aio_desc: { zh: '高集成度台式电脑', en: 'Highly integrated desktop computer', id: 'Komputer desktop terintegrasi tinggi', vi: 'Máy tính để bàn tích hợp cao' },
+  nav_sub_laptop: { zh: '笔记本电脑', en: 'Laptops', id: 'Laptop', vi: 'Máy tính xách tay' },
+  nav_sub_laptop_desc: { zh: '便携式商务与娱乐本', en: 'Portable business & entertainment laptops', id: 'Laptop bisnis & hiburan portabel', vi: 'Máy tính xách tay kinh doanh & giải trí' },
+  nav_sub_minipc: { zh: '迷你主机', en: 'Mini PC', id: 'Mini PC', vi: 'Mini PC' },
+  nav_sub_minipc_desc: { zh: '强劲性能的微型电脑', en: 'Powerful micro computer', id: 'Komputer mikro yang kuat', vi: 'Máy tính siêu nhỏ mạnh mẽ' },
+  nav_sub_electromechanical: { zh: '机电产品', en: 'Electromechanical', id: 'Elektromekanik', vi: 'Cơ điện' },
+  nav_sub_electromechanical_desc: { zh: '高品质电源与机箱组件', en: 'High quality power supplies & chassis components', id: 'Catu daya & komponen sasis berkualitas tinggi', vi: 'Nguồn điện & linh kiện khung gầm chất lượng cao' },
+  nav_sub_monitor: { zh: '显示器', en: 'Monitors', id: 'Monitor', vi: 'Màn hình' },
+  nav_sub_monitor_desc: { zh: '高色域超清显示屏', en: 'High color gamut ultra-clear displays', id: 'Layar ultra-clear gamut warna tinggi', vi: 'Màn hình siêu nét gam màu cao' },
+  nav_sub_components: { zh: '电脑配件', en: 'Components', id: 'Komponen', vi: 'Linh kiện' },
+  nav_sub_components_desc: { zh: '核心硬件与升级配件', en: 'Core hardware & upgrade parts', id: 'Perangkat keras inti & suku cadang peningkatan', vi: 'Phần cứng cốt lõi & phụ tùng nâng cấp' },
+  nav_sub_conference: { zh: '会议平板', en: 'Conference Screen', id: 'Layar Konferensi', vi: 'Màn hình hội nghị' },
+  nav_sub_conference_desc: { zh: '智能协作与会议系统', en: 'Smart collaboration & meeting systems', id: 'Sistem kolaborasi & pertemuan pintar', vi: 'Hệ thống cộng tác & hội họp thông minh' },
+  nav_sub_selfservice: { zh: '自助终端', en: 'Kiosk', id: 'Kios', vi: 'Kiosk' },
+  nav_sub_selfservice_desc: { zh: '政务与零售自助一体机', en: 'Government & retail self-service terminals', id: 'Terminal mandiri pemerintah & ritel', vi: 'Thiết bị tự phục vụ chính phủ & bán lẻ' },
+  nav_sub_industrial: { zh: '工控主机', en: 'Industrial PC', id: 'PC Industri', vi: 'PC công nghiệp' },
+  nav_sub_industrial_desc: { zh: '宽温防尘工业控制电脑', en: 'Wide temperature & dustproof industrial PCs', id: 'PC industri tahan debu & suhu luas', vi: 'PC công nghiệp chống bụi & nhiệt độ rộng' },
+  nav_sub_led: { zh: 'LED显示屏', en: 'LED Display', id: 'Layar LED', vi: 'Màn hình LED' },
+  nav_sub_led_desc: { zh: '室内外高亮无缝拼接屏', en: 'Indoor & outdoor high-brightness seamless screens', id: 'Layar mulus kecerahan tinggi indoor & outdoor', vi: 'Màn hình liền mạch độ sáng cao trong nhà & ngoài trời' },
+  nav_sub_showroom: { zh: '展厅工程', en: 'Showroom Solutions', id: 'Solusi Ruang Pameran', vi: 'Giải pháp phòng trưng bày' },
+  nav_sub_showroom_desc: { zh: '数字化多媒体展厅定制', en: 'Digital multimedia showroom customization', id: 'Kustomisasi ruang pameran multimedia digital', vi: 'Tùy chỉnh phòng trưng bày đa phương tiện kỹ thuật số' }
+};
+
 export function Navbar({ locale, setLocale, headerTheme = 'dark', themeLine }: NavbarProps) {
   const { t: tr } = useTranslations(locale);
+  const getSystemText = (key: string) => {
+    const fromDb = tr(key);
+    if (fromDb) return fromDb;
+    const fallback = SYSTEM_FALLBACKS[key];
+    if (fallback) {
+      return fallback[locale] || fallback['en'] || '';
+    }
+    return key;
+  };
   const { openInquiry } = useInquiry();
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -155,19 +200,19 @@ export function Navbar({ locale, setLocale, headerTheme = 'dark', themeLine }: N
       // Return hardcoded fallbacks if no data yet to avoid empty navbar
       return {
         wholesaleItems: [
-          { id: 'aio', label: tr('nav_sub_aio'), desc: tr('nav_sub_aio_desc'), icon: Monitor, href: '/products?category=AIO' },
-          { id: 'laptop', label: tr('nav_sub_laptop'), desc: tr('nav_sub_laptop_desc'), icon: Laptop, href: '/products?category=Laptop' },
-          { id: 'minipc', label: tr('nav_sub_minipc'), desc: tr('nav_sub_minipc_desc'), icon: Cpu, href: '/products?category=Mini%20PC' },
-          { id: 'electromechanical', label: tr('nav_sub_electromechanical'), desc: tr('nav_sub_electromechanical_desc'), icon: Zap, href: '/products?category=Electromechanical' },
-          { id: 'monitor', label: tr('nav_sub_monitor'), desc: tr('nav_sub_monitor_desc'), icon: Tv, href: '/products?category=Monitor' },
-          { id: 'components', label: tr('nav_sub_components'), desc: tr('nav_sub_components_desc'), icon: HardDrive, href: '/products?category=Components' },
+          { id: 'aio', label: getSystemText('nav_sub_aio'), desc: getSystemText('nav_sub_aio_desc'), icon: Monitor, href: '/products?category=AIO' },
+          { id: 'laptop', label: getSystemText('nav_sub_laptop'), desc: getSystemText('nav_sub_laptop_desc'), icon: Laptop, href: '/products?category=Laptop' },
+          { id: 'minipc', label: getSystemText('nav_sub_minipc'), desc: getSystemText('nav_sub_minipc_desc'), icon: Cpu, href: '/products?category=Mini%20PC' },
+          { id: 'electromechanical', label: getSystemText('nav_sub_electromechanical'), desc: getSystemText('nav_sub_electromechanical_desc'), icon: Zap, href: '/products?category=Electromechanical' },
+          { id: 'monitor', label: getSystemText('nav_sub_monitor'), desc: getSystemText('nav_sub_monitor_desc'), icon: Tv, href: '/products?category=Monitor' },
+          { id: 'components', label: getSystemText('nav_sub_components'), desc: getSystemText('nav_sub_components_desc'), icon: HardDrive, href: '/products?category=Components' },
         ],
         projectItems: [
-          { id: 'conference', label: tr('nav_sub_conference'), desc: tr('nav_sub_conference_desc'), icon: Presentation, href: '/products?category=Conference' },
-          { id: 'selfservice', label: tr('nav_sub_selfservice'), desc: tr('nav_sub_selfservice_desc'), icon: MousePointerClick, href: '/products?category=KIOSK' },
-          { id: 'industrial', label: tr('nav_sub_industrial'), desc: tr('nav_sub_industrial_desc'), icon: Factory, href: '/products?category=Industrial' },
-          { id: 'led', label: tr('nav_sub_led'), desc: tr('nav_sub_led_desc'), icon: Lightbulb, href: '/products?category=LED' },
-          { id: 'showroom', label: tr('nav_sub_showroom'), desc: tr('nav_sub_showroom_desc'), icon: Store, href: '/products?category=Showroom' },
+          { id: 'conference', label: getSystemText('nav_sub_conference'), desc: getSystemText('nav_sub_conference_desc'), icon: Presentation, href: '/products?category=Conference' },
+          { id: 'selfservice', label: getSystemText('nav_sub_selfservice'), desc: getSystemText('nav_sub_selfservice_desc'), icon: MousePointerClick, href: '/products?category=KIOSK' },
+          { id: 'industrial', label: getSystemText('nav_sub_industrial'), desc: getSystemText('nav_sub_industrial_desc'), icon: Factory, href: '/products?category=Industrial' },
+          { id: 'led', label: getSystemText('nav_sub_led'), desc: getSystemText('nav_sub_led_desc'), icon: Lightbulb, href: '/products?category=LED' },
+          { id: 'showroom', label: getSystemText('nav_sub_showroom'), desc: getSystemText('nav_sub_showroom_desc'), icon: Store, href: '/products?category=Showroom' },
         ]
       };
     }
@@ -193,7 +238,7 @@ export function Navbar({ locale, setLocale, headerTheme = 'dark', themeLine }: N
       }));
 
     return { wholesaleItems: wholesale, projectItems: projects };
-  }, [remoteCats, locale, tr]);
+  }, [remoteCats, locale, getSystemText, tr]);
 
   const logoStandard = siteConfig?.logoStandard ? getAssetUrl(siteConfig.logoStandard) : "/image/Heovose-color.svg";
   const logoInverted = siteConfig?.logoInverted ? getAssetUrl(siteConfig.logoInverted) : "/image/Heovose.svg";
@@ -259,7 +304,7 @@ export function Navbar({ locale, setLocale, headerTheme = 'dark', themeLine }: N
                       )}
                       onMouseEnter={() => handleMouseEnter('wholesale')}
                     >
-                      <span>{tr('NAV_WHOLESALE')}</span>
+                      <span>{getSystemText('NAV_WHOLESALE')}</span>
                       <ChevronDown className={cn(
                         "w-4 h-4 transition-transform duration-300",
                         activeMenu === 'wholesale' ? "rotate-180" : ""
@@ -283,6 +328,7 @@ export function Navbar({ locale, setLocale, headerTheme = 'dark', themeLine }: N
                         navSettings={navSettings}
                         locale={locale}
                         tr={tr}
+                        getSystemText={getSystemText}
                         line="wholesale"
                         onMouseEnter={() => handleMouseEnter('wholesale')}
                         onMouseLeave={handleMouseLeave}
@@ -306,7 +352,7 @@ export function Navbar({ locale, setLocale, headerTheme = 'dark', themeLine }: N
                       )}
                       onMouseEnter={() => handleMouseEnter('projects')}
                     >
-                      <span>{tr('NAV_PROJECTS')}</span>
+                      <span>{getSystemText('NAV_PROJECTS')}</span>
                       <ChevronDown className={cn(
                         "w-4 h-4 transition-transform duration-300",
                         activeMenu === 'projects' ? "rotate-180" : ""
@@ -330,6 +376,7 @@ export function Navbar({ locale, setLocale, headerTheme = 'dark', themeLine }: N
                         navSettings={navSettings}
                         locale={locale}
                         tr={tr}
+                        getSystemText={getSystemText}
                         line="project"
                         onMouseEnter={() => handleMouseEnter('projects')}
                         onMouseLeave={handleMouseLeave}
@@ -346,7 +393,7 @@ export function Navbar({ locale, setLocale, headerTheme = 'dark', themeLine }: N
                   ? "text-slate-800 hover:bg-slate-100"
                   : "text-white hover:bg-white/10"
               )}>
-                {tr('NAV_CASES')}
+                {getSystemText('NAV_CASES')}
               </Link>
               <Link href="/service-centers" className={cn(
                 "px-4 py-2 rounded-full transition-all duration-300 text-sm font-medium whitespace-nowrap",
@@ -354,7 +401,7 @@ export function Navbar({ locale, setLocale, headerTheme = 'dark', themeLine }: N
                   ? "text-slate-800 hover:bg-slate-100"
                   : "text-white hover:bg-white/10"
               )}>
-                {tr('NAV_SERVICE_CENTERS')}
+                {getSystemText('NAV_SERVICE_CENTERS')}
               </Link>
               <Link href="/about" className={cn(
                 "px-4 py-2 rounded-full transition-all duration-300 text-sm font-medium whitespace-nowrap",
@@ -362,7 +409,7 @@ export function Navbar({ locale, setLocale, headerTheme = 'dark', themeLine }: N
                   ? "text-slate-800 hover:bg-slate-100"
                   : "text-white hover:bg-white/10"
               )}>
-                {tr('NAV_ABOUT')}
+                {getSystemText('NAV_ABOUT')}
               </Link>
             </div>
 
@@ -377,7 +424,7 @@ export function Navbar({ locale, setLocale, headerTheme = 'dark', themeLine }: N
               >
                 <span className="flex items-center gap-2">
                   <MessageSquare className="h-4 w-4" />
-                  {tr('NAV_CONTACT')}
+                  {getSystemText('NAV_CONTACT')}
                 </span>
               </Button>
             </div>
@@ -400,7 +447,7 @@ export function Navbar({ locale, setLocale, headerTheme = 'dark', themeLine }: N
           <div className="lg:hidden absolute top-full left-0 right-0 bg-white border-t border-border p-6 shadow-2xl animate-in slide-in-from-top duration-300 h-screen overflow-y-auto">
             <div className="flex flex-col gap-8 pb-32">
               <div className="space-y-4">
-                <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">{tr('nav_wholesale')}</p>
+                <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">{getSystemText('nav_wholesale')}</p>
                 <div className="grid grid-cols-2 gap-4">
                   {wholesaleItems.map((item) => (
                     <Link key={item.label} href={item.href} onClick={() => setMobileMenuOpen(false)} className="flex items-center gap-3">
@@ -411,7 +458,7 @@ export function Navbar({ locale, setLocale, headerTheme = 'dark', themeLine }: N
                 </div>
               </div>
               <div className="space-y-4 pt-4 border-t border-dashed">
-                <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">{tr('nav_projects')}</p>
+                <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">{getSystemText('nav_projects')}</p>
                 <div className="grid grid-cols-2 gap-4">
                   {projectItems.map((item) => (
                     <Link key={item.label} href={item.href} onClick={() => setMobileMenuOpen(false)} className="flex items-center gap-3">
@@ -421,9 +468,9 @@ export function Navbar({ locale, setLocale, headerTheme = 'dark', themeLine }: N
                   ))}
                 </div>
               </div>
-              <Link href="/#cases" onClick={() => setMobileMenuOpen(false)} className="text-lg font-bold text-primary">{tr('NAV_CASES')}</Link>
-              <Link href="/service-centers" onClick={() => setMobileMenuOpen(false)} className="text-lg font-bold text-primary">{tr('NAV_SERVICE_CENTERS')}</Link>
-              <Link href="/about" onClick={() => setMobileMenuOpen(false)} className="text-lg font-bold text-primary">{tr('NAV_ABOUT')}</Link>
+              <Link href="/#cases" onClick={() => setMobileMenuOpen(false)} className="text-lg font-bold text-primary">{getSystemText('NAV_CASES')}</Link>
+              <Link href="/service-centers" onClick={() => setMobileMenuOpen(false)} className="text-lg font-bold text-primary">{getSystemText('NAV_SERVICE_CENTERS')}</Link>
+              <Link href="/about" onClick={() => setMobileMenuOpen(false)} className="text-lg font-bold text-primary">{getSystemText('NAV_ABOUT')}</Link>
 
               <div className="pt-6 border-t border-slate-100 mt-auto">
                 <Button 
@@ -434,7 +481,7 @@ export function Navbar({ locale, setLocale, headerTheme = 'dark', themeLine }: N
                   className="w-full rounded-xl bg-primary flex items-center justify-center gap-2"
                 >
                   <MessageSquare className="h-4 w-4" />
-                  {tr('NAV_CONTACT')}
+                  {getSystemText('NAV_CONTACT')}
                 </Button>
               </div>
             </div>
@@ -451,6 +498,7 @@ function MegaMenuContent({
   navSettings,
   locale,
   tr,
+  getSystemText,
   line,
   onMouseEnter,
   onMouseLeave
@@ -459,6 +507,7 @@ function MegaMenuContent({
   navSettings: any,
   locale: string,
   tr: any,
+  getSystemText: (key: string) => string,
   line: 'wholesale' | 'project',
   onMouseEnter: () => void,
   onMouseLeave: () => void
@@ -473,13 +522,13 @@ function MegaMenuContent({
       <div className="flex-1 space-y-8">
         <div className="flex items-center justify-between border-b pb-4 border-primary/10">
           <h4 className="text-[10px] font-bold uppercase tracking-widest font-headline text-primary/40">
-            {tr('nav_mega_title')}
+            {getSystemText('nav_mega_title')}
           </h4>
           <Link 
             href={`/products?line=${line}`} 
             className="flex items-center gap-2 text-[9px] font-bold uppercase tracking-widest cursor-pointer hover:translate-x-1 transition-transform text-primary"
           >
-            {tr('nav_mega_view_all')} <ArrowRight className="h-3 w-3" />
+            {getSystemText('nav_mega_view_all')} <ArrowRight className="h-3 w-3" />
           </Link>
         </div>
 
@@ -546,7 +595,7 @@ function MegaMenuContent({
               >
                 <Link href={navSettings?.featuredDownloadUrl || "#"}>
                   <Download className="h-3.5 w-3.5 opacity-40 group-hover/download:opacity-100 transition-opacity" />
-                  <span>{tr('nav_sub_download')}</span>
+                  <span>{getSystemText('nav_sub_download')}</span>
                 </Link>
               </Button>
             </div>

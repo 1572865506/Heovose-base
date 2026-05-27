@@ -64,7 +64,7 @@ function BentoCard({ item, index, locale, isVisible }: { item: any, index: numbe
               {item.label}
             </h3>
             <div className={cn(
-              "h-10 w-10 aspect-square rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-500 hover:scale-110",
+              "h-10 w-10 aspect-square rounded-full hidden md:flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-500 hover:scale-110",
               theme === 'light' ? "bg-black/10 text-slate-900" : "bg-white/90 text-black"
             )}>
               <ArrowUpRight className="h-5 w-5" />

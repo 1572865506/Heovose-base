@@ -14,9 +14,21 @@ export async function generateMetadata(): Promise<Metadata> {
       db.setting.findUnique({ where: { id: 'languages' } }),
     ]);
 
-    const config = (siteConfig?.value as any) || {};
-    const defaultLang = (langSettings?.value as any)?.defaultLanguage || 'en';
-    
+    let config: any = {};
+    if (siteConfig?.value) {
+      try { config = JSON.parse(siteConfig.value); } catch (_) {}
+    }
+
+    let defaultLang = 'en';
+    if (langSettings?.value) {
+      try {
+        const parsed = JSON.parse(langSettings.value);
+        defaultLang = parsed.defaultLanguage || 'en';
+      } catch (_) {}
+    }
+
+    const siteUrl = config.siteUrl ? config.siteUrl.replace(/\/$/, '') : 'https://www.heovose.com';
+
     // Helper to extract content
     const getContent = (entry: any, lang: string) => {
       const content = (entry?.content as any) || {};
@@ -28,11 +40,24 @@ export async function generateMetadata(): Promise<Metadata> {
     const keywords = getContent(keysEntry, defaultLang) || '';
 
     return {
+      metadataBase: new URL(siteUrl),
       title,
       description,
       keywords,
       icons: {
         icon: config.favicon ? getAssetUrl(config.favicon) : '/favicon.ico',
+      },
+      alternates: {
+        canonical: siteUrl,
+      },
+      openGraph: {
+        title,
+        description,
+        url: siteUrl,
+        siteName: title,
+        type: 'website',
+        locale: defaultLang === 'zh' ? 'zh_CN' : 'en_US',
+        images: config.logoStandard ? [getAssetUrl(config.logoStandard)] : [],
       }
     };
   } catch (e) {
@@ -107,7 +132,7 @@ export default async function RootLayout({
   }
 
   return (
-    <html lang={locale}>
+    <html lang={locale} suppressHydrationWarning>
       <head>
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
