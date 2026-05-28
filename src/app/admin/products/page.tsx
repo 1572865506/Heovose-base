@@ -46,6 +46,9 @@ import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 import { getAssetUrl } from '@/lib/image-utils';
+import { AdminPageHeader } from '@/components/admin/AdminPageHeader';
+import { GlassCard } from '@/components/admin/GlassCard';
+import { AdminSearchInput } from '@/components/admin/AdminSearchInput';
 
 interface Product {
   id: string;
@@ -201,35 +204,28 @@ export default function AdminProductsPage() {
 
   return (
     <div className="space-y-10 animate-in fade-in slide-in-from-bottom-4 duration-700">
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
-        <div className="space-y-1">
-          <h2 className="text-2xl font-headline font-bold text-foreground flex items-center gap-4">
-            <div className="h-10 w-10 rounded-2xl bg-primary/10 flex items-center justify-center text-primary">
-              <Package className="h-5 w-5" />
-            </div>
-            产品管理
-          </h2>
-          <p className="text-xs text-muted-foreground font-bold uppercase tracking-[0.2em] pl-14">Management / Product Catalog</p>
-        </div>
-
-        <Link href="/admin/products/editor">
-          <Button className="rounded-2xl h-14 px-8 font-bold uppercase tracking-widest text-xs gap-2.5 shadow-xl shadow-primary/20 hover:scale-105 transition-all">
-            <Plus className="h-4 w-4" /> 发布新产品
-          </Button>
-        </Link>
-      </div>
+      <AdminPageHeader
+        title="产品管理"
+        subtitle="Management / Product Catalog"
+        icon={Package}
+        actions={
+          <Link href="/admin/products/editor">
+            <Button className="rounded-2xl h-14 px-8 font-bold uppercase tracking-widest text-xs gap-2.5 shadow-xl shadow-primary/20 hover:scale-105 transition-all">
+              <Plus className="h-4 w-4" /> 发布新产品
+            </Button>
+          </Link>
+        }
+      />
 
       {/* 高级搜索与筛选栏 - Glassmorphism */}
-      <div className="flex flex-col lg:flex-row items-center gap-4 bg-card/40 backdrop-blur-3xl p-5 rounded-[2.5rem] border border-border/10 shadow-2xl shadow-black/20">
-        <div className="relative flex-1 w-full group">
-          <Search className="absolute left-6 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground/40 group-focus-within:text-primary transition-all" />
-          <Input
-            placeholder="按名称、型号或序列号搜索"
-            className="pl-14 border-none bg-muted/10 focus-visible:ring-0 rounded-2xl h-14 text-xs font-bold placeholder:text-muted-foreground/20 placeholder:font-bold placeholder:uppercase placeholder:tracking-[0.2em] transition-all"
-            value={searchQuery}
-            onChange={e => setSearchQuery(e.target.value)}
-          />
-        </div>
+      <GlassCard className="flex flex-col lg:flex-row items-center gap-4 p-5 rounded-[2.5rem]">
+        <AdminSearchInput
+          placeholder="按名称、型号或序列号搜索"
+          className="bg-muted/10"
+          iconClassName="left-6"
+          value={searchQuery}
+          onChange={e => setSearchQuery(e.target.value)}
+        />
         <div className="flex items-center gap-3 w-full lg:w-auto">
           {/* 排序选择器 */}
           <div className="h-14 flex items-center gap-3 px-6 bg-muted/10 rounded-2xl border border-transparent focus-within:border-primary/20 transition-all w-full lg:w-64 relative">
@@ -272,9 +268,9 @@ export default function AdminProductsPage() {
             <X className="h-4 w-4" />
           </Button>
         </div>
-      </div>
+      </GlassCard>
 
-      <div className="bg-card/40 backdrop-blur-3xl rounded-[2.5rem] border border-border/10 shadow-2xl shadow-black/10 overflow-hidden">
+      <GlassCard className="">
         <Table>
           <TableHeader className="bg-muted/30 border-b border-border/10">
             <TableRow className="hover:bg-transparent border-none h-16">
@@ -329,7 +325,7 @@ export default function AdminProductsPage() {
                     </div>
                   </TableCell>
                   <TableCell className="text-center">
-                    <span className="inline-flex items-center h-8 px-4 rounded-xl bg-muted/10 text-[10px] font-bold text-muted-foreground/60 uppercase tracking-widest border border-border/5">{getCategoryName(p.categoryId)}</span>
+                    <span className="inline-flex items-center h-8 px-4 rounded-xl bg-muted/10 text-[10px] font-bold text-muted-foreground/90 uppercase tracking-widest border border-border/5">{getCategoryName(p.categoryId)}</span>
                   </TableCell>
                   <TableCell className="text-center">
                     <div className="inline-flex items-center justify-center gap-2">
@@ -367,7 +363,7 @@ export default function AdminProductsPage() {
                             <Switch
                               checked={isEnabled}
                               onCheckedChange={() => handleToggleLanguage(p, lang.code, enabledLangs)}
-                              className="scale-[0.65] data-[state=checked]:bg-primary/40"
+                              className="scale-[0.65] data-[state=checked]:bg-primary"
                             />
                           </div>
                         );
@@ -447,7 +443,7 @@ export default function AdminProductsPage() {
             <Globe className="h-3.5 w-3.5 opacity-50" /> 系统：多语言节点已激活
           </div>
         </div>
-      </div>
+      </GlassCard>
     </div>
   );
 }

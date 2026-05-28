@@ -59,6 +59,8 @@ import {
 } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
+import { AdminPageHeader } from '@/components/admin/AdminPageHeader';
+import { GlassCard } from '@/components/admin/GlassCard';
 
 interface AIProvider {
   id: string;
@@ -90,15 +92,7 @@ interface AIConfig {
   _version?: number;
 }
 
-const GlassCard = ({ children, className }: { children: React.ReactNode, className?: string }) => (
-  <div className={cn(
-    "bg-white/70 backdrop-blur-xl border border-white/40 shadow-2xl rounded-[2.5rem] overflow-hidden transition-all duration-300",
-    "admin-interface-dark:bg-slate-900/40 admin-interface-dark:border-slate-850 admin-interface-dark:shadow-none",
-    className
-  )}>
-    {children}
-  </div>
-);
+
 
 export default function AiManagementPage() {
   const { toast } = useToast();
@@ -298,42 +292,37 @@ export default function AiManagementPage() {
       <div className="absolute top-[-20%] right-[-10%] w-[600px] h-[600px] bg-primary/5 blur-[120px] rounded-full -z-10" />
       <div className="absolute bottom-0 left-[-5%] w-[400px] h-[400px] bg-accent/5 blur-[100px] rounded-full -z-10" />
 
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 relative z-10">
-        <div className="space-y-1">
-          <h2 className="text-2xl font-headline font-bold text-foreground flex items-center gap-4">
-            <div className="h-10 w-10 rounded-2xl bg-primary/10 flex items-center justify-center text-primary shadow-sm">
-              <Bot className="h-5 w-5" />
+      <AdminPageHeader
+        title="AI 智译中枢"
+        subtitle="System / AI Hub"
+        icon={Bot}
+        actions={
+          <>
+            <div className="flex items-center gap-3 bg-muted/10 p-2 rounded-2xl border border-border/40">
+              <span className="text-xs text-muted-foreground font-bold uppercase tracking-wider pl-2">网关状态</span>
+              <Switch 
+                checked={formData.isEnabled} 
+                onCheckedChange={v => {
+                  const updated = { ...formData, isEnabled: v };
+                  setFormData(updated);
+                  handleSave(updated);
+                }}
+                className="data-[state=checked]:bg-primary"
+              />
             </div>
-            AI 智译中枢
-          </h2>
-          <p className="text-xs text-muted-foreground font-bold uppercase tracking-[0.2em] pl-14">System / AI Hub</p>
-        </div>
 
-        <div className="flex items-center gap-6">
-          <div className="flex items-center gap-3 bg-muted/10 p-2 rounded-2xl border border-border/40">
-            <span className="text-xs text-muted-foreground font-bold uppercase tracking-wider pl-2">网关状态</span>
-            <Switch 
-              checked={formData.isEnabled} 
-              onCheckedChange={v => {
-                const updated = { ...formData, isEnabled: v };
-                setFormData(updated);
-                handleSave(updated);
+            <Button 
+              onClick={() => {
+                setEditingProvider({ type: 'google', isActive: true, isPrimary: formData.providers.length === 0 });
+                setIsDialogOpen(true);
               }}
-              className="data-[state=checked]:bg-primary"
-            />
-          </div>
-
-          <Button 
-            onClick={() => {
-              setEditingProvider({ type: 'google', isActive: true, isPrimary: formData.providers.length === 0 });
-              setIsDialogOpen(true);
-            }}
-            className="rounded-2xl h-12 px-6 gap-2.5 font-bold uppercase tracking-widest text-[10px] shadow-xl shadow-primary/20 hover:scale-105 active:scale-95 transition-all bg-slate-900 text-white admin-interface-dark:bg-white admin-interface-dark:text-slate-900 admin-interface-dark:hover:bg-slate-100 admin-interface-dark:shadow-none"
-          >
-            <Plus className="h-4 w-4" /> 新增算力节点
-          </Button>
-        </div>
-      </div>
+              className="rounded-2xl h-12 px-6 gap-2.5 font-bold uppercase tracking-widest text-[10px] shadow-xl shadow-primary/20 hover:scale-105 active:scale-95 transition-all bg-slate-900 text-white admin-interface-dark:bg-white admin-interface-dark:text-slate-900 admin-interface-dark:hover:bg-slate-100 admin-interface-dark:shadow-none"
+            >
+              <Plus className="h-4 w-4" /> 新增算力节点
+            </Button>
+          </>
+        }
+      />
 
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
         <DialogContent className="max-w-2xl rounded-[3rem] p-0 border-none bg-slate-50 overflow-hidden max-h-[90vh] flex flex-col admin-interface-dark:bg-slate-950 admin-interface-dark:border admin-interface-dark:border-slate-850">

@@ -6,12 +6,12 @@ import { useSession } from 'next-auth/react';
 import { useLocalDoc } from '@/hooks/use-local-doc';
 import { useLocalCollection } from '@/hooks/use-local-collection';
 import { Loader2, TableProperties, Settings, ImageIcon, Library } from 'lucide-react';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { AdminTabs, AdminTabsList, AdminTabsTrigger, AdminTabsContent } from '@/components/admin/AdminTabs';
 import { useToast } from '@/hooks/use-toast';
 import { smartTranslate } from '@/lib/translate-client';
 import { MediaLibraryDialog } from '@/components/admin/media-library-dialog';
 
-// 导入拆分后的子组件
+import { AdminEditorHeader } from '@/components/admin/AdminEditorHeader';
 import EditorHeader from './components/EditorHeader';
 import BasicInfoSection from './components/BasicInfoSection';
 import MediaSection from './components/MediaSection';
@@ -654,22 +654,36 @@ function ProductEditorContent() {
   return (
     <div className="max-w-full w-full mx-auto space-y-10 pb-32 animate-in fade-in duration-700 relative min-h-screen">
       <AiGradientDef />
-      <EditorHeader isEditing={isEditing} formData={formData} categories={categories || []} translations={translations || []} translationCoverage={translationCoverage} idConflict={idConflict} onUpdateField={(f, v) => { if (f === 'categoryId') handleCategoryChange(v); else handleUpdateField(f, v); }} onSave={handleSave} onIdChange={(id) => handleUpdateField('id', id)} isSaving={isAiProcessing} />
+      <EditorHeader
+        isEditing={isEditing}
+        formData={formData}
+        categories={categories || []}
+        translations={translations || []}
+        translationCoverage={translationCoverage}
+        idConflict={idConflict}
+        onUpdateField={(f: string, v: any) => {
+          if (f === 'categoryId') handleCategoryChange(v);
+          else handleUpdateField(f as keyof ProductFormData, v);
+        }}
+        onSave={handleSave}
+        onIdChange={(id: string) => handleUpdateField('id', id)}
+        isSaving={isAiProcessing}
+      />
 
       <div className="relative z-10 max-w-7xl mx-auto px-4 md:px-0">
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-10">
+        <AdminTabs value={activeTab} onValueChange={setActiveTab} className="space-y-10">
           <div className="flex justify-center">
-            <TabsList className="bg-card/60 backdrop-blur-md p-1.5 h-16 rounded-[1.5rem] border border-border/30 shadow-sm inline-flex items-center gap-1">
-              <TabsTrigger value="basic" className="rounded-2xl h-12 px-8 text-[11px] font-bold uppercase tracking-[0.15em] data-[state=active]:bg-foreground data-[state=active]:text-background hover:bg-muted/40 hover:text-foreground"><Settings className="h-4 w-4 mr-2" /> 基础配置</TabsTrigger>
-              <TabsTrigger value="media" className="rounded-2xl h-12 px-8 text-[11px] font-bold uppercase tracking-[0.15em] data-[state=active]:bg-foreground data-[state=active]:text-background hover:bg-muted/40 hover:text-foreground"><ImageIcon className="h-4 w-4 mr-2" /> 产品图</TabsTrigger>
-              <TabsTrigger value="specs" className="rounded-2xl h-12 px-8 text-[11px] font-bold uppercase tracking-[0.15em] data-[state=active]:bg-foreground data-[state=active]:text-background hover:bg-muted/40 hover:text-foreground"><TableProperties className="h-4 w-4 mr-2" /> 规格参数</TabsTrigger>
-              <TabsTrigger value="details" className="rounded-2xl h-12 px-8 text-[11px] font-bold uppercase tracking-[0.15em] data-[state=active]:bg-foreground data-[state=active]:text-background hover:bg-muted/40 hover:text-foreground"><Library className="h-4 w-4 mr-2" /> 详细介绍</TabsTrigger>
-            </TabsList>
+            <AdminTabsList>
+              <AdminTabsTrigger value="basic"><Settings className="h-4 w-4" /> 基础配置</AdminTabsTrigger>
+              <AdminTabsTrigger value="media"><ImageIcon className="h-4 w-4" /> 产品图</AdminTabsTrigger>
+              <AdminTabsTrigger value="specs"><TableProperties className="h-4 w-4" /> 规格参数</AdminTabsTrigger>
+              <AdminTabsTrigger value="details"><Library className="h-4 w-4" /> 详细介绍</AdminTabsTrigger>
+            </AdminTabsList>
           </div>
 
-          <TabsContent value="basic"><BasicInfoSection formData={formData} updateField={handleUpdateField} aiConfigEnabled={aiConfig?.isEnabled} isAiProcessing={isAiProcessing} onAiTranslate={handleAiTranslateBasic} onOpenPicker={(t) => { setPickerTarget(t as any); setIsPickerOpen(true); }} /></TabsContent>
-          <TabsContent value="media"><MediaSection galleryUrls={formData.galleryUrls} onUpdateGallery={(urls) => handleUpdateField('galleryUrls', urls)} onOpenPicker={() => { setPickerTarget('gallery'); setIsPickerOpen(true); }} onMoveItem={(idx, dir) => { const n = [...formData.galleryUrls]; const t = dir === 'left' ? idx - 1 : idx + 1; if (t >= 0 && t < n.length) { [n[idx], n[t]] = [n[t], n[idx]]; handleUpdateField('galleryUrls', n); } }} /></TabsContent>
-          <TabsContent value="specs">
+          <AdminTabsContent value="basic"><BasicInfoSection formData={formData} updateField={handleUpdateField} aiConfigEnabled={aiConfig?.isEnabled} isAiProcessing={isAiProcessing} onAiTranslate={handleAiTranslateBasic} onOpenPicker={(t) => { setPickerTarget(t as any); setIsPickerOpen(true); }} /></AdminTabsContent>
+          <AdminTabsContent value="media"><MediaSection galleryUrls={formData.galleryUrls} onUpdateGallery={(urls) => handleUpdateField('galleryUrls', urls)} onOpenPicker={() => { setPickerTarget('gallery'); setIsPickerOpen(true); }} onMoveItem={(idx, dir) => { const n = [...formData.galleryUrls]; const t = dir === 'left' ? idx - 1 : idx + 1; if (t >= 0 && t < n.length) { [n[idx], n[t]] = [n[t], n[idx]]; handleUpdateField('galleryUrls', n); } }} /></AdminTabsContent>
+          <AdminTabsContent value="specs">
             <SpecMatrixSection
               key={renderKey}
               groups={formData.specGroups} setGroups={(g) => handleUpdateField('specGroups', g)} aiConfig={aiConfig} isAiProcessing={isAiProcessing} processingItems={processingItems} onAiTranslate={handleAiTranslateSpecItem}
@@ -725,9 +739,9 @@ function ProductEditorContent() {
               onSaveTemplate={handleSaveTemplate}
               onDeleteTemplate={handleDeleteTemplate}
             />
-          </TabsContent>
-          <TabsContent value="details"><StorySection zhContent={formData.localizedDetails.zh} targetContent={formData.localizedDetails[targetDetailsLang] || ''} targetLang={targetDetailsLang} onZhChange={(c) => handleUpdateField('localizedDetails', { ...formData.localizedDetails, zh: c })} onTargetChange={(c) => handleUpdateField('localizedDetails', { ...formData.localizedDetails, [targetDetailsLang]: c })} onTargetLangChange={setTargetDetailsLang} onAiTranslate={handleAiTranslateDetails} onImageClick={(t) => { setPickerTarget(t as any); setIsPickerOpen(true); }} supportedLangs={supportedLangs} isAiProcessing={isAiProcessing} aiConfigEnabled={aiConfig?.isEnabled} zhEditorRef={zhEditorRef} targetEditorRef={targetEditorRef} /></TabsContent>
-        </Tabs>
+          </AdminTabsContent>
+          <AdminTabsContent value="details"><StorySection zhContent={formData.localizedDetails.zh} targetContent={formData.localizedDetails[targetDetailsLang] || ''} targetLang={targetDetailsLang} onZhChange={(c) => handleUpdateField('localizedDetails', { ...formData.localizedDetails, zh: c })} onTargetChange={(c) => handleUpdateField('localizedDetails', { ...formData.localizedDetails, [targetDetailsLang]: c })} onTargetLangChange={setTargetDetailsLang} onAiTranslate={handleAiTranslateDetails} onImageClick={(t) => { setPickerTarget(t as any); setIsPickerOpen(true); }} supportedLangs={supportedLangs} isAiProcessing={isAiProcessing} aiConfigEnabled={aiConfig?.isEnabled} zhEditorRef={zhEditorRef} targetEditorRef={targetEditorRef} /></AdminTabsContent>
+        </AdminTabs>
       </div>
 
       <MediaLibraryDialog

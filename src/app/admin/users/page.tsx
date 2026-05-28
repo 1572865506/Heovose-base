@@ -44,6 +44,8 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Label } from '@/components/ui/label';
 import { cn } from '@/lib/utils';
+import { AdminPageHeader } from '@/components/admin/AdminPageHeader';
+import { GlassCard } from '@/components/admin/GlassCard';
 
 // AI 渐变定义
 const AiGradientDef = () => (
@@ -224,37 +226,32 @@ export default function UserManagementPage() {
     <div className="space-y-8 animate-in fade-in duration-700 pb-20">
       <AiGradientDef />
       
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 relative z-10">
-        <div className="space-y-1">
-          <h2 className="text-2xl font-headline font-bold text-foreground flex items-center gap-4">
-            <div className="h-10 w-10 rounded-2xl bg-primary/10 flex items-center justify-center text-primary shadow-sm">
-              <Users className="h-5 w-5" />
+      <AdminPageHeader
+        title="成员与权限管理"
+        subtitle="System / Team"
+        icon={Users}
+        actions={
+          <div className="flex items-center gap-3">
+            <div className="relative group">
+              <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground transition-colors group-focus-within:text-primary" />
+              <Input 
+                placeholder="搜索成员姓名或邮箱..." 
+                className="pl-11 w-80 h-12 rounded-2xl border-border/40 bg-card/50 backdrop-blur-sm focus:ring-primary/20 text-foreground"
+                value={searchQuery}
+                onChange={e => setSearchQuery(e.target.value)}
+              />
             </div>
-            成员与权限管理
-          </h2>
-          <p className="text-xs text-muted-foreground font-bold uppercase tracking-[0.2em] pl-14">System / Team</p>
-        </div>
-        
-        <div className="flex items-center gap-3">
-          <div className="relative group">
-            <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground transition-colors group-focus-within:text-primary" />
-            <Input 
-              placeholder="搜索成员姓名或邮箱..." 
-              className="pl-11 w-80 h-12 rounded-2xl border-border/40 bg-card/50 backdrop-blur-sm focus:ring-primary/20 text-foreground"
-              value={searchQuery}
-              onChange={e => setSearchQuery(e.target.value)}
-            />
+            <Button 
+              onClick={() => setIsCreateDialogOpen(true)}
+              className="rounded-full h-12 px-8 font-bold uppercase tracking-widest text-xs gap-2 shadow-xl shadow-primary/20 bg-foreground text-background hover:bg-foreground/90 shrink-0"
+            >
+              <UserPlus className="h-5 w-5" /> 邀请新成员
+            </Button>
           </div>
-          <Button 
-            onClick={() => setIsCreateDialogOpen(true)}
-            className="rounded-full h-12 px-8 font-bold uppercase tracking-widest text-xs gap-2 shadow-xl shadow-primary/20 bg-foreground text-background hover:bg-foreground/90"
-          >
-            <UserPlus className="h-5 w-5" /> 邀请新成员
-          </Button>
-        </div>
-      </div>
+        }
+      />
 
-      <div className="bg-card/70 backdrop-blur-xl rounded-[2.5rem] border border-border/40 shadow-2xl overflow-hidden">
+      <GlassCard className="rounded-[2.5rem]">
         <Table>
           <TableHeader className="bg-muted/20">
             <TableRow className="hover:bg-transparent border-border/10">
@@ -344,7 +341,7 @@ export default function UserManagementPage() {
             ))}
           </TableBody>
         </Table>
-      </div>
+      </GlassCard>
 
       {/* 权限编辑 Dialog */}
       <Dialog open={!!editingUser} onOpenChange={(open) => !open && setEditingUser(null)}>

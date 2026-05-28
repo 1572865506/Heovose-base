@@ -7,7 +7,7 @@ import { useLocalCollection } from '@/hooks/use-local-collection';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { AdminTabs, AdminTabsList, AdminTabsTrigger, AdminTabsContent } from '@/components/admin/AdminTabs';
 import {
   Select,
   SelectContent,
@@ -58,6 +58,8 @@ import { useToast } from '@/hooks/use-toast';
 import { smartTranslate } from '@/lib/translate-client';
 import { cn } from '@/lib/utils';
 import { ShinyButton } from '@/components/ui/shiny-button';
+import { AdminFormSection } from '@/components/admin/AdminFormSection';
+import { AdminPageHeader } from '@/components/admin/AdminPageHeader';
 import { MediaLibraryDialog } from '@/components/admin/media-library-dialog';
 import { getAssetUrl } from '@/lib/image-utils';
 import Image from 'next/image';
@@ -643,56 +645,39 @@ export default function AdminHomePage() {
     <div className="space-y-6 animate-in fade-in duration-500 pb-20">
       <AiGradientDef />
 
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 relative z-10">
-        <div className="space-y-1">
-          <h2 className="text-2xl font-headline font-bold text-foreground flex items-center gap-4">
-            <div className="h-10 w-10 rounded-2xl bg-primary/10 flex items-center justify-center text-primary shadow-sm">
-              <Home className="h-5 w-5" />
-            </div>
-            首页视觉配置
-          </h2>
-          <p className="text-xs text-muted-foreground font-bold uppercase tracking-[0.2em] pl-14">Management / Content / Home Visuals</p>
-        </div>
+      <AdminPageHeader
+        title="首页视觉配置"
+        subtitle="Management / Content / Home Visuals"
+        icon={Home}
+        actions={
+          <Button onClick={handleSave} disabled={isSaving} className="rounded-2xl h-12 px-8 gap-2.5 font-bold uppercase tracking-widest text-[10px] shadow-lg shadow-primary/20 hover:scale-105 transition-all">
+            {isSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
+            发布配置变更
+          </Button>
+        }
+      />
 
-        <Button onClick={handleSave} disabled={isSaving} className="rounded-2xl h-12 px-8 gap-2.5 font-bold uppercase tracking-widest text-[10px] shadow-lg shadow-primary/20 hover:scale-105 transition-all">
-          {isSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
-          发布配置变更
-        </Button>
-      </div>
-
-      <Tabs defaultValue="hero" className="w-full">
-        <TabsList className="bg-card/50 backdrop-blur-xl border border-border/40 p-1 rounded-2xl h-14 mb-8">
-          <TabsTrigger
-            value="hero"
-            className="rounded-xl px-8 h-12 data-[state=active]:bg-primary data-[state=active]:text-white font-bold text-[10px] uppercase tracking-widest transition-all gap-2 text-muted-foreground hover:text-foreground"
-          >
+      <AdminTabs defaultValue="hero" className="w-full">
+        <AdminTabsList className="mb-8">
+          <AdminTabsTrigger value="hero">
             <ImageIcon className="h-4 w-4" /> 英雄视觉 (Hero)
-          </TabsTrigger>
-          <TabsTrigger
-            value="video"
-            className="rounded-xl px-8 h-12 data-[state=active]:bg-primary data-[state=active]:text-white font-bold text-[10px] uppercase tracking-widest transition-all gap-2 text-muted-foreground hover:text-foreground"
-          >
+          </AdminTabsTrigger>
+          <AdminTabsTrigger value="video">
             <Film className="h-4 w-4" /> 品牌故事 (Video)
-          </TabsTrigger>
-          <TabsTrigger
-            value="bento"
-            className="rounded-xl px-8 h-12 data-[state=active]:bg-primary data-[state=active]:text-white font-bold text-[10px] uppercase tracking-widest transition-all gap-2 text-muted-foreground hover:text-foreground"
-          >
+          </AdminTabsTrigger>
+          <AdminTabsTrigger value="bento">
             <LayoutGrid className="h-4 w-4" /> 产品布局 (Bento)
-          </TabsTrigger>
-          <TabsTrigger
-            value="gallery"
-            className="rounded-xl px-8 h-12 data-[state=active]:bg-primary data-[state=active]:text-white font-bold text-[10px] uppercase tracking-widest transition-all gap-2 text-muted-foreground hover:text-foreground"
-          >
+          </AdminTabsTrigger>
+          <AdminTabsTrigger value="gallery">
             <Layers className="h-4 w-4" /> 产品轮播 (Gallery)
-          </TabsTrigger>
-        </TabsList>
+          </AdminTabsTrigger>
+        </AdminTabsList>
 
-        <TabsContent value="hero" className="space-y-6">
-          <div className="bg-card p-8 rounded-3xl border border-border shadow-sm space-y-6">
-            <h3 className="text-sm font-bold text-primary uppercase tracking-widest flex items-center gap-2 border-b pb-4">
-              <Layers className="h-4 w-4" /> 底部入口卡片配置
-            </h3>
+        <AdminTabsContent value="hero" className="space-y-6">
+          <AdminFormSection
+            title="底部入口卡片配置"
+            icon={Layers}
+          >
             <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
               <div className="p-5 rounded-2xl bg-muted/5 border border-dashed space-y-4">
                 <span className="text-[10px] font-bold uppercase text-primary">批发入口按钮及描述 (ZH / EN)</span>
@@ -841,16 +826,13 @@ export default function AdminHomePage() {
                 </div>
               </div>
             </div>
-          </div>
+          </AdminFormSection>
 
-          <div className="bg-card p-8 rounded-3xl border border-border shadow-sm space-y-8">
-            <div className="flex items-center justify-between border-b border-border/40 pb-4">
-              <div className="space-y-1">
-                <h3 className="text-sm font-bold text-primary uppercase tracking-widest flex items-center gap-2">
-                  <ImageIcon className="h-4 w-4" /> 英雄屏视觉卡片管理
-                </h3>
-                <p className="text-[10px] text-muted-foreground">设置一张或多张背景卡片。多张卡片将自动启用轮播效果。</p>
-              </div>
+          <AdminFormSection
+            title="英雄屏视觉卡片管理"
+            subtitle="设置一张或多张背景卡片。多张卡片将自动启用轮播效果。"
+            icon={ImageIcon}
+            actions={
               <div className="flex gap-3">
                 {aiConfig?.isEnabled && (
                   <ShinyButton
@@ -877,8 +859,8 @@ export default function AdminHomePage() {
                   <Plus className="h-3.5 w-3.5" /> 添加新内容卡片
                 </Button>
               </div>
-            </div>
-
+            }
+          >
             <div className="space-y-6">
               {formData.heroSlides.map((slide: any, index: number) => (
                 <div key={slide.id} className="group relative bg-muted/10 border border-border/60 hover:bg-muted/20 hover:border-primary/30 rounded-3xl p-6 transition-all duration-500 shadow-sm">
@@ -1110,27 +1092,21 @@ export default function AdminHomePage() {
                 <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest opacity-40">暂无内容卡片，请点击右上角添加</p>
               </div>
             )}
-          </div>
-        </TabsContent>
+          </AdminFormSection>
+        </AdminTabsContent>
 
-        <TabsContent value="video" className="space-y-6">
-          <div className="bg-card p-8 rounded-3xl border border-border shadow-sm space-y-8">
-            <div className="flex items-center justify-between border-b pb-6">
-              <div className="flex items-center gap-4">
-                <div className={cn("p-2 rounded-xl transition-colors", formData.isVideoEnabled ? "bg-primary text-white" : "bg-muted text-muted-foreground")}>
-                  <Video className="h-5 w-5" />
-                </div>
-                <div className="space-y-0.5">
-                  <h3 className="text-sm font-bold text-primary uppercase tracking-widest">视频/品牌故事模块开关</h3>
-                  <p className="text-[10px] text-muted-foreground font-medium">开启后前台将显示全屏视频品牌板块。</p>
-                </div>
-              </div>
+        <AdminTabsContent value="video" className="space-y-6">
+          <AdminFormSection
+            title="视频/品牌故事模块配置"
+            subtitle="开启或关闭全屏视频品牌故事模块，并配置文案与资源。"
+            icon={Video}
+            actions={
               <Switch
                 checked={formData.isVideoEnabled}
                 onCheckedChange={v => setFormData((prev: any) => ({ ...prev, isVideoEnabled: v }))}
               />
-            </div>
-
+            }
+          >
             {formData.isVideoEnabled && (
               <div className="space-y-8 animate-in fade-in slide-in-from-top-4 duration-500">
                 <div className="flex items-center justify-between">
@@ -1215,19 +1191,23 @@ export default function AdminHomePage() {
                 <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest opacity-40">视频模块已禁用，保存后前台将不再显示</p>
               </div>
             )}
-          </div>
-        </TabsContent>
-        <TabsContent value="bento" className="space-y-6">
-          <div className="bg-card p-8 rounded-3xl border border-border shadow-sm space-y-8">
-            <div className="flex items-center justify-between border-b pb-6">
-              <div className="space-y-1">
-                <h3 className="text-sm font-bold text-primary uppercase tracking-widest flex items-center gap-2">
-                  <LayoutGrid className="h-4 w-4" /> 产品推荐板块配置
-                </h3>
-                <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Configure titles for the Bento grid section</p>
-              </div>
-            </div>
-
+          </AdminFormSection>
+        </AdminTabsContent>
+        <AdminTabsContent value="bento" className="space-y-6">
+          <AdminFormSection
+            title="产品推荐板块配置"
+            subtitle="配置首页产品中心 Bento 网格的标题、副标题与格位卡片"
+            icon={LayoutGrid}
+            actions={
+              <Button
+                onClick={() => setBentoDialog({ open: true, item: { titleZh: '', titleEn: '', tagZh: '', tagEn: '', imageUrl: '', linkUrl: '', gridSize: 'small', order: (bentoItems?.length || 0) + 1 } })}
+                size="sm"
+                className="rounded-xl h-9 px-4 gap-2 text-[10px] font-bold uppercase tracking-wider shadow-md"
+              >
+                <Plus className="h-3.5 w-3.5" /> 添加新格位
+              </Button>
+            }
+          >
             <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
               <div className="space-y-6">
                 <div className="space-y-3">
@@ -1329,75 +1309,72 @@ export default function AdminHomePage() {
               </div>
             </div>
 
-            <div className="flex items-center justify-between">
-              <h3 className="text-xs font-bold text-primary uppercase tracking-widest flex items-center gap-2">
+            <div className="border-t border-border/10 pt-6 space-y-6">
+              <h4 className="text-xs font-bold text-primary uppercase tracking-widest flex items-center gap-2">
                 <LayoutGrid className="h-4 w-4" /> 首页格位内容管理 (Grid Items)
-              </h3>
+              </h4>
+
+              <DndContext
+                sensors={sensors}
+                collisionDetection={closestCenter}
+                onDragEnd={handleDragEnd}
+              >
+                <SortableContext
+                  items={bentoItems?.map((i: any) => i.id) || []}
+                  strategy={rectSortingStrategy}
+                >
+                  <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
+                    {bentoItems?.map((item: any) => (
+                      <SortableBentoItem
+                        key={item.id}
+                        item={item}
+                        onEdit={() => setBentoDialog({ open: true, item })}
+                        onDelete={async () => {
+                          if (confirm('确定删除此格位吗？')) {
+                            await fetch(`/api/bentoItems/${item.id}`, { method: 'DELETE' });
+                            mutateBentoItems();
+                            toast({ title: "已删除格位" });
+                          }
+                        }}
+                      />
+                    ))}
+
+                    {(!bentoItems || bentoItems.length === 0) && (
+                      <div className="col-span-full py-20 text-center bg-muted/5 border-2 border-dashed rounded-[2.5rem]">
+                        <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest opacity-40">暂无独立格位，请点击右上方添加</p>
+                      </div>
+                    )}
+                  </div>
+                </SortableContext>
+              </DndContext>
+              <div className="p-6 rounded-[2.5rem] bg-amber-50/50 border border-amber-100/50 flex gap-4 items-start">
+                <Info className="h-5 w-5 text-amber-600 mt-1" />
+                <div className="space-y-1">
+                  <p className="text-xs font-bold text-amber-900 uppercase tracking-tight">提示</p>
+                  <p className="text-[11px] text-amber-700 leading-relaxed">
+                    Bento 布局现已切换为独立管理模式。您在这里添加的格位将直接决定首页“产品中心”板块的展示内容。建议保持 6-11 个格位以获得最佳视觉效果。
+                  </p>
+                </div>
+              </div>
+            </div>
+          </AdminFormSection>
+        </AdminTabsContent>
+
+        <AdminTabsContent value="gallery" className="space-y-6">
+          <AdminFormSection
+            title="产品轮播板块配置"
+            subtitle="配置首页精选产品轮播板块的标题、副标题与产品列表"
+            icon={Layers}
+            actions={
               <Button
-                onClick={() => setBentoDialog({ open: true, item: { titleZh: '', titleEn: '', tagZh: '', tagEn: '', imageUrl: '', linkUrl: '', gridSize: 'small', order: (bentoItems?.length || 0) + 1 } })}
+                onClick={() => setProductPickerOpen(true)}
                 size="sm"
                 className="rounded-xl h-9 px-4 gap-2 text-[10px] font-bold uppercase tracking-wider shadow-md"
               >
-                <Plus className="h-3.5 w-3.5" /> 添加新格位
+                <Plus className="h-3.5 w-3.5" /> 添加产品到轮播
               </Button>
-            </div>
-
-            <DndContext
-              sensors={sensors}
-              collisionDetection={closestCenter}
-              onDragEnd={handleDragEnd}
-            >
-              <SortableContext
-                items={bentoItems?.map((i: any) => i.id) || []}
-                strategy={rectSortingStrategy}
-              >
-                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
-                  {bentoItems?.map((item: any) => (
-                    <SortableBentoItem
-                      key={item.id}
-                      item={item}
-                      onEdit={() => setBentoDialog({ open: true, item })}
-                      onDelete={async () => {
-                        if (confirm('确定删除此格位吗？')) {
-                          await fetch(`/api/bentoItems/${item.id}`, { method: 'DELETE' });
-                          mutateBentoItems();
-                          toast({ title: "已删除格位" });
-                        }
-                      }}
-                    />
-                  ))}
-
-                  {(!bentoItems || bentoItems.length === 0) && (
-                    <div className="col-span-full py-20 text-center bg-muted/5 border-2 border-dashed rounded-[2.5rem]">
-                      <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest opacity-40">暂无独立格位，请点击右上方添加</p>
-                    </div>
-                  )}
-                </div>
-              </SortableContext>
-            </DndContext>
-            <div className="p-6 rounded-[2.5rem] bg-amber-50/50 border border-amber-100/50 flex gap-4 items-start">
-              <Info className="h-5 w-5 text-amber-600 mt-1" />
-              <div className="space-y-1">
-                <p className="text-xs font-bold text-amber-900 uppercase tracking-tight">提示</p>
-                <p className="text-[11px] text-amber-700 leading-relaxed">
-                  Bento 布局现已切换为独立管理模式。您在这里添加的格位将直接决定首页“产品中心”板块的展示内容。建议保持 6-11 个格位以获得最佳视觉效果。
-                </p>
-              </div>
-            </div>
-          </div>
-        </TabsContent>
-
-        <TabsContent value="gallery" className="space-y-6">
-          <div className="bg-card p-8 rounded-3xl border border-border shadow-sm space-y-8">
-            <div className="flex items-center justify-between border-b pb-6">
-              <div className="space-y-1">
-                <h3 className="text-sm font-bold text-primary uppercase tracking-widest flex items-center gap-2">
-                  <Layers className="h-4 w-4" /> 产品轮播板块配置
-                </h3>
-                <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Configure titles for the smooth product carousel section</p>
-              </div>
-            </div>
-
+            }
+          >
             <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
               <div className="space-y-6">
                 <div className="space-y-3">
@@ -1490,147 +1467,140 @@ export default function AdminHomePage() {
               </div>
             </div>
 
-            <div className="flex items-center justify-between">
-              <h3 className="text-xs font-bold text-primary uppercase tracking-widest flex items-center gap-2">
+            <div className="border-t border-border/10 pt-6 space-y-6">
+              <h4 className="text-xs font-bold text-primary uppercase tracking-widest flex items-center gap-2">
                 <LayoutGrid className="h-4 w-4" /> 轮播内容管理
-              </h3>
-              <Button
-                onClick={() => setProductPickerOpen(true)}
-                size="sm"
-                className="rounded-xl h-9 px-4 gap-2 text-[10px] font-bold uppercase tracking-wider shadow-md"
-              >
-                <Plus className="h-3.5 w-3.5" /> 添加产品到轮播
-              </Button>
-            </div>
+              </h4>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-              {formData.galleryItems.map((item: any, idx: number) => {
-                const product = allProducts?.find((p: any) => p.id === item.productId);
-                if (!product) return null;
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                {formData.galleryItems.map((item: any, idx: number) => {
+                  const product = allProducts?.find((p: any) => p.id === item.productId);
+                  if (!product) return null;
 
-                const productName = translations?.find((t: any) => t.id === product.nameTextId)?.content?.zh || product.id;
+                  const productName = translations?.find((t: any) => t.id === product.nameTextId)?.content?.zh || product.id;
 
-                return (
-                  <div key={`${item.productId}-${idx}`} className="group relative bg-card/70 backdrop-blur-md rounded-[2rem] border border-border/60 p-4 hover:border-primary/40 hover:bg-card transition-all duration-500 shadow-sm">
-                    <div className="relative aspect-[11/9] rounded-2xl overflow-hidden mb-3 shadow-inner bg-muted/20">
-                      {product.mainImageUrl ? (
-                        <Image src={getAssetUrl(product.mainImageUrl)} alt="P" fill className="object-cover" />
-                      ) : (
-                        <div className="absolute inset-0 flex items-center justify-center text-muted-foreground/30">
-                          <ImageIcon className="h-8 w-8 opacity-20" />
+                  return (
+                    <div key={`${item.productId}-${idx}`} className="group relative bg-card/70 backdrop-blur-md rounded-[2rem] border border-border/60 p-4 hover:border-primary/40 hover:bg-card transition-all duration-500 shadow-sm">
+                      <div className="relative aspect-[11/9] rounded-2xl overflow-hidden mb-3 shadow-inner bg-muted/20">
+                        {product.mainImageUrl ? (
+                          <Image src={getAssetUrl(product.mainImageUrl)} alt="P" fill className="object-cover" />
+                        ) : (
+                          <div className="absolute inset-0 flex items-center justify-center text-muted-foreground/30">
+                            <ImageIcon className="h-8 w-8 opacity-20" />
+                          </div>
+                        )}
+
+                        <div className="absolute top-2 right-2 flex gap-1">
+                          <Button
+                            variant="destructive"
+                            size="icon"
+                            className="h-7 w-7 rounded-full shadow-lg"
+                            onClick={() => {
+                              const newItems = [...formData.galleryItems];
+                              newItems.splice(idx, 1);
+                              setFormData({ ...formData, galleryItems: newItems });
+                            }}
+                          >
+                            <Trash2 className="h-3 w-3" />
+                          </Button>
                         </div>
-                      )}
 
-                      <div className="absolute top-2 right-2 flex gap-1">
-                        <Button
-                          variant="destructive"
-                          size="icon"
-                          className="h-7 w-7 rounded-full shadow-lg"
-                          onClick={() => {
-                            const newItems = [...formData.galleryItems];
-                            newItems.splice(idx, 1);
-                            setFormData({ ...formData, galleryItems: newItems });
-                          }}
-                        >
-                          <Trash2 className="h-3 w-3" />
-                        </Button>
+                        {item.badge && (
+                          <div className="absolute top-2 left-2">
+                            <span className={cn(
+                              "inline-block px-2 py-0.5 text-[8px] font-black uppercase rounded-full text-white shadow-sm",
+                              item.badge === 'NEW' ? "bg-blue-500" : "bg-red-500"
+                            )}>
+                              {item.badge === 'NEW' ? '新品' : '热销'}
+                            </span>
+                          </div>
+                        )}
                       </div>
 
-                      {item.badge && (
-                        <div className="absolute top-2 left-2">
-                          <span className={cn(
-                            "inline-block px-2 py-0.5 text-[8px] font-black uppercase rounded-full text-white shadow-sm",
-                            item.badge === 'NEW' ? "bg-blue-500" : "bg-red-500"
-                          )}>
-                            {item.badge === 'NEW' ? '新品' : '热销'}
-                          </span>
+                      <div className="space-y-3">
+                        <h4 className="text-xs font-bold text-foreground line-clamp-1">{productName}</h4>
+                        <div className="space-y-1.5 pt-2 border-t border-dashed border-border/60">
+                          <Label className="text-[9px] font-bold uppercase opacity-40">设置标签 (Badge)</Label>
+                          <Select
+                            value={item.badge || 'none'}
+                            onValueChange={(v) => {
+                              const newItems = [...formData.galleryItems];
+                              newItems[idx] = { ...newItems[idx], badge: v === 'none' ? null : v };
+                              setFormData({ ...formData, galleryItems: newItems });
+                            }}
+                          >
+                            <SelectTrigger className="h-8 rounded-lg text-[10px]">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent className="rounded-xl">
+                              <SelectItem value="none" className="text-[10px]">无标签</SelectItem>
+                              <SelectItem value="NEW" className="text-[10px] font-bold text-blue-600">新品 (NEW)</SelectItem>
+                              <SelectItem value="HOT" className="text-[10px] font-bold text-red-600">热销 (HOT)</SelectItem>
+                            </SelectContent>
+                          </Select>
                         </div>
-                      )}
-                    </div>
 
-                    <div className="space-y-3">
-                      <h4 className="text-xs font-bold text-foreground line-clamp-1">{productName}</h4>
-                      <div className="space-y-1.5 pt-2 border-t border-dashed border-border/60">
-                        <Label className="text-[9px] font-bold uppercase opacity-40">设置标签 (Badge)</Label>
-                        <Select
-                          value={item.badge || 'none'}
-                          onValueChange={(v) => {
-                            const newItems = [...formData.galleryItems];
-                            newItems[idx] = { ...newItems[idx], badge: v === 'none' ? null : v };
-                            setFormData({ ...formData, galleryItems: newItems });
-                          }}
-                        >
-                          <SelectTrigger className="h-8 rounded-lg text-[10px]">
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent className="rounded-xl">
-                            <SelectItem value="none" className="text-[10px]">无标签</SelectItem>
-                            <SelectItem value="NEW" className="text-[10px] font-bold text-blue-600">新品 (NEW)</SelectItem>
-                            <SelectItem value="HOT" className="text-[10px] font-bold text-red-600">热销 (HOT)</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </div>
-
-                      <div className="flex gap-2 pt-1">
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="h-7 w-7 rounded-full bg-muted/40 hover:bg-muted/80 text-muted-foreground hover:text-foreground"
-                          disabled={idx === 0}
-                          onClick={() => {
-                            const newItems = [...formData.galleryItems];
-                            [newItems[idx - 1], newItems[idx]] = [newItems[idx], newItems[idx - 1]];
-                            setFormData({ ...formData, galleryItems: newItems });
-                          }}
-                        >
-                          <ArrowUp className="h-3 w-3" />
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="h-7 w-7 rounded-full bg-muted/40 hover:bg-muted/80 text-muted-foreground hover:text-foreground"
-                          disabled={idx === formData.galleryItems.length - 1}
-                          onClick={() => {
-                            const newItems = [...formData.galleryItems];
-                            [newItems[idx + 1], newItems[idx]] = [newItems[idx], newItems[idx + 1]];
-                            setFormData({ ...formData, galleryItems: newItems });
-                          }}
-                        >
-                          <ArrowDown className="h-3 w-3" />
-                        </Button>
+                        <div className="flex gap-2 pt-1">
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-7 w-7 rounded-full bg-muted/40 hover:bg-muted/80 text-muted-foreground hover:text-foreground"
+                            disabled={idx === 0}
+                            onClick={() => {
+                              const newItems = [...formData.galleryItems];
+                              [newItems[idx - 1], newItems[idx]] = [newItems[idx], newItems[idx - 1]];
+                              setFormData({ ...formData, galleryItems: newItems });
+                            }}
+                          >
+                            <ArrowUp className="h-3 w-3" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-7 w-7 rounded-full bg-muted/40 hover:bg-muted/80 text-muted-foreground hover:text-foreground"
+                            disabled={idx === formData.galleryItems.length - 1}
+                            onClick={() => {
+                              const newItems = [...formData.galleryItems];
+                              [newItems[idx + 1], newItems[idx]] = [newItems[idx], newItems[idx + 1]];
+                              setFormData({ ...formData, galleryItems: newItems });
+                            }}
+                          >
+                            <ArrowDown className="h-3 w-3" />
+                          </Button>
+                        </div>
                       </div>
                     </div>
+                  );
+                })}
+
+                {formData.galleryItems.length === 0 && (
+                  <div className="col-span-full py-16 text-center bg-muted/5 border-2 border-dashed rounded-[2.5rem]">
+                    <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest opacity-40">尚未手动添加产品。前台将默认拉取最新 8 个产品。</p>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="mt-4 rounded-xl px-6"
+                      onClick={() => setProductPickerOpen(true)}
+                    >
+                      开始添加产品
+                    </Button>
                   </div>
-                );
-              })}
+                )}
+              </div>
 
-              {formData.galleryItems.length === 0 && (
-                <div className="col-span-full py-16 text-center bg-muted/5 border-2 border-dashed rounded-[2.5rem]">
-                  <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest opacity-40">尚未手动添加产品。前台将默认拉取最新 8 个产品。</p>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="mt-4 rounded-xl px-6"
-                    onClick={() => setProductPickerOpen(true)}
-                  >
-                    开始添加产品
-                  </Button>
+              <div className="p-6 rounded-[2.5rem] bg-indigo-50/50 border border-indigo-100/50 flex gap-4 items-start">
+                <Info className="h-5 w-5 text-indigo-600 mt-1" />
+                <div className="space-y-1">
+                  <p className="text-xs font-bold text-indigo-900 uppercase tracking-tight">配置说明</p>
+                  <p className="text-[11px] text-indigo-700 leading-relaxed">
+                    您可以手动挑选需要展示在首页轮播中的产品。如果列表为空，系统将自动回退到“最新发布”模式。手动模式下，您可以为每个产品单独设置“新品”或“热销”标签。
+                  </p>
                 </div>
-              )}
-            </div>
-
-            <div className="p-6 rounded-[2.5rem] bg-indigo-50/50 border border-indigo-100/50 flex gap-4 items-start">
-              <Info className="h-5 w-5 text-indigo-600 mt-1" />
-              <div className="space-y-1">
-                <p className="text-xs font-bold text-indigo-900 uppercase tracking-tight">配置说明</p>
-                <p className="text-[11px] text-indigo-700 leading-relaxed">
-                  您可以手动挑选需要展示在首页轮播中的产品。如果列表为空，系统将自动回退到“最新发布”模式。手动模式下，您可以为每个产品单独设置“新品”或“热销”标签。
-                </p>
               </div>
             </div>
-          </div>
-        </TabsContent>
-      </Tabs>
+          </AdminFormSection>
+        </AdminTabsContent>
+      </AdminTabs>
 
       <MediaLibraryDialog
         open={pickerConfig.open}

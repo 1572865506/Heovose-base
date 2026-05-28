@@ -67,6 +67,7 @@ import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
 import { Settings } from 'lucide-react';
+import { AdminPageHeader } from '@/components/admin/AdminPageHeader';
 
 export default function InquiriesPage() {
   const { toast } = useToast();
@@ -214,90 +215,85 @@ export default function InquiriesPage() {
 
   return (
     <div className="space-y-8 animate-in fade-in duration-700">
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 relative z-10">
-        <div className="space-y-1">
-          <h2 className="text-2xl font-headline font-bold text-foreground flex items-center gap-4">
-            <div className="h-10 w-10 rounded-2xl bg-primary/10 flex items-center justify-center text-primary shadow-sm">
-              <MessageSquare className="h-5 w-5" />
+      <AdminPageHeader
+        title="询盘管理"
+        subtitle="Management / Content / Inquiries"
+        icon={MessageSquare}
+        actions={
+          <div className="flex items-center gap-4">
+            <div className="relative w-full md:w-80 group">
+              <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 group-focus-within:text-primary transition-colors" />
+              <Input 
+                placeholder="搜索姓名、邮箱或公司..." 
+                value={searchTerm}
+                onChange={(e) => {
+                  setSearchTerm(e.target.value);
+                  setCurrentPage(1); // Reset to first page on search
+                }}
+                className="pl-11 h-12 rounded-2xl bg-white border-slate-200 shadow-sm focus-visible:ring-primary/20 transition-all admin-interface-dark:bg-slate-900/50 admin-interface-dark:border-slate-800 admin-interface-dark:text-white admin-interface-dark:placeholder:text-slate-500"
+              />
             </div>
-            询盘管理
-          </h2>
-          <p className="text-xs text-muted-foreground font-bold uppercase tracking-[0.2em] pl-14">Management / Content / Inquiries</p>
-        </div>
-        
-        <div className="flex items-center gap-4">
-          <div className="relative w-full md:w-80 group">
-            <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 group-focus-within:text-primary transition-colors" />
-            <Input 
-              placeholder="搜索姓名、邮箱或公司..." 
-              value={searchTerm}
-              onChange={(e) => {
-                setSearchTerm(e.target.value);
-                setCurrentPage(1); // Reset to first page on search
-              }}
-              className="pl-11 h-12 rounded-2xl bg-white border-slate-200 shadow-sm focus-visible:ring-primary/20 transition-all admin-interface-dark:bg-slate-900/50 admin-interface-dark:border-slate-800 admin-interface-dark:text-white admin-interface-dark:placeholder:text-slate-500"
-            />
+            <Button 
+              variant="outline" 
+              onClick={handleExport}
+              className="h-12 rounded-2xl gap-2 font-bold px-6 border-slate-200 hover:bg-slate-50 transition-all text-slate-600 admin-interface-dark:border-slate-800 admin-interface-dark:hover:bg-slate-800/50 admin-interface-dark:text-slate-300"
+            >
+              <Download className="h-4 w-4" /> 导出 Excel
+            </Button>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline" className={cn(
+                  "h-12 rounded-2xl gap-2 font-bold px-6 border-slate-200 hover:bg-slate-50 transition-all admin-interface-dark:border-slate-800 admin-interface-dark:hover:bg-slate-800/50 admin-interface-dark:text-slate-300",
+                  statusFilter !== 'all' && "border-primary text-primary bg-primary/5"
+                )}>
+                  <Filter className="h-4 w-4" />
+                  {statusFilter === 'all' ? '筛选' : statusFilter === 'pending' ? '待处理' : '已处理'}
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-48 rounded-2xl p-2 border-slate-100 shadow-xl admin-interface-dark:bg-slate-950 admin-interface-dark:border-slate-900">
+                <DropdownMenuCheckboxItem 
+                  checked={statusFilter === 'all'}
+                  onCheckedChange={() => {
+                    setStatusFilter('all');
+                    setCurrentPage(1);
+                  }}
+                  className="rounded-xl font-medium"
+                >
+                  全部询盘
+                </DropdownMenuCheckboxItem>
+                <DropdownMenuSeparator className="bg-slate-50 admin-interface-dark:bg-slate-900" />
+                <DropdownMenuCheckboxItem 
+                  checked={statusFilter === 'pending'}
+                  onCheckedChange={() => {
+                    setStatusFilter('pending');
+                    setCurrentPage(1);
+                  }}
+                  className="rounded-xl font-medium text-orange-600 focus:text-orange-600 admin-interface-dark:text-orange-400 admin-interface-dark:focus:text-orange-400"
+                >
+                  待处理
+                </DropdownMenuCheckboxItem>
+                <DropdownMenuCheckboxItem 
+                  checked={statusFilter === 'processed'}
+                  onCheckedChange={() => {
+                    setStatusFilter('processed');
+                    setCurrentPage(1);
+                  }}
+                  className="rounded-xl font-medium text-green-600 focus:text-green-600 admin-interface-dark:text-green-400 admin-interface-dark:focus:text-green-400"
+                >
+                  已处理
+                </DropdownMenuCheckboxItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+            <Button 
+              variant="outline" 
+              onClick={() => setIsSettingsOpen(true)}
+              className="h-12 w-12 rounded-2xl p-0 border-slate-200 hover:bg-slate-50 transition-all admin-interface-dark:border-slate-800 admin-interface-dark:hover:bg-slate-800/50 admin-interface-dark:text-slate-300 animate-in fade-in"
+            >
+              <Settings className="h-4 w-4" />
+            </Button>
           </div>
-          <Button 
-            variant="outline" 
-            onClick={handleExport}
-            className="h-12 rounded-2xl gap-2 font-bold px-6 border-slate-200 hover:bg-slate-50 transition-all text-slate-600 admin-interface-dark:border-slate-800 admin-interface-dark:hover:bg-slate-800/50 admin-interface-dark:text-slate-300"
-          >
-            <Download className="h-4 w-4" /> 导出 Excel
-          </Button>
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="outline" className={cn(
-                "h-12 rounded-2xl gap-2 font-bold px-6 border-slate-200 hover:bg-slate-50 transition-all admin-interface-dark:border-slate-800 admin-interface-dark:hover:bg-slate-800/50 admin-interface-dark:text-slate-300",
-                statusFilter !== 'all' && "border-primary text-primary bg-primary/5"
-              )}>
-                <Filter className="h-4 w-4" />
-                {statusFilter === 'all' ? '筛选' : statusFilter === 'pending' ? '待处理' : '已处理'}
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-48 rounded-2xl p-2 border-slate-100 shadow-xl admin-interface-dark:bg-slate-950 admin-interface-dark:border-slate-900">
-              <DropdownMenuCheckboxItem 
-                checked={statusFilter === 'all'}
-                onCheckedChange={() => {
-                  setStatusFilter('all');
-                  setCurrentPage(1);
-                }}
-                className="rounded-xl font-medium"
-              >
-                全部询盘
-              </DropdownMenuCheckboxItem>
-              <DropdownMenuSeparator className="bg-slate-50 admin-interface-dark:bg-slate-900" />
-              <DropdownMenuCheckboxItem 
-                checked={statusFilter === 'pending'}
-                onCheckedChange={() => {
-                  setStatusFilter('pending');
-                  setCurrentPage(1);
-                }}
-                className="rounded-xl font-medium text-orange-600 focus:text-orange-600 admin-interface-dark:text-orange-400 admin-interface-dark:focus:text-orange-400"
-              >
-                待处理
-              </DropdownMenuCheckboxItem>
-              <DropdownMenuCheckboxItem 
-                checked={statusFilter === 'processed'}
-                onCheckedChange={() => {
-                  setStatusFilter('processed');
-                  setCurrentPage(1);
-                }}
-                className="rounded-xl font-medium text-green-600 focus:text-green-600 admin-interface-dark:text-green-400 admin-interface-dark:focus:text-green-400"
-              >
-                已处理
-              </DropdownMenuCheckboxItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-          <Button 
-            variant="outline" 
-            onClick={() => setIsSettingsOpen(true)}
-            className="h-12 w-12 rounded-2xl p-0 border-slate-200 hover:bg-slate-50 transition-all admin-interface-dark:border-slate-800 admin-interface-dark:hover:bg-slate-800/50 admin-interface-dark:text-slate-300"
-          >
-            <Settings className="h-4 w-4" />
-          </Button>
-        </div>
-      </div>
+        }
+      />
 
       <div className="bg-white rounded-[2.5rem] border border-slate-100 shadow-[0_32px_64px_-12px_rgba(0,0,0,0.05)] overflow-hidden admin-interface-dark:bg-slate-950/40 admin-interface-dark:border-slate-900">
         <Table>

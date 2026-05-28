@@ -25,6 +25,7 @@ import { getAssetUrl } from '@/lib/image-utils';
 import { useToast } from '@/hooks/use-toast';
 import { Badge } from '@/components/ui/badge';
 import { MediaLibraryDialog } from '@/components/admin/media-library-dialog';
+import { AdminPageHeader } from '@/components/admin/AdminPageHeader';
 
 export default function ProfilePage() {
   const { data: session } = useSession();
@@ -88,17 +89,11 @@ export default function ProfilePage() {
 
   return (
     <div className="max-w-4xl mx-auto space-y-8 animate-in fade-in duration-700">
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 relative z-10">
-        <div className="space-y-1">
-          <h2 className="text-2xl font-headline font-bold text-foreground flex items-center gap-4">
-            <div className="h-10 w-10 rounded-2xl bg-primary/10 flex items-center justify-center text-primary shadow-sm">
-              <UserCircle className="h-5 w-5" />
-            </div>
-            我的个人资料
-          </h2>
-          <p className="text-xs text-muted-foreground font-bold uppercase tracking-[0.2em] pl-14">Management / Account / Profile</p>
-        </div>
-      </div>
+      <AdminPageHeader
+        title="我的个人资料"
+        subtitle="Management / Account / Profile"
+        icon={UserCircle}
+      />
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
         <div className="lg:col-span-8 space-y-6">

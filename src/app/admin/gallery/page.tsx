@@ -75,6 +75,7 @@ import { getAssetUrl } from '@/lib/image-utils';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 import { CascaderSelect } from '@/components/ui/cascader-select';
+import { AdminPageHeader } from '@/components/admin/AdminPageHeader';
 
 interface GalleryCategory {
   id: string;
@@ -831,16 +832,12 @@ export default function GalleryPage() {
       </div>
 
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 relative z-10">
-        <div className="space-y-1">
-          <h2 className="text-2xl font-headline font-bold text-foreground flex items-center gap-4">
-            <div className="h-10 w-10 rounded-2xl bg-primary/10 flex items-center justify-center text-primary shadow-sm">
-              <FolderOpen className="h-5 w-5" />
-            </div>
-            资源管理中心
-          </h2>
-          <p className="text-[10px] text-muted-foreground/60 font-bold uppercase tracking-[0.2em] pl-14">Management / Digital Assets / Resources</p>
-        </div>
-        <div className="flex gap-3">
+      <AdminPageHeader
+        title="资源管理中心"
+        subtitle="Management / Digital Assets / Resources"
+        icon={FolderOpen}
+      />
+      <div className="flex gap-3">
           <Dialog open={isCategoryDialogOpen} onOpenChange={(o) => { setIsCategoryDialogOpen(o); if (!o) resetCatForm(); }}>
             <DialogTrigger asChild>
               <Button variant="outline" className="rounded-2xl h-14 px-8 gap-3 text-xs font-bold uppercase tracking-widest border-border/40 bg-card/40 backdrop-blur-sm hover:bg-card/70 text-foreground/80 hover:text-primary hover:border-primary/20 transition-all shadow-sm">

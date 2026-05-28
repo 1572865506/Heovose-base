@@ -40,6 +40,8 @@ import { Badge } from '@/components/ui/badge';
 import { MediaLibraryDialog } from '@/components/admin/media-library-dialog';
 import Image from 'next/image';
 import { getAssetUrl } from '@/lib/image-utils';
+import { AdminPageHeader } from '@/components/admin/AdminPageHeader';
+import { AdminFormSection } from '@/components/admin/AdminFormSection';
 
 interface ProductionStep {
   id: string;
@@ -303,31 +305,23 @@ export default function ProductionStepsAdminPage() {
 
   return (
     <div className="space-y-10 animate-in fade-in duration-500 pb-20">
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 relative z-10">
-        <div className="space-y-1">
-          <h2 className="text-2xl font-headline font-bold text-foreground flex items-center gap-4">
-            <div className="h-10 w-10 rounded-2xl bg-primary/10 flex items-center justify-center text-primary shadow-sm">
-              <ClipboardList className="h-5 w-5" />
-            </div>
-            制造流程管理
-          </h2>
-          <p className="text-xs text-muted-foreground font-bold uppercase tracking-[0.2em] pl-14">Management / Content / Steps</p>
-        </div>
+      <AdminPageHeader
+        title="制造流程管理"
+        subtitle="Management / Content / Steps"
+        icon={ClipboardList}
+        actions={
+          <Button onClick={() => handleOpenDialog()} className="rounded-2xl h-12 px-6 font-bold uppercase text-[10px] tracking-widest gap-2 shadow-lg shadow-primary/20">
+            <Plus className="h-4 w-4" /> 新增生产环节
+          </Button>
+        }
+      />
 
-        <Button onClick={() => handleOpenDialog()} className="rounded-2xl h-12 px-6 font-bold uppercase text-[10px] tracking-widest gap-2 shadow-lg shadow-primary/20">
-          <Plus className="h-4 w-4" /> 新增生产环节
-        </Button>
-      </div>
-
-      <div className="bg-card p-8 rounded-3xl border border-border/40 shadow-sm space-y-6">
-        <div className="flex items-center justify-between border-b pb-4">
-          <div className="space-y-1">
-            <h3 className="text-sm font-bold text-primary uppercase tracking-widest flex items-center gap-2">
-              <Sparkles className="h-4 w-4" /> 制造板块视觉文案配置
-            </h3>
-            <p className="text-[10px] text-muted-foreground uppercase tracking-widest font-bold opacity-60">Section Heading & Localization Settings</p>
-          </div>
-          <div className="flex gap-3">
+      <AdminFormSection
+        title="制造板块视觉文案配置"
+        subtitle="Section Heading & Localization Settings"
+        icon={Sparkles}
+        actions={
+          <>
             {aiConfig?.isEnabled && (
               <ShinyButton
                 onClick={handleTranslateSection}
@@ -349,9 +343,9 @@ export default function ProductionStepsAdminPage() {
               {isSavingConfig ? <Loader2 className="h-3 w-3 animate-spin" /> : <Check className="h-3 w-3" />}
               保存配置
             </Button>
-          </div>
-        </div>
-
+          </>
+        }
+      >
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
           <div className="space-y-4 p-5 bg-muted/5 rounded-2xl border border-dashed">
             <span className="text-[10px] font-bold uppercase text-primary/60 tracking-widest">中文配置 (ZH)</span>
@@ -401,10 +395,14 @@ export default function ProductionStepsAdminPage() {
             </div>
           </div>
         </div>
-      </div>
+      </AdminFormSection>
 
-      <div className="bg-card rounded-2xl border border-border/40 shadow-sm overflow-hidden">
-        <div className="p-6 space-y-4">
+      <AdminFormSection
+        title="环节步骤管理"
+        subtitle="Manage the ordering and detail of production steps"
+        icon={ClipboardList}
+      >
+        <div>
           {isLoading ? (
             <div className="py-20 text-center"><Loader2 className="h-8 w-8 animate-spin mx-auto opacity-10" /></div>
           ) : steps?.length === 0 ? (
@@ -447,7 +445,7 @@ export default function ProductionStepsAdminPage() {
             </div>
           )}
         </div>
-      </div>
+      </AdminFormSection>
 
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
         <DialogContent className="rounded-[3rem] max-w-5xl p-0 overflow-hidden shadow-[0_50px_100px_-20px_rgba(0,0,0,0.15)] admin-interface-dark:shadow-[0_50px_100px_-20px_rgba(0,0,0,0.5)] border border-slate-200/50 admin-interface-dark:border-white/5 bg-card flex flex-col">

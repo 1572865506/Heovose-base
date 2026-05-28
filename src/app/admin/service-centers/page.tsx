@@ -46,6 +46,9 @@ import {
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { motion, AnimatePresence } from 'framer-motion';
+import { AdminPageHeader } from '@/components/admin/AdminPageHeader';
+import { GlassCard as UnifiedGlassCard } from '@/components/admin/GlassCard';
+import { AdminFormSection } from '@/components/admin/AdminFormSection';
 
 // --- Types ---
 interface ServiceCenter {
@@ -65,15 +68,17 @@ interface ServiceCentersData {
   _version?: number;
 }
 
+const MotionGlassCard = motion(UnifiedGlassCard);
+
 const GlassCard = ({ children, className }: { children: React.ReactNode; className?: string }) => (
-  <motion.div
+  <MotionGlassCard
     initial={{ opacity: 0, y: 15 }}
     animate={{ opacity: 1, y: 0 }}
     exit={{ opacity: 0, y: -15 }}
-    className={cn("bg-card backdrop-blur-xl border border-border shadow-sm rounded-3xl overflow-hidden relative group", className)}
+    className={cn("relative group border-border shadow-sm", className)}
   >
     {children}
-  </motion.div>
+  </MotionGlassCard>
 );
 
 const SectionLabel = ({ children, icon: Icon }: { children: React.ReactNode; icon?: any }) => (
@@ -453,38 +458,30 @@ export default function ServiceCentersAdminPage() {
 
   return (
     <div className="max-w-[1600px] mx-auto space-y-12 pb-32">
-      {/* Header Area */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 relative z-10">
-        <div className="space-y-1">
-          <h2 className="text-2xl font-headline font-bold text-foreground flex items-center gap-4">
-            <div className="h-10 w-10 rounded-2xl bg-primary/10 flex items-center justify-center text-primary shadow-sm">
-              <Landmark className="h-5 w-5" />
-            </div>
-            服务中心管理
-          </h2>
-          <p className="text-xs text-muted-foreground font-bold uppercase tracking-[0.2em] pl-14">Management / Content / Service Centers</p>
-        </div>
-
-        {/* Action Button Controls Row */}
-        <div className="flex items-center gap-3.5">
-          <Button
-            onClick={() => setIsImportDialogOpen(true)}
-            variant="outline"
-            className="rounded-2xl h-12 px-6 gap-2.5 font-bold uppercase tracking-widest text-[10px] border-border hover:bg-muted/10 hover:scale-105 transition-all text-slate-700 dark:text-white"
-          >
-            <Upload className="w-4 h-4 text-slate-500" />
-            批量导入 JSON
-          </Button>
-
-          <Button
-            onClick={handleAddClick}
-            className="rounded-2xl h-12 px-8 gap-2.5 font-bold uppercase tracking-widest text-[10px] shadow-xl shadow-primary/10 hover:scale-105 transition-all bg-primary hover:bg-primary/90 text-white border-none"
-          >
-            <Plus className="w-4 h-4" />
-            新增服务中心
-          </Button>
-        </div>
-      </div>
+      <AdminPageHeader
+        title="服务中心管理"
+        subtitle="Management / Content / Service Centers"
+        icon={Landmark}
+        actions={
+          <>
+            <Button
+              onClick={() => setIsImportDialogOpen(true)}
+              variant="outline"
+              className="rounded-2xl h-12 px-6 gap-2.5 font-bold uppercase tracking-widest text-[10px] border-border hover:bg-muted/10 hover:scale-105 transition-all text-slate-700 dark:text-white"
+            >
+              <Upload className="w-4 h-4 text-slate-500" />
+              批量导入 JSON
+            </Button>
+            <Button
+              onClick={handleAddClick}
+              className="rounded-2xl h-12 px-8 gap-2.5 font-bold uppercase tracking-widest text-[10px] shadow-xl shadow-primary/10 hover:scale-105 transition-all bg-primary hover:bg-primary/90 text-white border-none"
+            >
+              <Plus className="w-4 h-4" />
+              新增服务中心
+            </Button>
+          </>
+        }
+      />
 
       {/* Metrics Section */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -513,197 +510,205 @@ export default function ServiceCentersAdminPage() {
         </div>
       </div>
 
-      {/* Search & Double Filter Bar */}
-      <div className="space-y-4 p-5 bg-muted/10 border border-border rounded-3xl backdrop-blur-sm">
-        <div className="flex flex-col md:flex-row items-center gap-4">
-          {/* Search */}
-          <div className="relative w-full md:flex-1">
-            <Search className="absolute left-4 top-3.5 w-4 h-4 text-muted-foreground/60" />
-            <Input
-              value={searchQuery}
-              onChange={e => setSearchQuery(e.target.value)}
-              placeholder="搜索服务中心名称、地址、省市、电话或备注..."
-              className="pl-11 h-12 bg-card border-border/60 hover:border-primary/30 focus-visible:border-primary/50 rounded-2xl text-xs font-semibold placeholder:text-muted-foreground/40 shadow-inner"
-            />
-          </div>
+      <AdminFormSection
+        title="服务网点列表"
+        subtitle="全球售后与技术支持中心网点数据流管理"
+        icon={Landmark}
+      >
+        <div className="space-y-8">
+          {/* Search & Double Filter Bar */}
+          <div className="space-y-4 p-5 bg-muted/10 border border-border rounded-3xl backdrop-blur-sm">
+            <div className="flex flex-col md:flex-row items-center gap-4">
+              {/* Search */}
+              <div className="relative w-full md:flex-1">
+                <Search className="absolute left-4 top-3.5 w-4 h-4 text-muted-foreground/60" />
+                <Input
+                  value={searchQuery}
+                  onChange={e => setSearchQuery(e.target.value)}
+                  placeholder="搜索服务中心名称、地址、省市、电话或备注..."
+                  className="pl-11 h-12 bg-card border-border/60 hover:border-primary/30 focus-visible:border-primary/50 rounded-2xl text-xs font-semibold placeholder:text-muted-foreground/40 shadow-inner"
+                />
+              </div>
 
-          {/* Region Country Pills Filter */}
-          <div className="flex items-center gap-2 bg-muted/20 border border-border p-1 rounded-2xl shrink-0 w-full md:w-auto">
-            {(['ALL', 'CN', 'ID'] as const).map(region => (
-              <button
-                key={region}
-                onClick={() => setSelectedRegion(region)}
-                className={cn(
-                  "flex-1 md:flex-none px-6 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-wider transition-all duration-300",
-                  selectedRegion === region
-                    ? "bg-card text-primary shadow-sm border border-border/60 scale-105"
-                    : "text-muted-foreground hover:text-foreground bg-transparent"
-                )}
-              >
-                {region === 'ALL' ? '全部国家' : region === 'CN' ? '中国区 (CN)' : '印尼区 (ID)'}
-              </button>
-            ))}
-          </div>
-        </div>
-
-        {/* Level 2: Dynamic Sub-Regions Filters Row */}
-        {availableSubRegions.length > 0 && (
-          <div className="flex flex-wrap items-center gap-1.5 pt-3 border-t border-border/40">
-            <div className="flex items-center gap-1 text-[9px] font-black uppercase tracking-wider text-muted-foreground/50 px-2.5 shrink-0">
-              <Globe className="w-3 h-3" />
-              <span>省市/地区过滤:</span>
+              {/* Region Country Pills Filter */}
+              <div className="flex items-center gap-2 bg-muted/20 border border-border p-1 rounded-2xl shrink-0 w-full md:w-auto">
+                {(['ALL', 'CN', 'ID'] as const).map(region => (
+                  <button
+                    key={region}
+                    onClick={() => setSelectedRegion(region)}
+                    className={cn(
+                      "flex-1 md:flex-none px-6 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-wider transition-all duration-300",
+                      selectedRegion === region
+                        ? "bg-card text-primary shadow-sm border border-border/60 scale-105"
+                        : "text-muted-foreground hover:text-foreground bg-transparent"
+                    )}
+                  >
+                    {region === 'ALL' ? '全部国家' : region === 'CN' ? '中国区 (CN)' : '印尼区 (ID)'}
+                  </button>
+                ))}
+              </div>
             </div>
-            
-            <button
-              onClick={() => setSelectedSubRegion('ALL')}
-              className={cn(
-                "px-3.5 py-1.5 rounded-lg text-[9px] font-bold uppercase tracking-wider transition-all duration-200",
-                selectedSubRegion === 'ALL'
-                  ? "bg-primary text-white shadow-sm scale-102"
-                  : "bg-card text-muted-foreground hover:text-foreground border border-border/60"
-              )}
-            >
-              全部
-            </button>
 
-            {availableSubRegions.map(sub => (
-              <button
-                key={sub}
-                onClick={() => setSelectedSubRegion(sub)}
-                className={cn(
-                  "px-3.5 py-1.5 rounded-lg text-[9px] font-bold uppercase tracking-wider transition-all duration-200",
-                  selectedSubRegion === sub
-                    ? "bg-primary text-white shadow-sm scale-102"
-                    : "bg-card text-muted-foreground hover:text-foreground border border-border/60"
-                )}
-              >
-                {sub}
-              </button>
-            ))}
+            {/* Level 2: Dynamic Sub-Regions Filters Row */}
+            {availableSubRegions.length > 0 && (
+              <div className="flex flex-wrap items-center gap-1.5 pt-3 border-t border-border/40">
+                <div className="flex items-center gap-1 text-[9px] font-black uppercase tracking-wider text-muted-foreground/50 px-2.5 shrink-0">
+                  <Globe className="w-3 h-3" />
+                  <span>省市/地区过滤:</span>
+                </div>
+                
+                <button
+                  onClick={() => setSelectedSubRegion('ALL')}
+                  className={cn(
+                    "px-3.5 py-1.5 rounded-lg text-[9px] font-bold uppercase tracking-wider transition-all duration-200",
+                    selectedSubRegion === 'ALL'
+                      ? "bg-primary text-white shadow-sm scale-102"
+                      : "bg-card text-muted-foreground hover:text-foreground border border-border/60"
+                  )}
+                >
+                  全部
+                </button>
+
+                {availableSubRegions.map(sub => (
+                  <button
+                    key={sub}
+                    onClick={() => setSelectedSubRegion(sub)}
+                    className={cn(
+                      "px-3.5 py-1.5 rounded-lg text-[9px] font-bold uppercase tracking-wider transition-all duration-200",
+                      selectedSubRegion === sub
+                        ? "bg-primary text-white shadow-sm scale-102"
+                        : "bg-card text-muted-foreground hover:text-foreground border border-border/60"
+                    )}
+                  >
+                    {sub}
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
-        )}
-      </div>
 
-      {/* Loading State */}
-      {isLoading ? (
-        <div className="py-24 text-center">
-          <Loader2 className="w-10 h-10 animate-spin text-primary mx-auto mb-4" />
-          <p className="text-muted-foreground text-xs font-semibold uppercase tracking-widest">正在检索数据库资产...</p>
-        </div>
-      ) : (
-        /* Bento Card Grid */
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-          <AnimatePresence mode="popLayout">
-            {filteredCenters.map(center => (
-              <GlassCard key={center.id} className="hover:border-primary/30 transition-all duration-500 hover:shadow-lg">
-                {/* Header Tag */}
-                <div className="p-6 md:p-8 pb-4 border-b border-border flex items-center justify-between">
-                  <div className="flex items-center gap-2 flex-wrap">
-                    <span className={cn(
-                      "px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest border",
-                      center.region === 'CN'
-                        ? "bg-blue-500/5 text-blue-500 border-blue-500/20"
-                        : "bg-teal-500/5 text-teal-500 border-teal-500/20"
-                    )}>
-                      {center.region === 'CN' ? '中国区' : '印度尼西亚'}
-                    </span>
-                    
-                    {/* Province badge tag */}
-                    <span className="px-2.5 py-1 rounded-full bg-slate-500/5 border border-slate-500/10 text-slate-500 text-[9px] font-black uppercase tracking-widest">
-                      {center.subRegion || '通用'}
-                    </span>
-                  </div>
+          {/* Loading State */}
+          {isLoading ? (
+            <div className="py-24 text-center">
+              <Loader2 className="w-10 h-10 animate-spin text-primary mx-auto mb-4" />
+              <p className="text-muted-foreground text-xs font-semibold uppercase tracking-widest">正在检索数据库资产...</p>
+            </div>
+          ) : (
+            /* Bento Card Grid */
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+              <AnimatePresence mode="popLayout">
+                {filteredCenters.map(center => (
+                  <GlassCard key={center.id} className="hover:border-primary/30 transition-all duration-500 hover:shadow-lg">
+                    {/* Header Tag */}
+                    <div className="p-6 md:p-8 pb-4 border-b border-border flex items-center justify-between">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span className={cn(
+                          "px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest border",
+                          center.region === 'CN'
+                            ? "bg-blue-500/5 text-blue-500 border-blue-500/20"
+                            : "bg-teal-500/5 text-teal-500 border-teal-500/20"
+                        )}>
+                          {center.region === 'CN' ? '中国区' : '印度尼西亚'}
+                        </span>
+                        
+                        {/* Province badge tag */}
+                        <span className="px-2.5 py-1 rounded-full bg-slate-500/5 border border-slate-500/10 text-slate-500 text-[9px] font-black uppercase tracking-widest">
+                          {center.subRegion || '通用'}
+                        </span>
+                      </div>
 
-                  <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-                    <Button
-                      onClick={() => handleEditClick(center)}
-                      variant="ghost"
-                      size="icon"
-                      className="h-8 w-8 rounded-lg hover:bg-primary/10 text-primary"
-                    >
-                      <Edit2 className="w-4 h-4" />
-                    </Button>
-                    <Button
-                      onClick={() => handleDeleteClick(center)}
-                      variant="ghost"
-                      size="icon"
-                      className="h-8 w-8 rounded-lg hover:bg-red-500/10 text-red-500"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </Button>
-                  </div>
-                </div>
-
-                {/* Content */}
-                <div className="p-6 md:p-8 space-y-6">
-                  {/* Name */}
-                  <h3 className="text-lg font-black text-slate-900 admin-interface-dark:text-white leading-tight font-headline group-hover:text-primary transition-colors">
-                    {center.name}
-                  </h3>
-
-                  {/* Address Box */}
-                  <div className="p-4 bg-muted/10 border border-border/40 rounded-2xl flex items-start justify-between gap-4 group/addr">
-                    <div className="flex gap-2.5 items-start">
-                      <MapPin className="w-4 h-4 text-primary shrink-0 mt-0.5" />
-                      <p className="text-xs text-muted-foreground leading-relaxed font-semibold">{center.address}</p>
-                    </div>
-                    <Button
-                      onClick={() => handleCopyText(center.address)}
-                      variant="ghost"
-                      size="icon"
-                      className="h-7 w-7 rounded-lg hover:bg-primary/10 text-primary opacity-0 group-hover/addr:opacity-100 transition-opacity shrink-0"
-                    >
-                      <Copy className="w-3.5 h-3.5" />
-                    </Button>
-                  </div>
-
-                  {/* Detail Grid */}
-                  <div className="space-y-3.5 pt-4 border-t border-dashed">
-                    {/* Phone */}
-                    <div className="flex items-center gap-3">
-                      <Phone className="w-3.5 h-3.5 text-muted-foreground/50 shrink-0" />
-                      <span className="text-xs font-bold text-slate-800 admin-interface-dark:text-slate-200">{center.phone}</span>
+                      <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                        <Button
+                          onClick={() => handleEditClick(center)}
+                          variant="ghost"
+                          size="icon"
+                          className="h-8 w-8 rounded-lg hover:bg-primary/10 text-primary"
+                        >
+                          <Edit2 className="w-4 h-4" />
+                        </Button>
+                        <Button
+                          onClick={() => handleDeleteClick(center)}
+                          variant="ghost"
+                          size="icon"
+                          className="h-8 w-8 rounded-lg hover:bg-red-500/10 text-red-500"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </Button>
+                      </div>
                     </div>
 
-                    {/* Email */}
-                    {center.email && (
-                      <div className="flex items-center gap-3">
-                        <Mail className="w-3.5 h-3.5 text-muted-foreground/50 shrink-0" />
-                        <span className="text-xs font-semibold text-muted-foreground">{center.email}</span>
-                      </div>
-                    )}
+                    {/* Content */}
+                    <div className="p-6 md:p-8 space-y-6">
+                      {/* Name */}
+                      <h3 className="text-lg font-black text-slate-900 admin-interface-dark:text-white leading-tight font-headline group-hover:text-primary transition-colors">
+                        {center.name}
+                      </h3>
 
-                    {/* Hours */}
-                    {center.hours && (
-                      <div className="flex items-center gap-3">
-                        <Clock className="w-3.5 h-3.5 text-muted-foreground/50 shrink-0" />
-                        <span className="text-xs font-semibold text-muted-foreground">{center.hours}</span>
+                      {/* Address Box */}
+                      <div className="p-4 bg-muted/10 border border-border/40 rounded-2xl flex items-start justify-between gap-4 group/addr">
+                        <div className="flex gap-2.5 items-start">
+                          <MapPin className="w-4 h-4 text-primary shrink-0 mt-0.5" />
+                          <p className="text-xs text-muted-foreground leading-relaxed font-semibold">{center.address}</p>
+                        </div>
+                        <Button
+                          onClick={() => handleCopyText(center.address)}
+                          variant="ghost"
+                          size="icon"
+                          className="h-7 w-7 rounded-lg hover:bg-primary/10 text-primary opacity-0 group-hover/addr:opacity-100 transition-opacity shrink-0"
+                        >
+                          <Copy className="w-3.5 h-3.5" />
+                        </Button>
                       </div>
-                    )}
 
-                    {/* Note */}
-                    {center.note && (
-                      <div className="flex items-start gap-3 p-3.5 rounded-xl bg-orange-500/[0.03] border border-orange-500/10">
-                        <FileText className="w-3.5 h-3.5 text-orange-500/60 shrink-0 mt-0.5" />
-                        <p className="text-[11px] font-semibold text-orange-500/80 leading-relaxed">{center.note}</p>
+                      {/* Detail Grid */}
+                      <div className="space-y-3.5 pt-4 border-t border-dashed">
+                        {/* Phone */}
+                        <div className="flex items-center gap-3">
+                          <Phone className="w-3.5 h-3.5 text-muted-foreground/50 shrink-0" />
+                          <span className="text-xs font-bold text-slate-800 admin-interface-dark:text-slate-200">{center.phone}</span>
+                        </div>
+
+                        {/* Email */}
+                        {center.email && (
+                          <div className="flex items-center gap-3">
+                            <Mail className="w-3.5 h-3.5 text-muted-foreground/50 shrink-0" />
+                            <span className="text-xs font-semibold text-muted-foreground">{center.email}</span>
+                          </div>
+                        )}
+
+                        {/* Hours */}
+                        {center.hours && (
+                          <div className="flex items-center gap-3">
+                            <Clock className="w-3.5 h-3.5 text-muted-foreground/50 shrink-0" />
+                            <span className="text-xs font-semibold text-muted-foreground">{center.hours}</span>
+                          </div>
+                        )}
+
+                        {/* Note */}
+                        {center.note && (
+                          <div className="flex items-start gap-3 p-3.5 rounded-xl bg-orange-500/[0.03] border border-orange-500/10">
+                            <FileText className="w-3.5 h-3.5 text-orange-500/60 shrink-0 mt-0.5" />
+                            <p className="text-[11px] font-semibold text-orange-500/80 leading-relaxed">{center.note}</p>
+                          </div>
+                        )}
                       </div>
-                    )}
-                  </div>
+                    </div>
+                  </GlassCard>
+                ))}
+              </AnimatePresence>
+
+              {/* Empty State */}
+              {filteredCenters.length === 0 && (
+                <div className="col-span-12 py-24 text-center border border-dashed border-border rounded-3xl bg-card">
+                  <ShieldAlert className="w-12 h-12 text-muted-foreground/30 mx-auto mb-4" />
+                  <p className="text-slate-900 admin-interface-dark:text-white text-sm font-bold">没有匹配的服务中心</p>
+                  <p className="text-muted-foreground text-xs mt-1">请重置筛选条件或点击上方功能按钮。</p>
                 </div>
-              </GlassCard>
-            ))}
-          </AnimatePresence>
-
-          {/* Empty State */}
-          {filteredCenters.length === 0 && (
-            <div className="col-span-12 py-24 text-center border border-dashed border-border rounded-3xl bg-card">
-              <ShieldAlert className="w-12 h-12 text-muted-foreground/30 mx-auto mb-4" />
-              <p className="text-slate-900 admin-interface-dark:text-white text-sm font-bold">没有匹配的服务中心</p>
-              <p className="text-muted-foreground text-xs mt-1">请重置筛选条件或点击上方功能按钮。</p>
+              )}
             </div>
           )}
         </div>
-      )}
+      </AdminFormSection>
 
       {/* --- Dialog 1: Add / Edit Single Center Dialog Modal --- */}
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>

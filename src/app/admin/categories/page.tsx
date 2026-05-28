@@ -57,6 +57,8 @@ import { getAssetUrl } from '@/lib/image-utils';
 import { smartTranslate } from '@/lib/translate-client';
 import { ShinyButton } from '@/components/ui/shiny-button';
 import { MediaLibraryDialog } from '@/components/admin/media-library-dialog';
+import { AdminPageHeader } from '@/components/admin/AdminPageHeader';
+import { GlassCard } from '@/components/admin/GlassCard';
 
 const AiGradientDef = () => (
   <svg width="0" height="0" className="absolute">
@@ -394,39 +396,34 @@ export default function CategoriesPage() {
           <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-[0.015] brightness-100 contrast-150" />
         </div>
 
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 relative z-10">
-          <div className="space-y-1">
-            <h2 className="text-2xl font-headline font-bold text-foreground flex items-center gap-4">
-              <div className="h-10 w-10 rounded-2xl bg-primary/10 flex items-center justify-center text-primary shadow-sm">
-                <Layers className="h-5 w-5" />
-              </div>
-              产品分类管理
-            </h2>
-            <p className="text-xs text-muted-foreground font-bold uppercase tracking-[0.2em] pl-14">Management / Structure / Taxonomy</p>
-          </div>
-
-          <div className="flex gap-3 relative z-10">
-            {(!systemPresets.hasWholesale || !systemPresets.hasProject) && (
+        <AdminPageHeader
+          title="产品分类管理"
+          subtitle="Management / Structure / Taxonomy"
+          icon={Layers}
+          actions={
+            <div className="flex gap-3 relative z-10">
+              {(!systemPresets.hasWholesale || !systemPresets.hasProject) && (
+                <Button
+                  variant="outline"
+                  onClick={handleInitPresets}
+                  className="rounded-2xl h-14 px-6 font-bold uppercase text-[10px] tracking-widest gap-2 border-amber-500/20 bg-amber-500/5 text-amber-500 hover:bg-amber-500/10 transition-all shadow-2xl shadow-amber-900/10"
+                >
+                  <Zap className="h-3.5 w-3.5 animate-pulse" /> 初始化预设顶级分类
+                </Button>
+              )}
               <Button
-                variant="outline"
-                onClick={handleInitPresets}
-                className="rounded-2xl h-14 px-6 font-bold uppercase text-[10px] tracking-widest gap-2 border-amber-500/20 bg-amber-500/5 text-amber-500 hover:bg-amber-500/10 transition-all shadow-2xl shadow-amber-900/10"
+                onClick={handleOpenDialog}
+                className="rounded-2xl h-14 px-8 font-bold uppercase text-[10px] tracking-[0.2em] gap-3 shadow-2xl shadow-primary/20 hover:scale-[1.02] active:scale-[0.98] transition-all"
               >
-                <Zap className="h-3.5 w-3.5 animate-pulse" /> 初始化预设顶级分类
+                <Plus className="h-5 w-5" /> 新增层级分类
               </Button>
-            )}
-            <Button
-              onClick={handleOpenDialog}
-              className="rounded-2xl h-14 px-8 font-bold uppercase text-[10px] tracking-[0.2em] gap-3 shadow-2xl shadow-primary/20 hover:scale-[1.02] active:scale-[0.98] transition-all"
-            >
-              <Plus className="h-5 w-5" /> 新增层级分类
-            </Button>
-          </div>
-        </div>
+            </div>
+          }
+        />
 
         {/* 表格主内容区 */}
         <div className="relative z-10 space-y-4">
-          <div className="bg-card/40 backdrop-blur-3xl rounded-[3rem] border border-border/10 shadow-2xl shadow-black/10 overflow-hidden">
+          <GlassCard className="">
             <Table>
               <TableHeader className="bg-muted/30 border-b border-border/10">
                 <TableRow className="hover:bg-transparent border-none">
@@ -541,14 +538,14 @@ export default function CategoriesPage() {
                 })}
               </TableBody>
             </Table>
-          </div>
+          </GlassCard>
 
           {/* Advisory Section moved inside Main Content Area */}
           <div className="mt-12 p-8 bg-primary/5 rounded-[2.5rem] border border-primary/10 relative overflow-hidden group">
             <div className="absolute top-0 right-0 p-8 opacity-[0.03] group-hover:opacity-[0.05] transition-opacity">
               <Zap className="h-24 w-24 text-primary" />
             </div>
-            <p className="text-[13px] leading-relaxed text-muted-foreground/70 font-medium relative z-10">
+            <p className="text-[12px] leading-relaxed text-muted-foreground/70 font-medium relative z-10">
               为了实现最优的用户导向，建议将所有业务子类挂载到 <strong className="text-primary font-black">“批发产品” (WHOLESALE)</strong> 或 <strong className="text-primary font-black">“项目产品” (PROJECT)</strong> 之下。
               这种“垂直双轨制”架构能够直接与首页的英雄屏按钮联动，确保全球客户能第一时间精准进入其对应的业务板块。
             </p>

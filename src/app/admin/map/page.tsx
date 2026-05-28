@@ -52,6 +52,8 @@ import { Card, CardContent } from '@/components/ui/card';
 import { getAssetUrl } from '@/lib/image-utils';
 import { MediaLibraryDialog } from '@/components/admin/media-library-dialog';
 import Image from 'next/image';
+import { AdminPageHeader } from '@/components/admin/AdminPageHeader';
+import { AdminFormSection } from '@/components/admin/AdminFormSection';
 
 // AI 极光渐变定义组件
 const AiGradientDef = () => (
@@ -362,52 +364,42 @@ export default function GlobalMapAdminPage() {
     <div className="space-y-10 animate-in fade-in duration-500 pb-20 relative z-10">
       <AiGradientDef />
       
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 relative z-10">
-        <div className="space-y-1">
-          <h2 className="text-2xl font-headline font-bold text-foreground flex items-center gap-4">
-            <div className="h-10 w-10 rounded-2xl bg-primary/10 flex items-center justify-center text-primary shadow-sm">
-              <Globe className="h-5 w-5" />
-            </div>
-            全球网点管理
-          </h2>
-          <p className="text-xs text-muted-foreground font-bold uppercase tracking-[0.2em] pl-14">Management / Content / Map</p>
-        </div>
-        
-        <Button 
-          onClick={handleSaveSectionConfig} 
-          disabled={isSavingConfig}
-          className="rounded-2xl h-12 px-8 gap-2.5 font-bold uppercase tracking-widest text-[10px] shadow-lg shadow-primary/20 hover:scale-105 transition-all"
-        >
-          {isSavingConfig ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
-          保存标题配置
-        </Button>
-      </div>
+      <AdminPageHeader
+        title="全球网点管理"
+        subtitle="Management / Content / Map"
+        icon={Globe}
+        actions={
+          <Button 
+            onClick={handleSaveSectionConfig} 
+            disabled={isSavingConfig}
+            className="rounded-2xl h-12 px-8 gap-2.5 font-bold uppercase tracking-widest text-[10px] shadow-lg shadow-primary/20 hover:scale-105 transition-all"
+          >
+            {isSavingConfig ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
+            保存标题配置
+          </Button>
+        }
+      />
 
-      <div className="bg-card p-8 rounded-3xl border border-border/10 shadow-sm space-y-8">
-        <div className="flex items-center justify-between border-b border-border/10 pb-4">
-          <div className="space-y-1">
-            <h3 className="text-lg font-headline font-bold text-primary flex items-center gap-2">
-              <Globe className="h-5 w-5 text-primary" /> 全球地图与网点管理
-            </h3>
-            <p className="text-[10px] text-muted-foreground uppercase font-medium">前台地图板块顶部的标题与描述。</p>
-          </div>
-          <div className="flex gap-3">
-             {aiConfig?.isEnabled && (
-              <ShinyButton 
-                onClick={handleTranslateSection}
-                disabled={isAiProcessing}
-                className="h-9 px-4"
-                shape="capsule"
-              >
-                <div className="flex items-center gap-2">
-                  {isAiProcessing ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Sparkles className="h-3.5 w-3.5" />}
-                  <span className="text-[10px] font-bold uppercase tracking-widest">AI 智译</span>
-                </div>
-              </ShinyButton>
-            )}
-          </div>
-        </div>
-
+      <AdminFormSection
+        title="全球地图与网点管理"
+        subtitle="前台地图板块顶部的标题与描述。"
+        icon={Globe}
+        actions={
+           aiConfig?.isEnabled && (
+            <ShinyButton 
+              onClick={handleTranslateSection}
+              disabled={isAiProcessing}
+              className="h-9 px-4"
+              shape="capsule"
+            >
+              <div className="flex items-center gap-2">
+                {isAiProcessing ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Sparkles className="h-3.5 w-3.5" />}
+                <span className="text-[10px] font-bold uppercase tracking-widest">AI 智译</span>
+              </div>
+            </ShinyButton>
+          )
+        }
+      >
         <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
           <div className="space-y-4">
             <div className="space-y-2">
@@ -430,16 +422,13 @@ export default function GlobalMapAdminPage() {
             </div>
           </div>
         </div>
-      </div>
+      </AdminFormSection>
 
-      <div className="bg-card p-8 rounded-3xl border border-border/10 shadow-sm space-y-8">
-        <div className="flex items-center justify-between border-b border-border/10 pb-4">
-          <div className="space-y-1">
-            <h3 className="text-sm font-bold text-primary uppercase tracking-widest flex items-center gap-2">
-              <MapPin className="h-4 w-4" /> 网点标注点管理
-            </h3>
-            <p className="text-[10px] text-muted-foreground uppercase font-medium">配置地图上显示的交互式 Pins。</p>
-          </div>
+      <AdminFormSection
+        title="网点标注点管理"
+        subtitle="配置地图上显示的交互式 Pins。"
+        icon={MapPin}
+        actions={
           <Button 
             onClick={() => {
               setLocationForm({ id: '', type: 'Factory', titleZh: '', titleEn: '', addressZh: '', addressEn: '', descZh: '', descEn: '', imageUrl: '', countryCode: 'cn', posTop: '50%', posLeft: '50%' });
@@ -450,8 +439,8 @@ export default function GlobalMapAdminPage() {
           >
             <Plus className="h-4 w-4" /> 新增网点
           </Button>
-        </div>
-
+        }
+      >
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {isLoadingLocs && (
             <div className="col-span-full py-20 text-center"><Loader2 className="h-8 w-8 animate-spin mx-auto opacity-10" /></div>
@@ -540,7 +529,7 @@ export default function GlobalMapAdminPage() {
             </Card>
           ))}
         </div>
-      </div>
+      </AdminFormSection>
 
       <Dialog open={isLocationDialogOpen} onOpenChange={setIsLocationDialogOpen}>
         <DialogContent className="rounded-[3rem] max-w-5xl h-[90vh] p-0 overflow-hidden shadow-[0_50px_100px_-20px_rgba(0,0,0,0.15)] admin-interface-dark:shadow-[0_50px_100px_-20px_rgba(0,0,0,0.5)] border border-slate-200/50 admin-interface-dark:border-white/5 bg-card flex flex-col">

@@ -42,6 +42,8 @@ import { Badge } from '@/components/ui/badge';
 import { Switch } from '@/components/ui/switch';
 import { MediaLibraryDialog } from '@/components/admin/media-library-dialog';
 import Image from 'next/image';
+import { AdminPageHeader } from '@/components/admin/AdminPageHeader';
+import { AdminFormSection } from '@/components/admin/AdminFormSection';
 
 interface CaseStudy {
   id: string;
@@ -333,31 +335,23 @@ export default function CaseStudiesAdminPage() {
 
   return (
     <div className="space-y-10 animate-in fade-in duration-500 pb-20">
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 relative z-10">
-        <div className="space-y-1">
-          <h2 className="text-2xl font-headline font-bold text-foreground flex items-center gap-4">
-            <div className="h-10 w-10 rounded-2xl bg-primary/10 flex items-center justify-center text-primary shadow-sm">
-              <Star className="h-5 w-5" />
-            </div>
-            成功案例管理
-          </h2>
-          <p className="text-xs text-muted-foreground font-bold uppercase tracking-[0.2em] pl-14">Management / Content / Cases</p>
-        </div>
-        
-        <Button onClick={() => handleOpenDialog()} className="rounded-2xl h-12 px-6 font-bold uppercase text-[10px] tracking-widest gap-2 shadow-lg shadow-primary/20">
-          <Plus className="h-4 w-4" /> 新增案例
-        </Button>
-      </div>
+      <AdminPageHeader
+        title="成功案例管理"
+        subtitle="Management / Content / Cases"
+        icon={Star}
+        actions={
+          <Button onClick={() => handleOpenDialog()} className="rounded-2xl h-12 px-6 font-bold uppercase text-[10px] tracking-widest gap-2 shadow-lg shadow-primary/20">
+            <Plus className="h-4 w-4" /> 新增案例
+          </Button>
+        }
+      />
 
-      <div className="bg-card p-8 rounded-3xl border border-border/20 shadow-sm space-y-6">
-        <div className="flex items-center justify-between border-b border-border/20 pb-4">
-          <div className="space-y-1">
-            <h3 className="text-sm font-bold text-foreground uppercase tracking-widest flex items-center gap-2">
-              <Sparkles className="h-4 w-4" /> 案例展示板块视觉文案配置
-            </h3>
-            <p className="text-[10px] text-muted-foreground uppercase tracking-widest font-bold opacity-60">Section Heading & Localization Settings</p>
-          </div>
-          <div className="flex gap-3">
+      <AdminFormSection
+        title="案例展示板块视觉文案配置"
+        subtitle="Section Heading & Localization Settings"
+        icon={Sparkles}
+        actions={
+          <>
             {aiConfig?.isEnabled && (
               <ShinyButton 
                 onClick={handleTranslateSection} 
@@ -379,9 +373,9 @@ export default function CaseStudiesAdminPage() {
               {isSavingConfig ? <Loader2 className="h-3 w-3 animate-spin" /> : <Check className="h-3 w-3" />}
               保存配置
             </Button>
-          </div>
-        </div>
-
+          </>
+        }
+      >
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
           <div className="space-y-4 p-5 bg-muted/5 rounded-2xl border border-dashed">
             <span className="text-[10px] font-bold uppercase text-primary/60 tracking-widest">中文配置 (ZH)</span>
@@ -431,7 +425,7 @@ export default function CaseStudiesAdminPage() {
             </div>
           </div>
         </div>
-      </div>
+      </AdminFormSection>
 
 
 

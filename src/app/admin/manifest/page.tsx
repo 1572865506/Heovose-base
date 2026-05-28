@@ -22,16 +22,14 @@ import {
 import { useToast } from '@/hooks/use-toast';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { AdminTabs, AdminTabsList, AdminTabsTrigger, AdminTabsContent } from '@/components/admin/AdminTabs';
 import { cn } from '@/lib/utils';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
+import { AdminPageHeader } from '@/components/admin/AdminPageHeader';
+import { GlassCard } from '@/components/admin/GlassCard';
 
-const GlassCard = ({ children, className }: { children: React.ReactNode, className?: string }) => (
-  <div className={cn("bg-card/70 backdrop-blur-xl border border-border/20 shadow-2xl rounded-3xl overflow-hidden", className)}>
-    {children}
-  </div>
-);
+
 
 export default function ManifestPage() {
   const { toast } = useToast();
@@ -81,48 +79,41 @@ export default function ManifestPage() {
       <div className="absolute top-[-10%] right-[-5%] w-[40%] h-[40%] bg-primary/10 blur-[120px] rounded-full -z-10 animate-pulse" />
       <div className="absolute bottom-[20%] left-[-10%] w-[35%] h-[35%] bg-accent/10 blur-[100px] rounded-full -z-10" />
 
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 relative z-10">
-        <div className="space-y-1">
-          <h2 className="text-2xl font-headline font-bold text-foreground flex items-center gap-4">
-            <div className="h-10 w-10 rounded-2xl bg-primary/10 flex items-center justify-center text-primary shadow-sm">
-              <FileText className="h-5 w-5" />
-            </div>
-            设计与架构白皮书
-          </h2>
-          <p className="text-xs text-muted-foreground font-bold uppercase tracking-[0.2em] pl-14">System / Blueprint</p>
-        </div>
-        
-        <div className="flex items-center gap-4">
-          <span className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mr-2 flex items-center gap-2">
-            <div className="w-1.5 h-1.5 rounded-full bg-primary" />
-            Version 2.0 Premium
-          </span>
-          <Button 
-            onClick={handleSave} 
-            disabled={isSaving}
-            className="rounded-2xl h-12 px-8 gap-2.5 font-bold uppercase tracking-widest text-[10px] shadow-lg shadow-primary/20 hover:scale-105 transition-all"
-          >
-            {isSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
-            签署并同步白皮书
-          </Button>
-        </div>
-      </div>
+      <AdminPageHeader
+        title="设计与架构白皮书"
+        subtitle="System / Blueprint"
+        icon={FileText}
+        actions={
+          <>
+            <span className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mr-2 flex items-center gap-2">
+              <div className="w-1.5 h-1.5 rounded-full bg-primary" />
+              Version 2.0 Premium
+            </span>
+            <Button 
+              onClick={handleSave} 
+              disabled={isSaving}
+              className="rounded-2xl h-12 px-8 gap-2.5 font-bold uppercase tracking-widest text-[10px] shadow-lg shadow-primary/20 hover:scale-105 transition-all"
+            >
+              {isSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
+              签署并同步白皮书
+            </Button>
+          </>
+        }
+      />
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-10">
         <div className="lg:col-span-8">
-          <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full space-y-6">
-            <div className="flex items-center justify-between bg-card/50 backdrop-blur-md p-1.5 rounded-2xl border border-border/20 shadow-sm w-fit">
-              <TabsList className="bg-transparent h-10 gap-1">
-                <TabsTrigger value="edit" className="rounded-xl px-6 text-[11px] font-bold uppercase tracking-wider gap-2 data-[state=active]:bg-primary data-[state=active]:text-white shadow-none transition-all">
-                  <Edit3 className="h-3.5 w-3.5" /> 核心协议编辑
-                </TabsTrigger>
-                <TabsTrigger value="preview" className="rounded-xl px-6 text-[11px] font-bold uppercase tracking-wider gap-2 data-[state=active]:bg-primary data-[state=active]:text-white shadow-none transition-all">
-                  <Eye className="h-3.5 w-3.5" /> 实时视图预览
-                </TabsTrigger>
-              </TabsList>
-            </div>
+          <AdminTabs value={activeTab} onValueChange={setActiveTab} className="w-full space-y-6">
+            <AdminTabsList>
+              <AdminTabsTrigger value="edit">
+                <Edit3 className="h-4 w-4" /> 核心协议编辑
+              </AdminTabsTrigger>
+              <AdminTabsTrigger value="preview">
+                <Eye className="h-4 w-4" /> 实时视图预览
+              </AdminTabsTrigger>
+            </AdminTabsList>
 
-            <TabsContent value="edit" className="m-0 focus-visible:ring-0">
+            <AdminTabsContent value="edit" className="m-0 focus-visible:ring-0">
               <GlassCard className="border-none shadow-[0_32px_64px_-12px_rgba(0,0,0,0.12)]">
                 <div className="bg-slate-900 p-8 text-white relative overflow-hidden">
                   <div className="absolute top-0 right-0 w-64 h-64 bg-primary/20 blur-[100px] rounded-full translate-x-32 -translate-y-32" />
@@ -145,16 +136,16 @@ export default function ManifestPage() {
                   />
                 </CardContent>
               </GlassCard>
-            </TabsContent>
+            </AdminTabsContent>
 
-            <TabsContent value="preview" className="m-0 focus-visible:ring-0">
+            <AdminTabsContent value="preview" className="m-0 focus-visible:ring-0">
               <GlassCard className="p-12 border-none shadow-xl bg-card prose prose-slate dark:prose-invert max-w-none prose-headings:font-headline prose-headings:text-foreground prose-p:text-muted-foreground prose-li:text-muted-foreground min-h-[700px] overflow-y-auto">
                 <ReactMarkdown remarkPlugins={[remarkGfm]}>
                   {content}
                 </ReactMarkdown>
               </GlassCard>
-            </TabsContent>
-          </Tabs>
+            </AdminTabsContent>
+          </AdminTabs>
         </div>
 
         <div className="lg:col-span-4 space-y-8">
