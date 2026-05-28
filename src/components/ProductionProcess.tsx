@@ -5,7 +5,7 @@ import { useState, useEffect, useRef, useMemo } from 'react';
 import Image from 'next/image';
 import { Locale } from "@/lib/translations";
 import { cn } from "@/lib/utils";
-import { Play, Pause, Loader2, X, Maximize } from "lucide-react";
+import { Play, Pause, Loader2, X, Globe } from "lucide-react";
 import { getAssetUrl } from '@/lib/image-utils';
 import { useLocalDoc } from '@/hooks/use-local-doc';
 import { useLocalCollection } from '@/hooks/use-local-collection';
@@ -18,6 +18,16 @@ import {
 } from "@/components/ui/dialog";
 import { VisuallyHidden } from "@radix-ui/react-visually-hidden";
 
+// 引入 GSAP 相关依赖
+import { gsap } from 'gsap';
+import { ScrollTrigger } from 'gsap/ScrollTrigger';
+import { useGSAP } from '@gsap/react';
+
+// 注册 GSAP 插件
+if (typeof window !== 'undefined') {
+  gsap.registerPlugin(ScrollTrigger, useGSAP);
+}
+
 interface StepData {
   id: string;
   order: number;
@@ -28,31 +38,28 @@ interface StepData {
   imageUrls: string[];
 }
 
+import { SectionHeading } from "./SectionHeading";
+
 export function ProductionProcess({ locale }: { locale: Locale }) {
-  const [activeStep, setActiveStep] = useState(0);
-  const [subIndex, setSubIndex] = useState(0);
-  const [isPlaying, setIsPlaying] = useState(true);
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
-  const [isVisible, setIsVisible] = useState(false);
-  const sectionRef = useRef<HTMLElement>(null);
-  const scrollRefs = useRef<(HTMLDivElement | null)[]>([]);
+  const [isHovered, setIsHovered] = useState(false);
+  const trackRef = useRef<HTMLDivElement>(null);
+  const offsetRef = useRef(0);
+  const speedRef = useRef(1.2);
 
-  const AUTOPLAY_DELAY = 4000;
-
-  // 1. 获取数据 - 改为默认开启预加载，不再等待进入视口
+  // 获取步骤数据与首页配置
   const { data: remoteSteps, isLoading } = useLocalCollection<StepData>('productionSteps', { enabled: true });
   const { data: homeContent } = useLocalDoc<any>('homepageContent', 'hero', { enabled: true });
 
   const { t } = useTranslations(locale);
 
-  // 2. 转换数据
+  // 转换数据格式
   const steps = useMemo(() => {
     if (remoteSteps && remoteSteps.length > 0) {
       return remoteSteps.map(s => {
-        // 优先使用翻译 ID，如果没有则回退到 titleZh/titleEn
         const label = (s as any).titleTextId ? t((s as any).titleTextId) : (locale === 'zh' ? s.titleZh : s.titleEn);
         const desc = (s as any).descriptionTextId ? t((s as any).descriptionTextId) : (locale === 'zh' ? s.descZh : s.descEn);
-        
+
         return {
           label: label || (locale === 'zh' ? s.titleZh : s.titleEn),
           tag: s.order < 10 ? `0${s.order}` : `${s.order}`,
@@ -65,237 +72,153 @@ export function ProductionProcess({ locale }: { locale: Locale }) {
   }, [remoteSteps, locale, t]);
 
   const displayTitle = useMemo(() => {
-    // 优先从翻译资产获取 (Zero-Hardcoding 体系)
     const translated = t('PROCESS_TITLE');
-    
-    // 如果翻译资产存在 (包括空字符串)，则返回翻译资产内容
-    // 只有在 translated 为 undefined (即 key 不存在) 时才回退
-    return translated ?? (locale === 'zh' ? homeContent?.processTitleZh : homeContent?.processTitleEn) ?? "";
+    return translated || (locale === 'zh' ? homeContent?.processTitleZh : homeContent?.processTitleEn) || "";
   }, [homeContent, locale, t]);
 
   const displaySubtitle = useMemo(() => {
-    // 优先从翻译资产获取
     const translated = t('PROCESS_SUBTITLE');
-    
-    return translated ?? (locale === 'zh' ? homeContent?.processSubtitleZh : homeContent?.processSubtitleEn) ?? "";
+    return translated || (locale === 'zh' ? homeContent?.processSubtitleZh : homeContent?.processSubtitleEn) || "";
   }, [homeContent, locale, t]);
 
-  // 3. 观察可见性 - 提前 800px 触发渲染，确保滚动到时已经完全加载
+  // 利用 requestAnimationFrame 实现阻尼渐变减速滚动效果（对齐证书墙做法）
   useEffect(() => {
-    const observer = new IntersectionObserver(
-      ([entry]) => {
-        if (entry.isIntersecting) {
-          setIsVisible(true);
-          observer.unobserve(entry.target);
+    if (steps.length === 0) return;
+    const targetSpeed = isHovered ? 0.25 : 1.2;
+    let frameId: number;
+
+    const animate = () => {
+      // 阻尼缓动过渡当前速度
+      speedRef.current += (targetSpeed - speedRef.current) * 0.08;
+      offsetRef.current -= speedRef.current;
+
+      if (trackRef.current) {
+        // 卡片三倍排布保证无缝
+        const trackWidth = trackRef.current.scrollWidth / 3;
+        if (trackWidth > 0 && Math.abs(offsetRef.current) >= trackWidth) {
+          offsetRef.current = 0;
         }
-      },
-      { threshold: 0.05, rootMargin: '800px' }
-    );
-    if (sectionRef.current) observer.observe(sectionRef.current);
-    return () => observer.disconnect();
-  }, []);
-
-  // 4. 观察滚动位置
-  useEffect(() => {
-    const observers: IntersectionObserver[] = [];
-    scrollRefs.current.forEach((ref, index) => {
-      if (ref) {
-        const observer = new IntersectionObserver(
-          ([entry]) => { if (entry.isIntersecting) setActiveStep(index); },
-          { threshold: 0.1, rootMargin: "-10% 0px -10% 0px" }
-        );
-        observer.observe(ref);
-        observers.push(observer);
+        trackRef.current.style.transform = `translateX(${offsetRef.current}px)`;
       }
-    });
-    return () => observers.forEach(o => o.disconnect());
-  }, [steps]);
 
-  // 5. 轮播逻辑
-  const imageSegments = useMemo(() => {
-    const segments: { start: number, end: number, images: string[] }[] = [];
-    let currentSegment: { start: number, end: number, images: string[] } | null = null;
-      steps.forEach((step: any, index: number) => {
-      const imagesKey = JSON.stringify(step.images);
-      if (!currentSegment || JSON.stringify(currentSegment.images) !== imagesKey) {
-        currentSegment = { start: index, end: index, images: step.images };
-        segments.push(currentSegment);
-      } else {
-        currentSegment.end = index;
-      }
-    });
-    return segments;
-  }, [steps]);
+      frameId = requestAnimationFrame(animate);
+    };
 
-  const activeImages = useMemo(() => steps[activeStep]?.images || [], [steps, activeStep]);
+    frameId = requestAnimationFrame(animate);
+    return () => cancelAnimationFrame(frameId);
+  }, [isHovered, steps]);
 
-  // Reset subIndex when images change
-  useEffect(() => {
-    setSubIndex(0);
-  }, [activeImages]);
-
-  // CUSTOM TIMER: Low-frequency slide switching
-  useEffect(() => {
-    if (!isPlaying || !isVisible || activeImages.length <= 1) return;
-
-    const timer = setInterval(() => {
-      setSubIndex((prev) => (prev + 1) % activeImages.length);
-    }, AUTOPLAY_DELAY);
-
-    return () => clearInterval(timer);
-  }, [isPlaying, isVisible, activeImages, subIndex]);
-
-  const subImageIndex = subIndex;
-
-  // 渲染逻辑拆分
   const renderLoading = () => (
     <div className="container mx-auto px-6">
-      <div className="py-40 flex flex-col items-center justify-center gap-4">
-        <Loader2 className="h-10 w-10 animate-spin text-primary opacity-20" />
-        <p className="text-[10px] font-bold uppercase tracking-widest opacity-40">同步精密制造流程中...</p>
+      <div className="py-24 flex flex-col items-center justify-center gap-4">
+        <Loader2 className="h-8 w-8 animate-spin text-primary opacity-30" />
+        <p className="text-[10px] font-bold uppercase tracking-widest opacity-40">
+          {t('PROCESS_LOADING')}
+        </p>
       </div>
     </div>
   );
 
   const renderPlaceholder = () => (
     <div className="container mx-auto px-6">
-      <div className="py-40 flex flex-col items-center justify-center opacity-0"></div>
+      <div className="py-24 flex flex-col items-center justify-center opacity-0"></div>
     </div>
   );
 
-  const renderContent = () => (
-    <div className="container mx-auto px-6">
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-16 lg:gap-24 relative">
-        <div className="lg:col-span-7 lg:sticky lg:top-32 h-fit space-y-16 pb-12">
-          <div className="space-y-4">
-            <h2 className="text-2xl xs:text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-headline font-bold text-slate-900 tracking-tight leading-none break-words whitespace-normal">
-              {displayTitle}
-            </h2>
-            {displaySubtitle && (
-              <p className="text-lg md:text-xl text-slate-400 font-medium transition-all duration-700">
-                {displaySubtitle}
-              </p>
-            )}
-          </div>
+  // 渲染跑马灯小卡片列表（复制多组以确保无缝无限循环）
+  const renderMarquee = () => {
+    // 复制 3 次以确保在超宽屏下也不会出现断裂
+    const duplicatedSteps = [...steps, ...steps, ...steps];
 
-          <div className="hidden lg:block relative group">
-            <div className={cn(
-              "relative h-[60vh] min-h-[450px] max-h-[700px] overflow-hidden shadow-2xl transition-all duration-500 rounded-[3rem] lg:-ml-12 lg:w-[calc(100%+3rem)] will-change-transform"
-            )}>
-              {imageSegments.map((segment, segIndex) => {
-                const isSegmentActive = activeStep >= segment.start && activeStep <= segment.end;
-                return (
-                  <div key={`seg-img-${segIndex}`} className={cn("absolute inset-0 transition-opacity duration-1000 ease-in-out", isSegmentActive ? "opacity-100 z-10" : "opacity-0 z-0 pointer-events-none")}>
-                    {segment.images.map((imgUrl, iIndex) => {
-                      const isVisibleSub = isSegmentActive && (segment.images.length > 1 ? subImageIndex === iIndex : iIndex === 0);
-                      return (
-                        <div key={`${segIndex}-${iIndex}-${imgUrl}`} className={cn("absolute inset-0 transition-opacity duration-1000 ease-in-out will-change-[opacity,transform] cursor-fullscreen", isVisibleSub ? "opacity-100" : "opacity-0")} onClick={() => setSelectedImage(imgUrl)} style={{ zIndex: isVisibleSub ? 20 : 10, transform: 'translateZ(0)' }}>
-                          <Image src={getAssetUrl(imgUrl)} alt="Process Detail" fill className="object-cover" unoptimized={imgUrl.startsWith('data:')} />
-                        </div>
-                      );
-                    })}
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/20 via-transparent to-transparent pointer-events-none" />
-                  </div>
-                );
-              })}
+    return (
+      <div className="relative w-full overflow-hidden py-6">
+        {/* 左侧边缘渐消遮罩 */}
+        <div className="absolute left-0 top-0 bottom-0 w-[8vw] lg:w-[15vw] bg-gradient-to-r from-white via-white/80 to-transparent pointer-events-none z-20" />
+        {/* 右侧边缘渐消遮罩 */}
+        <div className="absolute right-0 top-0 bottom-0 w-[8vw] lg:w-[15vw] bg-gradient-to-l from-white via-white/80 to-transparent pointer-events-none z-20" />
 
-              {activeImages.length > 1 && (
-                <div className="absolute bottom-4 right-4 lg:bottom-8 lg:right-8 z-50 flex items-center gap-3 lg:gap-4 animate-in fade-in slide-in-from-bottom-4 duration-500 cursor-default">
-                  <div className="flex gap-1.5 items-center">
-                    {activeImages.map((_: any, i: number) => (
-                      <button 
-                        key={i} 
-                        onClick={() => setSubIndex(i)} 
-                        className={cn(
-                          "relative h-1 rounded-full transition-all duration-500 overflow-hidden bg-white/30", 
-                          i === subImageIndex ? "w-6 lg:w-8" : "w-1.5 lg:w-2 hover:bg-white/50"
-                        )}
-                      >
-                        {i === subImageIndex && (
-                          <div 
-                            key={subImageIndex} // Reset key to restart animation on slide change
-                            className="absolute inset-0 bg-accent origin-left" 
-                            style={{ 
-                              animation: 'hero-progress-gpu 4000ms linear forwards',
-                              animationPlayState: isPlaying ? 'running' : 'paused'
-                            }} 
-                          />
-                        )}
-                      </button>
-                    ))}
-                  </div>
-                  <button 
-                    onClick={() => setIsPlaying(!isPlaying)} 
-                    className="w-8 h-8 lg:w-10 lg:h-10 rounded-full bg-white/10 flex items-center justify-center text-white hover:bg-accent hover:text-accent-foreground transition-all shadow-lg border border-white/10"
-                  >
-                    {isPlaying ? <Pause className="h-4 w-4 lg:h-5 lg:w-5" /> : <Play className="h-4 w-4 lg:h-5 lg:w-5 ml-0.5" />}
-                  </button>
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
-
-        <div className="lg:col-span-5 space-y-[60vh] pt-12 lg:pt-[40vh] pb-[60vh]">
-          {steps.map((step: any, index: number) => (
-            <div key={index} ref={(el) => { scrollRefs.current[index] = el; }} className={cn("relative transition-all duration-1000 pl-4 lg:pl-0 min-h-[30vh] flex flex-col justify-center", activeStep === index ? "opacity-100" : "opacity-10")}>
-              <span className={cn("absolute -left-12 -top-12 text-[15rem] font-black pointer-events-none select-none transition-all duration-1000 font-headline leading-none", activeStep === index ? "text-primary/[0.08] translate-y-0 scale-100 opacity-100" : "text-slate-200/0 translate-y-20 scale-90 opacity-0")}>
-                {step.tag}
-              </span>
-              <div className="relative z-10 space-y-8">
-                <h3 className={cn("text-xl xs:text-2xl sm:text-3xl lg:text-5xl font-headline font-bold text-slate-900 tracking-tight transition-all duration-700 break-words whitespace-normal", activeStep === index ? "translate-x-0" : "-translate-x-4")}>
-                  {step.label}
-                </h3>
-                <div className={cn("flex gap-6 transition-all duration-1000 delay-100", activeStep === index ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8")}>
-                  <div className="w-1.5 h-auto bg-accent/40 rounded-full shrink-0" />
-                  <p className="text-xl text-slate-500 font-medium leading-relaxed max-w-xl">{step.desc}</p>
-                </div>
-              </div>
-              <div className="lg:hidden w-full aspect-video rounded-3xl overflow-hidden relative border border-border/40 mt-8 shadow-lg">
-                {step.images.map((imgUrl: string, iIndex: number) => (
-                  <div key={`mob-${index}-${iIndex}`} className={cn("absolute inset-0 transition-opacity duration-1000 cursor-fullscreen", activeStep === index && subImageIndex === iIndex ? "opacity-100" : "opacity-0")} onClick={() => setSelectedImage(imgUrl)}>
-                    <Image src={getAssetUrl(imgUrl)} alt={step.label} fill className="object-cover" unoptimized={imgUrl.startsWith('data:')} />
-                  </div>
-                ))}
-                {/* 移动端轮播控制 */}
-                {step.images.length > 1 && activeStep === index && (
-                  <div className="absolute bottom-3 right-3 z-30 flex items-center gap-2 animate-in fade-in duration-500">
-                    <div className="flex gap-1 items-center">
-                      {step.images.map((_: any, i: number) => (
-                        <div key={i} className={cn("h-0.5 rounded-full bg-white/30 overflow-hidden transition-all duration-500 relative", i === subImageIndex ? "w-4" : "w-1")}>
-                          {i === subImageIndex && (
-                            <div 
-                              key={subImageIndex}
-                              className="absolute inset-0 bg-accent origin-left" 
-                              style={{ 
-                                animation: 'hero-progress-gpu 4000ms linear forwards',
-                                animationPlayState: isPlaying ? 'running' : 'paused'
-                              }} 
-                            />
-                          )}
-                        </div>
-                      ))}
+        {/* 跑马灯滚动轨道 */}
+        <div
+          ref={trackRef}
+          onMouseEnter={() => setIsHovered(true)}
+          onMouseLeave={() => setIsHovered(false)}
+          className="flex flex-row gap-6 w-max py-4 will-change-transform"
+        >
+          {duplicatedSteps.map((step: any, index: number) => {
+            const previewImage = step.images[0] || '';
+            return (
+              <div
+                key={`${step.tag}-${index}`}
+                className="w-[280px] sm:w-[320px] bg-white rounded-3xl border border-slate-100/80 shadow-lg shadow-slate-100/50 overflow-hidden flex flex-col group cursor-pointer hover:shadow-xl hover:border-slate-200/50 transition-all duration-500"
+                onClick={() => previewImage && setSelectedImage(previewImage)}
+              >
+                {/* 卡片图片区 */}
+                <div className="h-44 sm:h-48 w-full relative overflow-hidden bg-slate-100">
+                  {previewImage ? (
+                    <Image
+                      src={getAssetUrl(previewImage)}
+                      alt={step.label}
+                      fill
+                      className="object-cover transition-transform duration-700 ease-out group-hover:scale-105"
+                      unoptimized={previewImage.startsWith('data:')}
+                    />
+                  ) : (
+                    <div className="absolute inset-0 flex items-center justify-center text-slate-300 bg-slate-50">
+                      {t('PROCESS_NO_IMAGE')}
                     </div>
-                    <button onClick={(e) => { e.stopPropagation(); setIsPlaying(!isPlaying); }} className="w-7 h-7 rounded-full bg-black/20 backdrop-blur-sm flex items-center justify-center text-white border border-white/10">
-                      {isPlaying ? <Pause className="h-3.5 w-3.5" /> : <Play className="h-3.5 w-3.5 ml-0.5" />}
-                    </button>
+                  )}
+                  <div className="absolute inset-0 bg-black/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+                </div>
+
+                {/* 卡片文本区 */}
+                <div className="p-6 flex flex-col justify-between flex-grow space-y-4">
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between">
+                      <span className="px-3 py-1 rounded-full bg-primary/10 text-primary font-bold text-[10px] uppercase tracking-wider">
+                        {t('PROCESS_STEP')} {step.tag}
+                      </span>
+                    </div>
+                    <h3 className="text-lg font-headline font-bold text-slate-900 tracking-tight leading-snug group-hover:text-primary transition-colors">
+                      {step.label}
+                    </h3>
+                    <p className="text-xs sm:text-sm text-slate-400 font-medium leading-relaxed line-clamp-3">
+                      {step.desc}
+                    </p>
                   </div>
-                )}
+                </div>
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       </div>
-    </div>
-  );
+    );
+  };
 
   return (
-    <section id="process" ref={sectionRef} className="pt-16 pb-24 lg:py-32 bg-white relative overflow-x-clip min-h-[400px]">
-      {isLoading ? renderLoading() : (steps.length > 0 ? renderContent() : renderPlaceholder())}
+    <section id="process" className="bg-white py-20 relative overflow-hidden">
+      {/* 静态标题区域 */}
+      <div className="container mx-auto px-6 text-center">
+        <SectionHeading 
+          title={displayTitle} 
+          subtitle={displaySubtitle || undefined} 
+          centered={true} 
+        />
+      </div>
+
+      {/* 自动滚动卡片轨道 */}
+      <div className="w-full">
+        {isLoading ? renderLoading() : (steps.length > 0 ? renderMarquee() : renderPlaceholder())}
+      </div>
 
       <Dialog open={!!selectedImage} onOpenChange={(open) => !open && setSelectedImage(null)}>
         <DialogContent className="max-w-[95vw] max-h-[95vh] p-0 border-none bg-transparent shadow-none [&>button:last-child]:hidden">
-          <VisuallyHidden><DialogHeader><DialogTitle>查看大图</DialogTitle></DialogHeader></VisuallyHidden>
+          <VisuallyHidden>
+            <DialogHeader>
+              <DialogTitle>
+                {t('PROCESS_VIEW_LARGE')}
+              </DialogTitle>
+            </DialogHeader>
+          </VisuallyHidden>
           <div className="relative w-full h-[90vh] flex items-center justify-center group">
             {selectedImage && (
               <div className="relative w-full h-full animate-in zoom-in-95 fade-in duration-300 ease-out" onClick={() => setSelectedImage(null)}>

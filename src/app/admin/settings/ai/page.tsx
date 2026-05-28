@@ -2,11 +2,11 @@
 
 import { useState, useEffect, useMemo } from 'react';
 import { useLocalDoc } from '@/hooks/use-local-doc';
-import { 
-  Card, 
-  CardContent, 
-  CardDescription, 
-  CardHeader, 
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
   CardTitle,
   CardFooter
 } from '@/components/ui/card';
@@ -15,16 +15,16 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
-import { 
-  Bot, 
-  Cpu, 
-  Zap, 
-  Settings2, 
-  Plus, 
-  Trash2, 
-  RefreshCw, 
-  CheckCircle2, 
-  AlertCircle, 
+import {
+  Bot,
+  Cpu,
+  Zap,
+  Settings2,
+  Plus,
+  Trash2,
+  RefreshCw,
+  CheckCircle2,
+  AlertCircle,
   ExternalLink,
   LayoutGrid,
   Sparkles,
@@ -99,9 +99,9 @@ export default function AiManagementPage() {
   const [isSaving, setIsSaving] = useState(false);
   const [isTesting, setIsTesting] = useState<string | null>(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
-  
+
   const { data: aiConfig, isLoading, mutate } = useLocalDoc<AIConfig>('settings', 'ai');
-  
+
   const [formData, setFormData] = useState<AIConfig>({
     isEnabled: true,
     providers: [],
@@ -192,7 +192,7 @@ export default function AiManagementPage() {
   };
 
   const toggleProviderActive = (id: string, active: boolean) => {
-    const newProviders = formData.providers.map(p => 
+    const newProviders = formData.providers.map(p =>
       p.id === id ? { ...p, isActive: active } : p
     );
     const updated = { ...formData, providers: newProviders };
@@ -222,22 +222,22 @@ export default function AiManagementPage() {
         console.log(`[Browser LLM] Direct testing to ${provider.baseUrl}`);
         const res = await fetch(`${provider.baseUrl}/chat/completions`, {
           method: 'POST',
-          headers: { 
+          headers: {
             'Content-Type': 'application/json',
             'Authorization': `Bearer ${provider.apiKey || 'not-needed'}`
           },
-          body: JSON.stringify({ 
+          body: JSON.stringify({
             model: provider.model,
             messages: [{ role: 'user', content: 'Hello' }],
             max_tokens: 5
           })
         });
-        
+
         if (!res.ok) {
           const errorText = await res.text();
           throw new Error(`浏览器无法连接本地端点 (${res.status}): ${errorText || '请检查 CORS 设置'}`);
         }
-        
+
         const rawData = await res.json();
         data = {
           success: true,
@@ -249,7 +249,7 @@ export default function AiManagementPage() {
         const res = await fetch('/api/admin/ai/test', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ 
+          body: JSON.stringify({
             provider: provider.type,
             model: provider.model,
             apiKey: provider.apiKey,
@@ -258,14 +258,14 @@ export default function AiManagementPage() {
         });
         data = await res.json();
       }
-      
+
       const testResult: AIProvider['lastTest'] = {
         status: data.success ? 'success' : 'failed',
         latency: data.latency,
         timestamp: new Date().toISOString()
       };
 
-      const nextProviders = formData.providers.map(p => 
+      const nextProviders = formData.providers.map(p =>
         p.id === provider.id ? { ...p, lastTest: testResult } : p
       );
       const updated = { ...formData, providers: nextProviders };
@@ -300,8 +300,8 @@ export default function AiManagementPage() {
           <>
             <div className="flex items-center gap-3 bg-muted/10 p-2 rounded-2xl border border-border/40">
               <span className="text-xs text-muted-foreground font-bold uppercase tracking-wider pl-2">网关状态</span>
-              <Switch 
-                checked={formData.isEnabled} 
+              <Switch
+                checked={formData.isEnabled}
                 onCheckedChange={v => {
                   const updated = { ...formData, isEnabled: v };
                   setFormData(updated);
@@ -311,7 +311,7 @@ export default function AiManagementPage() {
               />
             </div>
 
-            <Button 
+            <Button
               onClick={() => {
                 setEditingProvider({ type: 'google', isActive: true, isPrimary: formData.providers.length === 0 });
                 setIsDialogOpen(true);
@@ -326,165 +326,165 @@ export default function AiManagementPage() {
 
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
         <DialogContent className="max-w-2xl rounded-[3rem] p-0 border-none bg-slate-50 overflow-hidden max-h-[90vh] flex flex-col admin-interface-dark:bg-slate-950 admin-interface-dark:border admin-interface-dark:border-slate-850">
-            {/* 固定头部：标题 + 供应商选择 */}
-            <div className="p-12 pb-8 bg-white border-b border-slate-100 shadow-sm z-10 admin-interface-dark:bg-slate-900 admin-interface-dark:border-slate-850 admin-interface-dark:shadow-none">
-              <DialogHeader className="mb-8">
-                <div className="flex items-center gap-4 mb-4">
-                  <div className="h-12 w-12 rounded-2xl bg-blue-600 text-white flex items-center justify-center shadow-lg shadow-blue-200 admin-interface-dark:shadow-none">
-                    <Cpu className="h-6 w-6" />
-                  </div>
-                  <DialogTitle className="text-3xl font-headline font-bold text-slate-900 tracking-tight admin-interface-dark:text-white">
-                    {editingProvider?.id ? '编辑算力节点' : '新增 AI 算力节点'}
-                  </DialogTitle>
+          {/* 固定头部：标题 + 供应商选择 */}
+          <div className="p-12 pb-8 bg-white border-b border-slate-100 shadow-sm z-10 admin-interface-dark:bg-slate-900 admin-interface-dark:border-slate-850 admin-interface-dark:shadow-none">
+            <DialogHeader className="mb-8">
+              <div className="flex items-center gap-4 mb-4">
+                <div className="h-12 w-12 rounded-2xl bg-blue-600 text-white flex items-center justify-center shadow-lg shadow-blue-200 admin-interface-dark:shadow-none">
+                  <Cpu className="h-6 w-6" />
                 </div>
-                <DialogDescription className="text-sm text-slate-500 leading-relaxed max-w-md font-medium admin-interface-dark:text-slate-400">
-                  配置 AI 服务商信息。您可以接入主流云端大模型，或通过 OpenAI 兼容协议接入本地私有化部署的模型。
-                </DialogDescription>
-              </DialogHeader>
+                <DialogTitle className="text-3xl font-headline font-bold text-slate-900 tracking-tight admin-interface-dark:text-white">
+                  {editingProvider?.id ? '编辑算力节点' : '新增 AI 算力节点'}
+                </DialogTitle>
+              </div>
+              <DialogDescription className="text-sm text-slate-500 leading-relaxed max-w-md font-medium admin-interface-dark:text-slate-400">
+                配置 AI 服务商信息。您可以接入主流云端大模型，或通过 OpenAI 兼容协议接入本地私有化部署的模型。
+              </DialogDescription>
+            </DialogHeader>
 
-              <div className="space-y-3">
-                <Label className="text-[9px] font-bold uppercase tracking-[0.2em] text-slate-400 pl-1 admin-interface-dark:text-slate-500">供应商类型 (Provider Type)</Label>
-                <div className="grid grid-cols-4 gap-2">
-                  {[
-                    { id: 'google', label: 'Gemini', icon: Zap, color: 'text-blue-500', bg: 'bg-blue-50' },
-                    { id: 'openai', label: 'OpenAI', icon: Sparkles, color: 'text-green-500', bg: 'bg-green-50' },
-                    { id: 'local', label: 'Local', icon: Server, color: 'text-slate-500', bg: 'bg-slate-50' },
-                    { id: 'browser-local', label: 'Browser', icon: Monitor, color: 'text-purple-500', bg: 'bg-purple-50' }
-                  ].map((t) => (
-                    <button
-                      key={t.id}
-                      type="button"
-                      onClick={() => setEditingProvider(prev => ({
-                        ...prev, 
-                        type: t.id as any, 
-                        model: t.id === 'google' ? 'gemini-1.5-flash' : (t.id === 'openai' ? 'gpt-4o' : 'hy-mt1.5-1.8b')
-                      }))}
-                      className={cn(
-                        "flex items-center justify-center gap-2 py-2.5 px-2 rounded-xl border transition-all duration-300",
-                        editingProvider?.type === t.id 
-                          ? "border-blue-500 bg-blue-50/50 text-blue-700 shadow-sm admin-interface-dark:bg-blue-950/30 admin-interface-dark:text-blue-400 admin-interface-dark:border-blue-800" 
-                          : "border-slate-100 bg-white hover:border-slate-200 text-slate-600 admin-interface-dark:border-slate-800 admin-interface-dark:bg-slate-900 admin-interface-dark:text-slate-400 admin-interface-dark:hover:bg-slate-800/50"
-                      )}
-                    >
-                      <t.icon className={cn("h-3.5 w-3.5 shrink-0", editingProvider?.type === t.id ? "text-blue-500" : "text-slate-400 admin-interface-dark:text-slate-500")} />
-                      <span className="text-[10px] font-bold truncate">{t.label}</span>
-                    </button>
-                  ))}
-                </div>
+            <div className="space-y-3">
+              <Label className="text-[9px] font-bold uppercase tracking-[0.2em] text-slate-400 pl-1 admin-interface-dark:text-slate-500">供应商类型 (Provider Type)</Label>
+              <div className="grid grid-cols-4 gap-2">
+                {[
+                  { id: 'google', label: 'Gemini', icon: Zap, color: 'text-blue-500', bg: 'bg-blue-50' },
+                  { id: 'openai', label: 'OpenAI', icon: Sparkles, color: 'text-green-500', bg: 'bg-green-50' },
+                  { id: 'local', label: 'Local', icon: Server, color: 'text-slate-500', bg: 'bg-slate-50' },
+                  { id: 'browser-local', label: 'Browser', icon: Monitor, color: 'text-purple-500', bg: 'bg-purple-50' }
+                ].map((t) => (
+                  <button
+                    key={t.id}
+                    type="button"
+                    onClick={() => setEditingProvider(prev => ({
+                      ...prev,
+                      type: t.id as any,
+                      model: t.id === 'google' ? 'gemini-1.5-flash' : (t.id === 'openai' ? 'gpt-4o' : 'hy-mt1.5-1.8b')
+                    }))}
+                    className={cn(
+                      "flex items-center justify-center gap-2 py-2.5 px-2 rounded-xl border transition-all duration-300",
+                      editingProvider?.type === t.id
+                        ? "border-blue-500 bg-blue-50/50 text-blue-700 shadow-sm admin-interface-dark:bg-blue-950/30 admin-interface-dark:text-blue-400 admin-interface-dark:border-blue-800"
+                        : "border-slate-100 bg-white hover:border-slate-200 text-slate-600 admin-interface-dark:border-slate-800 admin-interface-dark:bg-slate-900 admin-interface-dark:text-slate-400 admin-interface-dark:hover:bg-slate-800/50"
+                    )}
+                  >
+                    <t.icon className={cn("h-3.5 w-3.5 shrink-0", editingProvider?.type === t.id ? "text-blue-500" : "text-slate-400 admin-interface-dark:text-slate-500")} />
+                    <span className="text-[10px] font-bold truncate">{t.label}</span>
+                  </button>
+                ))}
               </div>
             </div>
+          </div>
 
-            {/* 滚动主体：具体参数配置 */}
-            <div className="overflow-y-auto p-12 pt-8 scrollbar-none flex-1 space-y-10">
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label className="text-[10px] font-bold uppercase tracking-widest text-slate-400 pl-1 admin-interface-dark:text-slate-500">节点名称</Label>
-                  <Input 
-                    value={editingProvider?.name || ''} 
-                    onChange={e => setEditingProvider(prev => ({...prev, name: e.target.value}))}
-                    placeholder="例如: 生产力集群-A" 
-                    className="rounded-xl h-12 bg-white border-slate-100 font-bold admin-interface-dark:bg-slate-900 admin-interface-dark:border-slate-800 admin-interface-dark:text-white"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label className="text-[10px] font-bold uppercase tracking-widest text-slate-400 pl-1 admin-interface-dark:text-slate-500">模型标识 (Model ID)</Label>
-                  <Input 
-                    value={editingProvider?.model || ''} 
-                    onChange={e => setEditingProvider(prev => ({...prev, model: e.target.value}))}
-                    placeholder={editingProvider?.type === 'google' ? 'gemini-1.5-flash' : 'gpt-4o'} 
-                    className="rounded-xl h-12 bg-white border-slate-100 font-mono text-xs font-bold admin-interface-dark:bg-slate-900 admin-interface-dark:border-slate-800 admin-interface-dark:text-white"
-                  />
-                </div>
-              </div>
-
+          {/* 滚动主体：具体参数配置 */}
+          <div className="overflow-y-auto p-12 pt-8 scrollbar-none flex-1 space-y-10">
+            <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label className="text-[10px] font-bold uppercase tracking-widest text-slate-400 pl-1 admin-interface-dark:text-slate-500">API 密钥 (Auth Token)</Label>
-                <div className="relative">
-                  <Input 
-                    type="password"
-                    value={editingProvider?.apiKey || ''} 
-                    onChange={e => setEditingProvider(prev => ({...prev!, apiKey: e.target.value}))}
-                    placeholder={editingProvider?.type === 'local' ? 'not-needed' : 'sk-****************'} 
-                    className="rounded-xl h-12 bg-white border-slate-100 font-mono text-xs font-bold pl-10 admin-interface-dark:bg-slate-900 admin-interface-dark:border-slate-800 admin-interface-dark:text-white"
-                  />
-                  <Key className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-300 admin-interface-dark:text-slate-650" />
-                </div>
+                <Label className="text-[10px] font-bold uppercase tracking-widest text-slate-400 pl-1 admin-interface-dark:text-slate-500">节点名称</Label>
+                <Input
+                  value={editingProvider?.name || ''}
+                  onChange={e => setEditingProvider(prev => ({ ...prev, name: e.target.value }))}
+                  placeholder="例如: 生产力集群-A"
+                  className="rounded-xl h-12 bg-white border-slate-100 font-bold admin-interface-dark:bg-slate-900 admin-interface-dark:border-slate-800 admin-interface-dark:text-white"
+                />
               </div>
-
-              {(editingProvider?.type === 'local' || editingProvider?.type === 'browser-local') && (
-                <div className="space-y-2 animate-in slide-in-from-top-2 duration-300">
-                  <Label className="text-[10px] font-bold uppercase tracking-widest text-slate-400 pl-1 admin-interface-dark:text-slate-500">
-                    {editingProvider?.type === 'browser-local' ? '浏览器直连端点 (Direct URL)' : '服务器代理端点 (Proxy URL)'}
-                  </Label>
-                  <Input 
-                    value={editingProvider?.baseUrl || ''} 
-                    onChange={e => setEditingProvider(prev => ({...prev!, baseUrl: e.target.value}))}
-                    placeholder={editingProvider?.type === 'browser-local' ? 'http://localhost:1234/v1' : 'http://172.x.x.x:1234/v1'} 
-                    className="rounded-xl h-12 bg-white border-slate-100 font-mono text-xs font-bold admin-interface-dark:bg-slate-900 admin-interface-dark:border-slate-800 admin-interface-dark:text-white"
-                  />
-                  <p className="text-[9px] text-slate-400 italic px-1 mt-1 admin-interface-dark:text-slate-550">
-                    {editingProvider?.type === 'browser-local' 
-                      ? "基于浏览器直连模式。访问者将直接请求其本机的 127.0.0.1，请确保模型开启了 CORS。" 
-                      : "基于服务器中转模式。翻译请求将由 WSL 服务器发起，需填写宿主机内网 IP。"}
-                  </p>
-                </div>
-              )}
-
-              <div className="flex items-center justify-between p-6 bg-white rounded-[2rem] border border-slate-100 shadow-sm admin-interface-dark:bg-slate-900 admin-interface-dark:border-slate-850">
-                 <div className="space-y-1">
-                    <span className="text-sm font-bold text-slate-900 block admin-interface-dark:text-white">设为首选节点 (Primary)</span>
-                    <span className="text-[10px] text-slate-400 font-medium tracking-tight admin-interface-dark:text-slate-505">所有任务将优先通过此节点下发。</span>
-                 </div>
-                 <Switch 
-                  checked={editingProvider?.isPrimary || false} 
-                  onCheckedChange={checked => setEditingProvider(prev => ({...prev!, isPrimary: checked}))}
-                 />
+              <div className="space-y-2">
+                <Label className="text-[10px] font-bold uppercase tracking-widest text-slate-400 pl-1 admin-interface-dark:text-slate-500">模型标识 (Model ID)</Label>
+                <Input
+                  value={editingProvider?.model || ''}
+                  onChange={e => setEditingProvider(prev => ({ ...prev, model: e.target.value }))}
+                  placeholder={editingProvider?.type === 'google' ? 'gemini-1.5-flash' : 'gpt-4o'}
+                  className="rounded-xl h-12 bg-white border-slate-100 font-mono text-xs font-bold admin-interface-dark:bg-slate-900 admin-interface-dark:border-slate-800 admin-interface-dark:text-white"
+                />
               </div>
             </div>
 
-            {/* 固定底部：操作按钮 */}
-            <DialogFooter className="p-8 bg-white border-t border-slate-100 sm:justify-between items-center admin-interface-dark:bg-slate-900 admin-interface-dark:border-slate-850">
-              <Button variant="ghost" onClick={() => setIsDialogOpen(false)} className="rounded-xl h-12 px-6 font-bold uppercase text-[10px] tracking-widest text-slate-400 admin-interface-dark:text-slate-500 admin-interface-dark:hover:bg-slate-800/50">取消</Button>
-              <Button onClick={handleAddOrUpdateProvider} className="rounded-xl h-12 px-10 font-bold uppercase text-[10px] tracking-widest shadow-lg shadow-primary/20 admin-interface-dark:bg-white admin-interface-dark:text-slate-900 admin-interface-dark:hover:bg-slate-100 admin-interface-dark:shadow-none">签署并同步</Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
+            <div className="space-y-2">
+              <Label className="text-[10px] font-bold uppercase tracking-widest text-slate-400 pl-1 admin-interface-dark:text-slate-500">API 密钥 (Auth Token)</Label>
+              <div className="relative">
+                <Input
+                  type="password"
+                  value={editingProvider?.apiKey || ''}
+                  onChange={e => setEditingProvider(prev => ({ ...prev!, apiKey: e.target.value }))}
+                  placeholder={editingProvider?.type === 'local' ? 'not-needed' : 'sk-****************'}
+                  className="rounded-xl h-12 bg-white border-slate-100 font-mono text-xs font-bold pl-10 admin-interface-dark:bg-slate-900 admin-interface-dark:border-slate-800 admin-interface-dark:text-white"
+                />
+                <Key className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-300 admin-interface-dark:text-slate-650" />
+              </div>
+            </div>
+
+            {(editingProvider?.type === 'local' || editingProvider?.type === 'browser-local') && (
+              <div className="space-y-2 animate-in slide-in-from-top-2 duration-300">
+                <Label className="text-[10px] font-bold uppercase tracking-widest text-slate-400 pl-1 admin-interface-dark:text-slate-500">
+                  {editingProvider?.type === 'browser-local' ? '浏览器直连端点 (Direct URL)' : '服务器代理端点 (Proxy URL)'}
+                </Label>
+                <Input
+                  value={editingProvider?.baseUrl || ''}
+                  onChange={e => setEditingProvider(prev => ({ ...prev!, baseUrl: e.target.value }))}
+                  placeholder={editingProvider?.type === 'browser-local' ? 'http://localhost:1234/v1' : 'http://172.x.x.x:1234/v1'}
+                  className="rounded-xl h-12 bg-white border-slate-100 font-mono text-xs font-bold admin-interface-dark:bg-slate-900 admin-interface-dark:border-slate-800 admin-interface-dark:text-white"
+                />
+                <p className="text-[9px] text-slate-400 italic px-1 mt-1 admin-interface-dark:text-slate-550">
+                  {editingProvider?.type === 'browser-local'
+                    ? "基于浏览器直连模式。访问者将直接请求其本机的 127.0.0.1，请确保模型开启了 CORS。"
+                    : "基于服务器中转模式。翻译请求将由 WSL 服务器发起，需填写宿主机内网 IP。"}
+                </p>
+              </div>
+            )}
+
+            <div className="flex items-center justify-between p-6 bg-white rounded-[2rem] border border-slate-100 shadow-sm admin-interface-dark:bg-slate-900 admin-interface-dark:border-slate-850">
+              <div className="space-y-1">
+                <span className="text-sm font-bold text-slate-900 block admin-interface-dark:text-white">设为首选节点 (Primary)</span>
+                <span className="text-[10px] text-slate-400 font-medium tracking-tight admin-interface-dark:text-slate-505">所有任务将优先通过此节点下发。</span>
+              </div>
+              <Switch
+                checked={editingProvider?.isPrimary || false}
+                onCheckedChange={checked => setEditingProvider(prev => ({ ...prev!, isPrimary: checked }))}
+              />
+            </div>
+          </div>
+
+          {/* 固定底部：操作按钮 */}
+          <DialogFooter className="p-8 bg-white border-t border-slate-100 sm:justify-between items-center admin-interface-dark:bg-slate-900 admin-interface-dark:border-slate-850">
+            <Button variant="ghost" onClick={() => setIsDialogOpen(false)} className="rounded-xl h-12 px-6 font-bold uppercase text-[10px] tracking-widest text-slate-400 admin-interface-dark:text-slate-500 admin-interface-dark:hover:bg-slate-800/50">取消</Button>
+            <Button onClick={handleAddOrUpdateProvider} className="rounded-xl h-12 px-10 font-bold uppercase text-[10px] tracking-widest shadow-lg shadow-primary/20 admin-interface-dark:bg-white admin-interface-dark:text-slate-900 admin-interface-dark:hover:bg-slate-100 admin-interface-dark:shadow-none">签署并同步</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-10">
         {/* Provider List (Left) */}
         <div className="lg:col-span-8 space-y-8">
           {formData.providers.length === 0 ? (
             <div className="py-32 flex flex-col items-center justify-center gap-6 bg-white/40 backdrop-blur-md rounded-[3rem] border border-dashed border-slate-300 admin-interface-dark:bg-slate-900/40 admin-interface-dark:border-slate-850 admin-interface-dark:shadow-none">
-               <div className="h-20 w-20 rounded-full bg-slate-100 flex items-center justify-center text-slate-300 admin-interface-dark:bg-slate-800 admin-interface-dark:text-slate-700">
-                  <Server className="h-10 w-10" />
-               </div>
-               <div className="text-center space-y-2">
-                  <p className="font-bold text-slate-400 uppercase tracking-widest text-sm admin-interface-dark:text-slate-500">暂未配置任何算力节点</p>
-                  <p className="text-xs text-slate-400 italic admin-interface-dark:text-slate-550">请添加一个 AI 供应商以启用智译功能。</p>
-               </div>
-               <Button onClick={() => setIsDialogOpen(true)} variant="outline" className="rounded-xl px-8 border-primary/20 text-primary admin-interface-dark:border-slate-800 admin-interface-dark:text-slate-300 admin-interface-dark:hover:bg-slate-800">立即添加</Button>
+              <div className="h-20 w-20 rounded-full bg-slate-100 flex items-center justify-center text-slate-300 admin-interface-dark:bg-slate-800 admin-interface-dark:text-slate-700">
+                <Server className="h-10 w-10" />
+              </div>
+              <div className="text-center space-y-2">
+                <p className="font-bold text-slate-400 uppercase tracking-widest text-sm admin-interface-dark:text-slate-500">暂未配置任何算力节点</p>
+                <p className="text-xs text-slate-400 italic admin-interface-dark:text-slate-550">请添加一个 AI 供应商以启用智译功能。</p>
+              </div>
+              <Button onClick={() => setIsDialogOpen(true)} variant="outline" className="rounded-xl px-8 border-primary/20 text-primary admin-interface-dark:border-slate-800 admin-interface-dark:text-slate-300 admin-interface-dark:hover:bg-slate-800">立即添加</Button>
             </div>
           ) : (
             <div className="space-y-6">
-               {formData.providers.sort((a, b) => (a.isPrimary ? -1 : 1)).map((provider, index) => (
+              {formData.providers.sort((a, b) => (a.isPrimary ? -1 : 1)).map((provider, index) => (
                 <GlassCard key={provider.id} className={cn(
-                  "border-none transition-all duration-500 hover:shadow-[0_40px_80px_-20px_rgba(0,0,0,0.1)] group",
+                  "border-none transition-all duration-500 hover:shadow-[0_20px_20px_-10px_rgba(0,0,0,0.1)] group",
                   provider.isPrimary && "ring-2 ring-primary ring-offset-4 admin-interface-dark:ring-offset-slate-950"
                 )}>
                   <div className="p-8 flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
                     <div className="flex items-center gap-6">
                       <div className={cn(
                         "h-16 w-16 rounded-2xl flex items-center justify-center shrink-0 shadow-inner relative overflow-hidden",
-                        provider.type === 'google' ? "bg-blue-50 text-blue-600 admin-interface-dark:bg-blue-950/30 admin-interface-dark:text-blue-400" : 
-                        provider.type === 'openai' ? "bg-green-50 text-green-600 admin-interface-dark:bg-green-950/30 admin-interface-dark:text-green-400" : 
-                        "bg-slate-100 text-slate-600 admin-interface-dark:bg-slate-800 admin-interface-dark:text-slate-400"
+                        provider.type === 'google' ? "bg-blue-50 text-blue-600 admin-interface-dark:bg-blue-950/30 admin-interface-dark:text-blue-400" :
+                          provider.type === 'openai' ? "bg-green-50 text-green-600 admin-interface-dark:bg-green-950/30 admin-interface-dark:text-green-400" :
+                            "bg-slate-100 text-slate-600 admin-interface-dark:bg-slate-800 admin-interface-dark:text-slate-400"
                       )}>
-                        {provider.type === 'google' ? <Zap className="h-8 w-8" /> : 
-                         provider.type === 'openai' ? <Sparkles className="h-8 w-8" /> : 
-                         <Server className="h-8 w-8" />}
+                        {provider.type === 'google' ? <Zap className="h-8 w-8" /> :
+                          provider.type === 'openai' ? <Sparkles className="h-8 w-8" /> :
+                            <Server className="h-8 w-8" />}
                         {provider.isPrimary && (
                           <div className="absolute top-0 right-0 p-1">
-                             <div className="h-2 w-2 rounded-full bg-primary animate-pulse shadow-[0_0_8px_rgba(252,220,0,1)]" />
+                            <div className="h-2 w-2 rounded-full bg-primary animate-pulse shadow-[0_0_8px_rgba(252,220,0,1)]" />
                           </div>
                         )}
                       </div>
@@ -502,14 +502,12 @@ export default function AiManagementPage() {
                             </Badge>
                           )}
                           {provider.lastTest && (
-                            <div className={`flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider border ${
-                              provider.lastTest.status === 'success' 
-                                ? 'bg-emerald-50 text-emerald-600 border-emerald-200 admin-interface-dark:bg-emerald-950/30 admin-interface-dark:text-emerald-400 admin-interface-dark:border-emerald-900/30' 
-                                : 'bg-rose-50 text-rose-600 border-rose-200 admin-interface-dark:bg-rose-950/30 admin-interface-dark:text-rose-400 admin-interface-dark:border-rose-900/30'
-                            }`}>
-                              <div className={`w-1.5 h-1.5 rounded-full ${
-                                provider.lastTest.status === 'success' ? 'bg-emerald-500 animate-pulse' : 'bg-rose-500'
-                              }`} />
+                            <div className={`flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider border ${provider.lastTest.status === 'success'
+                              ? 'bg-emerald-50 text-emerald-600 border-emerald-200 admin-interface-dark:bg-emerald-950/30 admin-interface-dark:text-emerald-400 admin-interface-dark:border-emerald-900/30'
+                              : 'bg-rose-50 text-rose-600 border-rose-200 admin-interface-dark:bg-rose-950/30 admin-interface-dark:text-rose-400 admin-interface-dark:border-rose-900/30'
+                              }`}>
+                              <div className={`w-1.5 h-1.5 rounded-full ${provider.lastTest.status === 'success' ? 'bg-emerald-500 animate-pulse' : 'bg-rose-500'
+                                }`} />
                               {provider.lastTest.status === 'success' ? `Online (${provider.lastTest.latency}ms)` : 'Offline'}
                             </div>
                           )}
@@ -524,9 +522,9 @@ export default function AiManagementPage() {
                     </div>
 
                     <div className="flex items-center gap-3 w-full md:w-auto">
-                      <Button 
-                        variant="ghost" 
-                        size="sm" 
+                      <Button
+                        variant="ghost"
+                        size="sm"
                         onClick={() => testProvider(provider)}
                         disabled={isTesting === provider.id || !provider.isActive}
                         className={cn(
@@ -537,28 +535,28 @@ export default function AiManagementPage() {
                         {isTesting === provider.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
                         {isTesting === provider.id ? '正在诊断' : '连接测试'}
                       </Button>
-                      
+
                       <div className="flex items-center bg-slate-50 p-1.5 rounded-xl border border-slate-100 admin-interface-dark:bg-slate-800/40 admin-interface-dark:border-slate-800">
-                         <Button 
-                          variant="ghost" 
-                          size="icon" 
+                        <Button
+                          variant="ghost"
+                          size="icon"
                           onClick={() => { setEditingProvider(provider); setIsDialogOpen(true); }}
                           className="h-8 w-8 rounded-lg hover:bg-white hover:shadow-sm text-slate-400 hover:text-primary transition-all admin-interface-dark:hover:bg-slate-800"
-                         >
-                            <Settings2 className="h-4 w-4" />
-                         </Button>
-                         <Button 
-                          variant="ghost" 
-                          size="icon" 
+                        >
+                          <Settings2 className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon"
                           onClick={() => handleDeleteProvider(provider.id)}
                           className="h-8 w-8 rounded-lg hover:bg-white hover:shadow-sm text-slate-400 hover:text-destructive transition-all admin-interface-dark:hover:bg-slate-800"
-                         >
-                            <Trash2 className="h-4 w-4" />
-                         </Button>
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
                       </div>
 
-                      <Switch 
-                        checked={provider.isActive} 
+                      <Switch
+                        checked={provider.isActive}
                         onCheckedChange={(checked) => toggleProviderActive(provider.id, checked)}
                       />
                     </div>
@@ -566,24 +564,24 @@ export default function AiManagementPage() {
 
                   {provider.baseUrl && (
                     <div className="px-8 pb-6">
-                       <div className="bg-slate-900/5 rounded-2xl p-4 flex items-center justify-between border border-slate-900/5 admin-interface-dark:bg-slate-950/50 admin-interface-dark:border-slate-850">
-                          <div className="flex items-center gap-3">
-                            <ExternalLink className="h-3.5 w-3.5 text-slate-400 admin-interface-dark:text-slate-550" />
-                            <span className="text-[10px] font-mono font-bold text-slate-500 tracking-tight admin-interface-dark:text-slate-400">Endpoint: {provider.baseUrl}</span>
-                          </div>
-                          <Badge variant="outline" className="bg-white border-slate-200 text-slate-400 text-[8px] font-bold admin-interface-dark:bg-slate-900 admin-interface-dark:border-slate-800 admin-interface-dark:text-slate-500">LOCAL PROXY ACTIVE</Badge>
-                       </div>
+                      <div className="bg-slate-900/5 rounded-2xl p-4 flex items-center justify-between border border-slate-900/5 admin-interface-dark:bg-slate-950/50 admin-interface-dark:border-slate-850">
+                        <div className="flex items-center gap-3">
+                          <ExternalLink className="h-3.5 w-3.5 text-slate-400 admin-interface-dark:text-slate-550" />
+                          <span className="text-[10px] font-mono font-bold text-slate-500 tracking-tight admin-interface-dark:text-slate-400">Endpoint: {provider.baseUrl}</span>
+                        </div>
+                        <Badge variant="outline" className="bg-white border-slate-200 text-slate-400 text-[8px] font-bold admin-interface-dark:bg-slate-900 admin-interface-dark:border-slate-800 admin-interface-dark:text-slate-500">LOCAL PROXY ACTIVE</Badge>
+                      </div>
                     </div>
                   )}
 
                   {!provider.isPrimary && provider.isActive && (
                     <div className="px-8 pb-6 pt-0 opacity-0 group-hover:opacity-100 transition-all">
-                       <Button 
+                      <Button
                         onClick={() => setPrimaryProvider(provider.id)}
                         className="w-full rounded-xl h-10 border-dashed border-primary/20 text-primary bg-primary/5 hover:bg-primary hover:text-white transition-all text-[9px] font-bold uppercase tracking-widest admin-interface-dark:bg-primary/10 admin-interface-dark:text-primary admin-interface-dark:hover:bg-primary admin-interface-dark:hover:text-white"
-                       >
-                         提升为此集群的主节点 (Set as Primary)
-                       </Button>
+                      >
+                        提升为此集群的主节点 (Set as Primary)
+                      </Button>
                     </div>
                   )}
                 </GlassCard>
@@ -603,7 +601,7 @@ export default function AiManagementPage() {
                   <p className="text-[10px] uppercase font-bold text-slate-400 tracking-widest mt-1 admin-interface-dark:text-slate-500">Expert System Prompt Injection</p>
                 </div>
               </div>
-              <Button 
+              <Button
                 onClick={() => handleSave(formData)}
                 disabled={isSaving}
                 className="rounded-full px-6 bg-slate-900 hover:bg-primary text-white transition-all shadow-lg hover:shadow-primary/20 group admin-interface-dark:bg-white admin-interface-dark:text-slate-900 admin-interface-dark:hover:bg-slate-100 admin-interface-dark:shadow-none"
@@ -620,9 +618,9 @@ export default function AiManagementPage() {
                   </Label>
                   <span className="text-[10px] font-mono text-slate-300 admin-interface-dark:text-slate-600">{formData.systemInstruction?.length || 0} / 4096</span>
                 </div>
-                
+
                 <div className="relative">
-                  <Textarea 
+                  <Textarea
                     value={formData.systemInstruction}
                     onChange={(e) => setFormData({ ...formData, systemInstruction: e.target.value })}
                     placeholder="输入 AI 的全局系统提示词..."
@@ -657,88 +655,88 @@ export default function AiManagementPage() {
 
         {/* Global Configuration (Right) */}
         <div className="lg:col-span-4 space-y-8">
-           <GlassCard className="border-none bg-slate-900 text-white p-8 space-y-10 shadow-2xl admin-interface-dark:bg-slate-950 admin-interface-dark:border admin-interface-dark:border-slate-850/50 admin-interface-dark:shadow-none">
-              <div className="space-y-2">
-                 <h4 className="text-[11px] font-bold uppercase tracking-[0.25em] text-primary">全局调度协议</h4>
-                 <p className="text-xs text-white/40 font-medium">配置当主节点出现异常或额度耗尽时的自动处理逻辑。</p>
+          <GlassCard className="border-none bg-slate-900 text-white p-8 space-y-10 shadow-2xl admin-interface-dark:bg-slate-950 admin-interface-dark:border admin-interface-dark:border-slate-850/50 admin-interface-dark:shadow-none">
+            <div className="space-y-2">
+              <h4 className="text-[11px] font-bold uppercase tracking-[0.25em] text-primary">全局调度协议</h4>
+              <p className="text-xs text-white/40 font-medium">配置当主节点出现异常或额度耗尽时的自动处理逻辑。</p>
+            </div>
+
+            <div className="space-y-6">
+              <div className="space-y-3">
+                <Label className="text-[10px] font-bold uppercase tracking-widest text-white/30 pl-1">容灾策略 (Fallback)</Label>
+                <Select
+                  value={formData.fallbackStrategy}
+                  onValueChange={(v: any) => {
+                    const updated = { ...formData, fallbackStrategy: v };
+                    setFormData(updated);
+                    handleSave(updated);
+                  }}
+                >
+                  <SelectTrigger className="rounded-xl h-12 bg-white/5 border-white/10 font-bold text-white shadow-inner">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent className="rounded-xl bg-slate-900 text-white border-white/10 admin-interface-dark:bg-slate-950 admin-interface-dark:border-slate-850">
+                    <SelectItem value="next-available">按优先级顺延</SelectItem>
+                    <SelectItem value="local-only">仅回退至本地节点</SelectItem>
+                    <SelectItem value="none">禁止回退 (直接报错)</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
 
-              <div className="space-y-6">
-                 <div className="space-y-3">
-                    <Label className="text-[10px] font-bold uppercase tracking-widest text-white/30 pl-1">容灾策略 (Fallback)</Label>
-                    <Select 
-                      value={formData.fallbackStrategy} 
-                      onValueChange={(v: any) => {
-                        const updated = { ...formData, fallbackStrategy: v };
-                        setFormData(updated);
-                        handleSave(updated);
+              <div className="p-6 bg-white/5 rounded-3xl border border-white/5 space-y-4">
+                <div className="flex items-center gap-3">
+                  <Zap className="h-4 w-4 text-primary" />
+                  <span className="text-[10px] font-bold uppercase tracking-widest">当前集群健康度</span>
+                </div>
+                <div className="space-y-4">
+                  <div className="flex justify-between items-center">
+                    <span className="text-[10px] text-white/30 font-medium">可用节点</span>
+                    <span className="text-xs font-bold font-mono">
+                      {formData.providers.filter(p => p.isActive && (p.lastTest?.status === 'success' || !p.lastTest)).length} / {formData.providers.length}
+                    </span>
+                  </div>
+                  <div className="h-1.5 w-full bg-white/5 rounded-full overflow-hidden">
+                    <div
+                      className="h-full bg-primary transition-all duration-1000"
+                      style={{
+                        width: `${formData.providers.length > 0
+                          ? (formData.providers.filter(p => p.isActive && (p.lastTest?.status === 'success' || !p.lastTest)).length / formData.providers.length) * 100
+                          : 0}%`
                       }}
-                    >
-                      <SelectTrigger className="rounded-xl h-12 bg-white/5 border-white/10 font-bold text-white shadow-inner">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent className="rounded-xl bg-slate-900 text-white border-white/10 admin-interface-dark:bg-slate-950 admin-interface-dark:border-slate-850">
-                        <SelectItem value="next-available">按优先级顺延</SelectItem>
-                        <SelectItem value="local-only">仅回退至本地节点</SelectItem>
-                        <SelectItem value="none">禁止回退 (直接报错)</SelectItem>
-                      </SelectContent>
-                    </Select>
-                 </div>
-
-                 <div className="p-6 bg-white/5 rounded-3xl border border-white/5 space-y-4">
-                    <div className="flex items-center gap-3">
-                       <Zap className="h-4 w-4 text-primary" />
-                       <span className="text-[10px] font-bold uppercase tracking-widest">当前集群健康度</span>
-                    </div>
-                    <div className="space-y-4">
-                       <div className="flex justify-between items-center">
-                          <span className="text-[10px] text-white/30 font-medium">可用节点</span>
-                          <span className="text-xs font-bold font-mono">
-                            {formData.providers.filter(p => p.isActive && (p.lastTest?.status === 'success' || !p.lastTest)).length} / {formData.providers.length}
-                          </span>
-                       </div>
-                       <div className="h-1.5 w-full bg-white/5 rounded-full overflow-hidden">
-                          <div 
-                            className="h-full bg-primary transition-all duration-1000" 
-                            style={{ 
-                              width: `${formData.providers.length > 0 
-                                ? (formData.providers.filter(p => p.isActive && (p.lastTest?.status === 'success' || !p.lastTest)).length / formData.providers.length) * 100 
-                                : 0}%` 
-                            }} 
-                          />
-                       </div>
-                    </div>
-                 </div>
+                    />
+                  </div>
+                </div>
               </div>
+            </div>
 
-              <div className="pt-6 border-t border-white/5 flex items-center justify-between">
-                 <div className="flex items-center gap-2">
-                    <Database className="h-3.5 w-3.5 text-primary/40" />
-                    <span className="text-[10px] font-bold text-white/20 uppercase tracking-widest">System Engine v2.5</span>
-                 </div>
-                 <div className="h-2 w-2 rounded-full bg-green-500 shadow-[0_0_10px_rgba(34,197,94,0.6)]" />
+            <div className="pt-6 border-t border-white/5 flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Database className="h-3.5 w-3.5 text-primary/40" />
+                <span className="text-[10px] font-bold text-white/20 uppercase tracking-widest">System Engine v2.5</span>
               </div>
-           </GlassCard>
+              <div className="h-2 w-2 rounded-full bg-green-500 shadow-[0_0_10px_rgba(34,197,94,0.6)]" />
+            </div>
+          </GlassCard>
 
-           <GlassCard className="border-none p-8 space-y-6">
-              <div className="flex items-center gap-3">
-                 <Sparkles className="h-5 w-5 text-primary" />
-                 <h4 className="text-[11px] font-bold uppercase tracking-widest text-slate-900 admin-interface-dark:text-white">使用建议</h4>
-              </div>
-              <ul className="space-y-4">
-                 {[
-                   "建议将 Gemini 1.5 Flash 作为主节点，其处理速度最快且带有较大的免费配额。",
-                   "如果涉及极其复杂的排版逻辑，建议备选一个 GPT-4o 节点作为高质量兜底。",
-                   "内网部署环境请优先启用 Local 节点，将 Base URL 指向 Ollama 服务以降低延迟。",
-                   "定期执行连接测试，确保 API 密钥尚未失效。"
-                 ].map((tip, i) => (
-                   <li key={i} className="flex gap-3">
-                      <div className="h-1.5 w-1.5 rounded-full bg-primary shrink-0 mt-1.5" />
-                      <p className="text-[10px] text-slate-500 leading-relaxed font-medium admin-interface-dark:text-slate-400">{tip}</p>
-                   </li>
-                 ))}
-              </ul>
-           </GlassCard>
+          <GlassCard className="border-none p-8 space-y-6">
+            <div className="flex items-center gap-3">
+              <Sparkles className="h-5 w-5 text-primary" />
+              <h4 className="text-[11px] font-bold uppercase tracking-widest text-slate-900 admin-interface-dark:text-white">使用建议</h4>
+            </div>
+            <ul className="space-y-4">
+              {[
+                "建议将 Gemini 1.5 Flash 作为主节点，其处理速度最快且带有较大的免费配额。",
+                "如果涉及极其复杂的排版逻辑，建议备选一个 GPT-4o 节点作为高质量兜底。",
+                "内网部署环境请优先启用 Local 节点，将 Base URL 指向 Ollama 服务以降低延迟。",
+                "定期执行连接测试，确保 API 密钥尚未失效。"
+              ].map((tip, i) => (
+                <li key={i} className="flex gap-3">
+                  <div className="h-1.5 w-1.5 rounded-full bg-primary shrink-0 mt-1.5" />
+                  <p className="text-[10px] text-slate-500 leading-relaxed font-medium admin-interface-dark:text-slate-400">{tip}</p>
+                </li>
+              ))}
+            </ul>
+          </GlassCard>
         </div>
       </div>
     </div>
