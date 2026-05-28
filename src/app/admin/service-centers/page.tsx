@@ -55,7 +55,7 @@ interface ServiceCenter {
   id: string;
   name: string;
   address: string;
-  region: 'CN' | 'ID';
+  region: string; // Open string to support any country/region code
   subRegion: string; // Dynamic Province/City/Sub-region
   phone: string;
   email?: string;
@@ -92,7 +92,7 @@ export default function ServiceCentersAdminPage() {
   const { toast } = useToast();
   const [isSaving, setIsSaving] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
-  const [selectedRegion, setSelectedRegion] = useState<'ALL' | 'CN' | 'ID'>('ALL');
+  const [selectedRegion, setSelectedRegion] = useState<string>('ALL');
   const [selectedSubRegion, setSelectedSubRegion] = useState<string>('ALL');
 
   // Single CRUD Dialog state
@@ -102,7 +102,7 @@ export default function ServiceCentersAdminPage() {
   // Form fields state
   const [formName, setFormName] = useState('');
   const [formAddress, setFormAddress] = useState('');
-  const [formRegion, setFormRegion] = useState<'CN' | 'ID'>('CN');
+  const [formRegion, setFormRegion] = useState<string>('CN');
   const [formSubRegion, setFormSubRegion] = useState('');
   const [formPhone, setFormPhone] = useState('');
   const [formEmail, setFormEmail] = useState('');
@@ -121,12 +121,20 @@ export default function ServiceCentersAdminPage() {
 
   const centers = useMemo(() => serviceCentersData?.centers || [], [serviceCentersData]);
 
-  // Compute metrics
+  // Compute metrics dynamically from current regions
   const metrics = useMemo(() => {
     const total = centers.length;
     const cnCount = centers.filter(c => c.region === 'CN').length;
     const idCount = centers.filter(c => c.region === 'ID').length;
     return { total, cnCount, idCount };
+  }, [centers]);
+
+  // Aggregate dynamic regions from all active centers
+  const availableRegions = useMemo(() => {
+    const uniqueRegions = centers
+      .map(c => c.region?.trim())
+      .filter((v, i, a) => v && a.indexOf(v) === i);
+    return uniqueRegions.sort();
   }, [centers]);
 
   // Aggregate dynamic sub-regions from active centers list based on country selection
@@ -201,8 +209,8 @@ export default function ServiceCentersAdminPage() {
           setImportCount(0);
           return null;
         }
-        if (item.region !== 'CN' && item.region !== 'ID') {
-          setImportError(`第 ${i + 1} 项数据校验失败：region 字段必须是 \"CN\"（中国）或 \"ID\"（印尼）二者之一。`);
+        if (!item.region || typeof item.region !== 'string' || !item.region.trim()) {
+          setImportError(`第 ${i + 1} 项数据校验失败：region 为必填项，且必须为非空字符串。`);
           setImportCount(0);
           return null;
         }
@@ -531,8 +539,19 @@ export default function ServiceCentersAdminPage() {
               </div>
 
               {/* Region Country Pills Filter */}
-              <div className="flex items-center gap-2 bg-muted/20 border border-border p-1 rounded-2xl shrink-0 w-full md:w-auto">
-                {(['ALL', 'CN', 'ID'] as const).map(region => (
+              <div className="flex flex-wrap items-center gap-2 bg-muted/20 border border-border p-1 rounded-2xl shrink-0 w-full md:w-auto">
+                <button
+                  onClick={() => setSelectedRegion('ALL')}
+                  className={cn(
+                    "flex-1 md:flex-none px-6 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-wider transition-all duration-300",
+                    selectedRegion === 'ALL'
+                      ? "bg-card text-primary shadow-sm border border-border/60 scale-105"
+                      : "text-muted-foreground hover:text-foreground bg-transparent"
+                  )}
+                >
+                  全部地区
+                </button>
+                {availableRegions.map(region => (
                   <button
                     key={region}
                     onClick={() => setSelectedRegion(region)}
@@ -543,7 +562,7 @@ export default function ServiceCentersAdminPage() {
                         : "text-muted-foreground hover:text-foreground bg-transparent"
                     )}
                   >
-                    {region === 'ALL' ? '全部国家' : region === 'CN' ? '中国区 (CN)' : '印尼区 (ID)'}
+                    {region === 'CN' ? '中国区 (CN)' : region === 'ID' ? '印尼区 (ID)' : `${region} 区`}
                   </button>
                 ))}
               </div>
@@ -606,9 +625,11 @@ export default function ServiceCentersAdminPage() {
                           "px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest border",
                           center.region === 'CN'
                             ? "bg-blue-500/5 text-blue-500 border-blue-500/20"
-                            : "bg-teal-500/5 text-teal-500 border-teal-500/20"
+                            : center.region === 'ID'
+                            ? "bg-teal-500/5 text-teal-500 border-teal-500/20"
+                            : "bg-purple-500/5 text-purple-500 border-purple-500/20"
                         )}>
-                          {center.region === 'CN' ? '中国区' : '印度尼西亚'}
+                          {center.region === 'CN' ? '中国区' : center.region === 'ID' ? '印度尼西亚' : `地区: ${center.region}`}
                         </span>
                         
                         {/* Province badge tag */}
@@ -725,21 +746,36 @@ export default function ServiceCentersAdminPage() {
 
           <form onSubmit={handleSave} className="space-y-6">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {/* Region Select */}
+              {/* Region Input & Presets */}
               <div className="space-y-2">
-                <SectionLabel>所属国家/地区 (Country)</SectionLabel>
-                <Select
-                  value={formRegion}
-                  onValueChange={(val: 'CN' | 'ID') => setFormRegion(val)}
-                >
-                  <SelectTrigger className="h-11 rounded-xl bg-card border-border/80 text-xs font-bold focus:ring-1 focus:ring-primary">
-                    <SelectValue placeholder="选择所在国家/地区" />
-                  </SelectTrigger>
-                  <SelectContent className="bg-card border-border shadow-lg rounded-xl">
-                    <SelectItem value="CN" className="text-xs font-bold py-2.5 rounded-lg cursor-pointer">中国 (CN)</SelectItem>
-                    <SelectItem value="ID" className="text-xs font-bold py-2.5 rounded-lg cursor-pointer">印度尼西亚 (ID)</SelectItem>
-                  </SelectContent>
-                </Select>
+                <SectionLabel>所属国家/地区代码 (Region Code)</SectionLabel>
+                <div className="flex gap-2">
+                  <Input
+                    value={formRegion}
+                    onChange={e => setFormRegion(e.target.value.toUpperCase())}
+                    placeholder="例如: CN, ID, VN, US"
+                    className="h-11 rounded-xl text-xs font-bold flex-1"
+                    maxLength={10}
+                    required
+                  />
+                  <div className="flex items-center gap-1">
+                    {['CN', 'ID', 'VN'].map(code => (
+                      <button
+                        key={code}
+                        type="button"
+                        onClick={() => setFormRegion(code)}
+                        className={cn(
+                          "px-2.5 py-1.5 rounded-lg text-[9px] font-black tracking-wider border transition-all",
+                          formRegion === code
+                            ? "bg-primary text-white border-primary shadow-sm"
+                            : "bg-card text-muted-foreground border-border hover:bg-muted/10"
+                        )}
+                      >
+                        {code}
+                      </button>
+                    ))}
+                  </div>
+                </div>
               </div>
 
               {/* SubRegion */}

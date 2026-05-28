@@ -297,12 +297,16 @@ export function Navbar({ locale, setLocale, headerTheme = 'dark', themeLine }: N
                   <DropdownMenuTrigger asChild>
                     <button
                       className={cn(
-                        "flex items-center space-x-1 px-4 py-2 rounded-full transition-all duration-300 text-sm font-medium whitespace-nowrap outline-none",
+                        "flex items-center space-x-1 px-4 py-2 rounded-full transition-all duration-300 text-sm font-medium whitespace-nowrap outline-none cursor-pointer",
                         (isNavbarActive || headerTheme === 'light')
                           ? "text-slate-800 hover:bg-slate-100"
                           : "text-white hover:bg-white/10"
                       )}
                       onMouseEnter={() => handleMouseEnter('wholesale')}
+                      onClick={() => {
+                        setActiveMenu(null);
+                        router.push('/products?line=wholesale');
+                      }}
                     >
                       <span>{getSystemText('NAV_WHOLESALE')}</span>
                       <ChevronDown className={cn(
@@ -345,12 +349,16 @@ export function Navbar({ locale, setLocale, headerTheme = 'dark', themeLine }: N
                   <DropdownMenuTrigger asChild>
                     <button
                       className={cn(
-                        "flex items-center space-x-1 px-4 py-2 rounded-full transition-all duration-300 text-sm font-medium whitespace-nowrap outline-none",
+                        "flex items-center space-x-1 px-4 py-2 rounded-full transition-all duration-300 text-sm font-medium whitespace-nowrap outline-none cursor-pointer",
                         (isNavbarActive || headerTheme === 'light')
                           ? "text-slate-800 hover:bg-slate-100"
                           : "text-white hover:bg-white/10"
                       )}
                       onMouseEnter={() => handleMouseEnter('projects')}
+                      onClick={() => {
+                        setActiveMenu(null);
+                        router.push('/products?line=project');
+                      }}
                     >
                       <span>{getSystemText('NAV_PROJECTS')}</span>
                       <ChevronDown className={cn(

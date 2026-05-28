@@ -477,7 +477,7 @@ function ProductListContent(props: ProductListClientProps) {
 
       <section className="py-16 container mx-auto px-6">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-12">
-          <aside className="lg:col-span-3 space-y-10">
+          <aside className="lg:col-span-3 space-y-10 lg:sticky lg:top-44 h-fit">
             <div className="space-y-4">
               <h3 className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground flex items-center gap-2">
                 <Search className="h-3 w-3" /> {tr('products_quickSearch')}

@@ -95,6 +95,19 @@ export default function HomeContent({ initialLocale }: HomeContentProps) {
     }
   }, [searchParams, langSettings, initialLocale]);
 
+  // 处理从非首页页面点击“全球案例”链接（带有 #cases 哈希）跳转回来时的定位问题
+  useEffect(() => {
+    if (mountHeavyComponents && typeof window !== 'undefined' && window.location.hash === '#cases') {
+      const timer = setTimeout(() => {
+        const element = document.getElementById('cases');
+        if (element) {
+          element.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+      }, 300); // 留出 300ms 渲染缓冲区
+      return () => clearTimeout(timer);
+    }
+  }, [mountHeavyComponents]);
+
   return (
       <main className="relative min-h-screen">
         <Navbar locale={locale} setLocale={setLocale} headerTheme={headerTheme} />

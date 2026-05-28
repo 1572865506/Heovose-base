@@ -166,6 +166,7 @@ export default function CategoriesPage() {
     const build = (parentId: string | null = null, depth = 0) => {
       categories
         .filter(c => (c.parentId || 'none') === (parentId || 'none'))
+        .sort((a, b) => a.order - b.order)
         .forEach(cat => {
           tree.push({ ...cat, depth });
           build(cat.id, depth + 1);
@@ -217,7 +218,7 @@ export default function CategoriesPage() {
   const handleMove = async (cat: ProductCategory, direction: 'up' | 'down') => {
     if (!categories) return;
 
-    // 找出同一层级的邻居
+    // 找出同一层级的邻居并按 order 排序
     const siblings = categories
       .filter(c => (c.parentId || 'none') === (cat.parentId || 'none'))
       .sort((a, b) => a.order - b.order);
@@ -227,45 +228,32 @@ export default function CategoriesPage() {
 
     if (neighborIdx < 0 || neighborIdx >= siblings.length) return;
 
-    const neighbor = siblings[neighborIdx];
-
-    // 交换 order
-    const oldOrder = cat.order;
-    const newOrder = neighbor.order;
+    // 在同级数组中交换位置
+    const updatedSiblings = [...siblings];
+    const temp = updatedSiblings[idx];
+    updatedSiblings[idx] = updatedSiblings[neighborIdx];
+    updatedSiblings[neighborIdx] = temp;
 
     try {
-      // 如果 order 相同（初始化时），手动拉开间距
-      const finalOrder = oldOrder === newOrder ? (direction === 'up' ? newOrder - 1 : newOrder + 1) : newOrder;
-
-      const res1 = await fetch(`/api/productCategories/${cat.id}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          id: cat.id,
-          slug: cat.slug,
-          nameTextId: cat.nameTextId,
-          descriptionTextId: cat.descriptionTextId,
-          thumbnailImageUrl: cat.thumbnailImageUrl,
-          parentId: cat.parentId,
-          order: finalOrder
-        }),
+      // 遍历所有同级分类，将其各自在数组中的新 index 作为 order 存回数据库，实现绝对唯一的物理排序
+      const promises = updatedSiblings.map((sibling, index) => {
+        return fetch(`/api/productCategories/${sibling.id}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            id: sibling.id,
+            slug: sibling.slug,
+            nameTextId: sibling.nameTextId,
+            descriptionTextId: sibling.descriptionTextId,
+            thumbnailImageUrl: sibling.thumbnailImageUrl,
+            parentId: sibling.parentId,
+            order: index
+          }),
+        });
       });
 
-      const res2 = await fetch(`/api/productCategories/${neighbor.id}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          id: neighbor.id,
-          slug: neighbor.slug,
-          nameTextId: neighbor.nameTextId,
-          descriptionTextId: neighbor.descriptionTextId,
-          thumbnailImageUrl: neighbor.thumbnailImageUrl,
-          parentId: neighbor.parentId,
-          order: oldOrder
-        }),
-      });
-
-      if (!res1.ok || !res2.ok) throw new Error('同步排序数据失败');
+      const results = await Promise.all(promises);
+      if (results.some(res => !res.ok)) throw new Error('部分分类数据同步失败');
 
       mutateCats();
       toast({ title: "排序已更新" });

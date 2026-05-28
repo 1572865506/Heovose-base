@@ -30,7 +30,7 @@ interface ServiceCenter {
   id: string;
   name: string;
   address: string;
-  region: 'CN' | 'ID';
+  region: string; // Open string for any dynamic country region
   subRegion: string; // Dynamic subRegion parameter
   phone: string;
   email?: string;
@@ -54,7 +54,7 @@ export default function ServiceCentersContent({ initialLocale }: ServiceCentersC
   const { toast } = useToast();
 
   const [searchQuery, setSearchQuery] = useState('');
-  const [selectedRegion, setSelectedRegion] = useState<'ALL' | 'CN' | 'ID'>('ALL');
+  const [selectedRegion, setSelectedRegion] = useState<string>('ALL');
   const [selectedSubRegion, setSelectedSubRegion] = useState<string>('ALL');
   
   // Progressive loading count state
@@ -98,6 +98,14 @@ export default function ServiceCentersContent({ initialLocale }: ServiceCentersC
       document.cookie = `NEXT_LOCALE=${detected}; path=/; max-age=31536000`;
     }
   }, [searchParams, langSettings, initialLocale]);
+
+  // Aggregate dynamic regions from all active centers
+  const availableRegions = useMemo(() => {
+    const uniqueRegions = centers
+      .map(c => c.region?.trim())
+      .filter((v, i, a) => v && a.indexOf(v) === i);
+    return uniqueRegions.sort();
+  }, [centers]);
 
   // Aggregate dynamic sub-regions from centers list based on country selection
   const availableSubRegions = useMemo(() => {
@@ -212,25 +220,39 @@ export default function ServiceCentersContent({ initialLocale }: ServiceCentersC
             </div>
 
             {/* Region Country Tabs */}
-            <div className="flex items-center gap-1.5 bg-slate-100/60 border border-slate-200/45 p-1 rounded-xl shrink-0 w-full md:w-auto">
-              {[
-                { key: 'ALL', label: t('SERVICE_TAB_ALL') },
-                { key: 'CN', label: t('SERVICE_TAB_CN') },
-                { key: 'ID', label: t('SERVICE_TAB_ID') },
-              ].map(tab => (
-                <button
-                  key={tab.key}
-                  onClick={() => setSelectedRegion(tab.key as any)}
-                  className={cn(
-                    "flex-1 md:flex-none px-4 py-2 rounded-lg text-[10px] font-black uppercase tracking-wider transition-all duration-300",
-                    selectedRegion === tab.key
-                      ? "bg-white text-primary shadow-sm border border-slate-200/60 scale-102"
-                      : "text-slate-500 hover:text-slate-900 bg-transparent"
-                  )}
-                >
-                  {tab.label}
-                </button>
-              ))}
+            <div className="flex flex-wrap items-center gap-1.5 bg-slate-100/60 border border-slate-200/45 p-1 rounded-xl shrink-0 w-full md:w-auto">
+              <button
+                onClick={() => setSelectedRegion('ALL')}
+                className={cn(
+                  "flex-1 md:flex-none px-4 py-2 rounded-lg text-[10px] font-black uppercase tracking-wider transition-all duration-300",
+                  selectedRegion === 'ALL'
+                    ? "bg-white text-primary shadow-sm border border-slate-200/60 scale-102"
+                    : "text-slate-500 hover:text-slate-900 bg-transparent"
+                )}
+              >
+                {t('SERVICE_TAB_ALL')}
+              </button>
+              {availableRegions.map(region => {
+                const getLabel = () => {
+                  if (region === 'CN') return t('SERVICE_TAB_CN');
+                  if (region === 'ID') return t('SERVICE_TAB_ID');
+                  return `${region}`;
+                };
+                return (
+                  <button
+                    key={region}
+                    onClick={() => setSelectedRegion(region)}
+                    className={cn(
+                      "flex-1 md:flex-none px-4 py-2 rounded-lg text-[10px] font-black uppercase tracking-wider transition-all duration-300",
+                      selectedRegion === region
+                        ? "bg-white text-primary shadow-sm border border-slate-200/60 scale-102"
+                        : "text-slate-500 hover:text-slate-900 bg-transparent"
+                    )}
+                  >
+                    {getLabel()}
+                  </button>
+                );
+              })}
             </div>
           </div>
 
@@ -315,9 +337,11 @@ export default function ServiceCentersContent({ initialLocale }: ServiceCentersC
                                 "px-2 py-0.5 rounded text-[8px] font-black uppercase tracking-widest border",
                                 center.region === 'CN'
                                   ? "bg-blue-500/[0.04] text-blue-600 border-blue-500/10"
-                                  : "bg-teal-500/[0.04] text-teal-600 border-teal-500/10"
+                                  : center.region === 'ID'
+                                  ? "bg-teal-500/[0.04] text-teal-600 border-teal-500/10"
+                                  : "bg-purple-500/[0.04] text-purple-600 border-purple-500/10"
                               )}>
-                                {center.region === 'CN' ? t('SERVICE_TAB_CN') : t('SERVICE_TAB_ID')}
+                                {center.region === 'CN' ? t('SERVICE_TAB_CN') : center.region === 'ID' ? t('SERVICE_TAB_ID') : center.region}
                               </span>
                               
                               {/* Subregion Badge Tag */}

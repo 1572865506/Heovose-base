@@ -92,7 +92,7 @@ export function GlobalMap({ locale, homeConfig, isLoading: isConfigLoading }: Gl
     const rawLocations = remoteLocations || [];
     if (rawLocations.length === 0) return [];
 
-    return rawLocations.map((loc: any) => {
+    const basePins = rawLocations.map((loc: any) => {
       const getLocalized = (textId: string | null | undefined, zh: string, en: string) => {
         const translated = textId ? lt(textId) : undefined;
         if (translated && translated.trim() !== '') return translated;
@@ -111,9 +111,29 @@ export function GlobalMap({ locale, homeConfig, isLoading: isConfigLoading }: Gl
         title: getLocalized(loc.titleTextId, loc.titleZh, loc.titleEn),
         address: getLocalized(loc.addressTextId, loc.addressZh, loc.addressEn),
         desc: getLocalized(loc.descTextId, loc.descZh, loc.descEn),
-        imageUrl: loc.imageUrl
+        imageUrl: loc.imageUrl,
+        isPlaceholder: false
       };
     });
+
+    // 当配置卡片不足 5 个时，补齐占位卡片使得排版始终占满 5 列
+    if (basePins.length > 0 && basePins.length < 5) {
+      const placeholderCount = 5 - basePins.length;
+      const placeholders = Array.from({ length: placeholderCount }).map((_, i) => ({
+        key: `placeholder-${i}`,
+        style: {},
+        type: 'COMING SOON',
+        icon: Globe,
+        title: lt('MAP_PLACEHOLDER_TITLE') || '正在布局中...',
+        address: lt('MAP_PLACEHOLDER_ADDR') || '全球战略布局规划中',
+        desc: lt('MAP_PLACEHOLDER_DESC') || 'Heovose 正在积极筹建和拓展新的本地化生产与技术服务节点，敬请期待。',
+        imageUrl: null,
+        isPlaceholder: true
+      }));
+      return [...basePins, ...placeholders];
+    }
+
+    return basePins;
   }, [remoteLocations, locale, lt]);
 
   const [selectedLocation, setSelectedLocation] = useState<any>(null);
@@ -147,115 +167,160 @@ export function GlobalMap({ locale, homeConfig, isLoading: isConfigLoading }: Gl
               "lg:grid-cols-8 sm:grid-cols-4"
             )}
           >
-            {pins.map((pin: any) => (
-              <div
-                key={`card-${pin.key}`}
-                onMouseEnter={() => setActiveLocation(pin.key)}
-                onMouseLeave={() => setActiveLocation(null)}
-                onClick={() => setSelectedLocation(pin)}
-                className={cn(
-                  "group relative aspect-[4/7] rounded-[2rem] border border-border/40 overflow-hidden transition-all duration-300 cursor-pointer shadow-xl transform-gpu isolate",
-                  "flex-shrink-0 w-[85vw] snap-center", // 移动端
-                  "sm:w-auto sm:flex-shrink-1 sm:snap-align-none", // 桌面端
-                  activeLocation === pin.key ? "z-10" : "hover:border-primary/30"
-                )}
-              >
-                {/* 背景图片容器 - 移除内部圆角，由父级裁剪 */}
-                <div className="absolute inset-0 z-0 transition-transform duration-700 group-hover:scale-110 overflow-hidden">
-                  {pin.imageUrl ? (
-                    <>
-                      <img 
-                        src={getAssetUrl(pin.imageUrl)} 
-                        alt="" 
-                        className="w-full h-full object-cover"
-                      />
-                      {/* 强化的底部遮罩确保文字清晰 */}
-                      <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/20 to-transparent opacity-60 group-hover:opacity-80 transition-opacity duration-500" />
-                    </>
-                  ) : (
-                    <div className="w-full h-full bg-slate-50 border-inner" />
+            {pins.map((pin: any) => {
+              if (pin.isPlaceholder) {
+                return (
+                  <div
+                    key={`card-${pin.key}`}
+                    className={cn(
+                      "relative aspect-[4/7] rounded-[2rem] border border-dashed border-slate-200 bg-slate-50/30 p-6 md:p-8 overflow-hidden transform-gpu isolate",
+                      "flex-shrink-0 w-[85vw] snap-center", // 移动端
+                      "sm:w-auto sm:flex-shrink-1 sm:snap-align-none" // 桌面端
+                    )}
+                  >
+                    {/* 微光流动背景 */}
+                    <div className="absolute inset-0 bg-gradient-to-br from-primary/[0.01] via-transparent to-accent/[0.01] z-0" />
+                    <div className="absolute -inset-[100%] bg-gradient-to-r from-transparent via-primary/[0.03] to-transparent group-hover:animate-[shimmer_3s_infinite] z-0 pointer-events-none" />
+
+                    <div className="relative z-10 h-full flex flex-col justify-between items-start">
+                      {/* 顶部标签 */}
+                      <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-[0.15em] bg-slate-200/50 text-slate-500 border border-slate-300/30">
+                        <pin.icon className="h-3 w-3 animate-spin duration-10000" />
+                        {pin.type}
+                      </div>
+
+                      {/* 文字区域 */}
+                      <div className="space-y-3.5 w-full">
+                        <div className="space-y-1.5">
+                          <h4 className="font-headline font-bold text-lg text-slate-400 group-hover:text-primary transition-colors leading-tight line-clamp-2">
+                            {pin.title}
+                          </h4>
+                          <p className="font-medium text-[10px] text-slate-400/60 leading-relaxed line-clamp-2">
+                            {pin.address}
+                          </p>
+                        </div>
+
+                        <div className="pt-3.5 border-t border-slate-100">
+                          <p className="leading-relaxed font-medium text-[10px] text-slate-400/50 italic line-clamp-4">
+                            {pin.desc}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                );
+              }
+
+              return (
+                <div
+                  key={`card-${pin.key}`}
+                  onMouseEnter={() => setActiveLocation(pin.key)}
+                  onMouseLeave={() => setActiveLocation(null)}
+                  onClick={() => setSelectedLocation(pin)}
+                  className={cn(
+                    "group relative aspect-[4/7] rounded-[2rem] border border-border/40 overflow-hidden transition-all duration-300 cursor-pointer shadow-xl transform-gpu isolate",
+                    "flex-shrink-0 w-[85vw] snap-center", // 移动端
+                    "sm:w-auto sm:flex-shrink-1 sm:snap-align-none", // 桌面端
+                    activeLocation === pin.key ? "z-10" : "hover:border-primary/30"
                   )}
-                  
-                  <div className={cn(
-                    "absolute inset-0 bg-black/40 transition-opacity duration-700",
-                    activeLocation === pin.key ? "opacity-100" : "opacity-0"
-                  )} />
-                </div>
-
-                {/* 内容区域 - 针对高密度布局优化 Padding */}
-                <div className={cn(
-                  "relative z-10 h-full flex flex-col justify-end items-start",
-                  pins.length > 5 ? "p-5" : "p-8"
-                )}>
-                  {/* 文字容器：Hover 时上移 */}
-                  <div className={cn(
-                    "space-y-3 w-full transition-all duration-700 cubic-bezier(0.23, 1, 0.32, 1) transform-gpu",
-                    activeLocation === pin.key ? "translate-y-0" : "translate-y-24"
-                  )}>
-                    {/* 标签 */}
-                    <div className={cn(
-                      "inline-flex items-center gap-2 px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-[0.15em] transition-all duration-700",
-                      pin.imageUrl 
-                        ? "bg-white/20 text-white border border-white/30 backdrop-blur-md"
-                        : "bg-primary/5 text-primary border border-primary/10"
-                    )}>
-                      <pin.icon className="h-3 w-3" />
-                      {pin.type}
-                    </div>
+                >
+                  {/* 背景图片容器 - 移除内部圆角，由父级裁剪 */}
+                  <div className="absolute inset-0 z-0 transition-transform duration-700 group-hover:scale-110 overflow-hidden">
+                    {pin.imageUrl ? (
+                      <>
+                        <img 
+                          src={getAssetUrl(pin.imageUrl)} 
+                          alt="" 
+                          className="w-full h-full object-cover"
+                        />
+                        {/* 强化的底部遮罩确保文字清晰 */}
+                        <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/20 to-transparent opacity-60 group-hover:opacity-80 transition-opacity duration-500" />
+                      </>
+                    ) : (
+                      <div className="w-full h-full bg-slate-50 border-inner" />
+                    )}
                     
-                    {/* 标题与地址 - 针对高密度布局优化字号 */}
-                    <div className="space-y-1.5">
-                      <h4 className={cn(
-                        "font-headline font-bold leading-tight tracking-tight transition-all duration-700 line-clamp-2",
-                        pins.length > 5 ? "text-base" : "text-2xl",
-                        pin.imageUrl ? "text-white" : "text-primary"
-                      )}>
-                        {pin.title}
-                      </h4>
-                      {/* 地址在 Hover 时显现 */}
-                      <p className={cn(
-                        "font-medium leading-relaxed transition-all duration-500 line-clamp-2",
-                        pins.length > 5 ? "text-[9px]" : "text-xs",
-                        pin.imageUrl ? "text-white/60" : "text-primary/40",
-                        activeLocation === pin.key ? "opacity-100" : "opacity-0"
-                      )}>
-                        {pin.address}
-                      </p>
-                    </div>
-
-                    {/* 描述 - 始终限制行数防止挤压按钮 */}
                     <div className={cn(
-                      "pt-3 border-t transition-all duration-500",
-                      pin.imageUrl ? "border-white/20" : "border-primary/10",
-                      activeLocation === pin.key ? "opacity-100 translate-y-0 h-auto mt-4" : "opacity-0 translate-y-4 h-0 overflow-hidden"
-                    )}>
-                      <p className={cn(
-                        "leading-relaxed font-medium italic line-clamp-3",
-                        pins.length > 5 ? "text-[9px]" : "text-xs",
-                        pin.imageUrl ? "text-white/80" : "text-primary/60"
-                      )}>
-                        {pin.desc}
-                      </p>
-                    </div>
+                      "absolute inset-0 bg-black/40 transition-opacity duration-700",
+                      activeLocation === pin.key ? "opacity-100" : "opacity-0"
+                    )} />
                   </div>
 
-                  {/* 右下角查看按钮 - 针对高密度布局优化尺寸 */}
+                  {/* 内容区域 - 针对高密度布局优化 Padding */}
                   <div className={cn(
-                    "w-full flex justify-end mt-4 transition-all duration-500 delay-100 transform-gpu",
-                    activeLocation === pin.key ? "opacity-100 translate-y-0 scale-100" : "opacity-0 translate-y-8 scale-50"
+                    "relative z-10 h-full flex flex-col justify-end items-start",
+                    pins.length > 5 ? "p-5" : "p-8"
                   )}>
+                    {/* 文字容器：Hover 时上移 */}
                     <div className={cn(
-                      "rounded-full backdrop-blur-2xl border transition-all duration-300 flex items-center justify-center group/btn shadow-xl bg-white/20 text-white border-white/30",
-                      pins.length > 5 ? "w-9 h-9" : "w-12 h-12"
+                      "space-y-3 w-full transition-all duration-700 cubic-bezier(0.23, 1, 0.32, 1) transform-gpu",
+                      activeLocation === pin.key ? "translate-y-0" : "translate-y-24"
                     )}>
-                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className={pins.length > 5 ? "h-3 w-3" : "h-4 w-4"}>
-                        <path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7" />
-                      </svg>
+                      {/* 标签 */}
+                      <div className={cn(
+                        "inline-flex items-center gap-2 px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-[0.15em] transition-all duration-700",
+                        pin.imageUrl 
+                          ? "bg-white/20 text-white border border-white/30 backdrop-blur-md"
+                          : "bg-primary/5 text-primary border border-primary/10"
+                      )}>
+                        <pin.icon className="h-3 w-3" />
+                        {pin.type}
+                      </div>
+                      
+                      {/* 标题与地址 - 针对高密度布局优化字号 */}
+                      <div className="space-y-1.5">
+                        <h4 className={cn(
+                          "font-headline font-bold leading-tight tracking-tight transition-all duration-700 line-clamp-2",
+                          pins.length > 5 ? "text-base" : "text-2xl",
+                          pin.imageUrl ? "text-white" : "text-primary"
+                        )}>
+                          {pin.title}
+                        </h4>
+                        {/* 地址在 Hover 时显现 */}
+                        <p className={cn(
+                          "font-medium leading-relaxed transition-all duration-500 line-clamp-2",
+                          pins.length > 5 ? "text-[9px]" : "text-xs",
+                          pin.imageUrl ? "text-white/60" : "text-primary/40",
+                          activeLocation === pin.key ? "opacity-100" : "opacity-0"
+                        )}>
+                          {pin.address}
+                        </p>
+                      </div>
+
+                      {/* 描述 - 始终限制行数防止挤压按钮 */}
+                      <div className={cn(
+                        "pt-3 border-t transition-all duration-500",
+                        pin.imageUrl ? "border-white/20" : "border-primary/10",
+                        activeLocation === pin.key ? "opacity-100 translate-y-0 h-auto mt-4" : "opacity-0 translate-y-4 h-0 overflow-hidden"
+                      )}>
+                        <p className={cn(
+                          "leading-relaxed font-medium italic line-clamp-3",
+                          pins.length > 5 ? "text-[9px]" : "text-xs",
+                          pin.imageUrl ? "text-white/80" : "text-primary/60"
+                        )}>
+                          {pin.desc}
+                        </p>
+                      </div>
+                    </div>
+
+                    {/* 右下角查看按钮 - 针对高密度布局优化尺寸 */}
+                    <div className={cn(
+                      "w-full flex justify-end mt-4 transition-all duration-500 delay-100 transform-gpu",
+                      activeLocation === pin.key ? "opacity-100 translate-y-0 scale-100" : "opacity-0 translate-y-8 scale-50"
+                    )}>
+                      <div className={cn(
+                        "rounded-full backdrop-blur-2xl border transition-all duration-300 flex items-center justify-center group/btn shadow-xl bg-white/20 text-white border-white/30",
+                        pins.length > 5 ? "w-9 h-9" : "w-12 h-12"
+                      )}>
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className={pins.length > 5 ? "h-3 w-3" : "h-4 w-4"}>
+                          <path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7" />
+                        </svg>
+                      </div>
                     </div>
                   </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </div>
       )}
