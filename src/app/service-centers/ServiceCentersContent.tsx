@@ -72,7 +72,7 @@ export default function ServiceCentersContent({ initialLocale }: ServiceCentersC
   // Synchronize locale changes with cookie/localStorage
   useEffect(() => {
     const detectLocale = () => {
-      const activeLangs = langSettings?.supportedLanguages?.map((l: any) => l.code) || ['en', 'zh', 'id', 'vi'];
+      const activeLangs = langSettings?.supportedLanguages?.map((l: any) => l.code) || ['en', 'zh', 'id', 'vi', 'vn'];
       const defaultLang = (langSettings?.defaultLanguage as Locale) || 'en';
       const langParam = searchParams.get('lang');
       if (langParam && activeLangs.includes(langParam)) return langParam as Locale;
@@ -234,9 +234,12 @@ export default function ServiceCentersContent({ initialLocale }: ServiceCentersC
               </button>
               {availableRegions.map(region => {
                 const getLabel = () => {
-                  if (region === 'CN') return t('SERVICE_TAB_CN');
-                  if (region === 'ID') return t('SERVICE_TAB_ID');
-                  return `${region}`;
+                  const upperRegion = region.toUpperCase();
+                  const dynamicTrans = t(`SERVICE_TAB_${upperRegion}`);
+                  if (dynamicTrans && dynamicTrans !== `SERVICE_TAB_${upperRegion}`) {
+                    return dynamicTrans;
+                  }
+                  return upperRegion;
                 };
                 return (
                   <button
@@ -341,7 +344,14 @@ export default function ServiceCentersContent({ initialLocale }: ServiceCentersC
                                   ? "bg-teal-500/[0.04] text-teal-600 border-teal-500/10"
                                   : "bg-purple-500/[0.04] text-purple-600 border-purple-500/10"
                               )}>
-                                {center.region === 'CN' ? t('SERVICE_TAB_CN') : center.region === 'ID' ? t('SERVICE_TAB_ID') : center.region}
+                                {(() => {
+                                  const upper = (center.region || '').toUpperCase();
+                                  const dynamicTrans = t(`SERVICE_TAB_${upper}`);
+                                  if (dynamicTrans && dynamicTrans !== `SERVICE_TAB_${upper}`) {
+                                    return dynamicTrans;
+                                  }
+                                  return upper;
+                                })()}
                               </span>
                               
                               {/* Subregion Badge Tag */}

@@ -14,9 +14,11 @@ interface SectionHeadingProps {
 
 export function SectionHeading({ title, subtitle, centered = false, className }: SectionHeadingProps) {
   const [isVisible, setIsVisible] = useState(false);
+  const [mounted, setMounted] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
+    setMounted(true);
     const observer = new IntersectionObserver(
       ([entry]) => {
         if (entry.isIntersecting) {
@@ -52,7 +54,7 @@ export function SectionHeading({ title, subtitle, centered = false, className }:
         duration={0.8}
         threshold={0.2}
       />
-      {subtitle && (
+      {mounted && subtitle ? (
         <p className={cn(
           "text-muted-foreground text-lg md:text-xl max-w-2xl font-medium transition-all duration-1000 delay-300",
           centered ? "mx-auto" : "mx-0",
@@ -60,7 +62,7 @@ export function SectionHeading({ title, subtitle, centered = false, className }:
         )}>
           {subtitle}
         </p>
-      )}
+      ) : null}
     </div>
   );
 }

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { useLocalDoc } from '@/hooks/use-local-doc';
 import { useLocalCollection } from '@/hooks/use-local-collection';
 import {
@@ -114,6 +114,105 @@ interface AiConfig {
   apiKey: string;
 }
 
+class TranslationSyncManager {
+  isSyncing = false;
+  progress = '';
+  totalProcessed = 0;
+  remaining = 0;
+  abortController: AbortController | null = null;
+  listeners = new Set<(state: { isSyncing: boolean; progress: string }) => void>();
+  mutateTranslations: (() => void) | null = null;
+
+  subscribe(listener: (state: { isSyncing: boolean; progress: string }) => void) {
+    this.listeners.add(listener);
+    listener({ isSyncing: this.isSyncing, progress: this.progress });
+    return () => {
+      this.listeners.delete(listener);
+    };
+  }
+
+  notify() {
+    this.listeners.forEach(l => l({ isSyncing: this.isSyncing, progress: this.progress }));
+  }
+
+  async start(mutate: () => void, toast: any) {
+    if (this.isSyncing) return;
+    this.isSyncing = true;
+    this.progress = '正在扫描未翻译词条...';
+    this.totalProcessed = 0;
+    this.remaining = 1;
+    this.abortController = new AbortController();
+    this.mutateTranslations = mutate;
+    this.notify();
+
+    try {
+      while (this.remaining > 0) {
+        if (this.abortController.signal.aborted) {
+          break;
+        }
+
+        const res = await fetch('/api/localizedStrings/sync-languages', {
+          method: 'POST',
+          signal: this.abortController.signal
+        });
+
+        if (!res.ok) {
+          const errData = await res.json();
+          throw new Error(errData.message || '翻译同步中途出错');
+        }
+
+        const data = await res.json();
+        this.remaining = data.remainingCount;
+        this.totalProcessed += data.processedCount;
+        
+        this.progress = `已补全 ${this.totalProcessed} 条翻译，剩余 ${this.remaining} 条待处理...`;
+        this.notify();
+
+        if (data.processedCount === 0 && this.remaining > 0) {
+          break;
+        }
+
+        // Delay between batches with abort handling
+        await new Promise<void>((resolve, reject) => {
+          const timer = setTimeout(resolve, 800);
+          this.abortController?.signal.addEventListener('abort', () => {
+            clearTimeout(timer);
+            reject(new DOMException('Aborted', 'AbortError'));
+          });
+        });
+      }
+
+      if (this.mutateTranslations) this.mutateTranslations();
+      toast({
+        title: this.abortController.signal.aborted ? 'AI 翻译同步已中断' : 'AI 增量翻译完成',
+        description: `共补全了 ${this.totalProcessed} 条翻译记录！`
+      });
+    } catch (err: any) {
+      if (err.name !== 'AbortError') {
+        toast({
+          variant: 'destructive',
+          title: 'AI 翻译同步中断',
+          description: err.message
+        });
+      }
+    } finally {
+      this.isSyncing = false;
+      this.progress = '';
+      this.abortController = null;
+      this.notify();
+      if (this.mutateTranslations) this.mutateTranslations();
+    }
+  }
+
+  stop() {
+    if (this.abortController) {
+      this.abortController.abort();
+    }
+  }
+}
+
+const syncManager = new TranslationSyncManager();
+
 export default function TranslationsPage() {
   const { toast } = useToast();
   const [searchQuery, setSearchQuery] = useState('');
@@ -127,6 +226,14 @@ export default function TranslationsPage() {
   const [isMergingBatch, setIsMergingBatch] = useState(false);
   const [isSyncingAI, setIsSyncingAI] = useState(false);
   const [syncProgress, setSyncProgress] = useState('');
+
+  useEffect(() => {
+    const unsubscribe = syncManager.subscribe((state) => {
+      setIsSyncingAI(state.isSyncing);
+      setSyncProgress(state.progress);
+    });
+    return unsubscribe;
+  }, []);
   const [translatingId, setTranslatingId] = useState<string | null>(null);
   const [isSyncingLocal, setIsSyncingLocal] = useState(false);
   const [showSyncConfirm, setShowSyncConfirm] = useState(false);
@@ -457,46 +564,8 @@ export default function TranslationsPage() {
     }
   };
 
-  const handleAiSync = async () => {
-    setIsSyncingAI(true);
-    setSyncProgress('正在扫描未翻译词条...');
-    try {
-      let remaining = 1;
-      let totalProcessed = 0;
-
-      while (remaining > 0) {
-        const res = await fetch('/api/localizedStrings/sync-languages', {
-          method: 'POST'
-        });
-        if (!res.ok) {
-          const errData = await res.json();
-          throw new Error(errData.message || '翻译同步中途出错');
-        }
-        const data = await res.json();
-        remaining = data.remainingCount;
-        totalProcessed += data.processedCount;
-        setSyncProgress(`已补全 ${totalProcessed} 条翻译，剩余 ${remaining} 条待处理...`);
-        if (data.processedCount === 0 && remaining > 0) {
-          break;
-        }
-        await new Promise((resolve) => setTimeout(resolve, 800));
-      }
-
-      mutateTrans();
-      toast({
-        title: 'AI 增量翻译完成',
-        description: `共补全了 ${totalProcessed} 条翻译记录！`
-      });
-    } catch (err: any) {
-      toast({
-        variant: 'destructive',
-        title: 'AI 翻译同步中断',
-        description: err.message
-      });
-    } finally {
-      setIsSyncingAI(false);
-      setSyncProgress('');
-    }
+  const handleAiSync = () => {
+    syncManager.start(mutateTrans, toast);
   };
 
   const handleAiTranslate = async (t: LocalizedString) => {
@@ -709,15 +778,26 @@ export default function TranslationsPage() {
             )}
 
             {aiConfig?.isEnabled && (
-              <Button
-                variant="outline"
-                onClick={handleAiSync}
-                disabled={isSyncingAI}
-                className="rounded-full h-12 px-6 border-blue-500/20 bg-blue-500/10 text-blue-400 hover:bg-blue-500/20 gap-2 shadow-sm font-bold text-xs uppercase tracking-wider"
-              >
-                {isSyncingAI ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
-                AI 增量翻译 {syncProgress && `(${syncProgress})`}
-              </Button>
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="outline"
+                  onClick={handleAiSync}
+                  disabled={isSyncingAI}
+                  className="rounded-full h-12 px-6 border-blue-500/20 bg-blue-500/10 text-blue-400 hover:bg-blue-500/20 gap-2 shadow-sm font-bold text-xs uppercase tracking-wider"
+                >
+                  {isSyncingAI ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
+                  AI 增量翻译 {syncProgress && `(${syncProgress})`}
+                </Button>
+                {isSyncingAI && (
+                  <Button
+                    variant="outline"
+                    onClick={() => syncManager.stop()}
+                    className="rounded-full h-12 px-4 border-red-500/20 bg-red-500/10 text-red-400 hover:bg-red-500/20 gap-2 font-bold text-xs uppercase tracking-wider animate-in fade-in zoom-in-95 duration-200"
+                  >
+                    <X className="h-4 w-4" /> 中断
+                  </Button>
+                )}
+              </div>
             )}
 
             <Button onClick={() => setIsSettingsOpen(true)} variant="outline" className="rounded-full h-12 px-6 gap-2 text-xs font-bold uppercase tracking-wider border-border/40 bg-card hover:bg-muted/20">

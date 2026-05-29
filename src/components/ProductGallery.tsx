@@ -177,15 +177,25 @@ export function ProductGallery({ locale }: { locale: Locale }) {
     }
 
     const defaultLang = langSettings?.defaultLanguage || 'en';
-    const allLocales: Locale[] = ['en', 'zh', 'id', 'vi'];
+    const configObj = galleryConfig?.data || galleryConfig || {};
+    const activeLangs = langSettings?.supportedLanguages?.map((l: any) => l.code) || 
+      Object.keys(configObj)
+        .filter(key => key.startsWith(prefix) && key.length > prefix.length)
+        .map(key => key.slice(prefix.length).toLowerCase());
 
     const getVal = (l: string) => {
-      const suffix = l.charAt(0).toUpperCase() + l.slice(1);
-      const field = `${prefix}${suffix}`;
-      return galleryConfig?.[field] || (galleryConfig as any)?.data?.[field];
+      const getField = (langCode: string) => {
+        const suffix = langCode.charAt(0).toUpperCase() + langCode.slice(1);
+        const field = `${prefix}${suffix}`;
+        return galleryConfig?.[field] || (galleryConfig as any)?.data?.[field];
+      };
+      let val = getField(l);
+      if (!val && l === 'vi') val = getField('vn');
+      if (!val && l === 'vn') val = getField('vi');
+      return val;
     };
 
-    return getVal(locale) || getVal(defaultLang) || allLocales.map(getVal).find(v => !!v) || (tr as any)(fallbackKey) || '';
+    return getVal(locale) || getVal(defaultLang) || activeLangs.map(getVal).find((v: any) => !!v) || (tr as any)(fallbackKey) || '';
   }, [galleryConfig, locale, langSettings, tr]);
 
   // 2. Data transformation

@@ -3,7 +3,11 @@ import db from '@/lib/db';
 
 export async function POST(request: Request) {
   try {
-    const body = await request.json();
+    const rawText = await request.text();
+    if (!rawText.trim()) {
+      return NextResponse.json({ error: 'Empty request body' }, { status: 400 });
+    }
+    const body = JSON.parse(rawText);
     const { type, sessionId, visitorId, path, x, y, element, ...rest } = body;
 
     // 1. Session ID and Visitor ID format & length validation

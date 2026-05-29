@@ -60,6 +60,7 @@ export default function ProductClient({ product, initialLocale }: { product: any
   
   const [locale, setLocale] = useState<Locale>(initialLocale);
   const [mounted, setMounted] = useState(false);
+  const [productUrl, setProductUrl] = useState('');
   const [activeMedia, setActiveMedia] = useState<{ url: string; type: 'image' | 'video' }>(() => {
     return {
       url: product?.mainImageUrl || '',
@@ -73,6 +74,7 @@ export default function ProductClient({ product, initialLocale }: { product: any
 
   useEffect(() => {
     setMounted(true);
+    setProductUrl(window.location.href);
   }, []);
 
   useEffect(() => {
@@ -91,6 +93,24 @@ export default function ProductClient({ product, initialLocale }: { product: any
   // 本地翻译兜底逻辑，服务于 SSR 和首次渲染，防止没有接口数据时显示空白
   const getProductText = (textId: string, textObj: any) => {
     if (!textId) return '';
+    
+    // 校验解析出的翻译内容是否是系统级翻译 Key 或是无有效内容的英文 Key。
+    // 如果是 Key 模式（如大写且含下划线，或含有前缀等），直接判定为未翻译，返回空。
+    const isTranslationKey = (val: any): boolean => {
+      if (typeof val !== 'string' || !val) return false;
+      const clean = val.trim();
+      if (clean === textId) return true;
+      // 匹配系统预设规则：大写字母+下划线，或者特定前缀
+      if (/^[A-Z0-9_]{3,}$/.test(clean)) return true;
+      if (/^(PROD|SPEC|CAT|MAP|ABOUT|NAV|SYS|SERVICE|PROCESS|CASES|ADV)_/i.test(clean)) return true;
+      return false;
+    };
+
+    const sanitizeVal = (val: any) => {
+      if (isTranslationKey(val)) return '';
+      return val || '';
+    };
+
     if (textObj) {
       let content = textObj.content || textObj;
       if (typeof content === 'string') {
@@ -100,16 +120,31 @@ export default function ProductClient({ product, initialLocale }: { product: any
         if (content.content && typeof content.content === 'object' && !Array.isArray(content.content)) {
           content = content.content;
         }
-        if (content[locale] !== undefined && content[locale] !== null) {
-          return content[locale];
+        if (content[locale] !== undefined && content[locale] !== null && content[locale] !== '') {
+          return sanitizeVal(content[locale]);
+        }
+        if (locale === 'vi' && content['vn'] !== undefined && content['vn'] !== null && content['vn'] !== '') {
+          return sanitizeVal(content['vn']);
+        }
+        if (locale === 'vn' && content['vi'] !== undefined && content['vi'] !== null && content['vi'] !== '') {
+          return sanitizeVal(content['vi']);
         }
       }
-      if (textObj[locale] !== undefined && textObj[locale] !== null) {
-        return textObj[locale];
+      if (textObj[locale] !== undefined && textObj[locale] !== null && textObj[locale] !== '') {
+        return sanitizeVal(textObj[locale]);
       }
-      return textObj.en || textObj.zh || '';
+      if (locale === 'vi' && textObj['vn'] !== undefined && textObj['vn'] !== null && textObj['vn'] !== '') {
+        return sanitizeVal(textObj['vn']);
+      }
+      if (locale === 'vn' && textObj['vi'] !== undefined && textObj['vi'] !== null && textObj['vi'] !== '') {
+        return sanitizeVal(textObj['vi']);
+      }
+      const fallbackVal = textObj.en || textObj.zh || '';
+      return sanitizeVal(fallbackVal);
     }
-    return tr(textId);
+    const fromGlobal = tr(textId);
+    if (fromGlobal && !isTranslationKey(fromGlobal)) return fromGlobal;
+    return '';
   };
 
   const specTranslationMap = useMemo(() => {
@@ -130,7 +165,9 @@ export default function ProductClient({ product, initialLocale }: { product: any
     if (translationObj) {
       return getProductText(textId, translationObj);
     }
-    return tr(textId);
+    const fromGlobal = tr(textId);
+    if (fromGlobal && fromGlobal !== textId) return fromGlobal;
+    return '';
   };
 
   const getSystemText = (key: string) => {
@@ -203,7 +240,16 @@ export default function ProductClient({ product, initialLocale }: { product: any
 
   const productDetails = useMemo(() => {
     if (!product?.localizedDetails) return '';
-    const content = product.localizedDetails[locale] || product.localizedDetails['en'] || product.localizedDetails['zh'] || '';
+    let details = product.localizedDetails;
+    if (typeof details === 'string') {
+      try {
+        details = JSON.parse(details);
+      } catch (e) {
+        console.error('Failed to parse localizedDetails JSON:', e);
+        return '';
+      }
+    }
+    const content = details?.[locale] || details?.['en'] || details?.['zh'] || '';
     const plainText = content.replace(/<[^>]*>?/gm, '').trim();
     return plainText ? content : '';
   }, [product, locale]);
@@ -260,7 +306,18 @@ export default function ProductClient({ product, initialLocale }: { product: any
 
   const groupedSpecs = useMemo(() => {
     if (!product?.specGroups) return [];
-    return product.specGroups.map((group: any) => ({
+    let specGroupsArray = product.specGroups;
+    if (typeof specGroupsArray === 'string') {
+      try {
+        specGroupsArray = JSON.parse(specGroupsArray);
+      } catch (e) {
+        console.error('Failed to parse specGroups JSON:', e);
+        return [];
+      }
+    }
+    if (!Array.isArray(specGroupsArray)) return [];
+
+    return specGroupsArray.map((group: any) => ({
       title: getSpecText(group.titleId),
       items: (group.items || []).map((item: any) => ({
         label: getSpecText(item.labelId),
@@ -273,7 +330,6 @@ export default function ProductClient({ product, initialLocale }: { product: any
     if (!product) return null;
     const productName = getProductText(product.nameTextId, product.nameText);
     const productDesc = product.descriptionTextId ? getProductText(product.descriptionTextId, product.descriptionText) : '';
-    const productUrl = typeof window !== 'undefined' ? window.location.href : '';
     
     return {
       "@context": "https://schema.org",
@@ -298,7 +354,7 @@ export default function ProductClient({ product, initialLocale }: { product: any
         }
       }
     };
-  }, [product, locale]);
+  }, [product, locale, productUrl]);
 
   return (
     <main className="min-h-screen bg-background">
@@ -409,55 +465,8 @@ export default function ProductClient({ product, initialLocale }: { product: any
                 </div>
               )}
 
-              {/* High-quality Zoom overlay modal */}
-              {isZoomOpen && activeMedia.type === 'image' && (
-                <div 
-                  className="fixed inset-0 z-[9999] bg-black/90 flex flex-col items-center justify-center cursor-zoom-out animate-in fade-in duration-300"
-                  onClick={() => { setIsZoomOpen(false); setZoomScale(1); }}
-                >
-                  <div className="absolute top-6 right-6 flex items-center gap-4" onClick={e => e.stopPropagation()}>
-                    <Button
-                      variant="outline"
-                      size="icon"
-                      className="h-12 w-12 rounded-full bg-white/10 hover:bg-white/20 border-white/20 text-white backdrop-blur-md"
-                      onClick={() => setZoomScale(s => Math.min(3, s + 0.25))}
-                    >
-                      <ZoomIn className="h-5 w-5" />
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size="icon"
-                      className="h-12 w-12 rounded-full bg-white/10 hover:bg-white/20 border-white/20 text-white backdrop-blur-md"
-                      onClick={() => setZoomScale(s => Math.max(0.5, s - 0.25))}
-                    >
-                      <ZoomOut className="h-5 w-5" />
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size="icon"
-                      className="h-12 w-12 rounded-full bg-white/10 hover:bg-white/20 border-white/20 text-white backdrop-blur-md"
-                      onClick={() => { setIsZoomOpen(false); setZoomScale(1); }}
-                    >
-                      <X className="h-5 w-5" />
-                    </Button>
-                  </div>
-                  
-                  <div className="relative w-[90vw] h-[80vh] flex items-center justify-center overflow-auto pointer-events-none">
-                    <div 
-                      className="relative transition-transform duration-300 ease-out pointer-events-auto"
-                      style={{ transform: `scale(${zoomScale})` }}
-                    >
-                      <img 
-                        src={getAssetUrl(activeMedia.url || product.mainImageUrl || '/image/product-placeholder.png')} 
-                        alt="Product Zoom"
-                        className="max-w-[90vw] max-h-[80vh] object-contain rounded-2xl select-none"
-                        draggable={false}
-                      />
-                    </div>
-                  </div>
-                </div>
-              )}
             </div>
+
 
             <div className="lg:col-span-5 flex flex-col space-y-10">
               <div className="space-y-4">
@@ -598,6 +607,54 @@ export default function ProductClient({ product, initialLocale }: { product: any
           </div>
         </div>
       <Footer locale={locale} />
+      {/* High-quality Zoom overlay modal */}
+      {isZoomOpen && activeMedia.type === 'image' && (
+        <div 
+          className="fixed inset-0 z-[9999] bg-black/90 flex items-center justify-center cursor-zoom-out animate-in fade-in duration-300"
+          onClick={() => { setIsZoomOpen(false); setZoomScale(1); }}
+        >
+          <div className="absolute top-6 right-6 flex items-center gap-4" onClick={e => e.stopPropagation()}>
+            <Button
+              variant="outline"
+              size="icon"
+              className="h-12 w-12 rounded-full bg-white/10 hover:bg-white/20 border-white/20 text-white backdrop-blur-md"
+              onClick={() => setZoomScale(s => Math.min(3, s + 0.25))}
+            >
+              <ZoomIn className="h-5 w-5" />
+            </Button>
+            <Button
+              variant="outline"
+              size="icon"
+              className="h-12 w-12 rounded-full bg-white/10 hover:bg-white/20 border-white/20 text-white backdrop-blur-md"
+              onClick={() => setZoomScale(s => Math.max(0.5, s - 0.25))}
+            >
+              <ZoomOut className="h-5 w-5" />
+            </Button>
+            <Button
+              variant="outline"
+              size="icon"
+              className="h-12 w-12 rounded-full bg-white/10 hover:bg-white/20 border-white/20 text-white backdrop-blur-md"
+              onClick={() => { setIsZoomOpen(false); setZoomScale(1); }}
+            >
+              <X className="h-5 w-5" />
+            </Button>
+          </div>
+          
+          <div className="relative w-[90vw] h-[80vh] flex items-center justify-center overflow-auto pointer-events-none">
+            <div 
+              className="relative transition-transform duration-300 ease-out pointer-events-auto"
+              style={{ transform: `scale(${zoomScale})` }}
+            >
+              <img 
+                src={getAssetUrl(activeMedia.url || product.mainImageUrl || '/image/product-placeholder.png')} 
+                alt="Product Zoom"
+                className="max-w-[90vw] max-h-[80vh] object-contain rounded-2xl select-none"
+                draggable={false}
+              />
+            </div>
+          </div>
+        </div>
+      )}
     </main>
   );
 }

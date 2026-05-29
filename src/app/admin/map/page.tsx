@@ -228,7 +228,7 @@ export default function GlobalMapAdminPage() {
       await fetch(`/api/localizedStrings/${encodeURIComponent(id)}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ id, content })
+        body: JSON.stringify({ id, content, forceGlobalUpdate: true })
       });
     } catch (e) {
       console.error(`Failed to sync translation for ${id}`, e);

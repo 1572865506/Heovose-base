@@ -1,39 +1,44 @@
 import { Metadata } from 'next';
 import db from '@/lib/db';
-import ProductClient from './ProductClient';
+import ProductClient from '@/app/products/[id]/ProductClient';
 import { notFound } from 'next/navigation';
 import { Locale } from '@/lib/translations';
 
 interface Props {
-  params: Promise<{ id: string }>;
+  params: Promise<{ locale: string; id: string }>;
 }
 
-// Resolve system default language configuration without cookies/headers dependency to enable SSG/ISR
-async function getDefaultLocale(): Promise<Locale> {
-  try {
-    const langSetting = await db.setting.findUnique({ where: { id: 'languages' } });
-    if (langSetting && langSetting.value) {
-      const parsed = JSON.parse(langSetting.value);
-      if (parsed.defaultLanguage && ['en', 'zh', 'id', 'vi'].includes(parsed.defaultLanguage)) {
-        return parsed.defaultLanguage as Locale;
-      }
-    }
-  } catch (_) {}
-  return 'en';
-}
-
-// Generate static params to statically compile detail pages for all published products
+// Generate static params to statically compile detail pages for all published products across all locales
 export async function generateStaticParams() {
   try {
-    const products = await db.product.findMany({
-      where: { status: 'published' },
-      select: { id: true }
+    const [products, langSetting] = await Promise.all([
+      db.product.findMany({
+        where: { status: 'published' },
+        select: { id: true }
+      }),
+      db.setting.findUnique({ where: { id: 'languages' } })
+    ]);
+
+    let locales = ['en', 'zh', 'id', 'vi'];
+    if (langSetting?.value) {
+      const parsed = JSON.parse(langSetting.value);
+      if (Array.isArray(parsed.supportedLanguages)) {
+        locales = parsed.supportedLanguages.map((l: any) => l.code);
+      }
+    }
+
+    const paramsList: Array<{ locale: string; id: string }> = [];
+    products.forEach((p: any) => {
+      locales.forEach((locale: string) => {
+        paramsList.push({
+          locale,
+          id: p.id
+        });
+      });
     });
-    return products.map((p: any) => ({
-      id: p.id
-    }));
+    return paramsList;
   } catch (error) {
-    console.error('Failed to generate static params for products:', error);
+    console.error('Failed to generate static params for product details:', error);
     return [];
   }
 }
@@ -41,6 +46,7 @@ export async function generateStaticParams() {
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const resolvedParams = await params;
   const id = resolvedParams.id;
+  const locale = resolvedParams.locale as Locale;
   
   // 1. Fetch Product
   const product = await db.product.findUnique({ where: { id } });
@@ -55,11 +61,8 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   }
   const template = config.productSeoTemplate || '[ProductName] | [SiteTitle]';
   const siteUrl = config.siteUrl ? config.siteUrl.replace(/\/$/, '') : 'https://www.heovose.com';
-  
-  // 3. Determine Default Locale
-  const locale = await getDefaultLocale();
 
-  // 4. Fetch Translated Strings for Replacement
+  // 3. Fetch Translated Strings for Replacement
   const [nameEntry, siteTitleEntry, descEntry] = await Promise.all([
     db.localizedString.findUnique({ where: { id: product.nameTextId } }),
     db.localizedString.findUnique({ where: { id: 'SITE_TITLE' } }),
@@ -70,7 +73,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const siteTitle = (siteTitleEntry?.content as any)?.[locale] || siteTitleEntry?.[locale] || 'Heovose Elevate';
   const description = descEntry ? ((descEntry.content as any)?.[locale] || '') : '';
 
-  // 5. Build Final Title using Template
+  // 4. Build Final Title using Template
   let title = template
     .replace('[ProductName]', productName)
     .replace('[SiteTitle]', siteTitle);
@@ -80,18 +83,18 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     title,
     description,
     alternates: {
-      canonical: `${siteUrl}/products/${id}`,
+      canonical: `${siteUrl}/${locale}/products/${id}`,
       languages: {
-        'en': `${siteUrl}/products/${id}?lang=en`,
-        'zh-Hans': `${siteUrl}/products/${id}?lang=zh`,
-        'id': `${siteUrl}/products/${id}?lang=id`,
-        'vi': `${siteUrl}/products/${id}?lang=vi`,
+        'en': `${siteUrl}/en/products/${id}`,
+        'zh-Hans': `${siteUrl}/zh/products/${id}`,
+        'id': `${siteUrl}/id/products/${id}`,
+        'vi': `${siteUrl}/vi/products/${id}`,
       }
     },
     openGraph: {
       title,
       description,
-      url: `${siteUrl}/products/${id}`,
+      url: `${siteUrl}/${locale}/products/${id}`,
       type: 'website',
       siteName: siteTitle,
       locale: locale === 'zh' ? 'zh_CN' : 'en_US',
@@ -103,6 +106,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 export default async function ProductPage({ params }: Props) {
   const resolvedParams = await params;
   const id = resolvedParams.id;
+  const targetLocale = resolvedParams.locale as Locale;
 
   const product = await db.product.findUnique({
     where: { id },
@@ -120,8 +124,16 @@ export default async function ProductPage({ params }: Props) {
 
   // 提取产品包含的规格翻译 IDs
   const specIds: string[] = [];
-  if (product.specGroups && typeof product.specGroups === 'object') {
-    const groups = product.specGroups as any;
+  let specGroups = product.specGroups;
+  if (typeof specGroups === 'string') {
+    try {
+      specGroups = JSON.parse(specGroups);
+    } catch (_) {
+      specGroups = null;
+    }
+  }
+  if (specGroups && typeof specGroups === 'object') {
+    const groups = specGroups as any;
     const groupArray = Array.isArray(groups) ? groups : [];
     groupArray.forEach((g: any) => {
       if (g.titleId) specIds.push(g.titleId);
@@ -141,13 +153,11 @@ export default async function ProductPage({ params }: Props) {
       })
     : [];
 
-  const locale = await getDefaultLocale();
-
   // 打包产品数据，在客户端进行注入
   const productWithSpecs = {
     ...product,
     specTranslations
   };
 
-  return <ProductClient product={JSON.parse(JSON.stringify(productWithSpecs))} initialLocale={locale} />;
+  return <ProductClient product={JSON.parse(JSON.stringify(productWithSpecs))} initialLocale={targetLocale} />;
 }

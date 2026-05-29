@@ -169,7 +169,7 @@ function ProductListContent(props: ProductListClientProps) {
 
   // 1. 智能判定语种
   useEffect(() => {
-    const activeLangs = initialLangSettings?.supportedLanguages?.map((l: any) => l.code) || ['en', 'zh', 'id', 'vi'];
+    const activeLangs = initialLangSettings?.supportedLanguages?.map((l: any) => l.code) || ['en', 'zh', 'id', 'vi', 'vn'];
     const detectLocale = () => {
       // 1. 优先 URL 参数
       const langParam = searchParams.get('lang');
@@ -352,7 +352,7 @@ function ProductListContent(props: ProductListClientProps) {
     return cat ? getT(cat.nameTextId) : tr('products_allCategories');
   }, [selectedCategoryId, categories, initialCategories, locale, tr]);
 
-  if (isCatsLoading || isTrLoading || !isLocaleReady) {
+  if (isTrLoading || !isLocaleReady) {
     return <div className="min-h-screen flex items-center justify-center bg-background"><Loader2 className="h-10 w-10 animate-spin opacity-20 text-primary" /></div>;
   }
 

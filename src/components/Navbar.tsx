@@ -4,7 +4,7 @@ import { useState, useEffect, useRef, useMemo } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
-import { Locale } from "@/lib/translations";
+import { Locale, getLocalizedLink } from "@/lib/translations";
 import { LanguageToggle } from "./LanguageToggle";
 import {
   Menu,
@@ -87,7 +87,21 @@ const SYSTEM_FALLBACKS: Record<string, Record<Locale, string>> = {
 
 export function Navbar({ locale, setLocale, headerTheme = 'dark', themeLine }: NavbarProps) {
   const { t: tr } = useTranslations(locale);
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
   const getSystemText = (key: string) => {
+    if (!mounted) {
+      // Return Vietnamese or default matching server translation to prevent mismatch during hydration
+      const fallback = SYSTEM_FALLBACKS[key];
+      if (fallback) {
+        return fallback[locale] || fallback['en'] || '';
+      }
+      return key;
+    }
     const fromDb = tr(key);
     if (fromDb) return fromDb;
     const fallback = SYSTEM_FALLBACKS[key];
@@ -151,8 +165,11 @@ export function Navbar({ locale, setLocale, headerTheme = 'dark', themeLine }: N
     };
   }, [mobileMenuOpen, activeMenu]);
 
-  // Determine if the page has a dark/colored header area at the top
-  const isTransparentHeaderPage = pathname === '/' || pathname === '/products';
+  // Determine if the page has a dark/colored header area at the top (dynamically supporting the active locale)
+  const isTransparentHeaderPage = useMemo(() => {
+    const cleanPath = pathname.replace(new RegExp(`^\\/${locale}`), '') || '/';
+    return cleanPath === '/' || cleanPath === '/products';
+  }, [pathname, locale]);
 
   // Navbar is "Active" (White Opaque) if:
   // 1. Scrolled down
@@ -275,7 +292,7 @@ export function Navbar({ locale, setLocale, headerTheme = 'dark', themeLine }: N
           : "bg-transparent border-b border-transparent"
       )}>
         <div className="container mx-auto px-6 flex items-center w-full h-full">
-          <Link href="/" className="flex items-center shrink-0">
+          <Link href={getLocalizedLink("/", locale)} className="flex items-center shrink-0">
             <Image
               src={isNavbarActive || headerTheme === 'light' ? logoStandard : logoInverted}
               alt="Heovose Logo"
@@ -293,109 +310,137 @@ export function Navbar({ locale, setLocale, headerTheme = 'dark', themeLine }: N
 
               {/* Wholesale Mega Menu Container */}
               <div className="h-full relative flex items-center">
-                <DropdownMenu open={activeMenu === 'wholesale'} onOpenChange={(open) => !open && handleMouseLeave()} modal={false}>
-                  <DropdownMenuTrigger asChild>
-                    <button
-                      className={cn(
-                        "flex items-center space-x-1 px-4 py-2 rounded-full transition-all duration-300 text-sm font-medium whitespace-nowrap outline-none cursor-pointer",
-                        (isNavbarActive || headerTheme === 'light')
-                          ? "text-slate-800 hover:bg-slate-100"
-                          : "text-white hover:bg-white/10"
-                      )}
-                      onMouseEnter={() => handleMouseEnter('wholesale')}
-                      onClick={() => {
-                        setActiveMenu(null);
-                        router.push('/products?line=wholesale');
-                      }}
-                    >
-                      <span>{getSystemText('NAV_WHOLESALE')}</span>
-                      <ChevronDown className={cn(
-                        "w-4 h-4 transition-transform duration-300",
-                        activeMenu === 'wholesale' ? "rotate-180" : ""
-                      )} />
-                    </button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent
-                    sideOffset={25}
-                    align="start"
-                    className="w-screen max-w-none left-0 right-0 border-none rounded-none shadow-none bg-transparent p-0 overflow-visible"
-                    onMouseEnter={() => handleMouseEnter('wholesale')}
-                  >
-                    <div className="container mx-auto px-6">
-                      <div className={cn(
-                        "rounded-[2.5rem] shadow-2xl border animate-in fade-in slide-in-from-top-4 duration-500",
-                        navSettings?.navbarMaterial === 'level-03' ? "glass-deep" : "glass-frosted",
-                        navSettings?.showBorder ? "border-white/20" : "border-transparent"
-                      )}>
-                        <MegaMenuContent 
-                        items={wholesaleItems} 
-                        navSettings={navSettings}
-                        locale={locale}
-                        tr={tr}
-                        getSystemText={getSystemText}
-                        line="wholesale"
+                {mounted ? (
+                  <DropdownMenu open={activeMenu === 'wholesale'} onOpenChange={(open) => !open && handleMouseLeave()} modal={false}>
+                    <DropdownMenuTrigger asChild>
+                      <button
+                        className={cn(
+                          "flex items-center space-x-1 px-4 py-2 rounded-full transition-all duration-300 text-sm font-medium whitespace-nowrap outline-none cursor-pointer",
+                          (isNavbarActive || headerTheme === 'light')
+                            ? "text-slate-800 hover:bg-slate-100"
+                            : "text-white hover:bg-white/10"
+                        )}
                         onMouseEnter={() => handleMouseEnter('wholesale')}
-                        onMouseLeave={handleMouseLeave}
-                      />
+                        onClick={() => {
+                          setActiveMenu(null);
+                          router.push(getLocalizedLink('/products?line=wholesale', locale));
+                        }}
+                      >
+                        <span>{getSystemText('NAV_WHOLESALE')}</span>
+                        <ChevronDown className={cn(
+                          "w-4 h-4 transition-transform duration-300",
+                          activeMenu === 'wholesale' ? "rotate-180" : ""
+                        )} />
+                      </button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent
+                      sideOffset={25}
+                      align="start"
+                      className="w-screen max-w-none left-0 right-0 border-none rounded-none shadow-none bg-transparent p-0 overflow-visible"
+                      onMouseEnter={() => handleMouseEnter('wholesale')}
+                    >
+                      <div className="container mx-auto px-6">
+                        <div className={cn(
+                          "rounded-[2.5rem] shadow-2xl border animate-in fade-in slide-in-from-top-4 duration-500",
+                          navSettings?.navbarMaterial === 'level-03' ? "glass-deep" : "glass-frosted",
+                          navSettings?.showBorder ? "border-white/20" : "border-transparent"
+                        )}>
+                          <MegaMenuContent 
+                          items={wholesaleItems} 
+                          navSettings={navSettings}
+                          locale={locale}
+                          tr={tr}
+                          getSystemText={getSystemText}
+                          line="wholesale"
+                          onMouseEnter={() => handleMouseEnter('wholesale')}
+                          onMouseLeave={handleMouseLeave}
+                        />
+                        </div>
                       </div>
-                    </div>
-                  </DropdownMenuContent>
-                </DropdownMenu>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                ) : (
+                  <button
+                    className={cn(
+                      "flex items-center space-x-1 px-4 py-2 rounded-full transition-all duration-300 text-sm font-medium whitespace-nowrap outline-none cursor-pointer",
+                      (isNavbarActive || headerTheme === 'light')
+                        ? "text-slate-800 hover:bg-slate-100"
+                        : "text-white hover:bg-white/10"
+                    )}
+                  >
+                    <span>{getSystemText('NAV_WHOLESALE')}</span>
+                    <ChevronDown className="w-4 h-4" />
+                  </button>
+                )}
               </div>
 
               {/* Projects Mega Menu Container */}
               <div className="h-full relative flex items-center">
-                <DropdownMenu open={activeMenu === 'projects'} onOpenChange={(open) => !open && handleMouseLeave()} modal={false}>
-                  <DropdownMenuTrigger asChild>
-                    <button
-                      className={cn(
-                        "flex items-center space-x-1 px-4 py-2 rounded-full transition-all duration-300 text-sm font-medium whitespace-nowrap outline-none cursor-pointer",
-                        (isNavbarActive || headerTheme === 'light')
-                          ? "text-slate-800 hover:bg-slate-100"
-                          : "text-white hover:bg-white/10"
-                      )}
-                      onMouseEnter={() => handleMouseEnter('projects')}
-                      onClick={() => {
-                        setActiveMenu(null);
-                        router.push('/products?line=project');
-                      }}
-                    >
-                      <span>{getSystemText('NAV_PROJECTS')}</span>
-                      <ChevronDown className={cn(
-                        "w-4 h-4 transition-transform duration-300",
-                        activeMenu === 'projects' ? "rotate-180" : ""
-                      )} />
-                    </button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent
-                    sideOffset={25}
-                    align="start"
-                    className="w-screen max-w-none left-0 right-0 border-none rounded-none shadow-none bg-transparent p-0 overflow-visible"
-                    onMouseEnter={() => handleMouseEnter('projects')}
-                  >
-                    <div className="container mx-auto px-6">
-                      <div className={cn(
-                        "rounded-[2.5rem] shadow-2xl border animate-in fade-in slide-in-from-top-4 duration-500",
-                        navSettings?.navbarMaterial === 'level-03' ? "glass-deep" : "glass-frosted",
-                        navSettings?.showBorder ? "border-white/20" : "border-transparent"
-                      )}>
-                        <MegaMenuContent 
-                        items={projectItems} 
-                        navSettings={navSettings}
-                        locale={locale}
-                        tr={tr}
-                        getSystemText={getSystemText}
-                        line="project"
+                {mounted ? (
+                  <DropdownMenu open={activeMenu === 'projects'} onOpenChange={(open) => !open && handleMouseLeave()} modal={false}>
+                    <DropdownMenuTrigger asChild>
+                      <button
+                        className={cn(
+                          "flex items-center space-x-1 px-4 py-2 rounded-full transition-all duration-300 text-sm font-medium whitespace-nowrap outline-none cursor-pointer",
+                          (isNavbarActive || headerTheme === 'light')
+                            ? "text-slate-800 hover:bg-slate-100"
+                            : "text-white hover:bg-white/10"
+                        )}
                         onMouseEnter={() => handleMouseEnter('projects')}
-                        onMouseLeave={handleMouseLeave}
-                      />
+                        onClick={() => {
+                          setActiveMenu(null);
+                          router.push(getLocalizedLink('/products?line=project', locale));
+                        }}
+                      >
+                        <span>{getSystemText('NAV_PROJECTS')}</span>
+                        <ChevronDown className={cn(
+                          "w-4 h-4 transition-transform duration-300",
+                          activeMenu === 'projects' ? "rotate-180" : ""
+                        )} />
+                      </button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent
+                      sideOffset={25}
+                      align="start"
+                      className="w-screen max-w-none left-0 right-0 border-none rounded-none shadow-none bg-transparent p-0 overflow-visible"
+                      onMouseEnter={() => handleMouseEnter('projects')}
+                    >
+                      <div className="container mx-auto px-6">
+                        <div className={cn(
+                          "rounded-[2.5rem] shadow-2xl border animate-in fade-in slide-in-from-top-4 duration-500",
+                          navSettings?.navbarMaterial === 'level-03' ? "glass-deep" : "glass-frosted",
+                          navSettings?.showBorder ? "border-white/20" : "border-transparent"
+                        )}>
+                          <MegaMenuContent 
+                          items={projectItems} 
+                          navSettings={navSettings}
+                          locale={locale}
+                          tr={tr}
+                          getSystemText={getSystemText}
+                          line="project"
+                          onMouseEnter={() => handleMouseEnter('projects')}
+                          onMouseLeave={handleMouseLeave}
+                        />
+                        </div>
                       </div>
-                    </div>
-                  </DropdownMenuContent>
-                </DropdownMenu>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                ) : (
+                  <button
+                    className={cn(
+                      "flex items-center space-x-1 px-4 py-2 rounded-full transition-all duration-300 text-sm font-medium whitespace-nowrap outline-none cursor-pointer",
+                      (isNavbarActive || headerTheme === 'light')
+                        ? "text-slate-800 hover:bg-slate-100"
+                        : "text-white hover:bg-white/10"
+                    )}
+                  >
+                    <span>{getSystemText('NAV_PROJECTS')}</span>
+                    <ChevronDown className="w-4 h-4" />
+                  </button>
+                )}
               </div>
 
-              <Link href="/#cases" className={cn(
+              <Link href={getLocalizedLink("/#cases", locale)} className={cn(
                 "px-4 py-2 rounded-full transition-all duration-300 text-sm font-medium whitespace-nowrap",
                 (isNavbarActive || headerTheme === 'light')
                   ? "text-slate-800 hover:bg-slate-100"
@@ -403,7 +448,7 @@ export function Navbar({ locale, setLocale, headerTheme = 'dark', themeLine }: N
               )}>
                 {getSystemText('NAV_CASES')}
               </Link>
-              <Link href="/service-centers" className={cn(
+              <Link href={getLocalizedLink("/service-centers", locale)} className={cn(
                 "px-4 py-2 rounded-full transition-all duration-300 text-sm font-medium whitespace-nowrap",
                 (isNavbarActive || headerTheme === 'light')
                   ? "text-slate-800 hover:bg-slate-100"
@@ -411,7 +456,7 @@ export function Navbar({ locale, setLocale, headerTheme = 'dark', themeLine }: N
               )}>
                 {getSystemText('NAV_SERVICE_CENTERS')}
               </Link>
-              <Link href="/about" className={cn(
+              <Link href={getLocalizedLink("/about", locale)} className={cn(
                 "px-4 py-2 rounded-full transition-all duration-300 text-sm font-medium whitespace-nowrap",
                 (isNavbarActive || headerTheme === 'light')
                   ? "text-slate-800 hover:bg-slate-100"
@@ -476,9 +521,9 @@ export function Navbar({ locale, setLocale, headerTheme = 'dark', themeLine }: N
                   ))}
                 </div>
               </div>
-              <Link href="/#cases" onClick={() => setMobileMenuOpen(false)} className="text-lg font-bold text-primary">{getSystemText('NAV_CASES')}</Link>
-              <Link href="/service-centers" onClick={() => setMobileMenuOpen(false)} className="text-lg font-bold text-primary">{getSystemText('NAV_SERVICE_CENTERS')}</Link>
-              <Link href="/about" onClick={() => setMobileMenuOpen(false)} className="text-lg font-bold text-primary">{getSystemText('NAV_ABOUT')}</Link>
+              <Link href={getLocalizedLink("/#cases", locale)} onClick={() => setMobileMenuOpen(false)} className="text-lg font-bold text-primary">{getSystemText('NAV_CASES')}</Link>
+              <Link href={getLocalizedLink("/service-centers", locale)} onClick={() => setMobileMenuOpen(false)} className="text-lg font-bold text-primary">{getSystemText('NAV_SERVICE_CENTERS')}</Link>
+              <Link href={getLocalizedLink("/about", locale)} onClick={() => setMobileMenuOpen(false)} className="text-lg font-bold text-primary">{getSystemText('NAV_ABOUT')}</Link>
 
               <div className="pt-6 border-t border-slate-100 mt-auto">
                 <Button 
@@ -533,7 +578,7 @@ function MegaMenuContent({
             {getSystemText('nav_mega_title')}
           </h4>
           <Link 
-            href={`/products?line=${line}`} 
+            href={getLocalizedLink(`/products?line=${line}`, locale)} 
             className="flex items-center gap-2 text-[9px] font-bold uppercase tracking-widest cursor-pointer hover:translate-x-1 transition-transform text-primary"
           >
             {getSystemText('nav_mega_view_all')} <ArrowRight className="h-3 w-3" />
@@ -555,7 +600,7 @@ function MegaMenuContent({
           {items.map((item) => (
             <DropdownMenuItem key={item.id} asChild className="p-0 bg-transparent hover:bg-transparent focus:bg-transparent data-[highlighted]:bg-transparent data-[highlighted]:text-initial transition-all duration-300">
               <Link
-                href={item.href}
+                href={getLocalizedLink(item.href, locale)}
                 className={cn(
                   "flex gap-5 group cursor-pointer outline-none focus:outline-none",
                   !item.desc && "items-center"

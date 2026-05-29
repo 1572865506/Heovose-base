@@ -13,7 +13,7 @@ export function useLanguage() {
 
   useEffect(() => {
     const detectLocale = () => {
-      const activeLangs = langSettings?.supportedLanguages?.map((l: any) => l.code) || ['en', 'zh', 'id', 'vi'];
+      const activeLangs = langSettings?.supportedLanguages?.map((l: any) => l.code) || ['en', 'zh', 'id', 'vi', 'vn'];
       const defaultLang = (langSettings?.defaultLanguage as Locale) || 'en';
 
       // 1. 优先 URL 参数

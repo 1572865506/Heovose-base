@@ -3,6 +3,7 @@ import './globals.css';
 import { Toaster } from "@/components/ui/toaster";
 import db from '@/lib/db';
 import { getAssetUrl } from '@/lib/image-utils';
+import { Locale } from '@/lib/translations';
 
 export async function generateMetadata(): Promise<Metadata> {
   try {
@@ -82,7 +83,7 @@ export default async function RootLayout({
   children: React.ReactNode;
 }>) {
   const cookieStore = await cookies();
-  const locale = cookieStore.get('NEXT_LOCALE')?.value || 'en';
+  const locale = (cookieStore.get('NEXT_LOCALE')?.value as Locale) || 'en';
 
   // 统一在服务端获取公开配置，不再通过 API 终点暴露给外部
   let publicSettings = {};
@@ -150,7 +151,7 @@ export default async function RootLayout({
         <AuthProvider>
           <SystemConfigProvider>
             <AdminThemeProvider>
-              <InquiryProvider>
+              <InquiryProvider locale={locale}>
                 {children}
               </InquiryProvider>
               <Toaster />

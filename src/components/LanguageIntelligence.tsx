@@ -28,7 +28,7 @@ export function LanguageIntelligence() {
     if (!langSettings || hasPrompted) return;
 
     const getActiveLocale = () => {
-      const activeLangs = langSettings?.supportedLanguages?.map((l: any) => l.code) || ['en', 'zh', 'id', 'vi'];
+      const activeLangs = langSettings?.supportedLanguages?.map((l: any) => l.code) || ['en', 'zh', 'id', 'vi', 'vn'];
       const defaultLang = langSettings?.defaultLanguage || 'en';
 
       // Use the same priority as the page detection
@@ -87,6 +87,11 @@ export function LanguageIntelligence() {
           action: "Ubah",
         },
         vi: {
+          title: "Phát hiện ngôn ngữ",
+          description: `Phát hiện ngôn ngữ hệ thống của bạn là ${targetLabel}. Chuyển sang ${targetLabel}?`,
+          action: "Chuyển",
+        },
+        vn: {
           title: "Phát hiện ngôn ngữ",
           description: `Phát hiện ngôn ngữ hệ thống của bạn là ${targetLabel}. Chuyển sang ${targetLabel}?`,
           action: "Chuyển",

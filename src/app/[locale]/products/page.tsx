@@ -1,10 +1,38 @@
 import { Metadata } from 'next';
 import db from '@/lib/db';
-import ProductListClient from './ProductListClient';
+import ProductListClient from '@/app/products/ProductListClient';
+import { Locale } from '@/lib/translations';
 
-export const revalidate = 3600; // Enable hourly Incremental Static Regeneration (ISR)
+// Enable Incremental Static Regeneration (ISR)
+export const revalidate = 3600;
+export const dynamicParams = true;
 
-export async function generateMetadata(): Promise<Metadata> {
+interface PageProps {
+  params: Promise<{ locale: string }>;
+}
+
+export async function generateStaticParams() {
+  try {
+    const langSetting = await db.setting.findUnique({ where: { id: 'languages' } });
+    if (langSetting?.value) {
+      const parsed = JSON.parse(langSetting.value);
+      if (Array.isArray(parsed.supportedLanguages)) {
+        return parsed.supportedLanguages.map((l: any) => ({ locale: l.code }));
+      }
+    }
+  } catch (e) {
+    console.error('[ISR generateStaticParams Products] Failed to load supported languages:', e);
+  }
+  return [
+    { locale: 'en' },
+    { locale: 'zh' },
+    { locale: 'id' },
+    { locale: 'vi' }
+  ];
+}
+
+export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
+  const { locale } = await params;
   let siteUrl = 'https://www.heovose.com';
   try {
     const siteConfig = await db.setting.findUnique({ where: { id: 'site' } });
@@ -24,24 +52,27 @@ export async function generateMetadata(): Promise<Metadata> {
     title,
     description,
     alternates: {
-      canonical: `${siteUrl}/products`,
+      canonical: `${siteUrl}/${locale}/products`,
       languages: {
-        'en': `${siteUrl}/products?lang=en`,
-        'zh-Hans': `${siteUrl}/products?lang=zh`,
-        'id': `${siteUrl}/products?lang=id`,
-        'vi': `${siteUrl}/products?lang=vi`,
+        'en': `${siteUrl}/en/products`,
+        'zh-Hans': `${siteUrl}/zh/products`,
+        'id': `${siteUrl}/id/products`,
+        'vi': `${siteUrl}/vi/products`,
       }
     },
     openGraph: {
       title,
       description,
-      url: `${siteUrl}/products`,
+      url: `${siteUrl}/${locale}/products`,
       type: 'website',
     }
   };
 }
 
-export default async function ProductListPage() {
+export default async function ProductListPage({ params }: PageProps) {
+  const { locale } = await params;
+  const targetLocale = locale as Locale;
+
   // 1. Fetch all product categories
   const categories = await db.productCategory.findMany({
     include: {
@@ -143,27 +174,22 @@ export default async function ProductListPage() {
     };
   };
 
-  const initialTranslations: Record<string, any[]> = {};
-  const supportedLangs = ['en', 'zh', 'id', 'vi'];
+  // Pre-load current locale translations
+  const sysTrans = sysStrings.map((item: any) => getPrunedItem(item, targetLocale)).filter(Boolean);
+  const prodTrans = initialProducts.flatMap((p: any) => [
+    getPrunedItem(p.nameText, targetLocale),
+    getPrunedItem(p.descriptionText, targetLocale)
+  ]).filter(Boolean);
+  const catTrans = categories.flatMap((c: any) => [
+    getPrunedItem(c.nameText, targetLocale),
+    getPrunedItem(c.descriptionText, targetLocale)
+  ]).filter(Boolean);
 
-  supportedLangs.forEach(lang => {
-    // a. System translation items
-    const sysTrans = sysStrings.map((item: any) => getPrunedItem(item, lang)).filter(Boolean);
-    // b. Preloaded products translation items
-    const prodTrans = initialProducts.flatMap((p: any) => [
-      getPrunedItem(p.nameText, lang),
-      getPrunedItem(p.descriptionText, lang)
-    ]).filter(Boolean);
-    // c. Categories translation items
-    const catTrans = categories.flatMap((c: any) => [
-      getPrunedItem(c.nameText, lang),
-      getPrunedItem(c.descriptionText, lang)
-    ]).filter(Boolean);
+  const initialTranslations = {
+    [targetLocale]: [...sysTrans, ...prodTrans, ...catTrans]
+  };
 
-    initialTranslations[lang] = [...sysTrans, ...prodTrans, ...catTrans];
-  });
-
-  // Serialize models into plain JSON objects to prevent Next.js hydration serialization issues (e.g. Date objects)
+  // Serialize models into plain JSON objects to prevent Next.js hydration serialization issues
   const serializedProducts = JSON.parse(JSON.stringify(initialProducts));
   const serializedCategories = JSON.parse(JSON.stringify(categories));
   const serializedTranslations = JSON.parse(JSON.stringify(initialTranslations));

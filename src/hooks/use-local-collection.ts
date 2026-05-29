@@ -38,8 +38,13 @@ export function notifyCacheUpdate(path: string, data: any) {
 }
 
 
-export function useLocalCollection<T = any>(path: string | null, options?: { enabled?: boolean }) {
+export function useLocalCollection<T = any>(path: string | null, options?: { enabled?: boolean; initialData?: T[] }) {
   const enabled = options?.enabled !== false;
+  
+  if (path && options?.initialData !== undefined && !globalCache.has(path)) {
+    globalCache.set(path, { data: options.initialData, timestamp: Date.now() });
+  }
+  
   const cached = path ? globalCache.get(path) : null;
   
   const [data, setData] = useState<T[] | null>(cached?.data || null);

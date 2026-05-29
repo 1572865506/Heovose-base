@@ -56,8 +56,7 @@ export async function GET(request: Request) {
       if (supportedCodes.includes(lang)) {
         const bizPrefixes = [
           'prod_', 'cat_', 'spec_', 'biz_tr_', 'psl_', 'psv_', 'psg_', 
-          'adv_', 'case_', 'step_', 'hero_slide_', 'slide_', 
-          'hero_wholesale_', 'hero_project_', 'MAP_LOC_'
+          'adv_'
         ];
 
         const filteredStrings = strings.filter((item: any) => {

@@ -17,7 +17,7 @@ export function useTranslations(locale: Locale) {
     return (key: string | null | undefined) => {
       if (!key) return '';
       
-      const isSystemId = /^[A-Z0-9_]{5,40}$/i.test(key) || /^(psl|psg|psv|prod|cat|hero|slide|case|step)_/i.test(key);
+      const isSystemId = /^[A-Z0-9_]{5,40}$/i.test(key) || /^(psl|psg|psv|prod|cat|hero|slide|case|step|bento)_/i.test(key);
 
       // 1. Try remote Database translation (Case-insensitive match)
       const normalizedKey = key.trim().toLowerCase();
@@ -54,7 +54,7 @@ export function useTranslations(locale: Locale) {
       } else if (isLoading) {
         finalResult = '';
       } else {
-        const isSystemId = /^[A-Z0-9_]{5,40}$/i.test(key) || /^(psl|psg|psv|prod|cat|hero|slide|case|step)_/i.test(key);
+        const isSystemId = /^[A-Z0-9_]{5,40}$/i.test(key) || /^(psl|psg|psv|prod|cat|hero|slide|case|step|bento)_/i.test(key);
         if (isSystemId) {
           finalResult = '';
           // Discovered unregistered system ID entry, client-side auto-registration disabled for security

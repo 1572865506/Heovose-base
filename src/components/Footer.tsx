@@ -1,13 +1,13 @@
 "use client";
 
 import Image from 'next/image';
-import { Locale } from "@/lib/translations";
+import { Locale, getLocalizedLink } from "@/lib/translations";
 import { Linkedin, Twitter, Facebook, Instagram, Youtube, Mail, Phone, MapPin, Link as LinkIcon, ArrowRight, MessagesSquare, MessageCircle, Globe } from "lucide-react";
 import { useTranslations } from '@/hooks/use-translations';
 import { useInquiry } from '@/components/providers/InquiryProvider';
 import { useLocalDoc } from '@/hooks/use-local-doc';
 import { useLocalCollection } from '@/hooks/use-local-collection';
-import { useMemo, useEffect } from 'react';
+import { useMemo, useEffect, useState } from 'react';
 import { getAssetUrl } from '@/lib/image-utils';
 import { injectTranslations } from '@/lib/translation-injector';
 
@@ -20,6 +20,11 @@ interface SiteConfig {
 }
 
 export function Footer({ locale }: { locale: Locale }) {
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
   const { t: tr } = useTranslations(locale);
   const { openInquiry } = useInquiry();
   const { data: siteConfig } = useLocalDoc<SiteConfig>('settings', 'site');
@@ -136,10 +141,10 @@ export function Footer({ locale }: { locale: Locale }) {
               <div className="space-y-4">
                 <span className="text-[10px] font-bold text-accent uppercase tracking-widest opacity-80">{tr('nav_wholesale')}</span>
                 <ul className="space-y-4 text-[13px]">
-                  {dynamicWholesale.length > 0 ? (
+                  {mounted && dynamicWholesale.length > 0 ? (
                     dynamicWholesale.map(cat => (
-                      <li key={cat.id} className="opacity-60 hover:opacity-100 hover:text-accent cursor-pointer transition-colors">
-                        <a href={`/products?category=${encodeURIComponent(cat.slug || cat.id)}`}>{tr(cat.nameTextId)}</a>
+                       <li key={cat.id} className="opacity-60 hover:opacity-100 hover:text-accent cursor-pointer transition-colors">
+                        <a href={getLocalizedLink(`/products?category=${encodeURIComponent(cat.slug || cat.id)}`, locale)}>{tr(cat.nameTextId)}</a>
                       </li>
                     ))
                   ) : (
@@ -150,10 +155,10 @@ export function Footer({ locale }: { locale: Locale }) {
               <div className="space-y-4">
                 <span className="text-[10px] font-bold text-accent uppercase tracking-widest opacity-80">{tr('nav_projects')}</span>
                 <ul className="space-y-4 text-[13px]">
-                  {dynamicProject.length > 0 ? (
+                  {mounted && dynamicProject.length > 0 ? (
                     dynamicProject.map(cat => (
                       <li key={cat.id} className="opacity-60 hover:opacity-100 hover:text-accent cursor-pointer transition-colors">
-                        <a href={`/products?category=${encodeURIComponent(cat.slug || cat.id)}`}>{tr(cat.nameTextId)}</a>
+                        <a href={getLocalizedLink(`/products?category=${encodeURIComponent(cat.slug || cat.id)}`, locale)}>{tr(cat.nameTextId)}</a>
                       </li>
                     ))
                   ) : (
@@ -168,9 +173,9 @@ export function Footer({ locale }: { locale: Locale }) {
           <div className="lg:col-span-2">
             <h4 className="font-bold mb-10 text-white uppercase tracking-[0.2em] text-[14px] opacity-100">{tr('nav_company')}</h4>
             <ul className="space-y-4 text-[13px] mt-[30px]">
-              <li className="opacity-60 hover:opacity-100 hover:text-accent cursor-pointer transition-colors"><a href="/about">{tr('nav_about')}</a></li>
-              <li className="opacity-60 hover:opacity-100 hover:text-accent cursor-pointer transition-colors"><a href="/service-centers">{tr('NAV_SERVICE_CENTERS')}</a></li>
-              <li className="opacity-60 hover:opacity-100 hover:text-accent cursor-pointer transition-colors"><a href="/#cases">{tr('nav_cases')}</a></li>
+              <li className="opacity-60 hover:opacity-100 hover:text-accent cursor-pointer transition-colors"><a href={getLocalizedLink("/about", locale)}>{tr('nav_about')}</a></li>
+              <li className="opacity-60 hover:opacity-100 hover:text-accent cursor-pointer transition-colors"><a href={getLocalizedLink("/service-centers", locale)}>{tr('NAV_SERVICE_CENTERS')}</a></li>
+              <li className="opacity-60 hover:opacity-100 hover:text-accent cursor-pointer transition-colors"><a href={getLocalizedLink("/#cases", locale)}>{tr('nav_cases')}</a></li>
               <li className="opacity-60 hover:opacity-100 hover:text-accent cursor-pointer transition-colors">{tr('nav_career')}</li>
               <li className="opacity-60 hover:opacity-100 hover:text-accent cursor-pointer transition-colors">{tr('nav_contact')}</li>
             </ul>
@@ -262,7 +267,7 @@ export function Footer({ locale }: { locale: Locale }) {
               {mapData?.mapTitleTextId ? tr(mapData.mapTitleTextId) : "Global Manufacturing Presence In"}
             </h4>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-              {sortedLocs.length > 0 ? (
+              {mounted && sortedLocs.length > 0 ? (
                 sortedLocs.map((loc: any) => {
                   // Determine flag based on address or title keywords
                   const flagCode = loc.countryCode || 'cn';

@@ -88,11 +88,20 @@ export default function CaseStudiesAdminPage() {
       const titleAsset = translations.find((t: any) => t.id === 'CASES_TITLE');
       const subtitleAsset = translations.find((t: any) => t.id === 'CASES_SUBTITLE');
       
+      const getVal = (asset: any, lang: string) => {
+        if (!asset) return undefined;
+        let content = asset.content || {};
+        if (content && typeof content === 'object' && 'content' in content && typeof content.content === 'object' && !Array.isArray(content.content)) {
+          content = content.content;
+        }
+        return content[lang];
+      };
+
       setSectionForm({
-        casesTitleZh: titleAsset?.content?.zh ?? homeContent?.casesTitleZh ?? '',
-        casesTitleEn: titleAsset?.content?.en ?? homeContent?.casesTitleEn ?? '',
-        casesSubtitleZh: subtitleAsset?.content?.zh ?? homeContent?.casesSubtitleZh ?? '',
-        casesSubtitleEn: subtitleAsset?.content?.en ?? homeContent?.casesSubtitleEn ?? ''
+        casesTitleZh: getVal(titleAsset, 'zh') ?? homeContent?.casesTitleZh ?? '',
+        casesTitleEn: getVal(titleAsset, 'en') ?? homeContent?.casesTitleEn ?? '',
+        casesSubtitleZh: getVal(subtitleAsset, 'zh') ?? homeContent?.casesSubtitleZh ?? '',
+        casesSubtitleEn: getVal(subtitleAsset, 'en') ?? homeContent?.casesSubtitleEn ?? ''
       });
     }
   }, [translations, homeContent]);
@@ -292,13 +301,17 @@ export default function CaseStudiesAdminPage() {
     setIsSavingConfig(true);
     try {
       // 1. 同步到主内容配置 (包含 TextId 引用)
-      const res = await fetch('/api/homepageContent/hero', {
+       const res = await fetch('/api/homepageContent/hero', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           // 彻底实现 0 硬编码：主表只存引用 ID，内容交由资产库
           casesTitleTextId: 'CASES_TITLE',
-          casesSubtitleTextId: 'CASES_SUBTITLE'
+          casesSubtitleTextId: 'CASES_SUBTITLE',
+          casesTitleZh: null,
+          casesTitleEn: null,
+          casesSubtitleZh: null,
+          casesSubtitleEn: null
         }),
       });
       
@@ -312,12 +325,12 @@ export default function CaseStudiesAdminPage() {
         fetch(`/api/localizedStrings/${encodeURIComponent('CASES_TITLE')}`, {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ id: 'CASES_TITLE', content: { zh: sectionForm.casesTitleZh, en: sectionForm.casesTitleEn } })
+          body: JSON.stringify({ id: 'CASES_TITLE', content: { zh: sectionForm.casesTitleZh, en: sectionForm.casesTitleEn }, forceGlobalUpdate: true })
         }),
         fetch(`/api/localizedStrings/${encodeURIComponent('CASES_SUBTITLE')}`, {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ id: 'CASES_SUBTITLE', content: { zh: sectionForm.casesSubtitleZh, en: sectionForm.casesSubtitleEn } })
+          body: JSON.stringify({ id: 'CASES_SUBTITLE', content: { zh: sectionForm.casesSubtitleZh, en: sectionForm.casesSubtitleEn }, forceGlobalUpdate: true })
         })
       ]);
 

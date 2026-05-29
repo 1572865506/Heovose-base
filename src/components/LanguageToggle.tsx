@@ -51,12 +51,31 @@ export function LanguageToggle({ currentLocale, setLocale, headerTheme = 'dark',
   }, [langSettings]);
 
   const handleLocaleChange = (code: string) => {
-    // 保存到本地缓存，以便下次访问自动判定
     localStorage.setItem('heovose-locale', code);
-    // 同时设置 Cookie 以便中间件 (Server-side) 识别
     document.cookie = `NEXT_LOCALE=${code}; path=/; max-age=31536000`; // 1 year
     setLocale(code as Locale);
-    window.location.reload();
+
+    // Redirect to the subpath URL
+    if (typeof window !== 'undefined') {
+      const currentPath = window.location.pathname;
+      const locales = availableLanguages.map(l => l.code);
+      const firstSegment = currentPath.split('/')[1];
+      
+      let newPath = currentPath;
+      if (locales.includes(firstSegment)) {
+        // Replace /zh/products with /en/products
+        const parts = currentPath.split('/');
+        parts[1] = code;
+        newPath = parts.join('/');
+      } else {
+        // Prepend locale (should normally not happen due to middleware, but as fallback)
+        newPath = `/${code}${currentPath === '/' ? '' : currentPath}`;
+      }
+      
+      const search = window.location.search;
+      const hash = window.location.hash;
+      window.location.href = `${newPath}${search}${hash}`;
+    }
   };
 
   // 确保当前显示的 locale 也是合规的
@@ -65,6 +84,27 @@ export function LanguageToggle({ currentLocale, setLocale, headerTheme = 'dark',
     if (activeCodes.includes(currentLocale)) return currentLocale;
     return (activeCodes[0] || 'en') as Locale;
   }, [currentLocale, availableLanguages]);
+
+  if (!mounted) {
+    return (
+      <Button 
+        variant="ghost" 
+        size="sm" 
+        className={cn(
+          "!rounded-full h-9 px-5 flex items-center gap-2 transition-all group shrink-0 border outline-none",
+          (isNavbarActive || headerTheme === 'light')
+            ? "bg-muted/30 hover:bg-muted/50 border-border/20 text-slate-800"
+            : "bg-white/10 hover:bg-white/20 border-white/10 text-white"
+        )}
+      >
+        <Loader2 className="h-3.5 w-3.5 animate-spin opacity-40" />
+        <span className="text-[11px] font-bold tracking-widest uppercase min-w-[20px] text-center">
+          {displayLocale === 'zh' ? 'ZH' : displayLocale.toUpperCase()}
+        </span>
+        <ChevronDown className="h-3 w-3 opacity-40 group-hover:opacity-100 transition-opacity" />
+      </Button>
+    );
+  }
 
   return (
     <DropdownMenu modal={false}>
@@ -79,7 +119,7 @@ export function LanguageToggle({ currentLocale, setLocale, headerTheme = 'dark',
               : "bg-white/10 hover:bg-white/20 border-white/10 text-white"
           )}
         >
-          {(!mounted || isLoading) ? (
+          {isLoading ? (
             <Loader2 className="h-3.5 w-3.5 animate-spin opacity-40" />
           ) : (
             <Languages className="h-4 w-4 text-primary/60 group-hover:text-primary transition-colors" />

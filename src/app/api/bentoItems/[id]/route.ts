@@ -65,6 +65,32 @@ export const PUT = withAuth('editor', async (
         brightness: brightness,
       },
     });
+
+    // 更新 LocalizedString 词条
+    await db.localizedString.upsert({
+      where: { id: `bento_item_${item.id}_title` },
+      create: {
+        id: `bento_item_${item.id}_title`,
+        content: { zh: data.titleZh, en: data.titleEn },
+      },
+      update: {
+        content: { zh: data.titleZh, en: data.titleEn },
+      },
+    });
+
+    if (data.tagZh) {
+      await db.localizedString.upsert({
+        where: { id: `bento_item_${item.id}_tag` },
+        create: {
+          id: `bento_item_${item.id}_tag`,
+          content: { zh: data.tagZh, en: data.tagEn },
+        },
+        update: {
+          content: { zh: data.tagZh, en: data.tagEn },
+        },
+      });
+    }
+
     return NextResponse.json(item);
   } catch (error: any) {
     console.error('Failed to update bento item:', error);
@@ -81,6 +107,16 @@ export const DELETE = withAuth('editor', async (
     await db.homepageBentoItem.delete({
       where: { id },
     });
+
+    // 清理翻译词条
+    await db.localizedString.deleteMany({
+      where: {
+        id: {
+          in: [`bento_item_${id}_title`, `bento_item_${id}_tag`]
+        }
+      }
+    });
+
     return NextResponse.json({ success: true });
   } catch (error: any) {
     console.error('Failed to delete bento item:', error);

@@ -96,11 +96,20 @@ export function ProductBento({ locale }: { locale: Locale }) {
 
         const getLocalized = (prefix: string) => {
           const defaultLang = langSettings?.defaultLanguage || 'en';
-          const allLocales: Locale[] = ['en', 'zh', 'id', 'vi'];
+          const activeLangs = langSettings?.supportedLanguages?.map((l: any) => l.code) || 
+            Object.keys(item)
+              .filter(key => key.startsWith(prefix) && key.length > prefix.length)
+              .map(key => key.slice(prefix.length).toLowerCase());
           
           const getVal = (l: string) => {
-            const suffix = l.charAt(0).toUpperCase() + l.slice(1);
-            return item[`${prefix}${suffix}`];
+            const getField = (langCode: string) => {
+              const suffix = langCode.charAt(0).toUpperCase() + langCode.slice(1);
+              return item[`${prefix}${suffix}`];
+            };
+            let val = getField(l);
+            if (!val && l === 'vi') val = getField('vn');
+            if (!val && l === 'vn') val = getField('vi');
+            return val;
           };
 
           const currentVal = getVal(locale);
@@ -109,7 +118,7 @@ export function ProductBento({ locale }: { locale: Locale }) {
           const defaultVal = getVal(defaultLang);
           if (defaultVal) return defaultVal;
           
-          for (const l of allLocales) {
+          for (const l of activeLangs) {
             if (l === locale || l === defaultLang) continue;
             const val = getVal(l);
             if (val) return val;
@@ -119,8 +128,8 @@ export function ProductBento({ locale }: { locale: Locale }) {
 
         return {
           id: item.id,
-          label: getLocalized('title'),
-          category: getLocalized('tag'),
+          label: tr(`bento_item_${item.id}_title`) || getLocalized('title'),
+          category: tr(`bento_item_${item.id}_tag`) || getLocalized('tag'),
           slug: item.linkUrl || '#',
           imageUrl: item.imageUrl || PlaceHolderImages[0].imageUrl,
           brightness: item.brightness,
@@ -166,15 +175,25 @@ export function ProductBento({ locale }: { locale: Locale }) {
     }
 
     const defaultLang = langSettings?.defaultLanguage || 'en';
-    const allLocales: Locale[] = ['en', 'zh', 'id', 'vi'];
+    const configObj = bentoConfig?.data || bentoConfig || {};
+    const activeLangs = langSettings?.supportedLanguages?.map((l: any) => l.code) || 
+      Object.keys(configObj)
+        .filter(key => key.startsWith(prefix) && key.length > prefix.length)
+        .map(key => key.slice(prefix.length).toLowerCase());
 
     const getVal = (l: string) => {
-      const suffix = l.charAt(0).toUpperCase() + l.slice(1);
-      const field = `${prefix}${suffix}`;
-      return bentoConfig?.[field] || (bentoConfig as any)?.data?.[field];
+      const getField = (langCode: string) => {
+        const suffix = langCode.charAt(0).toUpperCase() + langCode.slice(1);
+        const field = `${prefix}${suffix}`;
+        return bentoConfig?.[field] || (bentoConfig as any)?.data?.[field];
+      };
+      let val = getField(l);
+      if (!val && l === 'vi') val = getField('vn');
+      if (!val && l === 'vn') val = getField('vi');
+      return val;
     };
 
-    return getVal(locale) || getVal(defaultLang) || allLocales.map(getVal).find(v => !!v) || (tr as any)(fallbackKey) || '';
+    return getVal(locale) || getVal(defaultLang) || activeLangs.map(getVal).find((v: any) => !!v) || (tr as any)(fallbackKey) || '';
   };
 
   return (

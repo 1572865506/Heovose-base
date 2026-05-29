@@ -66,7 +66,7 @@ export function Hero({ locale, homeConfig, isLoading, onThemeChange }: HeroProps
       subheadlineEn: homeConfig?.heroSubheadlineEn || '',
       bgImage: homeConfig?.heroBgImage || "",
     }];
-  }, [homeConfig, tr]);
+  }, [JSON.stringify(homeConfig)]);
 
   // 2. Carousel Setup
   const [emblaRef, emblaApi] = useEmblaCarousel(
@@ -217,7 +217,7 @@ export function Hero({ locale, homeConfig, isLoading, onThemeChange }: HeroProps
       const currentVideos = videoRefs.current[selectedIndex] || [];
       currentVideos.forEach(v => {
         v.currentTime = 0;
-        v.play().catch(() => {});
+        v.play().catch(() => { });
       });
 
       let detectedDuration = 0;
@@ -304,7 +304,7 @@ export function Hero({ locale, homeConfig, isLoading, onThemeChange }: HeroProps
       }
       return null;
     }
-    
+
     // custom
     if (!slide.linkUrl) return null;
     return resolveLinkUrl(slide.linkUrl);
@@ -471,9 +471,9 @@ export function Hero({ locale, homeConfig, isLoading, onThemeChange }: HeroProps
 
                 {/* Clickable Overlay Link for Slide */}
                 {slideHref && (
-                  <Link 
-                    href={slideHref} 
-                    className="absolute inset-0 z-20 block cursor-pointer" 
+                  <Link
+                    href={slideHref}
+                    className="absolute inset-0 z-20 block cursor-pointer"
                     aria-label={getFallback(slide.headlineZh, slide.headlineEn)}
                   />
                 )}
@@ -581,8 +581,8 @@ export function Hero({ locale, homeConfig, isLoading, onThemeChange }: HeroProps
           {showEntryCards && (
             <div className={cn(
               "absolute bottom-10 md:bottom-[60px] left-1/2 -translate-x-1/2 px-4 md:px-0 w-full md:max-w-[44rem] pointer-events-auto transform translate-z-0 z-50",
-              (hasWholesaleConfig && hasProjectConfig) 
-                ? "grid grid-cols-2 gap-3 md:gap-8" 
+              (hasWholesaleConfig && hasProjectConfig)
+                ? "grid grid-cols-2 gap-3 md:gap-8"
                 : "flex justify-center"
             )}>
               {/* Wholesale Card */}
@@ -590,7 +590,7 @@ export function Hero({ locale, homeConfig, isLoading, onThemeChange }: HeroProps
                 <Link
                   href={wholesaleHref}
                   className={cn(
-                    "group relative h-24 sm:h-32 md:h-[9rem] rounded-[1.25rem] sm:rounded-[2rem] md:rounded-[2.5rem] transition-all duration-700 ease-[cubic-bezier(0.23,1,0.32,1)] cursor-pointer overflow-hidden shadow-2xl border border-white/10 hover:-translate-y-3 hover:scale-[1.02] hover:shadow-primary/30 hover:border-primary/30 gpu-accelerated w-full isolate",
+                    "group relative h-24 sm:h-32 md:h-[9rem] rounded-[1.25rem] sm:rounded-[2rem] md:rounded-[2.5rem] transition-all duration-700 ease-[cubic-bezier(0.23,1,0.32,1)] cursor-pointer overflow-hidden shadow-2xl border border-white/10 hover:-translate-y-1 hover:scale-[1.02] hover:shadow-primary/30 hover:border-primary/30 gpu-accelerated w-full isolate",
                     (!hasProjectConfig) && "sm:max-w-[calc(50%-1rem)]"
                   )}
                   style={{ maskImage: 'radial-gradient(white, white)', WebkitMaskImage: '-webkit-radial-gradient(white, white)' }}
@@ -627,7 +627,7 @@ export function Hero({ locale, homeConfig, isLoading, onThemeChange }: HeroProps
                     </div>
                   </div>
                   {/* Shine Effect on Hover */}
-                  <div className="absolute inset-0 bg-gradient-to-tr from-white/0 via-white/5 to-white/0 translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-1000 ease-in-out pointer-events-none" />
+                  <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent -skew-x-12 -translate-x-full group-hover:translate-x-full transition-transform duration-1000 ease-[cubic-bezier(0.25,1,0.5,1)] pointer-events-none z-10" />
                 </Link>
               )}
 
@@ -673,7 +673,7 @@ export function Hero({ locale, homeConfig, isLoading, onThemeChange }: HeroProps
                     </div>
                   </div>
                   {/* Shine Effect on Hover */}
-                  <div className="absolute inset-0 bg-gradient-to-tr from-white/0 via-white/5 to-white/0 translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-1000 ease-in-out pointer-events-none" />
+                  <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent -skew-x-12 -translate-x-full group-hover:translate-x-full transition-transform duration-1000 ease-[cubic-bezier(0.25,1,0.5,1)] pointer-events-none z-10" />
                 </Link>
               )}
             </div>

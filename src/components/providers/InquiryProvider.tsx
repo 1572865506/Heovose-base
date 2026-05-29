@@ -2,6 +2,7 @@
 
 import React, { createContext, useContext, useState, useEffect, ReactNode, Suspense } from 'react';
 import nextDynamic from 'next/dynamic';
+import { useParams } from 'next/navigation';
 import { Locale } from '@/lib/translations';
 
 const InquiryDialog = nextDynamic(
@@ -47,8 +48,8 @@ export function InquiryProvider({ children, locale: propLocale }: InquiryProvide
   const [isOpen, setIsOpen] = useState(false);
   const [inquiryOptions, setInquiryOptions] = useState<{ productId?: string; productName?: string }>({});
   
-  // Use prop locale if provided, otherwise fallback to 'en' (it will be updated by page logic anyway)
-  const locale = propLocale || 'en';
+  const params = useParams();
+  const locale = (params?.locale as Locale) || propLocale || 'en';
 
   const [showAnalytics, setShowAnalytics] = useState(false);
 

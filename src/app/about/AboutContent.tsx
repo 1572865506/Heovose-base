@@ -34,7 +34,7 @@ export default function AboutContent({ initialLocale }: AboutContentProps) {
 
   useEffect(() => {
     const detectLocale = () => {
-      const activeLangs = langSettings?.supportedLanguages?.map((l: any) => l.code) || ['en', 'zh', 'id', 'vi'];
+      const activeLangs = langSettings?.supportedLanguages?.map((l: any) => l.code) || ['en', 'zh', 'id', 'vi', 'vn'];
       const defaultLang = (langSettings?.defaultLanguage as Locale) || 'en';
       const langParam = searchParams.get('lang');
       if (langParam && activeLangs.includes(langParam)) return langParam as Locale;

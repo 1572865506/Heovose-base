@@ -5,7 +5,7 @@ import type { NextRequest } from 'next/server';
 
 const { auth } = NextAuth(authConfig);
 
-const locales = ['en', 'zh', 'id', 'vi'];
+const locales = ['en', 'zh', 'id', 'vi', 'vn'];
 
 // In-memory rate limiting cache
 interface RateLimitTracker {
@@ -197,23 +197,40 @@ export default auth(async (request) => {
     return NextResponse.next();
   }
 
-  // 2. Language resolution
-  const urlLocale = nextUrl.searchParams.get('lang');
-  if (!urlLocale) {
+  // 2. Language resolution and subpath routing
+  const segments = pathname.split('/');
+  const firstSegment = segments[1] || '';
+  const isLocaleFormat = (val: string) => /^[a-z]{2,3}(?:-[a-zA-Z]{2,4})?$/.test(val);
+  const pathnameHasLocale = isLocaleFormat(firstSegment);
+
+  const isExcluded = pathname.startsWith('/admin') || 
+                     pathname.startsWith('/api') || 
+                     pathname.startsWith('/auth') || 
+                     pathname.startsWith('/storage') ||
+                     pathname.includes('.');
+
+  if (!pathnameHasLocale && !isExcluded) {
+    const queryLang = nextUrl.searchParams.get('lang');
     const cookieLocale = request.cookies.get('NEXT_LOCALE')?.value;
     const acceptLang = request.headers.get('accept-language')?.split(',')[0].split('-')[0].toLowerCase();
-    const locales = ['en', 'zh', 'id', 'vi'];
     
     let resolved = 'en';
-    if (cookieLocale && locales.includes(cookieLocale)) {
+    if (queryLang && isLocaleFormat(queryLang)) {
+      resolved = queryLang;
+    } else if (cookieLocale && isLocaleFormat(cookieLocale)) {
       resolved = cookieLocale;
-    } else if (acceptLang && locales.includes(acceptLang)) {
+    } else if (acceptLang && isLocaleFormat(acceptLang)) {
       resolved = acceptLang;
     }
 
+    // Redirect to the subpath (e.g. /zh/products or /en)
     const url = nextUrl.clone();
-    url.searchParams.set('lang', resolved);
-    return NextResponse.rewrite(url);
+    url.pathname = `/${resolved}${pathname === '/' ? '' : pathname}`;
+    // Clean up query param if it was explicitly passed
+    if (url.searchParams.has('lang')) {
+      url.searchParams.delete('lang');
+    }
+    return NextResponse.redirect(url, 307);
   }
 
   return NextResponse.next();

@@ -1,33 +1,7 @@
 import { NextResponse } from 'next/server';
 import db from '@/lib/db';
 import { withAuth } from '@/lib/auth-utils';
-import { cleanupOrphanedStrings } from '@/lib/db-gc';
 import { caseStudySchema } from '@/lib/validations';
-
-function extractIdsFromCaseStudy(cs: any): string[] {
-  const ids: string[] = [];
-  if (!cs) return ids;
-  if (cs.titleTextId) ids.push(cs.titleTextId);
-  if (cs.tagTextId) ids.push(cs.tagTextId);
-  if (cs.descriptionTextId) ids.push(cs.descriptionTextId);
-  return ids;
-}
-
-export async function GET(
-  request: Request,
-  { params }: { params: Promise<{ id: string }> }
-) {
-  try {
-    const { id } = await params;
-    const item = await db.caseStudy.findUnique({
-      where: { id },
-    });
-    if (!item) return NextResponse.json({ error: 'Not Found' }, { status: 404 });
-    return NextResponse.json(item);
-  } catch (error) {
-    return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
-  }
-}
 
 export const PUT = withAuth('editor', async (
   request: Request,
@@ -35,63 +9,65 @@ export const PUT = withAuth('editor', async (
 ) => {
   try {
     const { id } = await params;
-    const data = await request.json();
-    
-    // Zod validation
-    const validation = caseStudySchema.safeParse(data);
+    const body = await request.json();
+
+    const validation = caseStudySchema.safeParse(body);
     if (!validation.success) {
       return NextResponse.json({ error: validation.error.errors[0].message }, { status: 400 });
     }
-    const updateData = validation.data;
 
-    console.log('[API] Updating case study:', id, 'data:', JSON.stringify(updateData));
-    
-    // 获取更新前关联的词条 IDs
-    const existing = await db.caseStudy.findUnique({ where: { id } });
-    const oldIds = existing ? extractIdsFromCaseStudy(existing) : [];
+    const data = validation.data;
+    let brightness = data.brightness;
 
-    let item;
-    try {
-      item = await db.caseStudy.upsert({
-        where: { id },
-        update: updateData,
-        create: { ...updateData, id },
-      });
-    } catch (upsertError: any) {
-      if (upsertError.message.includes('Unknown argument')) {
-        console.warn('[API] Stale client. Falling back to raw SQL for CaseStudy Text IDs...');
-        
-        // 分离新字段
-        const { tagTextId, titleTextId, descriptionTextId, published, ...safeData } = updateData;
-        console.log('[API Fallback] published:', published);
-        
-        // 1. 原始 SQL 更新，使用 Prisma 安全的参数化 $executeRaw 模板字面量
-        await db.$executeRaw`UPDATE "CaseStudy" SET "tagTextId" = ${tagTextId || null}, "titleTextId" = ${titleTextId || null}, "descriptionTextId" = ${descriptionTextId || null}, "published" = ${published === undefined ? true : published} WHERE id = ${id}`;
-
-        // 2. 安全 upsert
-        item = await db.caseStudy.upsert({
-          where: { id },
-          update: safeData,
-          create: { ...safeData, id },
-        });
-      } else {
-        throw upsertError;
+    // Auto calculate image brightness if needed
+    if (brightness === undefined || brightness === null) {
+      try {
+        const { calculateImageBrightness } = await import('@/lib/server/image-analysis');
+        brightness = await calculateImageBrightness(data.imageUrl);
+      } catch (err) {
+        console.error('Failed to auto-calculate case study brightness:', err);
       }
     }
 
-    // 自动物理垃圾回收释放的词条
-    const newIds = extractIdsFromCaseStudy(item);
-    const releasedIds = oldIds.filter(oid => oid && !newIds.includes(oid));
-    if (releasedIds.length > 0) {
-      await cleanupOrphanedStrings(releasedIds);
-    }
+    const item = await db.caseStudy.upsert({
+      where: { id },
+      update: {
+        tagZh: data.tagZh,
+        tagEn: data.tagEn,
+        titleZh: data.titleZh,
+        titleEn: data.titleEn,
+        descZh: data.descZh,
+        descEn: data.descEn,
+        imageUrl: data.imageUrl,
+        order: data.order,
+        published: data.published,
+        descriptionTextId: data.descriptionTextId,
+        tagTextId: data.tagTextId,
+        titleTextId: data.titleTextId,
+        brightness: brightness,
+      },
+      create: {
+        id,
+        tagZh: data.tagZh,
+        tagEn: data.tagEn,
+        titleZh: data.titleZh,
+        titleEn: data.titleEn,
+        descZh: data.descZh,
+        descEn: data.descEn,
+        imageUrl: data.imageUrl,
+        order: data.order,
+        published: data.published,
+        descriptionTextId: data.descriptionTextId,
+        tagTextId: data.tagTextId,
+        titleTextId: data.titleTextId,
+        brightness: brightness,
+      },
+    });
 
     return NextResponse.json(item);
   } catch (error: any) {
     console.error('Failed to update case study:', error);
-    return NextResponse.json({ 
-      error: 'Internal Server Error'
-    }, { status: 500 });
+    return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
   }
 });
 
@@ -101,22 +77,28 @@ export const DELETE = withAuth('editor', async (
 ) => {
   try {
     const { id } = await params;
-
-    // 获取待删除的翻译 IDs
-    const existing = await db.caseStudy.findUnique({ where: { id } });
-    const oldIds = existing ? extractIdsFromCaseStudy(existing) : [];
+    
+    // First find the case study to clean up localized strings
+    const item = await db.caseStudy.findUnique({
+      where: { id }
+    });
 
     await db.caseStudy.delete({
       where: { id },
     });
 
-    // 自动物理垃圾回收被释放的词条
-    if (oldIds.length > 0) {
-      await cleanupOrphanedStrings(oldIds);
+    // Clean up associated translation assets in localizedStrings table
+    if (item) {
+      const idsToDelete = [item.titleTextId, item.descriptionTextId, item.tagTextId].filter(Boolean) as string[];
+      if (idsToDelete.length > 0) {
+        await db.localizedString.deleteMany({
+          where: { id: { in: idsToDelete } }
+        });
+      }
     }
 
     return NextResponse.json({ success: true });
-  } catch (error) {
+  } catch (error: any) {
     console.error('Failed to delete case study:', error);
     return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
   }

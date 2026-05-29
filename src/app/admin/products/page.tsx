@@ -174,9 +174,17 @@ export default function AdminProductsPage() {
       const res = await fetch(`/api/products/${p.id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ status: newStatus }),
+        body: JSON.stringify({ 
+          status: newStatus,
+          id: p.id,
+          categoryId: p.categoryId,
+          updatedAt: (p as any).updatedAt ? new Date((p as any).updatedAt).toISOString() : new Date().toISOString()
+        }),
       });
-      if (!res.ok) throw new Error("状态更新失败");
+      if (!res.ok) {
+        const errorData = await res.json();
+        throw new Error(errorData.message || errorData.error || "状态更新失败");
+      }
       mutateProducts();
       toast({ title: newStatus === 'published' ? "产品已发布" : "产品已下架" });
     } catch (e: any) {
@@ -193,9 +201,17 @@ export default function AdminProductsPage() {
       const res = await fetch(`/api/products/${p.id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ enabledLanguages: newList }),
+        body: JSON.stringify({ 
+          enabledLanguages: newList,
+          id: p.id,
+          categoryId: p.categoryId,
+          updatedAt: (p as any).updatedAt ? new Date((p as any).updatedAt).toISOString() : new Date().toISOString()
+        }),
       });
-      if (!res.ok) throw new Error("语言设置更新失败");
+      if (!res.ok) {
+        const errorData = await res.json();
+        throw new Error(errorData.message || errorData.error || "语言设置更新失败");
+      }
       mutateProducts();
     } catch (e: any) {
       toast({ variant: "destructive", title: "设置失败", description: e.message });

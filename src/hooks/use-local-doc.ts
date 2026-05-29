@@ -5,9 +5,14 @@ const pendingRequests = new Map<string, Promise<any>>();
 const globalCache = new Map<string, { data: any, timestamp: number }>();
 const CACHE_TTL = 300000; // 5 minutes cache for stability
 
-export function useLocalDoc<T = any>(path: string | null, id: string | null = '', options?: { enabled?: boolean }) {
+export function useLocalDoc<T = any>(path: string | null, id: string | null = '', options?: { enabled?: boolean; initialData?: T }) {
   const enabled = options?.enabled !== false;
   const cacheKey = path ? `${path}/${id || ''}` : null;
+  
+  if (cacheKey && options?.initialData !== undefined && !globalCache.has(cacheKey)) {
+    globalCache.set(cacheKey, { data: options.initialData, timestamp: Date.now() });
+  }
+  
   const cached = cacheKey ? globalCache.get(cacheKey) : null;
   
   const [data, setData] = useState<T | null>(cached?.data || null);
