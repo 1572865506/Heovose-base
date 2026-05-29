@@ -84,6 +84,74 @@ export function Hero({ locale, homeConfig, isLoading, onThemeChange }: HeroProps
   const [selectedIndex, setSelectedIndex] = useState(0);
   const [currentTheme, setCurrentTheme] = useState<'light' | 'dark'>('dark');
 
+  // Video autoplay controls
+  const [activeDuration, setActiveDuration] = useState(6000);
+  const transitionTimeoutRef = React.useRef<NodeJS.Timeout | null>(null);
+  const slideStartTimeRef = React.useRef<number>(0);
+  const videoRefs = React.useRef<Record<number, HTMLVideoElement[]>>({});
+
+  const registerVideoRef = useCallback((index: number) => (el: HTMLVideoElement | null) => {
+    if (el) {
+      if (!videoRefs.current[index]) {
+        videoRefs.current[index] = [];
+      }
+      if (!videoRefs.current[index].includes(el)) {
+        videoRefs.current[index].push(el);
+      }
+    }
+  }, []);
+
+  const updateTransitionTimer = useCallback((durationMs: number) => {
+    if (transitionTimeoutRef.current) {
+      clearTimeout(transitionTimeoutRef.current);
+    }
+    setActiveDuration(durationMs);
+    // 5-second safety buffer in case of extreme loading issues
+    transitionTimeoutRef.current = setTimeout(() => {
+      if (emblaApi) {
+        emblaApi.scrollNext();
+      }
+    }, durationMs + 5000);
+  }, [emblaApi]);
+
+  const handleVideoMetadata = useCallback((index: number) => {
+    if (index !== selectedIndex) return;
+    const currentVideos = videoRefs.current[selectedIndex] || [];
+    let detectedDuration = 0;
+    for (const v of currentVideos) {
+      if (v.duration && !isNaN(v.duration) && v.duration > 0) {
+        detectedDuration = Math.max(detectedDuration, v.duration);
+      }
+    }
+    if (detectedDuration > 0) {
+      const durationMs = Math.max(detectedDuration * 1000, 6000);
+      updateTransitionTimer(durationMs);
+    }
+  }, [selectedIndex, updateTransitionTimer]);
+
+  const handleVideoEnded = useCallback((index: number) => {
+    if (index !== selectedIndex) return;
+    const elapsed = Date.now() - slideStartTimeRef.current;
+    if (elapsed >= 6000) {
+      if (transitionTimeoutRef.current) {
+        clearTimeout(transitionTimeoutRef.current);
+      }
+      if (emblaApi) {
+        emblaApi.scrollNext();
+      }
+    } else {
+      const remaining = 6000 - elapsed;
+      if (transitionTimeoutRef.current) {
+        clearTimeout(transitionTimeoutRef.current);
+      }
+      transitionTimeoutRef.current = setTimeout(() => {
+        if (emblaApi) {
+          emblaApi.scrollNext();
+        }
+      }, remaining);
+    }
+  }, [selectedIndex, emblaApi]);
+
   // Analyze brightness of the current slide
   useEffect(() => {
     if (slides.length > 0) {
@@ -122,6 +190,59 @@ export function Hero({ locale, homeConfig, isLoading, onThemeChange }: HeroProps
     emblaApi.on('select', onSelect);
     emblaApi.on('reInit', onSelect);
   }, [emblaApi, onSelect]);
+
+  useEffect(() => {
+    if (!emblaApi) return;
+    const autoplay = emblaApi.plugins().autoplay;
+    const currentSlide = slides[selectedIndex];
+    if (!currentSlide) return;
+
+    const isVideo = isVideoUrl(currentSlide.bgImage) || isVideoUrl(currentSlide.mobileBgImage);
+
+    // Pause all other videos
+    Object.entries(videoRefs.current).forEach(([idx, vList]) => {
+      if (Number(idx) !== selectedIndex) {
+        vList.forEach(v => {
+          v.pause();
+          v.currentTime = 0;
+        });
+      }
+    });
+
+    slideStartTimeRef.current = Date.now();
+
+    if (isVideo) {
+      autoplay?.stop();
+
+      const currentVideos = videoRefs.current[selectedIndex] || [];
+      currentVideos.forEach(v => {
+        v.currentTime = 0;
+        v.play().catch(() => {});
+      });
+
+      let detectedDuration = 0;
+      for (const v of currentVideos) {
+        if (v.duration && !isNaN(v.duration) && v.duration > 0) {
+          detectedDuration = Math.max(detectedDuration, v.duration);
+        }
+      }
+
+      const durationMs = detectedDuration > 0 ? Math.max(detectedDuration * 1000, 6000) : 6000;
+      updateTransitionTimer(durationMs);
+    } else {
+      if (transitionTimeoutRef.current) {
+        clearTimeout(transitionTimeoutRef.current);
+      }
+      setActiveDuration(6000);
+      autoplay?.play();
+    }
+
+    return () => {
+      if (transitionTimeoutRef.current) {
+        clearTimeout(transitionTimeoutRef.current);
+      }
+    };
+  }, [selectedIndex, slides, emblaApi, updateTransitionTimer]);
 
   const scrollPrev = useCallback(() => emblaApi && emblaApi.scrollPrev(), [emblaApi]);
   const scrollNext = useCallback(() => emblaApi && emblaApi.scrollNext(), [emblaApi]);
@@ -271,9 +392,12 @@ export function Hero({ locale, homeConfig, isLoading, onThemeChange }: HeroProps
                       <div className="hidden md:block absolute inset-0">
                         {isVideoUrl(slide.bgImage) ? (
                           <video
+                            ref={registerVideoRef(index)}
+                            onLoadedMetadata={() => handleVideoMetadata(index)}
+                            onEnded={() => handleVideoEnded(index)}
                             src={getAssetUrl(slide.bgImage)}
                             autoPlay
-                            loop
+                            loop={false}
                             muted
                             playsInline
                             className="object-cover w-full h-full"
@@ -294,9 +418,12 @@ export function Hero({ locale, homeConfig, isLoading, onThemeChange }: HeroProps
                       <div className="block md:hidden absolute inset-0">
                         {isVideoUrl(slide.mobileBgImage) ? (
                           <video
+                            ref={registerVideoRef(index)}
+                            onLoadedMetadata={() => handleVideoMetadata(index)}
+                            onEnded={() => handleVideoEnded(index)}
                             src={getAssetUrl(slide.mobileBgImage)}
                             autoPlay
-                            loop
+                            loop={false}
                             muted
                             playsInline
                             className="object-cover w-full h-full"
@@ -318,9 +445,12 @@ export function Hero({ locale, homeConfig, isLoading, onThemeChange }: HeroProps
                     // Default PC Poster
                     isVideoUrl(slide.bgImage) ? (
                       <video
+                        ref={registerVideoRef(index)}
+                        onLoadedMetadata={() => handleVideoMetadata(index)}
+                        onEnded={() => handleVideoEnded(index)}
                         src={getAssetUrl(slide.bgImage)}
                         autoPlay
-                        loop
+                        loop={false}
                         muted
                         playsInline
                         className="object-cover w-full h-full"
@@ -560,10 +690,10 @@ export function Hero({ locale, homeConfig, isLoading, onThemeChange }: HeroProps
                 >
                   {selectedIndex === index && (
                     <div
-                      key={`progress-${index}`}
+                      key={`progress-${index}-${activeDuration}`}
                       className="absolute inset-y-0 left-0 right-0 bg-white rounded-full origin-left"
                       style={{
-                        animation: 'hero-progress-gpu 6000ms linear forwards'
+                        animation: `hero-progress-gpu ${activeDuration}ms linear forwards`
                       }}
                     />
                   )}

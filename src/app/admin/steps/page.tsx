@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo, useEffect, useRef } from 'react';
 import { useLocalDoc } from '@/hooks/use-local-doc';
 import { useLocalCollection } from '@/hooks/use-local-collection';
 import { Button } from '@/components/ui/button';
@@ -74,9 +74,11 @@ export default function ProductionStepsAdminPage() {
     processSubtitleEn: ''
   });
 
-  // 同步初始化板块标题 (资产库优先 + Nullish Coalescing)
-  useMemo(() => {
-    if (translations) {
+  const hasInitializedRef = useRef(false);
+
+  // 同步初始化板块标题 (只在加载完成时初始化一次，避免被 SWR 背景刷新覆盖)
+  useEffect(() => {
+    if (translations && !hasInitializedRef.current) {
       const titleAsset = translations.find((t: any) => t.id === 'PROCESS_TITLE');
       const subtitleAsset = translations.find((t: any) => t.id === 'PROCESS_SUBTITLE');
 
@@ -86,6 +88,7 @@ export default function ProductionStepsAdminPage() {
         processSubtitleZh: subtitleAsset?.content?.zh ?? homeContent?.processSubtitleZh ?? '',
         processSubtitleEn: subtitleAsset?.content?.en ?? homeContent?.processSubtitleEn ?? ''
       });
+      hasInitializedRef.current = true;
     }
   }, [translations, homeContent]);
 
@@ -144,12 +147,12 @@ export default function ProductionStepsAdminPage() {
         fetch(`/api/localizedStrings/${encodeURIComponent(titleTextId)}`, {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ id: titleTextId, content: { zh: form.titleZh, en: form.titleEn } })
+          body: JSON.stringify({ id: titleTextId, forceGlobalUpdate: true, content: { zh: form.titleZh, en: form.titleEn } })
         }),
         fetch(`/api/localizedStrings/${encodeURIComponent(descTextId)}`, {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ id: descTextId, content: { zh: form.descZh, en: form.descEn } })
+          body: JSON.stringify({ id: descTextId, forceGlobalUpdate: true, content: { zh: form.descZh, en: form.descEn } })
         })
       ]);
 
@@ -275,12 +278,12 @@ export default function ProductionStepsAdminPage() {
         fetch(`/api/localizedStrings/${encodeURIComponent('PROCESS_TITLE')}`, {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ id: 'PROCESS_TITLE', content: { zh: sectionForm.processTitleZh, en: sectionForm.processTitleEn } })
+          body: JSON.stringify({ id: 'PROCESS_TITLE', forceGlobalUpdate: true, content: { zh: sectionForm.processTitleZh, en: sectionForm.processTitleEn } })
         }),
         fetch(`/api/localizedStrings/${encodeURIComponent('PROCESS_SUBTITLE')}`, {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ id: 'PROCESS_SUBTITLE', content: { zh: sectionForm.processSubtitleZh, en: sectionForm.processSubtitleEn } })
+          body: JSON.stringify({ id: 'PROCESS_SUBTITLE', forceGlobalUpdate: true, content: { zh: sectionForm.processSubtitleZh, en: sectionForm.processSubtitleEn } })
         })
       ]);
 

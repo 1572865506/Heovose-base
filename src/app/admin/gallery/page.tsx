@@ -285,7 +285,7 @@ export default function GalleryPage() {
   useEffect(() => {
     setSelectedIds(new Set());
     setCurrentPage(1); // 筛选条件改变时重置页码
-  }, [filterCategory, searchQuery]);
+  }, [filterCategory, searchQuery, filterType]);
 
   const { data: categories, mutate: mutateCats } = useLocalCollection<GalleryCategory>('galleryCategories');
   const { data: assets, isLoading, mutate: mutateAssets } = useLocalCollection<GalleryAsset>('galleryAssets');
@@ -832,12 +832,12 @@ export default function GalleryPage() {
       </div>
 
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 relative z-10">
-      <AdminPageHeader
-        title="资源管理中心"
-        subtitle="Management / Digital Assets / Resources"
-        icon={FolderOpen}
-      />
-      <div className="flex gap-3">
+        <AdminPageHeader
+          title="资源管理中心"
+          subtitle="Management / Digital Assets / Resources"
+          icon={FolderOpen}
+        />
+        <div className="flex gap-3">
           <Dialog open={isCategoryDialogOpen} onOpenChange={(o) => { setIsCategoryDialogOpen(o); if (!o) resetCatForm(); }}>
             <DialogTrigger asChild>
               <Button variant="outline" className="rounded-2xl h-14 px-8 gap-3 text-xs font-bold uppercase tracking-widest border-border/40 bg-card/40 backdrop-blur-sm hover:bg-card/70 text-foreground/80 hover:text-primary hover:border-primary/20 transition-all shadow-sm">
@@ -1158,6 +1158,34 @@ export default function GalleryPage() {
       </div>
 
       <div className="flex flex-col md:flex-row items-center gap-4 bg-card/40 backdrop-blur-3xl p-5 rounded-[2.5rem] border border-border/10 shadow-2xl relative z-10 shadow-black/5">
+        {/* 资源类型筛选按钮组 */}
+        <div className="flex items-center bg-muted/10 rounded-[1.5rem] p-1.5 gap-1.5 shadow-inner w-full md:w-auto h-14 shrink-0 overflow-x-auto scrollbar-none">
+          {[
+            { id: 'all', label: '全部', icon: Layers },
+            { id: 'image', label: '图片', icon: ImageIcon },
+            { id: 'video', label: '视频', icon: Play },
+            { id: 'document', label: '文档', icon: FileText }
+          ].map((t) => {
+            const Icon = t.icon;
+            return (
+              <Button
+                key={t.id}
+                variant="ghost"
+                onClick={() => setFilterType(t.id as any)}
+                className={cn(
+                  "h-11 rounded-[1.1rem] px-5 text-[11px] font-black uppercase tracking-wider transition-all duration-300 gap-2 flex items-center",
+                  filterType === t.id
+                    ? "bg-white admin-interface-dark:bg-slate-800 text-primary shadow-md scale-100"
+                    : "text-muted-foreground/60 hover:text-foreground hover:bg-white/5"
+                )}
+              >
+                <Icon className={cn("h-3.5 w-3.5", filterType === t.id ? "text-primary" : "text-muted-foreground/45")} />
+                {t.label}
+              </Button>
+            );
+          })}
+        </div>
+
         <div className="relative flex-1 w-full group">
           <Search className="absolute left-6 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground/20 group-focus-within:text-primary transition-all duration-500" />
           <Input
@@ -1167,6 +1195,7 @@ export default function GalleryPage() {
             onChange={e => setSearchQuery(e.target.value)}
           />
         </div>
+
         <div className="flex items-center gap-4 px-6 bg-muted/10 rounded-[1.5rem] border border-transparent focus-within:border-primary/20 transition-all w-full md:w-80 h-14 shadow-inner">
           <Layers className="h-5 w-5 text-primary/40 shrink-0" />
           <DropdownMenu>

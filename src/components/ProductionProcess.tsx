@@ -5,7 +5,7 @@ import { useState, useEffect, useRef, useMemo } from 'react';
 import Image from 'next/image';
 import { Locale } from "@/lib/translations";
 import { cn } from "@/lib/utils";
-import { Play, Pause, Loader2, X, Globe } from "lucide-react";
+import { Play, Pause, Loader2, X, Globe, ChevronRight, ChevronLeft } from "lucide-react";
 import { getAssetUrl } from '@/lib/image-utils';
 import { useLocalDoc } from '@/hooks/use-local-doc';
 import { useLocalCollection } from '@/hooks/use-local-collection';
@@ -41,10 +41,15 @@ interface StepData {
 import { SectionHeading } from "./SectionHeading";
 
 export function ProductionProcess({ locale }: { locale: Locale }) {
-  const [selectedImage, setSelectedImage] = useState<string | null>(null);
+  const [activeStepIndex, setActiveStepIndex] = useState<number | null>(null);
+  const [activeImageIndex, setActiveImageIndex] = useState<number>(0);
   const [isHovered, setIsHovered] = useState(false);
-  const trackRef = useRef<HTMLDivElement>(null);
-  const offsetRef = useRef(0);
+
+  // 双跑马灯轨道 refs 与 offsets
+  const trackRefImages = useRef<HTMLDivElement>(null);
+  const trackRefTexts = useRef<HTMLDivElement>(null);
+  const offsetImagesRef = useRef(0);
+  const offsetTextsRef = useRef(0);
   const speedRef = useRef(1.2);
 
   // 获取步骤数据与首页配置
@@ -71,6 +76,25 @@ export function ProductionProcess({ locale }: { locale: Locale }) {
     return [];
   }, [remoteSteps, locale, t]);
 
+  // 提取全部图片并建立所属步骤映射（并进行 URL 去重）
+  const uniqueImages = useMemo(() => {
+    const list: { url: string; stepIndex: number; imageIndex: number }[] = [];
+    const seen = new Set<string>();
+    steps.forEach((step, sIdx) => {
+      step.images.forEach((img, imgIdx) => {
+        if (img && !seen.has(img)) {
+          seen.add(img);
+          list.push({
+            url: img,
+            stepIndex: sIdx,
+            imageIndex: imgIdx
+          });
+        }
+      });
+    });
+    return list;
+  }, [steps]);
+
   const displayTitle = useMemo(() => {
     const translated = t('PROCESS_TITLE');
     return translated || (locale === 'zh' ? homeContent?.processTitleZh : homeContent?.processTitleEn) || "";
@@ -81,32 +105,80 @@ export function ProductionProcess({ locale }: { locale: Locale }) {
     return translated || (locale === 'zh' ? homeContent?.processSubtitleZh : homeContent?.processSubtitleEn) || "";
   }, [homeContent, locale, t]);
 
-  // 利用 requestAnimationFrame 实现阻尼渐变减速滚动效果（对齐证书墙做法）
+  // 使用 Ref 同步 hover 状态，避免 hover 时反复销毁重建动画 loop 导致微卡顿
+  const isHoveredRef = useRef(isHovered);
   useEffect(() => {
-    if (steps.length === 0) return;
-    const targetSpeed = isHovered ? 0.25 : 1.2;
+    isHoveredRef.current = isHovered;
+  }, [isHovered]);
+
+  // 缓存滚动轨道的宽度，避免在 animate() 中每帧调用 .scrollWidth 触发 forced reflow (Layout Thrashing)
+  const scrollWidthImagesRef = useRef(0);
+  const scrollWidthTextsRef = useRef(0);
+
+  useEffect(() => {
+    if (isLoading || steps.length === 0) return;
+
+    const measureWidths = () => {
+      if (trackRefImages.current) {
+        scrollWidthImagesRef.current = trackRefImages.current.scrollWidth / 3;
+      }
+      if (trackRefTexts.current) {
+        scrollWidthTextsRef.current = trackRefTexts.current.scrollWidth / 3;
+      }
+    };
+
+    // 延迟测量，确保布局和图片完全渲染
+    const timer = setTimeout(measureWidths, 500);
+
+    // 监听窗口大小变化重新测量
+    window.addEventListener('resize', measureWidths);
+
+    return () => {
+      clearTimeout(timer);
+      window.removeEventListener('resize', measureWidths);
+    };
+  }, [isLoading, steps.length, uniqueImages.length]);
+
+  // 双跑马灯视差滚动逻辑
+  useEffect(() => {
+    if (isLoading || steps.length === 0) return;
     let frameId: number;
 
     const animate = () => {
-      // 阻尼缓动过渡当前速度
+      const targetSpeed = isHoveredRef.current ? 0.25 : 1.2;
       speedRef.current += (targetSpeed - speedRef.current) * 0.08;
-      offsetRef.current -= speedRef.current;
 
-      if (trackRef.current) {
-        // 卡片三倍排布保证无缝
-        const trackWidth = trackRef.current.scrollWidth / 3;
-        if (trackWidth > 0 && Math.abs(offsetRef.current) >= trackWidth) {
-          offsetRef.current = 0;
+      // 图片跑马灯滚动（稍快，1.35x，使用 translate3d 开启 GPU 硬件加速）
+      if (trackRefImages.current && scrollWidthImagesRef.current > 0) {
+        offsetImagesRef.current -= speedRef.current * 1.35;
+        if (Math.abs(offsetImagesRef.current) >= scrollWidthImagesRef.current) {
+          offsetImagesRef.current = 0;
         }
-        trackRef.current.style.transform = `translateX(${offsetRef.current}px)`;
+        trackRefImages.current.style.transform = `translate3d(${offsetImagesRef.current}px, 0, 0)`;
+      }
+
+      // 文本跑马灯滚动（标准，0.95x，使用 translate3d 开启 GPU 硬件加速）
+      if (trackRefTexts.current && scrollWidthTextsRef.current > 0) {
+        offsetTextsRef.current -= speedRef.current * 0.95;
+        if (Math.abs(offsetTextsRef.current) >= scrollWidthTextsRef.current) {
+          offsetTextsRef.current = 0;
+        }
+        trackRefTexts.current.style.transform = `translate3d(${offsetTextsRef.current}px, 0, 0)`;
       }
 
       frameId = requestAnimationFrame(animate);
     };
 
-    frameId = requestAnimationFrame(animate);
-    return () => cancelAnimationFrame(frameId);
-  }, [isHovered, steps]);
+    // 延时 100ms 启动，确保 DOM 节点尺寸计算稳定
+    const startTimeout = setTimeout(() => {
+      frameId = requestAnimationFrame(animate);
+    }, 100);
+
+    return () => {
+      clearTimeout(startTimeout);
+      cancelAnimationFrame(frameId);
+    };
+  }, [isLoading, steps.length]);
 
   const renderLoading = () => (
     <div className="container mx-auto px-6">
@@ -125,70 +197,100 @@ export function ProductionProcess({ locale }: { locale: Locale }) {
     </div>
   );
 
-  // 渲染跑马灯小卡片列表（复制多组以确保无缝无限循环）
   const renderMarquee = () => {
-    // 复制 3 次以确保在超宽屏下也不会出现断裂
+    const duplicatedImages = [...uniqueImages, ...uniqueImages, ...uniqueImages];
     const duplicatedSteps = [...steps, ...steps, ...steps];
 
     return (
-      <div className="relative w-full overflow-hidden py-6">
-        {/* 左侧边缘渐消遮罩 */}
-        <div className="absolute left-0 top-0 bottom-0 w-[8vw] lg:w-[15vw] bg-gradient-to-r from-white via-white/80 to-transparent pointer-events-none z-20" />
-        {/* 右侧边缘渐消遮罩 */}
-        <div className="absolute right-0 top-0 bottom-0 w-[8vw] lg:w-[15vw] bg-gradient-to-l from-white via-white/80 to-transparent pointer-events-none z-20" />
-
-        {/* 跑马灯滚动轨道 */}
-        <div
-          ref={trackRef}
-          onMouseEnter={() => setIsHovered(true)}
-          onMouseLeave={() => setIsHovered(false)}
-          className="flex flex-row gap-6 w-max py-4 will-change-transform"
-        >
-          {duplicatedSteps.map((step: any, index: number) => {
-            const previewImage = step.images[0] || '';
-            return (
-              <div
-                key={`${step.tag}-${index}`}
-                className="w-[280px] sm:w-[320px] bg-white rounded-3xl border border-slate-100/80 shadow-lg shadow-slate-100/50 overflow-hidden flex flex-col group cursor-pointer hover:shadow-xl hover:border-slate-200/50 transition-all duration-500"
-                onClick={() => previewImage && setSelectedImage(previewImage)}
-              >
-                {/* 卡片图片区 */}
-                <div className="h-44 sm:h-48 w-full relative overflow-hidden bg-slate-100">
-                  {previewImage ? (
-                    <Image
-                      src={getAssetUrl(previewImage)}
-                      alt={step.label}
-                      fill
-                      className="object-cover transition-transform duration-700 ease-out group-hover:scale-105"
-                      unoptimized={previewImage.startsWith('data:')}
-                    />
-                  ) : (
-                    <div className="absolute inset-0 flex items-center justify-center text-slate-300 bg-slate-50">
-                      {t('PROCESS_NO_IMAGE')}
-                    </div>
-                  )}
-                  <div className="absolute inset-0 bg-black/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+      <div className="relative w-full overflow-hidden py-10 flex flex-col gap-12 select-none">
+        {/* 第一行：图片流动线 */}
+        {uniqueImages.length > 0 && (
+          <div className="relative w-full overflow-hidden">
+            <div
+              ref={trackRefImages}
+              onMouseEnter={() => setIsHovered(true)}
+              onMouseLeave={() => setIsHovered(false)}
+              className="flex flex-row gap-6 w-max py-6 px-4 will-change-transform"
+            >
+              {duplicatedImages.map((item, index) => (
+                <div
+                  key={`img-${item.url}-${index}`}
+                  className="w-[200px] h-[130px] sm:w-[240px] sm:h-[160px] rounded-[2rem] overflow-hidden border border-slate-100/80 shadow-lg shadow-slate-100/50 hover:shadow-xl hover:border-slate-200/50 transition-all duration-500 relative group cursor-pointer bg-slate-50 shrink-0"
+                  onClick={() => {
+                    setActiveStepIndex(item.stepIndex);
+                    setActiveImageIndex(item.imageIndex);
+                  }}
+                >
+                  <Image
+                    src={getAssetUrl(item.url)}
+                    alt="Production process detail"
+                    fill
+                    className="object-cover transition-transform duration-700 ease-out group-hover:scale-105"
+                    unoptimized={item.url.startsWith('data:')}
+                  />
+                  <div className="absolute inset-0 bg-black/5 group-hover:bg-black/10 transition-colors duration-500" />
                 </div>
+              ))}
+            </div>
+          </div>
+        )}
 
-                {/* 卡片文本区 */}
-                <div className="p-6 flex flex-col justify-between flex-grow space-y-4">
-                  <div className="space-y-2">
-                    <div className="flex items-center justify-between">
-                      <span className="px-3 py-1 rounded-full bg-primary/10 text-primary font-bold text-[10px] uppercase tracking-wider">
-                        {t('PROCESS_STEP')} {step.tag}
+        {/* 第二行：步骤文本引导线 */}
+        <div className="relative w-full overflow-hidden">
+          <div
+            ref={trackRefTexts}
+            onMouseEnter={() => setIsHovered(true)}
+            onMouseLeave={() => setIsHovered(false)}
+            className="flex flex-row gap-6 w-max py-6 px-4 will-change-transform items-center"
+          >
+            {duplicatedSteps.map((step: any, index: number) => {
+              const stepIndex = index % steps.length;
+              const isLastStep = stepIndex === steps.length - 1;
+
+              return (
+                <div key={`txt-${step.tag}-${index}`} className="flex items-center gap-6 shrink-0">
+                  <div
+                    className="w-[250px] sm:w-[290px] bg-white rounded-[2rem] border border-slate-100/80 shadow-lg shadow-slate-100/40 p-6 flex flex-col justify-between space-y-4 hover:shadow-xl hover:border-slate-200/45 transition-all duration-500 group cursor-pointer"
+                    onClick={() => {
+                      setActiveStepIndex(stepIndex);
+                      setActiveImageIndex(0);
+                    }}
+                  >
+                    <div className="space-y-2">
+                      <div className="flex items-center justify-between">
+                        <span className="px-3 py-1 rounded-full bg-primary/10 text-primary font-bold text-[10px] uppercase tracking-wider">
+                          {t('PROCESS_STEP')} {step.tag}
+                        </span>
+                      </div>
+                      <h3 className="text-sm sm:text-base font-headline font-bold text-slate-900 tracking-tight leading-snug group-hover:text-primary transition-colors truncate">
+                        {step.label}
+                      </h3>
+                      <p className="text-[11px] text-slate-400 font-medium leading-relaxed line-clamp-2">
+                        {step.desc}
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* 引导箭头或首尾循环分割线 */}
+                  {isLastStep ? (
+                    <div className="flex flex-col items-center justify-center px-4 self-stretch shrink-0">
+                      <div className="h-16 w-px border-l-2 border-dashed border-slate-300" />
+                      <span className="text-[8px] font-black text-slate-450 uppercase tracking-[0.25em] mt-3 whitespace-nowrap">
                       </span>
                     </div>
-                    <h3 className="text-lg font-headline font-bold text-slate-900 tracking-tight leading-snug group-hover:text-primary transition-colors">
-                      {step.label}
-                    </h3>
-                    <p className="text-xs sm:text-sm text-slate-400 font-medium leading-relaxed line-clamp-3">
-                      {step.desc}
-                    </p>
-                  </div>
+                  ) : (
+                    <div className="flex items-center justify-center shrink-0 w-8">
+                      <div className="h-[2px] w-8 bg-gradient-to-r from-primary/10 via-primary/40 to-primary/10 relative">
+                        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-white p-1 rounded-full border border-slate-100 shadow-sm">
+                          <ChevronRight className="h-3 w-3 text-primary/60 animate-pulse" />
+                        </div>
+                      </div>
+                    </div>
+                  )}
                 </div>
-              </div>
-            );
-          })}
+              );
+            })}
+          </div>
         </div>
       </div>
     );
@@ -198,10 +300,10 @@ export function ProductionProcess({ locale }: { locale: Locale }) {
     <section id="process" className="bg-white py-20 relative overflow-hidden">
       {/* 静态标题区域 */}
       <div className="container mx-auto px-6 text-center">
-        <SectionHeading 
-          title={displayTitle} 
-          subtitle={displaySubtitle || undefined} 
-          centered={true} 
+        <SectionHeading
+          title={displayTitle}
+          subtitle={displaySubtitle || undefined}
+          centered={true}
         />
       </div>
 
@@ -210,26 +312,77 @@ export function ProductionProcess({ locale }: { locale: Locale }) {
         {isLoading ? renderLoading() : (steps.length > 0 ? renderMarquee() : renderPlaceholder())}
       </div>
 
-      <Dialog open={!!selectedImage} onOpenChange={(open) => !open && setSelectedImage(null)}>
-        <DialogContent className="max-w-[95vw] max-h-[95vh] p-0 border-none bg-transparent shadow-none [&>button:last-child]:hidden">
-          <VisuallyHidden>
-            <DialogHeader>
-              <DialogTitle>
-                {t('PROCESS_VIEW_LARGE')}
-              </DialogTitle>
-            </DialogHeader>
-          </VisuallyHidden>
-          <div className="relative w-full h-[90vh] flex items-center justify-center group">
-            {selectedImage && (
-              <div className="relative w-full h-full animate-in zoom-in-95 fade-in duration-300 ease-out" onClick={() => setSelectedImage(null)}>
-                <Image src={getAssetUrl(selectedImage)} alt="Enlarged View" fill className="object-contain cursor-zoom-out-custom" unoptimized={selectedImage.startsWith('data:')} />
+      <Dialog open={activeStepIndex !== null} onOpenChange={(open) => { if (!open) { setActiveStepIndex(null); setActiveImageIndex(0); } }}>
+        {(() => {
+          const activeStep = activeStepIndex !== null ? steps[activeStepIndex] : null;
+          const activeImages = activeStep?.images || [];
+          const currentImage = activeImages[activeImageIndex] || '';
+
+          return (
+            <DialogContent className="max-w-[95vw] max-h-[95vh] p-0 border-none bg-transparent shadow-none [&>button:last-child]:hidden select-none">
+              <VisuallyHidden>
+                <DialogHeader>
+                  <DialogTitle>
+                    {t('PROCESS_VIEW_LARGE')}
+                  </DialogTitle>
+                </DialogHeader>
+              </VisuallyHidden>
+              <div className="relative w-full h-[90vh] flex items-center justify-center group">
+                {currentImage && (
+                  <div className="relative w-full h-full animate-in zoom-in-95 fade-in duration-300 ease-out" onClick={() => { setActiveStepIndex(null); setActiveImageIndex(0); }}>
+                    <Image src={getAssetUrl(currentImage)} alt="Enlarged View" fill className="object-contain cursor-zoom-out-custom" unoptimized={currentImage.startsWith('data:')} />
+                  </div>
+                )}
+                <button onClick={() => { setActiveStepIndex(null); setActiveImageIndex(0); }} className="absolute top-4 right-4 w-12 h-12 rounded-full bg-black/40 hover:bg-black/60 text-white flex items-center justify-center transition-all border border-white/10 z-50">
+                  <X className="h-6 w-6" />
+                </button>
+
+                {activeImages.length > 1 && (
+                  <div className="absolute bottom-6 left-1/2 -translate-x-1/2 flex items-center gap-4 z-50 bg-black/45 backdrop-blur-md px-5 py-2.5 rounded-full border border-white/10 shadow-2xl">
+                    {/* Left Button */}
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setActiveImageIndex((prev) => (prev === 0 ? activeImages.length - 1 : prev - 1));
+                      }}
+                      className="text-white/60 hover:text-white hover:scale-110 active:scale-95 transition-all p-1"
+                    >
+                      <ChevronLeft className="h-5 w-5" />
+                    </button>
+
+                    {/* Dot indicators */}
+                    <div className="flex gap-2">
+                      {activeImages.map((_, i) => (
+                        <button
+                          key={i}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setActiveImageIndex(i);
+                          }}
+                          className={cn(
+                            "h-1.5 rounded-full transition-all duration-300",
+                            activeImageIndex === i ? "w-4 bg-white" : "w-1.5 bg-white/40 hover:bg-white/60"
+                          )}
+                        />
+                      ))}
+                    </div>
+
+                    {/* Right Button */}
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setActiveImageIndex((prev) => (prev === activeImages.length - 1 ? 0 : prev + 1));
+                      }}
+                      className="text-white/60 hover:text-white hover:scale-110 active:scale-95 transition-all p-1"
+                    >
+                      <ChevronRight className="h-5 w-5" />
+                    </button>
+                  </div>
+                )}
               </div>
-            )}
-            <button onClick={() => setSelectedImage(null)} className="absolute top-4 right-4 w-12 h-12 rounded-full bg-black/40 hover:bg-black/60 text-white flex items-center justify-center transition-all border border-white/10 z-50">
-              <X className="h-6 w-6" />
-            </button>
-          </div>
-        </DialogContent>
+            </DialogContent>
+          );
+        })()}
       </Dialog>
     </section>
   );
