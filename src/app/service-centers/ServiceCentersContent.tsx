@@ -69,7 +69,6 @@ export default function ServiceCentersContent({ initialLocale }: ServiceCentersC
 
   const centers = useMemo(() => serviceCentersData?.centers || [], [serviceCentersData]);
 
-  const locale = initialLocale || 'en';
 
   // Synchronize locale changes with cookie/localStorage
   useEffect(() => {

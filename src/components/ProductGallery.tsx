@@ -39,20 +39,29 @@ function GalleryCard({
   const { openInquiry } = useInquiry();
 
   return (
-    <div className="group relative flex flex-col h-full max-w-[400px] mx-auto w-full bg-white rounded-[2.5rem] shadow-sm hover:shadow-xl hover:-translate-y-2 transition-all duration-500 border border-border/5 overflow-hidden transform-gpu">
+    <div className="group relative flex flex-col h-full max-w-[400px] mx-auto w-full bg-white rounded-[2.5rem] shadow-sm hover:shadow-xl hover:-translate-y-2 transition-all duration-500 border border-border/5 overflow-hidden transform-gpu isolate">
       <Link
         href={`/products/${product.id}`}
-        className="block"
+        className="block rounded-t-[2.5rem] overflow-hidden"
       >
         {/* Product Image - 11:9 Ratio at the top with Video Preview */}
-        <div className="relative w-full aspect-[11/9] overflow-hidden rounded-t-[2.5rem] bg-muted/5 shrink-0 isolate">
+        {/* 使用 -webkit-mask-image 配合 overflow-hidden 强行阻止 Safari & Chrome 中 GPU 缩放导致的圆角溢出闪烁 */}
+        <div 
+          className="relative w-full aspect-[11/9] overflow-hidden rounded-t-[2.5rem] bg-muted/5 shrink-0 isolate"
+          style={{ maskImage: 'radial-gradient(white, white)', WebkitMaskImage: '-webkit-radial-gradient(white, white)' }}
+        >
           <HoverVideoPlayer
             productId={product.id}
-            playingProductId={playingProductId}
-            setPlayingProductId={setPlayingProductId}
             videoUrl={product.videoUrl}
             mainImageUrl={product.imageUrl}
             alt={product.label}
+            onPlayStateChange={(playing) => {
+              if (playing) {
+                setPlayingProductId(product.id);
+              } else if (playingProductId === product.id) {
+                setPlayingProductId(null);
+              }
+            }}
           />
 
           {/* Floating Badge */}
@@ -200,13 +209,15 @@ export function ProductGallery({ locale }: { locale: Locale }) {
 
   // 2. Data transformation
   const products = useMemo(() => {
-    // 优先级 1: 手动配置的项目 (GalleryItems)
+    // 3. 循环轮播机制（数据兜底）：
+    // 当卡片总数过少（比如小于 8 个）时，Embla Carousel 的 loop: true 拼接机制会因为节点不足而失效（无法在划出视口的同时于右侧补齐卡片）。
+    // 在这里我们对 products 数组进行自适应倍增补齐，至少补充到 8 个，实现真正的无限循环。
+    let finalProducts: any[] = [];
     if (galleryConfig?.galleryItems && Array.isArray(galleryConfig.galleryItems) && galleryConfig.galleryItems.length > 0 && remoteProducts) {
-      return galleryConfig.galleryItems.map((item: any) => {
+      finalProducts = galleryConfig.galleryItems.map((item: any) => {
         const product = remoteProducts.find((p: any) => p.id === item.productId);
         if (!product) return null;
 
-        // 翻译 Badge
         let badgeLabel = item.badge;
         if (item.badge === 'NEW') badgeLabel = getT('BADGE_NEW');
         if (item.badge === 'HOT') badgeLabel = getT('BADGE_HOT');
@@ -220,15 +231,11 @@ export function ProductGallery({ locale }: { locale: Locale }) {
           imageUrl: product.mainImageUrl || '/image/product-placeholder.png',
           videoUrl: product.videoUrl || '',
           badge: badgeLabel,
-          badgeType: item.badge // Pass raw type for color logic
+          badgeType: item.badge
         };
       }).filter(Boolean);
-    }
-
-    // 优先级 2: 自动拉取最新产品
-    if (remoteProducts && remoteProducts.length > 0) {
-      return remoteProducts.map((p: any, idx: number) => {
-        // Mocked badges for fallback mode
+    } else if (remoteProducts && remoteProducts.length > 0) {
+      finalProducts = remoteProducts.map((p: any, idx: number) => {
         let badge = null;
         let badgeType = null;
         if (idx % 4 === 0) {
@@ -253,31 +260,80 @@ export function ProductGallery({ locale }: { locale: Locale }) {
       });
     }
 
-    return [];
+    if (finalProducts.length > 0 && finalProducts.length < 8) {
+      // 至少复制拼接至 8 个或以上
+      while (finalProducts.length < 8) {
+        finalProducts = [
+          ...finalProducts,
+          ...finalProducts.map((p: any, i: number) => ({
+            ...p,
+            // 复制时修改唯一的 id，防止 React Key 重复报错，同时保持数据独立
+            id: `${p.id}-dup-${finalProducts.length + i}`
+          }))
+        ];
+      }
+    }
+
+    return finalProducts;
   }, [remoteProducts, getT, galleryConfig]);
 
   useEffect(() => {
     if (!api) return;
 
+    const updateSlideVisibilities = () => {
+      const viewport = api.rootNode();
+      if (!viewport) return;
+      const viewportRect = viewport.getBoundingClientRect();
+      const slides = api.slideNodes();
+
+      slides.forEach((slide) => {
+        const slideRect = slide.getBoundingClientRect();
+        
+        // 算出卡片右侧超出 viewport 左侧的距离
+        // 如果 slideRect.right <= viewportRect.left，说明已经完全出左边界
+        const distanceToLeft = slideRect.right - viewportRect.left;
+        const fadeWidth = 100; // 渐隐过渡区域宽度，可以根据需要微调
+
+        if (distanceToLeft <= 0) {
+          slide.style.opacity = '0';
+          slide.style.pointerEvents = 'none';
+        } else if (distanceToLeft < fadeWidth) {
+          // 靠近左侧边界时平滑渐隐
+          const opacity = Math.max(0, distanceToLeft / fadeWidth);
+          slide.style.opacity = opacity.toString();
+          slide.style.pointerEvents = opacity < 0.1 ? 'none' : 'auto';
+        } else {
+          // 正常可见区域以及右侧准备入场的卡片，必须保持 opacity 为 1 确保不会出现空白
+          slide.style.opacity = '1';
+          slide.style.pointerEvents = 'auto';
+        }
+      });
+    };
+
     const onSelect = () => {
       const snapIndex = api.selectedScrollSnap();
       setCurrent(snapIndex);
+      updateSlideVisibilities();
     };
 
     const onReInit = () => {
       const newCount = api.scrollSnapList().length;
       setCount((prev) => (prev !== newCount ? newCount : prev));
+      updateSlideVisibilities();
     };
 
     setCount(api.scrollSnapList().length);
     setCurrent(api.selectedScrollSnap());
+    setTimeout(updateSlideVisibilities, 50); // 给 DOM 首次挂载留出计算空隙
 
     api.on("select", onSelect);
     api.on("reInit", onReInit);
+    api.on("scroll", updateSlideVisibilities);
 
     return () => {
       api.off("select", onSelect);
       api.off("reInit", onReInit);
+      api.off("scroll", updateSlideVisibilities);
     };
   }, [api]);
 
@@ -318,26 +374,32 @@ export function ProductGallery({ locale }: { locale: Locale }) {
         />
       </div>
 
-      <div className="relative px-4 md:px-12 lg:px-24">
+      <div className="relative px-4 md:px-12 lg:px-24 overflow-hidden md:overflow-visible">
         <Carousel
           setApi={setApi}
           opts={{
             align: "start",
             loop: true,
           }}
-          className="w-full overflow-visible"
+          className="w-full overflow-hidden md:overflow-visible"
         >
-          <CarouselContent className="-ml-8" viewportClassName="py-8 overflow-visible">
-            {products.map((product: any) => (
-              <CarouselItem key={product.id} className="pl-8 shrink-0 basis-auto w-[290px] xs:w-[320px] sm:w-[350px] md:w-[380px] lg:w-[400px]">
-                <GalleryCard 
-                  product={product} 
-                  requestQuoteText={tr('products_requestQuote')}
-                  playingProductId={playingProductId}
-                  setPlayingProductId={setPlayingProductId}
-                />
-              </CarouselItem>
-            ))}
+          <CarouselContent className="-ml-8" viewportClassName="py-8 overflow-hidden md:overflow-visible">
+            {products.map((product: any) => {
+              return (
+                <CarouselItem 
+                  key={product.id} 
+                  className="pl-8 shrink-0 basis-auto w-[290px] xs:w-[320px] sm:w-[350px] md:w-[380px] lg:w-[400px]"
+                  data-gallery-slide-id={product.id}
+                >
+                  <GalleryCard 
+                    product={product} 
+                    requestQuoteText={tr('products_requestQuote')}
+                    playingProductId={playingProductId}
+                    setPlayingProductId={setPlayingProductId}
+                  />
+                </CarouselItem>
+              );
+            })}
           </CarouselContent>
         </Carousel>
 

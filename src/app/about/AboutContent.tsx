@@ -25,41 +25,22 @@ interface AboutContentProps {
 }
 
 export default function AboutContent({ initialLocale }: AboutContentProps) {
-  const [locale, setLocale] = useState<Locale>(initialLocale);
   const { openInquiry } = useInquiry();
   const searchParams = useSearchParams();
   const { data: langSettings } = useLocalDoc<any>('settings', 'languages');
   const { data: siteConfig } = useLocalDoc<any>('settings', 'site');
+  // 严格遵守单一事实源原则：locale 必须与当前路由 of initialLocale 100% 对齐。
+  // 不得在挂载后执行浏览器环境检测进而 setLocale 修改语种状态，这会导致 SSR 生成的 HTML 字符串与客户端第一帧的 DOM 对不上。
+  const locale = initialLocale;
   const { t } = useTranslations(locale);
 
-  useEffect(() => {
-    const detectLocale = () => {
-      const activeLangs = langSettings?.supportedLanguages?.map((l: any) => l.code) || ['en', 'zh', 'id', 'vi', 'vn'];
-      const defaultLang = (langSettings?.defaultLanguage as Locale) || 'en';
-      const langParam = searchParams.get('lang');
-      if (langParam && activeLangs.includes(langParam)) return langParam as Locale;
-      
-      const saved = typeof window !== 'undefined' ? localStorage.getItem('heovose-locale') as Locale : null;
-      if (saved && activeLangs.includes(saved)) return saved;
-      
-      if (initialLocale && activeLangs.includes(initialLocale)) return initialLocale;
-      
-      const browserLang = typeof navigator !== 'undefined' 
-        ? (navigator.languages && navigator.languages.length > 0 
-           ? navigator.languages[0].split('-')[0].toLowerCase() 
-           : navigator.language.split('-')[0].toLowerCase()) as Locale
-        : 'en';
-      if (activeLangs.includes(browserLang)) return browserLang;
-      
-      return defaultLang;
-    };
-    const detected = detectLocale();
-    setLocale(detected);
+  const setLocale = (newLoc: Locale) => {
     if (typeof window !== 'undefined') {
-      localStorage.setItem('heovose-locale', detected);
-      document.cookie = `NEXT_LOCALE=${detected}; path=/; max-age=31536000`;
+      document.cookie = `NEXT_LOCALE=${newLoc}; path=/; max-age=31536000`; // 1 year
+      localStorage.setItem('heovose-locale', newLoc);
+      window.location.pathname = window.location.pathname.replace(/^\/[a-z]{2,3}/i, `/${newLoc}`);
     }
-  }, [searchParams, langSettings, initialLocale]);
+  };
 
   const containerRef = useRef<HTMLDivElement>(null);
   const { scrollYProgress } = useScroll({

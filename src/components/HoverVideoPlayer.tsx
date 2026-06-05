@@ -12,8 +12,7 @@ interface HoverVideoPlayerProps {
   alt: string;
   className?: string;
   productId: string;
-  playingProductId: string | null;
-  setPlayingProductId: (id: string | null) => void;
+  onPlayStateChange?: (playing: boolean) => void;
 }
 
 export function HoverVideoPlayer({ 
@@ -22,10 +21,9 @@ export function HoverVideoPlayer({
   alt, 
   className,
   productId,
-  playingProductId,
-  setPlayingProductId
+  onPlayStateChange
 }: HoverVideoPlayerProps) {
-  const isPlaying = playingProductId === productId;
+  const [isPlaying, setIsPlaying] = useState(false);
   const [isVideoLoaded, setIsVideoLoaded] = useState(false);
   const [hasBeenHovered, setHasBeenHovered] = useState(false);
   const [isTouchDevice, setIsTouchDevice] = useState(false);
@@ -33,6 +31,10 @@ export function HoverVideoPlayer({
   const videoRef = useRef<HTMLVideoElement>(null);
   const enterTimerRef = useRef<NodeJS.Timeout | null>(null);
   const leaveTimerRef = useRef<NodeJS.Timeout | null>(null);
+
+  const [videoProgress, setVideoProgress] = useState(0);
+  const [hoveringProgress, setHoveringProgress] = useState(false);
+  const progressTrackRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     setIsTouchDevice('ontouchstart' in window || navigator.maxTouchPoints > 0);
@@ -44,16 +46,53 @@ export function HoverVideoPlayer({
     }
   }, [isPlaying]);
 
+  // 监听视频进度更新
+  const handleTimeUpdate = () => {
+    const video = videoRef.current;
+    if (video && video.duration) {
+      setVideoProgress((video.currentTime / video.duration) * 100);
+    }
+  };
+
   useEffect(() => {
     const video = videoRef.current;
     if (!video) return;
 
     if (isPlaying) {
-      video.play().catch(() => {});
+      // 只有在非进度条 Hover 的情况下才去 play()
+      if (!hoveringProgress) {
+        video.play().catch(() => {});
+        onPlayStateChange?.(true);
+      } else {
+        video.pause();
+        onPlayStateChange?.(false);
+      }
+      // 发送自定义广播事件，通知其他卡片视频暂停
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent('heovose-video-play', { detail: { productId } }));
+      }
     } else {
       video.pause();
+      onPlayStateChange?.(false);
     }
-  }, [isPlaying]);
+  }, [isPlaying, productId, hoveringProgress, onPlayStateChange]);
+
+  // 监听全局其他卡片的播放事件，实现移动端（以及多设备/桌面多重操作）下的排他式唯一播放
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+
+    const handleGlobalPlay = (e: Event) => {
+      const customEvent = e as CustomEvent;
+      if (customEvent.detail && customEvent.detail.productId !== productId) {
+        setIsPlaying(false);
+      }
+    };
+
+    window.addEventListener('heovose-video-play', handleGlobalPlay);
+    return () => {
+      window.removeEventListener('heovose-video-play', handleGlobalPlay);
+    };
+  }, [productId]);
 
   useEffect(() => {
     return () => {
@@ -65,56 +104,56 @@ export function HoverVideoPlayer({
   const handleMouseEnter = () => {
     if (isTouchDevice) return;
     
-    // 清除离开延时器，保持继续播放
+    // 立即清除所有进入/离开定时器，不再采用长延时处理
     if (leaveTimerRef.current) {
       clearTimeout(leaveTimerRef.current);
       leaveTimerRef.current = null;
     }
-
-    // 延迟 150ms 触发播放，防止快速滑过误触
-    if (!enterTimerRef.current) {
-      enterTimerRef.current = setTimeout(() => {
-        setPlayingProductId(productId);
-        enterTimerRef.current = null;
-      }, 150);
-    }
-  };
-
-  const handleMouseLeave = () => {
-    if (isTouchDevice) return;
-
-    // 清除进入延时器，取消未发生的播放
     if (enterTimerRef.current) {
       clearTimeout(enterTimerRef.current);
       enterTimerRef.current = null;
     }
 
-    // 延迟 200ms 触发暂停，防止边缘抖动导致频繁停播
-    if (!leaveTimerRef.current) {
-      leaveTimerRef.current = setTimeout(() => {
-        if (playingProductId === productId) {
-          setPlayingProductId(null);
-        }
-        leaveTimerRef.current = null;
-      }, 200);
-    }
+    // 跨卡片移入时，强行接管为当前卡片播放，不再受外界延迟影响
+    setIsPlaying(true);
   };
 
-  const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
+  const handleMouseLeave = () => {
     if (isTouchDevice) return;
-    
-    // 如果视频正在播放，完全不做进度干预，让其平滑播放
-    if (isPlaying) return;
 
+    if (enterTimerRef.current) {
+      clearTimeout(enterTimerRef.current);
+      enterTimerRef.current = null;
+    }
+
+    // 采用极短的 50ms 延时做防抖处理
+    if (leaveTimerRef.current) {
+      clearTimeout(leaveTimerRef.current);
+    }
+    leaveTimerRef.current = setTimeout(() => {
+      setIsPlaying(false);
+      setHoveringProgress(false);
+      leaveTimerRef.current = null;
+    }, 50);
+  };
+
+  // 进度条的进度调节
+  const handleProgressAdjust = (clientX: number) => {
+    const track = progressTrackRef.current;
     const video = videoRef.current;
-    const container = containerRef.current;
-    if (!video || !container || isNaN(video.duration) || video.duration === 0) return;
+    if (!track || !video || isNaN(video.duration) || video.duration === 0) return;
 
-    const rect = container.getBoundingClientRect();
-    const x = e.clientX - rect.left;
+    const rect = track.getBoundingClientRect();
+    const x = clientX - rect.left;
     const pct = Math.max(0, Math.min(1, x / rect.width));
 
     video.currentTime = pct * video.duration;
+    setVideoProgress(pct * 100);
+  };
+
+  const handleProgressMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (isTouchDevice || !hoveringProgress) return;
+    handleProgressAdjust(e.clientX);
   };
 
   return (
@@ -122,8 +161,7 @@ export function HoverVideoPlayer({
       ref={containerRef}
       onMouseEnter={handleMouseEnter}
       onMouseLeave={handleMouseLeave}
-      onMouseMove={handleMouseMove}
-      className={cn("relative w-full h-full overflow-hidden select-none cursor-pointer", className)}
+      className={cn("relative w-full h-full overflow-hidden select-none cursor-pointer group/player", className)}
     >
       <Image
         src={getAssetUrl(mainImageUrl || '/image/product-placeholder.png')}
@@ -144,10 +182,11 @@ export function HoverVideoPlayer({
           loop
           playsInline
           preload="auto"
+          onTimeUpdate={handleTimeUpdate}
           onLoadedData={() => setIsVideoLoaded(true)}
           onCanPlay={() => {
             setIsVideoLoaded(true);
-            if (isPlaying) {
+            if (isPlaying && !hoveringProgress) {
               videoRef.current?.play().catch(() => {});
             }
           }}
@@ -159,12 +198,40 @@ export function HoverVideoPlayer({
         />
       )}
 
+      {/* 底部悬浮控制进度条 */}
+      {videoUrl && isPlaying && !isTouchDevice && (
+        <div 
+          ref={progressTrackRef}
+          onMouseEnter={() => setHoveringProgress(true)}
+          onMouseLeave={() => setHoveringProgress(false)}
+          onMouseMove={handleProgressMouseMove}
+          onClick={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            handleProgressAdjust(e.clientX);
+          }}
+          className="absolute bottom-0 left-0 right-0 h-8 flex items-end justify-center pb-2 px-3 z-30 transition-all duration-300 translate-y-2 opacity-0 group-hover/player:translate-y-0 group-hover/player:opacity-100 cursor-ew-resize group/progress"
+        >
+          {/* 进度条轨道 */}
+          <div className="w-full h-1 bg-white/20 rounded-full overflow-hidden transition-all duration-300 relative group-hover/progress:h-2">
+            <div 
+              className="absolute left-0 top-0 bottom-0 bg-primary transition-all duration-75"
+              style={{ width: `${videoProgress}%` }}
+            />
+          </div>
+        </div>
+      )}
+
       {videoUrl && (
         <button
           onClick={(e) => {
             e.preventDefault();
             e.stopPropagation();
-            setPlayingProductId(isPlaying ? null : productId);
+            const nextPlaying = !isPlaying;
+            if (nextPlaying) {
+              setHasBeenHovered(true);
+            }
+            setIsPlaying(nextPlaying);
           }}
           className={cn(
             "absolute top-3 right-3 h-8 w-8 rounded-full backdrop-blur-md flex items-center justify-center text-white border shadow-lg transition-all duration-300 active:scale-90 z-20",

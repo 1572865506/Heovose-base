@@ -216,8 +216,11 @@ export function Hero({ locale, homeConfig, isLoading, onThemeChange }: HeroProps
 
       const currentVideos = videoRefs.current[selectedIndex] || [];
       currentVideos.forEach(v => {
-        v.currentTime = 0;
-        v.play().catch(() => { });
+        // 如果视频已经在播放了，不要重复去 play() 或者重置 currentTime，防止二次闪烁/重播
+        if (v.paused || v.currentTime === 0) {
+          v.currentTime = 0;
+          v.play().catch(() => { });
+        }
       });
 
       let detectedDuration = 0;
@@ -356,7 +359,11 @@ export function Hero({ locale, homeConfig, isLoading, onThemeChange }: HeroProps
   const subheadlineAnimateFrom = React.useMemo(() => ({ opacity: 0, y: 20 }), []);
   const subheadlineAnimateTo = React.useMemo(() => ({ opacity: 1, y: 0 }), []);
 
-  if (isLoading) {
+  // 只有在真正没有数据 (isLoading 且 homeConfig 为空或无幻灯片) 时才展示骨架屏。
+  // 如果已经有缓存的 homeConfig (例如通过 initialData 传入)，即使处于重新校验 (isLoading === true) 状态，也进行平滑渲染，从而避免二次渲染闪烁。
+  const isRealLoading = isLoading && (!homeConfig || (!homeConfig.heroSlides && !homeConfig.heroHeadlineZh));
+
+  if (isRealLoading) {
     return (
       <section className="relative min-h-screen pt-20 overflow-hidden bg-background flex items-center">
         <div className="container mx-auto px-6 space-y-8 relative z-10">
@@ -374,6 +381,7 @@ export function Hero({ locale, homeConfig, isLoading, onThemeChange }: HeroProps
       </section>
     );
   }
+
 
   return (
     <section className="relative min-h-screen pt-20 overflow-hidden z-20 bg-background">
@@ -580,7 +588,7 @@ export function Hero({ locale, homeConfig, isLoading, onThemeChange }: HeroProps
           {/* Entry Cards - Responsive & Balanced with Enhanced Hover */}
           {showEntryCards && (
             <div className={cn(
-              "absolute bottom-10 md:bottom-[60px] left-1/2 -translate-x-1/2 px-4 md:px-0 w-full md:max-w-[44rem] pointer-events-auto transform translate-z-0 z-50",
+              "absolute bottom-10 md:bottom-[60px] left-1/2 -translate-x-1/2 px-4 md:px-0 w-full md:max-w-[44rem] pointer-events-auto z-50",
               (hasWholesaleConfig && hasProjectConfig)
                 ? "grid grid-cols-2 gap-3 md:gap-8"
                 : "flex justify-center"
@@ -590,7 +598,7 @@ export function Hero({ locale, homeConfig, isLoading, onThemeChange }: HeroProps
                 <Link
                   href={wholesaleHref}
                   className={cn(
-                    "group relative h-24 sm:h-32 md:h-[9rem] rounded-[1.25rem] sm:rounded-[2rem] md:rounded-[2.5rem] transition-all duration-700 ease-[cubic-bezier(0.23,1,0.32,1)] cursor-pointer overflow-hidden shadow-2xl border border-white/10 hover:-translate-y-1 hover:scale-[1.02] hover:shadow-primary/30 hover:border-primary/30 gpu-accelerated w-full isolate",
+                    "group relative h-24 sm:h-32 md:h-[9rem] rounded-[1.25rem] sm:rounded-[2rem] md:rounded-[2.5rem] transition-all duration-700 ease-[cubic-bezier(0.23,1,0.32,1)] cursor-pointer overflow-hidden shadow-2xl border border-white/10 hover:-translate-y-1 hover:scale-[1.02] hover:shadow-primary/30 hover:border-primary/30 w-full isolate",
                     (!hasProjectConfig) && "sm:max-w-[calc(50%-1rem)]"
                   )}
                   style={{ maskImage: 'radial-gradient(white, white)', WebkitMaskImage: '-webkit-radial-gradient(white, white)' }}
@@ -621,8 +629,21 @@ export function Hero({ locale, homeConfig, isLoading, onThemeChange }: HeroProps
                           {displayWholesaleDesc}
                         </p>
                       </div>
-                      <div className="w-7 h-7 xs:w-8 xs:h-8 sm:w-10 sm:h-10 md:w-12 md:h-12 rounded-full glass-frosted flex items-center justify-center text-slate-900 border border-white/20 group-hover:bg-primary group-hover:text-white group-hover:border-transparent transition-all duration-500 shadow-xl group-hover:scale-110 group-hover:rotate-45 shrink-0 aspect-square overflow-hidden transform-gpu will-change-transform">
-                        <ArrowUpRight className="h-3.5 w-3.5 xs:h-4 xs:w-4 sm:h-5 sm:w-5 md:h-6 md:w-6 animate-arrow-loop transform-gpu will-change-transform" />
+                      <div
+                        className="w-7 h-7 xs:w-8 xs:h-8 sm:w-10 sm:h-10 md:w-12 md:h-12 rounded-full glass-frosted flex items-center justify-center text-slate-900 border border-white/20 group-hover:bg-white group-hover:text-black group-hover:border-transparent transition-all duration-500 shadow-xl group-hover:rotate-45 shrink-0 aspect-square overflow-hidden"
+                        style={{
+                          zoom: 0.9,
+                          // 通过 CSS 变量或在 hover 状态下重置以防 zoom 不支持 transition，这里结合 zoom 的清晰度与过渡效果
+                          transform: 'scale(var(--btn-scale, 1))',
+                        }}
+                      >
+                        <style dangerouslySetInnerHTML={{
+                          __html: `
+                          .group:hover .glass-frosted {
+                            --btn-scale: 1.1111; /* 1 / 0.9 ≈ 1.1111，使其刚好缩放回 100% (0.9 * 1.1111 = 1) */
+                          }
+                        `}} />
+                        <ArrowUpRight className="h-3.5 w-3.5 xs:h-4 xs:w-4 sm:h-5 sm:w-5 md:h-6 md:w-6 animate-arrow-loop" />
                       </div>
                     </div>
                   </div>
@@ -636,7 +657,7 @@ export function Hero({ locale, homeConfig, isLoading, onThemeChange }: HeroProps
                 <Link
                   href={projectHref}
                   className={cn(
-                    "group relative h-24 sm:h-32 md:h-[9rem] rounded-[1.25rem] sm:rounded-[2rem] md:rounded-[2.5rem] transition-all duration-700 ease-[cubic-bezier(0.23,1,0.32,1)] cursor-pointer overflow-hidden shadow-2xl border border-white/10 hover:-translate-y-3 hover:scale-[1.02] hover:shadow-primary/30 hover:border-primary/30 gpu-accelerated w-full isolate",
+                    "group relative h-24 sm:h-32 md:h-[9rem] rounded-[1.25rem] sm:rounded-[2rem] md:rounded-[2.5rem] transition-all duration-700 ease-[cubic-bezier(0.23,1,0.32,1)] cursor-pointer overflow-hidden shadow-2xl border border-white/10 hover:-translate-y-3 hover:scale-[1.02] hover:shadow-primary/30 hover:border-primary/30 w-full isolate",
                     (!hasWholesaleConfig) && "sm:max-w-[calc(50%-1rem)]"
                   )}
                   style={{ maskImage: 'radial-gradient(white, white)', WebkitMaskImage: '-webkit-radial-gradient(white, white)' }}
@@ -667,8 +688,14 @@ export function Hero({ locale, homeConfig, isLoading, onThemeChange }: HeroProps
                           {displayProjectDesc}
                         </p>
                       </div>
-                      <div className="w-7 h-7 xs:w-8 xs:h-8 sm:w-10 sm:h-10 md:w-12 md:h-12 rounded-full glass-frosted flex items-center justify-center text-slate-900 border border-white/20 group-hover:bg-primary group-hover:text-white group-hover:border-transparent transition-all duration-500 shadow-xl group-hover:scale-110 group-hover:rotate-45 shrink-0 aspect-square overflow-hidden transform-gpu will-change-transform">
-                        <ArrowUpRight className="h-3.5 w-3.5 xs:h-4 xs:w-4 sm:h-5 sm:w-5 md:h-6 md:w-6 animate-arrow-loop-delay transform-gpu will-change-transform" />
+                      <div
+                        className="w-7 h-7 xs:w-8 xs:h-8 sm:w-10 sm:h-10 md:w-12 md:h-12 rounded-full glass-frosted flex items-center justify-center text-slate-900 border border-white/20 group-hover:bg-white group-hover:text-black group-hover:border-transparent transition-all duration-500 shadow-xl group-hover:rotate-45 shrink-0 aspect-square overflow-hidden"
+                        style={{
+                          zoom: 0.9,
+                          transform: 'scale(var(--btn-scale, 1))',
+                        }}
+                      >
+                        <ArrowUpRight className="h-3.5 w-3.5 xs:h-4 xs:w-4 sm:h-5 sm:w-5 md:h-6 md:w-6 animate-arrow-loop-delay" />
                       </div>
                     </div>
                   </div>
@@ -679,9 +706,9 @@ export function Hero({ locale, homeConfig, isLoading, onThemeChange }: HeroProps
             </div>
           )}
 
-          {/* Minimalist Progress Indicators - Positioned Horizontally Centered Above Entry Cards */}
+          {/* Minimalist Progress Indicators - Positioned Horizontally Centered Below Entry Cards */}
           {slides.length > 1 && (
-            <div className="absolute bottom-[148px] sm:bottom-[180px] md:bottom-[216px] left-1/2 -translate-x-1/2 flex items-center gap-3 pointer-events-auto transform translate-z-0 z-50">
+            <div className="absolute bottom-[12px] md:bottom-[20px] left-1/2 -translate-x-1/2 flex items-center gap-3 pointer-events-auto transform translate-z-0 z-50">
               {slides.map((_, index) => (
                 <button
                   key={index}

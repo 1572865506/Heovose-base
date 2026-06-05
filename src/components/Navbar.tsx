@@ -443,28 +443,40 @@ export function Navbar({ locale, setLocale, headerTheme = 'dark', themeLine }: N
                 )}
               </div>
 
-              <Link href={getLocalizedLink("/#cases", locale)} className={cn(
-                "px-4 py-2 rounded-full transition-all duration-300 text-sm font-medium whitespace-nowrap",
-                (isNavbarActive || headerTheme === 'light')
-                  ? "text-slate-800 hover:bg-slate-100"
-                  : "text-white hover:bg-white/10"
-              )}>
+              <Link 
+                href={getLocalizedLink("/#cases", locale)} 
+                onMouseEnter={handleMouseLeave}
+                className={cn(
+                  "px-4 py-2 rounded-full transition-all duration-300 text-sm font-medium whitespace-nowrap",
+                  (isNavbarActive || headerTheme === 'light')
+                    ? "text-slate-800 hover:bg-slate-100"
+                    : "text-white hover:bg-white/10"
+                )}
+              >
                 {getSystemText('NAV_CASES')}
               </Link>
-              <Link href={getLocalizedLink("/service-centers", locale)} className={cn(
-                "px-4 py-2 rounded-full transition-all duration-300 text-sm font-medium whitespace-nowrap",
-                (isNavbarActive || headerTheme === 'light')
-                  ? "text-slate-800 hover:bg-slate-100"
-                  : "text-white hover:bg-white/10"
-              )}>
+              <Link 
+                href={getLocalizedLink("/service-centers", locale)} 
+                onMouseEnter={handleMouseLeave}
+                className={cn(
+                  "px-4 py-2 rounded-full transition-all duration-300 text-sm font-medium whitespace-nowrap",
+                  (isNavbarActive || headerTheme === 'light')
+                    ? "text-slate-800 hover:bg-slate-100"
+                    : "text-white hover:bg-white/10"
+                )}
+              >
                 {getSystemText('NAV_SERVICE_CENTERS')}
               </Link>
-              <Link href={getLocalizedLink("/about", locale)} className={cn(
-                "px-4 py-2 rounded-full transition-all duration-300 text-sm font-medium whitespace-nowrap",
-                (isNavbarActive || headerTheme === 'light')
-                  ? "text-slate-800 hover:bg-slate-100"
-                  : "text-white hover:bg-white/10"
-              )}>
+              <Link 
+                href={getLocalizedLink("/about", locale)} 
+                onMouseEnter={handleMouseLeave}
+                className={cn(
+                  "px-4 py-2 rounded-full transition-all duration-300 text-sm font-medium whitespace-nowrap",
+                  (isNavbarActive || headerTheme === 'light')
+                    ? "text-slate-800 hover:bg-slate-100"
+                    : "text-white hover:bg-white/10"
+                )}
+              >
                 {getSystemText('NAV_ABOUT')}
               </Link>
             </div>

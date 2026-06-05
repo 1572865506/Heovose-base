@@ -79,6 +79,16 @@ export default function HomeContent({ initialLocale, initialTranslations, initia
     }
   };
 
+  // 在组件成功挂载客户端后，同步当前路由中的 initialLocale 到 Cookie 和本地存储中。
+  // 这可确保用户即使通过直接修改地址栏（如把 /en 改为 /zh）访问，在刷新或进行后续页面跳转时，
+  // 浏览器的 Cookie 和 localStorage 也同步变更为最新意图，不会发生“下级链接又退回旧语言”的现象。
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('heovose-locale', initialLocale);
+      document.cookie = `NEXT_LOCALE=${initialLocale}; path=/; max-age=31536000`;
+    }
+  }, [initialLocale]);
+
   // 更加健壮的锚点滚动逻辑：直接监听 hash 并等待 DOM 元素出现后自动平滑滚动
   useEffect(() => {
     if (typeof window === 'undefined') return;

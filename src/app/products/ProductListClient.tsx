@@ -147,6 +147,14 @@ function ProductListContent(props: ProductListClientProps) {
     window.addEventListener('scroll', handleScroll, { passive: true });
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
+
+  // 同步手动修改地址栏后的 initialLocale 到 Cookie
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('heovose-locale', initialLocale);
+      document.cookie = `NEXT_LOCALE=${initialLocale}; path=/; max-age=31536000`;
+    }
+  }, [initialLocale]);
   
   const categoryParam = searchParams.get('category');
   const lineParam = searchParams.get('line') as BusinessLine;
@@ -630,8 +638,6 @@ function ProductListContent(props: ProductListClientProps) {
                           <div className="relative aspect-[11/9] bg-muted/20 overflow-hidden">
                             <HoverVideoPlayer
                               productId={product.id}
-                              playingProductId={playingProductId}
-                              setPlayingProductId={setPlayingProductId}
                               videoUrl={videoSrc}
                               mainImageUrl={product.mainImageUrl}
                               alt={getT(product.nameTextId) || 'Product Image'}
