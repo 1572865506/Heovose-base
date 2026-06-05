@@ -54,6 +54,7 @@ interface LanguageSettings {
 type BusinessLine = 'wholesale' | 'project';
 
 interface ProductListClientProps {
+  initialLocale: Locale;
   initialProducts: any[];
   initialTotal: number;
   initialCategories: any[];
@@ -62,11 +63,42 @@ interface ProductListClientProps {
 }
 
 function ProductListContent(props: ProductListClientProps) {
-  const { initialProducts, initialTotal, initialCategories, initialLangSettings, initialTranslations } = props;
+  const { initialLocale, initialProducts, initialTotal, initialCategories, initialLangSettings, initialTranslations } = props;
 
-  // Initialize global cache instantly during rendering pass to support synchronous SSR and hydrate
-  const hasInitialized = useRef(false);
-  if (!hasInitialized.current) {
+  // 必须在渲染期间同步向全局内存缓存写入初始数据！
+  // 如果在客户端挂载后的 useEffect 中异步写入，挂载前的第一帧 Hook 会因为找不到缓存项而去触发 api 请求，
+  // 导致挂载完后第一帧是空（闪烁为 Loading 或兜底为空），或者由于延迟覆盖使原本有数据的分类在第二帧变空。
+  if (typeof window !== 'undefined' || typeof global !== 'undefined') {
+    if (!globalCache.has('productCategories')) {
+      globalCache.set('productCategories', { data: initialCategories, timestamp: Date.now() });
+    }
+    const wholesalePath = 'productCategories?parentId=WHOLESALE';
+    if (!globalCache.has(wholesalePath)) {
+      globalCache.set(wholesalePath, { data: initialCategories.filter((c: any) => c.parentId === 'WHOLESALE' || c.id === 'WHOLESALE'), timestamp: Date.now() });
+    }
+    const projectPath = 'productCategories?parentId=PROJECT';
+    if (!globalCache.has(projectPath)) {
+      globalCache.set(projectPath, { data: initialCategories.filter((c: any) => c.parentId === 'PROJECT' || c.id === 'PROJECT'), timestamp: Date.now() });
+    }
+    
+    if (initialLangSettings && !globalCache.has('settings/languages')) {
+      globalCache.set('settings/languages', { data: initialLangSettings, timestamp: Date.now() });
+    }
+    
+    if (initialTranslations) {
+      Object.entries(initialTranslations).forEach(([lang, trans]) => {
+        const transPath = `localizedStrings?lang=${lang}`;
+        if (!globalCache.has(transPath)) {
+          globalCache.set(transPath, { data: trans, timestamp: Date.now() });
+        }
+      });
+    }
+  }
+
+  // 移出渲染主干，统一在客户端挂载后的首个 useEffect 中填充缓存，
+  // 避免服务端与客户端在 Concurrent 渲染阶段修改全局变量带来的并发状态冲突副作用
+  useEffect(() => {
+    // 依然保留挂载后的双重确认注入
     globalCache.set('productCategories', { data: initialCategories, timestamp: Date.now() });
     globalCache.set('productCategories?parentId=WHOLESALE', { data: initialCategories.filter((c: any) => c.parentId === 'WHOLESALE' || c.id === 'WHOLESALE'), timestamp: Date.now() });
     globalCache.set('productCategories?parentId=PROJECT', { data: initialCategories.filter((c: any) => c.parentId === 'PROJECT' || c.id === 'PROJECT'), timestamp: Date.now() });
@@ -80,16 +112,16 @@ function ProductListContent(props: ProductListClientProps) {
         globalCache.set(`localizedStrings?lang=${lang}`, { data: trans, timestamp: Date.now() });
       });
     }
-    hasInitialized.current = true;
-  }
+  }, [initialCategories, initialLangSettings, initialTranslations]);
 
   const searchParams = useSearchParams();
   const router = useRouter();
   const { openInquiry } = useInquiry();
   
   const defaultLangCode = (initialLangSettings?.defaultLanguage as Locale) || 'en';
-  const [locale, setLocale] = useState<Locale>(defaultLangCode);
-  const [isLocaleReady, setIsLocaleReady] = useState(false);
+  // 遵循单一事实源原则：直接使用服务端解出的 initialLocale，不执行二次挂载语言检测切换，
+  // 从根本上避免 SSR 与 Hydration HTML 的内容失匹错误
+  const locale = initialLocale || defaultLangCode;
   
   const [searchQuery, setSearchQuery] = useState('');
   const [debouncedSearchQuery, setDebouncedSearchQuery] = useState('');
@@ -167,33 +199,6 @@ function ProductListContent(props: ProductListClientProps) {
     return () => clearTimeout(timer);
   }, [searchQuery]);
 
-  // 1. 智能判定语种
-  useEffect(() => {
-    const activeLangs = initialLangSettings?.supportedLanguages?.map((l: any) => l.code) || ['en', 'zh', 'id', 'vi', 'vn'];
-    const detectLocale = () => {
-      // 1. 优先 URL 参数
-      const langParam = searchParams.get('lang');
-      if (langParam && activeLangs.includes(langParam)) return langParam as Locale;
-      
-      // 2. 其次检查本地存储
-      const saved = typeof window !== 'undefined' ? localStorage.getItem('heovose-locale') as Locale : null;
-      if (saved && activeLangs.includes(saved)) return saved;
-      
-      // 3. 检查浏览器语言
-      const browserLang = typeof navigator !== 'undefined' 
-        ? (navigator.languages && navigator.languages.length > 0 
-           ? navigator.languages[0].split('-')[0].toLowerCase() 
-           : navigator.language.split('-')[0].toLowerCase()) as Locale
-        : 'en';
-      if (activeLangs.includes(browserLang)) return browserLang;
-      
-      return defaultLangCode;
-    };
-    
-    setLocale(detectLocale());
-    setIsLocaleReady(true);
-  }, [searchParams, initialLangSettings, defaultLangCode]);
-
   // Handle Search Input Change: Reset URL page param to 1 on search change
   const prevSearchRef = useRef(debouncedSearchQuery);
   useEffect(() => {
@@ -213,15 +218,14 @@ function ProductListContent(props: ProductListClientProps) {
 
   // 3. 计算当前业务线下可选的分类
   const filteredCategories = useMemo(() => {
-    const currentCats = categories || initialCategories;
+    const currentCats = (categories && categories.length > 0) ? categories : initialCategories;
+    if (!currentCats) return [];
     const parentId = activeLine === 'wholesale' ? 'WHOLESALE' : 'PROJECT';
     return currentCats.filter(c => c.parentId === parentId && c.id !== parentId);
   }, [categories, initialCategories, activeLine]);
 
   // 当筛选参数或语种改变时，从后端分页拉取产品数据
   useEffect(() => {
-    if (!isLocaleReady) return;
-    
     // Skip duplicate initial API fetch on mount when params are matching default wholesale states
     if (isFirstRender.current) {
       isFirstRender.current = false;
@@ -273,7 +277,7 @@ function ProductListContent(props: ProductListClientProps) {
     return () => {
       isMounted = false;
     };
-  }, [currentPage, selectedCategoryId, debouncedSearchQuery, activeLine, locale, isLocaleReady, defaultLangCode]);
+  }, [currentPage, selectedCategoryId, debouncedSearchQuery, activeLine, locale, defaultLangCode]);
 
   // 注入产品翻译到本地全局缓存
   useEffect(() => {
@@ -339,7 +343,7 @@ function ProductListContent(props: ProductListClientProps) {
   };
 
   const rootCategory = useMemo(() => {
-    const currentCats = categories || initialCategories;
+    const currentCats = (categories && categories.length > 0) ? categories : initialCategories;
     if (!currentCats) return null;
     const rootId = activeLine === 'wholesale' ? 'WHOLESALE' : 'PROJECT';
     return currentCats.find(c => c.id === rootId);
@@ -347,12 +351,12 @@ function ProductListContent(props: ProductListClientProps) {
 
   const activeCategoryName = useMemo(() => {
     if (!selectedCategoryId) return tr('products_allCategories');
-    const currentCats = categories || initialCategories;
+    const currentCats = (categories && categories.length > 0) ? categories : initialCategories;
     const cat = currentCats?.find(c => c.id === selectedCategoryId);
     return cat ? getT(cat.nameTextId) : tr('products_allCategories');
   }, [selectedCategoryId, categories, initialCategories, locale, tr]);
 
-  if (isTrLoading || !isLocaleReady) {
+  if (isTrLoading) {
     return <div className="min-h-screen flex items-center justify-center bg-background"><Loader2 className="h-10 w-10 animate-spin opacity-20 text-primary" /></div>;
   }
 
@@ -401,7 +405,12 @@ function ProductListContent(props: ProductListClientProps) {
 
   return (
     <main className="relative min-h-screen bg-[#F8F9FA]">
-      <Navbar locale={locale} setLocale={setLocale} themeLine={activeLine} />
+      <Navbar locale={locale} setLocale={(newLoc) => {
+        if (typeof window !== 'undefined') {
+          document.cookie = `NEXT_LOCALE=${newLoc}; path=/; max-age=31536000`;
+          window.location.pathname = window.location.pathname.replace(/^\/[a-z]{2,3}/i, `/${newLoc}`);
+        }
+      }} themeLine={activeLine} />
       
       {/* Hero Section */}
       <section className="pt-40 pb-20 bg-primary text-white relative transition-colors duration-700 overflow-hidden">

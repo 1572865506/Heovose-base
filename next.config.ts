@@ -9,6 +9,8 @@ const nextConfig: NextConfig = {
     ignoreDuringBuilds: true,
   },
   images: {
+    dangerouslyAllowSVG: true,
+    contentDispositionType: 'attachment',
     remotePatterns: [
       { protocol: 'https', hostname: 'placehold.co', pathname: '/**' },
       { protocol: 'https', hostname: 'images.unsplash.com', pathname: '/**' },

@@ -74,9 +74,7 @@ export default async function Home({ params }: PageProps) {
       return {
         id: item.id,
         key: item.key,
-        content: {
-          [targetLocale]: content[targetLocale] || ""
-        }
+        content: content
       };
     });
 

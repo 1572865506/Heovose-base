@@ -40,8 +40,18 @@ export function LanguageToggle({ currentLocale, setLocale, headerTheme = 'dark',
 
   // 2. 处理动态语种列表
   const availableLanguages = useMemo(() => {
-    if (langSettings?.supportedLanguages && langSettings.supportedLanguages.length > 0) {
-      return langSettings.supportedLanguages;
+    // During SSR and Hydration (before mounted is true),
+    // check client window state if possible, but keep it strictly aligned with standard defaults
+    // to prevent server-client list mismatch.
+    let settings = langSettings;
+    if (!settings && typeof window !== 'undefined') {
+      const publicSettings = (window as any).__HEOVOSE_PUBLIC_SETTINGS__;
+      if (publicSettings?.languages) {
+        settings = publicSettings.languages;
+      }
+    }
+    if (settings?.supportedLanguages && settings.supportedLanguages.length > 0) {
+      return settings.supportedLanguages;
     }
     // 默认保底语种
     return [

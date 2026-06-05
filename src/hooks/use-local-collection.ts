@@ -40,7 +40,33 @@ export function notifyCacheUpdate(path: string, data: any) {
 
 export function useLocalCollection<T = any>(path: string | null, options?: { enabled?: boolean; initialData?: T[] }) {
   const enabled = options?.enabled !== false;
-  
+
+  // 在组件渲染的第一时间同步向 globalCache 填充被劫持的系统配置与分类数据，
+  // 这样在组件初始化 useState(cached?.data) 时就能直接拿到数据，实现真正的 SSR 与 Hydration 同步渲染
+  if (path && !globalCache.has(path)) {
+    const isClient = typeof window !== 'undefined';
+    const isAdmin = isClient ? window.location.pathname.includes('/admin') : false;
+    
+    if (!isAdmin) {
+      const publicSettings = isClient 
+        ? (window as any).__HEOVOSE_PUBLIC_SETTINGS__ 
+        : (typeof global !== 'undefined' ? (global as any).__HEOVOSE_PUBLIC_SETTINGS__ : null);
+        
+      if ((path === 'productCategories' || path.startsWith('productCategories?')) && publicSettings?.productCategories) {
+        const localCategories = publicSettings.productCategories;
+        let localData = localCategories;
+        if (path.includes('parentId=WHOLESALE')) {
+          localData = localCategories.filter((c: any) => c.parentId === 'WHOLESALE' || c.id === 'WHOLESALE');
+        } else if (path.includes('parentId=PROJECT')) {
+          localData = localCategories.filter((c: any) => c.parentId === 'PROJECT' || c.id === 'PROJECT');
+        }
+        globalCache.set(path, { data: localData, timestamp: Date.now() });
+      } else if (path.startsWith('localizedStrings?lang=') && publicSettings?.translations) {
+        globalCache.set(path, { data: publicSettings.translations, timestamp: Date.now() });
+      }
+    }
+  }
+
   if (path && options?.initialData !== undefined && !globalCache.has(path)) {
     globalCache.set(path, { data: options.initialData, timestamp: Date.now() });
   }
@@ -58,6 +84,39 @@ export function useLocalCollection<T = any>(path: string | null, options?: { ena
   }, [path]);
 
   const fetchData = useCallback(async (currentPath: string) => {
+    // 对 productCategories 做本地劫持，避免客户端 AJAX 请求和秒替换闪烁
+    const isAdmin = typeof window !== 'undefined' && window.location.pathname.includes('/admin');
+    if (currentPath.startsWith('productCategories') && !isAdmin) {
+      const publicSettings = typeof window !== 'undefined' ? (window as any).__HEOVOSE_PUBLIC_SETTINGS__ : null;
+      const localCategories = publicSettings?.productCategories || [];
+      
+      let localData = localCategories;
+      if (currentPath.includes('parentId=WHOLESALE')) {
+        localData = localCategories.filter((c: any) => c.parentId === 'WHOLESALE' || c.id === 'WHOLESALE');
+      } else if (currentPath.includes('parentId=PROJECT')) {
+        localData = localCategories.filter((c: any) => c.parentId === 'PROJECT' || c.id === 'PROJECT');
+      }
+      
+      if (currentPath !== latestPathRef.current) return;
+      globalCache.set(currentPath, { data: localData, timestamp: Date.now() });
+      setData(localData);
+      setError(null);
+      setIsLoading(false);
+      return;
+    }
+    // 对 localizedStrings?lang= 做本地劫持，避免客户端 AJAX 请求和秒替换闪烁
+    if (currentPath.startsWith('localizedStrings?lang=') && !isAdmin) {
+      const publicSettings = typeof window !== 'undefined' ? (window as any).__HEOVOSE_PUBLIC_SETTINGS__ : null;
+      const localData = publicSettings?.translations || [];
+      
+      if (currentPath !== latestPathRef.current) return;
+      globalCache.set(currentPath, { data: localData, timestamp: Date.now() });
+      setData(localData);
+      setError(null);
+      setIsLoading(false);
+      return;
+    }
+
     if (pendingRequests.has(currentPath)) {
       try {
         const result = await pendingRequests.get(currentPath);
@@ -169,7 +228,8 @@ export function useLocalCollection<T = any>(path: string | null, options?: { ena
       return;
     }
 
-    // Reset data if path changed and it's not in cache to avoid stale data from different queries
+    // Check cache again, if it has data, set it instead of resetting to null.
+    // This prevents the state from flashing back to null during hydration effects.
     const currentCached = globalCache.get(path);
     if (!currentCached) {
       setData(null);
@@ -177,6 +237,13 @@ export function useLocalCollection<T = any>(path: string | null, options?: { ena
     } else {
       setData(currentCached.data);
       setIsLoading(false);
+    }
+
+    // 针对被劫持的公共路径（分类和系统翻译），若缓存已存在数据，无需再通过网络 Fetch 发起数据拉取
+    // 这样可以避免客户端再次触发 AJAX 导致在网络慢时又被覆盖为中间态空数据
+    const isHijacked = path.startsWith('productCategories') || path.startsWith('localizedStrings?lang=');
+    if (isHijacked && currentCached) {
+      return;
     }
 
     fetchData(path);

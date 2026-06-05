@@ -41,11 +41,18 @@ export function Footer({ locale }: { locale: Locale }) {
   const { data: mapData } = useLocalDoc<any>('homepageContent', 'map');
 
   const { dynamicWholesale, dynamicProject } = useMemo(() => {
-    if (!remoteCats) return { dynamicWholesale: [], dynamicProject: [] };
+    const isClient = typeof window !== 'undefined';
+    const publicSettings = isClient 
+      ? (window as any).__HEOVOSE_PUBLIC_SETTINGS__ 
+      : (typeof global !== 'undefined' ? (global as any).__HEOVOSE_PUBLIC_SETTINGS__ : null);
+    
+    const availableCats = (remoteCats && remoteCats.length > 0) 
+      ? remoteCats 
+      : (publicSettings?.productCategories || []);
 
     return {
-      dynamicWholesale: remoteCats.filter((c: any) => c.parentId === 'WHOLESALE'),
-      dynamicProject: remoteCats.filter((c: any) => c.parentId === 'PROJECT')
+      dynamicWholesale: availableCats.filter((c: any) => c.parentId === 'WHOLESALE'),
+      dynamicProject: availableCats.filter((c: any) => c.parentId === 'PROJECT')
     };
   }, [remoteCats]);
 
@@ -142,7 +149,7 @@ export function Footer({ locale }: { locale: Locale }) {
                 <span className="text-[10px] font-bold text-accent uppercase tracking-widest opacity-80">{tr('nav_wholesale')}</span>
                 <ul className="space-y-4 text-[13px]">
                   {mounted && dynamicWholesale.length > 0 ? (
-                    dynamicWholesale.map(cat => (
+                    dynamicWholesale.map((cat: any) => (
                        <li key={cat.id} className="opacity-60 hover:opacity-100 hover:text-accent cursor-pointer transition-colors">
                         <a href={getLocalizedLink(`/products?category=${encodeURIComponent(cat.slug || cat.id)}`, locale)}>{tr(cat.nameTextId)}</a>
                       </li>
@@ -156,7 +163,7 @@ export function Footer({ locale }: { locale: Locale }) {
                 <span className="text-[10px] font-bold text-accent uppercase tracking-widest opacity-80">{tr('nav_projects')}</span>
                 <ul className="space-y-4 text-[13px]">
                   {mounted && dynamicProject.length > 0 ? (
-                    dynamicProject.map(cat => (
+                    dynamicProject.map((cat: any) => (
                       <li key={cat.id} className="opacity-60 hover:opacity-100 hover:text-accent cursor-pointer transition-colors">
                         <a href={getLocalizedLink(`/products?category=${encodeURIComponent(cat.slug || cat.id)}`, locale)}>{tr(cat.nameTextId)}</a>
                       </li>

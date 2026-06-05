@@ -88,13 +88,26 @@ export default async function RootLayout({
   // 统一在服务端获取公开配置，不再通过 API 终点暴露给外部
   let publicSettings = {};
   try {
-    const [siteConfig, navConfig, aboutConfig, serviceConfig, storageConfig, langConfig] = await Promise.all([
+    const [siteConfig, navConfig, aboutConfig, serviceConfig, storageConfig, langConfig, categories, rawStrings] = await Promise.all([
       db.setting.findUnique({ where: { id: 'site' } }),
       db.setting.findUnique({ where: { id: 'navigation' } }),
       db.setting.findUnique({ where: { id: 'about_page_content' } }),
       db.setting.findUnique({ where: { id: 'service_centers' } }),
       db.setting.findUnique({ where: { id: 'storage' } }),
       db.setting.findUnique({ where: { id: 'languages' } }),
+      db.productCategory.findMany({
+        include: {
+          nameText: true,
+          descriptionText: true,
+        },
+        orderBy: {
+          order: 'asc',
+        },
+      }),
+      db.localizedString.findMany({
+        orderBy: { id: 'asc' },
+        take: 5000,
+      }),
     ]);
 
     const parseSafeJson = (str: string | null) => {
@@ -112,6 +125,32 @@ export default async function RootLayout({
       }
     };
 
+    // Filter translation strings to prune payload (identical to API filter logic)
+    const bizPrefixes = [
+      'prod_', 'cat_', 'spec_', 'biz_tr_', 'psl_', 'psv_', 'psg_', 
+      'adv_'
+    ];
+
+    const filteredStrings = (rawStrings || []).filter((item: any) => {
+      const itemId = item.id || '';
+      const itemKey = item.key || '';
+      return !bizPrefixes.some(prefix => 
+        itemId.startsWith(prefix) || itemKey.startsWith(prefix)
+      );
+    });
+
+    const localeTranslations = filteredStrings.map((item: any) => {
+      let content = (item.content as any) || {};
+      if (content && typeof content === 'object' && 'content' in content && typeof content.content === 'object' && !Array.isArray(content.content)) {
+        content = content.content;
+      }
+      return {
+        id: item.id,
+        key: item.key,
+        content: content
+      };
+    });
+
     publicSettings = {
       site: parseSafeJson(siteConfig?.value ?? null) || {},
       navigation: parseSafeJson(navConfig?.value ?? null) || {},
@@ -127,7 +166,15 @@ export default async function RootLayout({
         ],
         defaultLanguage: 'zh'
       },
+      productCategories: categories || [],
+      translations: localeTranslations,
     };
+
+    // Inject into Node.js global context so useLocalCollection and useLocalDoc hooks
+    // can resolve database records synchronously during server-side render (SSR).
+    if (typeof global !== 'undefined') {
+      (global as any).__HEOVOSE_PUBLIC_SETTINGS__ = publicSettings;
+    }
   } catch (e) {
     console.error('[Layout Error] Failed to load public settings:', e);
   }

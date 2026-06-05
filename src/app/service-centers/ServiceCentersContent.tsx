@@ -69,35 +69,15 @@ export default function ServiceCentersContent({ initialLocale }: ServiceCentersC
 
   const centers = useMemo(() => serviceCentersData?.centers || [], [serviceCentersData]);
 
+  const locale = initialLocale || 'en';
+
   // Synchronize locale changes with cookie/localStorage
   useEffect(() => {
-    const detectLocale = () => {
-      const activeLangs = langSettings?.supportedLanguages?.map((l: any) => l.code) || ['en', 'zh', 'id', 'vi', 'vn'];
-      const defaultLang = (langSettings?.defaultLanguage as Locale) || 'en';
-      const langParam = searchParams.get('lang');
-      if (langParam && activeLangs.includes(langParam)) return langParam as Locale;
-      
-      const saved = typeof window !== 'undefined' ? localStorage.getItem('heovose-locale') as Locale : null;
-      if (saved && activeLangs.includes(saved)) return saved;
-      
-      if (initialLocale && activeLangs.includes(initialLocale)) return initialLocale;
-      
-      const browserLang = typeof navigator !== 'undefined' 
-        ? (navigator.languages && navigator.languages.length > 0 
-           ? navigator.languages[0].split('-')[0].toLowerCase() 
-           : navigator.language.split('-')[0].toLowerCase()) as Locale
-        : 'en';
-      if (activeLangs.includes(browserLang)) return browserLang;
-      
-      return defaultLang;
-    };
-    const detected = detectLocale();
-    setLocale(detected);
     if (typeof window !== 'undefined') {
-      localStorage.setItem('heovose-locale', detected);
-      document.cookie = `NEXT_LOCALE=${detected}; path=/; max-age=31536000`;
+      localStorage.setItem('heovose-locale', locale);
+      document.cookie = `NEXT_LOCALE=${locale}; path=/; max-age=31536000`;
     }
-  }, [searchParams, langSettings, initialLocale]);
+  }, [locale]);
 
   // Aggregate dynamic regions from all active centers
   const availableRegions = useMemo(() => {
@@ -160,7 +140,12 @@ export default function ServiceCentersContent({ initialLocale }: ServiceCentersC
   return (
     <main className="relative min-h-screen bg-slate-50 overflow-x-clip font-body selection:bg-primary selection:text-white">
       {/* 1. Global Navigation Navbar */}
-      <Navbar locale={locale} setLocale={setLocale} />
+      <Navbar locale={locale} setLocale={(newLoc) => {
+        if (typeof window !== 'undefined') {
+          document.cookie = `NEXT_LOCALE=${newLoc}; path=/; max-age=31536000`;
+          window.location.pathname = window.location.pathname.replace(/^\/[a-z]{2,3}/i, `/${newLoc}`);
+        }
+      }} />
 
       {/* Aurora Background Lights */}
       <div className="absolute top-0 right-[-10%] w-[800px] h-[800px] rounded-full bg-primary/[0.04] blur-[160px] pointer-events-none z-0" />

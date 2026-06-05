@@ -168,9 +168,7 @@ export default async function ProductListPage({ params }: PageProps) {
     return {
       id: item.id,
       key: item.key,
-      content: {
-        [lang]: content[lang] || ""
-      }
+      content: content
     };
   };
 
@@ -196,6 +194,7 @@ export default async function ProductListPage({ params }: PageProps) {
 
   return (
     <ProductListClient
+      initialLocale={targetLocale}
       initialProducts={serializedProducts}
       initialTotal={initialTotal}
       initialCategories={serializedCategories}

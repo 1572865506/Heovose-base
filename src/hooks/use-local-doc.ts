@@ -9,6 +9,20 @@ export function useLocalDoc<T = any>(path: string | null, id: string | null = ''
   const enabled = options?.enabled !== false;
   const cacheKey = path ? `${path}/${id || ''}` : null;
   
+  // 在组件渲染的第一时间同步向 globalCache 填充被劫持的系统配置与分类数据，
+  // 这样在组件初始化 useState(cached?.data) 时就能直接拿到数据，实现真正的 SSR 与 Hydration 同步渲染
+  if (cacheKey && path === 'settings' && id && !globalCache.has(cacheKey)) {
+    const PUBLIC_SETTINGS = ['site', 'navigation', 'about_page_content', 'service_centers', 'storage', 'languages'];
+    if (PUBLIC_SETTINGS.includes(id)) {
+      const isClient = typeof window !== 'undefined';
+      const publicSettings = isClient 
+        ? (window as any).__HEOVOSE_PUBLIC_SETTINGS__ 
+        : (typeof global !== 'undefined' ? (global as any).__HEOVOSE_PUBLIC_SETTINGS__ : null);
+      const localData = publicSettings?.[id] || {};
+      globalCache.set(cacheKey, { data: localData, timestamp: Date.now() });
+    }
+  }
+
   if (cacheKey && options?.initialData !== undefined && !globalCache.has(cacheKey)) {
     globalCache.set(cacheKey, { data: options.initialData, timestamp: Date.now() });
   }
@@ -108,6 +122,16 @@ export function useLocalDoc<T = any>(path: string | null, id: string | null = ''
       if (!path || id === null || id === 'new') setData(null);
       setIsLoading(false);
       return;
+    }
+
+    const key = `${path}/${id || ''}`;
+    const currentCached = globalCache.get(key);
+    if (!currentCached) {
+      setData(null);
+      setIsLoading(true);
+    } else {
+      setData(currentCached.data);
+      setIsLoading(false);
     }
 
     fetchData(path, id);

@@ -179,6 +179,8 @@ export async function PUT(
             mapTitleTextId, mapSubtitleTextId,
             heroWholesaleLinkType, heroWholesaleLinkUrl,
             heroProjectLinkType, heroProjectLinkUrl,
+            galleryTitleEn, galleryTitleZh,
+            gallerySubtitleEn, gallerySubtitleZh,
             ...safeData 
           } = filteredData;
           
@@ -220,6 +222,22 @@ export async function PUT(
                 `UPDATE "HomepageContent" SET "heroProjectLinkType" = $1, "heroProjectLinkUrl" = $2 WHERE id = $3`,
                 heroProjectLinkType || 'category',
                 heroProjectLinkUrl || null,
+                id
+              );
+            }
+            if (galleryTitleEn !== undefined || galleryTitleZh !== undefined) {
+              await db.$executeRawUnsafe(
+                `UPDATE "HomepageContent" SET "galleryTitleEn" = $1, "galleryTitleZh" = $2 WHERE id = $3`,
+                galleryTitleEn || null,
+                galleryTitleZh || null,
+                id
+              );
+            }
+            if (gallerySubtitleEn !== undefined || gallerySubtitleZh !== undefined) {
+              await db.$executeRawUnsafe(
+                `UPDATE "HomepageContent" SET "gallerySubtitleEn" = $1, "gallerySubtitleZh" = $2 WHERE id = $3`,
+                gallerySubtitleEn || null,
+                gallerySubtitleZh || null,
                 id
               );
             }

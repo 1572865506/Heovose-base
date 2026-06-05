@@ -8,6 +8,10 @@ interface Props {
   params: Promise<{ locale: string; id: string }>;
 }
 
+// Enable Incremental Static Regeneration (ISR) with 1-hour stale revalidation
+export const revalidate = 3600;
+export const dynamicParams = true;
+
 // Generate static params to statically compile detail pages for all published products across all locales
 export async function generateStaticParams() {
   try {

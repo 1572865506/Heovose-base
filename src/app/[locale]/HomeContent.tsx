@@ -39,7 +39,6 @@ interface HomeContentProps {
 }
 
 export default function HomeContent({ initialLocale, initialTranslations, initialConfigs }: HomeContentProps) {
-  const [locale, setLocale] = useState<Locale>(initialLocale);
   const [headerTheme, setHeaderTheme] = useState<'light' | 'dark'>('dark');
   const [mountHeavyComponents, setMountHeavyComponents] = useState(false);
   const searchParams = useSearchParams();
@@ -62,47 +61,23 @@ export default function HomeContent({ initialLocale, initialTranslations, initia
   const { data: heroConfig, isLoading: isHeroLoading } = useLocalDoc<any>('homepageContent', 'hero', { initialData: initialConfigs.hero });
   const { data: videoConfig, isLoading: isVideoLoading } = useLocalDoc<any>('homepageContent', 'video', { initialData: initialConfigs.video });
   const { data: mapConfig, isLoading: isMapLoading } = useLocalDoc<any>('homepageContent', 'map', { initialData: initialConfigs.map });
-  const { data: langSettings } = useLocalDoc<any>('settings', 'languages', { initialData: initialConfigs.languages });
   
   // 预先注册并加载当前的翻译（通过 initialTranslations 直接填充缓存，完全避免二次加载闪烁）
-  useLocalCollection<any>(`localizedStrings?lang=${locale}`, { initialData: initialTranslations });
-  useTranslations(locale);
+  useLocalCollection<any>(`localizedStrings?lang=${initialLocale}`, { initialData: initialTranslations });
+  useTranslations(initialLocale);
 
-  useEffect(() => {
-    const detectLocale = () => {
-      const activeLangs = langSettings?.supportedLanguages?.map((l: any) => l.code) || ['en', 'zh', 'id', 'vi'];
-      const defaultLang = (langSettings?.defaultLanguage as Locale) || 'en';
+  // 严格遵守单一事实源原则：locale 必须与当前路由的 initialLocale 100% 对齐。
+  // 不得在挂载后执行浏览器环境检测进而 setLocale 修改语种状态，这会导致 SSR 生成的 HTML 字符串与客户端第一帧的 DOM 对不上。
+  // locale 的切换必须伴随 URL 重定向或在最顶层完成。
+  const locale = initialLocale;
 
-      // 1. 优先使用 URL 中匹配出来的 locale
-      if (initialLocale && activeLangs.includes(initialLocale)) return initialLocale;
-      
-      // 2. 备用检测 URL 参数 (作后备支持)
-      const langParam = searchParams.get('lang');
-      if (langParam && activeLangs.includes(langParam)) return langParam as Locale;
-      
-      // 3. 检查本地存储
-      const saved = typeof window !== 'undefined' ? localStorage.getItem('heovose-locale') as Locale : null;
-      if (saved && activeLangs.includes(saved)) return saved;
-      
-      // 4. 检查浏览器语言
-      const browserLang = typeof navigator !== 'undefined' 
-        ? (navigator.languages && navigator.languages.length > 0 
-           ? navigator.languages[0].split('-')[0].toLowerCase() 
-           : navigator.language.split('-')[0].toLowerCase()) as Locale
-        : 'en';
-      if (activeLangs.includes(browserLang)) return browserLang;
-      
-      return defaultLang;
-    };
-    
-    const detected = detectLocale();
-    setLocale(detected);
-    
+  const setLocale = (newLoc: Locale) => {
     if (typeof window !== 'undefined') {
-      localStorage.setItem('heovose-locale', detected);
-      document.cookie = `NEXT_LOCALE=${detected}; path=/; max-age=31536000`; // 1 year
+      document.cookie = `NEXT_LOCALE=${newLoc}; path=/; max-age=31536000`; // 1 year
+      localStorage.setItem('heovose-locale', newLoc);
+      window.location.pathname = window.location.pathname.replace(/^\/[a-z]{2,3}/i, `/${newLoc}`);
     }
-  }, [searchParams, langSettings, initialLocale]);
+  };
 
   // 更加健壮的锚点滚动逻辑：直接监听 hash 并等待 DOM 元素出现后自动平滑滚动
   useEffect(() => {
