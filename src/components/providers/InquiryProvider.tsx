@@ -2,7 +2,7 @@
 
 import React, { createContext, useContext, useState, useEffect, ReactNode, Suspense } from 'react';
 import nextDynamic from 'next/dynamic';
-import { useParams } from 'next/navigation';
+import { useParams, usePathname } from 'next/navigation';
 import { Locale } from '@/lib/translations';
 
 const InquiryDialog = nextDynamic(
@@ -49,9 +49,13 @@ export function InquiryProvider({ children, locale: propLocale }: InquiryProvide
   const [inquiryOptions, setInquiryOptions] = useState<{ productId?: string; productName?: string }>({});
   
   const params = useParams();
+  const pathname = usePathname();
   const locale = (params?.locale as Locale) || propLocale || 'en';
 
   const [showAnalytics, setShowAnalytics] = useState(false);
+  const isAdmin = pathname?.startsWith('/admin') || 
+                  pathname?.startsWith('/auth') || 
+                  pathname?.includes('/login');
 
   useEffect(() => {
     if ('requestIdleCallback' in window) {
@@ -74,9 +78,11 @@ export function InquiryProvider({ children, locale: propLocale }: InquiryProvide
 
   return (
     <InquiryContext.Provider value={{ openInquiry }}>
-      <Suspense fallback={null}>
-        <LanguageIntelligence />
-      </Suspense>
+      {!isAdmin && (
+        <Suspense fallback={null}>
+          <LanguageIntelligence />
+        </Suspense>
+      )}
       {showAnalytics && <AnalyticsTracker />}
       {children}
       {isOpen && (
@@ -88,7 +94,7 @@ export function InquiryProvider({ children, locale: propLocale }: InquiryProvide
           productName={inquiryOptions.productName}
         />
       )}
-      <CookieConsent />
+      {!isAdmin && <CookieConsent />}
     </InquiryContext.Provider>
   );
 }

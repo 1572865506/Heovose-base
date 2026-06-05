@@ -90,6 +90,7 @@ export async function GET(request: Request) {
       const matchedIds = matchedStrings.map((item: { id: string }) => item.id);
       
       where.OR = [
+        { id: { contains: search, mode: 'insensitive' } },
         { nameTextId: { in: matchedIds } },
         { descriptionTextId: { in: matchedIds } }
       ];

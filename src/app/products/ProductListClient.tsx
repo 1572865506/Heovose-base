@@ -196,8 +196,17 @@ function ProductListContent(props: ProductListClientProps) {
     return isNaN(page) || page < 1 ? 1 : page;
   }, [searchParams]);
 
+  // 判断是否为默认页面状态（非搜索、无特定分类、批发产品线且处于第1页）
+  const isDefaultState = currentPage === 1 && 
+                         !categoryParam && 
+                         !searchParams.get('search') && 
+                         activeLine === 'wholesale';
+
   // Initialize products using the server-rendered preloaded data
   const [productsData, setProductsData] = useState<{ products: Product[], pagination: { total: number, page: number, limit: number, totalPages: number } } | null>(() => {
+    if (!isDefaultState) {
+      return null;
+    }
     return {
       products: initialProducts,
       pagination: {
@@ -208,7 +217,7 @@ function ProductListContent(props: ProductListClientProps) {
       }
     };
   });
-  const [isProdsLoading, setIsProdsLoading] = useState(false);
+  const [isProdsLoading, setIsProdsLoading] = useState(!isDefaultState);
   const isFirstRender = useRef(true);
 
   // 快速搜索 300ms 防抖处理

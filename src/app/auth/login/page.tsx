@@ -2,8 +2,8 @@
 import '../../admin/admin-theme.css';
 
 import { useState, useEffect } from "react";
-import { signIn } from "next-auth/react";
 import { useRouter } from "next/navigation";
+import { loginAction } from "../actions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardHeader, CardTitle, CardContent, CardFooter } from "@/components/ui/card";
@@ -39,6 +39,19 @@ export default function LoginPage() {
   const { resolvedTheme } = useAdminTheme();
   const isDark = resolvedTheme === 'dark';
 
+  // 动态将客户端中 NextAuth 要求的环境变量修正为浏览器当前真实的 origin，
+  // 彻底避免从不同局域网 IP、本地 localhost 或生产域名访问时由于 Origin 不匹配或端上变量缺失导致的 Invalid URL 崩溃报错。
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const origin = window.location.origin;
+      const anyWin = window as any;
+      anyWin.process = anyWin.process || {};
+      anyWin.process.env = anyWin.process.env || {};
+      anyWin.process.env.NEXTAUTH_URL = origin;
+      anyWin.process.env.AUTH_URL = origin;
+    }
+  }, []);
+
   // 决定最终展示的 Logo 图片
   const logoSrc = isDark
     ? (siteConfig?.logoInverted || siteConfig?.logoStandard)
@@ -53,25 +66,32 @@ export default function LoginPage() {
     setError("");
 
     try {
-      const result = await signIn("credentials", {
-        email,
-        password,
-        redirect: false,
-      });
+      const result = await loginAction({ email, password });
 
       if (result?.error) {
         let errorMsg = "登录失败：邮箱或密码错误";
-        if (result.error === "Configuration" || result.error === "AccessDenied") {
+        if (result.error === "AccessDenied") {
           errorMsg = "系统内部错误，请联系系统管理员";
         }
         setError(errorMsg);
         toast({ title: "认证失败", description: errorMsg, variant: "destructive" });
       } else {
         toast({ title: "登录成功", description: "欢迎回来，正在为您准备控制台..." });
-        router.push("/admin");
+        window.location.href = "/admin";
       }
-    } catch (err) {
-      setError("发生意外错误");
+    } catch (err: any) {
+      // 允许 Next.js 的服务端正常跳转机制抛出重定向信号
+      if (err?.message === "NEXT_REDIRECT" || err?.digest?.startsWith("NEXT_REDIRECT")) {
+        return;
+      }
+      console.error("Login unexpected client error:", err);
+      const errDetail = String(err?.message || err || '');
+      setError(`发生意外错误: ${errDetail}`);
+      toast({ 
+        title: "认证意外中断", 
+        description: `错误详情: ${errDetail}`, 
+        variant: "destructive" 
+      });
     } finally {
       setIsLoading(false);
     }

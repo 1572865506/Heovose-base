@@ -98,6 +98,10 @@ export default auth(async (request) => {
     if (origin) {
       const isAllowedOrigin = origin === appUrl || 
                               origin.startsWith('http://localhost:') || 
+                              origin.startsWith('http://127.0.0.1:') || 
+                              origin.startsWith('http://192.168.') || 
+                              origin.startsWith('http://10.') || 
+                              origin.startsWith('http://172.') || 
                               origin.endsWith('.heovose.com') ||
                               origin.endsWith('.web.app');
       if (!isAllowedOrigin) {
@@ -110,6 +114,10 @@ export default auth(async (request) => {
         const appUrlObj = new URL(appUrl);
         const isAllowedReferer = refererUrl.origin === appUrlObj.origin ||
                                  refererUrl.origin.startsWith('http://localhost:') ||
+                                 refererUrl.origin.startsWith('http://127.0.0.1:') ||
+                                 refererUrl.origin.startsWith('http://192.168.') ||
+                                 refererUrl.origin.startsWith('http://10.') ||
+                                 refererUrl.origin.startsWith('http://172.') ||
                                  refererUrl.hostname.endsWith('.heovose.com') ||
                                  refererUrl.hostname.endsWith('.web.app');
         if (!isAllowedReferer) {
@@ -148,9 +156,9 @@ export default auth(async (request) => {
   }
 
   // Rate limiting for specific high-risk API endpoints (including products API to prevent search DoS)
-  if (pathname === '/api/products' || pathname === '/api/analytics/track' || pathname.startsWith('/api/auth') || pathname === '/api/inquiries' || pathname === '/api/upload') {
+  if (pathname === '/api/products' || pathname === '/api/analytics/track' || pathname.startsWith('/api/auth') || pathname.endsWith('/auth/login') || pathname === '/api/inquiries' || pathname === '/api/upload') {
     const isGetProducts = pathname === '/api/products' && request.method === 'GET';
-    const isStateChangingPost = request.method === 'POST' && (pathname.startsWith('/api/auth') || pathname === '/api/inquiries' || pathname === '/api/upload' || pathname === '/api/analytics/track');
+    const isStateChangingPost = request.method === 'POST' && (pathname.startsWith('/api/auth') || pathname.endsWith('/auth/login') || pathname === '/api/inquiries' || pathname === '/api/upload' || pathname === '/api/analytics/track');
     
     if (isGetProducts || isStateChangingPost) {
       const ip = (request as any).ip || request.headers.get("x-forwarded-for")?.split(",")[0].trim() || "127.0.0.1";
@@ -162,7 +170,7 @@ export default auth(async (request) => {
         limit = 5; // max 5 inquiry submissions per minute
       } else if (pathname === '/api/upload') {
         limit = 10; // max 10 file uploads per minute
-      } else if (pathname.startsWith('/api/auth')) {
+      } else if (pathname.startsWith('/api/auth') || pathname.endsWith('/auth/login')) {
         limit = 10; // max 10 login / auth POST attempts per minute
       } else if (pathname === '/api/products') {
         limit = 60; // max 60 product search/list requests per minute to prevent DoS

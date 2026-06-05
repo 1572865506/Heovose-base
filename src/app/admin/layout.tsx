@@ -248,7 +248,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
             <div className="flex gap-4 pt-4">
               <Button variant="outline" className="flex-1 h-14 rounded-2xl font-bold uppercase tracking-widest text-[10px] border-border/60 hover:bg-muted/10" onClick={() => window.location.reload()}><RefreshCw className="mr-2 h-4 w-4" /> 重新同步权限</Button>
-              <Button className="flex-1 h-14 rounded-2xl font-bold uppercase tracking-widest text-[10px] shadow-lg shadow-primary/20" onClick={() => signOut()}><LogOut className="mr-2 h-4 w-4" /> 退出当前账号</Button>
+              <Button className="flex-1 h-14 rounded-2xl font-bold uppercase tracking-widest text-[10px] shadow-lg shadow-primary/20" onClick={() => signOut({ redirectTo: '/auth/login' })}><LogOut className="mr-2 h-4 w-4" /> 退出当前账号</Button>
             </div>
           </AlertDescription>
         </Alert>
@@ -429,7 +429,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                     </Link>
                   </DropdownMenuItem>
                   <DropdownMenuSeparator className="mx-2 bg-border/40" />
-                  <DropdownMenuItem className="rounded-xl px-4 py-3 cursor-pointer text-destructive focus:bg-destructive/15 data-[highlighted]:bg-destructive/15 focus:text-destructive data-[highlighted]:text-destructive transition-colors" onClick={() => signOut()}>
+                  <DropdownMenuItem className="rounded-xl px-4 py-3 cursor-pointer text-destructive focus:bg-destructive/15 data-[highlighted]:bg-destructive/15 focus:text-destructive data-[highlighted]:text-destructive transition-colors" onClick={() => signOut({ redirectTo: '/auth/login' })}>
                     <div className="flex items-center gap-4">
                       <LogOut className="h-4 w-4" />
                       <span className="text-xs font-bold uppercase tracking-widest">注销登录</span>
