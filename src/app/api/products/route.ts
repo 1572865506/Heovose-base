@@ -3,6 +3,21 @@ import db from '@/lib/db';
 
 export const dynamic = 'force-dynamic';
 
+function splitSearchQuery(query: string): string[] {
+  const terms: string[] = [];
+  // 匹配连续的英文字母/数字/小数点，或者中文单字
+  const regex = /([a-zA-Z0-9.]+)|([\u4e00-\u9fa5])/g;
+  let match;
+  while ((match = regex.exec(query)) !== null) {
+    if (match[1]) {
+      terms.push(match[1]);
+    } else if (match[2]) {
+      terms.push(match[2]);
+    }
+  }
+  return terms.length > 0 ? terms : [query];
+}
+
 export async function GET(request: Request) {
   try {
     const { searchParams } = new URL(request.url);
@@ -51,6 +66,7 @@ export async function GET(request: Request) {
 
     // 模糊检索（后端通过 translation 辅助进行产品搜索）
     if (search) {
+      const terms = splitSearchQuery(search);
       // 使用 Prisma 参数化查询替代 $queryRaw，完全防范 SQL 注入风险
       const matchedStrings = await db.localizedString.findMany({
         where: {
@@ -58,14 +74,14 @@ export async function GET(request: Request) {
             { id: { startsWith: 'prod_' } },
             { id: { startsWith: 'biz_tr_' } }
           ],
-          AND: {
+          AND: terms.map((term) => ({
             OR: [
-              { content: { path: ['zh'], string_contains: search, mode: 'insensitive' } },
-              { content: { path: ['en'], string_contains: search, mode: 'insensitive' } },
-              { content: { path: ['id'], string_contains: search, mode: 'insensitive' } },
-              { content: { path: ['vi'], string_contains: search, mode: 'insensitive' } },
+              { content: { path: ['zh'], string_contains: term, mode: 'insensitive' } },
+              { content: { path: ['en'], string_contains: term, mode: 'insensitive' } },
+              { content: { path: ['id'], string_contains: term, mode: 'insensitive' } },
+              { content: { path: ['vi'], string_contains: term, mode: 'insensitive' } },
             ]
-          }
+          }))
         },
         select: {
           id: true

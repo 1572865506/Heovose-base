@@ -270,11 +270,28 @@ export function Footer({ locale }: { locale: Locale }) {
 
           {/* Presence Right (9/12) */}
           <div className="lg:col-span-9 space-y-8 lg:pl-32">
-            <h4 className="text-xl font-bold text-white">
-              {mapData?.mapTitleTextId ? tr(mapData.mapTitleTextId) : "Global Manufacturing Presence In"}
+            <h4 className="text-xl font-bold text-white min-h-[28px] flex items-center">
+              {!mounted || !mapData ? (
+                <span className="inline-block h-6 w-56 bg-white/10 rounded animate-pulse" />
+              ) : (
+                tr(mapData.mapTitleTextId) || "Global Manufacturing Presence"
+              )}
             </h4>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-              {mounted && sortedLocs.length > 0 ? (
+              {!mounted || sortedLocs.length === 0 ? (
+                Array.from({ length: 4 }).map((_, idx) => (
+                  <div key={`skeleton-loc-${idx}`} className="p-6 rounded-2xl bg-white/5 border border-white/5 space-y-4 animate-pulse">
+                    <div className="flex items-center justify-between">
+                      <div className="h-5 w-7 bg-white/10 rounded" />
+                      <div className="h-3 w-16 bg-white/10 rounded" />
+                    </div>
+                    <div className="space-y-2">
+                      <div className="h-4 w-3/4 bg-white/10 rounded" />
+                      <div className="h-3 w-5/6 bg-white/10 rounded" />
+                    </div>
+                  </div>
+                ))
+              ) : (
                 sortedLocs.map((loc: any) => {
                   // Determine flag based on address or title keywords
                   const flagCode = loc.countryCode || 'cn';
@@ -332,8 +349,6 @@ export function Footer({ locale }: { locale: Locale }) {
                     </div>
                   );
                 })
-              ) : (
-                <div className="col-span-full py-10 italic opacity-40 text-xs">Loading presence data...</div>
               )}
             </div>
           </div>

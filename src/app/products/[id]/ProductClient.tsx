@@ -7,13 +7,14 @@ import { useSearchParams } from 'next/navigation';
 import { Locale } from '@/lib/translations';
 import { Navbar } from '@/components/Navbar';
 import { Footer } from '@/components/Footer';
-import { 
-  ArrowRight, 
-  Star, 
-  ShieldCheck, 
-  Download, 
-  Mail, 
+import {
+  ArrowRight,
+  Star,
+  ShieldCheck,
+  Download,
+  Mail,
   ChevronRight,
+  ChevronLeft,
   Globe,
   Zap,
   Phone,
@@ -57,7 +58,7 @@ const SYSTEM_FALLBACKS: Record<string, Record<Locale, string>> = {
 export default function ProductClient({ product, initialLocale }: { product: any, initialLocale: Locale }) {
   const searchParams = useSearchParams();
   const { openInquiry } = useInquiry();
-  
+
   // Synchronous detectLocale to avoid secondary rendering pass and prevent Hydration Mismatch
   const [locale, setLocale] = useState<Locale>(initialLocale);
 
@@ -77,7 +78,7 @@ export default function ProductClient({ product, initialLocale }: { product: any
   useEffect(() => {
     setMounted(true);
     setProductUrl(window.location.href);
-    
+
     // 挂载后再把匹配成功的语种存入 local storage 和 Cookie
     if (typeof window !== 'undefined') {
       localStorage.setItem('heovose-locale', locale);
@@ -87,9 +88,9 @@ export default function ProductClient({ product, initialLocale }: { product: any
 
   useEffect(() => {
     if (product?.mainImageUrl) {
-      setActiveMedia({ 
-        url: product.mainImageUrl, 
-        type: isVideoUrl(product.mainImageUrl) ? 'video' : 'image' 
+      setActiveMedia({
+        url: product.mainImageUrl,
+        type: isVideoUrl(product.mainImageUrl) ? 'video' : 'image'
       });
     }
   }, [product?.mainImageUrl]);
@@ -101,7 +102,7 @@ export default function ProductClient({ product, initialLocale }: { product: any
   // 本地翻译兜底逻辑，服务于 SSR 和首次渲染，防止没有接口数据时显示空白
   const getProductText = (textId: string, textObj: any) => {
     if (!textId) return '';
-    
+
     // 校验解析出的翻译内容是否是系统级翻译 Key 或是无有效内容的英文 Key。
     // 如果是 Key 模式（如大写且含下划线，或含有前缀等），直接判定为未翻译，返回空。
     const isTranslationKey = (val: any): boolean => {
@@ -234,7 +235,7 @@ export default function ProductClient({ product, initialLocale }: { product: any
       setSanitizedDetails('');
     }
   }, [productDetails]);
-  
+
   const categoryName = useMemo(() => {
     if (!product) return '';
     // 优先采用产品自带的分类多语言实体，满足 SSR 阶段渲染
@@ -256,7 +257,33 @@ export default function ProductClient({ product, initialLocale }: { product: any
     if (!product) return [];
     return [product.mainImageUrl, ...(product.galleryImageUrls || [])].filter(Boolean) as string[];
   }, [product]);
-  
+
+  const zoomImages = useMemo(() => {
+    return galleryImages.filter(img => !isVideoUrl(img));
+  }, [galleryImages]);
+
+  const currentZoomIndex = useMemo(() => {
+    return zoomImages.indexOf(activeMedia.url);
+  }, [zoomImages, activeMedia.url]);
+
+  useEffect(() => {
+    if (!isZoomOpen) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        setIsZoomOpen(false);
+        setZoomScale(1);
+      } else if (e.key === 'ArrowLeft' && currentZoomIndex > 0) {
+        setActiveMedia({ url: zoomImages[currentZoomIndex - 1], type: 'image' });
+        setZoomScale(1);
+      } else if (e.key === 'ArrowRight' && currentZoomIndex < zoomImages.length - 1) {
+        setActiveMedia({ url: zoomImages[currentZoomIndex + 1], type: 'image' });
+        setZoomScale(1);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isZoomOpen, currentZoomIndex, zoomImages]);
+
   const { data: relatedProducts } = useLocalCollection<any>(product?.id ? `products/${product.id}/related` : null);
 
   // 注入推荐产品的翻译数据
@@ -297,7 +324,7 @@ export default function ProductClient({ product, initialLocale }: { product: any
     if (!product) return null;
     const productName = getProductText(product.nameTextId, product.nameText);
     const productDesc = product.descriptionTextId ? getProductText(product.descriptionTextId, product.descriptionText) : '';
-    
+
     return {
       "@context": "https://schema.org",
       "@type": "Product",
@@ -357,14 +384,29 @@ export default function ProductClient({ product, initialLocale }: { product: any
             <div className="lg:col-span-7 space-y-6">
               <div className="relative aspect-[11/9] bg-muted/20 rounded-[2.5rem] overflow-hidden border border-border/40 shadow-inner group flex items-center justify-center">
                 {activeMedia.type === 'video' ? (
-                  <video src={getAssetUrl(activeMedia.url)} controls autoPlay playsInline muted className="w-full h-full object-cover rounded-[2.5rem]" />
+                  <video
+                    src={getAssetUrl(activeMedia.url)}
+                    controls
+                    autoPlay
+                    playsInline
+                    muted
+                    onEnded={() => {
+                      if (product?.mainImageUrl) {
+                        setActiveMedia({
+                          url: product.mainImageUrl,
+                          type: isVideoUrl(product.mainImageUrl) ? 'video' : 'image'
+                        });
+                      }
+                    }}
+                    className="w-full h-full object-cover rounded-[2.5rem]"
+                  />
                 ) : (
-                  <Image 
-                    src={getAssetUrl(activeMedia.url || product.mainImageUrl || '/image/product-placeholder.png')} 
-                    alt={getProductText(product.nameTextId, product.nameText)} 
-                    fill 
+                  <Image
+                    src={getAssetUrl(activeMedia.url || product.mainImageUrl || '/image/product-placeholder.png')}
+                    alt={getProductText(product.nameTextId, product.nameText)}
+                    fill
                     sizes="(max-width: 768px) 100vw, (max-width: 1200px) 60vw, 50vw"
-                    className="object-cover premium-zoom-image cursor-zoom-in" 
+                    className="object-cover premium-zoom-image cursor-zoom-in"
                     onClick={() => setIsZoomOpen(true)}
                   />
                 )}
@@ -375,11 +417,11 @@ export default function ProductClient({ product, initialLocale }: { product: any
                   const isActive = activeMedia.url === img;
 
                   return (
-                    <button 
-                      key={`img-${idx}`} 
-                      onClick={() => setActiveMedia({ url: img, type: isVid ? 'video' : 'image' })} 
+                    <button
+                      key={`img-${idx}`}
+                      onClick={() => setActiveMedia({ url: img, type: isVid ? 'video' : 'image' })}
                       className={cn(
-                        "relative aspect-[11/9] rounded-2xl overflow-hidden border-2 bg-muted/10 transition-all duration-500 ease-[cubic-bezier(0.23,1,0.32,1)] flex items-center justify-center group/media-thumb", 
+                        "relative aspect-[11/9] rounded-2xl overflow-hidden border-2 bg-muted/10 transition-all duration-500 ease-[cubic-bezier(0.23,1,0.32,1)] flex items-center justify-center group/media-thumb",
                         isActive ? "border-primary" : "border-transparent hover:border-primary/40"
                       )}
                     >
@@ -402,10 +444,10 @@ export default function ProductClient({ product, initialLocale }: { product: any
                 })}
 
                 {product.videoUrl && ![product.mainImageUrl, ...(product.galleryImageUrls || [])].filter(Boolean).includes(product.videoUrl) && (
-                  <button 
-                    onClick={() => setActiveMedia({ url: product.videoUrl, type: 'video' })} 
+                  <button
+                    onClick={() => setActiveMedia({ url: product.videoUrl, type: 'video' })}
                     className={cn(
-                      "relative aspect-[11/9] rounded-2xl overflow-hidden border-2 bg-muted/10 transition-all duration-500 ease-[cubic-bezier(0.23,1,0.32,1)] flex items-center justify-center group/vid-thumb", 
+                      "relative aspect-[11/9] rounded-2xl overflow-hidden border-2 bg-muted/10 transition-all duration-500 ease-[cubic-bezier(0.23,1,0.32,1)] flex items-center justify-center group/vid-thumb",
                       activeMedia.type === 'video' && activeMedia.url === product.videoUrl ? "border-primary" : "border-transparent hover:border-primary/40"
                     )}
                   >
@@ -451,135 +493,180 @@ export default function ProductClient({ product, initialLocale }: { product: any
                   <span className="text-xs font-bold uppercase tracking-[0.2em]">{getSystemText('core_advantages')}</span>
                 </div>
                 <div className="grid grid-cols-1 gap-4">
-                   {advantages.map((adv: string, i: number) => (
-                     <div key={i} className="flex items-start gap-4 p-3 bg-muted/20 rounded-2xl border border-border/20">
-                        <Star className="h-5 w-5 mt-0.5 shrink-0 text-primary fill-primary/10" />
-                        <span className="text-sm text-muted-foreground font-medium whitespace-pre-wrap">{adv}</span>
-                     </div>
-                   ))}
+                  {advantages.map((adv: string, i: number) => (
+                    <div key={i} className="flex items-start gap-4 p-3 bg-muted/20 rounded-2xl border border-border/20">
+                      <Star className="h-5 w-5 mt-0.5 shrink-0 text-primary fill-primary/10" />
+                      <span className="text-sm text-muted-foreground font-medium whitespace-pre-wrap">{adv}</span>
+                    </div>
+                  ))}
                 </div>
               </div>
 
               <div className="flex flex-col sm:flex-row gap-4 pt-6 no-print">
-                  <Button 
-                    onClick={() => openInquiry({ 
-                      productId: product.id, 
-                      productName: getProductText(product.nameTextId, product.nameText) 
-                    })} 
-                    className="h-16 px-10 rounded-2xl text-base font-bold flex-1 shadow-xl"
-                  >
-                    {getSystemText('product_contact_now')} <ArrowRight className="ml-2 h-5 w-5" />
-                  </Button>
-                 <Button onClick={() => window.print()} variant="outline" className="h-16 px-8 rounded-2xl"><Download className="mr-2 h-5 w-5" />{getSystemText('product_spec_sheet')}</Button>
+                <Button
+                  onClick={() => openInquiry({
+                    productId: product.id,
+                    productName: getProductText(product.nameTextId, product.nameText)
+                  })}
+                  className="h-16 px-10 rounded-2xl text-base font-bold flex-1 shadow-xl"
+                >
+                  {getSystemText('product_contact_now')} <ArrowRight className="ml-2 h-5 w-5" />
+                </Button>
+                <Button onClick={() => window.print()} variant="outline" className="h-16 px-8 rounded-2xl"><Download className="mr-2 h-5 w-5" />{getSystemText('product_spec_sheet')}</Button>
               </div>
 
               <div className="pt-8 border-t border-border/40 no-print">
-                 <div className="space-y-3">
-                    <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">{getSystemText('nav_contact')}</span>
-                    <div className="flex flex-col sm:flex-row sm:items-center gap-4 sm:gap-8">
-                       <a href={`mailto:${companyEmail}`} className="flex items-center gap-2 text-sm font-bold text-primary hover:text-primary/80 transition-colors">
-                          <Mail className="h-4 w-4 opacity-40" /> {companyEmail}
-                       </a>
-                       <a href={`tel:${companyPhone}`} className="flex items-center gap-2 text-sm font-bold text-primary hover:text-primary/80 transition-colors">
-                          <Phone className="h-4 w-4 opacity-40" /> {companyPhone}
-                       </a>
-                    </div>
-                 </div>
+                <div className="space-y-3">
+                  <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">{getSystemText('nav_contact')}</span>
+                  <div className="flex flex-col sm:flex-row sm:items-center gap-4 sm:gap-8">
+                    <a href={`mailto:${companyEmail}`} className="flex items-center gap-2 text-sm font-bold text-primary hover:text-primary/80 transition-colors">
+                      <Mail className="h-4 w-4 opacity-40" /> {companyEmail}
+                    </a>
+                    <a href={`tel:${companyPhone}`} className="flex items-center gap-2 text-sm font-bold text-primary hover:text-primary/80 transition-colors">
+                      <Phone className="h-4 w-4 opacity-40" /> {companyPhone}
+                    </a>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
         </div>
       </div>
 
-      <div className="bg-white border-t border-slate-100 mt-24">
-          <div className="container mx-auto px-6 py-24 max-w-[1200px]">
-            <Tabs defaultValue={productDetails ? "desc" : "specs"} className="w-full">
-              <TabsList className="bg-transparent h-auto p-0 border-b border-slate-100 w-full justify-start gap-12 rounded-none mb-16 no-print">
-                {productDetails && <TabsTrigger value="desc" className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent px-0 pb-6 text-sm font-bold text-slate-400 data-[state=active]:text-primary transition-all tracking-widest">{getSystemText('product_tab_desc')}</TabsTrigger>}
-                <TabsTrigger value="specs" className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent px-0 pb-6 text-sm font-bold text-slate-400 data-[state=active]:text-primary transition-all tracking-widest">{getSystemText('product_tab_specs')}</TabsTrigger>
-              </TabsList>
-              
-              {productDetails && (
-                <TabsContent value="desc" forceMount className="max-w-4xl animate-in fade-in slide-in-from-bottom-4 duration-700 data-[state=inactive]:hidden print:data-[state=inactive]:block">
-                  <div className="prose prose-lg dark:prose-invert max-w-none" dangerouslySetInnerHTML={{ __html: sanitizedDetails }} />
-                </TabsContent>
-              )}
-              <TabsContent value="specs" forceMount className="animate-in fade-in slide-in-from-bottom-4 duration-700 data-[state=inactive]:hidden print:data-[state=inactive]:block">
-                 <div className="space-y-16">
-                    {groupedSpecs.map((group: any, gIdx: number) => (
-                      <div key={gIdx} className="space-y-8">
-                        <div className="flex items-center gap-4">
-                           <h3 className="text-2xl font-headline font-bold text-primary shrink-0">{group.title}</h3>
-                           <div className="h-px bg-border flex-1" />
-                        </div>
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                          {group.items.map((item: any, iIdx: number) => (
-                            <div key={iIdx} className="p-6 bg-white rounded-2xl border border-slate-100 shadow-sm hover:shadow-xl hover:shadow-primary/5 transition-all duration-500 flex flex-col gap-3 group/spec">
-                              <span className="text-xs font-bold tracking-[0.1em] text-slate-400 group-hover/spec:text-primary transition-colors">
-                                {item.label}
-                              </span>
-                              <span className="text-sm font-normal text-slate-900 font-['JetBrains_Mono'] leading-relaxed whitespace-pre-wrap">
-                                {item.value}
-                              </span>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    ))}
-                 </div>
+      <div className="bg-white border-t border-slate-100">
+        <div className="container mx-auto px-6 py-24 max-w-[1200px]">
+          <Tabs defaultValue={productDetails ? "desc" : "specs"} className="w-full">
+            <TabsList className="bg-transparent h-auto p-0 border-b border-slate-100 w-full justify-start gap-12 rounded-none mb-16 no-print">
+              {productDetails && <TabsTrigger value="desc" className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent px-0 pb-6 text-sm font-bold text-slate-400 data-[state=active]:text-primary transition-all tracking-widest">{getSystemText('product_tab_desc')}</TabsTrigger>}
+              <TabsTrigger value="specs" className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent px-0 pb-6 text-sm font-bold text-slate-400 data-[state=active]:text-primary transition-all tracking-widest">{getSystemText('product_tab_specs')}</TabsTrigger>
+            </TabsList>
+
+            {productDetails && (
+              <TabsContent value="desc" forceMount className="max-w-4xl animate-in fade-in slide-in-from-bottom-4 duration-700 data-[state=inactive]:hidden print:data-[state=inactive]:block">
+                <div className="prose prose-lg dark:prose-invert max-w-none" dangerouslySetInnerHTML={{ __html: sanitizedDetails }} />
               </TabsContent>
-            </Tabs>
-
-            {displayRelatedProducts.length > 0 && (
-              <div className="mt-40 space-y-12 no-print">
-                <div className="flex items-center justify-between">
-                  <div className="space-y-1">
-                    <h3 className="text-2xl font-headline font-bold text-primary uppercase tracking-tight">{getSystemText('related_products_title')}</h3>
-                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-[0.3em]">{getSystemText('explore_more_tech')}</p>
-                  </div>
-                  <div className="h-px bg-slate-100 flex-1 mx-12 hidden md:block" />
-                  <Link href="/products" className="group flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest text-primary hover:opacity-70 transition-all">
-                    {getSystemText('view_all')}
-                    <ArrowRight className="h-3 w-3 group-hover:translate-x-1 transition-transform" />
-                  </Link>
-                </div>
-
-                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-6">
-                  {displayRelatedProducts.map((p: any) => {
-                    const cat = categories?.find((c: any) => c.id === p.categoryId);
-                    return (
-                      <Link key={p.id} href={`/products/${p.id}?lang=${locale}`} className="group space-y-4">
-                        <div className="relative aspect-[11/9] bg-slate-50 rounded-2xl overflow-hidden border border-slate-100 transition-all duration-500 group-hover:shadow-2xl group-hover:shadow-primary/10">
-                          <HoverVideoPlayer
-                            productId={p.id}
-                            playingProductId={playingProductId}
-                            setPlayingProductId={setPlayingProductId}
-                            videoUrl={p.videoUrl}
-                            mainImageUrl={p.mainImageUrl}
-                            alt={getProductText(p.nameTextId, p.nameText)}
-                          />
-                        </div>
-                        <div className="space-y-1 px-1">
-                          <p className="text-[9px] font-bold text-primary/40 uppercase tracking-widest truncate">
-                            {cat ? getProductText(cat.nameTextId, cat.nameText) : ''}
-                          </p>
-                          <h4 className="text-xs font-bold text-slate-900 group-hover:text-primary transition-colors line-clamp-1">{getProductText(p.nameTextId, p.nameText)}</h4>
-                        </div>
-                      </Link>
-                    );
-                  })}
-                </div>
-              </div>
             )}
-          </div>
+            <TabsContent value="specs" forceMount className="animate-in fade-in slide-in-from-bottom-4 duration-700 data-[state=inactive]:hidden print:data-[state=inactive]:block">
+              <div className="space-y-16">
+                {groupedSpecs.map((group: any, gIdx: number) => (
+                  <div key={gIdx} className="space-y-8">
+                    <div className="flex items-center gap-4">
+                      <h3 className="text-2xl font-headline font-bold text-primary shrink-0">{group.title}</h3>
+                      <div className="h-px bg-border flex-1" />
+                    </div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                      {group.items.map((item: any, iIdx: number) => (
+                        <div key={iIdx} className="p-6 bg-white rounded-2xl border border-slate-100 shadow-sm hover:shadow-xl hover:shadow-primary/5 transition-all duration-500 flex flex-col gap-3 group/spec">
+                          <span className="text-xs font-bold tracking-[0.1em] text-slate-400 group-hover/spec:text-primary transition-colors">
+                            {item.label}
+                          </span>
+                          <span className="text-sm font-normal text-slate-900 font-['JetBrains_Mono'] leading-relaxed whitespace-pre-wrap">
+                            {item.value}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </TabsContent>
+          </Tabs>
+
+          {displayRelatedProducts.length > 0 && (
+            <div className="mt-40 space-y-12 no-print">
+              <div className="flex items-center justify-between">
+                <div className="space-y-1">
+                  <h3 className="text-2xl font-headline font-bold text-primary uppercase tracking-tight">{getSystemText('related_products_title')}</h3>
+                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-[0.3em]">{getSystemText('explore_more_tech')}</p>
+                </div>
+                <div className="h-px bg-slate-100 flex-1 mx-12 hidden md:block" />
+                <Link href="/products" className="group flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest text-primary hover:opacity-70 transition-all">
+                  {getSystemText('view_all')}
+                  <ArrowRight className="h-3 w-3 group-hover:translate-x-1 transition-transform" />
+                </Link>
+              </div>
+
+              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-6">
+                {displayRelatedProducts.map((p: any) => {
+                  const cat = categories?.find((c: any) => c.id === p.categoryId);
+                  return (
+                    <Link key={p.id} href={`/products/${p.id}?lang=${locale}`} className="group space-y-4">
+                      <div className="relative aspect-[11/9] bg-slate-50 rounded-2xl overflow-hidden border border-slate-100 transition-all duration-500 group-hover:shadow-2xl group-hover:shadow-primary/10">
+                        <HoverVideoPlayer
+                          productId={p.id}
+                          playingProductId={playingProductId}
+                          setPlayingProductId={setPlayingProductId}
+                          videoUrl={p.videoUrl}
+                          mainImageUrl={p.mainImageUrl}
+                          alt={getProductText(p.nameTextId, p.nameText)}
+                        />
+                      </div>
+                      <div className="space-y-1 px-1">
+                        <p className="text-[9px] font-bold text-primary/40 uppercase tracking-widest truncate">
+                          {cat ? getProductText(cat.nameTextId, cat.nameText) : ''}
+                        </p>
+                        <h4 className="text-xs font-bold text-slate-900 group-hover:text-primary transition-colors line-clamp-1">{getProductText(p.nameTextId, p.nameText)}</h4>
+                      </div>
+                    </Link>
+                  );
+                })}
+              </div>
+            </div>
+          )}
         </div>
+      </div>
       <Footer locale={locale} />
       {/* High-quality Zoom overlay modal */}
       {isZoomOpen && activeMedia.type === 'image' && (
-        <div 
+        <div
           className="fixed inset-0 z-[9999] bg-black/90 flex items-center justify-center cursor-zoom-out animate-in fade-in duration-300"
           onClick={() => { setIsZoomOpen(false); setZoomScale(1); }}
         >
+          {/* Bottom controls: Prev, Current/Total, Next */}
+          <div
+            className="absolute bottom-10 left-1/2 -translate-x-1/2 z-[10000] flex items-center gap-6 bg-white/10 border border-white/10 px-3 py-3 rounded-full backdrop-blur-md shadow-2xl"
+            onClick={e => e.stopPropagation()}
+          >
+            {/* Left Button */}
+            <button
+              disabled={currentZoomIndex === 0}
+              onClick={() => {
+                if (currentZoomIndex > 0) {
+                  setActiveMedia({ url: zoomImages[currentZoomIndex - 1], type: 'image' });
+                  setZoomScale(1);
+                }
+              }}
+              className={cn(
+                "h-10 w-10 rounded-full flex items-center justify-center transition-all duration-300 text-white active:scale-90 cursor-pointer",
+                currentZoomIndex === 0 ? "opacity-30 cursor-not-allowed" : "hover:bg-white/10"
+              )}
+            >
+              <ChevronLeft className="h-6 w-6" />
+            </button>
+
+            {/* Index Display */}
+            <span className="text-white/80 font-mono text-xs font-bold tracking-widest select-none">
+              {currentZoomIndex + 1} <span className="text-white/30 mx-1">/</span> {zoomImages.length}
+            </span>
+
+            {/* Right Button */}
+            <button
+              disabled={currentZoomIndex === zoomImages.length - 1}
+              onClick={() => {
+                if (currentZoomIndex < zoomImages.length - 1) {
+                  setActiveMedia({ url: zoomImages[currentZoomIndex + 1], type: 'image' });
+                  setZoomScale(1);
+                }
+              }}
+              className={cn(
+                "h-10 w-10 rounded-full flex items-center justify-center transition-all duration-300 text-white active:scale-90 cursor-pointer",
+                currentZoomIndex === zoomImages.length - 1 ? "opacity-30 cursor-not-allowed" : "hover:bg-white/10"
+              )}
+            >
+              <ChevronRight className="h-6 w-6" />
+            </button>
+          </div>
+
           <div className="absolute top-6 right-6 flex items-center gap-4" onClick={e => e.stopPropagation()}>
             <Button
               variant="outline"
@@ -606,14 +693,14 @@ export default function ProductClient({ product, initialLocale }: { product: any
               <X className="h-5 w-5" />
             </Button>
           </div>
-          
+
           <div className="relative w-[90vw] h-[80vh] flex items-center justify-center overflow-auto pointer-events-none">
-            <div 
+            <div
               className="relative transition-transform duration-300 ease-out pointer-events-auto"
               style={{ transform: `scale(${zoomScale})` }}
             >
-              <img 
-                src={getAssetUrl(activeMedia.url || product.mainImageUrl || '/image/product-placeholder.png')} 
+              <img
+                src={getAssetUrl(activeMedia.url || product.mainImageUrl || '/image/product-placeholder.png')}
                 alt="Product Zoom"
                 className="max-w-[90vw] max-h-[80vh] object-contain rounded-2xl select-none"
                 draggable={false}

@@ -155,12 +155,24 @@ function ProductListContent(props: ProductListClientProps) {
       document.cookie = `NEXT_LOCALE=${initialLocale}; path=/; max-age=31536000`;
     }
   }, [initialLocale]);
-  
+
   const categoryParam = searchParams.get('category');
   const lineParam = searchParams.get('line') as BusinessLine;
 
-  // Deriving states directly from URL (Single Source of Truth) to prevent race conditions and duplicate fetch
-  const activeLine = lineParam || 'wholesale';
+  // Deriving states directly from URL and category mappings to prevent race conditions and layout mismatch
+  const activeLine = useMemo<BusinessLine>(() => {
+    if (lineParam === 'wholesale' || lineParam === 'project') {
+      return lineParam;
+    }
+    if (categoryParam) {
+      const found = initialCategories?.find((c: any) => c.slug === categoryParam || c.id === categoryParam);
+      if (found) {
+        if (found.parentId === 'PROJECT') return 'project';
+        if (found.parentId === 'WHOLESALE') return 'wholesale';
+      }
+    }
+    return 'wholesale';
+  }, [lineParam, categoryParam, initialCategories]);
 
   // Using useLocalCollection/useLocalDoc but they will hit globalCache instantly
   const { data: categories, isLoading: isCatsLoading } = useLocalCollection<Category>(

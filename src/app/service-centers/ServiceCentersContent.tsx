@@ -127,13 +127,48 @@ export default function ServiceCentersContent({ initialLocale }: ServiceCentersC
     return filteredCenters.slice(0, visibleCount);
   }, [filteredCenters, visibleCount]);
 
-  // Copy Address Helper
+  // Copy Address Helper with safe HTTPS & HTTP fallback
   const handleCopyAddress = (address: string) => {
-    navigator.clipboard.writeText(address);
-    toast({
-      title: t('SERVICE_ADDRESS_COPIED'),
-      className: "bg-primary text-white border-none rounded-2xl shadow-xl"
-    });
+    const showToast = () => {
+      toast({
+        title: t('SERVICE_ADDRESS_COPIED') || 'Copied successfully',
+        className: "bg-primary text-white border-none rounded-2xl shadow-xl"
+      });
+    };
+
+    if (navigator.clipboard && typeof navigator.clipboard.writeText === 'function') {
+      navigator.clipboard.writeText(address)
+        .then(showToast)
+        .catch(err => {
+          console.error('Failed to copy text using clipboard API: ', err);
+          fallbackCopy(address);
+        });
+    } else {
+      fallbackCopy(address);
+    }
+
+    function fallbackCopy(text: string) {
+      try {
+        const textArea = document.createElement("textarea");
+        textArea.value = text;
+        // Avoid scrolling to bottom
+        textArea.style.top = "0";
+        textArea.style.left = "0";
+        textArea.style.position = "fixed";
+        document.body.appendChild(textArea);
+        textArea.focus();
+        textArea.select();
+        const successful = document.execCommand('copy');
+        document.body.removeChild(textArea);
+        if (successful) {
+          showToast();
+        } else {
+          console.error('Fallback copy command was unsuccessful');
+        }
+      } catch (err) {
+        console.error('Fallback copy exception: ', err);
+      }
+    }
   };
 
   return (
