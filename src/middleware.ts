@@ -53,12 +53,19 @@ function checkRateLimit(ip: string, limit: number, durationMs: number): { succes
 export default auth(async (request) => {
   const { nextUrl } = request;
   const pathname = nextUrl.pathname;
+  const origin = request.headers.get('origin');
+  const referer = request.headers.get('referer');
+  const secFetchSite = request.headers.get('sec-fetch-site');
+  const appUrl = process.env.NEXTAUTH_URL || 'http://localhost:9002';
 
   // CSRF 防护 (L-7)：拦截跨站的非安全写操作请求（POST, PUT, DELETE, PATCH）
   const method = request.method;
   const isWriteMethod = ['POST', 'PUT', 'DELETE', 'PATCH'].includes(method);
   
   if (isWriteMethod && pathname !== '/api/analytics/track') {
+    // 添加核心调试日志，诊断反代与 CSRF Origin 校验数据
+    console.log(`[CSRF Debug] path: ${pathname}, origin: ${origin}, nextUrl.origin: ${nextUrl.origin}, appUrl: ${appUrl}`);
+
     // 维护模式拦截 (问题 4)：在还原/升级期间阻止所有非管理性质的写操作，防范数据冲突与不一致
     if (!pathname.startsWith('/api/admin/system')) {
       try {
@@ -80,11 +87,6 @@ export default auth(async (request) => {
         console.error("[Middleware] Maintenance check failed, bypassing block to ensure availability:", e);
       }
     }
-
-    const origin = request.headers.get('origin');
-    const referer = request.headers.get('referer');
-    const secFetchSite = request.headers.get('sec-fetch-site');
-    const appUrl = process.env.NEXTAUTH_URL || 'http://localhost:9002';
     
     // 1. 拦截明确标识的跨站写操作
     if (secFetchSite === 'cross-site') {
