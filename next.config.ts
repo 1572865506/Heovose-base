@@ -2,6 +2,16 @@ import type {NextConfig} from 'next';
 
 const nextConfig: NextConfig = {
   /* config options here */
+  experimental: {
+    serverActions: {
+      allowedOrigins: [
+        '8.219.243.231',
+        '8.219.243.231:9002',
+        'localhost:9002',
+        '127.0.0.1:9002'
+      ]
+    }
+  },
   typescript: {
     ignoreBuildErrors: true,
   },
