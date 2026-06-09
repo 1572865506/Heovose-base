@@ -97,6 +97,7 @@ export default auth(async (request) => {
     // 2. 校验 Origin 同源域
     if (origin) {
       const isAllowedOrigin = origin === appUrl || 
+                              origin === nextUrl.origin || 
                               origin.startsWith('http://localhost:') || 
                               origin.startsWith('http://127.0.0.1:') || 
                               origin.startsWith('http://192.168.') || 
@@ -113,6 +114,7 @@ export default auth(async (request) => {
         const refererUrl = new URL(referer);
         const appUrlObj = new URL(appUrl);
         const isAllowedReferer = refererUrl.origin === appUrlObj.origin ||
+                                 refererUrl.origin === nextUrl.origin || 
                                  refererUrl.origin.startsWith('http://localhost:') ||
                                  refererUrl.origin.startsWith('http://127.0.0.1:') ||
                                  refererUrl.origin.startsWith('http://192.168.') ||
