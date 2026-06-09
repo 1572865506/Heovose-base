@@ -22,20 +22,20 @@ export function AdminThemeProvider({ children }: { children: React.ReactNode }) 
   // 严格限定后台路径
   const isAdminPath = pathname?.startsWith('/admin') || pathname?.startsWith('/auth');
 
-  const [theme, setTheme] = useState<Theme>(() => {
-    if (typeof window !== 'undefined') {
-      const saved = localStorage.getItem('admin-ui-theme') as Theme;
-      return (saved && ['light', 'dark', 'system'].includes(saved)) ? saved : 'system';
-    }
-    return 'system';
-  });
-
+  const [theme, setTheme] = useState<Theme>('system');
   const [systemTheme, setSystemTheme] = useState<'light' | 'dark'>('light');
 
-  // 监听系统偏好
+  // 监听系统偏好并在客户端挂载后初始化主题
   useEffect(() => {
     if (!isAdminPath) return;
 
+    // 1. 初始化读取本地存储的主题设置
+    const saved = localStorage.getItem('admin-ui-theme') as Theme;
+    if (saved && ['light', 'dark', 'system'].includes(saved)) {
+      setTheme(saved);
+    }
+
+    // 2. 监听及更新系统色彩偏好
     const media = window.matchMedia('(prefers-color-scheme: dark)');
     const update = () => setSystemTheme(media.matches ? 'dark' : 'light');
     
@@ -46,7 +46,7 @@ export function AdminThemeProvider({ children }: { children: React.ReactNode }) 
 
   // 持久化用户选择
   useEffect(() => {
-    if (isAdminPath) {
+    if (isAdminPath && theme) {
       localStorage.setItem('admin-ui-theme', theme);
     }
   }, [theme, isAdminPath]);
@@ -74,10 +74,10 @@ export function AdminThemeProvider({ children }: { children: React.ReactNode }) 
     }
 
     if (resolvedTheme === 'dark') {
-      root.classList.add(ADMIN_DARK_CLASS);
+      root.classList.add(ADMIN_DARK_CLASS, 'dark');
       root.style.colorScheme = 'dark';
     } else {
-      root.classList.remove(ADMIN_DARK_CLASS);
+      root.classList.remove(ADMIN_DARK_CLASS, 'dark');
       root.style.colorScheme = 'light';
     }
   }, [resolvedTheme, isAdminPath]);

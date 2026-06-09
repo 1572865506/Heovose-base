@@ -30,7 +30,7 @@ import { Loader2, Send } from 'lucide-react';
 const formSchema = z.object({
   name: z.string().min(1, 'Required'),
   email: z.string().email('Invalid email'),
-  phone: z.string().optional(),
+  phone: z.string().min(1, 'Required'),
   company: z.string().optional(),
   message: z.string().min(10, 'Minimum 10 characters'),
   website_url: z.string().optional(), // Honeypot

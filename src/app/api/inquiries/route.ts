@@ -12,7 +12,7 @@ import { dbRateLimit } from '@/lib/rate-limit';
 const inquirySchema = z.object({
   name: z.string().min(1, 'Name is required').max(100),
   email: z.string().email('Invalid email address'),
-  phone: z.string().max(50).optional().nullable(),
+  phone: z.string().min(1, 'Phone number is required').max(50),
   company: z.string().max(100).optional().nullable(),
   message: z.string().min(10, 'Message must be at least 10 characters').max(2000),
   productId: z.string().optional().nullable(),
