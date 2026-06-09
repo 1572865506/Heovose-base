@@ -76,11 +76,8 @@ export default auth(async (request) => {
           }
         }
       } catch (e) {
-        // 在数据库重置还原期间，后端可能抛出数据库连接错误，直接视同维护中并予以拦截
-        return NextResponse.json(
-          { error: "System is under maintenance. Write operations are temporarily disabled." },
-          { status: 503 }
-        );
+        // 核心容错修正：如果因为容器网络回环或 DNS 解析失败导致探测接口报错，仅打印日志，不强制拦截登录
+        console.error("[Middleware] Maintenance check failed, bypassing block to ensure availability:", e);
       }
     }
 
