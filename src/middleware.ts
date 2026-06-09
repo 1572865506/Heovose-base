@@ -62,8 +62,8 @@ export default auth(async (request) => {
     // 维护模式拦截 (问题 4)：在还原/升级期间阻止所有非管理性质的写操作，防范数据冲突与不一致
     if (!pathname.startsWith('/api/admin/system')) {
       try {
-        const appUrl = process.env.NEXTAUTH_URL || 'http://localhost:9002';
-        const checkRes = await fetch(`${appUrl}/api/admin/system/maintenance-check`, {
+        const localApiUrl = `http://127.0.0.1:${process.env.PORT || '9002'}`;
+        const checkRes = await fetch(`${localApiUrl}/api/admin/system/maintenance-check`, {
           headers: { 'Cache-Control': 'no-cache' }
         });
         if (checkRes.ok) {
