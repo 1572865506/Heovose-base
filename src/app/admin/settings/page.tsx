@@ -537,12 +537,16 @@ export default function AdminSettingsPage() {
                      </tr>
                   </thead>
                   <tbody className="divide-y divide-border/40">
-                     {backups.filter(b => b.type === "DATABASE").length > 0 ? (
-                       backups.filter(b => b.type === "DATABASE").map((backup, idx) => (
+                     {backups.filter(b => b.type === "DATABASE" || b.type === "STORAGE").length > 0 ? (
+                       backups.filter(b => b.type === "DATABASE" || b.type === "STORAGE").map((backup, idx) => (
                           <tr key={idx} className="group hover:bg-muted/10 transition-colors">
                              <td className="px-8 py-4.5">
                                 <div className="flex items-center gap-3">
-                                   <FileText className="h-4 w-4 text-muted-foreground/60" />
+                                   {backup.type === "DATABASE" ? (
+                                     <FileText className="h-4 w-4 text-blue-400" />
+                                   ) : (
+                                     <Cloud className="h-4 w-4 text-emerald-400" />
+                                   )}
                                    <div>
                                       <p className="text-xs font-bold text-foreground/90">{backup.filename}</p>
                                       <p className="text-[10px] text-muted-foreground/80 mt-0.5">{new Date(backup.time).toLocaleString()}</p>
@@ -550,7 +554,11 @@ export default function AdminSettingsPage() {
                                 </div>
                              </td>
                              <td className="px-8 py-4.5 text-center">
-                                <Badge variant="outline" className="text-[9px] font-bold uppercase bg-blue-500/10 text-blue-500 border-blue-500/20">SQL DATA</Badge>
+                                {backup.type === "DATABASE" ? (
+                                  <Badge variant="outline" className="text-[9px] font-bold uppercase bg-blue-500/10 text-blue-500 border-blue-500/20">SQL DATA</Badge>
+                                ) : (
+                                  <Badge variant="outline" className="text-[9px] font-bold uppercase bg-emerald-500/10 text-emerald-500 border-emerald-500/20">STORAGE DATA</Badge>
+                                )}
                              </td>
                              <td className="px-8 py-4.5 text-center text-[10px] font-bold text-muted-foreground">
                                 {(backup.size / 1024 / 1024).toFixed(2)} MB
@@ -566,16 +574,20 @@ export default function AdminSettingsPage() {
                                    >
                                       <Download className="h-4 w-4" />
                                    </Button>
-                                   <Button 
-                                     variant="ghost" 
-                                     size="sm" 
-                                     disabled={isRestoring}
-                                     onClick={() => handleRestore(backup.filename)}
-                                     title="还原此版本"
-                                     className="h-8 w-8 p-0 rounded-lg text-muted-foreground hover:text-red-500 hover:bg-red-500/10"
-                                   >
-                                      {isRestoring ? <Loader2 className="h-4 w-4 animate-spin" /> : <RotateCcw className="h-4 w-4" />}
-                                   </Button>
+                                   {backup.type === "DATABASE" ? (
+                                      <Button 
+                                        variant="ghost" 
+                                        size="sm" 
+                                        disabled={isRestoring}
+                                        onClick={() => handleRestore(backup.filename)}
+                                        title="还原此版本"
+                                        className="h-8 w-8 p-0 rounded-lg text-muted-foreground hover:text-red-500 hover:bg-red-500/10"
+                                      >
+                                         {isRestoring ? <Loader2 className="h-4 w-4 animate-spin" /> : <RotateCcw className="h-4 w-4" />}
+                                      </Button>
+                                   ) : (
+                                      <div className="h-8 w-8" />
+                                   )}
                                 </div>
                              </td>
                           </tr>
