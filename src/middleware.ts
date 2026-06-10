@@ -151,7 +151,7 @@ export default auth(async (request) => {
       response.headers.set('Access-Control-Allow-Headers', 'X-CSRF-Token, X-Requested-With, Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version');
       return response;
     }
-    if (request.method !== 'GET') {
+    if (request.method !== 'GET' && request.method !== 'HEAD') {
       return NextResponse.json(
         { error: "Method Not Allowed" },
         { status: 405 }

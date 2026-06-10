@@ -13,7 +13,7 @@ const s3Client = new S3Client({
 export async function ensureBucketExists(bucketName: string) {
   try {
     const { CreateBucketCommand, HeadBucketCommand, PutBucketPolicyCommand } = await import("@aws-sdk/client-s3");
-    
+
     const appUrl = process.env.NEXTAUTH_URL;
     const allowedOrigins = process.env.NODE_ENV === 'production' && appUrl
       ? [appUrl]
@@ -24,7 +24,7 @@ export async function ensureBucketExists(bucketName: string) {
     } catch (error: any) {
       if (error.name === 'NotFound' || error.$metadata?.httpStatusCode === 404) {
         await s3Client.send(new CreateBucketCommand({ Bucket: bucketName }));
-        
+
         // Set public read policy for MinIO
         const policy: any = {
           Version: "2012-10-17",
@@ -55,7 +55,7 @@ export async function ensureBucketExists(bucketName: string) {
             console.warn("Invalid NEXTAUTH_URL for S3 Policy Referer:", e);
           }
         }
-        
+
         await s3Client.send(new PutBucketPolicyCommand({
           Bucket: bucketName,
           Policy: JSON.stringify(policy),
