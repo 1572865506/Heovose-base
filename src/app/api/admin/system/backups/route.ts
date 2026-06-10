@@ -12,7 +12,7 @@ export const GET = withAuth('superadmin', async () => {
 
     const files = fs.readdirSync(backupDir);
     const backups = files
-      .filter(f => !f.startsWith(".")) // Exclude hidden files like .env.backup
+      .filter(f => !f.startsWith(".") && f !== "db_backup.sql" && f !== "db_backup.sql.gz" && f !== "minio_backup.tar" && f !== "minio_backup.tar.gz")
       .map(filename => {
         const stats = fs.statSync(path.join(backupDir, filename));
         let type = "OTHER";
