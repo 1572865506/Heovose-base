@@ -6,11 +6,6 @@ TIMESTAMP=$(date +%Y%m%d_%H%M%S)
 DB_CONTAINER="heovose-db"
 DB_NAME="heovose_elevate"
 DB_USER="heovose"
-# 动态检测 MinIO 容器挂载的 volume 卷名称
-MINIO_VOLUME=$(docker inspect heovose-storage --format '{{ range .Mounts }}{{ if eq .Destination "/data" }}{{ .Name }}{{ end }}{{ end }}' 2>/dev/null)
-if [ -z "$MINIO_VOLUME" ]; then
-    MINIO_VOLUME="heovose-base_minio_data"
-fi
 
 mkdir -p $BACKUP_DIR
 
@@ -21,9 +16,9 @@ echo "📦 正在导出数据库 (PostgreSQL) 并使用 gzip 压缩..."
 docker exec $DB_CONTAINER pg_dump -U $DB_USER $DB_NAME | gzip > "$BACKUP_DIR/db_backup_$TIMESTAMP.sql.gz"
 cp "$BACKUP_DIR/db_backup_$TIMESTAMP.sql.gz" "$BACKUP_DIR/db_backup.sql.gz"
 
-# 2. 导出 MinIO 存储数据 (使用 tar -czf 压缩，通过 stdout 流式写入宿主，避免路径绑定错误)
+# 2. 导出 MinIO 存储数据 (使用 tar -czf 压缩，通过 stdout 流式写入宿主，并使用 --volumes-from 直接挂载容器的存储路径)
 echo "📦 正在导出存储桶 (MinIO) 并使用 gzip 压缩..."
-docker run --rm -v $MINIO_VOLUME:/data alpine tar czf - -C /data . > "$BACKUP_DIR/minio_backup_$TIMESTAMP.tar.gz"
+docker run --rm --volumes-from heovose-storage alpine tar czf - -C /data . > "$BACKUP_DIR/minio_backup_$TIMESTAMP.tar.gz"
 cp "$BACKUP_DIR/minio_backup_$TIMESTAMP.tar.gz" "$BACKUP_DIR/minio_backup.tar.gz"
 
 # 3. 自动清理超过 180 天的旧备份文件

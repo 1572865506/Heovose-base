@@ -5,11 +5,6 @@ BACKUP_DIR="./backups"
 DB_CONTAINER="heovose-db"
 DB_NAME="heovose_elevate"
 DB_USER="heovose"
-# 动态检测 MinIO 容器挂载的 volume 卷名称
-MINIO_VOLUME=$(docker inspect heovose-storage --format '{{ range .Mounts }}{{ if eq .Destination "/data" }}{{ .Name }}{{ end }}{{ end }}' 2>/dev/null)
-if [ -z "$MINIO_VOLUME" ]; then
-    MINIO_VOLUME="heovose-base_minio_data"
-fi
 
 # 获取参数
 TARGET_SQL=$1
@@ -55,18 +50,18 @@ else
     exit 1
 fi
 
-# 2. 还原 MinIO 存储数据 (使用 stdin 管道解压导入，解决容器挂载宿主机路径引起的空目录映射问题)
+# 2. 还原 MinIO 存储数据 (使用 stdin 管道解压导入，并使用 --volumes-from 直接挂载容器的存储路径，解决卷名和挂载路径差异问题)
 if [ -f "$TARGET_MINIO" ]; then
     echo "📦 正在还原存储桶 (MinIO)..."
     # 2.1 清理旧数据
-    docker run --rm -v $MINIO_VOLUME:/data alpine sh -c "rm -rf /data/*"
+    docker run --rm --volumes-from heovose-storage alpine sh -c "rm -rf /data/*"
     # 2.2 管道流式导入解压
     case "$TARGET_MINIO" in
         *.gz)
-            docker run -i --rm -v $MINIO_VOLUME:/data alpine tar xzf - -C /data < "$TARGET_MINIO"
+            docker run -i --rm --volumes-from heovose-storage alpine tar xzf - -C /data < "$TARGET_MINIO"
             ;;
         *)
-            docker run -i --rm -v $MINIO_VOLUME:/data alpine tar xf - -C /data < "$TARGET_MINIO"
+            docker run -i --rm --volumes-from heovose-storage alpine tar xf - -C /data < "$TARGET_MINIO"
             ;;
     esac
 else
