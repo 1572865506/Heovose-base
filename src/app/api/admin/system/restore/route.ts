@@ -68,7 +68,9 @@ export const POST = withAuth('superadmin', async (
   } catch (error: any) {
     console.error("Restore failed:", error);
     return NextResponse.json({ 
-      error: "Internal Server Error"
+      error: error.message || "Internal Server Error",
+      stdout: error.stdout,
+      stderr: error.stderr
     }, { status: 500 });
   } finally {
     // 无论还原成功还是失败，均安全释放维护状态文件锁，保障服务正常可用 (问题 4)

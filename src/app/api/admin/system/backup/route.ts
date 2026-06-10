@@ -41,7 +41,9 @@ export const POST = withAuth('superadmin', async (
   } catch (error: any) {
     console.error("Backup failed:", error);
     return NextResponse.json({ 
-      error: "Internal Server Error"
+      error: error.message || "Internal Server Error",
+      stdout: error.stdout,
+      stderr: error.stderr
     }, { status: 500 });
   }
 });
