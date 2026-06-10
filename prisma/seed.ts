@@ -6,6 +6,7 @@ const prisma = new PrismaClient()
 
 async function main() {
   console.log('Clearing database...')
+  await prisma.setting.deleteMany()
   await prisma.mapLocation.deleteMany()
   await prisma.homepageContent.deleteMany()
   await prisma.caseStudy.deleteMany()
@@ -195,6 +196,60 @@ async function main() {
         fileName: 'office-b.jpg',
         fileSize: 204800,
         categoryId: galCat.id
+      }
+    ]
+  })
+
+  // 8. Create Default Settings
+  console.log('Seeding settings...')
+  await prisma.setting.createMany({
+    data: [
+      {
+        id: 'languages',
+        value: JSON.stringify({
+          supportedLanguages: [
+            { code: 'zh', label: '中文' },
+            { code: 'en', label: 'English' },
+            { code: 'id', label: 'Indonesian' },
+            { code: 'vi', label: 'Việt Nam' }
+          ],
+          defaultLanguage: 'zh',
+          _version: 1
+        })
+      },
+      {
+        id: 'site',
+        value: JSON.stringify({
+          title: 'Heovose Elevate',
+          description: 'Technology Manufacturing',
+          siteUrl: 'http://localhost:9002',
+          logoStandard: '',
+          logoInverted: '',
+          favicon: '',
+          _version: 1
+        })
+      },
+      {
+        id: 'navigation',
+        value: JSON.stringify({
+          items: [],
+          _version: 1
+        })
+      },
+      {
+        id: 'storage',
+        value: JSON.stringify({
+          baseUrl: '/storage',
+          _version: 1
+        })
+      },
+      {
+        id: 'ai',
+        value: JSON.stringify({
+          provider: 'gemini',
+          model: 'gemini-1.5-flash',
+          _version: 1
+        })
       }
     ]
   })

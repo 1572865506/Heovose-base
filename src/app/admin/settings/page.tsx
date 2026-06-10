@@ -19,7 +19,7 @@ import {
 } from "@/components/ui/select";
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
-import { History, RotateCcw, Terminal, Download, Database, Cpu, Info, ShieldCheck, Globe, Save, Settings2, Loader2, Cloud, FileText, PlayCircle } from 'lucide-react';
+import { History, RotateCcw, Terminal, Download, Database, Cpu, Info, ShieldCheck, Globe, Save, Settings2, Loader2, Cloud, FileText, PlayCircle, Upload } from 'lucide-react';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
@@ -50,6 +50,7 @@ export default function AdminSettingsPage() {
   const [isUpdating, setIsUpdating] = useState(false);
   const [isChecking, setIsChecking] = useState(false);
   const [isRestoring, setIsRestoring] = useState(false);
+  const [isUploadingBackup, setIsUploadingBackup] = useState(false);
   const [updateInfo, setUpdateInfo] = useState<any>(null);
   const [sysStatus, setSysStatus] = useState<any>(null);
   const [backups, setBackups] = useState<any[]>([]);
@@ -167,6 +168,41 @@ export default function AdminSettingsPage() {
       toast({ variant: "destructive", title: "备份失败", description: e.message });
     } finally {
       setIsBackingUp(false);
+    }
+  };
+
+  const handleUploadBackup = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
+
+    setIsUploadingBackup(true);
+    let successCount = 0;
+    
+    try {
+      for (let i = 0; i < files.length; i++) {
+        const file = files[i];
+        const formData = new FormData();
+        formData.append('file', file);
+        
+        const res = await fetch('/api/admin/system/upload-backup', {
+          method: 'POST',
+          body: formData
+        });
+        
+        const data = await res.json();
+        if (res.ok && data.success) {
+          successCount++;
+        } else {
+          throw new Error(data.error || `文件 ${file.name} 上传失败`);
+        }
+      }
+      toast({ title: "备份文件导入成功", description: `已成功上传并导入 ${successCount} 个备份文件` });
+      fetchBackups();
+    } catch (err: any) {
+      toast({ variant: "destructive", title: "导入失败", description: err.message });
+    } finally {
+      setIsUploadingBackup(false);
+      e.target.value = '';
     }
   };
 
@@ -467,7 +503,27 @@ export default function AdminSettingsPage() {
             subtitle="Backup History & Recovery"
             icon={History}
             actions={
-              <Button variant="ghost" size="sm" onClick={fetchBackups} className="text-[10px] font-bold uppercase tracking-widest text-primary hover:bg-primary/5 h-8 rounded-lg">刷新列表</Button>
+              <div className="flex items-center gap-2">
+                <label className="flex items-center cursor-pointer">
+                  <span className="inline-flex items-center justify-center rounded-lg text-[10px] font-bold uppercase tracking-widest text-primary hover:bg-primary/5 h-8 px-3 transition-colors">
+                    {isUploadingBackup ? (
+                      <Loader2 className="h-3 w-3 animate-spin mr-1" />
+                    ) : (
+                      <Upload className="h-3 w-3 mr-1" />
+                    )}
+                    导入备份
+                  </span>
+                  <input
+                    type="file"
+                    className="hidden"
+                    accept=".sql,.sql.gz,.tar,.tar.gz"
+                    multiple
+                    onChange={handleUploadBackup}
+                    disabled={isUploadingBackup}
+                  />
+                </label>
+                <Button variant="ghost" size="sm" onClick={fetchBackups} className="text-[10px] font-bold uppercase tracking-widest text-primary hover:bg-primary/5 h-8 rounded-lg">刷新列表</Button>
+              </div>
             }
           >
             <div className="overflow-x-auto">
