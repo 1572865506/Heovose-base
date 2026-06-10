@@ -201,7 +201,7 @@ export function Hero({ locale, homeConfig, isLoading, onThemeChange }: HeroProps
 
   useEffect(() => {
     if (!emblaApi) return;
-    const autoplay = emblaApi.plugins().autoplay;
+    const autoplay = emblaApi.plugins()?.autoplay;
     const currentSlide = slides[selectedIndex];
     if (!currentSlide) return;
 
