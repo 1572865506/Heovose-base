@@ -6,7 +6,11 @@ TIMESTAMP=$(date +%Y%m%d_%H%M%S)
 DB_CONTAINER="heovose-db"
 DB_NAME="heovose_elevate"
 DB_USER="heovose"
-MINIO_VOLUME="heovose-base_minio_data"
+# 动态检测 MinIO 容器挂载的 volume 卷名称
+MINIO_VOLUME=$(docker inspect heovose-storage --format '{{ range .Mounts }}{{ if eq .Destination "/data" }}{{ .Name }}{{ end }}{{ end }}' 2>/dev/null)
+if [ -z "$MINIO_VOLUME" ]; then
+    MINIO_VOLUME="heovose-base_minio_data"
+fi
 
 mkdir -p $BACKUP_DIR
 
