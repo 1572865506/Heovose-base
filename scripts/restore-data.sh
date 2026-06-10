@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/sh
 
 # 配置
 BACKUP_DIR="./backups"
@@ -29,7 +29,7 @@ echo "🚀 开始从 $TARGET_SQL 还原 Heovose Elevate 数据..."
 
 # 0. 还原前自动创建当前数据的临时备份，防止还原出错无法恢复 (问题 1)
 echo "📦 正在执行还原前自动临时备份..."
-bash ./scripts/export-data.sh
+sh ./scripts/export-data.sh
 
 # 1. 还原 PostgreSQL 数据库
 if [ -f "$TARGET_SQL" ]; then
@@ -38,11 +38,14 @@ if [ -f "$TARGET_SQL" ]; then
     docker exec -i $DB_CONTAINER psql -U $DB_USER $DB_NAME -c "DROP SCHEMA public CASCADE; CREATE SCHEMA public; ALTER SCHEMA public OWNER TO $DB_USER;"
     
     # 判断是否为 gzip 压缩包并还原
-    if [[ "$TARGET_SQL" == *.gz ]]; then
-        gunzip -c "$TARGET_SQL" | docker exec -i $DB_CONTAINER psql -U $DB_USER $DB_NAME
-    else
-        docker exec -i $DB_CONTAINER psql -U $DB_USER $DB_NAME < "$TARGET_SQL"
-    fi
+    case "$TARGET_SQL" in
+        *.gz)
+            gunzip -c "$TARGET_SQL" | docker exec -i $DB_CONTAINER psql -U $DB_USER $DB_NAME
+            ;;
+        *)
+            docker exec -i $DB_CONTAINER psql -U $DB_USER $DB_NAME < "$TARGET_SQL"
+            ;;
+    esac
 else
     echo "⚠️ 错误: 未找到数据库备份文件 $TARGET_SQL"
     exit 1
@@ -52,11 +55,14 @@ fi
 if [ -f "$TARGET_MINIO" ]; then
     echo "📦 正在还原存储桶 (MinIO)..."
     # 先清理旧数据，再解压新数据 (判断是否为 gzip 压缩包)
-    if [[ "$TARGET_MINIO" == *.gz ]]; then
-        docker run --rm -v $MINIO_VOLUME:/data -v $(pwd)/backups:/backup alpine sh -c "rm -rf /data/* && tar xzvf /backup/$(basename $TARGET_MINIO) -C /data"
-    else
-        docker run --rm -v $MINIO_VOLUME:/data -v $(pwd)/backups:/backup alpine sh -c "rm -rf /data/* && tar xvf /backup/$(basename $TARGET_MINIO) -C /data"
-    fi
+    case "$TARGET_MINIO" in
+        *.gz)
+            docker run --rm -v $MINIO_VOLUME:/data -v $(pwd)/backups:/backup alpine sh -c "rm -rf /data/* && tar xzvf /backup/$(basename $TARGET_MINIO) -C /data"
+            ;;
+        *)
+            docker run --rm -v $MINIO_VOLUME:/data -v $(pwd)/backups:/backup alpine sh -c "rm -rf /data/* && tar xvf /backup/$(basename $TARGET_MINIO) -C /data"
+            ;;
+    esac
 else
     echo "⚠️ 错误: 未找到存储桶备份文件 $TARGET_MINIO"
     exit 1

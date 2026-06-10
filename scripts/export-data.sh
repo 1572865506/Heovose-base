@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/sh
 
 # 配置
 BACKUP_DIR="./backups"

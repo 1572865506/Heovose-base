@@ -16,7 +16,7 @@ export const POST = withAuth('superadmin', async (
     const scriptPath = path.join(process.cwd(), "scripts", "export-data.sh");
     
     // Execute the script securely using execFile
-    const { stdout, stderr } = await execFileAsync("bash", [scriptPath]);
+    const { stdout, stderr } = await execFileAsync("/bin/sh", [scriptPath]);
 
     
     console.log("Backup stdout:", stdout);

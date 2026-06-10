@@ -46,7 +46,7 @@ export const POST = withAuth('superadmin', async (
     fs.writeFileSync(maintenanceFile, "true");
 
     // Execute the restore script securely using execFile
-    const { stdout, stderr } = await execFileAsync("bash", [scriptPath, sqlPath, minioPath]);
+    const { stdout, stderr } = await execFileAsync("/bin/sh", [scriptPath, sqlPath, minioPath]);
     
     console.log("Restore stdout:", stdout);
     if (stderr) console.error("Restore stderr:", stderr);
