@@ -21,9 +21,9 @@ echo "📦 正在导出数据库 (PostgreSQL) 并使用 gzip 压缩..."
 docker exec $DB_CONTAINER pg_dump -U $DB_USER $DB_NAME | gzip > "$BACKUP_DIR/db_backup_$TIMESTAMP.sql.gz"
 cp "$BACKUP_DIR/db_backup_$TIMESTAMP.sql.gz" "$BACKUP_DIR/db_backup.sql.gz"
 
-# 2. 导出 MinIO 存储数据 (使用 tar -czf 压缩)
+# 2. 导出 MinIO 存储数据 (使用 tar -czf 压缩，通过 stdout 流式写入宿主，避免路径绑定错误)
 echo "📦 正在导出存储桶 (MinIO) 并使用 gzip 压缩..."
-docker run --rm -v $MINIO_VOLUME:/data -v $(pwd)/backups:/backup alpine tar czvf /backup/minio_backup_$TIMESTAMP.tar.gz -C /data .
+docker run --rm -v $MINIO_VOLUME:/data alpine tar czf - -C /data . > "$BACKUP_DIR/minio_backup_$TIMESTAMP.tar.gz"
 cp "$BACKUP_DIR/minio_backup_$TIMESTAMP.tar.gz" "$BACKUP_DIR/minio_backup.tar.gz"
 
 # 3. 自动清理超过 180 天的旧备份文件

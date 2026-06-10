@@ -55,16 +55,18 @@ else
     exit 1
 fi
 
-# 2. 还原 MinIO 存储数据
+# 2. 还原 MinIO 存储数据 (使用 stdin 管道解压导入，解决容器挂载宿主机路径引起的空目录映射问题)
 if [ -f "$TARGET_MINIO" ]; then
     echo "📦 正在还原存储桶 (MinIO)..."
-    # 先清理旧数据，再解压新数据 (判断是否为 gzip 压缩包)
+    # 2.1 清理旧数据
+    docker run --rm -v $MINIO_VOLUME:/data alpine sh -c "rm -rf /data/*"
+    # 2.2 管道流式导入解压
     case "$TARGET_MINIO" in
         *.gz)
-            docker run --rm -v $MINIO_VOLUME:/data -v $(pwd)/backups:/backup alpine sh -c "rm -rf /data/* && tar xzvf /backup/$(basename $TARGET_MINIO) -C /data"
+            docker run -i --rm -v $MINIO_VOLUME:/data alpine tar xzf - -C /data < "$TARGET_MINIO"
             ;;
         *)
-            docker run --rm -v $MINIO_VOLUME:/data -v $(pwd)/backups:/backup alpine sh -c "rm -rf /data/* && tar xvf /backup/$(basename $TARGET_MINIO) -C /data"
+            docker run -i --rm -v $MINIO_VOLUME:/data alpine tar xf - -C /data < "$TARGET_MINIO"
             ;;
     esac
 else
