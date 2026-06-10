@@ -15,6 +15,9 @@ RUN npm run build
 FROM node:20-alpine AS runner
 WORKDIR /app
 
+# 安装 bash 和 docker-cli 客户端，以便在容器内运行备份还原脚本
+RUN apk add --no-cache bash docker-cli
+
 ENV NODE_ENV=production
 ENV PORT=9002
 
@@ -25,6 +28,10 @@ COPY --from=builder /app/node_modules ./node_modules
 COPY --from=builder /app/.next ./.next
 COPY --from=builder /app/public ./public
 COPY --from=builder /app/prisma ./prisma
+COPY --from=builder /app/scripts ./scripts
+
+# 赋予脚本可执行权限
+RUN chmod +x ./scripts/*.sh
 
 EXPOSE 9002
 CMD ["npm", "run", "start"]
