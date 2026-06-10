@@ -69,16 +69,24 @@ export function Hero({ locale, homeConfig, isLoading, onThemeChange }: HeroProps
   }, [JSON.stringify(homeConfig)]);
 
   // 2. Carousel Setup
+  const plugins = React.useMemo(() => {
+    if (slides.length > 1) {
+      return [
+        Autoplay({ delay: 6000, stopOnInteraction: false }),
+        Fade()
+      ];
+    }
+    return [];
+  }, [slides.length]);
+
   const [emblaRef, emblaApi] = useEmblaCarousel(
     {
-      loop: true,
+      loop: slides.length > 1,
       duration: 30,
-      skipSnaps: false
+      skipSnaps: false,
+      active: slides.length > 1
     },
-    [
-      Autoplay({ delay: 6000, stopOnInteraction: false }),
-      Fade()
-    ]
+    plugins
   );
 
   const [selectedIndex, setSelectedIndex] = useState(0);
