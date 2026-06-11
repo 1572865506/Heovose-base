@@ -24,82 +24,61 @@ export async function ensureBucketExists(bucketName: string) {
     } catch (error: any) {
       if (error.name === 'NotFound' || error.$metadata?.httpStatusCode === 404) {
         await s3Client.send(new CreateBucketCommand({ Bucket: bucketName }));
-
-        // Set public read policy for MinIO
-        const policy: any = {
-          Version: "2012-10-17",
-          Statement: [
-            {
-              Effect: "Allow",
-              Principal: "*",
-              Action: ["s3:GetObject"],
-              Resource: [`arn:aws:s3:::${bucketName}/*`],
-            },
-          ],
-        };
-
-        // L-6 生产环境下在 Policy 中对匿名 GetObject 限制必须本站 Referer，以防盗用
-        if (process.env.NODE_ENV === 'production' && appUrl) {
-          try {
-            const domain = new URL(appUrl).hostname;
-            policy.Statement[0].Condition = {
-              StringLike: {
-                "aws:Referer": [
-                  `https://*.${domain}/*`,
-                  `http://*.${domain}/*`,
-                  `${appUrl}/*`
-                ]
-              }
-            };
-          } catch (e) {
-            console.warn("Invalid NEXTAUTH_URL for S3 Policy Referer:", e);
-          }
-        }
-
-        await s3Client.send(new PutBucketPolicyCommand({
-          Bucket: bucketName,
-          Policy: JSON.stringify(policy),
-        }));
-
-        // Set CORS policy for MinIO to allow metadata loading (resolution, duration)
-        const { PutBucketCorsCommand } = await import("@aws-sdk/client-s3");
-        await s3Client.send(new PutBucketCorsCommand({
-          Bucket: bucketName,
-          CORSConfiguration: {
-            CORSRules: [
-              {
-                AllowedHeaders: ["*"],
-                AllowedMethods: ["GET", "HEAD"],
-                AllowedOrigins: allowedOrigins,
-                ExposeHeaders: ["ETag", "Content-Length", "Content-Type"],
-                MaxAgeSeconds: 3000
-              }
-            ]
-          }
-        }));
-      } else {
-        // Even if bucket exists, try to update CORS to be safe
-        const { PutBucketCorsCommand } = await import("@aws-sdk/client-s3");
-        try {
-          await s3Client.send(new PutBucketCorsCommand({
-            Bucket: bucketName,
-            CORSConfiguration: {
-              CORSRules: [
-                {
-                  AllowedHeaders: ["*"],
-                  AllowedMethods: ["GET", "HEAD"],
-                  AllowedOrigins: allowedOrigins,
-                  ExposeHeaders: ["ETag", "Content-Length", "Content-Type"],
-                  MaxAgeSeconds: 3000
-                }
-              ]
-            }
-          }));
-        } catch (corsErr) {
-          console.error("Non-critical: Error updating CORS on existing bucket:", corsErr);
-        }
       }
     }
+
+    // Set public read policy for MinIO
+    const policy: any = {
+      Version: "2012-10-17",
+      Statement: [
+        {
+          Effect: "Allow",
+          Principal: "*",
+          Action: ["s3:GetObject"],
+          Resource: [`arn:aws:s3:::${bucketName}/*`],
+        },
+      ],
+    };
+
+    // L-6 生产环境下在 Policy 中对匿名 GetObject 限制必须本站 Referer，以防盗用
+    if (process.env.NODE_ENV === 'production' && appUrl) {
+      try {
+        const domain = new URL(appUrl).hostname;
+        policy.Statement[0].Condition = {
+          StringLike: {
+            "aws:Referer": [
+              `https://*.${domain}/*`,
+              `http://*.${domain}/*`,
+              `${appUrl}/*`
+            ]
+          }
+        };
+      } catch (e) {
+        console.warn("Invalid NEXTAUTH_URL for S3 Policy Referer:", e);
+      }
+    }
+
+    await s3Client.send(new PutBucketPolicyCommand({
+      Bucket: bucketName,
+      Policy: JSON.stringify(policy),
+    }));
+
+    // Set CORS policy for MinIO to allow metadata loading (resolution, duration)
+    const { PutBucketCorsCommand } = await import("@aws-sdk/client-s3");
+    await s3Client.send(new PutBucketCorsCommand({
+      Bucket: bucketName,
+      CORSConfiguration: {
+        CORSRules: [
+          {
+            AllowedHeaders: ["*"],
+            AllowedMethods: ["GET", "HEAD"],
+            AllowedOrigins: allowedOrigins,
+            ExposeHeaders: ["ETag", "Content-Length", "Content-Type"],
+            MaxAgeSeconds: 3000
+          }
+        ]
+      }
+    }));
   } catch (e) {
     console.error("Error ensuring bucket exists:", e);
   }
