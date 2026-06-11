@@ -27,6 +27,19 @@ const nextConfig: NextConfig = {
       { protocol: 'https', hostname: 'picsum.photos', pathname: '/**' },
       { protocol: 'http', hostname: 'localhost', port: '9000', pathname: '/**' },
       { protocol: 'http', hostname: '127.0.0.1', port: '9000', pathname: '/**' },
+      { protocol: 'http', hostname: 'heovose-storage', port: '9000', pathname: '/**' },
+      { 
+        protocol: 'http', 
+        hostname: process.env.STORAGE_ENDPOINT || 'localhost', 
+        port: process.env.STORAGE_PORT || '9000', 
+        pathname: '/**' 
+      },
+      { 
+        protocol: 'https', 
+        hostname: process.env.STORAGE_ENDPOINT || 'localhost', 
+        port: process.env.STORAGE_PORT || '9000', 
+        pathname: '/**' 
+      },
       { protocol: 'http', hostname: '192.168.*', port: '9000', pathname: '/**' },
       { protocol: 'http', hostname: '10.*', port: '9000', pathname: '/**' },
       { protocol: 'http', hostname: '172.*', port: '9000', pathname: '/**' },
