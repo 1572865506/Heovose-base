@@ -77,14 +77,6 @@ const nextConfig: NextConfig = {
       },
     ]
   },
-  async rewrites() {
-    return [
-      {
-        source: '/storage/:path*',
-        destination: `http://${process.env.STORAGE_ENDPOINT || 'localhost'}:${process.env.STORAGE_PORT || '9000'}/:path*`,
-      },
-    ]
-  },
 };
 
 export default nextConfig;
