@@ -26,9 +26,9 @@ fi
 
 echo "🚀 开始从 $TARGET_SQL 还原 Heovose Elevate 数据..."
 
-# 0. 还原前自动创建当前数据的临时备份，防止还原出错无法恢复 (问题 1)
-echo "📦 正在执行还原前自动临时备份..."
-sh ./scripts/export-data.sh
+# 0. 还原前自动创建当前数据的临时备份 (默认注释掉，防止混淆并提高还原速度；如需开启请取消注释)
+# echo "📦 正在执行还原前自动临时备份..."
+# sh ./scripts/export-data.sh
 
 # 1. 还原 PostgreSQL 数据库
 if [ -f "$TARGET_SQL" ]; then
@@ -64,6 +64,10 @@ if [ -f "$TARGET_MINIO" ]; then
             docker run -i --rm --volumes-from heovose-storage alpine tar xf - -C /data < "$TARGET_MINIO"
             ;;
     esac
+    
+    # 2.3 重启 MinIO 容器以重新加载并索引磁盘上的还原文件 (至关重要)
+    echo "🔄 正在重启 MinIO 存储容器以应用更新..."
+    docker restart heovose-storage
 else
     echo "⚠️ 错误: 未找到存储桶备份文件 $TARGET_MINIO"
     exit 1
