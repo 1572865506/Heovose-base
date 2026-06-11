@@ -312,7 +312,7 @@ export default function AdminProductsPage() {
                     <div className="absolute left-0 top-2.5 bottom-2.5 w-1 bg-primary scale-y-0 group-hover:scale-y-100 transition-transform duration-500 rounded-r-full" />
                     <div className="relative h-16 w-16 rounded-2xl border border-border/10 bg-background shadow-inner overflow-hidden group-hover:scale-105 transition-transform duration-500">
                       {p.mainImageUrl ? (
-                        <Image src={getAssetUrl(p.mainImageUrl)} alt="" fill className="object-contain p-2.5" unoptimized />
+                        <Image src={getAssetUrl(p.mainImageUrl, true)} alt="" fill className="object-contain p-2.5" unoptimized />
                       ) : (
                         <div className="absolute inset-0 bg-muted/5 flex items-center justify-center text-muted-foreground/10"><Package className="h-8 w-8" /></div>
                       )}

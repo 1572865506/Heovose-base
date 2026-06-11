@@ -30,7 +30,6 @@ COPY --from=builder /app/.next ./.next
 COPY --from=builder /app/public ./public
 COPY --from=builder /app/prisma ./prisma
 COPY --from=builder /app/scripts ./scripts
-COPY --from=builder /app/src/lib/image-loader.ts ./src/lib/image-loader.ts
 
 # 赋予脚本可执行权限
 RUN chmod +x ./scripts/*.sh

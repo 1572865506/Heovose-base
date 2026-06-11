@@ -454,7 +454,7 @@ export default function CaseStudiesAdminPage() {
             <div key={item.id} className="group relative bg-card rounded-3xl border border-border/40 overflow-hidden shadow-sm hover:shadow-xl hover:translate-y-[-4px] transition-all duration-500">
               <div className="relative h-48 bg-muted/20">
                 {item.imageUrl ? (
-                  <Image src={getAssetUrl(item.imageUrl)} alt="" fill className="object-cover" unoptimized />
+                  <Image src={getAssetUrl(item.imageUrl, true)} alt="" fill className="object-cover" unoptimized />
                 ) : (
                   <div className="flex items-center justify-center h-full opacity-20"><ImageIcon className="h-8 w-8" /></div>
                 )}
@@ -528,7 +528,7 @@ export default function CaseStudiesAdminPage() {
                 >
                   {form.imageUrl ? (
                     <>
-                      <Image src={getAssetUrl(form.imageUrl)} alt="" fill className="object-cover" unoptimized />
+                      <Image src={getAssetUrl(form.imageUrl, true)} alt="" fill className="object-cover" unoptimized />
                       <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity">
                         <Button variant="secondary" size="sm" className="rounded-full h-8 text-[10px] font-bold uppercase tracking-wider">更换展示图</Button>
                       </div>

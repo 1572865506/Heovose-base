@@ -876,7 +876,7 @@ export default function AdminHomePage() {
                             isVideoUrl(slide.bgImage) ? (
                               <video src={getAssetUrl(slide.bgImage)} className="object-cover w-full h-full" muted playsInline />
                             ) : (
-                              <Image src={getAssetUrl(slide.bgImage)} alt="Preview" fill className="object-cover" unoptimized />
+                              <Image src={getAssetUrl(slide.bgImage, true)} alt="Preview" fill className="object-cover" unoptimized />
                             )
                           ) : (
                             <div className="absolute inset-0 flex items-center justify-center text-muted-foreground/30"><ImageIcon className="h-6 w-6" /></div>
@@ -905,7 +905,7 @@ export default function AdminHomePage() {
                             isVideoUrl(slide.mobileBgImage) ? (
                               <video src={getAssetUrl(slide.mobileBgImage)} className="object-cover w-full h-full" muted playsInline />
                             ) : (
-                              <Image src={getAssetUrl(slide.mobileBgImage)} alt="Preview" fill className="object-cover" unoptimized />
+                              <Image src={getAssetUrl(slide.mobileBgImage, true)} alt="Preview" fill className="object-cover" unoptimized />
                             )
                           ) : (
                             <div className="absolute inset-0 flex flex-col items-center justify-center gap-1 text-muted-foreground/30 text-[8px] bg-muted/5">
