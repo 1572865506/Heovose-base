@@ -1,5 +1,15 @@
 import type {NextConfig} from 'next';
 
+const appUrl = process.env.NEXTAUTH_URL;
+let appHostname = '';
+if (appUrl) {
+  try {
+    appHostname = new URL(appUrl).hostname;
+  } catch (e) {
+    console.warn("Invalid NEXTAUTH_URL for image optimization:", e);
+  }
+}
+
 const nextConfig: NextConfig = {
   /* config options here */
   experimental: {
@@ -29,17 +39,21 @@ const nextConfig: NextConfig = {
       { protocol: 'http', hostname: '127.0.0.1', port: '9000', pathname: '/**' },
       { protocol: 'http', hostname: 'heovose-storage', port: '9000', pathname: '/**' },
       { 
-        protocol: 'http', 
+        protocol: 'http' as const, 
         hostname: process.env.STORAGE_ENDPOINT || 'localhost', 
         port: process.env.STORAGE_PORT || '9000', 
         pathname: '/**' 
       },
       { 
-        protocol: 'https', 
+        protocol: 'https' as const, 
         hostname: process.env.STORAGE_ENDPOINT || 'localhost', 
         port: process.env.STORAGE_PORT || '9000', 
         pathname: '/**' 
       },
+      ...(appHostname ? [
+        { protocol: 'http' as const, hostname: appHostname, pathname: '/**' },
+        { protocol: 'https' as const, hostname: appHostname, pathname: '/**' }
+      ] : []),
       { protocol: 'http', hostname: '192.168.*', port: '9000', pathname: '/**' },
       { protocol: 'http', hostname: '10.*', port: '9000', pathname: '/**' },
       { protocol: 'http', hostname: '172.*', port: '9000', pathname: '/**' },
