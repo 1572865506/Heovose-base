@@ -40,23 +40,7 @@ export async function ensureBucketExists(bucketName: string) {
       ],
     };
 
-    // L-6 生产环境下在 Policy 中对匿名 GetObject 限制必须本站 Referer，以防盗用
-    if (process.env.NODE_ENV === 'production' && appUrl) {
-      try {
-        const domain = new URL(appUrl).hostname;
-        policy.Statement[0].Condition = {
-          StringLike: {
-            "aws:Referer": [
-              `https://*.${domain}/*`,
-              `http://*.${domain}/*`,
-              `${appUrl}/*`
-            ]
-          }
-        };
-      } catch (e) {
-        console.warn("Invalid NEXTAUTH_URL for S3 Policy Referer:", e);
-      }
-    }
+
 
     await s3Client.send(new PutBucketPolicyCommand({
       Bucket: bucketName,
