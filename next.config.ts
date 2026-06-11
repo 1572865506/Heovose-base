@@ -45,6 +45,12 @@ const nextConfig: NextConfig = {
       { protocol: 'http', hostname: '172.*', port: '9000', pathname: '/**' },
     ],
   },
+  webpack: (config: any, { dev }: { dev: boolean }) => {
+    if (!dev) {
+      config.parallelism = 1;
+    }
+    return config;
+  },
   async headers() {
     return [
       {

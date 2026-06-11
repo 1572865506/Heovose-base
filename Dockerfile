@@ -9,7 +9,8 @@ RUN npm config set registry https://registry.npmmirror.com && npm ci
 # 复制整个项目并执行代码生成与打包构建
 COPY . .
 RUN npx prisma generate
-RUN npm run build
+# 限制线程池大小和内存使用上限，防止低配云服务器在编译时卡死
+RUN env UV_THREADPOOL_SIZE=1 NODE_OPTIONS="--max-old-space-size=1024" npm run build
 
 # 第二阶段：生产环境运行镜像
 FROM node:20-alpine AS runner
