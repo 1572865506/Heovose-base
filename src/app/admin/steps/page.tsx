@@ -422,7 +422,7 @@ export default function ProductionStepsAdminPage() {
 
                   <div className="relative w-20 h-14 shrink-0 bg-card rounded-lg border border-border/40 overflow-hidden shadow-inner">
                     {step.imageUrls?.[0] ? (
-                      <Image src={getAssetUrl(step.imageUrls[0], true)} alt="" fill className="object-cover" unoptimized />
+                      <Image src={getAssetUrl(step.imageUrls[0])} alt="" fill className="object-cover" unoptimized />
                     ) : (
                       <div className="flex items-center justify-center h-full opacity-20"><ImageIcon className="h-5 w-5" /></div>
                     )}
@@ -490,7 +490,7 @@ export default function ProductionStepsAdminPage() {
                 <div className="flex gap-4 p-4 bg-muted/5 rounded-xl border border-slate-200 admin-interface-dark:border-white/10 overflow-x-auto min-h-[120px] items-center">
                   {form.imageUrls?.map((url, i) => (
                     <div key={i} className="group relative w-32 aspect-square shrink-0 rounded-lg border border-border/40 overflow-hidden bg-card shadow-sm transition-all hover:scale-105">
-                      <Image src={getAssetUrl(url, true)} alt="" fill className="object-cover" unoptimized />
+                      <Image src={getAssetUrl(url)} alt="" fill className="object-cover" unoptimized />
                       <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-1.5">
                         <Button size="icon" variant="secondary" className="h-6 w-6 rounded-full" disabled={i === 0} onClick={() => moveImage(i, 'left')}><ChevronLeft className="h-3.5 w-3.5" /></Button>
                         <Button size="icon" variant="secondary" className="h-6 w-6 rounded-full" disabled={i === (form.imageUrls?.length || 0) - 1} onClick={() => moveImage(i, 'right')}><ChevronRight className="h-3.5 w-3.5" /></Button>

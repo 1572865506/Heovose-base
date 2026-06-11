@@ -82,7 +82,7 @@ const SortableImageCard = memo(({ url, idx, onDelete, onMove }: {
           }}
         />
       ) : (
-        <Image src={getAssetUrl(url, true)} alt={`Gallery ${idx}`} fill className="object-cover transition-transform duration-1000 group-hover/card:scale-110 rounded-[2rem]" unoptimized />
+        <Image src={getAssetUrl(url)} alt={`Gallery ${idx}`} fill className="object-cover transition-transform duration-1000 group-hover/card:scale-110 rounded-[2rem]" unoptimized />
       )}
 
       {/* 底部交互层 (毛玻璃) */}

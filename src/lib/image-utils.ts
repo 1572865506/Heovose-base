@@ -20,7 +20,7 @@ export function setGlobalStorageBaseUrl(url: string) {
  * 兼容旧的绝对路径 (http://192.168.1.190:9000/...) 
  * 并支持动态解析存储前缀
  */
-export function getAssetUrl(path: string | null | undefined, unoptimized = false): string {
+export function getAssetUrl(path: string | null | undefined): string {
   if (!path) return '';
 
   // 1. 如果是 data: 链接（Base64），直接返回
@@ -30,22 +30,6 @@ export function getAssetUrl(path: string | null | undefined, unoptimized = false
   if (path.startsWith('/image/') || path.startsWith('/video/') || path.startsWith('/icons/') || path.startsWith('/assets/') || path.startsWith('/favicon.ico')) {
     return path;
   }
-
-  // 判断是否为生产环境
-  let isProd = false;
-  if (typeof window !== 'undefined') {
-    const hostname = window.location.hostname;
-    if (hostname !== 'localhost' && hostname !== '127.0.0.1' && !hostname.startsWith('192.168.')) {
-      isProd = true;
-    }
-  } else {
-    if (process.env.NODE_ENV === 'production') {
-      isProd = true;
-    }
-  }
-
-  // 生产环境且需要优化时使用 Docker 内网域名，否则走默认 /storage 相对代理
-  const basePrefix = (isProd && !unoptimized) ? 'http://heovose-storage:9000' : globalStorageBaseUrl;
 
   // 3. 处理绝对路径 (http/https)
   if (path.startsWith('http')) {
@@ -83,7 +67,7 @@ export function getAssetUrl(path: string | null | undefined, unoptimized = false
 
       if (relativePath) {
         const cleanPath = relativePath.startsWith('/') ? relativePath.slice(1) : relativePath;
-        return `${basePrefix}/${cleanPath}`;
+        return `${globalStorageBaseUrl}/${cleanPath}`;
       }
     }
 
@@ -93,5 +77,5 @@ export function getAssetUrl(path: string | null | undefined, unoptimized = false
 
   // 4. 处理已经是相对路径的情况 (如 bucket/file.jpg)
   const cleanPath = path.startsWith('/') ? path.slice(1) : path;
-  return `${basePrefix}/${cleanPath}`;
+  return `${globalStorageBaseUrl}/${cleanPath}`;
 }

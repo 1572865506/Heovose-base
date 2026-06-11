@@ -148,7 +148,7 @@ export default function AdminPage() {
                   <Link key={p.id} href={`/admin/products/editor?id=${p.id}`} className="flex items-center gap-8 p-8 hover:bg-primary/[0.03] transition-all group relative">
                     <div className="h-16 w-16 rounded-[1.25rem] border border-border/10 bg-background/40 overflow-hidden relative shrink-0 group-hover:scale-105 transition-all duration-500 shadow-inner ring-1 ring-white/5">
                       {p.mainImageUrl ? (
-                        <Image src={getAssetUrl(p.mainImageUrl, true)} alt="" fill className="object-contain p-2.5 brightness-110 contrast-110" unoptimized />
+                        <Image src={getAssetUrl(p.mainImageUrl)} alt="" fill className="object-contain p-2.5 brightness-110 contrast-110" unoptimized />
                       ) : (
                         <div className="absolute inset-0 flex items-center justify-center text-muted-foreground/20"><Package className="h-8 w-8" /></div>
                       )}

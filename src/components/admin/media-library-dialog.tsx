@@ -526,7 +526,7 @@ export function MediaLibraryDialog({
                                  <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{fileExt}</span>
                               </div>
                             ) : (
-                              <Image src={getAssetUrl(asset.url, true)} alt={asset.title} fill className="object-contain p-4 transition-transform duration-700 group-hover:scale-110" unoptimized />
+                              <Image src={getAssetUrl(asset.url)} alt={asset.title} fill className="object-contain p-4 transition-transform duration-700 group-hover:scale-110" unoptimized />
                             )}
                             
                             <div className="absolute inset-x-0 bottom-0 p-3 bg-white/95 admin-interface-dark:bg-slate-900/90 backdrop-blur-md border-t border-slate-100 admin-interface-dark:border-border/40 opacity-0 group-hover:opacity-100 transition-opacity translate-y-1 group-hover:translate-y-0 duration-300">

@@ -437,7 +437,7 @@ export default function CategoriesPage() {
                         <div className="absolute left-0 top-4 bottom-4 w-1 bg-primary scale-y-0 group-hover:scale-y-100 transition-transform duration-500 rounded-r-full shadow-[0_0_15px_rgba(var(--primary),0.5)]" />
                         <div className="relative h-14 w-14 rounded-2xl border border-border/10 bg-background shadow-inner flex items-center justify-center group-hover:scale-105 transition-transform duration-500 overflow-hidden">
                           {cat.thumbnailImageUrl ? (
-                            <Image src={getAssetUrl(cat.thumbnailImageUrl, true)} alt={cat.id} fill className="object-contain p-2.5" unoptimized />
+                            <Image src={getAssetUrl(cat.thumbnailImageUrl)} alt={cat.id} fill className="object-contain p-2.5" unoptimized />
                           ) : (
                             <LayoutGrid className="h-6 w-6 opacity-10 text-muted-foreground" />
                           )}
@@ -634,7 +634,7 @@ export default function CategoriesPage() {
               >
                 {formData.thumbnailImageUrl ? (
                   <>
-                    <Image src={getAssetUrl(formData.thumbnailImageUrl, true)} alt="Thumbnail" fill className="object-contain p-5 transition-transform duration-700 group-hover:scale-105" unoptimized />
+                    <Image src={getAssetUrl(formData.thumbnailImageUrl)} alt="Thumbnail" fill className="object-contain p-5 transition-transform duration-700 group-hover:scale-105" unoptimized />
                     <div className="absolute inset-0 bg-background/60 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-all duration-500 gap-4 backdrop-blur-[4px]">
                       <Button variant="secondary" size="sm" className="rounded-xl h-10 px-6 text-[10px] font-bold uppercase tracking-wider shadow-2xl bg-background text-foreground border-none">更换视觉资源</Button>
                       <Button
