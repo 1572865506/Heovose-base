@@ -65,7 +65,11 @@ if [ -f "$TARGET_MINIO" ]; then
             ;;
     esac
     
-    # 2.3 重启 MinIO 容器以重新加载并索引磁盘上的还原文件 (至关重要)
+    # 2.3 修复文件权限，防止 docker 恢复导致的文件属主为 root 从而引发 MinIO 403 Access Denied
+    echo "🔑 正在修复存储桶文件权限..."
+    docker run --rm --volumes-from heovose-storage alpine chmod -R 777 /data
+    
+    # 2.4 重启 MinIO 容器以重新加载并索引磁盘上的还原文件 (至关重要)
     echo "🔄 正在重启 MinIO 存储容器以应用更新..."
     docker restart heovose-storage
 else
