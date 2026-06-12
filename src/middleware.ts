@@ -72,7 +72,7 @@ export default auth(async (request) => {
   const origin = request.headers.get('origin');
   const referer = request.headers.get('referer');
   const secFetchSite = request.headers.get('sec-fetch-site');
-  const appUrl = process.env.NEXTAUTH_URL || 'http://localhost:9002';
+  const appUrl = process.env.AUTH_URL || process.env.NEXTAUTH_URL || 'http://localhost:9002';
 
   // CSRF 防护 (L-7)：拦截跨站的非安全写操作请求（POST, PUT, DELETE, PATCH）
   const method = request.method;
@@ -123,6 +123,7 @@ export default auth(async (request) => {
                               origin.endsWith('.heovose.com') ||
                               origin.endsWith('.web.app');
       if (!isAllowedOrigin) {
+        console.warn(`[CSRF Blocked] Origin: ${origin} not matched against AppUrl: ${appUrl}, NextUrlOrigin: ${nextUrl.origin}, Host: ${host}`);
         return NextResponse.json({ error: 'CSRF Protection: Origin mismatch.' }, { status: 403 });
       }
     } else if (referer) {
@@ -153,7 +154,7 @@ export default auth(async (request) => {
   if (pathname.startsWith('/storage')) {
 
     const requestOrigin = request.headers.get('origin') || '';
-    const appUrl = process.env.NEXTAUTH_URL || 'http://localhost:9002';
+    const appUrl = process.env.AUTH_URL || process.env.NEXTAUTH_URL || 'http://localhost:9002';
     const isAllowedOrigin = requestOrigin === appUrl || 
                             requestOrigin.startsWith('http://localhost:') || 
                             requestOrigin.endsWith('.heovose.com') ||
