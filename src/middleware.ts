@@ -53,6 +53,22 @@ function checkRateLimit(ip: string, limit: number, durationMs: number): { succes
 export default auth(async (request) => {
   const { nextUrl } = request;
   const pathname = nextUrl.pathname;
+
+  // 动态重写 /storage 请求至 MinIO 存储服务（避免构建时硬编码 Endpoint 的问题且性能更好）
+  if (pathname.startsWith('/storage/')) {
+    const cleanPath = pathname.substring('/storage'.length);
+    const endpoint = process.env.STORAGE_ENDPOINT || 'localhost';
+    const port = process.env.STORAGE_PORT || '9000';
+    const protocol = process.env.STORAGE_USE_SSL === 'true' ? 'https' : 'http';
+    
+    const targetUrl = new URL(request.url);
+    targetUrl.protocol = protocol;
+    targetUrl.host = `${endpoint}:${port}`;
+    targetUrl.pathname = cleanPath;
+    
+    return NextResponse.rewrite(targetUrl);
+  }
+
   const origin = request.headers.get('origin');
   const referer = request.headers.get('referer');
   const secFetchSite = request.headers.get('sec-fetch-site');
