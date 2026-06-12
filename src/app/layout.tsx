@@ -82,8 +82,13 @@ export default async function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  const cookieStore = await cookies();
-  const locale = (cookieStore.get('NEXT_LOCALE')?.value as Locale) || 'en';
+  let locale: Locale = 'en';
+  try {
+    const cookieStore = await cookies();
+    locale = (cookieStore.get('NEXT_LOCALE')?.value as Locale) || 'en';
+  } catch (_) {
+    // 捕获静态编译/预渲染期间的 cookies() 调用错误，默认使用英文进行静态编译
+  }
 
   // 统一在服务端获取公开配置，不再通过 API 终点暴露给外部
   let publicSettings = {};
