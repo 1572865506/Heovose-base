@@ -1,6 +1,7 @@
 import AboutContent from "@/app/about/AboutContent";
 import { Locale } from "@/lib/translations";
 import db from '@/lib/db';
+import { Suspense } from 'react';
 
 export async function generateStaticParams() {
   try {
@@ -28,5 +29,9 @@ interface PageProps {
 
 export default async function AboutPage({ params }: PageProps) {
   const { locale } = await params;
-  return <AboutContent initialLocale={locale as Locale} />;
+  return (
+    <Suspense fallback={null}>
+      <AboutContent initialLocale={locale as Locale} />
+    </Suspense>
+  );
 }
