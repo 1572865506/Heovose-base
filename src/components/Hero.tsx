@@ -414,18 +414,22 @@ export function Hero({ locale, homeConfig, isLoading, onThemeChange }: HeroProps
                     <>
                       {/* PC Poster */}
                       <div className="hidden md:block absolute inset-0">
-                        {isVideoUrl(slide.bgImage) && index === selectedIndex && allowVideo ? (
-                          <video
-                            ref={registerVideoRef(index)}
-                            onLoadedMetadata={() => handleVideoMetadata(index)}
-                            onEnded={() => handleVideoEnded(index)}
-                            src={getAssetUrl(slide.bgImage)}
-                            autoPlay
-                            loop={false}
-                            muted
-                            playsInline
-                            className="object-cover w-full h-full"
-                          />
+                        {isVideoUrl(slide.bgImage) ? (
+                          index === selectedIndex && allowVideo ? (
+                            <video
+                              ref={registerVideoRef(index)}
+                              onLoadedMetadata={() => handleVideoMetadata(index)}
+                              onEnded={() => handleVideoEnded(index)}
+                              src={getAssetUrl(slide.bgImage)}
+                              autoPlay
+                              loop={false}
+                              muted
+                              playsInline
+                              className="object-cover w-full h-full"
+                            />
+                          ) : (
+                            <div className="absolute inset-0 bg-neutral-950/60" />
+                          )
                         ) : (
                           <Image
                             src={getAssetUrl(slide.bgImage)}
@@ -440,18 +444,22 @@ export function Hero({ locale, homeConfig, isLoading, onThemeChange }: HeroProps
                       </div>
                       {/* Mobile Poster */}
                       <div className="block md:hidden absolute inset-0">
-                        {isVideoUrl(slide.mobileBgImage) && index === selectedIndex && allowVideo ? (
-                          <video
-                            ref={registerVideoRef(index)}
-                            onLoadedMetadata={() => handleVideoMetadata(index)}
-                            onEnded={() => handleVideoEnded(index)}
-                            src={getAssetUrl(slide.mobileBgImage)}
-                            autoPlay
-                            loop={false}
-                            muted
-                            playsInline
-                            className="object-cover w-full h-full"
-                          />
+                        {isVideoUrl(slide.mobileBgImage) || isVideoUrl(slide.bgImage) ? (
+                          index === selectedIndex && allowVideo ? (
+                            <video
+                              ref={registerVideoRef(index)}
+                              onLoadedMetadata={() => handleVideoMetadata(index)}
+                              onEnded={() => handleVideoEnded(index)}
+                              src={getAssetUrl(slide.mobileBgImage || slide.bgImage)}
+                              autoPlay
+                              loop={false}
+                              muted
+                              playsInline
+                              className="object-cover w-full h-full"
+                            />
+                          ) : (
+                            <div className="absolute inset-0 bg-neutral-950/60" />
+                          )
                         ) : (
                           <Image
                             src={getAssetUrl(slide.mobileBgImage || slide.bgImage)}
@@ -467,18 +475,22 @@ export function Hero({ locale, homeConfig, isLoading, onThemeChange }: HeroProps
                     </>
                   ) : (
                     // Default PC Poster
-                    isVideoUrl(slide.bgImage) && index === selectedIndex && allowVideo ? (
-                      <video
-                        ref={registerVideoRef(index)}
-                        onLoadedMetadata={() => handleVideoMetadata(index)}
-                        onEnded={() => handleVideoEnded(index)}
-                        src={getAssetUrl(slide.bgImage)}
-                        autoPlay
-                        loop={false}
-                        muted
-                        playsInline
-                        className="object-cover w-full h-full"
-                      />
+                    isVideoUrl(slide.bgImage) ? (
+                      index === selectedIndex && allowVideo ? (
+                        <video
+                          ref={registerVideoRef(index)}
+                          onLoadedMetadata={() => handleVideoMetadata(index)}
+                          onEnded={() => handleVideoEnded(index)}
+                          src={getAssetUrl(slide.bgImage)}
+                          autoPlay
+                          loop={false}
+                          muted
+                          playsInline
+                          className="object-cover w-full h-full"
+                        />
+                      ) : (
+                        <div className="absolute inset-0 bg-neutral-950/60" />
+                      )
                     ) : (
                       <Image
                         src={getAssetUrl(slide.bgImage)}
