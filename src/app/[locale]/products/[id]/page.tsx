@@ -3,6 +3,7 @@ import db from '@/lib/db';
 import ProductClient from '@/app/products/[id]/ProductClient';
 import { notFound } from 'next/navigation';
 import { Locale } from '@/lib/translations';
+import { Suspense } from 'react';
 
 interface Props {
   params: Promise<{ locale: string; id: string }>;
@@ -163,5 +164,9 @@ export default async function ProductPage({ params }: Props) {
     specTranslations
   };
 
-  return <ProductClient product={JSON.parse(JSON.stringify(productWithSpecs))} initialLocale={targetLocale} />;
+  return (
+    <Suspense fallback={null}>
+      <ProductClient product={JSON.parse(JSON.stringify(productWithSpecs))} initialLocale={targetLocale} />
+    </Suspense>
+  );
 }
