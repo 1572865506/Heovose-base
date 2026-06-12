@@ -91,6 +91,14 @@ export function Hero({ locale, homeConfig, isLoading, onThemeChange }: HeroProps
 
   const [selectedIndex, setSelectedIndex] = useState(0);
   const [currentTheme, setCurrentTheme] = useState<'light' | 'dark'>('dark');
+  const [allowVideo, setAllowVideo] = useState(false);
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setAllowVideo(true);
+    }, 1000); // 延时 1 秒开启视频，将初始带宽全部让给网页结构和首屏大图
+    return () => clearTimeout(timer);
+  }, []);
 
   // Video autoplay controls
   const [activeDuration, setActiveDuration] = useState(6000);
@@ -406,7 +414,7 @@ export function Hero({ locale, homeConfig, isLoading, onThemeChange }: HeroProps
                     <>
                       {/* PC Poster */}
                       <div className="hidden md:block absolute inset-0">
-                        {isVideoUrl(slide.bgImage) ? (
+                        {isVideoUrl(slide.bgImage) && index === selectedIndex && allowVideo ? (
                           <video
                             ref={registerVideoRef(index)}
                             onLoadedMetadata={() => handleVideoMetadata(index)}
@@ -432,7 +440,7 @@ export function Hero({ locale, homeConfig, isLoading, onThemeChange }: HeroProps
                       </div>
                       {/* Mobile Poster */}
                       <div className="block md:hidden absolute inset-0">
-                        {isVideoUrl(slide.mobileBgImage) ? (
+                        {isVideoUrl(slide.mobileBgImage) && index === selectedIndex && allowVideo ? (
                           <video
                             ref={registerVideoRef(index)}
                             onLoadedMetadata={() => handleVideoMetadata(index)}
@@ -446,7 +454,7 @@ export function Hero({ locale, homeConfig, isLoading, onThemeChange }: HeroProps
                           />
                         ) : (
                           <Image
-                            src={getAssetUrl(slide.mobileBgImage)}
+                            src={getAssetUrl(slide.mobileBgImage || slide.bgImage)}
                             alt={getFallback(slide.headlineZh, slide.headlineEn)}
                             fill
                             className="object-cover object-[66%_center]"
@@ -459,7 +467,7 @@ export function Hero({ locale, homeConfig, isLoading, onThemeChange }: HeroProps
                     </>
                   ) : (
                     // Default PC Poster
-                    isVideoUrl(slide.bgImage) ? (
+                    isVideoUrl(slide.bgImage) && index === selectedIndex && allowVideo ? (
                       <video
                         ref={registerVideoRef(index)}
                         onLoadedMetadata={() => handleVideoMetadata(index)}
