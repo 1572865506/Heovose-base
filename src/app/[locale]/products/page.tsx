@@ -2,6 +2,7 @@ import { Metadata } from 'next';
 import db from '@/lib/db';
 import ProductListClient from '@/app/products/ProductListClient';
 import { Locale } from '@/lib/translations';
+import { Suspense } from 'react';
 
 // Enable Incremental Static Regeneration (ISR)
 export const revalidate = 3600;
@@ -202,13 +203,15 @@ export default async function ProductListPage({ params }: PageProps) {
   const serializedTranslations = JSON.parse(JSON.stringify(initialTranslations));
 
   return (
-    <ProductListClient
-      initialLocale={targetLocale}
-      initialProducts={serializedProducts}
-      initialTotal={initialTotal}
-      initialCategories={serializedCategories}
-      initialLangSettings={initialLangSettings}
-      initialTranslations={serializedTranslations}
-    />
+    <Suspense fallback={null}>
+      <ProductListClient
+        initialLocale={targetLocale}
+        initialProducts={serializedProducts}
+        initialTotal={initialTotal}
+        initialCategories={serializedCategories}
+        initialLangSettings={initialLangSettings}
+        initialTranslations={serializedTranslations}
+      />
+    </Suspense>
   );
 }

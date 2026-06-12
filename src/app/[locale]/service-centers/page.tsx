@@ -1,6 +1,7 @@
 import ServiceCentersContent from "@/app/service-centers/ServiceCentersContent";
 import { Locale } from "@/lib/translations";
 import db from '@/lib/db';
+import { Suspense } from 'react';
 
 export async function generateStaticParams() {
   try {
@@ -28,5 +29,9 @@ interface PageProps {
 
 export default async function ServiceCentersPage({ params }: PageProps) {
   const { locale } = await params;
-  return <ServiceCentersContent initialLocale={locale as Locale} />;
+  return (
+    <Suspense fallback={null}>
+      <ServiceCentersContent initialLocale={locale as Locale} />
+    </Suspense>
+  );
 }
