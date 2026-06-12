@@ -9,44 +9,7 @@ interface Props {
   params: Promise<{ locale: string; id: string }>;
 }
 
-// Enable Incremental Static Regeneration (ISR) with 1-hour stale revalidation
-export const revalidate = 3600;
-export const dynamicParams = true;
-
-// Generate static params to statically compile detail pages for all published products across all locales
-export async function generateStaticParams() {
-  try {
-    const [products, langSetting] = await Promise.all([
-      db.product.findMany({
-        where: { status: 'published' },
-        select: { id: true }
-      }),
-      db.setting.findUnique({ where: { id: 'languages' } })
-    ]);
-
-    let locales = ['en', 'zh', 'id', 'vi'];
-    if (langSetting?.value) {
-      const parsed = JSON.parse(langSetting.value);
-      if (Array.isArray(parsed.supportedLanguages)) {
-        locales = parsed.supportedLanguages.map((l: any) => l.code);
-      }
-    }
-
-    const paramsList: Array<{ locale: string; id: string }> = [];
-    products.forEach((p: any) => {
-      locales.forEach((locale: string) => {
-        paramsList.push({
-          locale,
-          id: p.id
-        });
-      });
-    });
-    return paramsList;
-  } catch (error) {
-    console.error('Failed to generate static params for product details:', error);
-    return [];
-  }
-}
+export const dynamic = 'force-dynamic';
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const resolvedParams = await params;

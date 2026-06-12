@@ -4,32 +4,10 @@ import ProductListClient from '@/app/products/ProductListClient';
 import { Locale } from '@/lib/translations';
 import { Suspense } from 'react';
 
-// Enable Incremental Static Regeneration (ISR)
-export const revalidate = 3600;
-export const dynamicParams = true;
+export const dynamic = 'force-dynamic';
 
 interface PageProps {
   params: Promise<{ locale: string }>;
-}
-
-export async function generateStaticParams() {
-  try {
-    const langSetting = await db.setting.findUnique({ where: { id: 'languages' } });
-    if (langSetting?.value) {
-      const parsed = JSON.parse(langSetting.value);
-      if (Array.isArray(parsed.supportedLanguages)) {
-        return parsed.supportedLanguages.map((l: any) => ({ locale: l.code }));
-      }
-    }
-  } catch (e) {
-    console.error('[ISR generateStaticParams Products] Failed to load supported languages:', e);
-  }
-  return [
-    { locale: 'en' },
-    { locale: 'zh' },
-    { locale: 'id' },
-    { locale: 'vi' }
-  ];
 }
 
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
