@@ -113,50 +113,67 @@ export default async function ProductPage({ params }: Props) {
   const id = resolvedParams.id;
   const targetLocale = resolvedParams.locale as Locale;
 
-  const product = await db.product.findUnique({
-    where: { id },
-    include: {
-      nameText: true,
-      descriptionText: true,
-      category: {
-        include: {
-          nameText: true
+  let product: any = null;
+  let specTranslations: any[] = [];
+
+  try {
+    product = await db.product.findUnique({
+      where: { id },
+      include: {
+        nameText: true,
+        descriptionText: true,
+        category: {
+          include: {
+            nameText: true
+          }
         }
       }
-    }
-  });
-  if (!product) notFound();
+    });
 
-  // 提取产品包含的规格翻译 IDs
-  const specIds: string[] = [];
-  let specGroups = product.specGroups;
-  if (typeof specGroups === 'string') {
-    try {
-      specGroups = JSON.parse(specGroups);
-    } catch (_) {
-      specGroups = null;
-    }
-  }
-  if (specGroups && typeof specGroups === 'object') {
-    const groups = specGroups as any;
-    const groupArray = Array.isArray(groups) ? groups : [];
-    groupArray.forEach((g: any) => {
-      if (g.titleId) specIds.push(g.titleId);
-      if (Array.isArray(g.items)) {
-        g.items.forEach((item: any) => {
-          if (item.labelId) specIds.push(item.labelId);
-          if (item.valueId) specIds.push(item.valueId);
+    if (product) {
+      // 提取产品包含的规格翻译 IDs
+      const specIds: string[] = [];
+      let specGroups = product.specGroups;
+      if (typeof specGroups === 'string') {
+        try {
+          specGroups = JSON.parse(specGroups);
+        } catch (_) {
+          specGroups = null;
+        }
+      }
+      if (specGroups && typeof specGroups === 'object') {
+        const groups = specGroups as any;
+        const groupArray = Array.isArray(groups) ? groups : [];
+        groupArray.forEach((g: any) => {
+          if (g.titleId) specIds.push(g.titleId);
+          if (Array.isArray(g.items)) {
+            g.items.forEach((item: any) => {
+              if (item.labelId) specIds.push(item.labelId);
+              if (item.valueId) specIds.push(item.valueId);
+            });
+          }
         });
       }
-    });
+
+      // 批量查出这些 ID 的翻译
+      if (specIds.length > 0) {
+        specTranslations = await db.localizedString.findMany({
+          where: { id: { in: specIds } }
+        });
+      }
+    }
+  } catch (error) {
+    console.error('[Build / SSR] Product detail query failed or connection not found:', error);
   }
 
-  // 批量查出这些 ID 的翻译
-  const specTranslations = specIds.length > 0
-    ? await db.localizedString.findMany({
-        where: { id: { in: specIds } }
-      })
-    : [];
+  // 如果在编译预渲染阶段由于数据库缺失导致产品为空，返回兜底对象，避免 notFound 中断 build
+  if (!product) {
+    if (!process.env.DATABASE_URL) {
+      product = { id, nameText: {}, descriptionText: {}, specGroups: [] };
+    } else {
+      notFound();
+    }
+  }
 
   // 打包产品数据，在客户端进行注入
   const productWithSpecs = {

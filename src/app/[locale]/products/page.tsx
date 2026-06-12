@@ -73,119 +73,128 @@ export default async function ProductListPage({ params }: PageProps) {
   const { locale } = await params;
   const targetLocale = locale as Locale;
 
-  // 1. Fetch all product categories
-  const categories = await db.productCategory.findMany({
-    include: {
-      nameText: true,
-      descriptionText: true,
-    },
-    orderBy: {
-      order: 'asc',
-    },
-  });
-
-  // Helper to recursively find all descendant category IDs
-  const getAllDescendantIds = (parentId: string): string[] => {
-    const children = categories.filter((c: any) => c.parentId === parentId);
-    let ids = children.map((c: any) => c.id);
-    children.forEach((child: any) => {
-      ids = [...ids, ...getAllDescendantIds(child.id)];
-    });
-    return ids;
-  };
-  const wholesaleSubCategoryIds = ['WHOLESALE', ...getAllDescendantIds('WHOLESALE')];
-
-  // 2. Fetch initial products (first page limit = 12, wholesale line)
-  const initialProducts = await db.product.findMany({
-    where: {
-      status: 'published',
-      categoryId: { in: wholesaleSubCategoryIds },
-    },
-    include: {
-      nameText: true,
-      descriptionText: true,
-    },
-    take: 12,
-    orderBy: {
-      updatedAt: 'desc',
-    },
-  });
-
-  const initialTotal = await db.product.count({
-    where: {
-      status: 'published',
-      categoryId: { in: wholesaleSubCategoryIds },
-    },
-  });
-
-  // 3. Fetch system language settings
+  let categories: any[] = [];
+  let initialProducts: any[] = [];
+  let initialTotal = 0;
   let initialLangSettings: any = null;
+  let initialTranslations: any = {};
+
   try {
-    const langSetting = await db.setting.findUnique({
-      where: { id: 'languages' },
+    // 1. Fetch all product categories
+    categories = await db.productCategory.findMany({
+      include: {
+        nameText: true,
+        descriptionText: true,
+      },
+      orderBy: {
+        order: 'asc',
+      },
     });
-    if (langSetting && langSetting.value) {
-      initialLangSettings = JSON.parse(langSetting.value);
-    }
-  } catch (e) {
-    console.error('Failed to parse language settings:', e);
-  }
 
-  // 4. Fetch translations and pre-compile pruned languages data
-  const allStrings = await db.localizedString.findMany({
-    take: 5000,
-    orderBy: { id: 'asc' },
-  });
-
-  const bizPrefixes = [
-    'prod_', 'cat_', 'spec_', 'biz_tr_', 'psl_', 'psv_', 'psg_', 
-    'adv_', 'case_', 'step_', 'hero_slide_', 'slide_', 
-    'hero_wholesale_', 'hero_project_', 'MAP_LOC_'
-  ];
-
-  // Filter out system UI strings
-  const sysStrings = allStrings.filter((item: any) => {
-    const itemId = item.id || '';
-    const itemKey = item.key || '';
-    return !bizPrefixes.some(prefix => 
-      itemId.startsWith(prefix) || itemKey.startsWith(prefix)
-    );
-  });
-
-  const getPrunedItem = (item: any, lang: string) => {
-    if (!item) return null;
-    let content = item.content || {};
-    if (typeof content === 'string') {
-      try {
-        content = JSON.parse(content);
-      } catch (e) {
-        content = {};
-      }
-    }
-    if (content && typeof content === 'object' && 'content' in content && typeof content.content === 'object' && !Array.isArray(content.content)) {
-      content = content.content;
-    }
-    return {
-      id: item.id,
-      key: item.key,
-      content: content
+    // Helper to recursively find all descendant category IDs
+    const getAllDescendantIds = (parentId: string): string[] => {
+      const children = categories.filter((c: any) => c.parentId === parentId);
+      let ids = children.map((c: any) => c.id);
+      children.forEach((child: any) => {
+        ids = [...ids, ...getAllDescendantIds(child.id)];
+      });
+      return ids;
     };
-  };
+    const wholesaleSubCategoryIds = ['WHOLESALE', ...getAllDescendantIds('WHOLESALE')];
 
-  // Pre-load current locale translations
-  const sysTrans = sysStrings.map((item: any) => getPrunedItem(item, targetLocale)).filter(Boolean);
-  const prodTrans = initialProducts.flatMap((p: any) => [
-    getPrunedItem(p.nameText, targetLocale),
-    getPrunedItem(p.descriptionText, targetLocale)
-  ]).filter(Boolean);
-  const catTrans = categories.flatMap((c: any) => [
-    getPrunedItem(c.nameText, targetLocale),
-    getPrunedItem(c.descriptionText, targetLocale)
-  ]).filter(Boolean);
+    // 2. Fetch initial products (first page limit = 12, wholesale line)
+    initialProducts = await db.product.findMany({
+      where: {
+        status: 'published',
+        categoryId: { in: wholesaleSubCategoryIds },
+      },
+      include: {
+        nameText: true,
+        descriptionText: true,
+      },
+      take: 12,
+      orderBy: {
+        updatedAt: 'desc',
+      },
+    });
 
-  const initialTranslations = {
-    [targetLocale]: [...sysTrans, ...prodTrans, ...catTrans]
-  };
+    initialTotal = await db.product.count({
+      where: {
+        status: 'published',
+        categoryId: { in: wholesaleSubCategoryIds },
+      },
+    });
+
+    // 3. Fetch system language settings
+    try {
+      const langSetting = await db.setting.findUnique({
+        where: { id: 'languages' },
+      });
+      if (langSetting && langSetting.value) {
+        initialLangSettings = JSON.parse(langSetting.value);
+      }
+    } catch (e) {
+      console.error('Failed to parse language settings:', e);
+    }
+
+    // 4. Fetch translations and pre-compile pruned languages data
+    const allStrings = await db.localizedString.findMany({
+      take: 5000,
+      orderBy: { id: 'asc' },
+    });
+
+    const bizPrefixes = [
+      'prod_', 'cat_', 'spec_', 'biz_tr_', 'psl_', 'psv_', 'psg_', 
+      'adv_', 'case_', 'step_', 'hero_slide_', 'slide_', 
+      'hero_wholesale_', 'hero_project_', 'MAP_LOC_'
+    ];
+
+    // Filter out system UI strings
+    const sysStrings = allStrings.filter((item: any) => {
+      const itemId = item.id || '';
+      const itemKey = item.key || '';
+      return !bizPrefixes.some(prefix => 
+        itemId.startsWith(prefix) || itemKey.startsWith(prefix)
+      );
+    });
+
+    const getPrunedItem = (item: any, lang: string) => {
+      if (!item) return null;
+      let content = item.content || {};
+      if (typeof content === 'string') {
+        try {
+          content = JSON.parse(content);
+        } catch (e) {
+          content = {};
+        }
+      }
+      if (content && typeof content === 'object' && 'content' in content && typeof content.content === 'object' && !Array.isArray(content.content)) {
+        content = content.content;
+      }
+      return {
+        id: item.id,
+        key: item.key,
+        content: content
+      };
+    };
+
+    // Pre-load current locale translations
+    const sysTrans = sysStrings.map((item: any) => getPrunedItem(item, targetLocale)).filter(Boolean);
+    const prodTrans = initialProducts.flatMap((p: any) => [
+      getPrunedItem(p.nameText, targetLocale),
+      getPrunedItem(p.descriptionText, targetLocale)
+    ]).filter(Boolean);
+    const catTrans = categories.flatMap((c: any) => [
+      getPrunedItem(c.nameText, targetLocale),
+      getPrunedItem(c.descriptionText, targetLocale)
+    ]).filter(Boolean);
+
+    initialTranslations = {
+      [targetLocale]: [...sysTrans, ...prodTrans, ...catTrans]
+    };
+  } catch (error) {
+    console.error('[Build / SSR] Database query failed or connection not found:', error);
+  }
 
   // Serialize models into plain JSON objects to prevent Next.js hydration serialization issues
   const serializedProducts = JSON.parse(JSON.stringify(initialProducts));
