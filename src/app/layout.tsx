@@ -2,6 +2,8 @@ import type {Metadata} from 'next';
 import './globals.css';
 import { Toaster } from "@/components/ui/toaster";
 import db from '@/lib/db';
+
+export const dynamic = 'force-dynamic';
 import { getAssetUrl } from '@/lib/image-utils';
 import { Locale } from '@/lib/translations';
 
