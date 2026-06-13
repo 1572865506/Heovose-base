@@ -138,22 +138,50 @@ async function handleShelllessTranslate(input: TranslateInput, provider: any, ai
       return { [lang]: JSON.stringify(json) };
     }
 
-    const res = await smartTranslate({ 
-      text: JSON.stringify(map), 
-      targetLangs: input.targetLangs,
-      taskType: 'json-map' 
-    });
-    
-    const translatedRaw = res[lang];
-    let translatedMap: any;
-    try {
-      translatedMap = JSON.parse(translatedRaw);
-    } catch (e) {
-      const match = translatedRaw.match(/\{[\s\S]*\}/);
-      if (match) translatedMap = JSON.parse(match[0]);
+    const isLocal = provider.type === 'browser-local' || provider.type === 'local';
+    let translatedMap: Record<number, string> = {};
+
+    if (isLocal) {
+      // 本地模型容易在生成 JSON 时出错，拆分成单独的普通文本翻译
+      await Promise.all(
+        Object.keys(map).map(async (keyStr) => {
+          const idx = Number(keyStr);
+          const rawVal = map[idx];
+          try {
+            const singleRes = await handleOriginalTranslate({
+              text: rawVal,
+              targetLangs: input.targetLangs,
+              taskType: 'text'
+            }, provider, 'text', aiConfig);
+            translatedMap[idx] = singleRes[lang] || rawVal;
+          } catch (err) {
+            console.error(`[SmartTranslate] Local translation failed for item: ${rawVal}`, err);
+            translatedMap[idx] = rawVal;
+          }
+        })
+      );
+    } else {
+      // 远程高级模型，继续使用批量打包翻译以节省 API token 消耗和提高速度
+      try {
+        const res = await smartTranslate({ 
+          text: JSON.stringify(map), 
+          targetLangs: input.targetLangs,
+          taskType: 'json-map' 
+        });
+        
+        const translatedRaw = res[lang];
+        try {
+          translatedMap = JSON.parse(translatedRaw);
+        } catch (e) {
+          const match = translatedRaw.match(/\{[\s\S]*\}/);
+          if (match) translatedMap = JSON.parse(match[0]);
+        }
+      } catch (e) {
+        console.warn("[SmartTranslate] Batch JSON translation failed, falling back to individual translation:", e);
+      }
     }
 
-    if (translatedMap) {
+    if (translatedMap && Object.keys(translatedMap).length > 0) {
       textNodes.forEach((node, i) => {
         if (translatedMap[i]) node.parent[node.key] = translatedMap[i];
       });

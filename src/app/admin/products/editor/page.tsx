@@ -49,6 +49,7 @@ interface ProductFormData {
   galleryUrls: string[];
   specGroups: ProductSpecGroup[];
   localizedDetails: Record<string, string>;
+  enabledLanguages: string[];
 }
 
 // 辅助组件：AI 极光渐变
@@ -88,8 +89,8 @@ function robustJsonParse(rawStr: string) {
       // 3. 终极救命稻草：正则特征抠取
       console.log('⚠️ [SmartTranslate] 标准解析失败，启动正则特征抠取...');
       const pairs: Record<string, string> = {};
-      // 匹配 "l_sg_xxx": "value" 或 l_sg_xxx: "value" 等各种变形
-      const regex = /["']?([glv]_[a-zA-Z0-9_]+)["']?\s*[：:]\s*["']([^"']*)["']/gi;
+      // 匹配 "key": "value" 或 key: "value" 等各种变形
+      const regex = /["']?([a-zA-Z0-9_]+)["']?\s*[：:]\s*["']([^"']*)["']/gi;
       let match;
       while ((match = regex.exec(jsonStr)) !== null) {
         pairs[match[1]] = match[2];
@@ -120,7 +121,8 @@ function ProductEditorContent() {
     id: '', categoryId: '', mainImageUrl: '', videoUrl: '', galleryUrls: [],
     nameEn: '', nameZh: '', descEn: '', descZh: '',
     localizedDetails: { zh: '', en: '' },
-    specGroups: [], status: 'published'
+    specGroups: [], status: 'published',
+    enabledLanguages: []
   });
 
   const [activeTab, setActiveTab] = useState('basic');
@@ -204,11 +206,22 @@ function ProductEditorContent() {
         nameEn: getT(product.nameTextId).en, nameZh: getT(product.nameTextId).zh,
         descEn: getT(product.descriptionTextId).en, descZh: getT(product.descriptionTextId).zh,
         localizedDetails: product.localizedDetails || { zh: '', en: '' },
-        specGroups: sGroups, status: product.status || 'published'
+        specGroups: sGroups, status: product.status || 'published',
+        enabledLanguages: product.enabledLanguages || supportedLangs.map((l: any) => l.code)
       });
       setLastUpdatedAt(product.updatedAt || null);
     }
-  }, [isEditing, product, translations]);
+  }, [isEditing, product, translations, supportedLangs]);
+
+  // 新建产品时，当语言列表配置加载完，默认勾选全部可见语言
+  useEffect(() => {
+    if (!isEditing && supportedLangs.length > 0) {
+      setFormData(prev => ({
+        ...prev,
+        enabledLanguages: supportedLangs.map((l: any) => l.code)
+      }));
+    }
+  }, [isEditing, supportedLangs]);
 
   useEffect(() => {
     if (isEditing || !formData.id) {
