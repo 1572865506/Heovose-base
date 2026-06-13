@@ -51,7 +51,7 @@ export function LanguageToggle({ currentLocale, setLocale, headerTheme = 'dark',
       }
     }
     if (settings?.supportedLanguages && settings.supportedLanguages.length > 0) {
-      return settings.supportedLanguages;
+      return settings.supportedLanguages.filter((l: any) => l.isActive !== false);
     }
     // 默认保底语种
     return [

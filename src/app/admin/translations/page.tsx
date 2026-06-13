@@ -135,46 +135,98 @@ class TranslationSyncManager {
     this.listeners.forEach(l => l({ isSyncing: this.isSyncing, progress: this.progress }));
   }
 
-  async start(mutate: () => void, toast: any) {
+  async start(translations: LocalizedString[], activeLanguages: LanguageOption[], defaultLanguage: string, mutate: () => void, toast: any) {
     if (this.isSyncing) return;
     this.isSyncing = true;
     this.progress = '正在扫描未翻译词条...';
     this.totalProcessed = 0;
-    this.remaining = 1;
     this.abortController = new AbortController();
     this.mutateTranslations = mutate;
     this.notify();
 
     try {
-      while (this.remaining > 0) {
+      const supportedCodes = activeLanguages.map(l => l.code);
+      const pendingTasks: { id: string; sourceText: string; targetLang: string; currentContent: any }[] = [];
+
+      for (const item of translations) {
+        let content = (item.content as any) || {};
+        if (content && typeof content === 'object' && 'content' in content && typeof content.content === 'object' && !Array.isArray(content.content)) {
+          content = content.content;
+        }
+
+        const sourceLang = [defaultLanguage, 'zh', 'en', ...Object.keys(content)].find(
+          (lang) => content[lang] !== undefined && content[lang] !== null && content[lang] !== ''
+        );
+
+        if (!sourceLang) continue;
+        const sourceText = content[sourceLang];
+
+        for (const code of supportedCodes) {
+          const val = content[code];
+          if (!val || val.trim() === '' || val === item.id) {
+            if (code !== sourceLang) {
+              pendingTasks.push({
+                id: item.id,
+                sourceText,
+                targetLang: code,
+                currentContent: content,
+              });
+            }
+          }
+        }
+      }
+
+      this.remaining = pendingTasks.length;
+      if (this.remaining === 0) {
+        toast({ title: 'AI 增量翻译', description: '所有语言翻译已是最新状态！' });
+        return;
+      }
+
+      this.progress = `正在处理翻译任务，剩余 ${this.remaining} 条待处理...`;
+      this.notify();
+
+      for (const task of pendingTasks) {
         if (this.abortController.signal.aborted) {
           break;
         }
 
-        const res = await fetch('/api/localizedStrings/sync-languages', {
-          method: 'POST',
-          signal: this.abortController.signal
-        });
+        try {
+          const translationResult = await smartTranslate({
+            text: task.sourceText,
+            sourceLang: undefined,
+            targetLangs: [task.targetLang],
+            taskType: 'text',
+          });
 
-        if (!res.ok) {
-          const errData = await res.json();
-          throw new Error(errData.message || '翻译同步中途出错');
+          if (translationResult && translationResult[task.targetLang] !== undefined) {
+            const newContent = {
+              ...task.currentContent,
+              [task.targetLang]: translationResult[task.targetLang],
+            };
+
+            const putRes = await fetch(`/api/localizedStrings/${encodeURIComponent(task.id)}`, {
+              method: 'PUT',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                id: task.id,
+                content: newContent
+              }),
+            });
+
+            if (putRes.ok) {
+              this.totalProcessed++;
+            }
+          }
+        } catch (err) {
+          console.error(`Failed to translate ${task.id}:`, err);
         }
 
-        const data = await res.json();
-        this.remaining = data.remainingCount;
-        this.totalProcessed += data.processedCount;
-        
+        this.remaining--;
         this.progress = `已补全 ${this.totalProcessed} 条翻译，剩余 ${this.remaining} 条待处理...`;
         this.notify();
 
-        if (data.processedCount === 0 && this.remaining > 0) {
-          break;
-        }
-
-        // Delay between batches with abort handling
         await new Promise<void>((resolve, reject) => {
-          const timer = setTimeout(resolve, 800);
+          const timer = setTimeout(resolve, 300);
           this.abortController?.signal.addEventListener('abort', () => {
             clearTimeout(timer);
             reject(new DOMException('Aborted', 'AbortError'));
@@ -268,10 +320,14 @@ export default function TranslationsPage() {
 
   const [sortConfig, setSortConfig] = useState<{ key: string, direction: 'asc' | 'desc' }>({ key: 'updatedAt', direction: 'desc' });
 
-  const activeLanguages = useMemo(() => langSettings?.supportedLanguages || [
+  const allLanguages = useMemo(() => langSettings?.supportedLanguages || [
     { code: 'zh', label: '中文' },
     { code: 'en', label: 'English' }
   ], [langSettings]);
+
+  const activeLanguages = useMemo(() => {
+    return allLanguages.filter((l: any) => l.isActive !== false);
+  }, [allLanguages]);
 
   const referenceMap = useMemo(() => {
     const map = new Map<string, { type: string, name: string, id: string, linkable: boolean }[]>();
@@ -565,7 +621,9 @@ export default function TranslationsPage() {
   };
 
   const handleAiSync = () => {
-    syncManager.start(mutateTrans, toast);
+    const defaultLanguage = langSettings?.defaultLanguage || 'zh';
+    if (!translations) return;
+    syncManager.start(translations, activeLanguages, defaultLanguage, mutateTrans, toast);
   };
 
   const handleAiTranslate = async (t: LocalizedString) => {
@@ -822,27 +880,83 @@ export default function TranslationsPage() {
           </DialogHeader>
           <div className="space-y-6 py-6">
             <div className="space-y-3">
-              {activeLanguages.map(l => (
+              {allLanguages.map(l => (
                 <div key={l.code} className="flex items-center justify-between p-4 bg-muted/20 rounded-2xl border border-border/20 transition-all hover:border-primary/20">
                   <div className="flex flex-col">
                     <span className="font-bold text-foreground">{l.label}</span>
                     <span className="text-[10px] text-muted-foreground/60 font-mono uppercase">System Code: {l.code}</span>
                   </div>
                   <div className="flex items-center gap-3">
-                    <Badge className="bg-emerald-500/10 hover:bg-emerald-500/15 text-emerald-600 border-emerald-500/20 font-bold px-3 py-1 rounded-full text-[10px] tracking-widest shadow-[0_0_15px_-3px_rgba(16,185,129,0.2)] transition-all">
-                      <span className="relative flex h-1.5 w-1.5 mr-2">
-                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                        <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-emerald-500"></span>
-                      </span>
-                      ACTIVE
-                    </Badge>
+                    {l.code === 'zh' || l.code === 'en' ? (
+                      <Badge className="bg-emerald-500/10 text-emerald-600 border-emerald-500/20 font-bold px-3 py-1 rounded-full text-[10px] tracking-widest cursor-default select-none shadow-[0_0_15px_-3px_rgba(16,185,129,0.2)]">
+                        <span className="relative flex h-1.5 w-1.5 mr-2">
+                          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                          <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-emerald-500"></span>
+                        </span>
+                        ACTIVE
+                      </Badge>
+                    ) : (
+                      <button
+                        onClick={async () => {
+                          const isCurrentlyActive = l.isActive !== false;
+                          const updated = allLanguages.map(lang => 
+                            lang.code === l.code ? { ...lang, isActive: !isCurrentlyActive } : lang
+                          );
+                          try {
+                            const res = await fetch('/api/settings/languages', {
+                              method: 'PUT',
+                              headers: { 'Content-Type': 'application/json' },
+                              body: JSON.stringify({
+                                supportedLanguages: updated,
+                                _version: langSettings?._version
+                              }),
+                            });
+                            if (!res.ok) throw new Error("更新状态失败");
+                            const savedData = await res.json();
+                            if (typeof window !== 'undefined' && (window as any).__HEOVOSE_PUBLIC_SETTINGS__) {
+                              (window as any).__HEOVOSE_PUBLIC_SETTINGS__.languages = savedData;
+                            }
+                            mutateLangs();
+                            toast({ 
+                              title: l.isActive !== false ? "语种已停用" : "语种已启用", 
+                              description: `已成功${l.isActive !== false ? '停用' : '启用'} ${l.label} 语言维度。` 
+                            });
+                          } catch (e: any) {
+                            toast({ variant: "destructive", title: "操作失败", description: e.message });
+                          }
+                        }}
+                        className={cn(
+                          "px-3 py-1 rounded-full text-[10px] font-bold tracking-widest transition-all border outline-none select-none flex items-center shadow-sm hover:scale-[1.02] active:scale-[0.98] cursor-pointer",
+                          l.isActive !== false 
+                            ? "bg-emerald-500/10 hover:bg-emerald-500/15 text-emerald-600 border-emerald-500/20 shadow-[0_0_15px_-3px_rgba(16,185,129,0.2)]" 
+                            : "bg-muted text-muted-foreground/60 border-border/30 hover:bg-muted/80"
+                        )}
+                      >
+                        {l.isActive !== false ? (
+                          <>
+                            <span className="relative flex h-1.5 w-1.5 mr-2">
+                              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                              <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-emerald-500"></span>
+                            </span>
+                            ACTIVE
+                          </>
+                        ) : (
+                          <>
+                            <span className="relative flex h-1.5 w-1.5 mr-2">
+                              <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-muted-foreground/30"></span>
+                            </span>
+                            INACTIVE
+                          </>
+                        )}
+                      </button>
+                    )}
                     {l.code !== 'zh' && l.code !== 'en' && (
                       <Button
                         variant="ghost"
                         size="icon"
                         onClick={async () => {
                           if (!confirm(`确定要移除 ${l.label} 吗？\n移除后全站将不再显示该语种，但已有的翻译数据会保留在数据库中。`)) return;
-                          const updated = activeLanguages.filter(lang => lang.code !== l.code);
+                          const updated = allLanguages.filter(lang => lang.code !== l.code);
                           try {
                             const res = await fetch('/api/settings/languages', {
                               method: 'PUT',
@@ -858,6 +972,10 @@ export default function TranslationsPage() {
                                 throw new Error(errData.message || "配置已被他人修改，请刷新页面加载最新配置后再重试。");
                               }
                               throw new Error("移除失败");
+                            }
+                            const savedData = await res.json();
+                            if (typeof window !== 'undefined' && (window as any).__HEOVOSE_PUBLIC_SETTINGS__) {
+                              (window as any).__HEOVOSE_PUBLIC_SETTINGS__.languages = savedData;
                             }
                             mutateLangs();
                             toast({ title: "语种已移除" });
@@ -890,14 +1008,14 @@ export default function TranslationsPage() {
                   return;
                 }
 
-                if (activeLanguages.some(l => l.code === newLang.code)) {
+                if (allLanguages.some(l => l.code === newLang.code)) {
                   toast({ variant: "destructive", title: "该语种已存在" });
                   return;
                 }
 
-                const updated = [...activeLanguages, newLang];
+                const updated = [...allLanguages, { ...newLang, isActive: true }];
                 try {
-                  const res = await fetch('/api/settings/languages', {
+                   const res = await fetch('/api/settings/languages', {
                     method: 'PUT',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
@@ -914,11 +1032,15 @@ export default function TranslationsPage() {
                     throw new Error('API request failed');
                   }
 
+                  const savedData = await res.json();
+                  if (typeof window !== 'undefined' && (window as any).__HEOVOSE_PUBLIC_SETTINGS__) {
+                    (window as any).__HEOVOSE_PUBLIC_SETTINGS__.languages = savedData;
+                  }
                   mutateLangs();
                   setNewLang({ code: '', label: '' });
                   toast({
                     title: "语种已激活",
-                    description: `成功添加 ${newLang.label}，请刷新页面以确保全站同步。`,
+                    description: `成功添加 ${newLang.label}，语种已同步更新。`,
                   });
                 } catch (e: any) {
                   console.error('Add Language Error:', e);

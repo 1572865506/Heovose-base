@@ -141,7 +141,10 @@ function ProductEditorContent() {
   const { data: langConfig } = useLocalDoc<any>('settings', 'languages');
   const { data: specTemplates, mutate: mutateTemplates } = useLocalCollection<any>('specTemplates');
 
-  const supportedLangs = useMemo(() => langConfig?.supportedLanguages || [{ code: 'zh', label: '中文' }, { code: 'en', label: 'English' }], [langConfig]);
+  const supportedLangs = useMemo(() => {
+    const list = langConfig?.supportedLanguages || [{ code: 'zh', label: '中文' }, { code: 'en', label: 'English' }];
+    return list.filter((l: any) => l.isActive !== false);
+  }, [langConfig]);
 
   const translationCoverage = useMemo(() => {
     let tBasic = 0, dBasic = 0;

@@ -95,10 +95,13 @@ export default function AdminProductsPage() {
   const [productsData, setProductsData] = useState<{ products: Product[], pagination: { total: number, page: number, limit: number, totalPages: number } } | null>(null);
   const [isProdsLoading, setIsProdsLoading] = useState(true);
 
-  const activeLanguages = useMemo(() => langSettings?.supportedLanguages || [
-    { code: 'zh', label: '中文' },
-    { code: 'en', label: 'English' }
-  ], [langSettings]);
+  const activeLanguages = useMemo(() => {
+    const list = langSettings?.supportedLanguages || [
+      { code: 'zh', label: '中文' },
+      { code: 'en', label: 'English' }
+    ];
+    return list.filter((l: any) => l.isActive !== false);
+  }, [langSettings]);
 
   const getTranslation = (id: string, lang: 'zh' | 'en' = 'zh') => {
     const t = translations?.find(t => t.id === id);

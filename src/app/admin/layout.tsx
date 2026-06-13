@@ -324,12 +324,12 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                                 : "text-foreground/70 hover:bg-primary/5 hover:text-primary hover:translate-x-1 group-data-[collapsible=icon]:hover:translate-x-0"
                             )}>
                               {isActive && (
-                                <div className="absolute left-0 top-2 bottom-2 w-1 bg-accent rounded-r-full shadow-[0_0_10px_rgba(252,220,0,0.8)]" />
+                                <div className="absolute left-0 top-2 bottom-2 w-1 bg-emerald-500 rounded-r-full shadow-[0_0_10px_rgba(16,185,129,0.8)]" />
                               )}
                               <item.icon className={cn("h-4 w-4 shrink-0 transition-all duration-500 group-hover/item:scale-110", isActive ? "!text-white drop-shadow-sm" : "text-muted-foreground group-hover/item:text-primary")} />
                               <span className="text-sm font-medium tracking-tight group-data-[collapsible=icon]:hidden">{item.title}</span>
                               {isActive && (
-                                <div className="absolute right-3 h-1 w-1 rounded-full bg-accent animate-pulse shadow-[0_0_8px_rgba(252,220,0,0.6)] group-data-[collapsible=icon]:hidden" />
+                                <div className="absolute right-3 h-1 w-1 rounded-full bg-emerald-500 animate-pulse shadow-[0_0_8px_rgba(16,185,129,0.6)] group-data-[collapsible=icon]:hidden" />
                               )}
                             </Link>
                           </SidebarMenuButton>

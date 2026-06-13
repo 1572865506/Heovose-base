@@ -19,7 +19,7 @@ export function useLocalDoc<T = any>(path: string | null, id: string | null = ''
         ? (window as any).__HEOVOSE_PUBLIC_SETTINGS__ 
         : (typeof global !== 'undefined' ? (global as any).__HEOVOSE_PUBLIC_SETTINGS__ : null);
       const localData = publicSettings?.[id] || {};
-      globalCache.set(cacheKey, { data: localData, timestamp: Date.now() });
+      globalCache.set(cacheKey, { data: JSON.parse(JSON.stringify(localData)), timestamp: Date.now() });
     }
   }
 
@@ -43,14 +43,17 @@ export function useLocalDoc<T = any>(path: string | null, id: string | null = ''
     const key = `${currentPath}/${currentId}`;
 
     // 对 settings 中的公开配置做本地劫持，避免发送 AJAX 请求，从根源关闭匿名访问 API 的通道
+    // 在后台管理界面 (以 /admin 开头) 则放行，允许通过 API 获取最新配置，以便状态实时更新
     const PUBLIC_SETTINGS = ['site', 'navigation', 'about_page_content', 'service_centers', 'storage', 'languages'];
-    if (currentPath === 'settings' && currentId && PUBLIC_SETTINGS.includes(currentId)) {
+    const isAdmin = typeof window !== 'undefined' && window.location.pathname.startsWith('/admin');
+    if (!isAdmin && currentPath === 'settings' && currentId && PUBLIC_SETTINGS.includes(currentId)) {
       const publicSettings = typeof window !== 'undefined' ? (window as any).__HEOVOSE_PUBLIC_SETTINGS__ : null;
       const localData = publicSettings?.[currentId] || {};
+      const clonedData = JSON.parse(JSON.stringify(localData));
       
       if (key !== latestKeyRef.current) return;
-      globalCache.set(key, { data: localData, timestamp: Date.now() });
-      setData(localData);
+      globalCache.set(key, { data: clonedData, timestamp: Date.now() });
+      setData(clonedData);
       setError(null);
       setIsLoading(false);
       return;
@@ -105,6 +108,11 @@ export function useLocalDoc<T = any>(path: string | null, id: string | null = ''
       globalCache.set(key, { data: json, timestamp: Date.now() });
       setData(json);
       setError(null);
+      
+      // 同步更新全局 window 对象上的缓存数据，保证系统其他引用该配置的组件也同步拿到最新值
+      if (typeof window !== 'undefined' && (window as any).__HEOVOSE_PUBLIC_SETTINGS__) {
+        (window as any).__HEOVOSE_PUBLIC_SETTINGS__[currentId] = json;
+      }
     } catch (err: any) {
       if (key !== latestKeyRef.current) return;
       console.error(`CRITICAL: Failed to fetch "${key}":`, err);

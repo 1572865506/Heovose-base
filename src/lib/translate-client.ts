@@ -247,7 +247,7 @@ Rules:
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     const data = await res.json();
     const rawContent = data.choices?.[0]?.message?.content || '';
-    const finalVal = robustExtract(rawContent);
+    const finalVal = robustExtract(rawContent, input.text, lang);
 
     // 如果是 JSON 任务（如规格表、富文本、内部 Map），或者提取到了对象，则整体回传
     const isJsonTask = taskType === 'spec' || taskType === 'rich-text' || taskType === 'json-map' || (typeof finalVal === 'object' && finalVal !== null);
@@ -278,7 +278,7 @@ Rules:
 /**
  * 鲁棒性提取：支持提取 JSON 对象或清洗纯文本
  */
-function robustExtract(raw: string) {
+function robustExtract(raw: string, sourceText?: string, targetLang?: string) {
   // 1. 尝试提取 JSON
   const matches = raw.match(/\{[\s\S]*\}/g);
   if (matches) {
@@ -295,6 +295,12 @@ function robustExtract(raw: string) {
     .replace(/^Here is the translation[:：]?\s*/i, '')
     .replace(/^This is translated to [\w\s]+[:：]?\s*/i, '')
     .trim();
+
+  // 3. 防御性机制：若原文没有括号，但翻译结果末尾被 LLM 强行附加了括号包裹的英文/原文，进行自动剥离
+  const hasParenthesesInSource = sourceText && (sourceText.includes('(') || sourceText.includes('\uff08'));
+  if (targetLang && targetLang.toLowerCase() !== 'en' && !hasParenthesesInSource) {
+    cleaned = cleaned.replace(/\s*[\(\uff08]\s*[a-zA-Z0-9\s\-_.,;:!?'"&/]+\s*[\)\uff09]\s*$/g, '');
+  }
 
   return cleaned;
 }

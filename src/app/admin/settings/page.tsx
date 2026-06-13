@@ -338,7 +338,7 @@ export default function AdminSettingsPage() {
                   </SelectTrigger>
                   <SelectContent className="rounded-xl border-border/40 shadow-2xl p-1 bg-card/90 backdrop-blur-xl">
                     {formData.supportedLanguages.length > 0 ? (
-                      formData.supportedLanguages.map((lang: any) => (
+                      formData.supportedLanguages.filter((l: any) => l.isActive !== false).map((lang: any) => (
                         <SelectItem key={lang.code} value={lang.code} className="rounded-lg h-9 text-xs font-bold my-0.5">
                           {lang.label} ({lang.code.toUpperCase()})
                         </SelectItem>

@@ -117,10 +117,13 @@ export default function SiteSettingsPage() {
   const { data: translations, mutate: mutateTrans } = useLocalCollection<LocalizedString>('localizedStrings?full=true');
   const { data: langSettings } = useLocalDoc<any>('settings', 'languages');
   
-  const activeLanguages = useMemo(() => langSettings?.supportedLanguages || [
-    { code: 'zh', label: '中文' }, 
-    { code: 'en', label: 'English' }
-  ], [langSettings]);
+  const activeLanguages = useMemo(() => {
+    const list = langSettings?.supportedLanguages || [
+      { code: 'zh', label: '中文' }, 
+      { code: 'en', label: 'English' }
+    ];
+    return list.filter((l: any) => l.isActive !== false);
+  }, [langSettings]);
 
   const [localConfig, setLocalConfig] = useState<SiteConfig>({});
   const [transEdits, setTransEdits] = useState<Record<string, Record<string, string>>>({});

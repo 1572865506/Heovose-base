@@ -101,7 +101,7 @@ Rules:
         if (!proxyRes.ok) throw new Error(`Model Node Error: ${proxyRes.status}`);
         const data = await proxyRes.json();
         const fullText = data.choices?.[0]?.message?.content || '';
-        const finalVal = robustExtract(fullText);
+        const finalVal = robustExtract(fullText, input.text, targetLang);
         return { [targetLang]: typeof finalVal === 'object' ? JSON.stringify(finalVal) : String(finalVal) };
       }
 
@@ -122,11 +122,11 @@ Rules:
       const finalModel = `googleai/${providerInfo.model.split('/').pop() || providerInfo.model}`;
 
       const systemPrompt = `You are a professional translator. 
-Rules:
-1. Translate to ${targetLangName}. 
-2. NO explanation, NO markdown, NO prefix. 
-3. Preserve all \\n and format exactly.
-4. Return ONLY the translation, do NOT repeat the original text.${isJsonTask ? '\n5. If JSON, keep keys, translate values only.' : ''}`;
+      Rules:
+      1. Translate to ${targetLangName}. 
+      2. NO explanation, NO markdown, NO prefix. 
+      3. Preserve all \\n and format exactly.
+      4. Return ONLY the translation, do NOT repeat the original text.${isJsonTask ? '\n5. If JSON, keep keys, translate values only.' : ''}`;
 
       const userPrompt = isJsonTask 
         ? `SOURCE_JSON:\n${input.text}\n\nTRANSLATED_JSON_IN_${targetLangName.toUpperCase()}:`
@@ -142,7 +142,7 @@ Rules:
       });
 
       const fullText = response.text || '';
-      const finalVal = robustExtract(fullText);
+      const finalVal = robustExtract(fullText, input.text, targetLang);
       return { [targetLang]: typeof finalVal === 'object' ? JSON.stringify(finalVal) : String(finalVal) };
     } catch (error: any) {
       lastError = error;
@@ -152,7 +152,7 @@ Rules:
   throw lastError;
 }
 
-function robustExtract(raw: string) {
+function robustExtract(raw: string, sourceText?: string, targetLang?: string) {
   // 1. 尝试提取 JSON
   const matches = raw.match(/\{[\s\S]*\}/g);
   if (matches) {
@@ -169,6 +169,12 @@ function robustExtract(raw: string) {
     .replace(/^Here is the translation[:：]?\s*/i, '')
     .replace(/^This is translated to [\w\s]+[:：]?\s*/i, '')
     .trim();
+
+  // 3. 防御性机制：若原文没有括号，但翻译结果末尾被 LLM 强行附加了括号包裹的英文/原文，进行自动剥离
+  const hasParenthesesInSource = sourceText && (sourceText.includes('(') || sourceText.includes('\uff08'));
+  if (targetLang && targetLang.toLowerCase() !== 'en' && !hasParenthesesInSource) {
+    cleaned = cleaned.replace(/\s*[\(\uff08]\s*[a-zA-Z0-9\s\-_.,;:!?'"&/]+\s*[\)\uff09]\s*$/g, '');
+  }
 
   return cleaned;
 }
