@@ -1003,8 +1003,8 @@ export default function GalleryPage() {
               <div className="p-8 grid grid-cols-1 md:grid-cols-12 gap-8 bg-card">
                 <div className="md:col-span-7">
                   <div
-                    onDragOver={e => e.preventDefault()}
-                    onDrop={e => { e.preventDefault(); handleFileUpload(e.dataTransfer.files); }}
+                    onDragOver={e => { e.preventDefault(); e.stopPropagation(); }}
+                    onDrop={e => { e.preventDefault(); e.stopPropagation(); handleFileUpload(e.dataTransfer.files); }}
                     className={cn(
                       "h-[400px] border-2 border-dashed rounded-[2rem] flex flex-col items-center justify-center transition-all cursor-pointer group relative overflow-hidden bg-muted/5 shadow-inner",
                       pendingFiles.length > 0 ? "border-primary/40 bg-primary/[0.02]" : "border-slate-200 admin-interface-dark:border-white/10 hover:bg-primary/[0.02] hover:border-primary/40"
