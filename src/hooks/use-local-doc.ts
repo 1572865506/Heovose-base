@@ -113,6 +113,9 @@ export function useLocalDoc<T = any>(path: string | null, id: string | null = ''
       if (typeof window !== 'undefined' && (window as any).__HEOVOSE_PUBLIC_SETTINGS__) {
         (window as any).__HEOVOSE_PUBLIC_SETTINGS__[currentId] = json;
       }
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent('heovose-local-doc-updated', { detail: { key } }));
+      }
     } catch (err: any) {
       if (key !== latestKeyRef.current) return;
       console.error(`CRITICAL: Failed to fetch "${key}":`, err);
@@ -152,6 +155,24 @@ export function useLocalDoc<T = any>(path: string | null, id: string | null = ''
       fetchData(path, id || '');
     }
   }, [path, id, fetchData]);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const handleUpdate = (e: Event) => {
+      const { key } = (e as CustomEvent).detail;
+      const currentKey = path ? `${path}/${id || ''}` : null;
+      if (key === currentKey) {
+        const latestCached = globalCache.get(key);
+        if (latestCached) {
+          setData(latestCached.data);
+        }
+      }
+    };
+    window.addEventListener('heovose-local-doc-updated', handleUpdate);
+    return () => {
+      window.removeEventListener('heovose-local-doc-updated', handleUpdate);
+    };
+  }, [path, id]);
 
   return { data, isLoading, error, mutate };
 }

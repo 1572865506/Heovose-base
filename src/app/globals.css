@@ -156,6 +156,17 @@
     100% { background-position: 0% 50%; }
   }
 
+  /* 隐藏滚动条 */
+  .scrollbar-none {
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+  }
+  .scrollbar-none::-webkit-scrollbar {
+    display: none;
+    width: 0 !important;
+    height: 0 !important;
+  }
+
   /* 工业级极简滚动条 - 修复圆角溢出 */
   .scrollbar-minimal {
     scrollbar-width: thin;

@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useMemo, useRef, useEffect, useCallback } from 'react';
+import { useSession } from 'next-auth/react';
 import { useLocalCollection } from '@/hooks/use-local-collection';
 import {
   Plus,
@@ -35,7 +36,9 @@ import {
   FileText,
   Archive,
   File,
-  FolderOpen
+  FolderOpen,
+  Database,
+  Wallet
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -282,13 +285,65 @@ export default function GalleryPage() {
   const [currentPage, setCurrentPage] = useState(1);
   const ITEMS_PER_PAGE = 20;
 
+
   useEffect(() => {
     setSelectedIds(new Set());
     setCurrentPage(1); // 筛选条件改变时重置页码
   }, [filterCategory, searchQuery, filterType]);
 
+  const { data: session } = useSession();
+  const isAdmin = useMemo(() => {
+    return (session?.user as any)?.role === 'superadmin';
+  }, [session]);
+
   const { data: categories, mutate: mutateCats } = useLocalCollection<GalleryCategory>('galleryCategories');
   const { data: assets, isLoading, mutate: mutateAssets } = useLocalCollection<GalleryAsset>('galleryAssets');
+
+  const [quotaGB, setQuotaGB] = useState<number>(50);
+  const [isConfigDialogOpen, setIsConfigDialogOpen] = useState(false);
+  const [inputQuota, setInputQuota] = useState('50');
+
+  const totalUsedSize = useMemo(() => {
+    if (!assets) return 0;
+    return assets.reduce((acc, asset) => acc + (asset.fileSize || 0), 0);
+  }, [assets]);
+
+  const usedPercentage = useMemo(() => {
+    const totalQuotaBytes = quotaGB * 1024 * 1024 * 1024;
+    if (totalQuotaBytes === 0) return 0;
+    return (totalUsedSize / totalQuotaBytes) * 100;
+  }, [totalUsedSize, quotaGB]);
+
+  const formatSize = useCallback((bytes: number) => {
+    if (bytes === 0) return '0 B';
+    const k = 1024;
+    const sizes = ['B', 'KB', 'MB', 'GB', 'TB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+  }, []);
+
+  useEffect(() => {
+    const storedQuota = localStorage.getItem('heovose_gallery_quota');
+    if (storedQuota) {
+      setQuotaGB(parseFloat(storedQuota) || 50);
+      setInputQuota(storedQuota);
+    }
+  }, []);
+
+  const handleSaveConfig = () => {
+    const q = parseFloat(inputQuota);
+    if (isNaN(q) || q <= 0) {
+      toast({ variant: "destructive", title: "无效的容量大小" });
+      return;
+    }
+    setQuotaGB(q);
+    localStorage.setItem('heovose_gallery_quota', q.toString());
+    setIsConfigDialogOpen(false);
+    toast({
+      title: "配置已更新",
+      description: "存储容量信息已成功同步。"
+    });
+  };
 
   const getDisplayName = useCallback((cat?: GalleryCategory) => {
     if (!cat) return '未分类';
@@ -832,11 +887,79 @@ export default function GalleryPage() {
       </div>
 
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 relative z-10">
-        <AdminPageHeader
-          title="资源管理中心"
-          subtitle="Management / Digital Assets / Resources"
-          icon={FolderOpen}
-        />
+        <div className="flex flex-col lg:flex-row lg:items-center gap-6 flex-1">
+          <AdminPageHeader
+            title="资源管理中心"
+            subtitle="Management / Digital Assets / Resources"
+            icon={FolderOpen}
+          />
+          
+          <div 
+            onClick={() => {
+              if (!isAdmin) return;
+              setInputQuota(quotaGB.toString());
+              setIsConfigDialogOpen(true);
+            }}
+            className={cn(
+              "flex items-center gap-4 border backdrop-blur-xl p-3 px-5 rounded-2xl shadow-sm shrink-0 select-none",
+              usedPercentage >= 90
+                ? "bg-gradient-to-br from-red-500/[0.03] to-rose-500/[0.01] dark:from-red-500/[0.02] dark:to-transparent border-red-500/20"
+                : "bg-gradient-to-br from-emerald-500/[0.03] to-teal-500/[0.01] dark:from-emerald-500/[0.02] dark:to-transparent border-emerald-500/10",
+              isAdmin 
+                ? (usedPercentage >= 90 
+                    ? "hover:from-red-500/[0.06] hover:to-rose-500/[0.03] hover:border-red-500/40 cursor-pointer transition-all duration-500 group" 
+                    : "hover:from-emerald-500/[0.06] hover:to-teal-500/[0.03] hover:border-emerald-500/20 cursor-pointer transition-all duration-500 group")
+                : "cursor-default opacity-85"
+            )}
+          >
+            <div className="flex items-center gap-3">
+              <div className={cn(
+                "h-10 w-10 rounded-xl flex items-center justify-center shrink-0 transition-transform duration-500 group-hover:scale-105",
+                usedPercentage >= 90
+                  ? "bg-red-500/10 dark:bg-red-500/20 text-red-500 shadow-[0_0_15px_-3px_rgba(239,68,68,0.3)]"
+                  : "bg-emerald-500/10 dark:bg-emerald-500/20 text-emerald-500 shadow-[0_0_15px_-3px_rgba(16,185,129,0.3)]"
+              )}>
+                <Database className="h-5 w-5" />
+              </div>
+              <div className="flex flex-col">
+                <div className="flex items-center gap-1.5">
+                  <span className={cn(
+                    "text-[10px] font-black uppercase tracking-wider",
+                    usedPercentage >= 90 ? "text-red-500/80" : "text-emerald-500/80"
+                  )}>存储桶状态</span>
+                  {usedPercentage >= 90 ? (
+                    <span className="text-[8px] px-1.5 py-0.5 rounded-full bg-red-500/10 text-red-500 font-bold scale-90 origin-left animate-pulse">容量紧张</span>
+                  ) : isAdmin && (
+                    <span className="text-[8px] px-1.5 py-0.5 rounded-full bg-emerald-500/10 text-emerald-500 font-bold scale-90 origin-left opacity-0 group-hover:opacity-100 transition-opacity duration-300">配置</span>
+                  )}
+                </div>
+                <div className="flex items-center gap-2 mt-0.5">
+                  <span className="text-xs font-bold text-foreground">
+                    {formatSize(totalUsedSize)}
+                  </span>
+                  <span className="text-muted-foreground/30 text-xs">/</span>
+                  <span className="text-xs font-bold text-muted-foreground">
+                    {quotaGB} GB
+                  </span>
+                </div>
+                <div className={cn(
+                  "w-28 h-1.5 rounded-full mt-1.5 overflow-hidden",
+                  usedPercentage >= 90 ? "bg-red-500/10" : "bg-emerald-500/10"
+                )}>
+                  <div 
+                    className={cn(
+                      "h-full rounded-full transition-all duration-500",
+                      usedPercentage >= 90
+                        ? "bg-gradient-to-r from-red-500 to-rose-400"
+                        : "bg-gradient-to-r from-emerald-500 to-teal-400"
+                    )} 
+                    style={{ width: `${Math.min(100, usedPercentage)}%` }}
+                  />
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
         <div className="flex gap-3">
           <Dialog open={isCategoryDialogOpen} onOpenChange={(o) => { setIsCategoryDialogOpen(o); if (!o) resetCatForm(); }}>
             <DialogTrigger asChild>
@@ -1795,6 +1918,44 @@ export default function GalleryPage() {
                 复制原始引用地址
               </Button>
             </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={isConfigDialogOpen} onOpenChange={setIsConfigDialogOpen}>
+        <DialogContent className="rounded-[2.5rem] max-w-md p-0 overflow-hidden border border-border/10 shadow-[0_50px_100px_-20px_rgba(0,0,0,0.15)] bg-background">
+          <div className="p-10 space-y-8">
+            <DialogHeader className="flex flex-row items-center gap-4 space-y-0">
+              <div className="h-10 w-10 rounded-xl bg-emerald-500/10 flex items-center justify-center text-emerald-500 shrink-0">
+                <Database className="h-5 w-5" />
+              </div>
+              <div>
+                <DialogTitle className="text-xl font-headline font-bold text-foreground tracking-tight">存储配额与余额配置</DialogTitle>
+                <DialogDescription className="text-[9px] font-bold text-muted-foreground uppercase tracking-widest">Bucket Quota & Balance Configuration</DialogDescription>
+              </div>
+            </DialogHeader>
+
+            <div className="space-y-6">
+              <div className="space-y-3">
+                <Label className="text-[10px] font-bold uppercase text-muted-foreground/40 tracking-[0.2em] pl-1">存储配额大小 (GB)</Label>
+                <Input 
+                  type="number" 
+                  value={inputQuota} 
+                  onChange={e => setInputQuota(e.target.value)} 
+                  className="rounded-2xl h-12 bg-muted/10 border-transparent focus:bg-muted/20 text-sm font-bold shadow-inner" 
+                  placeholder="例如: 50" 
+                />
+              </div>
+            </div>
+
+            <DialogFooter className="flex gap-4 pt-4 border-t border-border/10">
+              <Button variant="ghost" onClick={() => setIsConfigDialogOpen(false)} className="flex-1 rounded-2xl h-12 font-bold uppercase text-[10px] tracking-widest text-muted-foreground/40 hover:text-foreground">
+                取消
+              </Button>
+              <Button onClick={handleSaveConfig} className="flex-[2] rounded-2xl h-12 font-bold uppercase text-[10px] tracking-[0.2em] shadow-2xl shadow-emerald-500/20 bg-emerald-500 hover:bg-emerald-600 text-white">
+                保存配置
+              </Button>
+            </DialogFooter>
           </div>
         </DialogContent>
       </Dialog>

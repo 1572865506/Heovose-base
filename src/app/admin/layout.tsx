@@ -18,7 +18,8 @@ import {
   SidebarGroup,
   SidebarGroupLabel,
   SidebarGroupContent,
-  SidebarTrigger
+  SidebarTrigger,
+  useSidebar
 } from '@/components/ui/sidebar';
 import { 
   LayoutDashboard, 
@@ -259,8 +260,14 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   if (pathname === '/admin/login') return <>{children}</>;
   if (!session || !adminData) return null;
 
-  const activeModel = aiConfig?.model ? getModelQuota(aiConfig.model) : null;
-  const aiStatus = aiConfig?.lastDiagnosis?.status;
+  const primaryProvider = aiConfig?.providers?.find((p: any) => p.isPrimary && p.isActive) || 
+                          aiConfig?.providers?.find((p: any) => p.isActive);
+  const activeModel = primaryProvider?.model ? (getModelQuota(primaryProvider.model).id === primaryProvider.model ? getModelQuota(primaryProvider.model) : null) : null;
+  const aiStatus = !aiConfig?.isEnabled 
+    ? 'offline'
+    : primaryProvider
+      ? (primaryProvider.lastTest?.status || 'success')
+      : 'offline';
 
   return (
     <SidebarProvider>
@@ -274,23 +281,19 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
         <Sidebar collapsible="icon" className="border-r border-border/40 shadow-[20px_0_40px_-20px_rgba(0,0,0,0.03)] bg-background/80 backdrop-blur-xl shrink-0 z-40">
           <SidebarHeader className="h-16 flex items-center justify-center border-b border-border/40">
-            <Link href="/admin" className="flex items-center justify-center gap-3 w-full px-4 overflow-hidden">
-              <div className="flex-shrink-0 flex items-center justify-center">
+            <Link href="/admin" className="flex items-center justify-center w-full px-4 overflow-hidden group-data-[collapsible=icon]:px-1">
+              <div className="flex-shrink-0 flex items-center justify-center h-8 w-auto group-data-[collapsible=icon]:h-8 group-data-[collapsible=icon]:w-8 group-data-[collapsible=icon]:p-0.5">
                 {siteConfig?.logoStandard ? (
                   <Image 
                     src={getAssetUrl(siteConfig.logoStandard)} 
                     alt="Logo" 
                     width={80} 
                     height={32} 
-                    className="h-8 w-auto object-contain max-w-[120px]" 
+                    className="h-full w-auto object-contain max-h-8" 
                   />
                 ) : (
-                  <Image src="/image/Heovose-color.svg" alt="Heovose" width={80} height={32} className="h-7 w-auto" />
+                  <Image src="/image/Heovose-color.svg" alt="Heovose" width={80} height={32} className="h-full w-auto max-h-7" />
                 )}
-              </div>
-              <div className="flex flex-col justify-center leading-tight">
-                <span className="text-[13px] font-bold text-foreground whitespace-nowrap tracking-wider">后台</span>
-                <span className="text-[13px] font-bold text-foreground whitespace-nowrap tracking-wider">系统</span>
               </div>
             </Link>
           </SidebarHeader>
@@ -315,7 +318,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
                       return (
                         <SidebarMenuItem key={item.title}>
-                          <SidebarMenuButton asChild isActive={isActive}>
+                          <SidebarMenuButton asChild isActive={isActive} tooltip={item.title}>
                             <Link href={item.href} className={cn(
                               "flex items-center gap-3 px-4 py-2.5 transition-all duration-500 rounded-xl relative group/item overflow-hidden",
                               "group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:px-0 group-data-[collapsible=icon]:gap-0",
@@ -324,12 +327,12 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                                 : "text-foreground/70 hover:bg-primary/5 hover:text-primary hover:translate-x-1 group-data-[collapsible=icon]:hover:translate-x-0"
                             )}>
                               {isActive && (
-                                <div className="absolute left-0 top-2 bottom-2 w-1 bg-emerald-500 rounded-r-full shadow-[0_0_10px_rgba(16,185,129,0.8)]" />
+                                <div className="absolute left-0 top-2 bottom-2 w-1 bg-orange-400/90 rounded-r-full shadow-[0_0_6px_rgba(251,146,60,0.4)]" />
                               )}
                               <item.icon className={cn("h-4 w-4 shrink-0 transition-all duration-500 group-hover/item:scale-110", isActive ? "!text-white drop-shadow-sm" : "text-muted-foreground group-hover/item:text-primary")} />
                               <span className="text-sm font-medium tracking-tight group-data-[collapsible=icon]:hidden">{item.title}</span>
                               {isActive && (
-                                <div className="absolute right-3 h-1 w-1 rounded-full bg-emerald-500 animate-pulse shadow-[0_0_8px_rgba(16,185,129,0.6)] group-data-[collapsible=icon]:hidden" />
+                                <div className="absolute right-3 h-1 w-1 rounded-full bg-orange-400/80 animate-pulse shadow-[0_0_5px_rgba(251,146,60,0.3)] group-data-[collapsible=icon]:hidden" />
                               )}
                             </Link>
                           </SidebarMenuButton>
@@ -342,19 +345,18 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             ))}
           </SidebarContent>
 
-          <SidebarFooter className="p-6 border-t border-border/40">
+          <SidebarFooter className="p-6 group-data-[collapsible=icon]:p-2 border-t border-border/40 flex flex-row items-center justify-between group-data-[collapsible=icon]:justify-center">
             <div className="flex flex-col gap-1 group-data-[collapsible=icon]:hidden">
                <p className="text-[8px] font-bold text-muted-foreground/40 uppercase tracking-[0.2em]">Heovose Systems</p>
                <p className="text-[8px] font-medium text-muted-foreground/30 uppercase">© 2026 ELEVATE OS</p>
             </div>
+            <SidebarTrigger className="h-10 w-10 rounded-xl hover:bg-primary/5 text-primary transition-colors shrink-0" />
           </SidebarFooter>
         </Sidebar>
 
         <main className="flex-1 flex flex-col min-w-0 w-full h-screen overflow-hidden relative z-10">
           <header className="h-16 border-b border-border/40 bg-background/60 backdrop-blur-xl flex items-center justify-between px-8 shrink-0 z-50">
             <div className="flex items-center gap-5">
-              <SidebarTrigger className="h-10 w-10 rounded-xl hover:bg-primary/5 text-primary transition-colors" />
-              <div className="h-6 w-px bg-border/60" />
               <h1 className="font-headline font-bold text-sm text-primary uppercase tracking-[0.25em]">
                 {allItems.find(i => pathname === i.href || (i.href !== '/admin' && pathname.startsWith(i.href + '/')))?.title || 'WORKSPACE'}
               </h1>
@@ -365,21 +367,23 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
               <Link href="/admin/settings/ai">
                 <Button variant="ghost" size="sm" className={cn(
                   "rounded-full h-10 px-5 flex items-center gap-3 border transition-all duration-500 group/ai",
-                  aiStatus === 'success' ? "bg-green-50/50 border-green-200/50 text-green-700 hover:bg-green-100/50 shadow-sm" : 
-                  aiStatus === 'quota' ? "bg-orange-50/50 border-orange-200/50 text-orange-700 hover:bg-orange-100/50" : 
-                  aiStatus === 'failed' ? "bg-destructive/5 border-destructive/10 text-destructive" : 
-                  "bg-background/50 border-border/40 text-muted-foreground hover:bg-background hover:shadow-md"
+                  aiStatus === 'success' ? "bg-green-50/50 border-green-200/50 text-green-700 hover:bg-green-100/50 shadow-sm dark:bg-emerald-950/30 dark:border-emerald-800/30 dark:text-emerald-400 dark:hover:bg-emerald-950/50" : 
+                  aiStatus === 'quota' ? "bg-orange-50/50 border-orange-200/50 text-orange-700 hover:bg-orange-100/50 dark:bg-orange-950/30 dark:border-orange-800/30 dark:text-orange-400 dark:hover:bg-orange-950/50" : 
+                  aiStatus === 'failed' ? "bg-destructive/5 border-destructive/10 text-destructive dark:bg-red-950/30 dark:border-red-900/30 dark:text-red-400 dark:hover:bg-red-950/50" : 
+                  "bg-background/50 border-border/40 text-muted-foreground hover:bg-background hover:shadow-md dark:bg-muted/10 dark:border-white/5 dark:text-muted-foreground/60 dark:hover:bg-muted/20"
                 )}>
                   {aiStatus === 'success' ? (
                     <div className="relative">
-                      <Zap className="h-3.5 w-3.5 text-green-600 animate-pulse" />
-                      <div className="absolute inset-0 bg-green-400 blur-md opacity-40 animate-pulse" />
+                      <Zap className="h-3.5 w-3.5 text-green-600 dark:text-emerald-400 animate-pulse" />
+                      <div className="absolute inset-0 bg-green-400 dark:bg-emerald-400 blur-md opacity-40 animate-pulse" />
                     </div>
                   ) : <Bot className="h-3.5 w-3.5 group-hover/ai:rotate-12 transition-transform" />}
                   
                   <span className="text-xs font-bold tracking-[0.1em] uppercase flex items-center gap-2">
-                    {aiStatus === 'success' && activeModel ? (
-                      <><span className="opacity-40">{activeModel.shortName}</span><span className="w-[2px] h-[2px] rounded-full bg-current opacity-30" /><span>{activeModel.rpm} RPM</span></>
+                    {aiStatus === 'success' && primaryProvider ? (
+                      <span className="opacity-70">
+                        {activeModel ? activeModel.name : primaryProvider.model}
+                      </span>
                     ) : aiStatus === 'quota' ? 'Quota Full' : aiStatus === 'failed' ? 'AI Error' : 'Offline'}
                   </span>
                 </Button>
