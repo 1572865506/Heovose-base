@@ -35,7 +35,7 @@ import {
   Play,
   FileText,
   Archive,
-  File,
+  File as FileIcon,
   FolderOpen,
   Database,
   Wallet
@@ -79,6 +79,8 @@ import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 import { CascaderSelect } from '@/components/ui/cascader-select';
 import { AdminPageHeader } from '@/components/admin/AdminPageHeader';
+import { Switch } from '@/components/ui/switch';
+import { Slider } from '@/components/ui/slider';
 
 interface GalleryCategory {
   id: string;
@@ -186,6 +188,74 @@ const AssetResolution = ({ id, initialW, initialH }: { id: string, initialW?: nu
   );
 };
 
+const compressImageFile = (file: File, quality: number): Promise<File> => {
+  return new Promise((resolve) => {
+    const isImg = ['image/jpeg', 'image/png', 'image/webp'].includes(file.type);
+    if (!isImg) {
+      resolve(file);
+      return;
+    }
+    const canvasQuality = quality / 100;
+    const reader = new FileReader();
+    reader.readAsDataURL(file);
+    reader.onload = (event) => {
+      const img = new (window as any).Image();
+      img.src = event.target?.result as string;
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        canvas.width = img.naturalWidth;
+        canvas.height = img.naturalHeight;
+
+        let ctx: CanvasRenderingContext2D | null = null;
+        try {
+          // 尽量使用 display-p3 色彩空间以保留现代显示器的宽色域，防止色彩变淡/偏色
+          ctx = canvas.getContext('2d', { colorSpace: 'display-p3' }) as CanvasRenderingContext2D;
+        } catch (e) {
+          ctx = canvas.getContext('2d');
+        }
+
+        if (!ctx) {
+          resolve(file);
+          return;
+        }
+
+        // 启用高质量的图像平滑算法，保留细节边缘的锐利度
+        ctx.imageSmoothingEnabled = true;
+        ctx.imageSmoothingQuality = 'high';
+        ctx.drawImage(img, 0, 0, img.naturalWidth, img.naturalHeight);
+
+        // 智能选择输出格式：如果是 JPEG 则保持 JPEG 格式压缩，防止 WebP 互转造成的二次失真；其他转换为 webp
+        const outputFormat = file.type === 'image/jpeg' ? 'image/jpeg' : 'image/webp';
+        const extension = file.type === 'image/jpeg' ? '.jpg' : '.webp';
+
+        canvas.toBlob(
+          (blob) => {
+            if (blob) {
+              const compressedFile = new File([blob], file.name.replace(/\.[^/.]+$/, "") + extension, {
+                type: outputFormat,
+                lastModified: Date.now(),
+              });
+
+              // 只有在压缩后体积明显变小（小于原图 95%）时才使用压缩版，否则保留原图
+              if (compressedFile.size < file.size * 0.95) {
+                resolve(compressedFile);
+              } else {
+                resolve(file);
+              }
+            } else {
+              resolve(file);
+            }
+          },
+          outputFormat,
+          canvasQuality
+        );
+      };
+      img.onerror = () => resolve(file);
+    };
+    reader.onerror = () => resolve(file);
+  });
+};
+
 export default function GalleryPage() {
   const { toast } = useToast();
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -278,18 +348,32 @@ export default function GalleryPage() {
   const [pendingFiles, setPendingFiles] = useState<File[]>([]);
   const [isCleaning, setIsCleaning] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
+  const [enableCompression, setEnableCompression] = useState(false);
+  const [compressionQuality, setCompressionQuality] = useState(85);
 
   const [selectionBox, setSelectionBox] = useState<{ startX: number, startY: number, currentX: number, currentY: number } | null>(null);
   const itemRefs = useRef<Map<string, HTMLDivElement>>(new Map());
 
   const [currentPage, setCurrentPage] = useState(1);
+  const [jumpPageVal, setJumpPageVal] = useState('1');
   const ITEMS_PER_PAGE = 20;
+
+  useEffect(() => {
+    setJumpPageVal(currentPage.toString());
+  }, [currentPage]);
 
 
   useEffect(() => {
     setSelectedIds(new Set());
     setCurrentPage(1); // 筛选条件改变时重置页码
   }, [filterCategory, searchQuery, filterType]);
+
+  useEffect(() => {
+    if (isUploadDialogOpen) {
+      setEnableCompression(false);
+      setCompressionQuality(85);
+    }
+  }, [isUploadDialogOpen]);
 
   const { data: session } = useSession();
   const isAdmin = useMemo(() => {
@@ -373,9 +457,16 @@ export default function GalleryPage() {
     return tree;
   }, [categories, getDisplayName]);
 
+  // Handle default selection based on filterCategory (if not 'all')
   useEffect(() => {
-    if (categoryTree.length > 0 && !targetUploadCategoryId) setTargetUploadCategoryId(categoryTree[0].id);
-  }, [categoryTree, targetUploadCategoryId]);
+    if (categoryTree.length > 0) {
+      if (filterCategory && filterCategory !== 'all') {
+        setTargetUploadCategoryId(filterCategory);
+      } else {
+        setTargetUploadCategoryId('');
+      }
+    }
+  }, [filterCategory, categoryTree]);
 
   const filteredAssets = useMemo(() => {
     if (!assets) return [];
@@ -470,7 +561,7 @@ export default function GalleryPage() {
 
       const newSelected = new Set(e.shiftKey ? selectedIds : []);
 
-      filteredAssets.forEach(asset => {
+      paginatedAssets.forEach(asset => {
         const el = itemRefs.current.get(asset.id);
         if (!el) return;
 
@@ -511,7 +602,7 @@ export default function GalleryPage() {
       window.removeEventListener('mousemove', handleGlobalMouseMove);
       window.removeEventListener('mouseup', handleGlobalMouseUp);
     };
-  }, [selectionBox, selectedIds, filteredAssets]);
+  }, [selectionBox, selectedIds, paginatedAssets]);
 
   const handleFileUpload = (files: FileList | null) => {
     if (!files) return;
@@ -537,13 +628,17 @@ export default function GalleryPage() {
 
   const startUpload = async () => {
     if (pendingFiles.length === 0) return;
+    if (!targetUploadCategoryId) {
+      toast({ variant: "destructive", title: "操作受阻", description: "请先选择归属分类。" });
+      return;
+    }
     if (!categories || categories.length === 0) {
       toast({ variant: "destructive", title: "操作受阻", description: "请先添加至少一个分类。" });
       return;
     }
 
     setIsUploading(true);
-    const categoryId = targetUploadCategoryId || categoryTree[0]?.id;
+    const categoryId = targetUploadCategoryId;
     setIsTasksPanelOpen(true);
     setIsTasksPanelMinimized(false);
 
@@ -567,8 +662,13 @@ export default function GalleryPage() {
       const taskId = newTasks[i].id;
 
       try {
+        let uploadFile = file;
+        if (enableCompression) {
+          uploadFile = await compressImageFile(file, compressionQuality);
+        }
+
         const formData = new FormData();
-        formData.append('file', file);
+        formData.append('file', uploadFile);
 
         const uploadRes = await fetch('/api/upload', {
           method: 'POST',
@@ -578,7 +678,7 @@ export default function GalleryPage() {
         if (!uploadRes.ok) throw new Error("Upload failed");
         const { url, fileName } = await uploadRes.json();
 
-        const isVideo = file.type.startsWith('video/');
+        const isVideo = uploadFile.type.startsWith('video/');
         let w = 0;
         let h = 0;
         let duration = 0;
@@ -617,8 +717,8 @@ export default function GalleryPage() {
 
         updateTask(taskId, { progress: 70 });
 
-        const title = file.name.split('.')[0];
-        const categoryId = targetUploadCategoryId || categoryTree[0]?.id;
+        const title = uploadFile.name.split('.')[0];
+        const categoryId = targetUploadCategoryId;
 
         if (!categoryId) {
           throw new Error("请先选择一个素材分类再上传。");
@@ -643,7 +743,7 @@ export default function GalleryPage() {
           duration: isVideo ? duration : undefined,
           title: title,
           fileName: fileName,
-          fileSize: file.size,
+          fileSize: uploadFile.size,
           categoryId: categoryId,
           width: w,
           height: h
@@ -893,8 +993,8 @@ export default function GalleryPage() {
             subtitle="Management / Digital Assets / Resources"
             icon={FolderOpen}
           />
-          
-          <div 
+
+          <div
             onClick={() => {
               if (!isAdmin) return;
               setInputQuota(quotaGB.toString());
@@ -905,10 +1005,10 @@ export default function GalleryPage() {
               usedPercentage >= 90
                 ? "bg-gradient-to-br from-red-500/[0.03] to-rose-500/[0.01] dark:from-red-500/[0.02] dark:to-transparent border-red-500/20"
                 : "bg-gradient-to-br from-emerald-500/[0.03] to-teal-500/[0.01] dark:from-emerald-500/[0.02] dark:to-transparent border-emerald-500/10",
-              isAdmin 
-                ? (usedPercentage >= 90 
-                    ? "hover:from-red-500/[0.06] hover:to-rose-500/[0.03] hover:border-red-500/40 cursor-pointer transition-all duration-500 group" 
-                    : "hover:from-emerald-500/[0.06] hover:to-teal-500/[0.03] hover:border-emerald-500/20 cursor-pointer transition-all duration-500 group")
+              isAdmin
+                ? (usedPercentage >= 90
+                  ? "hover:from-red-500/[0.06] hover:to-rose-500/[0.03] hover:border-red-500/40 cursor-pointer transition-all duration-500 group"
+                  : "hover:from-emerald-500/[0.06] hover:to-teal-500/[0.03] hover:border-emerald-500/20 cursor-pointer transition-all duration-500 group")
                 : "cursor-default opacity-85"
             )}
           >
@@ -946,13 +1046,13 @@ export default function GalleryPage() {
                   "w-28 h-1.5 rounded-full mt-1.5 overflow-hidden",
                   usedPercentage >= 90 ? "bg-red-500/10" : "bg-emerald-500/10"
                 )}>
-                  <div 
+                  <div
                     className={cn(
                       "h-full rounded-full transition-all duration-500",
                       usedPercentage >= 90
                         ? "bg-gradient-to-r from-red-500 to-rose-400"
                         : "bg-gradient-to-r from-emerald-500 to-teal-400"
-                    )} 
+                    )}
                     style={{ width: `${Math.min(100, usedPercentage)}%` }}
                   />
                 </div>
@@ -1258,6 +1358,38 @@ export default function GalleryPage() {
                         </p>
                       </div>
                     </div>
+                    <div className="space-y-4 p-4 bg-muted/10 border border-border/20 rounded-2xl">
+                      <div className="flex items-center justify-between">
+                        <div className="space-y-1">
+                          <Label className="text-[10px] font-bold uppercase tracking-wider text-foreground">图片智能压缩</Label>
+                          <p className="text-[9px] text-muted-foreground leading-none">Smart Image Compression</p>
+                        </div>
+                        <Switch
+                          checked={enableCompression}
+                          onCheckedChange={setEnableCompression}
+                        />
+                      </div>
+
+                      {enableCompression && (
+                        <div className="space-y-3 pt-3 border-t border-dashed border-border/40 animate-in fade-in duration-300">
+                          <div className="flex justify-between items-center text-[10px] font-bold text-muted-foreground uppercase tracking-widest pl-1">
+                            <span>压缩质量 (Quality)</span>
+                            <span className="text-primary">{compressionQuality}%</span>
+                          </div>
+                          <Slider
+                            value={[compressionQuality]}
+                            onValueChange={(val) => setCompressionQuality(val[0])}
+                            min={10}
+                            max={100}
+                            step={5}
+                            className="w-full"
+                          />
+                          <p className="text-[8px] text-muted-foreground leading-normal pl-1 italic">
+                            保持原始分辨率，在不改变图片宽度/高度的情况下以最佳算法编码压缩。
+                          </p>
+                        </div>
+                      )}
+                    </div>
                   </div>
                 </div>
               </div>
@@ -1265,13 +1397,13 @@ export default function GalleryPage() {
                 <Button variant="ghost" onClick={() => { setIsUploadDialogOpen(false); setPendingFiles([]); }} className="h-14 rounded-2xl flex-1 font-bold uppercase text-[10px] tracking-widest text-muted-foreground/60 admin-interface-dark:text-muted-foreground/40 hover:text-foreground">取消</Button>
                 <Button
                   onClick={startUpload}
-                  disabled={pendingFiles.length === 0 || isUploading}
+                  disabled={pendingFiles.length === 0 || isUploading || !targetUploadCategoryId}
                   className="h-14 rounded-2xl flex-1 font-bold uppercase text-[10px] tracking-[0.2em] shadow-2xl shadow-primary/20"
                 >
                   {isUploading ? (
                     <><Loader2 className="h-4 w-4 animate-spin mr-2" /> 处理中...</>
                   ) : (
-                    <><CloudUpload className="h-4 w-4 mr-2" /> 立即上传 ({pendingFiles.length})</>
+                    <><CloudUpload className="h-4 w-4 mr-2" /> {!targetUploadCategoryId ? '请选择分类' : `立即上传 (${pendingFiles.length})`}</>
                   )}
                 </Button>
               </DialogFooter>
@@ -1359,7 +1491,7 @@ export default function GalleryPage() {
       {/* 资产网格展示 */}
       <div className="relative z-10 flex-1 overflow-y-auto scrollbar-minimal px-2">
         {filteredAssets.length > 0 ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-8 pb-32">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-4 pb-8">
             {paginatedAssets.map((asset) => {
               const isSelected = selectedIds.has(asset.id);
               const fileExt = asset.fileName?.toLowerCase().split('.').pop() || '';
@@ -1511,7 +1643,7 @@ export default function GalleryPage() {
 
       {/* 高密度分页控制 / HD PAGINATION CONTROL */}
       {totalPages > 1 && (
-        <div className="flex items-center justify-center gap-4 relative z-10 pt-16">
+        <div className="flex items-center justify-center gap-4 relative z-10 pt-4">
           <Button
             variant="outline"
             size="icon"
@@ -1550,6 +1682,34 @@ export default function GalleryPage() {
           >
             <ChevronRight className="h-5 w-5" />
           </Button>
+
+          <div className="flex items-center gap-2 bg-card/40 backdrop-blur-3xl p-1.5 rounded-2xl border border-border/10 shadow-2xl">
+            <span className="text-[10px] font-bold text-muted-foreground/60 uppercase tracking-widest pl-2">跳转至</span>
+            <Input
+              type="text"
+              value={jumpPageVal}
+              onChange={(e) => {
+                const val = e.target.value;
+                if (val === '' || /^\d+$/.test(val)) {
+                  setJumpPageVal(val);
+                }
+              }}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  const p = parseInt(jumpPageVal);
+                  if (!isNaN(p) && p >= 1 && p <= totalPages) {
+                    setCurrentPage(p);
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                  } else {
+                    setJumpPageVal(currentPage.toString());
+                  }
+                }
+              }}
+              className="w-12 h-9 rounded-xl bg-muted/10 border-transparent text-center text-xs font-bold focus:bg-muted/20 focus:ring-0 focus-visible:ring-0 focus-visible:ring-offset-0 p-0"
+              placeholder="页"
+            />
+            <span className="text-[10px] font-bold text-muted-foreground/60 uppercase tracking-widest pr-2">/ {totalPages} 页</span>
+          </div>
         </div>
       )}
 
@@ -1794,7 +1954,7 @@ export default function GalleryPage() {
           </DialogHeader>
 
           {/* 悬浮工具栏 / FLOATING TOOLBAR */}
-          <div className="absolute top-8 left-1/2 -translate-x-1/2 z-50 flex items-center gap-3 bg-white/5 backdrop-blur-3xl p-2 px-3 rounded-full border border-white/10 shadow-2xl">
+          <div className="absolute top-8 left-1/2 -translate-x-1/2 z-50 flex items-center gap-3 bg-slate-950/95 backdrop-blur-3xl p-2 px-3 rounded-full border border-white/10 shadow-2xl">
             <div className="flex bg-white/[0.03] rounded-full p-1 border border-white/5">
               <Button
                 variant="ghost"
@@ -1938,12 +2098,12 @@ export default function GalleryPage() {
             <div className="space-y-6">
               <div className="space-y-3">
                 <Label className="text-[10px] font-bold uppercase text-muted-foreground/40 tracking-[0.2em] pl-1">存储配额大小 (GB)</Label>
-                <Input 
-                  type="number" 
-                  value={inputQuota} 
-                  onChange={e => setInputQuota(e.target.value)} 
-                  className="rounded-2xl h-12 bg-muted/10 border-transparent focus:bg-muted/20 text-sm font-bold shadow-inner" 
-                  placeholder="例如: 50" 
+                <Input
+                  type="number"
+                  value={inputQuota}
+                  onChange={e => setInputQuota(e.target.value)}
+                  className="rounded-2xl h-12 bg-muted/10 border-transparent focus:bg-muted/20 text-sm font-bold shadow-inner"
+                  placeholder="例如: 50"
                 />
               </div>
             </div>

@@ -16,7 +16,7 @@ import {
   FileText,
   Archive,
   Upload,
-  File
+  File as FileIcon
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -53,6 +53,8 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { ChevronDown } from 'lucide-react';
 import { useLocalCollection } from '@/hooks/use-local-collection';
+import { Switch } from '@/components/ui/switch';
+import { Slider } from '@/components/ui/slider';
 
 export interface GalleryAsset {
   id: string;
@@ -98,6 +100,70 @@ const ITEMS_PER_PAGE = 18;
 const DOCUMENT_EXTS = ['pdf', 'doc', 'docx', 'xls', 'xlsx', 'ppt', 'pptx', 'txt'];
 const ARCHIVE_EXTS = ['zip', 'rar', '7z', 'tar', 'gz'];
 
+const compressImageFile = (file: File, quality: number): Promise<File> => {
+  return new Promise((resolve) => {
+    const isImg = ['image/jpeg', 'image/png', 'image/webp'].includes(file.type);
+    if (!isImg) {
+      resolve(file);
+      return;
+    }
+    const canvasQuality = quality / 100;
+    const reader = new FileReader();
+    reader.readAsDataURL(file);
+    reader.onload = (event) => {
+      const img = new (window as any).Image();
+      img.src = event.target?.result as string;
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        canvas.width = img.naturalWidth;
+        canvas.height = img.naturalHeight;
+        
+        let ctx: CanvasRenderingContext2D | null = null;
+        try {
+          ctx = canvas.getContext('2d', { colorSpace: 'display-p3' }) as CanvasRenderingContext2D;
+        } catch (e) {
+          ctx = canvas.getContext('2d');
+        }
+
+        if (!ctx) {
+          resolve(file);
+          return;
+        }
+
+        ctx.imageSmoothingEnabled = true;
+        ctx.imageSmoothingQuality = 'high';
+        ctx.drawImage(img, 0, 0, img.naturalWidth, img.naturalHeight);
+        
+        const outputFormat = file.type === 'image/jpeg' ? 'image/jpeg' : 'image/webp';
+        const extension = file.type === 'image/jpeg' ? '.jpg' : '.webp';
+
+        canvas.toBlob(
+          (blob) => {
+            if (blob) {
+              const compressedFile = new File([blob], file.name.replace(/\.[^/.]+$/, "") + extension, {
+                type: outputFormat,
+                lastModified: Date.now(),
+              });
+              
+              if (compressedFile.size < file.size * 0.95) {
+                resolve(compressedFile);
+              } else {
+                resolve(file);
+              }
+            } else {
+              resolve(file);
+            }
+          },
+          outputFormat,
+          canvasQuality
+        );
+      };
+      img.onerror = () => resolve(file);
+    };
+    reader.onerror = () => resolve(file);
+  });
+};
+
 export function MediaLibraryDialog({
   open,
   onOpenChange,
@@ -121,18 +187,24 @@ export function MediaLibraryDialog({
   const [pendingFiles, setPendingFiles] = useState<File[]>([]);
   const [isUploading, setIsUploading] = useState(false);
   const [uploadTasks, setUploadTasks] = useState<UploadTask[]>([]);
+  const [enableCompression, setEnableCompression] = useState(false);
+  const [compressionQuality, setCompressionQuality] = useState(85);
   const [targetUploadCategoryId, setTargetUploadCategoryId] = useState<string>('');
   const [duplicateStrategy, setDuplicateStrategy] = useState<'rename' | 'overwrite'>('rename');
 
   const { data: assets, isLoading: isLoadingAssets, mutate: mutateAssets } = useLocalCollection<GalleryAsset>('galleryAssets');
   const { data: categories, isLoading: isLoadingCategories } = useLocalCollection<GalleryCategory>('galleryCategories');
 
-  // Handle auto-selection of first category for upload
+  // Handle default selection based on currentCategoryId (if not 'all')
   useEffect(() => {
-    if (categories && categories.length > 0 && !targetUploadCategoryId) {
-      setTargetUploadCategoryId(categories[0].id);
+    if (categories && categories.length > 0) {
+      if (currentCategoryId && currentCategoryId !== 'all') {
+        setTargetUploadCategoryId(currentCategoryId);
+      } else {
+        setTargetUploadCategoryId('');
+      }
     }
-  }, [categories, targetUploadCategoryId]);
+  }, [categories, currentCategoryId]);
 
   const toggleExpand = (id: string, e: React.MouseEvent) => {
     e.stopPropagation();
@@ -185,6 +257,8 @@ export function MediaLibraryDialog({
       setActiveTab('library');
       setPendingFiles([]);
       setUploadTasks([]);
+      setEnableCompression(false);
+      setCompressionQuality(85);
     }
   }, [open]);
 
@@ -250,8 +324,13 @@ export function MediaLibraryDialog({
         const taskId = newTasks[i].id;
         
         try {
+          let uploadFile = file;
+          if (enableCompression) {
+             uploadFile = await compressImageFile(file, compressionQuality);
+          }
+
           const formData = new FormData();
-          formData.append('file', file);
+          formData.append('file', uploadFile);
 
           const uploadRes = await fetch('/api/upload', {
             method: 'POST',
@@ -261,7 +340,7 @@ export function MediaLibraryDialog({
           if (!uploadRes.ok) throw new Error("上传请求失败");
           const { url, fileName } = await uploadRes.json();
 
-          const fileExt = file.name.toLowerCase().split('.').pop() || '';
+          const fileExt = uploadFile.name.toLowerCase().split('.').pop() || '';
           const isVideo = ['mp4', 'webm', 'ogg', 'mov'].includes(fileExt);
           const isDoc = DOCUMENT_EXTS.includes(fileExt) || ARCHIVE_EXTS.includes(fileExt);
           
@@ -293,7 +372,7 @@ export function MediaLibraryDialog({
             w = dims.w; h = dims.h;
           }
 
-          const title = file.name.split('.')[0];
+          const title = uploadFile.name.split('.')[0];
           let assetId = `asset_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
           
           // --- Duplicate Handling Strategy ---
@@ -310,7 +389,7 @@ export function MediaLibraryDialog({
             type: isVideo ? 'VIDEO' : (isDoc ? 'DOCUMENT' : 'IMAGE'),
             title: title,
             fileName: fileName,
-            fileSize: file.size,
+            fileSize: uploadFile.size,
             categoryId: targetUploadCategoryId,
             width: w > 0 ? w : undefined,
             height: h > 0 ? h : undefined,
@@ -592,7 +671,7 @@ export function MediaLibraryDialog({
                                     <div key={i} className="flex items-center justify-between p-4 bg-slate-50 admin-interface-dark:bg-muted/20 rounded-2xl border border-slate-100 admin-interface-dark:border-border/40 group/item">
                                        <div className="flex items-center gap-4 overflow-hidden">
                                           <div className="h-10 w-10 rounded-xl bg-white admin-interface-dark:bg-slate-800 flex items-center justify-center shrink-0 shadow-sm">
-                                             <File className="h-5 w-5 text-slate-400" />
+                                             <FileIcon className="h-5 w-5 text-slate-400" />
                                           </div>
                                           <div className="flex flex-col overflow-hidden">
                                              <span className="text-xs font-bold text-slate-700 admin-interface-dark:text-foreground truncate">{file.name}</span>
@@ -664,9 +743,42 @@ export function MediaLibraryDialog({
                               </DropdownMenuItem>
                            </DropdownMenuContent>
                         </DropdownMenu>
-                     </div>
-
-                     <div className="p-8 rounded-2xl bg-primary/5 border border-primary/10 space-y-4">
+                      </div>
+ 
+                      <div className="space-y-4 p-4 bg-muted/10 border border-border/20 rounded-2xl">
+                         <div className="flex items-center justify-between">
+                            <div className="space-y-1">
+                               <Label className="text-[10px] font-bold uppercase tracking-wider text-foreground">图片智能压缩</Label>
+                               <p className="text-[9px] text-muted-foreground leading-none">Smart Image Compression</p>
+                            </div>
+                            <Switch 
+                               checked={enableCompression} 
+                               onCheckedChange={setEnableCompression} 
+                            />
+                         </div>
+                         
+                         {enableCompression && (
+                            <div className="space-y-3 pt-3 border-t border-dashed border-border/40 animate-in fade-in duration-300">
+                               <div className="flex justify-between items-center text-[10px] font-bold text-muted-foreground uppercase tracking-widest pl-1">
+                                  <span>压缩质量 (Quality)</span>
+                                  <span className="text-primary">{compressionQuality}%</span>
+                               </div>
+                               <Slider 
+                                  value={[compressionQuality]} 
+                                  onValueChange={(val) => setCompressionQuality(val[0])} 
+                                  min={10} 
+                                  max={100} 
+                                  step={5} 
+                                  className="w-full"
+                               />
+                               <p className="text-[8px] text-muted-foreground leading-normal pl-1 italic">
+                                  保持原始分辨率，在不改变图片宽度/高度的情况下以最佳算法编码压缩。
+                               </p>
+                            </div>
+                         )}
+                      </div>
+ 
+                      <div className="p-8 rounded-2xl bg-primary/5 border border-primary/10 space-y-4">
                         <div className="flex items-center gap-3">
                            <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center"><CloudUpload className="h-4 w-4 text-primary" /></div>
                            <p className="text-[11px] font-bold text-primary uppercase tracking-widest">智能上传协议</p>
@@ -695,11 +807,11 @@ export function MediaLibraryDialog({
                      
                      <Button 
                         onClick={startUpload} 
-                        disabled={pendingFiles.length === 0 || isUploading}
+                        disabled={pendingFiles.length === 0 || isUploading || !targetUploadCategoryId}
                         className="w-full h-16 rounded-2xl text-xs font-bold uppercase tracking-[0.2em] shadow-2xl shadow-primary/20 gap-3"
                      >
                         {isUploading ? <Loader2 className="h-5 w-5 animate-spin" /> : <CloudUpload className="h-5 w-5" />}
-                        立即同步至云端素材库
+                        {!targetUploadCategoryId ? '请先选择归属分类' : '立即同步至云端素材库'}
                      </Button>
                   </div>
                </div>
