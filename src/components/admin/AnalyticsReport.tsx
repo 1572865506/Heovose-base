@@ -18,7 +18,8 @@ import {
   Activity, 
   Smartphone,
   TrendingUp,
-  MapPin
+  MapPin,
+  ShoppingBag
 } from 'lucide-react';
 import { 
   BarChart, 
@@ -59,7 +60,8 @@ export function AnalyticsReport({ isOpen, onClose, data }: AnalyticsReportProps)
       timeSeries: data.timeSeries,
       geoDistribution: data.geoData,
       deviceBreakdown: data.deviceData,
-      contentPerformance: data.sortedPages
+      contentPerformance: data.sortedPages,
+      productPerformance: data.productMetrics
     };
 
     const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' });
@@ -160,7 +162,7 @@ export function AnalyticsReport({ isOpen, onClose, data }: AnalyticsReportProps)
                 <div>
                   <DialogTitle className="text-3xl font-headline font-bold uppercase tracking-tight">深度数据洞察报告</DialogTitle>
                   <DialogDescription className="text-white/40 font-bold uppercase tracking-[0.2em] mt-1 print:text-white/60">
-                    Business Intelligence Summary • {new Date().toLocaleDateString('zh-CN', { year: 'numeric', month: 'long', day: 'numeric' })}
+                    Business Summary • {new Date().toLocaleDateString('zh-CN', { year: 'numeric', month: 'long', day: 'numeric' })}
                   </DialogDescription>
                 </div>
               </div>
@@ -181,7 +183,7 @@ export function AnalyticsReport({ isOpen, onClose, data }: AnalyticsReportProps)
               </div>
               <div className="space-y-1">
                 <p className="text-[10px] font-bold text-white/30 uppercase tracking-widest print:text-white/50">平均点击率</p>
-                <p className="text-2xl font-headline font-bold">{Math.round((data.clickEvents / data.totalEvents) * 100)}%</p>
+                <p className="text-2xl font-headline font-bold">{data.totalEvents > 0 ? Math.round((data.clickEvents / data.totalEvents) * 100) : 0}%</p>
               </div>
             </div>
           </div>
@@ -219,20 +221,24 @@ export function AnalyticsReport({ isOpen, onClose, data }: AnalyticsReportProps)
                   <h3 className="text-sm font-bold uppercase tracking-[0.2em] text-slate-400">访客地域分布 (Geo Location)</h3>
                 </div>
                 <div className="space-y-4">
-                  {data.geoData.slice(0, 5).map((item: any, i: number) => (
-                    <div key={i} className="flex items-center justify-between">
-                      <div className="flex items-center gap-3">
-                        <span className="text-[10px] font-bold text-slate-300">0{i+1}</span>
-                        <span className="text-xs font-bold text-slate-600 uppercase">{item.name || '其他'}</span>
-                      </div>
-                      <div className="flex items-center gap-4 flex-1 max-w-[200px]">
-                        <div className="flex-1 h-1.5 bg-slate-50 rounded-full overflow-hidden">
-                          <div className="h-full bg-primary" style={{ width: `${(item.value / data.geoData[0].value) * 100}%` }} />
+                  {data.geoData && data.geoData.length > 0 ? (
+                    data.geoData.slice(0, 5).map((item: any, i: number) => (
+                      <div key={i} className="flex items-center justify-between">
+                        <div className="flex items-center gap-3">
+                          <span className="text-[10px] font-bold text-slate-300">0{i+1}</span>
+                          <span className="text-xs font-bold text-slate-600 uppercase">{item.name || '其他'}</span>
                         </div>
-                        <span className="text-xs font-bold text-slate-900 w-8 text-right">{item.value}</span>
+                        <div className="flex items-center gap-4 flex-1 max-w-[200px]">
+                          <div className="flex-1 h-1.5 bg-slate-50 rounded-full overflow-hidden">
+                            <div className="h-full bg-primary" style={{ width: `${data.geoData[0]?.value ? (item.value / data.geoData[0].value) * 100 : 0}%` }} />
+                          </div>
+                          <span className="text-xs font-bold text-slate-900 w-8 text-right">{item.value}</span>
+                        </div>
                       </div>
-                    </div>
-                  ))}
+                    ))
+                  ) : (
+                    <p className="text-xs text-slate-400">暂无地域分布数据</p>
+                  )}
                 </div>
               </section>
 
@@ -246,14 +252,16 @@ export function AnalyticsReport({ isOpen, onClose, data }: AnalyticsReportProps)
                     <PieChart>
                       <Pie
                         data={data.deviceData}
-                        innerRadius={60}
-                        outerRadius={80}
-                        paddingAngle={5}
+                        innerRadius={55}
+                        outerRadius={75}
+                        paddingAngle={8}
+                        cornerRadius={6}
                         dataKey="value"
+                        stroke="none"
                         label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
                       >
                         {data.deviceData.map((entry: any, index: number) => (
-                          <Cell key={`cell-${index}`} fill={['#0f172a', '#3b82f6', '#fcd34d'][index % 3]} />
+                          <Cell key={`cell-${index}`} fill={['#6366f1', '#0ea5e9', '#f59e0b'][index % 3]} />
                         ))}
                       </Pie>
                       <Tooltip />
@@ -263,7 +271,7 @@ export function AnalyticsReport({ isOpen, onClose, data }: AnalyticsReportProps)
                 <div className="flex justify-center gap-6">
                   {data.deviceData.map((item: any, i: number) => (
                     <div key={i} className="flex items-center gap-2">
-                      <div className="h-2 w-2 rounded-full" style={{ backgroundColor: ['#0f172a', '#3b82f6', '#fcd34d'][i % 3] }} />
+                      <div className="h-2 w-2 rounded-full" style={{ backgroundColor: ['#6366f1', '#0ea5e9', '#f59e0b'][i % 3] }} />
                       <span className="text-[10px] font-bold text-slate-400 uppercase">{item.name}</span>
                     </div>
                   ))}
@@ -287,17 +295,49 @@ export function AnalyticsReport({ isOpen, onClose, data }: AnalyticsReportProps)
                     </tr>
                   </thead>
                   <tbody className="text-xs font-bold text-slate-600">
-                    {data.sortedPages.map(([path, count]: any, i: number) => (
+                    {data.sortedPages.map((item: any, i: number) => (
                       <tr key={i} className="border-t border-slate-200/50">
-                        <td className="py-4 font-mono">{path}</td>
-                        <td className="py-4 text-right text-slate-900">{count}</td>
-                        <td className="py-4 text-right">{Math.round((count / data.totalEvents) * 100)}%</td>
+                        <td className="py-4 font-mono">{item.path}</td>
+                        <td className="py-4 text-right text-slate-900">{item.pv}</td>
+                        <td className="py-4 text-right">{data.totalEvents > 0 ? Math.round((item.pv / data.totalEvents) * 100) : 0}%</td>
                       </tr>
                     ))}
                   </tbody>
                 </table>
               </div>
             </section>
+
+            {/* Section 4: Product Performance */}
+            {data.productMetrics && data.productMetrics.length > 0 && (
+              <section className="space-y-8 print:break-inside-avoid">
+                <div className="flex items-center gap-3">
+                  <ShoppingBag className="h-5 w-5 text-primary" />
+                  <h3 className="text-sm font-bold uppercase tracking-[0.2em] text-slate-400">产品询盘与转化表现 (Product performance)</h3>
+                </div>
+                <div className="bg-slate-50 rounded-3xl p-8 border border-slate-100 overflow-hidden print:bg-white print:p-0">
+                  <table className="w-full text-left">
+                    <thead>
+                      <tr className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+                        <th className="pb-6">产品名称</th>
+                        <th className="pb-6 text-right">被访问数量 (PV)</th>
+                        <th className="pb-6 text-right">产品询盘数</th>
+                        <th className="pb-6 text-right">询盘转化率</th>
+                      </tr>
+                    </thead>
+                    <tbody className="text-xs font-bold text-slate-600">
+                      {data.productMetrics.map((item: any, i: number) => (
+                        <tr key={i} className="border-t border-slate-200/50">
+                          <td className="py-4 font-semibold text-slate-800">{item.name}</td>
+                          <td className="py-4 text-right text-slate-500">{item.views} 次</td>
+                          <td className="py-4 text-right text-slate-900">{item.inquiries} 个</td>
+                          <td className="py-4 text-right text-green-600 font-mono">{item.conversion}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </section>
+            )}
           </div>
         </div>
 

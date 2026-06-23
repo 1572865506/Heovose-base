@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardHeader, CardTitle, CardContent, CardFooter } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
-import { Loader2, Lock, ShieldCheck, Mail, Key, Sparkles } from "lucide-react";
+import { Loader2, Lock, ShieldCheck, User, Key, Sparkles } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import NextImage from 'next/image';
 import { useLocalDoc } from '@/hooks/use-local-doc';
@@ -198,15 +198,15 @@ export default function LoginPage() {
                   <Label className={cn(
                     "text-[10px] font-bold uppercase tracking-[0.2em] ml-1 group-focus-within/field:text-primary transition-colors duration-300",
                     isDark ? "text-white/40" : "text-slate-500"
-                  )}>凭证识别 / Identifier</Label>
+                  )}>账户</Label>
                   <div className="relative">
-                    <Mail className={cn(
+                    <User className={cn(
                       "absolute left-5 top-1/2 -translate-y-1/2 h-4 w-4 group-focus-within/field:text-primary transition-colors duration-300",
                       isDark ? "text-white/20" : "text-slate-400"
                     )} />
                     <Input
                       type="email"
-                      placeholder="admin@heovose.com"
+                      placeholder="输入账号"
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
                       required
@@ -225,11 +225,17 @@ export default function LoginPage() {
                     <Label className={cn(
                       "text-[10px] font-bold uppercase tracking-[0.2em] group-focus-within/field:text-primary transition-colors duration-300",
                       isDark ? "text-white/40" : "text-slate-500"
-                    )}>访问令牌 / Access Token</Label>
-                    <span className={cn(
-                      "text-[9px] font-bold cursor-pointer hover:text-primary transition-colors uppercase tracking-widest duration-300",
-                      isDark ? "text-white/20" : "text-slate-400"
-                    )}>忘记密码？</span>
+                    )}>密码</Label>
+                    <span 
+                      onClick={() => toast({
+                        title: "修改密码提示",
+                        description: "系统账号安全度高，请联系系统管理员修改您的密码。"
+                      })}
+                      className={cn(
+                        "text-[9px] font-bold cursor-pointer hover:text-primary transition-colors uppercase tracking-widest duration-300",
+                        isDark ? "text-white/20" : "text-slate-400"
+                      )}
+                    >忘记密码？</span>
                   </div>
                   <div className="relative">
                     <Key className={cn(
@@ -257,7 +263,7 @@ export default function LoginPage() {
             <CardFooter className="p-10 pt-4">
               <Button
                 type="submit"
-                className="w-[50%] mx-auto h-16 rounded-2xl bg-primary hover:bg-primary/90 text-black font-black uppercase tracking-[0.25em] text-[11px] shadow-2xl shadow-primary/20 transition-all hover:scale-[1.02] active:scale-[0.98]"
+                className="w-[50%] mx-auto h-16 rounded-2xl bg-primary hover:bg-primary/90 text-white font-black uppercase tracking-[0.25em] text-[11px] shadow-2xl shadow-primary/20 transition-all hover:scale-[1.02] active:scale-[0.98]"
                 disabled={isLoading}
               >
                 {isLoading ? (

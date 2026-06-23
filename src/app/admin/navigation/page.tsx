@@ -33,6 +33,7 @@ export default function NavigationSettingsPage() {
   const { toast } = useToast();
   const [isSaving, setIsSaving] = useState(false);
   const [isPickerOpen, setIsPickerOpen] = useState(false);
+  const [pickerType, setPickerType] = useState<'featured' | 'products-banner'>('featured');
 
   const { data: remoteSettings, isLoading, mutate: mutateSettings } = useLocalDoc<any>('settings', 'navigation');
   const [settings, setSettings] = useState<any>({
@@ -43,7 +44,8 @@ export default function NavigationSettingsPage() {
     megaMenuGap: 12,
     featuredText: '立即下载手册',
     featuredDownloadUrl: '/files/catalog_2026.pdf',
-    featuredCoverUrl: '/image/catalog-placeholder.png'
+    featuredCoverUrl: '/image/catalog-placeholder.png',
+    productsBannerImage: ''
   });
 
   useEffect(() => {
@@ -129,6 +131,9 @@ export default function NavigationSettingsPage() {
           </AdminTabsTrigger>
           <AdminTabsTrigger value="featured">
             <Sparkles className="mr-2 h-4 w-4" /> 主推板块设置
+          </AdminTabsTrigger>
+          <AdminTabsTrigger value="products-banner">
+            <ImageIcon className="mr-2 h-4 w-4" /> 产品分类页配置
           </AdminTabsTrigger>
         </AdminTabsList>
 
@@ -257,7 +262,10 @@ export default function NavigationSettingsPage() {
                   <Label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">推广封面图 (Cover Image)</Label>
                   <div 
                     className="relative group cursor-pointer"
-                    onClick={() => setIsPickerOpen(true)}
+                    onClick={() => {
+                      setPickerType('featured');
+                      setIsPickerOpen(true);
+                    }}
                   >
                      <div className="aspect-[4/3] rounded-3xl border-2 border-dashed border-border/40 bg-muted/5 flex flex-col items-center justify-center gap-4 group-hover:border-primary/40 group-hover:bg-primary/5 transition-all overflow-hidden relative">
                         {settings.featuredCoverUrl ? (
@@ -337,6 +345,83 @@ export default function NavigationSettingsPage() {
             </div>
           </AdminFormSection>
         </AdminTabsContent>
+
+        <AdminTabsContent value="products-banner" className="space-y-6 outline-none">
+          <AdminFormSection
+            title="产品分类页导航图片 (Category Page Banner)"
+            subtitle="配置前台产品分类页面顶部的 Banner 背景图"
+            icon={ImageIcon}
+          >
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
+              <div className="space-y-8">
+                <div className="space-y-4">
+                  <Label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">导航背景图 (Banner Image)</Label>
+                  <div 
+                    className="relative group cursor-pointer"
+                    onClick={() => {
+                      setPickerType('products-banner');
+                      setIsPickerOpen(true);
+                    }}
+                  >
+                     <div className="aspect-[21/9] rounded-3xl border-2 border-dashed border-border/40 bg-muted/5 flex flex-col items-center justify-center gap-4 group-hover:border-primary/40 group-hover:bg-primary/5 transition-all overflow-hidden relative">
+                        {settings.productsBannerImage ? (
+                          <>
+                            <Image 
+                              src={getAssetUrl(settings.productsBannerImage)} 
+                              alt="Selected Banner" 
+                              fill 
+                              className="object-cover opacity-45 group-hover:scale-105 transition-transform"
+                              unoptimized
+                            />
+                            <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 bg-black/20 text-white">
+                              <ImageIcon className="h-8 w-8" />
+                              <p className="text-[10px] font-bold uppercase tracking-widest">点击更换背景图</p>
+                            </div>
+                          </>
+                        ) : (
+                          <>
+                            <div className="h-12 w-12 rounded-2xl bg-card shadow-sm flex items-center justify-center text-muted-foreground group-hover:scale-110 transition-transform">
+                              <ImageIcon className="h-6 w-6" />
+                            </div>
+                            <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">点击上传背景图</p>
+                          </>
+                        )}
+                     </div>
+                  </div>
+                </div>
+
+                {settings.productsBannerImage && (
+                  <Button 
+                    variant="outline"
+                    className="h-10 rounded-xl px-4 text-[10px] font-bold uppercase tracking-widest text-destructive hover:text-destructive/80 border-destructive/20 hover:bg-destructive/5"
+                    onClick={() => updateSetting('productsBannerImage', '')}
+                  >
+                    清除图片（恢复默认）
+                  </Button>
+                )}
+              </div>
+
+              <div className="space-y-6">
+                <Label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">前台视觉效果模拟 (Live Simulation)</Label>
+                <div className="rounded-[2rem] border border-border/40 overflow-hidden relative bg-primary text-white p-8 aspect-[21/9] flex flex-col justify-end">
+                  <div 
+                    className="absolute inset-0 transition-opacity duration-500 bg-cover bg-center" 
+                    style={{ 
+                      backgroundImage: settings.productsBannerImage ? `url(${getAssetUrl(settings.productsBannerImage)})` : 'none',
+                      backgroundColor: settings.productsBannerImage ? 'transparent' : '#0052cc',
+                      opacity: settings.productsBannerImage ? 0.35 : 0.1 
+                    }} 
+                  />
+                  <div className="relative z-10 space-y-2">
+                    <div className="h-4 w-16 bg-white/25 rounded-full" />
+                    <div className="h-6 w-32 bg-white/40 rounded-full" />
+                    <div className="h-3 w-48 bg-white/20 rounded-full" />
+                  </div>
+                </div>
+              </div>
+            </div>
+          </AdminFormSection>
+        </AdminTabsContent>
       </AdminTabs>
 
       <MediaLibraryDialog 
@@ -344,12 +429,16 @@ export default function NavigationSettingsPage() {
         onOpenChange={setIsPickerOpen}
         onSelect={(assets) => {
           if (assets.length > 0) {
-            updateSetting('featuredCoverUrl', assets[0].url);
+            if (pickerType === 'featured') {
+              updateSetting('featuredCoverUrl', assets[0].url);
+            } else if (pickerType === 'products-banner') {
+              updateSetting('productsBannerImage', assets[0].url);
+            }
           }
         }}
         selectionMode="single"
-        title="选择推荐板块封面"
-        subtitle="选择一张精美的产品画册或推广封面图"
+        title={pickerType === 'featured' ? "选择推荐板块封面" : "选择分类页导航图片"}
+        subtitle={pickerType === 'featured' ? "选择一张精美的产品画册或推广封面图" : "选择一张高端的分类页背景大图"}
       />
     </div>
   );

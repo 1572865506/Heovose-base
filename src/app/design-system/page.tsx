@@ -20,6 +20,7 @@ import {
   DialogTrigger,
   DialogClose
 } from '@/components/ui/dialog';
+import { useToast } from '@/hooks/use-toast';
 
 // Import extracted components
 import { AiGradientDef } from '@/components/design-system/AiGradientDef';
@@ -46,17 +47,35 @@ import { AdminSystemSpecification } from '@/components/design-system/AdminSystem
 import { NavbarSpecification } from '@/components/design-system/NavbarSpecification';
 
 export default function DesignSystemPage() {
+  const { toast } = useToast();
   const [activeSystem, setActiveSystem] = useState<'frontend' | 'backend'>('frontend');
   const [manifestContent, setManifestContent] = useState('');
   const [isLoadingManifest, setIsLoadingManifest] = useState(false);
 
   const loadManifest = async () => {
     setIsLoadingManifest(true);
-    const res = activeSystem === 'frontend' ? await getFrontendManifest() : await getAdminManifest();
-    if (res.success) {
-      setManifestContent(res.content);
+    try {
+      const res = activeSystem === 'frontend' ? await getFrontendManifest() : await getAdminManifest();
+      if (res.success) {
+        setManifestContent(res.content);
+      } else {
+        setManifestContent('');
+        toast({
+          variant: "destructive",
+          title: "加载失败",
+          description: res.error || "获取白皮书内容失败"
+        });
+      }
+    } catch (e: any) {
+      setManifestContent('');
+      toast({
+        variant: "destructive",
+        title: "加载异常",
+        description: e.message || "请求服务器白皮书组件时出错"
+      });
+    } finally {
+      setIsLoadingManifest(false);
     }
-    setIsLoadingManifest(false);
   };
 
   return (

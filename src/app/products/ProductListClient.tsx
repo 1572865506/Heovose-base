@@ -181,6 +181,7 @@ function ProductListContent(props: ProductListClientProps) {
       : `productCategories?parentId=${activeLine === 'wholesale' ? 'WHOLESALE' : 'PROJECT'}`
   );
   const { data: langSettings } = useLocalDoc<LanguageSettings>('settings', 'languages');
+  const { data: navSettings } = useLocalDoc<any>('settings', 'navigation');
   const { t: tr, isLoading: isTrLoading } = useTranslations(locale);
 
   const selectedCategoryId = useMemo(() => {
@@ -445,11 +446,11 @@ function ProductListContent(props: ProductListClientProps) {
       <section className="pt-40 pb-20 bg-primary text-white relative transition-colors duration-700 overflow-hidden">
         <div className={cn(
           "absolute inset-0 transition-opacity duration-1000",
-          rootCategory?.thumbnailImageUrl ? "opacity-30" : "opacity-0"
+          (navSettings?.productsBannerImage || rootCategory?.thumbnailImageUrl) ? "opacity-30" : "opacity-0"
         )}>
-          {rootCategory?.thumbnailImageUrl && (
+          {(navSettings?.productsBannerImage || rootCategory?.thumbnailImageUrl) && (
             <Image 
-              src={getAssetUrl(rootCategory.thumbnailImageUrl)} 
+              src={getAssetUrl(navSettings.productsBannerImage || rootCategory.thumbnailImageUrl)} 
               alt="" 
               fill 
               className="object-cover mix-blend-overlay" 
