@@ -256,6 +256,20 @@ const compressImageFile = (file: File, quality: number): Promise<File> => {
   });
 };
 
+const getFormatColorClass = (fileName: string) => {
+  const ext = fileName.split('.').pop()?.toLowerCase() || '';
+  if (['jpg', 'jpeg', 'png', 'webp', 'gif', 'svg', 'bmp'].includes(ext)) {
+    return 'text-emerald-500 dark:text-emerald-400 font-extrabold';
+  }
+  if (['mp4', 'webm', 'ogg', 'mov', 'avi', 'mkv'].includes(ext)) {
+    return 'text-amber-500 dark:text-amber-400 font-extrabold';
+  }
+  if (['pdf', 'doc', 'docx', 'xls', 'xlsx', 'ppt', 'pptx', 'txt', 'zip', 'rar', '7z'].includes(ext)) {
+    return 'text-sky-500 dark:text-sky-400 font-extrabold';
+  }
+  return 'text-muted-foreground/40 font-bold';
+};
+
 export default function GalleryPage() {
   const { toast } = useToast();
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -1567,22 +1581,52 @@ export default function GalleryPage() {
                       />
                     )}
 
-                    <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-all duration-700 flex items-center justify-center gap-4 backdrop-blur-[4px]">
-                      <Button
-                        size="icon"
-                        variant="secondary"
-                        className="h-12 w-12 rounded-2xl shadow-2xl bg-white/10 hover:bg-primary border border-white/10 group/btn transition-all scale-75 group-hover:scale-100 duration-500"
-                        onClick={(e) => { e.stopPropagation(); setPreviewAsset(asset); setPreviewZoom('fit'); }}
-                      >
-                        <Maximize className="h-5 w-5 text-white group-hover/btn:scale-110 transition-all" />
-                      </Button>
+                    <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-all duration-700 backdrop-blur-[4px]">
+                      {/* 中间全屏按钮 */}
+                      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2">
+                        <Button
+                          size="icon"
+                          variant="secondary"
+                          className="h-12 w-12 rounded-2xl shadow-2xl bg-white/10 hover:bg-primary border border-white/10 group/btn transition-all scale-75 group-hover:scale-100 duration-500 text-white hover:text-black"
+                          onClick={(e) => { e.stopPropagation(); setPreviewAsset(asset); setPreviewZoom('fit'); }}
+                          title="查看大图"
+                        >
+                          <Maximize className="h-5 w-5 transition-all" />
+                        </Button>
+                      </div>
+
+                      {/* 右下角操作按钮组 */}
+                      <div className="absolute bottom-3 right-3 flex gap-2 z-20 scale-90 origin-bottom-right transition-all group-hover:scale-100 duration-500">
+                        <Button
+                          size="icon"
+                          variant="secondary"
+                          className="h-9 w-9 rounded-xl shadow-2xl bg-white/10 hover:bg-primary border border-white/10 group/btn text-white hover:text-black"
+                          onClick={(e) => { e.stopPropagation(); handleCopy(asset.url); }}
+                          title="复制链接"
+                        >
+                          <Copy className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          size="icon"
+                          variant="secondary"
+                          className="h-9 w-9 rounded-xl shadow-2xl bg-white/10 hover:bg-amber-500 border border-white/10 group/btn text-white"
+                          onClick={(e) => { e.stopPropagation(); setEditingAsset(asset); }}
+                          title="元数据修正"
+                        >
+                          <Edit3 className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          size="icon"
+                          variant="secondary"
+                          className="h-9 w-9 rounded-xl shadow-2xl bg-white/10 hover:bg-destructive border border-white/10 group/btn text-white"
+                          onClick={(e) => { e.stopPropagation(); handleDeleteAsset(asset); }}
+                          title="永久删除"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
                     </div>
-                    <div className="absolute bottom-4 left-4 pointer-events-none">
-                      <Badge className="text-[8px] bg-black/40 backdrop-blur-md border border-white/5 px-3 py-1 h-6 font-black uppercase tracking-[0.2em] text-white/70">
-                        {getDisplayName(categories?.find(c => c.id === asset.categoryId))}
-                      </Badge>
                     </div>
-                  </div>
 
                   <div className="p-5 pt-2 space-y-4">
                     <div className="space-y-1">
@@ -1591,43 +1635,16 @@ export default function GalleryPage() {
                         <p className="text-[9px] font-black text-muted-foreground/40 uppercase tracking-widest flex items-center gap-1.5 shrink-0">
                           <span>{((asset.fileSize || 0) / 1024).toFixed(0)} KB</span>
                           <span>•</span>
-                          <span className="text-primary/40">{asset.fileName.split('.').pop()?.toUpperCase()}</span>
+                          <span className={cn("transition-colors", getFormatColorClass(asset.fileName))}>{asset.fileName.split('.').pop()?.toUpperCase()}</span>
                         </p>
+                        <div className="h-3 w-px bg-border/10" />
+                        <span className="text-[9px] font-black text-primary/70 uppercase tracking-widest truncate max-w-[80px]" title={getDisplayName(categories?.find(c => c.id === asset.categoryId))}>
+                          {getDisplayName(categories?.find(c => c.id === asset.categoryId))}
+                        </span>
                         {actualType === 'IMAGE' && (
                           <div className="h-3 w-px bg-border/10" />
                         )}
                         {actualType === 'IMAGE' && <AssetResolution id={asset.id} initialW={asset.width} initialH={asset.height} />}
-                      </div>
-                    </div>
-                    <div className="flex items-center justify-between border-t border-border/10 pt-4">
-                      <div className="flex gap-2">
-                        <Button
-                          size="icon"
-                          variant="ghost"
-                          className="h-9 w-9 rounded-xl text-muted-foreground hover:text-primary hover:bg-primary/15 transition-all"
-                          onClick={(e) => { e.stopPropagation(); handleCopy(asset.url); }}
-                          title="复制标识 ID / COPY ASSET URL"
-                        >
-                          <Copy className="h-4 w-4" />
-                        </Button>
-                        <Button
-                          size="icon"
-                          variant="ghost"
-                          className="h-9 w-9 rounded-xl text-muted-foreground hover:text-amber-500 hover:bg-amber-500/15 transition-all"
-                          onClick={(e) => { e.stopPropagation(); setEditingAsset(asset); }}
-                          title="元数据修正 / EDIT METADATA"
-                        >
-                          <Edit3 className="h-4 w-4" />
-                        </Button>
-                        <Button
-                          size="icon"
-                          variant="ghost"
-                          className="h-9 w-9 rounded-xl text-muted-foreground hover:text-destructive hover:bg-destructive/15 transition-all"
-                          onClick={(e) => { e.stopPropagation(); handleDeleteAsset(asset); }}
-                          title="永久粉碎 / PERMANENT DELETE"
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
                       </div>
                     </div>
                   </div>
