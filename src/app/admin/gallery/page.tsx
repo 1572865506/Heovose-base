@@ -1318,7 +1318,16 @@ export default function GalleryPage() {
                 <div className="md:col-span-5 space-y-8">
                   <div className="space-y-6">
                     <div className="space-y-3">
-                      <Label className="text-[10px] font-bold uppercase text-muted-foreground/40 tracking-[0.2em] pl-1">上传分类</Label>
+                      <div className="flex justify-between items-center pr-1">
+                        <Label className="text-[10px] font-bold uppercase text-muted-foreground/40 tracking-[0.2em] pl-1">上传分类</Label>
+                        <Button 
+                          variant="link" 
+                          onClick={() => setIsCategoryDialogOpen(true)} 
+                          className="h-auto p-0 text-[10px] font-bold text-primary uppercase tracking-widest hover:opacity-80"
+                        >
+                          + 管理分类
+                        </Button>
+                      </div>
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
                           <Button variant="outline" className="w-full h-14 rounded-2xl bg-muted/10 border-transparent focus:ring-4 focus:ring-primary/5 justify-between px-5 font-bold transition-all group shadow-inner">
