@@ -54,6 +54,31 @@ export default auth(async (request) => {
   const { nextUrl } = request;
   const pathname = nextUrl.pathname;
 
+  // 1. 隐藏后台登录入口安全防护
+  if (pathname === '/auth/login') {
+    const secretParam = nextUrl.searchParams.get('secret');
+    const secretCookie = request.cookies.get('login_access_allowed')?.value;
+    const adminSecret = process.env.ADMIN_LOGIN_SECRET || 'heovose_secure_2026';
+
+    // 如果没有合法的 URL 口令，且浏览器内无临时授权 Cookie，直接返回 404 伪装无此页面
+    if (secretParam !== adminSecret && secretCookie !== 'true') {
+      return new NextResponse("Not Found", { status: 404 });
+    }
+
+    // 若通过口令进入，为浏览器植入长期 Cookie 标识，并重定向去除 URL 敏感参数
+    if (secretParam === adminSecret) {
+      const redirectUrl = new URL('/auth/login', request.url);
+      const response = NextResponse.redirect(redirectUrl);
+      response.cookies.set('login_access_allowed', 'true', {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'lax',
+        maxAge: 60 * 60 * 24 * 7, // 7 天有效期
+      });
+      return response;
+    }
+  }
+
   // 动态重写 /storage 请求至 MinIO 存储服务（避免构建时硬编码 Endpoint 的问题且性能更好）
   if (pathname.startsWith('/storage/')) {
     const cleanPath = pathname.substring('/storage'.length);
@@ -218,10 +243,16 @@ export default auth(async (request) => {
 
   const isLoggedIn = !!request.auth;
 
-  // 1. Admin protection
+  // 2. Admin protection 与入口防探针拦截
   if (pathname.startsWith("/admin")) {
     if (!isLoggedIn) {
-      return NextResponse.redirect(new URL("/auth/login", nextUrl));
+      const secretCookie = request.cookies.get('login_access_allowed')?.value;
+      if (secretCookie === 'true') {
+        return NextResponse.redirect(new URL("/auth/login", nextUrl));
+      } else {
+        // 无授权 Cookie 时访问后台，直接静默跳转到前台首页，彻底隐匿后台地址
+        return NextResponse.redirect(new URL("/", nextUrl));
+      }
     }
     return NextResponse.next();
   }
