@@ -43,7 +43,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   let productRoutes: Array<{ url: string; lastModified: Date; changeFrequency: 'weekly'; priority: number }> = [];
   try {
     const products = await db.product.findMany({
-      where: { status: 'published' },
+      where: { status: 'published', deletedAt: null },
       select: { id: true, updatedAt: true }
     });
     productRoutes = products.map((prod: any) => ({

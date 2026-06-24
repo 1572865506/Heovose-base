@@ -31,7 +31,7 @@ export async function GET(request: Request) {
     const sortOrder = searchParams.get('sortOrder') || 'desc';
 
     // 构建 where 条件
-    let where: any = {};
+    let where: any = { deletedAt: null };
     if (status) {
       where.status = status;
     }
@@ -89,11 +89,19 @@ export async function GET(request: Request) {
       });
       const matchedIds = matchedStrings.map((item: { id: string }) => item.id);
       
-      where.OR = [
+      const searchOR = [
         { id: { contains: search, mode: 'insensitive' } },
         { nameTextId: { in: matchedIds } },
         { descriptionTextId: { in: matchedIds } }
       ];
+
+      // 将原来的 where 条件与 searchOR 条件通过 AND 进行组合，防止已删除产品被检索出来
+      where = {
+        AND: [
+          where,
+          { OR: searchOR }
+        ]
+      };
     }
 
     // 如果未指定 page，说明是旧版调用，执行不分页的扁平数组查询，保障向下兼容

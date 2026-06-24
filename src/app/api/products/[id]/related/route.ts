@@ -16,7 +16,7 @@ export async function GET(
       }
     });
 
-    if (!product) {
+    if (!product || product.deletedAt) {
       return NextResponse.json({ error: 'Product not found' }, { status: 404 });
     }
 
@@ -27,6 +27,7 @@ export async function GET(
       where: {
         id: { not: productId },
         status: 'published',
+        deletedAt: null,
         OR: [
           // 优先拉取同一分类下的产品
           ...(product.categoryId ? [{ categoryId: product.categoryId }] : []),

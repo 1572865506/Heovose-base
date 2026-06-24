@@ -86,6 +86,7 @@ export default async function ProductListPage({ params }: PageProps) {
       where: {
         status: 'published',
         categoryId: { in: wholesaleSubCategoryIds },
+        deletedAt: null,
       },
       include: {
         nameText: true,
@@ -101,6 +102,7 @@ export default async function ProductListPage({ params }: PageProps) {
       where: {
         status: 'published',
         categoryId: { in: wholesaleSubCategoryIds },
+        deletedAt: null,
       },
     });
 

@@ -20,7 +20,7 @@ export async function GET(
       },
     });
 
-    if (!product) {
+    if (!product || product.deletedAt) {
       return NextResponse.json({ error: 'Product not found' }, { status: 404 });
     }
 
@@ -140,21 +140,21 @@ export const PUT = withAuth('editor', async (
 
 export const DELETE = withAuth('editor', async (
   request: Request,
-  { params }: { params: Promise<{ id: string }> }
+  { params }: { params: Promise<{ id: string }> },
+  user
 ) => {
   try {
     const { id } = await params;
 
-    // 查找待删除产品并提取关联翻译 IDs
-    const existingProduct = await db.product.findUnique({ where: { id } });
-    const oldIds = existingProduct ? extractIdsFromProduct(existingProduct) : [];
-
-    await db.product.delete({ where: { id } });
-
-    // 删除产品后，释放所有原本关联的词条 ID 引用，并执行垃圾回收
-    if (oldIds.length > 0) {
-      await cleanupOrphanedStrings(oldIds);
-    }
+    // 逻辑软删除：标记被删除时间及操作人，同时设为草稿状态以防前台缓存或暴露
+    await db.product.update({
+      where: { id },
+      data: {
+        deletedAt: new Date(),
+        deletedBy: user.email,
+        status: 'draft'
+      }
+    });
 
     // On-demand revalidation
     revalidatePath(`/products/${id}`);
@@ -162,7 +162,7 @@ export const DELETE = withAuth('editor', async (
 
     return NextResponse.json({ success: true });
   } catch (error: any) {
-    console.error('Failed to delete product:', error);
+    console.error('Failed to soft-delete product:', error);
     return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
   }
 });

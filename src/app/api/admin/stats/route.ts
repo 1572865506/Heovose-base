@@ -5,10 +5,11 @@ import { withAuth } from '@/lib/auth-utils';
 export const GET = withAuth('editor', async (request) => {
   try {
     const [productsCount, categoriesCount, usersCount, recentProducts] = await Promise.all([
-      db.product.count(),
+      db.product.count({ where: { deletedAt: null } }),
       db.productCategory.count(),
       db.user.count(),
       db.product.findMany({
+        where: { deletedAt: null },
         take: 5,
         orderBy: { updatedAt: 'desc' },
         include: {

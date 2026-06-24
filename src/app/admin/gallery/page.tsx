@@ -849,10 +849,30 @@ export default function GalleryPage() {
     if (selectedIds.size === 0) return;
     if (!confirm(`永久移除选中的 ${selectedIds.size} 项素材？`)) return;
     try {
-      await Promise.all(Array.from(selectedIds).map(id => fetch(`/api/galleryAssets/${id}`, { method: 'DELETE' })));
+      const ids = Array.from(selectedIds);
+      const errors: string[] = [];
+      
+      for (const id of ids) {
+        const res = await fetch(`/api/galleryAssets/${id}`, { method: 'DELETE' });
+        if (!res.ok) {
+          const errData = await res.json().catch(() => ({}));
+          const asset = assets?.find(a => a.id === id);
+          errors.push(`「${asset?.title || id}」: ${errData.message || '删除失败'}`);
+        }
+      }
+      
       mutateAssets();
       setSelectedIds(new Set());
-      toast({ title: `已删除 ${selectedIds.size} 项素材` });
+      
+      if (errors.length > 0) {
+        toast({
+          variant: "destructive",
+          title: "部分素材删除失败",
+          description: errors.join('\n')
+        });
+      } else {
+        toast({ title: `已成功删除 ${ids.length} 项素材` });
+      }
     } catch (e) {
       toast({ variant: "destructive", title: "批量删除失败" });
     }
@@ -862,15 +882,17 @@ export default function GalleryPage() {
     if (!confirm(`永久移除素材 "${asset.title}"？`)) return;
     try {
       const res = await fetch(`/api/galleryAssets/${asset.id}`, { method: 'DELETE' });
-      if (!res.ok) throw new Error("删除失败");
+      if (!res.ok) {
+        const errData = await res.json().catch(() => ({}));
+        throw new Error(errData.message || "删除失败");
+      }
       mutateAssets();
-      // Remove from selected list if present
       const newSelected = new Set(selectedIds);
       newSelected.delete(asset.id);
       setSelectedIds(newSelected);
-      toast({ title: "已删除素材" });
-    } catch (e) {
-      toast({ variant: "destructive", title: "删除失败" });
+      toast({ title: "已成功删除素材" });
+    } catch (e: any) {
+      toast({ variant: "destructive", title: "删除失败", description: e.message });
     }
   };
 

@@ -261,6 +261,8 @@ export function useLocalCollection<T = any>(path: string | null, options?: { ena
     if (path) {
       globalCache.delete(path);
       pendingRequests.delete(path); // Clear any pending requests to force a real fetch
+      // 必须将本地状态清空或设置为 null，以允许干净的拉取，避免 Merge 机制将网络拉回的已删除列表中不存在的项目继续残留
+      setData(null);
       fetchData(path);
     }
   }, [path, fetchData]);

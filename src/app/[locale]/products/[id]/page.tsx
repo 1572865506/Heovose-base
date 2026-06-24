@@ -18,7 +18,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   
   // 1. Fetch Product
   const product = await db.product.findUnique({ where: { id } });
-  if (!product) return { title: 'Product Not Found' };
+  if (!product || product.deletedAt) return { title: 'Product Not Found' };
 
   // 2. Fetch Site Config & SEO Template
   const siteConfig = await db.setting.findUnique({ where: { id: 'site' } });
@@ -92,6 +92,10 @@ export default async function ProductPage({ params }: Props) {
         }
       }
     });
+
+    if (product && product.deletedAt) {
+      product = null;
+    }
 
     if (product) {
       // 提取产品包含的规格翻译 IDs

@@ -39,7 +39,7 @@ export async function GET() {
       where: { createdAt: { gt: lastSeen } }
     }),
     db.product.count({
-      where: { createdAt: { gt: lastSeen } }
+      where: { createdAt: { gt: lastSeen }, deletedAt: null }
     }),
     db.visitorSession.count({
       where: { createdAt: { gt: lastSeen } }

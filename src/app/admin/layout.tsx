@@ -50,7 +50,8 @@ import {
   User,
   Bell,
   Search,
-  Landmark
+  Landmark,
+  Trash2
 } from 'lucide-react';
 import { ThemeToggle } from '@/components/admin/ThemeToggle';
 import Link from 'next/link';
@@ -119,6 +120,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     {
       label: "System",
       items: [
+        { title: "回收站", icon: Trash2, href: "/admin/recycle-bin" },
         { title: "多语言智译", icon: Globe, href: "/admin/translations", permission: 'translations_manage' },
         { title: "AI 中枢", icon: Bot, href: "/admin/settings/ai", permission: 'ai_config' },
         ...(isSuperAdmin ? [{ title: "成员权限", icon: Users, href: "/admin/users" }] : []),

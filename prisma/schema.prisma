@@ -160,6 +160,8 @@ model Product {
   updatedAt                DateTime         @updatedAt
   galleryImageBrightnesses Float[]
   mainImageBrightness      Float?
+  deletedAt                DateTime?
+  deletedBy                String?
   category                 ProductCategory? @relation(fields: [categoryId], references: [id])
   descriptionText          LocalizedString? @relation("ProductDesc", fields: [descriptionTextId], references: [id], onDelete: Cascade)
   nameText                 LocalizedString  @relation("ProductName", fields: [nameTextId], references: [id], onDelete: Cascade)
@@ -167,6 +169,7 @@ model Product {
   @@index([categoryId])
   @@index([nameTextId])
   @@index([descriptionTextId])
+  @@index([deletedAt])
 }
 
 model ProductCategory {
@@ -311,9 +314,12 @@ model GalleryAsset {
   thumbnailUrl String?
   type         String           @default("IMAGE")
   brightness   Float?
+  deletedAt    DateTime?
+  deletedBy    String?
   category     GalleryCategory? @relation(fields: [categoryId], references: [id])
 
   @@index([categoryId])
+  @@index([deletedAt])
 }
 
 model Setting {

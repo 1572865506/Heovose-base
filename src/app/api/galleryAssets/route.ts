@@ -8,6 +8,7 @@ export async function GET(request: Request) {
     const limitStr = searchParams.get('limit');
 
     const queryOptions: any = {
+      where: { deletedAt: null },
       orderBy: { createdAt: 'desc' },
     };
 
