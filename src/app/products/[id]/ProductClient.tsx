@@ -97,6 +97,7 @@ export default function ProductClient({ product, initialLocale }: { product: any
 
   const { data: categories } = useLocalCollection<any>('productCategories');
   const { data: langSettings } = useLocalDoc<any>('settings', 'languages');
+  const { data: siteConfig } = useLocalDoc<any>('settings', 'site');
   const { t: tr } = useTranslations(locale);
 
   // 校验解析出的翻译内容是否是系统级翻译 Key 或是无有效内容的英文 Key。
@@ -369,7 +370,7 @@ export default function ProductClient({ product, initialLocale }: { product: any
       )}
       <Navbar locale={locale} setLocale={setLocale} />
 
-      <div className="pt-32 pb-20">
+      <div className="pt-32 pb-20 no-print">
         <div className="container mx-auto px-6">
           {/* Print Only Header */}
           <div className="print-header hidden print:flex items-center justify-between border-b border-slate-200 pb-6 mb-8">
@@ -542,7 +543,7 @@ export default function ProductClient({ product, initialLocale }: { product: any
         </div>
       </div>
 
-      <div className="bg-white border-t border-slate-100">
+      <div className="bg-white border-t border-slate-100 no-print">
         <div className="container mx-auto px-6 py-24 max-w-[1200px]">
           <Tabs defaultValue={productDetails ? "desc" : "specs"} className="w-full">
             <TabsList className="bg-transparent h-auto p-0 border-b border-slate-100 w-full justify-start gap-12 rounded-none mb-16 no-print">
@@ -718,6 +719,103 @@ export default function ProductClient({ product, initialLocale }: { product: any
           </div>
         </div>
       )}
+
+      {/* Dedicated Print-only layout */}
+      <div className="hidden print:block print-layout">
+        {/* Page 1 */}
+        <div className="print-page page-1 flex flex-col justify-between">
+          <div>
+            {/* Print Header */}
+            <div className="print-header flex items-center justify-between border-b-2 border-primary pb-3 mb-6">
+              {siteConfig?.logoStandard ? (
+                <img src={getAssetUrl(siteConfig.logoStandard)} alt="Logo" className="h-8 object-contain" />
+              ) : (
+                <span className="text-lg font-bold tracking-widest text-primary">HEOVOSE ELEVATE</span>
+              )}
+              <span className="text-xs text-muted-foreground font-bold uppercase tracking-wider">{getProductText(product.nameTextId, product.nameText)}</span>
+            </div>
+
+            {/* Product Title on print */}
+            <div className="mb-6">
+              {categoryName && (
+                <span className="text-[10px] font-bold text-primary uppercase tracking-[0.2em]">{categoryName}</span>
+              )}
+              <h1 className="text-2xl font-bold text-slate-900 mt-1">{getProductText(product.nameTextId, product.nameText)}</h1>
+            </div>
+
+            {/* Main Image */}
+            <div className="relative aspect-[16/10] max-w-[580px] mx-auto overflow-hidden mb-4">
+              <img src={getAssetUrl(product.mainImageUrl || '/image/product-placeholder.png')} alt="Product Main" className="w-full h-full object-cover rounded-xl" />
+            </div>
+
+            {/* Gallery Images (other than mainImage, max 2 rows, max 12 images) */}
+            {product.galleryImageUrls && product.galleryImageUrls.filter((img: string) => img !== product.mainImageUrl && !isVideoUrl(img)).length > 0 && (
+              <div className="grid grid-cols-6 gap-2 mb-4">
+                {product.galleryImageUrls
+                  .filter((img: string) => img !== product.mainImageUrl && !isVideoUrl(img))
+                  .slice(0, 12) // Limit to 12 images (2 rows of 6)
+                  .map((img: string, idx: number) => (
+                    <div key={idx} className="relative aspect-[11/9] overflow-hidden rounded-lg">
+                      <img src={getAssetUrl(img)} alt={`Gallery ${idx}`} className="w-full h-full object-cover" />
+                    </div>
+                  ))}
+              </div>
+            )}
+
+            {/* Core Advantages */}
+            {advantages.length > 0 && (
+              <div className="space-y-3 mt-4">
+                <div className="flex items-center gap-2">
+                  <ShieldCheck className="h-4 w-4 text-primary" />
+                  <span className="text-xs font-bold uppercase tracking-[0.2em]">{getSystemText('core_advantages')}</span>
+                </div>
+                <div className="grid grid-cols-1 gap-1">
+                  {advantages.map((adv: string, i: number) => (
+                    <div key={i} className="flex items-start gap-3 py-1.5">
+                      <Star className="h-3.5 w-3.5 mt-0.5 shrink-0 text-primary fill-primary/10" />
+                      <span className="text-xs text-slate-600 font-medium whitespace-pre-wrap">{adv}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Page 2: Specifications */}
+        <div className="print-page page-2 page-break-before-always">
+          {/* Print Header */}
+          <div className="print-header flex items-center justify-between border-b-2 border-primary pb-3 mb-6">
+            {siteConfig?.logoStandard ? (
+              <img src={getAssetUrl(siteConfig.logoStandard)} alt="Logo" className="h-8 object-contain" />
+            ) : (
+              <span className="text-lg font-bold tracking-widest text-primary">HEOVOSE ELEVATE</span>
+            )}
+            <span className="text-xs text-muted-foreground font-bold uppercase tracking-wider">{getProductText(product.nameTextId, product.nameText)}</span>
+          </div>
+
+          <div className="space-y-6">
+            <h2 className="text-xl font-bold text-primary flex items-center gap-2">
+              {getSystemText('product_tab_specs')}
+            </h2>
+            <div className="space-y-6">
+              {groupedSpecs.map((group: any, gIdx: number) => (
+                <div key={gIdx} className="space-y-3">
+                  <h3 className="text-sm font-bold text-slate-800 border-l-4 border-primary pl-2">{group.title}</h3>
+                  <div className="border border-slate-200 rounded-xl overflow-hidden divide-y divide-slate-200 mx-[50px]">
+                    {group.items.map((item: any, iIdx: number) => (
+                      <div key={iIdx} className="flex justify-between p-3 bg-white text-xs gap-6">
+                        <span className="font-medium text-slate-500 shrink-0">{item.label}</span>
+                        <span className="font-bold text-slate-900 text-right pl-6 whitespace-pre-wrap">{item.value}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
     </main>
   );
 }

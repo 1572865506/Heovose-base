@@ -455,6 +455,15 @@
 
 /* Print optimization for professional PDF specifications */
 @media print {
+  @page {
+    margin: 45px 30px !important;
+  }
+
+  .page-break-before-always {
+    page-break-before: always !important;
+    break-before: page !important;
+  }
+
   /* Hide UI elements and interactive widgets */
   .no-print,
   header,
@@ -479,6 +488,13 @@
     padding: 0 !important;
     -webkit-print-color-adjust: exact !important;
     print-color-adjust: exact !important;
+  }
+
+  /* Force transparent background for all printable elements to save ink */
+  body, html, main, .print-layout, .print-page, .print-page * {
+    background-color: transparent !important;
+    background-image: none !important;
+    box-shadow: none !important;
   }
 
   /* Ensure main wrapper has no pt/pb clipping */
