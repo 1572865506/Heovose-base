@@ -220,13 +220,30 @@ export function MediaLibraryDialog({
     setExpandedIds(newExpanded);
   };
 
+  const activeCategoryIds = useMemo(() => {
+    if (!currentCategoryId || currentCategoryId === 'all' || !categories) return new Set<string>();
+    const ids = new Set<string>([currentCategoryId]);
+    const getChildren = (parentId: string) => {
+      categories.forEach(c => {
+        if (c.parentId === parentId && !ids.has(c.id)) {
+          ids.add(c.id);
+          getChildren(c.id);
+        }
+      });
+    };
+    getChildren(currentCategoryId);
+    return ids;
+  }, [currentCategoryId, categories]);
+
   // Filter Logic
   const filteredAssets = useMemo(() => {
     if (!assets) return [];
     return assets.filter(a => {
       const matchSearch = a.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
                          a.fileName.toLowerCase().includes(searchQuery.toLowerCase());
-      const matchCategory = currentCategoryId === 'all' || a.categoryId === currentCategoryId;
+      const matchCategory = currentCategoryId === 'all' || 
+                           (a.categoryId && activeCategoryIds.has(a.categoryId)) ||
+                           a.categoryId === currentCategoryId;
       
       const fileExt = a.fileName?.toLowerCase().split('.').pop() || '';
       const isVideoFile = ['mp4', 'webm', 'ogg', 'mov'].includes(fileExt);
@@ -243,7 +260,7 @@ export function MediaLibraryDialog({
 
       return matchSearch && matchCategory && matchType;
     });
-  }, [assets, searchQuery, currentCategoryId, filterType]);
+  }, [assets, searchQuery, currentCategoryId, filterType, activeCategoryIds]);
 
   // Pagination Logic
   const totalPages = Math.ceil(filteredAssets.length / ITEMS_PER_PAGE);

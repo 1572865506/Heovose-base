@@ -485,12 +485,29 @@ export default function GalleryPage() {
     }
   }, [filterCategory, categoryTree]);
 
+  const activeCategoryIds = useMemo(() => {
+    if (!filterCategory || filterCategory === 'all' || !categories) return new Set<string>();
+    const ids = new Set<string>([filterCategory]);
+    const getChildren = (parentId: string) => {
+      categories.forEach(c => {
+        if (c.parentId === parentId && !ids.has(c.id)) {
+          ids.add(c.id);
+          getChildren(c.id);
+        }
+      });
+    };
+    getChildren(filterCategory);
+    return ids;
+  }, [filterCategory, categories]);
+
   const filteredAssets = useMemo(() => {
     if (!assets) return [];
     return assets.filter(a => {
       const matchSearch = a.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
         a.fileName.toLowerCase().includes(searchQuery.toLowerCase());
-      const matchCategory = filterCategory === 'all' || a.categoryId === filterCategory;
+      const matchCategory = filterCategory === 'all' || 
+        (a.categoryId && activeCategoryIds.has(a.categoryId)) ||
+        a.categoryId === filterCategory;
 
       const fileExt = a.fileName?.toLowerCase().split('.').pop() || '';
       const isVideoFile = ['mp4', 'webm', 'ogg', 'mov'].includes(fileExt);
@@ -507,9 +524,28 @@ export default function GalleryPage() {
 
       return matchSearch && matchCategory && matchType;
     });
-  }, [assets, searchQuery, filterCategory, filterType]);
+  }, [assets, searchQuery, filterCategory, filterType, activeCategoryIds]);
 
   const totalPages = Math.ceil(filteredAssets.length / ITEMS_PER_PAGE);
+
+  const paginationRange = useMemo(() => {
+    const range = [];
+    const delta = 1;
+    range.push(1);
+    if (currentPage > delta + 2) {
+      range.push('...');
+    }
+    for (let i = Math.max(2, currentPage - delta); i <= Math.min(totalPages - 1, currentPage + delta); i++) {
+      range.push(i);
+    }
+    if (currentPage < totalPages - delta - 1) {
+      range.push('...');
+    }
+    if (totalPages > 1) {
+      range.push(totalPages);
+    }
+    return range;
+  }, [currentPage, totalPages]);
   const paginatedAssets = useMemo(() => {
     const start = (currentPage - 1) * ITEMS_PER_PAGE;
     return filteredAssets.slice(start, start + ITEMS_PER_PAGE);
@@ -1713,77 +1749,95 @@ export default function GalleryPage() {
         )}
       </div>
 
-      {/* 高密度分页控制 / HD PAGINATION CONTROL */}
-      {totalPages > 1 && (
-        <div className="flex items-center justify-center gap-4 relative z-10 pt-4">
-          <Button
-            variant="outline"
-            size="icon"
-            disabled={currentPage === 1}
-            onClick={() => { setCurrentPage(prev => Math.max(1, prev - 1)); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
-            className="rounded-2xl h-12 w-12 border-border/10 bg-card/40 backdrop-blur-3xl hover:bg-primary/10 hover:text-primary transition-all shadow-2xl"
-          >
-            <ChevronLeft className="h-5 w-5" />
-          </Button>
-
-          <div className="flex items-center gap-2 bg-card/40 backdrop-blur-3xl p-2 rounded-2xl border border-border/10 shadow-2xl">
-            {Array.from({ length: totalPages }, (_, i) => i + 1).map(page => (
-              <Button
-                key={page}
-                variant={currentPage === page ? "default" : "ghost"}
-                size="sm"
-                onClick={() => { setCurrentPage(page); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
-                className={cn(
-                  "h-10 min-w-[2.5rem] rounded-xl text-[11px] font-black uppercase tracking-widest transition-all",
-                  currentPage === page
-                    ? "shadow-[0_10px_25px_-5px_rgba(var(--primary),0.4)] scale-110"
-                    : "text-muted-foreground/40 hover:text-primary hover:bg-primary/5"
-                )}
-              >
-                {page}
-              </Button>
-            ))}
+      {/* 资产统计与高密度分页控制 / ASSETS STATISTICS & HD PAGINATION CONTROL */}
+      <div className="flex flex-col items-center gap-4 relative z-10 pt-8 pb-4">
+        {filteredAssets.length > 0 && (
+          <div className="text-[10px] font-bold text-muted-foreground/60 uppercase tracking-widest bg-card/40 backdrop-blur-3xl px-4 py-2.5 rounded-2xl border border-border/10 shadow-2xl">
+            当前分类及筛选条件下共有 <span className="text-primary font-black">{filteredAssets.length}</span> 个素材
           </div>
+        )}
 
-          <Button
-            variant="outline"
-            size="icon"
-            disabled={currentPage === totalPages}
-            onClick={() => { setCurrentPage(prev => Math.min(totalPages, prev + 1)); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
-            className="rounded-2xl h-12 w-12 border-border/10 bg-card/40 backdrop-blur-3xl hover:bg-primary/10 hover:text-primary transition-all shadow-2xl"
-          >
-            <ChevronRight className="h-5 w-5" />
-          </Button>
+        {totalPages > 1 && (
+          <div className="flex items-center justify-center gap-4">
+            <Button
+              variant="outline"
+              size="icon"
+              disabled={currentPage === 1}
+              onClick={() => { setCurrentPage(prev => Math.max(1, prev - 1)); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
+              className="rounded-2xl h-12 w-12 border-border/10 bg-card/40 backdrop-blur-3xl hover:bg-primary/10 hover:text-primary transition-all shadow-2xl"
+            >
+              <ChevronLeft className="h-5 w-5" />
+            </Button>
 
-          <div className="flex items-center gap-2 bg-card/40 backdrop-blur-3xl p-1.5 rounded-2xl border border-border/10 shadow-2xl">
-            <span className="text-[10px] font-bold text-muted-foreground/60 uppercase tracking-widest pl-2">跳转至</span>
-            <Input
-              type="text"
-              value={jumpPageVal}
-              onChange={(e) => {
-                const val = e.target.value;
-                if (val === '' || /^\d+$/.test(val)) {
-                  setJumpPageVal(val);
+            <div className="flex items-center gap-2 bg-card/40 backdrop-blur-3xl p-2 rounded-2xl border border-border/10 shadow-2xl">
+              {paginationRange.map((page, idx) => {
+                if (page === '...') {
+                  return (
+                    <span key={`ellipsis-${idx}`} className="px-2 text-xs font-black text-muted-foreground/30 select-none">
+                      ...
+                    </span>
+                  );
                 }
-              }}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter') {
-                  const p = parseInt(jumpPageVal);
-                  if (!isNaN(p) && p >= 1 && p <= totalPages) {
-                    setCurrentPage(p);
-                    window.scrollTo({ top: 0, behavior: 'smooth' });
-                  } else {
-                    setJumpPageVal(currentPage.toString());
+                const pageNum = page as number;
+                return (
+                  <Button
+                    key={`page-${pageNum}`}
+                    variant={currentPage === pageNum ? "default" : "ghost"}
+                    size="sm"
+                    onClick={() => { setCurrentPage(pageNum); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
+                    className={cn(
+                      "h-10 min-w-[2.5rem] rounded-xl text-[11px] font-black uppercase tracking-widest transition-all",
+                      currentPage === pageNum
+                        ? "shadow-[0_10px_25px_-5px_rgba(var(--primary),0.4)] scale-110"
+                        : "text-muted-foreground/40 hover:text-primary hover:bg-primary/5"
+                    )}
+                  >
+                    {pageNum}
+                  </Button>
+                );
+              })}
+            </div>
+
+            <Button
+              variant="outline"
+              size="icon"
+              disabled={currentPage === totalPages}
+              onClick={() => { setCurrentPage(prev => Math.min(totalPages, prev + 1)); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
+              className="rounded-2xl h-12 w-12 border-border/10 bg-card/40 backdrop-blur-3xl hover:bg-primary/10 hover:text-primary transition-all shadow-2xl"
+            >
+              <ChevronRight className="h-5 w-5" />
+            </Button>
+
+            <div className="flex items-center gap-2 bg-card/40 backdrop-blur-3xl p-1.5 rounded-2xl border border-border/10 shadow-2xl">
+              <span className="text-[10px] font-bold text-muted-foreground/60 uppercase tracking-widest pl-2">跳转至</span>
+              <Input
+                type="text"
+                value={jumpPageVal}
+                onChange={(e) => {
+                  const val = e.target.value;
+                  if (val === '' || /^\d+$/.test(val)) {
+                    setJumpPageVal(val);
                   }
-                }
-              }}
-              className="w-12 h-9 rounded-xl bg-muted/10 border-transparent text-center text-xs font-bold focus:bg-muted/20 focus:ring-0 focus-visible:ring-0 focus-visible:ring-offset-0 p-0"
-              placeholder="页"
-            />
-            <span className="text-[10px] font-bold text-muted-foreground/60 uppercase tracking-widest pr-2">/ {totalPages} 页</span>
+                }}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    const p = parseInt(jumpPageVal);
+                    if (!isNaN(p) && p >= 1 && p <= totalPages) {
+                      setCurrentPage(p);
+                      window.scrollTo({ top: 0, behavior: 'smooth' });
+                    } else {
+                      setJumpPageVal(currentPage.toString());
+                    }
+                  }
+                }}
+                className="w-12 h-9 rounded-xl bg-muted/10 border-transparent text-center text-xs font-bold focus:bg-muted/20 focus:ring-0 focus-visible:ring-0 focus-visible:ring-offset-0 p-0"
+                placeholder="页"
+              />
+              <span className="text-[10px] font-bold text-muted-foreground/60 uppercase tracking-widest pr-2">/ {totalPages} 页</span>
+            </div>
           </div>
-        </div>
-      )}
+        )}
+      </div>
 
       {/* 高级批量操作栏 / PREMIUM BATCH ACTIONS BAR */}
       {selectedIds.size > 0 && (
