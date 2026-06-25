@@ -176,11 +176,18 @@ function ProductEditorContent() {
       const getT = (id?: string) => {
         if (!id) return { zh: '', en: '' };
         const t = translations?.find((tr: any) => tr.id === id);
-        const content = (t?.content as any) || {};
-        return {
-          zh: content.zh || (t as any)?.zh || '',
-          en: content.en || (t as any)?.en || ''
-        };
+        if (t) {
+          const content = (t?.content as any) || {};
+          return {
+            zh: content.zh || (t as any)?.zh || '',
+            en: content.en || (t as any)?.en || ''
+          };
+        }
+        // 如果 id 本身不是以 key 命名的，直接作为内容返回，防止后台读取出空白
+        if (id && !/^(biz_tr_|spec_|psl_|psv_|psg_|prod_|cat_)/i.test(id)) {
+          return { zh: id, en: id };
+        }
+        return { zh: '', en: '' };
       };
       let rawGroups = product.specGroups;
       if (typeof rawGroups === 'string') {
@@ -194,6 +201,7 @@ function ProductEditorContent() {
       const sGroups = groupsArray.map((g: any) => ({
         uid: generateUniqueId('sg'),
         titleEn: getT(g.titleId).en, titleZh: getT(g.titleId).zh,
+        titleId: g.titleId,
         items: (Array.isArray(g.items) ? g.items : []).map((i: any) => ({
           uid: generateUniqueId('si'),
           labelEn: getT(i.labelId).en, labelZh: getT(i.labelId).zh,
@@ -296,10 +304,19 @@ function ProductEditorContent() {
       ];
 
       formData.specGroups.forEach(g => {
-        if (g.titleZh) translationsToSync.push({ zh: g.titleZh, en: g.titleEn || '' });
+        if (g.titleZh) {
+          const titleEn = g.titleEn || findLocalTranslation(g.titleZh) || '';
+          translationsToSync.push({ zh: g.titleZh, en: titleEn });
+        }
         g.items.forEach(i => {
-          if (!i.labelId && i.labelZh) translationsToSync.push({ zh: i.labelZh, en: i.labelEn || '' });
-          if (!i.valueId && i.valueZh) translationsToSync.push({ zh: i.valueZh, en: i.valueEn || '' });
+          if (i.labelZh) {
+            const labelEn = i.labelEn || findLocalTranslation(i.labelZh) || '';
+            translationsToSync.push({ zh: i.labelZh, en: labelEn });
+          }
+          if (i.valueZh) {
+            const valueEn = i.valueEn || findLocalTranslation(i.valueZh) || '';
+            translationsToSync.push({ zh: i.valueZh, en: valueEn });
+          }
         });
       });
 
@@ -314,8 +331,17 @@ function ProductEditorContent() {
       const { mapping } = await bulkRes.json() as { mapping: Record<string, string> };
 
       const getHashId = (zh: string, en: string) => {
-        const key = `${(zh || '').trim()}::${(en || '').trim()}`;
-        return mapping[key] || '';
+        const cleanZh = (zh || '').trim();
+        let cleanEn = (en || '').trim();
+        if (cleanZh && !cleanEn) {
+          // 尝试查找历史字典翻译作为兜底
+          const localEn = findLocalTranslation(cleanZh);
+          if (localEn) {
+            cleanEn = localEn.trim();
+          }
+        }
+        const key = `${cleanZh}::${cleanEn}`;
+        return mapping[key] || cleanZh;
       };
 
       const nameHashId = getHashId(formData.nameZh, formData.nameEn);
@@ -324,8 +350,8 @@ function ProductEditorContent() {
       const sGroups = formData.specGroups.map(g => ({
         titleId: getHashId(g.titleZh, g.titleEn),
         items: g.items.map(i => ({
-          labelId: i.labelId || getHashId(i.labelZh, i.labelEn),
-          valueId: i.valueId || getHashId(i.valueZh, i.valueEn)
+          labelId: getHashId(i.labelZh, i.labelEn),
+          valueId: getHashId(i.valueZh, i.valueEn)
         }))
       }));
 

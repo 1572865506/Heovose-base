@@ -99,26 +99,31 @@ export default function ProductClient({ product, initialLocale }: { product: any
   const { data: langSettings } = useLocalDoc<any>('settings', 'languages');
   const { t: tr } = useTranslations(locale);
 
+  // 校验解析出的翻译内容是否是系统级翻译 Key 或是无有效内容的英文 Key。
+  // 如果是 Key 模式（如大写且含下划线，或含有前缀等），直接判定为未翻译，返回空。
+  const isTranslationKey = (val: any, textId?: string): boolean => {
+    if (typeof val !== 'string' || !val) return false;
+    const clean = val.trim();
+    if (textId && clean === textId) return true;
+    
+    // 如果是系统正式翻译ID（以 biz_tr_ 或 spec_ 开头），它不是硬编码的系统语言Key占位符，而是待匹配的多语言文本，不应该判定为Key
+    if (/^(biz_tr_|spec_)/i.test(clean)) return false;
+    if (textId && /^(biz_tr_|spec_)/i.test(textId)) return false;
+    
+    // 匹配系统预设规则：大写字母+下划线，或者特定前缀
+    if (/^[A-Z0-9_]{3,}$/.test(clean)) return true;
+    if (/^(PROD|SPEC|CAT|MAP|ABOUT|NAV|SYS|SERVICE|PROCESS|CASES|ADV)_/i.test(clean)) return true;
+    return false;
+  };
+
+  const sanitizeVal = (val: any, textId?: string) => {
+    if (isTranslationKey(val, textId)) return '';
+    return val || '';
+  };
+
   // 本地翻译兜底逻辑，服务于 SSR 和首次渲染，防止没有接口数据时显示空白
   const getProductText = (textId: string, textObj: any) => {
     if (!textId) return '';
-
-    // 校验解析出的翻译内容是否是系统级翻译 Key 或是无有效内容的英文 Key。
-    // 如果是 Key 模式（如大写且含下划线，或含有前缀等），直接判定为未翻译，返回空。
-    const isTranslationKey = (val: any): boolean => {
-      if (typeof val !== 'string' || !val) return false;
-      const clean = val.trim();
-      if (clean === textId) return true;
-      // 匹配系统预设规则：大写字母+下划线，或者特定前缀
-      if (/^[A-Z0-9_]{3,}$/.test(clean)) return true;
-      if (/^(PROD|SPEC|CAT|MAP|ABOUT|NAV|SYS|SERVICE|PROCESS|CASES|ADV)_/i.test(clean)) return true;
-      return false;
-    };
-
-    const sanitizeVal = (val: any) => {
-      if (isTranslationKey(val)) return '';
-      return val || '';
-    };
 
     if (textObj) {
       let content = textObj.content || textObj;
@@ -130,26 +135,26 @@ export default function ProductClient({ product, initialLocale }: { product: any
           content = content.content;
         }
         if (content[locale] !== undefined && content[locale] !== null && content[locale] !== '') {
-          return sanitizeVal(content[locale]);
+          return sanitizeVal(content[locale], textId);
         }
         if (locale === 'vi' && content['vn'] !== undefined && content['vn'] !== null && content['vn'] !== '') {
-          return sanitizeVal(content['vn']);
+          return sanitizeVal(content['vn'], textId);
         }
         if (locale === 'vn' && content['vi'] !== undefined && content['vi'] !== null && content['vi'] !== '') {
-          return sanitizeVal(content['vi']);
+          return sanitizeVal(content['vi'], textId);
         }
       }
       if (textObj[locale] !== undefined && textObj[locale] !== null && textObj[locale] !== '') {
-        return sanitizeVal(textObj[locale]);
+        return sanitizeVal(textObj[locale], textId);
       }
       if (locale === 'vi' && textObj['vn'] !== undefined && textObj['vn'] !== null && textObj['vn'] !== '') {
-        return sanitizeVal(textObj['vn']);
+        return sanitizeVal(textObj['vn'], textId);
       }
       if (locale === 'vn' && textObj['vi'] !== undefined && textObj['vi'] !== null && textObj['vi'] !== '') {
-        return sanitizeVal(textObj['vi']);
+        return sanitizeVal(textObj['vi'], textId);
       }
       const fallbackVal = textObj.en || textObj.zh || '';
-      return sanitizeVal(fallbackVal);
+      return sanitizeVal(fallbackVal, textId);
     }
     const fromGlobal = tr(textId);
     if (fromGlobal && !isTranslationKey(fromGlobal)) return fromGlobal;
@@ -175,8 +180,11 @@ export default function ProductClient({ product, initialLocale }: { product: any
       return getProductText(textId, translationObj);
     }
     const fromGlobal = tr(textId);
-    if (fromGlobal && fromGlobal !== textId) return fromGlobal;
-    return '';
+    if (fromGlobal && fromGlobal !== textId && !isTranslationKey(fromGlobal)) return fromGlobal;
+    
+    // 如果是类似 spec_ / biz_tr_ 等 ID 格式，但前台未能成功关联对应的多语言词条对象：
+    // 我们也尽力将这个文本作为 ID 进行原样或全局缓存返回，不直接过滤丢弃
+    return textId;
   };
 
   const getSystemText = (key: string) => {
@@ -313,11 +321,12 @@ export default function ProductClient({ product, initialLocale }: { product: any
 
     return specGroupsArray.map((group: any) => ({
       title: getSpecText(group.titleId),
-      items: (group.items || []).map((item: any) => ({
-        label: getSpecText(item.labelId),
-        value: getSpecText(item.valueId)
-      })).filter((i: any) => i.label && i.label.trim() !== '')
-    })).filter((g: any) => g.title);
+      items: (group.items || []).map((item: any) => {
+        const label = getSpecText(item.labelId);
+        const value = getSpecText(item.valueId);
+        return { label, value };
+      }).filter((i: any) => (i.label && i.label.trim() !== '') || (i.value && i.value.trim() !== ''))
+    })).filter((g: any) => g.title && g.items.length > 0);
   }, [product, locale, tr, specTranslationMap]);
 
   const jsonLd = useMemo(() => {
@@ -508,11 +517,11 @@ export default function ProductClient({ product, initialLocale }: { product: any
                     productId: product.id,
                     productName: getProductText(product.nameTextId, product.nameText)
                   })}
-                  className="h-16 px-10 rounded-2xl text-base font-bold flex-1 shadow-xl"
+                  className="h-16 min-h-16 px-10 rounded-2xl text-base font-bold flex-1 shadow-xl"
                 >
                   {getSystemText('product_contact_now')} <ArrowRight className="ml-2 h-5 w-5" />
                 </Button>
-                <Button onClick={() => window.print()} variant="outline" className="h-16 px-8 rounded-2xl"><Download className="mr-2 h-5 w-5" />{getSystemText('product_spec_sheet')}</Button>
+                <Button onClick={() => window.print()} variant="outline" className="h-16 min-h-16 px-8 rounded-2xl"><Download className="mr-2 h-5 w-5" />{getSystemText('product_spec_sheet')}</Button>
               </div>
 
               <div className="pt-8 border-t border-border/40 no-print">

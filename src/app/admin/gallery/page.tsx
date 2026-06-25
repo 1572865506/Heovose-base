@@ -190,11 +190,14 @@ const AssetResolution = ({ id, initialW, initialH }: { id: string, initialW?: nu
 
 const compressImageFile = (file: File, quality: number): Promise<File> => {
   return new Promise((resolve) => {
-    const isImg = ['image/jpeg', 'image/png', 'image/webp'].includes(file.type);
-    if (!isImg) {
+    // 只有有损图像格式（JPEG/WebP）才支持重绘压缩
+    const isImage = file.type.startsWith('image/');
+    const isLossy = ['image/jpeg', 'image/jpg', 'image/webp'].includes(file.type);
+    if (!isImage || !isLossy || quality >= 95) {
       resolve(file);
       return;
     }
+    
     const canvasQuality = quality / 100;
     const reader = new FileReader();
     reader.readAsDataURL(file);
@@ -202,31 +205,29 @@ const compressImageFile = (file: File, quality: number): Promise<File> => {
       const img = new (window as any).Image();
       img.src = event.target?.result as string;
       img.onload = () => {
+        const width = img.naturalWidth;
+        const height = img.naturalHeight;
+
         const canvas = document.createElement('canvas');
-        canvas.width = img.naturalWidth;
-        canvas.height = img.naturalHeight;
-
-        let ctx: CanvasRenderingContext2D | null = null;
-        try {
-          // 尽量使用 display-p3 色彩空间以保留现代显示器的宽色域，防止色彩变淡/偏色
-          ctx = canvas.getContext('2d', { colorSpace: 'display-p3' }) as CanvasRenderingContext2D;
-        } catch (e) {
-          ctx = canvas.getContext('2d');
-        }
-
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext('2d', { colorSpace: 'display-p3' });
         if (!ctx) {
           resolve(file);
           return;
         }
 
-        // 启用高质量的图像平滑算法，保留细节边缘的锐利度
-        ctx.imageSmoothingEnabled = true;
-        ctx.imageSmoothingQuality = 'high';
-        ctx.drawImage(img, 0, 0, img.naturalWidth, img.naturalHeight);
+        // 2. 核心细节修复：JPEG 格式不支持透明通道（Alpha）。如果在 Canvas 里直接 drawImage，
+        // 任何半透明的像素边缘或者抗锯齿区域都会被默认叠加为黑色背景，导致边缘细节出现高斯模糊状的脏斑和色偏。
+        // 我们必须在绘制前预先将 Canvas 背景平铺填充为纯白色的实体背景，然后再原样叠加原图。
+        ctx.fillStyle = '#FFFFFF';
+        ctx.fillRect(0, 0, width, height);
 
-        // 智能选择输出格式：如果是 JPEG 则保持 JPEG 格式压缩，防止 WebP 互转造成的二次失真；其他转换为 webp
-        const outputFormat = file.type === 'image/jpeg' ? 'image/jpeg' : 'image/webp';
-        const extension = file.type === 'image/jpeg' ? '.jpg' : '.webp';
+        // 1:1 无缩放绘制
+        ctx.drawImage(img, 0, 0);
+
+        const outputFormat = file.type;
+        const extension = file.type === 'image/webp' ? '.webp' : '.jpg';
 
         canvas.toBlob(
           (blob) => {
@@ -236,7 +237,7 @@ const compressImageFile = (file: File, quality: number): Promise<File> => {
                 lastModified: Date.now(),
               });
 
-              // 只有在压缩后体积明显变小（小于原图 95%）时才使用压缩版，否则保留原图
+              // 仅当体积优化 5% 以上才采用压缩版
               if (compressedFile.size < file.size * 0.95) {
                 resolve(compressedFile);
               } else {
@@ -247,7 +248,7 @@ const compressImageFile = (file: File, quality: number): Promise<File> => {
             }
           },
           outputFormat,
-          canvasQuality
+          Math.max(canvasQuality, 0.92) // 将 JPEG 有损压缩防线提高到 0.92，保留极限逼真度
         );
       };
       img.onerror = () => resolve(file);
@@ -354,6 +355,8 @@ export default function GalleryPage() {
 
   const [targetUploadCategoryId, setTargetUploadCategoryId] = useState<string>('');
   const [duplicateStrategy, setDuplicateStrategy] = useState<DuplicateStrategy>('rename');
+  const [openUploadCategory, setOpenUploadCategory] = useState(false);
+  const [openUploadStrategy, setOpenUploadStrategy] = useState(false);
 
   const [uploadTasks, setUploadTasks] = useState<UploadTask[]>([]);
   const [isTasksPanelOpen, setIsTasksPanelOpen] = useState(false);
@@ -1140,11 +1143,13 @@ export default function GalleryPage() {
                           >
                             无 (顶级分类 ROOT)
                           </DropdownMenuItem>
-                          <CategoryMenu
-                            categories={categoryTree}
-                            onSelect={(id: string) => setCatForm({ ...catForm, parentId: id })}
-                            getDisplayName={getDisplayName}
-                          />
+                          <div className="max-h-[300px] overflow-y-auto custom-scrollbar">
+                            <CategoryMenu
+                              categories={categoryTree}
+                              onSelect={(id: string) => setCatForm({ ...catForm, parentId: id })}
+                              getDisplayName={getDisplayName}
+                            />
+                          </div>
                         </DropdownMenuContent>
                       </DropdownMenu>
                     </div>
@@ -1350,7 +1355,10 @@ export default function GalleryPage() {
                           + 管理分类
                         </Button>
                       </div>
-                      <DropdownMenu>
+                      <DropdownMenu open={openUploadCategory} onOpenChange={(o) => {
+                        setOpenUploadCategory(o);
+                        if (o) setOpenUploadStrategy(false);
+                      }}>
                         <DropdownMenuTrigger asChild>
                           <Button variant="outline" className="w-full h-14 rounded-2xl bg-muted/10 border-transparent focus:ring-4 focus:ring-primary/5 justify-between px-5 font-bold transition-all group shadow-inner">
                             <span className="text-sm tracking-tight truncate">
@@ -1362,17 +1370,25 @@ export default function GalleryPage() {
                         <DropdownMenuContent align="start" sideOffset={8} className="min-w-[16rem] p-2 rounded-2xl shadow-2xl border border-slate-200/50 admin-interface-dark:border-white/5 bg-card/95 backdrop-blur-3xl animate-in fade-in slide-in-from-top-2 duration-300 z-[1100]">
                           <DropdownMenuLabel className="text-[10px] uppercase font-black opacity-20 px-4 py-3 tracking-[0.2em]">Taxonomy Architecture</DropdownMenuLabel>
                           <DropdownMenuSeparator className="bg-border/10 my-1" />
-                          <CategoryMenu
-                            categories={categoryTree}
-                            onSelect={setTargetUploadCategoryId}
-                            getDisplayName={getDisplayName}
-                          />
+                          <div className="max-h-[300px] overflow-y-auto custom-scrollbar">
+                            <CategoryMenu
+                              categories={categoryTree}
+                              onSelect={(id) => {
+                                setTargetUploadCategoryId(id);
+                                setOpenUploadCategory(false);
+                              }}
+                              getDisplayName={getDisplayName}
+                            />
+                          </div>
                         </DropdownMenuContent>
                       </DropdownMenu>
                     </div>
                     <div className="space-y-3">
                       <Label className="text-[10px] font-bold uppercase text-muted-foreground/40 tracking-[0.2em] pl-1">冲突处理协议</Label>
-                      <DropdownMenu>
+                      <DropdownMenu open={openUploadStrategy} onOpenChange={(o) => {
+                        setOpenUploadStrategy(o);
+                        if (o) setOpenUploadCategory(false);
+                      }}>
                         <DropdownMenuTrigger asChild>
                           <Button variant="outline" className="w-full h-14 rounded-2xl bg-muted/10 border-transparent focus:ring-4 focus:ring-primary/5 justify-between px-5 font-bold transition-all group text-left shadow-inner">
                             <span className={cn("text-sm tracking-tight truncate", duplicateStrategy === 'overwrite' && "text-amber-500 font-bold")}>
@@ -1383,13 +1399,19 @@ export default function GalleryPage() {
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="start" sideOffset={8} className="min-w-[16rem] p-2 rounded-2xl shadow-2xl border border-slate-200/50 admin-interface-dark:border-white/5 bg-card/95 backdrop-blur-3xl animate-in fade-in slide-in-from-top-2 duration-300 z-[1200]">
                           <DropdownMenuItem
-                            onClick={() => setDuplicateStrategy('rename')}
+                            onClick={() => {
+                              setDuplicateStrategy('rename');
+                              setOpenUploadStrategy(false);
+                            }}
                             className="rounded-xl text-xs py-3 px-4 font-bold focus:bg-primary/10 transition-all cursor-pointer mb-1"
                           >
                             自动重命名 (生成独立副本)
                           </DropdownMenuItem>
                           <DropdownMenuItem
-                            onClick={() => setDuplicateStrategy('overwrite')}
+                            onClick={() => {
+                              setDuplicateStrategy('overwrite');
+                              setOpenUploadStrategy(false);
+                            }}
                             className="rounded-xl text-xs py-3 px-4 text-amber-500 font-bold focus:bg-amber-500/10 transition-all cursor-pointer"
                           >
                             覆盖现有资源 (全站映射同步)
@@ -1523,11 +1545,13 @@ export default function GalleryPage() {
               >
                 全部分类架构 (ALL)
               </DropdownMenuItem>
-              <CategoryMenu
-                categories={categoryTree}
-                onSelect={setFilterCategory}
-                getDisplayName={getDisplayName}
-              />
+              <div className="max-h-[300px] overflow-y-auto custom-scrollbar">
+                <CategoryMenu
+                  categories={categoryTree}
+                  onSelect={setFilterCategory}
+                  getDisplayName={getDisplayName}
+                />
+              </div>
             </DropdownMenuContent>
           </DropdownMenu>
         </div>
@@ -2087,9 +2111,10 @@ export default function GalleryPage() {
                       const img = e.currentTarget;
                       setPreviewDimensions({ width: img.naturalWidth, height: img.naturalHeight });
                     }}
+                    style={{ imageRendering: 'high-quality' }}
                     className={cn(
                       "shadow-[0_50px_100px_rgba(0,0,0,0.8)] border border-white/10 rounded-2xl transition-all duration-700",
-                      previewZoom === 'fit' ? "max-w-full max-h-full object-contain" : "max-w-none w-auto h-auto"
+                      previewZoom === 'fit' ? "max-w-full max-h-full" : "max-w-none w-auto h-auto"
                     )}
                   />
                 )}

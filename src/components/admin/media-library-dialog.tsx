@@ -102,8 +102,9 @@ const ARCHIVE_EXTS = ['zip', 'rar', '7z', 'tar', 'gz'];
 
 const compressImageFile = (file: File, quality: number): Promise<File> => {
   return new Promise((resolve) => {
-    const isImg = ['image/jpeg', 'image/png', 'image/webp'].includes(file.type);
-    if (!isImg) {
+    const isImage = file.type.startsWith('image/');
+    const isLossy = ['image/jpeg', 'image/jpg', 'image/webp'].includes(file.type);
+    if (!isImage || !isLossy) {
       resolve(file);
       return;
     }
@@ -191,6 +192,8 @@ export function MediaLibraryDialog({
   const [compressionQuality, setCompressionQuality] = useState(85);
   const [targetUploadCategoryId, setTargetUploadCategoryId] = useState<string>('');
   const [duplicateStrategy, setDuplicateStrategy] = useState<'rename' | 'overwrite'>('rename');
+  const [openCategoryDropdown, setOpenCategoryDropdown] = useState(false);
+  const [openStrategyDropdown, setOpenStrategyDropdown] = useState(false);
 
   const { data: assets, isLoading: isLoadingAssets, mutate: mutateAssets } = useLocalCollection<GalleryAsset>('galleryAssets');
   const { data: categories, isLoading: isLoadingCategories } = useLocalCollection<GalleryCategory>('galleryCategories');
@@ -690,7 +693,10 @@ export function MediaLibraryDialog({
                   <div className="md:col-span-5 space-y-10">
                      <div className="space-y-4">
                         <Label className="text-[10px] font-bold uppercase text-slate-400 admin-interface-dark:text-muted-foreground tracking-[0.2em] pl-1">保存归属分类</Label>
-                        <DropdownMenu>
+                        <DropdownMenu open={openCategoryDropdown} onOpenChange={(o) => {
+                           setOpenCategoryDropdown(o);
+                           if (o) setOpenStrategyDropdown(false);
+                        }}>
                            <DropdownMenuTrigger asChild>
                               <Button variant="outline" className="w-full h-14 rounded-2xl bg-white admin-interface-dark:bg-card border-slate-200 admin-interface-dark:border-border/60 shadow-sm justify-between px-6 font-bold text-xs text-foreground hover:bg-slate-50 admin-interface-dark:hover:bg-muted/30 group">
                                  <span className="truncate">
@@ -706,7 +712,10 @@ export function MediaLibraryDialog({
                                  {categories?.map(cat => (
                                     <DropdownMenuItem 
                                        key={cat.id} 
-                                       onClick={() => setTargetUploadCategoryId(cat.id)}
+                                       onClick={() => {
+                                          setTargetUploadCategoryId(cat.id);
+                                          setOpenCategoryDropdown(false);
+                                       }}
                                        className="rounded-xl py-3 px-4 text-xs font-bold transition-all focus:bg-primary/5 admin-interface-dark:focus:bg-muted/50 text-slate-700 admin-interface-dark:text-popover-foreground cursor-pointer"
                                     >
                                        {cat.name}
@@ -719,7 +728,10 @@ export function MediaLibraryDialog({
 
                      <div className="space-y-4">
                         <Label className="text-[10px] font-bold uppercase text-slate-400 admin-interface-dark:text-muted-foreground tracking-[0.2em] pl-1">重复文件冲突策略</Label>
-                        <DropdownMenu>
+                        <DropdownMenu open={openStrategyDropdown} onOpenChange={(o) => {
+                           setOpenStrategyDropdown(o);
+                           if (o) setOpenCategoryDropdown(false);
+                        }}>
                            <DropdownMenuTrigger asChild>
                               <Button variant="outline" className="w-full h-14 rounded-2xl bg-white admin-interface-dark:bg-card border-slate-200 admin-interface-dark:border-border/60 shadow-sm justify-between px-6 font-bold text-xs text-foreground hover:bg-slate-50 admin-interface-dark:hover:bg-muted/30 group">
                                  <span className={cn("truncate", duplicateStrategy === 'overwrite' && "text-orange-600")}>
@@ -730,13 +742,19 @@ export function MediaLibraryDialog({
                            </DropdownMenuTrigger>
                            <DropdownMenuContent align="start" className="w-[300px] rounded-2xl p-2 border border-slate-100 admin-interface-dark:border-border bg-white admin-interface-dark:bg-popover text-slate-900 admin-interface-dark:text-popover-foreground shadow-2xl animate-in zoom-in-95 duration-200 z-[11000]">
                               <DropdownMenuItem 
-                                 onClick={() => setDuplicateStrategy('rename')}
+                                 onClick={() => {
+                                    setDuplicateStrategy('rename');
+                                    setOpenStrategyDropdown(false);
+                                 }}
                                  className="rounded-xl py-3 px-4 text-xs font-bold transition-all focus:bg-primary/5 admin-interface-dark:focus:bg-muted/50 text-slate-700 admin-interface-dark:text-popover-foreground cursor-pointer"
                               >
                                  自动重命名 (生成副本)
                               </DropdownMenuItem>
                               <DropdownMenuItem 
-                                 onClick={() => setDuplicateStrategy('overwrite')}
+                                 onClick={() => {
+                                    setDuplicateStrategy('overwrite');
+                                    setOpenStrategyDropdown(false);
+                                 }}
                                  className="rounded-xl py-3 px-4 text-xs font-bold text-orange-600 transition-all focus:bg-orange-50 admin-interface-dark:focus:bg-orange-950/20 cursor-pointer"
                               >
                                  覆盖现有文件 (全站同步)

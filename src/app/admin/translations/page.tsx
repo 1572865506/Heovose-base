@@ -1165,7 +1165,7 @@ export default function TranslationsPage() {
                                       <p className="font-bold uppercase text-primary border-b border-border/10 pb-2 flex items-center gap-2">
                                         <CheckCircle2 className="h-3.5 w-3.5" /> 数据链路引用轨迹
                                       </p>
-                                      <div className="max-h-[200px] overflow-y-auto pr-2 space-y-2">
+                                      <div className="max-h-[200px] overflow-y-auto pr-2 space-y-2 custom-scrollbar">
                                         {refs.map((ref: any, idx: number) => (
                                           <div key={idx} className="flex items-center justify-between gap-6 p-2 rounded-xl hover:bg-muted/20 transition-colors">
                                             <div className="flex flex-col">
