@@ -94,8 +94,46 @@ export async function GET(request: Request) {
       uniqueMap.set(fullKey, { id: item.id, zh, en });
     }
 
+    // 按照匹配度进行排序：
+    // 1. 完全匹配最高优先
+    // 2. 前缀匹配次之
+    // 3. 包含匹配再次之（越靠前越好）
+    // 4. 匹配度相同时，长度越短越优先
+    const getMatchScore = (x: { zh: string; en: string }) => {
+      const zhLower = x.zh.toLowerCase();
+      const enLower = x.en.toLowerCase();
+      
+      if (zhLower === searchLower || enLower === searchLower) {
+        return 0;
+      }
+      if (zhLower.startsWith(searchLower) || enLower.startsWith(searchLower)) {
+        return 1;
+      }
+      const idxZh = zhLower.indexOf(searchLower);
+      const idxEn = enLower.indexOf(searchLower);
+      const minIdx = Math.min(
+        idxZh !== -1 ? idxZh : Infinity,
+        idxEn !== -1 ? idxEn : Infinity
+      );
+      if (minIdx !== Infinity) {
+        return 2 + minIdx / 1000;
+      }
+      return 4;
+    };
+
+    const sortedResults = Array.from(uniqueMap.values()).sort((a, b) => {
+      const scoreA = getMatchScore(a);
+      const scoreB = getMatchScore(b);
+      if (scoreA !== scoreB) {
+        return scoreA - scoreB;
+      }
+      const lenA = Math.min(a.zh.length, a.en ? a.en.length : Infinity);
+      const lenB = Math.min(b.zh.length, b.en ? b.en.length : Infinity);
+      return lenA - lenB;
+    });
+
     // 限制返回条数，格式化输出
-    const results = Array.from(uniqueMap.values())
+    const results = sortedResults
       .slice(0, 10)
       .map((x) => ({
         id: x.id,
