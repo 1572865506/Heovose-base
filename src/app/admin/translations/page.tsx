@@ -209,7 +209,8 @@ class TranslationSyncManager {
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({
                 id: task.id,
-                content: newContent
+                content: newContent,
+                forceGlobalUpdate: true
               }),
             });
 
@@ -623,11 +624,56 @@ export default function TranslationsPage() {
   const handleAiSync = () => {
     const defaultLanguage = langSettings?.defaultLanguage || 'zh';
     if (!translations) return;
+
+    // 检测是否有被多处引用的待翻译词条
+    const supportedCodes = activeLanguages.map(l => l.code);
+    const uniqueMultiRefIds = new Set<string>();
+
+    for (const item of translations) {
+      let content = (item.content as any) || {};
+      if (content && typeof content === 'object' && 'content' in content && typeof content.content === 'object' && !Array.isArray(content.content)) {
+        content = content.content;
+      }
+
+      const sourceLang = [defaultLanguage, 'zh', 'en', ...Object.keys(content)].find(
+        (lang) => content[lang] !== undefined && content[lang] !== null && content[lang] !== ''
+      );
+
+      if (!sourceLang) continue;
+
+      for (const code of supportedCodes) {
+        const val = content[code];
+        if (!val || val.trim() === '' || val === item.id) {
+          if (code !== sourceLang) {
+            const refs = referenceMap.get(item.id);
+            if (refs && refs.length > 1) {
+              uniqueMultiRefIds.add(item.id);
+            }
+          }
+        }
+      }
+    }
+
+    if (uniqueMultiRefIds.size > 0) {
+      if (!confirm(`检测到有 ${uniqueMultiRefIds.size} 个待翻译词条在全站被多处引用（如公共规格/字典词条等）。\nAI 增量翻译会同时为这些引用位置补全翻译。\n\n是否确认继续？`)) {
+        return;
+      }
+    }
+
     syncManager.start(translations, activeLanguages, defaultLanguage, mutateTrans, toast);
   };
 
   const handleAiTranslate = async (t: LocalizedString) => {
     if (!aiConfig?.isEnabled) { toast({ variant: "destructive", title: "AI 未启用" }); return; }
+
+    // 检查单条词条是否被多处引用并提示
+    const refs = referenceMap.get(t.id);
+    if (refs && refs.length > 1) {
+      if (!confirm(`该词条当前被多处引用（共 ${refs.length} 处），AI 智译将同步更新所有引用位置的翻译，是否确认？`)) {
+        return;
+      }
+    }
+
     const content = (t.content as any) || {};
     const st = content.en || t.en || content.zh || t.zh;
     const sc = (content.en || t.en) ? 'en' : 'zh';
@@ -667,7 +713,8 @@ export default function TranslationsPage() {
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             id: t.id,
-            content: newContent
+            content: newContent,
+            forceGlobalUpdate: true
           }),
         });
 

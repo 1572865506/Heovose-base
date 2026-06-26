@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo, Fragment } from 'react';
 import { useLocalDoc } from '@/hooks/use-local-doc';
 import { 
   Card, 
@@ -19,7 +19,7 @@ import {
 } from "@/components/ui/select";
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
-import { History, RotateCcw, Terminal, Download, Database, Cpu, Info, ShieldCheck, Globe, Save, Settings2, Loader2, Cloud, FileText, PlayCircle, Upload } from 'lucide-react';
+import { History, RotateCcw, Terminal, Download, Database, Cpu, Info, ShieldCheck, Globe, Save, Settings2, Loader2, Cloud, FileText, PlayCircle, Upload, ChevronDown, ChevronRight } from 'lucide-react';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
@@ -54,6 +54,58 @@ export default function AdminSettingsPage() {
   const [updateInfo, setUpdateInfo] = useState<any>(null);
   const [sysStatus, setSysStatus] = useState<any>(null);
   const [backups, setBackups] = useState<any[]>([]);
+  const [expandedBackups, setExpandedBackups] = useState<Record<string, boolean>>({});
+
+  const toggleBackupExpanded = (timestamp: string) => {
+    setExpandedBackups(prev => ({
+      ...prev,
+      [timestamp]: !prev[timestamp]
+    }));
+  };
+
+  const groupedBackups = useMemo(() => {
+    const groups = {};
+    const fallbackGroups = [];
+
+    backups.forEach(b => {
+      if (b.type !== "DATABASE" && b.type !== "STORAGE") return;
+
+      const match = b.filename.match(/(?:db_backup_|minio_backup_)([0-9]{8}_[0-9]{6})/);
+      if (match) {
+        const ts = match[1];
+        if (!groups[ts]) {
+          groups[ts] = {
+            timestamp: ts,
+            time: b.time,
+          };
+        }
+        if (b.type === "DATABASE") {
+          groups[ts].dbBackup = b;
+        } else {
+          groups[ts].storageBackup = b;
+        }
+      } else {
+        fallbackGroups.push({
+          timestamp: b.filename,
+          time: b.time,
+          dbBackup: b.type === "DATABASE" ? b : undefined,
+          storageBackup: b.type === "STORAGE" ? b : undefined,
+        });
+      }
+    });
+
+    const list = Object.values(groups).concat(fallbackGroups);
+    return list.sort((a, b) => new Date(b.time).getTime() - new Date(a.time).getTime());
+  }, [backups]);
+
+  const formatTimestamp = (ts, fallbackTime) => {
+    const match = ts.match(/^(\d{4})(\d{2})(\d{2})_(\d{2})(\d{2})(\d{2})$/);
+    if (match) {
+      const [_, y, m, d, hr, min, sec] = match;
+      return `${y}-${m}-${d} ${hr}:${min}:${sec}`;
+    }
+    return new Date(fallbackTime).toLocaleString();
+  };
 
   const { data: langSettings, isLoading: isLangLoading, mutate: mutateLangs } = useLocalDoc<AppConfig>('settings', 'languages');
   const { data: storageSettings, isLoading: isStorageLoading, mutate: mutateStorage } = useLocalDoc<StorageConfig>('settings', 'storage');
@@ -205,25 +257,8 @@ export default function AdminSettingsPage() {
       e.target.value = '';
     }
   };
-
-  const handleDownload = (filename: string) => {
-    window.open(`/api/admin/system/backups/${filename}`, '_blank');
-  };
-
-  const handleRestore = async (sqlFile: string) => {
-    const timestamp = sqlFile.match(/\d{8}_\d{6}/)?.[0];
-    if (!timestamp) {
-      toast({ variant: "destructive", title: "无效的备份文件", description: "无法识别时间戳" });
-      return;
-    }
-
-    const minioFile = backups.find(b => b.filename.includes(timestamp) && b.type === "STORAGE")?.filename;
-    if (!minioFile) {
-      toast({ variant: "destructive", title: "缺少匹配的存储备份", description: "无法找到对应的 MinIO 备份文件" });
-      return;
-    }
-
-    const confirmText = prompt(`⚠️ 危险操作：您正在尝试将数据库和存储还原到 ${timestamp} 的状态。\n当前所有数据将被覆盖且不可撤销！\n\n请输入 "CONFIRM" 以继续：`);
+  const handleRestore = async (sqlFile: string, minioFile: string, timestamp: string) => {
+    const confirmText = prompt(`⚠️ 危险操作：您正在尝试将系统数据库和存储空间（图片/素材等）同时还原到 ${timestamp} 的状态。\n这会完全覆盖当前所有的数据与素材，且此操作不可逆！\n\n若确认要执行，请输入 "CONFIRM"：`);
     
     if (confirmText !== "CONFIRM") {
       toast({ title: "还原已取消" });
@@ -239,7 +274,7 @@ export default function AdminSettingsPage() {
       });
       const data = await res.json();
       if (data.success) {
-        toast({ title: "还原成功", description: "系统数据已恢复，建议手动刷新页面。" });
+        toast({ title: "还原成功", description: "系统还原成功，页面即将自动刷新。" });
         window.location.reload();
       } else {
         throw new Error(data.error);
@@ -527,81 +562,164 @@ export default function AdminSettingsPage() {
             }
           >
             <div className="overflow-x-auto">
-               <table className="w-full text-left">
+                                             <table className="w-full text-left">
                   <thead className="bg-muted/10">
                      <tr>
-                        <th className="px-8 py-3.5 text-[10px] font-bold uppercase text-muted-foreground tracking-widest">文件名称</th>
-                        <th className="px-8 py-3.5 text-[10px] font-bold uppercase text-muted-foreground tracking-widest text-center">类型</th>
-                        <th className="px-8 py-3.5 text-[10px] font-bold uppercase text-muted-foreground tracking-widest text-center">大小</th>
-                        <th className="px-8 py-3.5 text-[10px] font-bold uppercase text-muted-foreground tracking-widest text-right">操作</th>
+                        <th className="px-8 py-3.5 text-[10px] font-bold uppercase text-muted-foreground tracking-widest">备份名称 / 包含内容</th>
+                        <th className="px-8 py-3.5 text-[10px] font-bold uppercase text-muted-foreground tracking-widest text-center">备份类型</th>
+                        <th className="px-8 py-3.5 text-[10px] font-bold uppercase text-muted-foreground tracking-widest text-center">文件大小</th>
+                        <th className="px-8 py-3.5 text-[10px] font-bold uppercase text-muted-foreground tracking-widest text-right">状态 / 操作</th>
                      </tr>
                   </thead>
                   <tbody className="divide-y divide-border/40">
-                     {backups.filter(b => b.type === "DATABASE" || b.type === "STORAGE").length > 0 ? (
-                       backups.filter(b => b.type === "DATABASE" || b.type === "STORAGE").map((backup, idx) => (
-                          <tr key={idx} className="group hover:bg-muted/10 transition-colors">
-                             <td className="px-8 py-4.5">
-                                <div className="flex items-center gap-3">
-                                   {backup.type === "DATABASE" ? (
-                                     <FileText className="h-4 w-4 text-blue-400" />
-                                   ) : (
-                                     <Cloud className="h-4 w-4 text-emerald-400" />
-                                   )}
-                                   <div>
-                                      <p className="text-xs font-bold text-foreground/90">{backup.filename}</p>
-                                      <p className="text-[10px] text-muted-foreground/80 mt-0.5">{new Date(backup.time).toLocaleString()}</p>
-                                   </div>
-                                </div>
-                             </td>
-                             <td className="px-8 py-4.5 text-center">
-                                {backup.type === "DATABASE" ? (
-                                  <Badge variant="outline" className="text-[9px] font-bold uppercase bg-blue-500/10 text-blue-500 border-blue-500/20">SQL DATA</Badge>
-                                ) : (
-                                  <Badge variant="outline" className="text-[9px] font-bold uppercase bg-emerald-500/10 text-emerald-500 border-emerald-500/20">STORAGE DATA</Badge>
-                                )}
-                             </td>
-                             <td className="px-8 py-4.5 text-center text-[10px] font-bold text-muted-foreground">
-                                {(backup.size / 1024 / 1024).toFixed(2)} MB
-                             </td>
-                             <td className="px-8 py-4.5 text-right">
-                                <div className="flex justify-end gap-1.5">
-                                   <Button 
-                                     variant="ghost" 
-                                     size="sm" 
-                                     onClick={() => handleDownload(backup.filename)}
-                                     title="下载备份"
-                                     className="h-8 w-8 p-0 rounded-lg text-muted-foreground hover:text-primary hover:bg-primary/5"
-                                   >
-                                      <Download className="h-4 w-4" />
-                                   </Button>
-                                   {backup.type === "DATABASE" ? (
-                                      <Button 
-                                        variant="ghost" 
-                                        size="sm" 
-                                        disabled={isRestoring}
-                                        onClick={() => handleRestore(backup.filename)}
-                                        title="还原此版本"
-                                        className="h-8 w-8 p-0 rounded-lg text-muted-foreground hover:text-red-500 hover:bg-red-500/10"
-                                      >
-                                         {isRestoring ? <Loader2 className="h-4 w-4 animate-spin" /> : <RotateCcw className="h-4 w-4" />}
-                                      </Button>
-                                   ) : (
-                                      <div className="h-8 w-8" />
-                                   )}
-                                </div>
-                             </td>
-                          </tr>
-                       ))
-                     ) : (
-                       <tr>
-                         <td colSpan={4} className="px-8 py-12 text-center">
-                           <div className="flex flex-col items-center gap-2 opacity-30">
-                             <Database className="h-8 w-8" />
-                             <p className="text-xs font-bold uppercase tracking-widest text-muted-foreground">暂无备份档案</p>
-                           </div>
-                         </td>
-                       </tr>
-                     )}
+                     {groupedBackups.length > 0 ? (
+                       groupedBackups.map((group, groupIdx) => {
+                          const isExpanded = !!expandedBackups[group.timestamp];
+                          const totalSize = (group.dbBackup ? group.dbBackup.size : 0) + (group.storageBackup ? group.storageBackup.size : 0);
+                          const hasDb = !!group.dbBackup;
+                          const hasStorage = !!group.storageBackup;
+
+                          return (
+                            <Fragment key={group.timestamp || groupIdx}>
+                              <tr 
+                                className="group hover:bg-muted/10 transition-colors cursor-pointer"
+                                onClick={() => toggleBackupExpanded(group.timestamp)}
+                              >
+                                 <td className="px-8 py-4.5">
+                                    <div className="flex items-center gap-3">
+                                       <div className="text-muted-foreground group-hover:text-primary transition-colors">
+                                          {isExpanded ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
+                                       </div>
+                                       <div>
+                                          <p className="text-xs font-bold text-foreground/90">
+                                             备份归档 - {formatTimestamp(group.timestamp, group.time)}
+                                          </p>
+                                          <p className="text-[10px] text-muted-foreground/80 mt-0.5">
+                                             生成时间: {new Date(group.time).toLocaleString()}
+                                          </p>
+                                       </div>
+                                    </div>
+                                 </td>
+                                 <td className="px-8 py-4.5 text-center">
+                                    <div className="flex items-center justify-center gap-1.5">
+                                       {hasDb && (
+                                         <Badge variant="outline" className="text-[9px] font-bold uppercase bg-blue-500/10 text-blue-500 border-blue-500/20">
+                                            数据库
+                                         </Badge>
+                                       )}
+                                       {hasStorage && (
+                                         <Badge variant="outline" className="text-[9px] font-bold uppercase bg-emerald-500/10 text-emerald-500 border-emerald-500/20">
+                                            存储桶
+                                         </Badge>
+                                       )}
+                                    </div>
+                                 </td>
+                                 <td className="px-8 py-4.5 text-center text-[10px] font-bold text-muted-foreground">
+                                    {(totalSize / 1024 / 1024).toFixed(2)} MB
+                                 </td>
+                                 <td className="px-8 py-4.5 text-right">
+                                    <div className="flex justify-end items-center gap-3" onClick={(e) => e.stopPropagation()}>
+                                       {hasDb && hasStorage && (
+                                         <Button 
+                                           variant="ghost" 
+                                           size="sm" 
+                                           disabled={isRestoring}
+                                           onClick={() => handleRestore(group.dbBackup.filename, group.storageBackup.filename, formatTimestamp(group.timestamp, group.time))}
+                                           className="h-8 px-3 rounded-lg text-red-400 hover:text-red-500 hover:bg-red-500/10 gap-1.5 text-[10px] font-bold uppercase tracking-wider"
+                                         >
+                                            {isRestoring ? <Loader2 className="h-3 w-3 animate-spin" /> : <RotateCcw className="h-3 w-3" />}
+                                            一键还原
+                                         </Button>
+                                       )}
+                                       <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider cursor-pointer" onClick={() => toggleBackupExpanded(group.timestamp)}>
+                                          {isExpanded ? '折叠' : '展开'}
+                                       </span>
+                                    </div>
+                                 </td>
+                              </tr>
+                              {isExpanded && (
+                                <>
+                                  {group.dbBackup && (
+                                    <tr className="bg-muted/5 border-b border-border/20">
+                                      <td className="px-8 py-3.5 pl-14">
+                                        <div className="flex items-center gap-2">
+                                          <FileText className="h-3.5 w-3.5 text-blue-400" />
+                                          <span className="text-[11px] font-mono text-muted-foreground truncate max-w-[280px]" title={group.dbBackup.filename}>
+                                            {group.dbBackup.filename}
+                                          </span>
+                                        </div>
+                                      </td>
+                                      <td className="px-8 py-3.5 text-center">
+                                        <Badge variant="outline" className="text-[8px] font-bold uppercase bg-blue-500/5 text-blue-400 border-blue-500/10">
+                                          SQL DATA
+                                        </Badge>
+                                      </td>
+                                      <td className="px-8 py-3.5 text-center text-[10px] font-mono text-muted-foreground/80">
+                                        {(group.dbBackup.size / 1024 / 1024).toFixed(2)} MB
+                                      </td>
+                                      <td className="px-8 py-3.5 text-right">
+                                        <div className="flex justify-end gap-1.5">
+                                          <Button 
+                                            variant="ghost" 
+                                            size="sm" 
+                                            onClick={(e) => { e.stopPropagation(); handleDownload(group.dbBackup.filename); }}
+                                            title="下载数据库备份"
+                                            className="h-7 w-7 p-0 rounded-lg text-muted-foreground hover:text-primary hover:bg-primary/5"
+                                          >
+                                            <Download className="h-3.5 w-3.5" />
+                                          </Button>
+                                        </div>
+                                      </td>
+                                    </tr>
+                                  )}
+                                  {group.storageBackup && (
+                                    <tr className="bg-muted/5 border-b border-border/20">
+                                      <td className="px-8 py-3.5 pl-14">
+                                        <div className="flex items-center gap-2">
+                                          <Cloud className="h-3.5 w-3.5 text-emerald-400" />
+                                          <span className="text-[11px] font-mono text-muted-foreground truncate max-w-[280px]" title={group.storageBackup.filename}>
+                                            {group.storageBackup.filename}
+                                          </span>
+                                        </div>
+                                      </td>
+                                      <td className="px-8 py-3.5 text-center">
+                                        <Badge variant="outline" className="text-[8px] font-bold uppercase bg-emerald-500/5 text-emerald-400 border-emerald-500/10">
+                                          STORAGE DATA
+                                        </Badge>
+                                      </td>
+                                      <td className="px-8 py-3.5 text-center text-[10px] font-mono text-muted-foreground/80">
+                                        {(group.storageBackup.size / 1024 / 1024).toFixed(2)} MB
+                                      </td>
+                                      <td className="px-8 py-3.5 text-right">
+                                        <div className="flex justify-end gap-1.5">
+                                          <Button 
+                                            variant="ghost" 
+                                            size="sm" 
+                                            onClick={(e) => { e.stopPropagation(); handleDownload(group.storageBackup.filename); }}
+                                            title="下载存储备份"
+                                            className="h-7 w-7 p-0 rounded-lg text-muted-foreground hover:text-primary hover:bg-primary/5"
+                                          >
+                                            <Download className="h-3.5 w-3.5" />
+                                          </Button>
+                                        </div>
+                                      </td>
+                                    </tr>
+                                  )}
+                                </>
+                              )}
+                            </Fragment>
+                          );
+                       })
+                      ) : (
+                        <tr>
+                          <td colSpan={4} className="px-8 py-12 text-center">
+                            <div className="flex flex-col items-center gap-2 opacity-30">
+                              <Database className="h-8 w-8" />
+                              <p className="text-xs font-bold uppercase tracking-widest text-muted-foreground">暂无备份档案</p>
+                            </div>
+                          </td>
+                        </tr>
+                      )}
                   </tbody>
                </table>
             </div>
