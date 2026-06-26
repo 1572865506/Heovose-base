@@ -101,10 +101,12 @@ interface LocalizedString {
 interface LanguageOption {
   code: string;
   label: string;
+  isActive?: boolean;
 }
 
 interface LanguageSettings {
   supportedLanguages: LanguageOption[];
+  defaultLanguage?: string;
   _version?: number;
 }
 

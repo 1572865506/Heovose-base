@@ -64,10 +64,15 @@ export default function AdminSettingsPage() {
   };
 
   const groupedBackups = useMemo(() => {
-    const groups = {};
-    const fallbackGroups = [];
+    const groups: Record<string, {
+      timestamp: string;
+      time: any;
+      dbBackup?: any;
+      storageBackup?: any;
+    }> = {};
+    const fallbackGroups: any[] = [];
 
-    backups.forEach(b => {
+    backups.forEach((b: any) => {
       if (b.type !== "DATABASE" && b.type !== "STORAGE") return;
 
       const match = b.filename.match(/(?:db_backup_|minio_backup_)([0-9]{8}_[0-9]{6})/);
@@ -95,10 +100,10 @@ export default function AdminSettingsPage() {
     });
 
     const list = Object.values(groups).concat(fallbackGroups);
-    return list.sort((a, b) => new Date(b.time).getTime() - new Date(a.time).getTime());
+    return list.sort((a: any, b: any) => new Date(b.time).getTime() - new Date(a.time).getTime());
   }, [backups]);
 
-  const formatTimestamp = (ts, fallbackTime) => {
+  const formatTimestamp = (ts: string, fallbackTime: any) => {
     const match = ts.match(/^(\d{4})(\d{2})(\d{2})_(\d{2})(\d{2})(\d{2})$/);
     if (match) {
       const [_, y, m, d, hr, min, sec] = match;
@@ -257,6 +262,10 @@ export default function AdminSettingsPage() {
       e.target.value = '';
     }
   };
+  const handleDownload = (filename: string) => {
+    window.open(`/api/admin/system/backups/${filename}`, '_blank');
+  };
+
   const handleRestore = async (sqlFile: string, minioFile: string, timestamp: string) => {
     const confirmText = prompt(`⚠️ 危险操作：您正在尝试将系统数据库和存储空间（图片/素材等）同时还原到 ${timestamp} 的状态。\n这会完全覆盖当前所有的数据与素材，且此操作不可逆！\n\n若确认要执行，请输入 "CONFIRM"：`);
     
@@ -573,7 +582,7 @@ export default function AdminSettingsPage() {
                   </thead>
                   <tbody className="divide-y divide-border/40">
                      {groupedBackups.length > 0 ? (
-                       groupedBackups.map((group, groupIdx) => {
+                       groupedBackups.map((group: any, groupIdx: number) => {
                           const isExpanded = !!expandedBackups[group.timestamp];
                           const totalSize = (group.dbBackup ? group.dbBackup.size : 0) + (group.storageBackup ? group.storageBackup.size : 0);
                           const hasDb = !!group.dbBackup;
