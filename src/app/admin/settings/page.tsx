@@ -301,6 +301,9 @@ export default function AdminSettingsPage() {
     try {
       const res = await fetch('/api/admin/system/check', { method: 'POST' });
       const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.error || "获取升级状态失败");
+      }
       if (data.hasUpdate) {
         setUpdateInfo(data);
         toast({ title: "发现新更新", description: `共有 ${data.count} 个新的提交记录` });

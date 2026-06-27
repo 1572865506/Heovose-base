@@ -16,8 +16,8 @@ RUN env UV_THREADPOOL_SIZE=1 NODE_OPTIONS="--max-old-space-size=1024" npm run bu
 FROM node:20-alpine AS runner
 WORKDIR /app
 
-# 安装 bash 和 docker-cli 客户端，以便在容器内运行备份还原脚本
-RUN apk add --no-cache bash docker-cli
+# 安装 bash, docker-cli 和 git 客户端，以便在容器内运行备份还原与检查更新脚本
+RUN apk add --no-cache bash docker-cli git
 
 ENV NODE_ENV=production
 ENV PORT=9002

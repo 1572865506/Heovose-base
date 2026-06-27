@@ -21,6 +21,9 @@ export const POST = withAuth('superadmin', async () => {
         count: parseInt(count), 
         logs: logs.split("\n") 
       });
+    } else if (result.startsWith("ERROR")) {
+      const [, message] = result.split("|");
+      return NextResponse.json({ error: message || "检测更新失败" }, { status: 500 });
     }
 
     return NextResponse.json({ hasUpdate: false });
