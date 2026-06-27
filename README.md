@@ -222,3 +222,5 @@ bash scripts/restore.sh ./backups/backup_xxxxxx.tar.gz
 ---
 
 祝部署顺利！如有其他问题或需求，请随时查阅 `docs/blueprint.md`。
+
+<!-- TEST_COMMIT: 2026-06-27 update testing hook -->
