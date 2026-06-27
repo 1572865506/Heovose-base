@@ -4,6 +4,9 @@
 PROJECT_DIR=$(pwd)
 LOG_FILE="./backups/update_log.txt"
 
+# 记录当前版本 Commit ID，以便更新失败时自动回退
+PREV_COMMIT=$(git rev-parse HEAD 2>/dev/null)
+
 mkdir -p ./backups
 
 # 注册清理钩子，在脚本退出时自动移除维护标记，防止意外崩溃导致卡死在维护模式 (问题 4)
@@ -42,7 +45,16 @@ if [ $? -eq 0 ]; then
     # 如果使用 pm2，可以取消注释下面一行
     # pm2 restart all
 else
-    echo "❌ [$(date)] 构建失败，正在尝试保留旧版本..." | tee -a $LOG_FILE
+    echo "❌ [$(date)] 构建失败，正在尝试自动回退至上一版本..." | tee -a $LOG_FILE
+    if [ ! -z "$PREV_COMMIT" ]; then
+        echo "⏪ 正在回滚代码到 Commit ID: $PREV_COMMIT ..." | tee -a $LOG_FILE
+        git reset --hard $PREV_COMMIT | tee -a $LOG_FILE
+        npm install | tee -a $LOG_FILE
+        npm run build | tee -a $LOG_FILE
+        echo "✅ 已成功回退至更新前的稳定版本。" | tee -a $LOG_FILE
+    else
+        echo "⚠️ 未找到上一个版本的 Commit 记录，无法自动回退。" | tee -a $LOG_FILE
+    fi
     exit 1
 fi
 
