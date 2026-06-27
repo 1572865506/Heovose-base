@@ -29,6 +29,13 @@ export const POST = withAuth('superadmin', async () => {
     return NextResponse.json({ hasUpdate: false });
   } catch (error: any) {
     console.error("Check update failed:", error);
-    return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
+    if (error.stdout) {
+      const result = error.stdout.trim();
+      if (result.startsWith("ERROR")) {
+        const [, message] = result.split("|");
+        return NextResponse.json({ error: message || "检测更新失败" }, { status: 500 });
+      }
+    }
+    return NextResponse.json({ error: error.message || "Internal Server Error" }, { status: 500 });
   }
 });
