@@ -39,6 +39,13 @@ import {
   Clock,
   Zap,
   Users,
+  Loader2,
+  CheckCircle2,
+  ChevronDown,
+  ChevronRight,
+  Cpu,
+  Server,
+  Sparkles,
   UserCircle,
   ShieldCheck,
   RefreshCw,
@@ -81,8 +88,123 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   const { toast } = useToast();
 
   const { data: adminData, isLoading: isAdminDataLoading } = useLocalDoc<any>('profile', '');
-  const { data: aiConfig } = useLocalDoc<any>('settings', 'ai');
+  const { data: aiConfig, mutate: mutateAi } = useLocalDoc<any>('settings', 'ai');
   const { data: siteConfig } = useLocalDoc<any>('settings', 'site');
+
+  const [expandedNodeId, setExpandedNodeId] = useState<string | null>(null);
+  const [isTestingNode, setIsTestingNode] = useState<string | null>(null);
+  const [isSavingAi, setIsSavingAi] = useState(false);
+
+  // Automatically set expandedNodeId to primary provider when aiConfig loads
+  useEffect(() => {
+    if (aiConfig?.providers) {
+      const primary = aiConfig.providers.find((p: any) => p.isPrimary);
+      if (primary) {
+        setExpandedNodeId(primary.id);
+      }
+    }
+  }, [aiConfig]);
+
+  const handleSetPrimaryProvider = async (id: string) => {
+    if (!aiConfig) return;
+    setIsSavingAi(true);
+    const newProviders = aiConfig.providers.map((p: any) => ({
+      ...p,
+      isPrimary: p.id === id,
+      isActive: p.id === id ? true : p.isActive
+    }));
+    const updated = { ...aiConfig, providers: newProviders };
+    try {
+      const res = await fetch('/api/settings/ai', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(updated),
+      });
+      if (res.ok) {
+        mutateAi();
+        toast({ title: "已切换首选节点", description: "新的 AI 调度策略已生效。" });
+      }
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setIsSavingAi(false);
+    }
+  };
+
+  const handleTestProvider = async (provider: any) => {
+    setIsTestingNode(provider.id);
+    try {
+      let data;
+      const startTime = Date.now();
+
+      if (provider.type === 'browser-local') {
+        const res = await fetch(`${provider.baseUrl}/chat/completions`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${provider.apiKey || 'not-needed'}`
+          },
+          body: JSON.stringify({
+            model: provider.model,
+            messages: [{ role: 'user', content: 'Hello' }],
+            max_tokens: 5
+          })
+        });
+
+        if (!res.ok) {
+          throw new Error('连接失败');
+        }
+
+        const rawData = await res.json();
+        data = {
+          success: true,
+          latency: Date.now() - startTime,
+          responseText: rawData.choices?.[0]?.message?.content
+        };
+      } else {
+        const res = await fetch('/api/admin/ai/test', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            provider: provider.type,
+            model: provider.model,
+            apiKey: provider.apiKey,
+            baseUrl: provider.baseUrl
+          })
+        });
+        data = await res.json();
+      }
+
+      const testResult = {
+        status: data.success ? 'success' : 'failed',
+        latency: data.latency,
+        timestamp: new Date().toISOString()
+      };
+
+      const nextProviders = aiConfig.providers.map((p: any) =>
+        p.id === provider.id ? { ...p, lastTest: testResult } : p
+      );
+      const updated = { ...aiConfig, providers: nextProviders };
+      
+      const res = await fetch('/api/settings/ai', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(updated),
+      });
+      if (res.ok) {
+        mutateAi();
+        if (data.success) {
+          toast({ title: `${provider.name} 连接成功`, description: `延迟: ${data.latency}ms` });
+        } else {
+          throw new Error(data.error);
+        }
+      }
+    } catch (e: any) {
+      toast({ variant: "destructive", title: `${provider.name} 连接失败`, description: e.message });
+    } finally {
+      setIsTestingNode(null);
+    }
+  };
 
   const isDeterminingAccess = status === 'loading' || (session && isAdminDataLoading);
 
@@ -365,31 +487,136 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             </div>
 
             <div className="flex items-center gap-6">
-              {/* AI Status Pill - Aurora Style */}
-              <Link href="/admin/settings/ai">
-                <Button variant="ghost" size="sm" className={cn(
-                  "rounded-full h-10 px-5 flex items-center gap-3 border transition-all duration-500 group/ai",
-                  aiStatus === 'success' ? "bg-green-50/50 border-green-200/50 text-green-700 hover:bg-green-100/50 shadow-sm dark:bg-emerald-950/30 dark:border-emerald-800/30 dark:text-emerald-400 dark:hover:bg-emerald-950/50" : 
-                  aiStatus === 'quota' ? "bg-orange-50/50 border-orange-200/50 text-orange-700 hover:bg-orange-100/50 dark:bg-orange-950/30 dark:border-orange-800/30 dark:text-orange-400 dark:hover:bg-orange-950/50" : 
-                  aiStatus === 'failed' ? "bg-destructive/5 border-destructive/10 text-destructive dark:bg-red-950/30 dark:border-red-900/30 dark:text-red-400 dark:hover:bg-red-950/50" : 
-                  "bg-background/50 border-border/40 text-muted-foreground hover:bg-background hover:shadow-md dark:bg-muted/10 dark:border-white/5 dark:text-muted-foreground/60 dark:hover:bg-muted/20"
-                )}>
-                  {aiStatus === 'success' ? (
-                    <div className="relative">
-                      <Zap className="h-3.5 w-3.5 text-green-600 dark:text-emerald-400 animate-pulse" />
-                      <div className="absolute inset-0 bg-green-400 dark:bg-emerald-400 blur-md opacity-40 animate-pulse" />
-                    </div>
-                  ) : <Bot className="h-3.5 w-3.5 group-hover/ai:rotate-12 transition-transform" />}
-                  
-                  <span className="text-xs font-bold tracking-[0.1em] uppercase flex items-center gap-2">
-                    {aiStatus === 'success' && primaryProvider ? (
-                      <span className="opacity-70">
-                        {activeModel ? activeModel.name : primaryProvider.model}
+              {/* AI Status Pill - Accordion Dropdown on Hover */}
+              <div className="relative group/ai-container">
+                <Link href="/admin/settings/ai">
+                  <Button variant="ghost" size="sm" className={cn(
+                    "rounded-full h-10 px-5 flex items-center gap-3 border transition-all duration-500 group/ai",
+                    aiStatus === 'success' ? "bg-green-50/50 border-green-200/50 text-green-700 hover:bg-green-100/50 hover:text-green-700 shadow-sm dark:bg-emerald-950/30 dark:border-emerald-800/30 dark:text-emerald-400 dark:hover:bg-emerald-950/50 dark:hover:text-emerald-400" : 
+                    aiStatus === 'quota' ? "bg-orange-50/50 border-orange-200/50 text-orange-700 hover:bg-orange-100/50 hover:text-orange-700 dark:bg-orange-950/30 dark:border-orange-800/30 dark:text-orange-400 dark:hover:bg-orange-950/50 dark:hover:text-orange-400" : 
+                    aiStatus === 'failed' ? "bg-destructive/5 border-destructive/10 text-destructive hover:bg-destructive/10 hover:text-destructive dark:bg-red-950/30 dark:border-red-900/30 dark:text-red-400 dark:hover:bg-red-950/50 dark:hover:text-red-400" : 
+                    "bg-background/50 border-border/40 text-muted-foreground hover:bg-background hover:text-muted-foreground hover:shadow-md dark:bg-muted/10 dark:border-white/5 dark:text-muted-foreground/60 dark:hover:bg-muted/20 dark:hover:text-muted-foreground/60"
+                  )}>
+                    {aiStatus === 'success' ? (
+                      <div className="relative">
+                        <Zap className="h-3.5 w-3.5 text-green-600 dark:text-emerald-400 animate-pulse" />
+                        <div className="absolute inset-0 bg-green-400 dark:bg-emerald-400 blur-md opacity-40 animate-pulse" />
+                      </div>
+                    ) : <Bot className="h-3.5 w-3.5 group-hover/ai:rotate-12 transition-transform" />}
+                    
+                    <span className="text-xs font-bold tracking-[0.1em] uppercase flex items-center gap-2">
+                      {aiStatus === 'success' && primaryProvider ? (
+                        <span className="opacity-70">
+                          {activeModel ? activeModel.name : primaryProvider.model}
+                        </span>
+                      ) : aiStatus === 'quota' ? 'Quota Full' : aiStatus === 'failed' ? 'AI Error' : 'Offline'}
+                    </span>
+                  </Button>
+                </Link>
+
+                {/* Hover Accordion Dropdown Content */}
+                {aiConfig?.isEnabled && aiConfig?.providers?.length > 0 && (
+                  <div className="absolute right-0 top-10 mt-1 w-80 bg-background/95 backdrop-blur-2xl border border-border/40 rounded-2xl shadow-[0_30px_60px_-15px_rgba(0,0,0,0.15)] p-4 opacity-0 scale-95 pointer-events-none group-hover/ai-container:opacity-100 group-hover/ai-container:scale-100 group-hover/ai-container:pointer-events-auto transition-all duration-300 z-50 origin-top-right">
+                    <div className="flex items-center justify-between border-b border-border/40 pb-3 mb-3">
+                      <span className="text-xs font-bold text-primary uppercase tracking-wider flex items-center gap-1.5">
+                        <Cpu className="h-3.5 w-3.5 animate-pulse" />
+                        AI 算力集群节点
                       </span>
-                    ) : aiStatus === 'quota' ? 'Quota Full' : aiStatus === 'failed' ? 'AI Error' : 'Offline'}
-                  </span>
-                </Button>
-              </Link>
+                      <span className="text-[10px] text-muted-foreground font-mono">
+                        {aiConfig.providers.filter((p: any) => p.isActive && p.lastTest?.status === 'success').length}/{aiConfig.providers.length} Online
+                      </span>
+                    </div>
+
+                    <div className="space-y-2">
+                      {aiConfig.providers.map((provider: any) => {
+                        const isExpanded = expandedNodeId === provider.id;
+                        const isPrimary = provider.isPrimary;
+                        
+                        return (
+                          <div 
+                            key={provider.id}
+                            onMouseEnter={() => setExpandedNodeId(provider.id)}
+                            className={cn(
+                              "border border-border/20 rounded-xl overflow-hidden transition-all duration-300",
+                              isExpanded ? "bg-muted/15 border-primary/20 shadow-sm" : "bg-transparent hover:bg-muted/5"
+                            )}
+                          >
+                            {/* Accordion Header */}
+                            <div className="p-3 flex items-center justify-between cursor-pointer">
+                              <div className="flex items-center gap-2.5 min-w-0">
+                                <div className={cn(
+                                  "h-7 w-7 rounded-lg flex items-center justify-center shrink-0",
+                                  provider.type === 'google' ? "bg-blue-500/10 text-blue-500" :
+                                  provider.type === 'openai' ? "bg-green-500/10 text-green-500" : "bg-slate-500/10 text-slate-500"
+                                )}>
+                                  {provider.type === 'google' ? <Zap className="h-4 w-4" /> :
+                                   provider.type === 'openai' ? <Sparkles className="h-4 w-4" /> : <Server className="h-4 w-4" />}
+                                </div>
+                                <div className="min-w-0">
+                                  <div className="flex items-center gap-1.5">
+                                    <span className="text-xs font-bold text-foreground/90 truncate max-w-[100px]">{provider.name}</span>
+                                    {isPrimary && (
+                                      <span className="h-1.5 w-1.5 rounded-full bg-primary" title="首选节点" />
+                                    )}
+                                  </div>
+                                  <span className="text-[9px] text-muted-foreground/80 font-mono block truncate">{provider.model}</span>
+                                </div>
+                              </div>
+
+                              <div className="flex items-center gap-2">
+                                <div className={cn(
+                                  "w-2 h-2 rounded-full",
+                                  !provider.isActive ? "bg-muted-foreground/30" :
+                                  provider.lastTest?.status === 'success' ? "bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)] animate-pulse" :
+                                  provider.lastTest?.status === 'failed' ? "bg-rose-500" : "bg-orange-400"
+                                )} />
+                                {isExpanded ? <ChevronDown className="h-3.5 w-3.5 text-muted-foreground/60" /> : <ChevronRight className="h-3.5 w-3.5 text-muted-foreground/60" />}
+                              </div>
+                            </div>
+
+                            {/* Accordion Body */}
+                            <div className={cn(
+                              "transition-all duration-300 ease-in-out overflow-hidden px-3",
+                              isExpanded ? "max-h-24 pb-3 opacity-100" : "max-h-0 opacity-0"
+                            )}>
+                              <div className="pt-1.5 border-t border-border/10 flex flex-col gap-2">
+                                <div className="flex items-center justify-between text-[9px] font-mono text-muted-foreground">
+                                  <span>类型: {provider.type}</span>
+                                  {provider.lastTest && (
+                                    <span>延迟: {provider.lastTest.latency ? `${provider.lastTest.latency}ms` : 'N/A'}</span>
+                                  )}
+                                </div>
+                                <div className="flex gap-1.5">
+                                  <Button
+                                    variant="outline"
+                                    size="sm"
+                                    disabled={isTestingNode === provider.id || !provider.isActive}
+                                    onClick={() => handleTestProvider(provider)}
+                                    className="flex-1 h-7 text-[9px] font-bold uppercase rounded-lg border-border/40 hover:bg-primary/5 hover:text-primary gap-1"
+                                  >
+                                    {isTestingNode === provider.id ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <RefreshCw className="h-3 w-3" />}
+                                    测试
+                                  </Button>
+                                  {!isPrimary && provider.isActive && (
+                                    <Button
+                                      size="sm"
+                                      disabled={isSavingAi}
+                                      onClick={() => handleSetPrimaryProvider(provider.id)}
+                                      className="flex-1 h-7 text-[9px] font-bold uppercase rounded-lg bg-primary hover:bg-primary/90 text-white shadow-sm"
+                                    >
+                                      设为首选
+                                    </Button>
+                                  )}
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+              </div>
               <div className="h-6 w-px bg-border/60 hidden md:block" />
               
               <ThemeToggle />

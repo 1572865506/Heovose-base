@@ -16,6 +16,7 @@ interface AdminEditorHeaderProps {
   middleContent?: ReactNode;
   rightExtraActions?: ReactNode;
   className?: string;
+  onBack?: () => void;
 }
 
 export const AdminEditorHeader = memo(({
@@ -27,12 +28,15 @@ export const AdminEditorHeader = memo(({
   customBackUrl,
   middleContent,
   rightExtraActions,
-  className
+  className,
+  onBack
 }: AdminEditorHeaderProps) => {
   const router = useRouter();
 
   const handleBack = () => {
-    if (customBackUrl) {
+    if (onBack) {
+      onBack();
+    } else if (customBackUrl) {
       router.push(customBackUrl);
     } else {
       router.back();

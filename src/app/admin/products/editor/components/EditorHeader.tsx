@@ -45,6 +45,7 @@ interface EditorHeaderProps {
   onSave: () => void;
   onIdChange: (id: string) => void;
   isSaving?: boolean;
+  onBack?: () => void;
 }
 
 const EditorHeader = memo(({
@@ -57,7 +58,8 @@ const EditorHeader = memo(({
   onUpdateField,
   onSave,
   onIdChange,
-  isSaving
+  isSaving,
+  onBack
 }: EditorHeaderProps) => {
 
   const middleContent = (
@@ -211,6 +213,7 @@ const EditorHeader = memo(({
       saveText="同步至云端"
       middleContent={middleContent}
       rightExtraActions={rightExtraActions}
+      onBack={onBack}
     />
   );
 });

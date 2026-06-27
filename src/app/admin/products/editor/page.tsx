@@ -5,11 +5,13 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { useSession } from 'next-auth/react';
 import { useLocalDoc } from '@/hooks/use-local-doc';
 import { useLocalCollection } from '@/hooks/use-local-collection';
-import { Loader2, TableProperties, Settings, ImageIcon, Library } from 'lucide-react';
+import { Loader2, TableProperties, Settings, ImageIcon, Library, Info } from 'lucide-react';
 import { AdminTabs, AdminTabsList, AdminTabsTrigger, AdminTabsContent } from '@/components/admin/AdminTabs';
 import { useToast } from '@/hooks/use-toast';
 import { smartTranslate } from '@/lib/translate-client';
 import { MediaLibraryDialog } from '@/components/admin/media-library-dialog';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { Button } from '@/components/ui/button';
 
 import { AdminEditorHeader } from '@/components/admin/AdminEditorHeader';
 import EditorHeader from './components/EditorHeader';
@@ -116,6 +118,70 @@ function ProductEditorContent() {
 
   const zhEditorRef = useRef<any>(null);
   const targetEditorRef = useRef<any>(null);
+  const initialDataRef = useRef<ProductFormData | null>(null);
+  const hasPushedStateRef = useRef(false);
+
+  const checkIsDirty = () => {
+    if (!initialDataRef.current) return false;
+    const cleanObj = (obj: any) => {
+      if (!obj) return '';
+      return JSON.stringify({
+        id: obj.id,
+        categoryId: obj.categoryId,
+        status: obj.status,
+        nameZh: obj.nameZh,
+        nameEn: obj.nameEn,
+        descZh: obj.descZh,
+        descEn: obj.descEn,
+        mainImageUrl: obj.mainImageUrl,
+        videoUrl: obj.videoUrl,
+        galleryUrls: obj.galleryUrls,
+        localizedDetails: obj.localizedDetails,
+        enabledLanguages: obj.enabledLanguages,
+        specGroups: obj.specGroups?.map((g: any) => ({
+          titleZh: g.titleZh,
+          titleEn: g.titleEn,
+          items: g.items?.map((i: any) => ({
+            labelZh: i.labelZh,
+            labelEn: i.labelEn,
+            valueZh: i.valueZh,
+            valueEn: i.valueEn
+          }))
+        }))
+      });
+    };
+    return cleanObj(formData) !== cleanObj(initialDataRef.current);
+  };
+
+  const getDifferentSections = (draftData: any, initForm: any) => {
+    const diffs: string[] = [];
+    if (!draftData || !initForm) return diffs;
+    const basicFields = ['id', 'categoryId', 'status', 'nameZh', 'nameEn', 'descZh', 'descEn', 'enabledLanguages'];
+    if (basicFields.some(f => JSON.stringify(draftData[f]) !== JSON.stringify(initForm[f]))) {
+      diffs.push('基础配置');
+    }
+    const mediaFields = ['mainImageUrl', 'videoUrl', 'galleryUrls'];
+    if (mediaFields.some(f => JSON.stringify(draftData[f]) !== JSON.stringify(initForm[f]))) {
+      diffs.push('产品图');
+    }
+    const cleanSpecs = (groups: any) => groups?.map((g: any) => ({
+      titleZh: g.titleZh,
+      titleEn: g.titleEn,
+      items: g.items?.map((i: any) => ({
+        labelZh: i.labelZh,
+        labelEn: i.labelEn,
+        valueZh: i.valueZh,
+        valueEn: i.valueEn
+      }))
+    })) || [];
+    if (JSON.stringify(cleanSpecs(draftData.specGroups)) !== JSON.stringify(cleanSpecs(initForm.specGroups))) {
+      diffs.push('规格参数');
+    }
+    if (JSON.stringify(draftData.localizedDetails) !== JSON.stringify(initForm.localizedDetails)) {
+      diffs.push('详细介绍');
+    }
+    return diffs;
+  };
 
   const [formData, setFormData] = useState<ProductFormData>({
     id: '', categoryId: '', mainImageUrl: '', videoUrl: '', galleryUrls: [],
@@ -133,6 +199,10 @@ function ProductEditorContent() {
   const [isPickerOpen, setIsPickerOpen] = useState(false);
   const [pickerTarget, setPickerTarget] = useState<'main' | 'video' | 'gallery' | 'richtext-zh' | 'richtext-target'>('main');
   const [lastUpdatedAt, setLastUpdatedAt] = useState<string | null>(null);
+  const [hasDraft, setHasDraft] = useState(false);
+  const [draftTime, setDraftTime] = useState('');
+  const [differentSections, setDifferentSections] = useState<string[]>([]);
+  const draftDataRef = useRef<any>(null);
 
   const { data: product, isLoading: isProdLoading } = useLocalDoc<any>('products', productId || 'new');
   const { data: categories } = useLocalCollection<any>('productCategories');
@@ -210,7 +280,7 @@ function ProductEditorContent() {
           valueId: i.valueId
         }))
       }));
-      setFormData({
+      const initialForm = {
         id: product.id, categoryId: product.categoryId, mainImageUrl: product.mainImageUrl,
         videoUrl: product.videoUrl || '',
         galleryUrls: product.galleryImageUrls || [],
@@ -219,7 +289,55 @@ function ProductEditorContent() {
         localizedDetails: product.localizedDetails || { zh: '', en: '' },
         specGroups: sGroups, status: product.status || 'published',
         enabledLanguages: product.enabledLanguages || supportedLangs.map((l: any) => l.code)
-      });
+      };
+      setFormData(initialForm);
+      if (!initialDataRef.current) {
+        initialDataRef.current = initialForm;
+        const draftKey = `heovose_draft_product_${isEditing ? productId : 'new'}`;
+        const draftStr = localStorage.getItem(draftKey);
+        if (draftStr) {
+          try {
+            const draft = JSON.parse(draftStr);
+            const cleanObj = (obj: any) => {
+              if (!obj) return '';
+              return JSON.stringify({
+                id: obj.id,
+                categoryId: obj.categoryId,
+                status: obj.status,
+                nameZh: obj.nameZh,
+                nameEn: obj.nameEn,
+                descZh: obj.descZh,
+                descEn: obj.descEn,
+                mainImageUrl: obj.mainImageUrl,
+                videoUrl: obj.videoUrl,
+                galleryUrls: obj.galleryUrls,
+                localizedDetails: obj.localizedDetails,
+                enabledLanguages: obj.enabledLanguages,
+                specGroups: obj.specGroups?.map((g: any) => ({
+                  titleZh: g.titleZh,
+                  titleEn: g.titleEn,
+                  items: g.items?.map((i: any) => ({
+                    labelZh: i.labelZh,
+                    labelEn: i.labelEn,
+                    valueZh: i.valueZh,
+                    valueEn: i.valueEn
+                  }))
+                }))
+              });
+            };
+            if (cleanObj(draft.data) !== cleanObj(initialForm)) {
+              setHasDraft(true);
+              setDraftTime(new Date(draft.timestamp).toLocaleString());
+              setDifferentSections(getDifferentSections(draft.data, initialForm));
+              draftDataRef.current = draft.data;
+            } else {
+              localStorage.removeItem(draftKey);
+            }
+          } catch (e) {
+            console.error("Failed to parse local draft", e);
+          }
+        }
+      }
       setLastUpdatedAt(product.updatedAt || null);
     }
   }, [isEditing, product, translations, supportedLangs]);
@@ -227,12 +345,138 @@ function ProductEditorContent() {
   // 新建产品时，当语言列表配置加载完，默认勾选全部可见语言
   useEffect(() => {
     if (!isEditing && supportedLangs.length > 0) {
-      setFormData(prev => ({
-        ...prev,
+      const defaultForm = {
+        id: '', categoryId: '', mainImageUrl: '', videoUrl: '', galleryUrls: [],
+        nameEn: '', nameZh: '', descEn: '', descZh: '',
+        localizedDetails: { zh: '', en: '' },
+        specGroups: [], status: 'published' as const,
         enabledLanguages: supportedLangs.map((l: any) => l.code)
-      }));
+      };
+      setFormData(defaultForm);
+      if (!initialDataRef.current) {
+        initialDataRef.current = defaultForm;
+        const draftKey = 'heovose_draft_product_new';
+        const draftStr = localStorage.getItem(draftKey);
+        if (draftStr) {
+          try {
+            const draft = JSON.parse(draftStr);
+            const cleanObj = (obj: any) => {
+              if (!obj) return '';
+              return JSON.stringify({
+                id: obj.id,
+                categoryId: obj.categoryId,
+                status: obj.status,
+                nameZh: obj.nameZh,
+                nameEn: obj.nameEn,
+                descZh: obj.descZh,
+                descEn: obj.descEn,
+                mainImageUrl: obj.mainImageUrl,
+                videoUrl: obj.videoUrl,
+                galleryUrls: obj.galleryUrls,
+                localizedDetails: obj.localizedDetails,
+                enabledLanguages: obj.enabledLanguages,
+                specGroups: obj.specGroups?.map((g: any) => ({
+                  titleZh: g.titleZh,
+                  titleEn: g.titleEn,
+                  items: g.items?.map((i: any) => ({
+                    labelZh: i.labelZh,
+                    labelEn: i.labelEn,
+                    valueZh: i.valueZh,
+                    valueEn: i.valueEn
+                  }))
+                }))
+              });
+            };
+            if (cleanObj(draft.data) !== cleanObj(defaultForm)) {
+              setHasDraft(true);
+              setDraftTime(new Date(draft.timestamp).toLocaleString());
+              setDifferentSections(getDifferentSections(draft.data, defaultForm));
+              draftDataRef.current = draft.data;
+            } else {
+              localStorage.removeItem(draftKey);
+            }
+          } catch (e) {
+            console.error("Failed to parse local draft", e);
+          }
+        }
+      }
     }
   }, [isEditing, supportedLangs]);
+
+  // 监听浏览器刷新/关闭，防止未保存数据丢失
+  useEffect(() => {
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      if (checkIsDirty()) {
+        e.preventDefault();
+        e.returnValue = '您有未保存的修改，确定要离开吗？';
+        return '您有未保存的修改，确定要离开吗？';
+      }
+    };
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    return () => window.removeEventListener('beforeunload', handleBeforeUnload);
+  }, [formData]);
+
+  // 当检测到数据脏时，向 window.history 压入一个阻塞状态，用来拦截浏览器回退物理按键
+  useEffect(() => {
+    const isDirty = checkIsDirty();
+    if (isDirty && !hasPushedStateRef.current) {
+      window.history.pushState({ isBlocking: true }, '', window.location.href);
+      hasPushedStateRef.current = true;
+    } else if (!isDirty && hasPushedStateRef.current) {
+      hasPushedStateRef.current = false;
+      window.history.back();
+    }
+  }, [formData]);
+
+  // 监听 popstate（浏览器物理后退）
+  useEffect(() => {
+    const handlePopState = (e: PopStateEvent) => {
+      if (hasPushedStateRef.current) {
+        const confirmLeave = window.confirm("您有未保存的修改，确定要返回吗？所有未保存的修改都将丢失。");
+        if (confirmLeave) {
+          hasPushedStateRef.current = false;
+          // 浏览器已经回退了一步，我们只需允许流程通过即可
+        } else {
+          // 恢复阻塞状态以防下一次后退
+          window.history.pushState({ isBlocking: true }, '', window.location.href);
+        }
+      }
+    };
+
+    window.addEventListener('popstate', handlePopState);
+    return () => {
+      window.removeEventListener('popstate', handlePopState);
+    };
+  }, [formData]);
+
+  // 自动保存草稿至 localStorage
+  useEffect(() => {
+    if (!initialDataRef.current) return;
+    const draftKey = `heovose_draft_product_${isEditing ? productId : 'new'}`;
+    if (checkIsDirty()) {
+      localStorage.setItem(draftKey, JSON.stringify({
+        timestamp: Date.now(),
+        data: formData
+      }));
+    } else {
+      localStorage.removeItem(draftKey);
+    }
+  }, [formData]);
+
+  const handleRestoreDraft = () => {
+    if (draftDataRef.current) {
+      setFormData(draftDataRef.current);
+      setHasDraft(false);
+      toast({ title: "已恢复本地草稿", description: "已为您恢复上次未保存的编辑内容。" });
+    }
+  };
+
+  const handleDiscardDraft = () => {
+    const draftKey = `heovose_draft_product_${isEditing ? productId : 'new'}`;
+    localStorage.removeItem(draftKey);
+    setHasDraft(false);
+    toast({ title: "已忽略草稿", description: "本地暂存草稿已被清理。" });
+  };
 
   useEffect(() => {
     if (isEditing || !formData.id) {
@@ -387,7 +631,16 @@ function ProductEditorContent() {
       setLastUpdatedAt(updatedProduct.updatedAt || null);
 
       toast({ title: "同步成功", description: "产品数据已持久化至云端" });
-      router.push('/admin/products');
+      initialDataRef.current = formData;
+      localStorage.removeItem(`heovose_draft_product_${formData.id}`);
+      localStorage.removeItem('heovose_draft_product_new');
+      if (hasPushedStateRef.current) {
+        hasPushedStateRef.current = false;
+        window.history.back();
+      }
+      setTimeout(() => {
+        router.push('/admin/products');
+      }, 50);
     } catch (e: any) {
       console.error("Save Error:", e);
       toast({ variant: "destructive", title: "保存失败", description: e.message });
@@ -691,6 +944,21 @@ function ProductEditorContent() {
     }
   };
 
+  const handleBack = () => {
+    if (checkIsDirty()) {
+      const confirmLeave = window.confirm("您有未保存的修改，确定要返回吗？所有未保存的修改都将丢失。");
+      if (!confirmLeave) return;
+      localStorage.removeItem(`heovose_draft_product_${isEditing ? productId : 'new'}`);
+    }
+    if (hasPushedStateRef.current) {
+      hasPushedStateRef.current = false;
+      window.history.back();
+    }
+    setTimeout(() => {
+      router.push('/admin/products');
+    }, 50);
+  };
+
   if (isProdLoading) return <div className="h-screen flex items-center justify-center"><Loader2 className="animate-spin opacity-20 text-primary" /></div>;
 
   return (
@@ -710,7 +978,49 @@ function ProductEditorContent() {
         onSave={handleSave}
         onIdChange={(id: string) => handleUpdateField('id', id)}
         isSaving={isAiProcessing}
+        onBack={handleBack}
       />
+
+      {hasDraft && (
+        <div className="relative z-10 max-w-7xl mx-auto px-4 md:px-0">
+          <Alert className="bg-primary/[0.04] border-primary/25 rounded-2xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 p-5 backdrop-blur-md shadow-lg shadow-primary/5">
+            <div className="flex items-center gap-3">
+              <div className="h-9 w-9 rounded-xl bg-primary/10 flex items-center justify-center text-primary shrink-0">
+                <Info className="h-5 w-5 text-primary animate-pulse" />
+              </div>
+              <div>
+                <AlertTitle className="text-xs font-black text-foreground uppercase tracking-wider">检测到本地未保存的修改草稿</AlertTitle>
+                <AlertDescription className="text-[10px] text-muted-foreground/80 mt-0.5 leading-relaxed flex flex-col gap-1">
+                  <span>系统于 <span className="font-bold text-primary">{draftTime}</span> 自动为您暂存了未同步的修改草稿。</span>
+                  {differentSections.length > 0 && (
+                    <span className="text-[9px] text-primary/80 font-bold uppercase tracking-widest flex items-center gap-1.5 mt-0.5">
+                      <span className="h-1.5 w-1.5 rounded-full bg-primary animate-pulse" />
+                      不一致板块: {differentSections.join('、')}
+                    </span>
+                  )}
+                </AlertDescription>
+              </div>
+            </div>
+            <div className="flex gap-2.5 w-full sm:w-auto justify-end">
+              <Button 
+                size="sm" 
+                variant="outline" 
+                className="h-8 px-4 text-[9px] font-bold uppercase tracking-widest rounded-xl border-border/40 hover:bg-destructive/10 hover:text-destructive hover:border-destructive/20 transition-all"
+                onClick={handleDiscardDraft}
+              >
+                忽略并删除
+              </Button>
+              <Button 
+                size="sm" 
+                className="h-8 px-4 text-[9px] font-bold uppercase tracking-widest rounded-xl bg-primary hover:bg-primary/90 text-white shadow-md shadow-primary/15 transition-all"
+                onClick={handleRestoreDraft}
+              >
+                恢复草稿
+              </Button>
+            </div>
+          </Alert>
+        </div>
+      )}
 
       <div className="relative z-10 max-w-7xl mx-auto px-4 md:px-0">
         <AdminTabs value={activeTab} onValueChange={setActiveTab} className="space-y-10">
