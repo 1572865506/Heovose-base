@@ -128,6 +128,20 @@ const CategoryMenu = React.memo(({
   onSelect: (id: string) => void;
   getDisplayName: (cat?: GalleryCategory) => string;
 }) => {
+  const [collapsedIds, setCollapsedIds] = React.useState<Set<string>>(new Set());
+
+  const toggleCollapse = React.useCallback((id: string) => {
+    setCollapsedIds(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) {
+        next.delete(id);
+      } else {
+        next.add(id);
+      }
+      return next;
+    });
+  }, []);
+
   // 递归生成带缩进的平铺列表
   const renderFlatItems = (parentId: string | null = null, depth = 0): React.ReactNode[] => {
     const levelCats = categories.filter(c => {
@@ -138,24 +152,43 @@ const CategoryMenu = React.memo(({
 
     return levelCats.flatMap(cat => {
       const children = categories.filter(c => c.parentId === cat.id);
-      const indent = depth > 0 ? '　'.repeat(depth) + '└ ' : '';
-
+      const hasChildren = children.length > 0;
+      const isCollapsed = collapsedIds.has(cat.id);
       return [
         <DropdownMenuItem
           key={cat.id}
           onClick={() => onSelect(cat.id)}
           className={cn(
-            "rounded-xl px-3 py-2 text-xs font-bold transition-colors cursor-pointer",
+            "rounded-xl py-2 text-xs font-bold transition-colors cursor-pointer flex items-center justify-between group",
             depth === 0 ? "text-foreground" : "text-muted-foreground",
             "hover:bg-primary/5 focus:bg-primary/5 focus:text-primary"
           )}
+          style={{ paddingLeft: `${depth * 16 + 12}px`, paddingRight: '12px' }}
         >
-          <span className="truncate">
-            <span className="opacity-30 mr-1">{indent}</span>
-            {getDisplayName(cat)}
-          </span>
+          <div className="flex items-center gap-1.5 min-w-0 flex-1">
+            {hasChildren ? (
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  e.preventDefault();
+                  toggleCollapse(cat.id);
+                }}
+                className="h-5 w-5 rounded-md hover:bg-muted-foreground/10 flex items-center justify-center shrink-0 text-muted-foreground/60 hover:text-foreground transition-all"
+              >
+                {isCollapsed ? (
+                  <ChevronRight className="h-3.5 w-3.5" />
+                ) : (
+                  <ChevronDown className="h-3.5 w-3.5" />
+                )}
+              </button>
+            ) : (
+              <div className="w-5 shrink-0" />
+            )}
+            <span className="truncate">{getDisplayName(cat)}</span>
+          </div>
         </DropdownMenuItem>,
-        ...renderFlatItems(cat.id, depth + 1)
+        ...(isCollapsed ? [] : renderFlatItems(cat.id, depth + 1))
       ];
     });
   };

@@ -30,6 +30,7 @@ export function extractIdsFromSpecGroups(specGroups: any): string[] {
   if (Array.isArray(groups)) {
     groups.forEach((g: any) => {
       if (g?.titleId) ids.push(g.titleId);
+      if (g?.footnoteId) ids.push(g.footnoteId);
       if (Array.isArray(g?.items)) {
         g.items.forEach((item: any) => {
           if (item?.labelId) ids.push(item.labelId);

@@ -141,6 +141,8 @@ function ProductEditorContent() {
         specGroups: obj.specGroups?.map((g: any) => ({
           titleZh: g.titleZh,
           titleEn: g.titleEn,
+          footnoteZh: g.footnoteZh,
+          footnoteEn: g.footnoteEn,
           items: g.items?.map((i: any) => ({
             labelZh: i.labelZh,
             labelEn: i.labelEn,
@@ -167,6 +169,8 @@ function ProductEditorContent() {
     const cleanSpecs = (groups: any) => groups?.map((g: any) => ({
       titleZh: g.titleZh,
       titleEn: g.titleEn,
+      footnoteZh: g.footnoteZh,
+      footnoteEn: g.footnoteEn,
       items: g.items?.map((i: any) => ({
         labelZh: i.labelZh,
         labelEn: i.labelEn,
@@ -272,6 +276,8 @@ function ProductEditorContent() {
         uid: generateUniqueId('sg'),
         titleEn: getT(g.titleId).en, titleZh: getT(g.titleId).zh,
         titleId: g.titleId,
+        footnoteEn: getT(g.footnoteId).en, footnoteZh: getT(g.footnoteId).zh,
+        footnoteId: g.footnoteId,
         items: (Array.isArray(g.items) ? g.items : []).map((i: any) => ({
           uid: generateUniqueId('si'),
           labelEn: getT(i.labelId).en, labelZh: getT(i.labelId).zh,
@@ -316,6 +322,8 @@ function ProductEditorContent() {
                 specGroups: obj.specGroups?.map((g: any) => ({
                   titleZh: g.titleZh,
                   titleEn: g.titleEn,
+                  footnoteZh: g.footnoteZh,
+                  footnoteEn: g.footnoteEn,
                   items: g.items?.map((i: any) => ({
                     labelZh: i.labelZh,
                     labelEn: i.labelEn,
@@ -378,6 +386,8 @@ function ProductEditorContent() {
                 specGroups: obj.specGroups?.map((g: any) => ({
                   titleZh: g.titleZh,
                   titleEn: g.titleEn,
+                  footnoteZh: g.footnoteZh,
+                  footnoteEn: g.footnoteEn,
                   items: g.items?.map((i: any) => ({
                     labelZh: i.labelZh,
                     labelEn: i.labelEn,
@@ -552,6 +562,10 @@ function ProductEditorContent() {
           const titleEn = g.titleEn || findLocalTranslation(g.titleZh) || '';
           translationsToSync.push({ zh: g.titleZh, en: titleEn });
         }
+        if (g.footnoteZh) {
+          const footnoteEn = g.footnoteEn || findLocalTranslation(g.footnoteZh) || '';
+          translationsToSync.push({ zh: g.footnoteZh, en: footnoteEn });
+        }
         g.items.forEach(i => {
           if (i.labelZh) {
             const labelEn = i.labelEn || findLocalTranslation(i.labelZh) || '';
@@ -593,6 +607,7 @@ function ProductEditorContent() {
 
       const sGroups = formData.specGroups.map(g => ({
         titleId: getHashId(g.titleZh, g.titleEn),
+        footnoteId: g.footnoteZh ? getHashId(g.footnoteZh, g.footnoteEn) : undefined,
         items: g.items.map(i => ({
           labelId: getHashId(i.labelZh, i.labelEn),
           valueId: getHashId(i.valueZh, i.valueEn)

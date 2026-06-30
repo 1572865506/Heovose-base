@@ -1,10 +1,15 @@
-import { translateContent } from '@/ai/flows/translate-flow';
-
 interface TranslateInput {
   text: string;
   sourceLang?: string;
   targetLangs: string[];
   taskType?: 'spec' | 'rich-text' | 'text' | 'json-map';
+}
+
+interface Footnote {
+  id: string;
+  type: 'ordered' | 'unordered';
+  raw: string;
+  translated?: string;
 }
 
 /**
@@ -67,8 +72,6 @@ export async function smartTranslate(input: TranslateInput) {
  * 辅助方法：探测文本是否已经属于目标语种 (简单启发式)
  */
 function isAlreadyTargetLanguage(text: string, targetLang: string): boolean {
-  // 遵循用户建议：不再通过复杂的正则判定语种，仅做基础的非空校验
-  // 如果调用方已经决定要翻译，网关层不再做二次拦截（除非原文确实为空）
   return !text || !text.trim();
 }
 
@@ -83,7 +86,6 @@ async function handleShelllessTranslate(input: TranslateInput, provider: any, ai
   try { 
     json = JSON.parse(input.text); 
   } catch (e) {
-    // 如果不是 JSON 但包含换行，则按行拆分
     if (input.text.includes('\n')) {
       const lines = input.text.split('\n');
       json = {};
@@ -97,12 +99,10 @@ async function handleShelllessTranslate(input: TranslateInput, provider: any, ai
   const textNodes: { parent: any, key: string, value: string }[] = [];
   
   if (isPlainLines) {
-    // 纯文本行模式：直接把每行作为待译节点
     Object.keys(json).forEach(key => {
       textNodes.push({ parent: json, key, value: json[key] });
     });
   } else {
-    // JSON 模式：深度遍历
     const traverse = (obj: any) => {
       if (!obj || typeof obj !== 'object') return;
       for (const key in obj) {
@@ -124,7 +124,6 @@ async function handleShelllessTranslate(input: TranslateInput, provider: any, ai
     let workCount = 0;
     
     textNodes.forEach((node, i) => {
-      // --- 核心逻辑：已译排除 ---
       if (isAlreadyTargetLanguage(node.value, lang)) {
         console.log(`⏩ [SmartTranslate] 跳过已翻译片段: "${node.value.substring(0, 10)}..."`);
         return;
@@ -142,7 +141,6 @@ async function handleShelllessTranslate(input: TranslateInput, provider: any, ai
     let translatedMap: Record<number, string> = {};
 
     if (isLocal) {
-      // 本地模型容易在生成 JSON 时出错，拆分成单独的普通文本翻译
       await Promise.all(
         Object.keys(map).map(async (keyStr) => {
           const idx = Number(keyStr);
@@ -161,7 +159,6 @@ async function handleShelllessTranslate(input: TranslateInput, provider: any, ai
         })
       );
     } else {
-      // 远程高级模型，继续使用批量打包翻译以节省 API token 消耗和提高速度
       try {
         const res = await smartTranslate({ 
           text: JSON.stringify(map), 
@@ -187,7 +184,6 @@ async function handleShelllessTranslate(input: TranslateInput, provider: any, ai
       });
       
       if (isPlainLines) {
-        // 如果是纯文本行模式，重新拼接成多行字符串
         const result = Object.values(json).join('\n');
         return { [lang]: result };
       }
@@ -195,7 +191,6 @@ async function handleShelllessTranslate(input: TranslateInput, provider: any, ai
     }
   }
   
-  // 无法解析 JSON 或无文本节点，回退
   return await handleOriginalTranslate(input, provider, 'text', aiConfig);
 }
 
@@ -218,18 +213,42 @@ async function handleOriginalTranslate(input: TranslateInput, provider: any, tas
     'vi': 'Vietnamese'
   };
   const targetLangName = langMap[lang.toLowerCase()] || lang.toUpperCase();
+
+  const isJsonInput = taskType === 'spec' || taskType === 'rich-text' || taskType === 'json-map' || (input.text.trim().startsWith('{') && input.text.trim().endsWith('}'));
+
+  // 1. 客户端定界符屏蔽处理：分离脚注与正文，使用学术占位符 [fn0]
+  const footnotes: Footnote[] = [];
+  let processedText = input.text;
+  const hasFootnotes = input.text.includes('[[') || input.text.includes('{{');
+  
+  if (hasFootnotes && provider.type === 'browser-local') {
+    processedText = extractFootnotes(input.text, isJsonInput, footnotes);
+  }
+
+  const isJsonTask = taskType === 'spec' || taskType === 'rich-text' || taskType === 'json-map';
+
   const finalSystem = `You are a professional translator.
 Rules:
 1. Translate to ${targetLangName}. 
 2. NO explanation, NO markdown, NO prefix. 
 3. Preserve all \\n and format EXACTLY. 
 4. Keep the same number of lines as the source text.
-5. Return ONLY the translation, do NOT repeat the original text.${(taskType === 'spec' || taskType === 'rich-text') ? '\n6. If JSON, keep keys, translate values only.' : ''}`;
+5. Return ONLY the translation, do NOT repeat the original text.
+6. Do NOT translate or modify placeholder tags like [fn0], [fn1], [fn2] etc. Keep them exactly as they are.${isJsonTask ? '\n7. If JSON, keep keys, translate values only.' : ''}`;
 
   if (provider.type === 'browser-local') {
-    const userContent = (taskType === 'spec' || taskType === 'rich-text') 
-      ? `SOURCE_JSON:\n${input.text}\n\nTRANSLATED_JSON_IN_${targetLangName.toUpperCase()}:`
-      : `SOURCE_TEXT:\n${input.text}\n\nTRANSLATION_IN_${targetLangName.toUpperCase()}_ONLY:`;
+    // 并行翻译提取出的每个脚注
+    if (footnotes.length > 0) {
+      await Promise.all(
+        footnotes.map(async (fn) => {
+          fn.translated = await translateFootnoteLocal(fn.raw, targetLangName, provider);
+        })
+      );
+    }
+
+    const userContent = isJsonTask 
+      ? `SOURCE_JSON:\n${processedText}\n\nTRANSLATED_JSON_IN_${targetLangName.toUpperCase()}:`
+      : `SOURCE_TEXT:\n${processedText}\n\nTRANSLATION_IN_${targetLangName.toUpperCase()}_ONLY:`;
 
     const res = await fetch(`${provider.baseUrl}/chat/completions`, {
       method: 'POST',
@@ -247,39 +266,182 @@ Rules:
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     const data = await res.json();
     const rawContent = data.choices?.[0]?.message?.content || '';
-    const finalVal = robustExtract(rawContent, input.text, lang);
+    const finalVal = robustExtract(rawContent, processedText, lang);
 
-    // 如果是 JSON 任务（如规格表、富文本、内部 Map），或者提取到了对象，则整体回传
-    const isJsonTask = taskType === 'spec' || taskType === 'rich-text' || taskType === 'json-map' || (typeof finalVal === 'object' && finalVal !== null);
-    if (typeof finalVal === 'object' && finalVal !== null) {
-      if (isJsonTask) {
-        return { [lang]: JSON.stringify(finalVal) };
+    let processedVal: any = finalVal;
+    if (footnotes.length > 0) {
+      const rawString = typeof finalVal === 'object' ? JSON.stringify(finalVal) : String(finalVal);
+      const restoredString = restoreFootnotes(rawString, isJsonInput, footnotes);
+      try {
+        processedVal = isJsonInput ? JSON.parse(restoredString) : restoredString;
+      } catch (e) {
+        processedVal = restoredString;
       }
-      // 否则尝试寻找语种 Key
-      const val = finalVal[lang] || 
-                  finalVal[lang.toLowerCase()] || 
-                  finalVal[targetLangName] || 
-                  finalVal[targetLangName.toLowerCase()] ||
-                  finalVal['translation'] ||
-                  Object.values(finalVal)[0];
+    }
+
+    const isJsonOutput = taskType === 'spec' || taskType === 'rich-text' || taskType === 'json-map' || (typeof processedVal === 'object' && processedVal !== null);
+    if (typeof processedVal === 'object' && processedVal !== null) {
+      if (isJsonOutput) {
+        return { [lang]: JSON.stringify(processedVal) };
+      }
+      const val = processedVal[lang] || 
+                  processedVal[lang.toLowerCase()] || 
+                  processedVal[targetLangName] || 
+                  processedVal[targetLangName.toLowerCase()] ||
+                  processedVal['translation'] ||
+                  Object.values(processedVal)[0];
       return { [lang]: String(val) };
     }
     
-    return { [lang]: String(finalVal) };
+    return { [lang]: String(processedVal) };
   } else {
-    return await translateContent({
-      ...input,
-      taskType: taskType as any,
-      providerId: provider.id
+    // 远程云端调用 API，直接传递原文，由服务端完成抽取与翻译
+    const apiRes = await fetch('/api/translate', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        ...input,
+        taskType: taskType as any,
+        providerId: provider.id
+      })
     });
+    if (!apiRes.ok) {
+      const errData = await apiRes.json().catch(() => ({}));
+      throw new Error(errData.error || `Translation API error: ${apiRes.status}`);
+    }
+    return await apiRes.json();
   }
+}
+
+// 辅助方法：本地大模型翻译单个脚注字串
+async function translateFootnoteLocal(text: string, targetLangName: string, provider: any): Promise<string> {
+  try {
+    const systemPrompt = `You are a professional translator. Translate to ${targetLangName}. Return ONLY the translation. NO explanation.`;
+    const userPrompt = `Translate this:\n${text}`;
+    
+    const res = await fetch(`${provider.baseUrl}/chat/completions`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: provider.model,
+        messages: [
+          { role: 'system', content: systemPrompt },
+          { role: 'user', content: userPrompt }
+        ],
+        temperature: 0.1
+      })
+    });
+    if (!res.ok) return text;
+    const data = await res.json();
+    return (data.choices?.[0]?.message?.content || text).trim();
+  } catch (e) {
+    console.warn('[SmartTranslate] Local footnote translation failed:', e);
+    return text;
+  }
+}
+
+// 提取 Payload 中的所有脚注为 [fn0]
+function extractFootnotes(text: string, isJson: boolean, footnotes: Footnote[]): string {
+  let counter = 0;
+
+  const extractFromStr = (str: string): string => {
+    if (!str) return '';
+    
+    // 匹配 [[...]]
+    let res = str.replace(/\[\[([\s\S]*?)\]\]/g, (match, content) => {
+      const id = `[fn${counter++}]`;
+      footnotes.push({ id, type: 'ordered', raw: content.trim() });
+      return id;
+    });
+
+    // 匹配 {{...}}
+    res = res.replace(/\{\{([\s\S]*?)\}\}/g, (match, content) => {
+      const id = `[fn${counter++}]`;
+      footnotes.push({ id, type: 'unordered', raw: content.trim() });
+      return id;
+    });
+
+    return res;
+  };
+
+  if (isJson) {
+    try {
+      const data = JSON.parse(text);
+      const traverse = (obj: any): any => {
+        if (!obj || typeof obj !== 'object') return obj;
+        const processed = Array.isArray(obj) ? [] : {};
+        for (const key in obj) {
+          if (typeof obj[key] === 'string') {
+            (processed as any)[key] = extractFromStr(obj[key]);
+          } else {
+            (processed as any)[key] = traverse(obj[key]);
+          }
+        }
+        return processed;
+      };
+      return JSON.stringify(traverse(data));
+    } catch (e) {
+      return extractFromStr(text);
+    }
+  }
+
+  return extractFromStr(text);
+}
+
+// 还原 Payload 中的所有脚注占位符为真正的译文
+function restoreFootnotes(text: string, isJson: boolean, footnotes: Footnote[]): string {
+  const restoreToStr = (str: string): string => {
+    if (!str) return '';
+    let res = str;
+    
+    for (const fn of footnotes) {
+      const num = fn.id.replace(/\D/g, '');
+      const regexPattern = `\\[\\s*[fF][nN]\\s*${num}\\s*\\]`;
+      const regex = new RegExp(regexPattern, 'g');
+      
+      const tag = fn.type === 'ordered' 
+        ? `[[${fn.translated || fn.raw}]]` 
+        : `{{${fn.translated || fn.raw}}}`;
+        
+      res = res.replace(regex, tag);
+    }
+
+    return res
+      .replace(/\s*\[\[\s*/g, ' [[')
+      .replace(/\s*\]\]\s*/g, ']] ')
+      .replace(/\s*\{\{\s*/g, ' {{')
+      .replace(/\s*\}\}\s*/g, '}} ')
+      .trim();
+  };
+
+  if (isJson) {
+    try {
+      const data = JSON.parse(text);
+      const traverse = (obj: any): any => {
+        if (!obj || typeof obj !== 'object') return obj;
+        const processed = Array.isArray(obj) ? [] : {};
+        for (const key in obj) {
+          if (typeof obj[key] === 'string') {
+            (processed as any)[key] = restoreToStr(obj[key]);
+          } else {
+            (processed as any)[key] = traverse(obj[key]);
+          }
+        }
+        return processed;
+      };
+      return JSON.stringify(traverse(data));
+    } catch (e) {
+      return restoreToStr(text);
+    }
+  }
+
+  return restoreToStr(text);
 }
 
 /**
  * 鲁棒性提取：支持提取 JSON 对象或清洗纯文本
  */
 function robustExtract(raw: string, sourceText?: string, targetLang?: string) {
-  // 1. 尝试提取 JSON
   const matches = raw.match(/\{[\s\S]*\}/g);
   if (matches) {
     const longest = matches.reduce((a, b) => a.length > b.length ? a : b);
@@ -288,7 +450,6 @@ function robustExtract(raw: string, sourceText?: string, targetLang?: string) {
     } catch (e) {}
   }
 
-  // 2. 清洗普通文本：移除 Markdown 加粗、常见前缀
   let cleaned = raw
     .replace(/\*\*/g, '')
     .replace(/^(Translation|Result|Translated|Output|Response|译文|结果)[:：]\s*/i, '')
@@ -296,7 +457,6 @@ function robustExtract(raw: string, sourceText?: string, targetLang?: string) {
     .replace(/^This is translated to [\w\s]+[:：]?\s*/i, '')
     .trim();
 
-  // 3. 防御性机制：若原文没有括号，但翻译结果末尾被 LLM 强行附加了括号包裹的英文/原文，进行自动剥离
   const hasParenthesesInSource = sourceText && (sourceText.includes('(') || sourceText.includes('\uff08'));
   if (targetLang && targetLang.toLowerCase() !== 'en' && !hasParenthesesInSource) {
     cleaned = cleaned.replace(/\s*[\(\uff08]\s*[a-zA-Z0-9\s\-_.,;:!?'"&/]+\s*[\)\uff09]\s*$/g, '');
@@ -322,7 +482,7 @@ function getFriendlyErrorMessage(error: any): string {
     return 'AI 节点认证失败，请检查 API Key 配置是否正确。';
   }
   if (msg.includes('ECONNREFUSED') || msg.includes('Failed to fetch')) {
-    return '无法连接到 AI 服务，请检查本地模型服务是否已启动或网络是否通畅。';
+    return '无法连接 to AI 服务，请检查本地模型服务是否已启动或网络是否通畅。';
   }
   if (msg.includes('timeout')) {
     return 'AI 响应超时，可能是网络连接不稳定或模型推理过慢。';
@@ -331,5 +491,5 @@ function getFriendlyErrorMessage(error: any): string {
     return '模型输出格式异常，请尝试更换其他 AI 模型节点。';
   }
 
-  return msg; // 兜底返回原始消息
+  return msg;
 }

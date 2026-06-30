@@ -63,6 +63,8 @@ interface ProductSpecGroup {
   titleEn: string;
   titleZh: string;
   items: ProductSpecEntry[];
+  footnoteZh?: string;
+  footnoteEn?: string;
 }
 
 interface SpecMatrixSectionProps {
@@ -390,6 +392,21 @@ const SpecMatrixSection = memo(({
           <Button onClick={handleAddGroup} className="rounded-xl h-10 px-5 text-[10px] font-bold uppercase tracking-widest bg-foreground text-background hover:bg-foreground/90">
             <PlusCircle className="h-4 w-4 mr-2" /> 新增规格组
           </Button>
+        </div>
+      </div>
+
+      {/* 脚注格式提示 */}
+      <div className="bg-primary/[0.03] border border-primary/15 rounded-2xl p-4 flex items-start gap-3 mt-6">
+        <span className="text-primary text-xs shrink-0 select-none">💡</span>
+        <div className="space-y-1">
+          <p className="text-[10px] font-black text-foreground uppercase tracking-wider">智能内联脚注 (Inline Footnotes)</p>
+          <p className="text-[10px] text-muted-foreground/80 leading-relaxed">
+            系统支持两种格式的内联脚注，前台会自动对其进行解析与汇总：
+            <br />
+            1. <b>有序脚注</b>（使用 <code className="bg-primary/10 text-primary px-1 py-0.5 rounded font-mono text-[9px]">[[内容]]</code>）：前台会解析为带数字的角标，如 <sup className="text-primary font-bold">[1]</sup>，并在底部按 <b>[1]、[2]</b> 顺序汇总展示。
+            <br />
+            2. <b>无序/星号说明</b>（使用 <code className="bg-amber-500/10 text-amber-600 px-1 py-0.5 rounded font-mono text-[9px]">{"{{内容}}"}</code>）：前台会解析为星号角标，如 <sup className="text-amber-500 font-bold">*</sup>，并在底部按 <b>*、**、***</b> 样式展示。
+          </p>
         </div>
       </div>
 

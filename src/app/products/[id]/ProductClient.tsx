@@ -307,28 +307,74 @@ export default function ProductClient({ product, initialLocale }: { product: any
     return relatedProducts || [];
   }, [relatedProducts]);
 
-  const groupedSpecs = useMemo(() => {
-    if (!product?.specGroups) return [];
+  const parsedSpecs = useMemo(() => {
+    if (!product?.specGroups) return { groups: [], orderedFootnotes: [], unorderedFootnotes: [] };
     let specGroupsArray = product.specGroups;
     if (typeof specGroupsArray === 'string') {
       try {
         specGroupsArray = JSON.parse(specGroupsArray);
       } catch (e) {
         console.error('Failed to parse specGroups JSON:', e);
-        return [];
+        return { groups: [], orderedFootnotes: [], unorderedFootnotes: [] };
       }
     }
-    if (!Array.isArray(specGroupsArray)) return [];
+    if (!Array.isArray(specGroupsArray)) return { groups: [], orderedFootnotes: [], unorderedFootnotes: [] };
 
-    return specGroupsArray.map((group: any) => ({
-      title: getSpecText(group.titleId),
+    const orderedList: string[] = [];
+    const unorderedList: string[] = [];
+
+    const getOrderedIndex = (content: string) => {
+      const idx = orderedList.indexOf(content);
+      if (idx !== -1) return idx + 1;
+      orderedList.push(content);
+      return orderedList.length;
+    };
+
+    const getUnorderedAsterisks = (content: string) => {
+      let idx = unorderedList.indexOf(content);
+      if (idx === -1) {
+        unorderedList.push(content);
+        idx = unorderedList.length - 1;
+      }
+      return '*'.repeat(idx + 1);
+    };
+
+    const processText = (text: string) => {
+      if (!text) return '';
+      
+      // 1. Process Ordered Footnotes [[content]]
+      let result = text.replace(/\[\[(.*?)\]\]/g, (match, p1) => {
+        const footnoteContent = (p1 || '').trim();
+        if (!footnoteContent) return '';
+        const num = getOrderedIndex(footnoteContent);
+        return `<sup class="text-amber-500 font-bold ml-0.5 select-none">[${num}]</sup>`;
+      });
+
+      // 2. Process Unordered Footnotes {{content}}
+      result = result.replace(/\{\{(.*?)\}\}/g, (match, p1) => {
+        const footnoteContent = (p1 || '').trim();
+        if (!footnoteContent) return '';
+        const asterisks = getUnorderedAsterisks(footnoteContent);
+        return `<sup class="text-amber-500 font-black ml-0.5 select-none">${asterisks}</sup>`;
+      });
+
+      return result;
+    };
+
+    const groups = specGroupsArray.map((group: any) => ({
+      title: processText(getSpecText(group.titleId) || ''),
+      footnote: getSpecText(group.footnoteId),
       items: (group.items || []).map((item: any) => {
-        const label = getSpecText(item.labelId);
-        const value = getSpecText(item.valueId);
+        const label = processText(getSpecText(item.labelId) || '');
+        const value = processText(getSpecText(item.valueId) || '');
         return { label, value };
       }).filter((i: any) => (i.label && i.label.trim() !== '') || (i.value && i.value.trim() !== ''))
     })).filter((g: any) => g.title && g.items.length > 0);
+
+    return { groups, orderedFootnotes: orderedList, unorderedFootnotes: unorderedList };
   }, [product, locale, tr, specTranslationMap]);
+
+  const groupedSpecs = parsedSpecs.groups;
 
   const jsonLd = useMemo(() => {
     if (!product) return null;
@@ -561,23 +607,38 @@ export default function ProductClient({ product, initialLocale }: { product: any
                 {groupedSpecs.map((group: any, gIdx: number) => (
                   <div key={gIdx} className="space-y-8">
                     <div className="flex items-center gap-4">
-                      <h3 className="text-2xl font-headline font-bold text-primary shrink-0">{group.title}</h3>
+                      <h3 className="text-2xl font-headline font-bold text-primary shrink-0" dangerouslySetInnerHTML={{ __html: group.title }} />
                       <div className="h-px bg-border flex-1" />
                     </div>
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                       {group.items.map((item: any, iIdx: number) => (
                         <div key={iIdx} className="p-6 bg-white rounded-2xl border border-slate-100 shadow-sm hover:shadow-xl hover:shadow-primary/5 transition-all duration-500 flex flex-col gap-3 group/spec">
-                          <span className="text-xs font-bold tracking-[0.1em] text-slate-400 group-hover/spec:text-primary transition-colors">
-                            {item.label}
-                          </span>
-                          <span className="text-sm font-normal text-slate-900 font-['JetBrains_Mono'] leading-relaxed whitespace-pre-wrap">
-                            {item.value}
-                          </span>
+                          <span className="text-xs font-bold tracking-[0.1em] text-slate-400 group-hover/spec:text-primary transition-colors" dangerouslySetInnerHTML={{ __html: item.label }} />
+                          <span className="text-sm font-normal text-slate-900 font-['JetBrains_Mono'] leading-relaxed whitespace-pre-wrap" dangerouslySetInnerHTML={{ __html: item.value }} />
                         </div>
                       ))}
                     </div>
                   </div>
                 ))}
+
+                {(parsedSpecs.orderedFootnotes.length > 0 || parsedSpecs.unorderedFootnotes.length > 0) && (
+                  <div className="mt-16 pt-8 border-t border-slate-100 space-y-3 no-print">
+                    <div className="space-y-3">
+                      {parsedSpecs.unorderedFootnotes.map((fn, idx) => (
+                        <p key={idx} className="text-xs text-slate-400/90 font-mono flex items-start gap-2 leading-relaxed">
+                          <span className="text-amber-500 font-bold shrink-0 select-none">{'*'.repeat(idx + 1)}</span>
+                          <span>{fn}</span>
+                        </p>
+                      ))}
+                      {parsedSpecs.orderedFootnotes.map((fn, idx) => (
+                        <p key={idx} className="text-xs text-slate-400/90 font-mono flex items-start gap-2 leading-relaxed">
+                          <span className="text-amber-500 font-bold shrink-0 select-none">[{idx + 1}]</span>
+                          <span>{fn}</span>
+                        </p>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </div>
             </TabsContent>
           </Tabs>
@@ -801,18 +862,37 @@ export default function ProductClient({ product, initialLocale }: { product: any
             <div className="space-y-6">
               {groupedSpecs.map((group: any, gIdx: number) => (
                 <div key={gIdx} className="space-y-3">
-                  <h3 className="text-sm font-bold text-slate-800 border-l-4 border-primary pl-2">{group.title}</h3>
+                  <h3 className="text-sm font-bold text-slate-800 border-l-4 border-primary pl-2" dangerouslySetInnerHTML={{ __html: group.title }} />
                   <div className="border border-slate-200 rounded-xl overflow-hidden divide-y divide-slate-200 mx-[50px]">
                     {group.items.map((item: any, iIdx: number) => (
                       <div key={iIdx} className="flex justify-between p-3 bg-white text-xs gap-6">
-                        <span className="font-medium text-slate-500 shrink-0">{item.label}</span>
-                        <span className="font-bold text-slate-900 text-right pl-6 whitespace-pre-wrap">{item.value}</span>
+                        <span className="font-medium text-slate-500 shrink-0" dangerouslySetInnerHTML={{ __html: item.label }} />
+                        <span className="font-bold text-slate-900 text-right pl-6 whitespace-pre-wrap" dangerouslySetInnerHTML={{ __html: item.value }} />
                       </div>
                     ))}
                   </div>
                 </div>
               ))}
             </div>
+
+            {(parsedSpecs.orderedFootnotes.length > 0 || parsedSpecs.unorderedFootnotes.length > 0) && (
+              <div className="mt-8 pt-6 border-t border-slate-200 space-y-1.5 mx-[50px]">
+                <div className="space-y-1.5">
+                  {parsedSpecs.unorderedFootnotes.map((fn, idx) => (
+                    <p key={idx} className="text-[10px] text-slate-400 font-mono flex items-start gap-1.5 leading-relaxed">
+                      <span className="text-amber-500 font-bold shrink-0 select-none">{'*'.repeat(idx + 1)}</span>
+                      <span>{fn}</span>
+                    </p>
+                  ))}
+                  {parsedSpecs.orderedFootnotes.map((fn, idx) => (
+                    <p key={idx} className="text-[10px] text-slate-400 font-mono flex items-start gap-1.5 leading-relaxed">
+                      <span className="text-amber-500 font-bold shrink-0 select-none">[{idx + 1}]</span>
+                      <span>{fn}</span>
+                    </p>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
         </div>
       </div>
