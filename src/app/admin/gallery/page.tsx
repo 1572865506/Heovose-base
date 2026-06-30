@@ -128,10 +128,10 @@ const CategoryMenu = React.memo(({
   onSelect: (id: string) => void;
   getDisplayName: (cat?: GalleryCategory) => string;
 }) => {
-  const [collapsedIds, setCollapsedIds] = React.useState<Set<string>>(new Set());
+  const [expandedIds, setExpandedIds] = React.useState<Set<string>>(new Set());
 
-  const toggleCollapse = React.useCallback((id: string) => {
-    setCollapsedIds(prev => {
+  const toggleExpand = React.useCallback((id: string) => {
+    setExpandedIds(prev => {
       const next = new Set(prev);
       if (next.has(id)) {
         next.delete(id);
@@ -153,7 +153,7 @@ const CategoryMenu = React.memo(({
     return levelCats.flatMap(cat => {
       const children = categories.filter(c => c.parentId === cat.id);
       const hasChildren = children.length > 0;
-      const isCollapsed = collapsedIds.has(cat.id);
+      const isExpanded = expandedIds.has(cat.id);
       return [
         <DropdownMenuItem
           key={cat.id}
@@ -172,14 +172,14 @@ const CategoryMenu = React.memo(({
                 onClick={(e) => {
                   e.stopPropagation();
                   e.preventDefault();
-                  toggleCollapse(cat.id);
+                  toggleExpand(cat.id);
                 }}
                 className="h-5 w-5 rounded-md hover:bg-muted-foreground/10 flex items-center justify-center shrink-0 text-muted-foreground/60 hover:text-foreground transition-all"
               >
-                {isCollapsed ? (
-                  <ChevronRight className="h-3.5 w-3.5" />
-                ) : (
+                {isExpanded ? (
                   <ChevronDown className="h-3.5 w-3.5" />
+                ) : (
+                  <ChevronRight className="h-3.5 w-3.5" />
                 )}
               </button>
             ) : (
@@ -188,7 +188,7 @@ const CategoryMenu = React.memo(({
             <span className="truncate">{getDisplayName(cat)}</span>
           </div>
         </DropdownMenuItem>,
-        ...(isCollapsed ? [] : renderFlatItems(cat.id, depth + 1))
+        ...(isExpanded ? renderFlatItems(cat.id, depth + 1) : [])
       ];
     });
   };
