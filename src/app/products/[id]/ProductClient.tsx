@@ -41,7 +41,7 @@ const isVideoUrl = (url: string) => {
   return /\.(mp4|webm|ogg|mov|m4v)$/i.test(url);
 };
 
-const SYSTEM_FALLBACKS: Record<string, Record<Locale, string>> = {
+const SYSTEM_FALLBACKS: Record<string, Record<string, string>> = {
   nav_home: { zh: '首页', en: 'Home', id: 'Beranda', vi: 'Trang chủ' },
   nav_products: { zh: '产品中心', en: 'Products', id: 'Produk', vi: 'Sản phẩm' },
   core_advantages: { zh: '核心优势', en: 'Core Advantages', id: 'Keunggulan Utama', vi: 'Ưu thế cốt lõi' },
@@ -72,7 +72,6 @@ export default function ProductClient({ product, initialLocale }: { product: any
   });
   const [isZoomOpen, setIsZoomOpen] = useState(false);
   const [zoomScale, setZoomScale] = useState(1);
-  const [playingProductId, setPlayingProductId] = useState<string | null>(null);
   const [sanitizedDetails, setSanitizedDetails] = useState('');
 
   useEffect(() => {
@@ -665,8 +664,6 @@ export default function ProductClient({ product, initialLocale }: { product: any
                       <div className="relative aspect-[11/9] bg-slate-50 rounded-2xl overflow-hidden border border-slate-100 transition-all duration-500 group-hover:shadow-2xl group-hover:shadow-primary/10">
                         <HoverVideoPlayer
                           productId={p.id}
-                          playingProductId={playingProductId}
-                          setPlayingProductId={setPlayingProductId}
                           videoUrl={p.videoUrl}
                           mainImageUrl={p.mainImageUrl}
                           alt={getProductText(p.nameTextId, p.nameText)}

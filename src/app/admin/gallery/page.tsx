@@ -803,7 +803,8 @@ export default function GalleryPage() {
 
         updateTask(taskId, { progress: 70 });
 
-        const title = uploadFile.name.split('.')[0];
+        const lastDotIndex = uploadFile.name.lastIndexOf('.');
+        const title = lastDotIndex !== -1 ? uploadFile.name.substring(0, lastDotIndex) : uploadFile.name;
         const categoryId = targetUploadCategoryId;
 
         if (!categoryId) {
@@ -2198,7 +2199,7 @@ export default function GalleryPage() {
                       const img = e.currentTarget;
                       setPreviewDimensions({ width: img.naturalWidth, height: img.naturalHeight });
                     }}
-                    style={{ imageRendering: 'high-quality' }}
+                    style={{ imageRendering: 'high-quality' as any }}
                     className={cn(
                       "shadow-[0_50px_100px_rgba(0,0,0,0.8)] border border-white/10 rounded-2xl transition-all duration-700",
                       previewZoom === 'fit' ? "max-w-full max-h-full" : "max-w-none w-auto h-auto"

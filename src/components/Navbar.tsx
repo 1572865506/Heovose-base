@@ -49,7 +49,7 @@ import { useTranslations } from '@/hooks/use-translations';
 import { useInquiry } from '@/components/providers/InquiryProvider';
 import { injectTranslations } from '@/lib/translation-injector';
 
-const SYSTEM_FALLBACKS: Record<string, Record<Locale, string>> = {
+const SYSTEM_FALLBACKS: Record<string, Record<string, string>> = {
   NAV_WHOLESALE: { zh: '批发业务', en: 'Wholesale Business', id: 'Bisnis Grosir', vi: 'Kinh doanh bán sỉ', vn: 'Kinh doanh bán sỉ' },
   nav_wholesale: { zh: '批发业务', en: 'Wholesale Business', id: 'Bisnis Grosir', vi: 'Kinh doanh bán sỉ', vn: 'Kinh doanh bán sỉ' },
   NAV_PROJECTS: { zh: '项目工程', en: 'Project Solutions', id: 'Solusi Proyek', vi: 'Giải pháp dự án', vn: 'Giải pháp dự án' },

@@ -392,7 +392,8 @@ export function MediaLibraryDialog({
             w = dims.w; h = dims.h;
           }
 
-          const title = uploadFile.name.split('.')[0];
+          const lastDotIndex = uploadFile.name.lastIndexOf('.');
+          const title = lastDotIndex !== -1 ? uploadFile.name.substring(0, lastDotIndex) : uploadFile.name;
           let assetId = `asset_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
           
           // --- Duplicate Handling Strategy ---
@@ -629,7 +630,7 @@ export function MediaLibraryDialog({
                             )}
                             
                             <div className="absolute inset-x-0 bottom-0 p-3 bg-white/95 admin-interface-dark:bg-slate-900/90 backdrop-blur-md border-t border-slate-100 admin-interface-dark:border-border/40 opacity-0 group-hover:opacity-100 transition-opacity translate-y-1 group-hover:translate-y-0 duration-300">
-                               <p className="text-[10px] font-bold text-foreground truncate">{asset.title}</p>
+                               <p className="text-[10px] font-bold text-foreground line-clamp-2 break-all" title={asset.title}>{asset.title}</p>
                                <p className="text-[8px] text-slate-400 admin-interface-dark:text-muted-foreground/60 font-mono">{( (asset.fileSize || 0) / 1024).toFixed(0)}KB</p>
                             </div>
 

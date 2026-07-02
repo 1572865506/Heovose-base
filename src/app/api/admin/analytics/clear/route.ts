@@ -31,7 +31,7 @@ export async function POST(request: Request) {
     }
 
     // 4. 执行数据清洗事务
-    await db.$transaction(async (tx) => {
+    await db.$transaction(async (tx: any) => {
       // 清空 visitorSession 表 (AnalyticsEvent 表会因为 Cascade 级联删除被自动物理清除)
       await tx.visitorSession.deleteMany({});
       
