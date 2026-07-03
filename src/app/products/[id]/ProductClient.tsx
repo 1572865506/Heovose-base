@@ -432,7 +432,9 @@ export default function ProductClient({ product, initialLocale }: { product: any
               {getSystemText('nav_products')}
             </Link>
             <ChevronRight className="h-3 w-3 text-primary/20" />
-            <span className="text-primary">{getProductText(product.nameTextId, product.nameText)}</span>
+            <span className="text-primary truncate max-w-[120px] sm:max-w-[200px] md:max-w-[350px] inline-block align-bottom" title={getProductText(product.nameTextId, product.nameText)}>
+              {getProductText(product.nameTextId, product.nameText)}
+            </span>
           </nav>
 
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-16">

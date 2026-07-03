@@ -668,9 +668,7 @@ function ProductListContent(props: ProductListClientProps) {
                         <div className="px-3 md:px-8 pt-3 md:pt-8 pb-20 md:pb-24 space-y-2 md:space-y-4 flex flex-col flex-1">
                           <div className="space-y-1">
                             <h3 className="text-xs md:text-xl font-headline font-bold text-slate-900 transition-colors leading-tight line-clamp-2 group-hover:text-primary">
-                              {(getT(product.nameTextId) || '').length > 22 
-                                ? (getT(product.nameTextId) || '').substring(0, 22) + '...' 
-                                : getT(product.nameTextId)}
+                              {getT(product.nameTextId) || ''}
                             </h3>
                           </div>
                           <p className="text-[10px] md:text-xs text-muted-foreground line-clamp-2 md:line-clamp-3 leading-relaxed opacity-60 whitespace-pre-line">
