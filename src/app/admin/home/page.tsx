@@ -369,6 +369,7 @@ export default function AdminHomePage() {
         updates.galleryTitleEn = getTrans('GALLERY_TITLE', 'en') || galleryData.galleryTitleEn || '';
         updates.gallerySubtitleZh = getTrans('GALLERY_SUBTITLE', 'zh') || galleryData.gallerySubtitleZh || '';
         updates.gallerySubtitleEn = getTrans('GALLERY_SUBTITLE', 'en') || galleryData.gallerySubtitleEn || '';
+        updates.galleryItems = galleryData.galleryItems || [];
       }
 
       return updates;

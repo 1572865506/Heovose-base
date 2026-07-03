@@ -59,3 +59,9 @@ else
 fi
 
 echo "🎉 更新流程全部完成！" | tee -a $LOG_FILE
+
+# 自动重启 Web 容器以激活内存中的新 Next.js 进程 (通过挂载的 /var/run/docker.sock)
+if command -v docker >/dev/null 2>&1 && docker ps >/dev/null 2>&1; then
+    echo "🔄 检测到 Docker 守护进程，正在延迟 2 秒后重启 Web 容器以激活新版本..." | tee -a $LOG_FILE
+    (sleep 2 && docker restart heovose-web) >/dev/null 2>&1 &
+fi

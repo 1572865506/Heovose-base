@@ -49,6 +49,7 @@ import {
   GitMerge,
   Bot,
   LayoutGrid,
+  Download,
 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Label } from '@/components/ui/label';
@@ -735,6 +736,51 @@ export default function TranslationsPage() {
     } finally { setTranslatingId(null); }
   };
 
+  const handleExport = () => {
+    if (!filteredTranslations || filteredTranslations.length === 0) {
+      toast({ variant: "destructive", title: "导出失败", description: "当前列表中没有可导出的数据" });
+      return;
+    }
+
+    const langCodes = activeLanguages.map(l => l.code);
+    const headers = ['ID', 'Type', 'ReferCount', ...langCodes.map(code => code.toUpperCase())];
+
+    const csvRows = [
+      headers.join(','),
+      ...filteredTranslations.map(t => {
+        const id = `"${t.id.replace(/"/g, '""')}"`;
+        const type = `"${(t.type || 'SYSTEM').replace(/"/g, '""')}"`;
+        const referCount = t.referCount || 0;
+        
+        const langContents = langCodes.map(code => {
+          const content = (t.content as any)?.[code] || (['zh', 'en', 'idn', 'vi'].includes(code) ? (t as any)[code] : '') || '';
+          return `"${content.replace(/"/g, '""').replace(/\r?\n/g, '\\n')}"`; // Replace line breaks with escaped \n to keep CSV rows integrity
+        });
+
+        return [id, type, referCount, ...langContents].join(',');
+      })
+    ];
+
+    const csvContent = "\uFEFF" + csvRows.join('\n');
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.setAttribute("href", url);
+    
+    const timestamp = new Date().toISOString().slice(0, 10);
+    const filename = `translations_${activeTab}_${timestamp}.csv`;
+    link.setAttribute("download", filename);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    
+    toast({
+      title: "导出成功",
+      description: `已成功导出 ${filteredTranslations.length} 条翻译数据到 CSV 文件`,
+      className: "bg-green-50 border-green-200 text-green-800 rounded-2xl"
+    });
+  };
+
   const filteredTranslations = useMemo(() => {
     const list = activeTab === 'business'
       ? categorizedTranslations.business
@@ -906,6 +952,10 @@ export default function TranslationsPage() {
                 )}
               </div>
             )}
+
+            <Button onClick={handleExport} variant="outline" className="rounded-full h-12 px-6 gap-2 text-xs font-bold uppercase tracking-wider border-border/40 bg-card hover:bg-muted/20">
+              <Download className="h-4 w-4" /> 导出 CSV
+            </Button>
 
             <Button onClick={() => setIsSettingsOpen(true)} variant="outline" className="rounded-full h-12 px-6 gap-2 text-xs font-bold uppercase tracking-wider border-border/40 bg-card hover:bg-muted/20">
               <Settings2 className="h-4 w-4" /> 语种配置
