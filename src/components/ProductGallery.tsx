@@ -132,7 +132,7 @@ export function ProductGallery({ locale }: { locale: Locale }) {
   }, [isPlaying]);
 
   // 1. Fetch dynamic data
-  const { data: remoteProducts, isLoading } = useLocalCollection<any>('products?status=published&limit=8');
+  const { data: remoteProducts, isLoading } = useLocalCollection<any>('products?status=published');
   const { data: allTranslations } = useLocalCollection<any>(`localizedStrings?lang=${locale}`);
   const { data: langSettings } = useLocalDoc<any>('settings', 'languages');
 
@@ -235,7 +235,8 @@ export function ProductGallery({ locale }: { locale: Locale }) {
         };
       }).filter(Boolean);
     } else if (remoteProducts && remoteProducts.length > 0) {
-      finalProducts = remoteProducts.map((p: any, idx: number) => {
+      // 限制轮播图默认兜底展示前 8 个产品，防止未配置时页面溢出
+      finalProducts = remoteProducts.slice(0, 8).map((p: any, idx: number) => {
         let badge = null;
         let badgeType = null;
         if (idx % 4 === 0) {

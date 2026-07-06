@@ -137,7 +137,11 @@ export function CaseStudies({ locale }: { locale: Locale }) {
   const [selectedCase, setSelectedCase] = useState<any>(null);
 
   return (
-    <section id="cases" ref={sectionRef} className="relative pt-20 pb-20 lg:pt-24 lg:pb-24 bg-background overflow-hidden">
+    <section id="cases" ref={sectionRef} className="relative pt-20 pb-20 lg:pt-24 lg:pb-24 bg-[#FAFAFC] overflow-hidden">
+      {/* Google Labs-style fluid background blobs */}
+      <div className="absolute left-[5%] top-[15%] w-[450px] h-[450px] bg-blue-500/10 rounded-full blur-[120px] pointer-events-none -z-10 animate-pulse" style={{ animationDuration: '10s' }} />
+      <div className="absolute right-[10%] bottom-[5%] w-[500px] h-[500px] bg-emerald-500/10 rounded-full blur-[140px] pointer-events-none -z-10 animate-pulse" style={{ animationDuration: '15s' }} />
+      
       <div className="container mx-auto px-6 mb-4 relative z-10 text-center lg:text-left">
         <SectionHeading
           title={displayTitle}
@@ -161,15 +165,15 @@ export function CaseStudies({ locale }: { locale: Locale }) {
           <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-6 z-20">
             <button
               onClick={() => galleryRef.current?.prev()}
-              className="w-14 h-14 rounded-full bg-white/80 backdrop-blur-md shadow-lg flex items-center justify-center text-slate-800 hover:bg-blue-600 hover:text-white transition-all duration-300 group"
+              className="w-14 h-14 rounded-full bg-white/80 backdrop-blur-md border border-slate-100/80 shadow-sm flex items-center justify-center text-slate-800 hover:border-slate-200/80 transition-all duration-300 group"
             >
-              <ChevronLeft className="w-6 h-6 group-hover:-translate-x-1 transition-transform" />
+              <ChevronLeft className="w-6 h-6 group-hover:text-blue-600 transition-colors duration-300" />
             </button>
             <button
               onClick={() => galleryRef.current?.next()}
-              className="w-14 h-14 rounded-full bg-white/80 backdrop-blur-md shadow-lg flex items-center justify-center text-slate-800 hover:bg-blue-600 hover:text-white transition-all duration-300 group"
+              className="w-14 h-14 rounded-full bg-white/80 backdrop-blur-md border border-slate-100/80 shadow-sm flex items-center justify-center text-slate-800 hover:border-slate-200/80 transition-all duration-300 group"
             >
-              <ChevronRight className="w-6 h-6 group-hover:translate-x-1 transition-transform" />
+              <ChevronRight className="w-6 h-6 group-hover:text-blue-600 transition-colors duration-300" />
             </button>
           </div>
         </div>
