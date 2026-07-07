@@ -249,7 +249,7 @@ export function GlobalMap({ locale, homeConfig, isLoading: isConfigLoading }: Gl
                   {/* 内容区域 - 针对高密度布局优化 Padding */}
                   <div className={cn(
                     "relative z-10 h-full flex flex-col justify-end items-start",
-                    pins.length > 5 ? "p-5" : "p-8"
+                    pins.length > 5 ? "p-5" : "p-6"
                   )}>
                     {/* 文字容器：Hover 时上移 */}
                     <div className={cn(
@@ -270,8 +270,8 @@ export function GlobalMap({ locale, homeConfig, isLoading: isConfigLoading }: Gl
                       {/* 标题与地址 - 针对高密度布局优化字号 */}
                       <div className="space-y-1.5">
                         <h4 className={cn(
-                          "font-headline font-bold leading-tight tracking-tight transition-all duration-700 line-clamp-2",
-                          pins.length > 5 ? "text-base" : "text-2xl",
+                          "font-headline font-bold leading-tight tracking-tight transition-all duration-700 line-clamp-2 text-balance",
+                          pins.length > 5 ? "text-base" : "text-xl",
                           pin.imageUrl ? "text-white" : "text-primary"
                         )}>
                           {pin.title}

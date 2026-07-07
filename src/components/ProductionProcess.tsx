@@ -205,7 +205,7 @@ export function ProductionProcess({ locale }: { locale: Locale }) {
       <div className="relative w-full overflow-hidden py-10 flex flex-col gap-12 select-none">
         {/* 第一行：图片流动线 */}
         {uniqueImages.length > 0 && (
-          <div className="relative w-full overflow-hidden">
+          <div className="relative w-full overflow-hidden py-4 -my-4">
             <div
               ref={trackRefImages}
               onMouseEnter={() => setIsHovered(true)}
@@ -215,7 +215,7 @@ export function ProductionProcess({ locale }: { locale: Locale }) {
               {duplicatedImages.map((item, index) => (
                 <div
                   key={`img-${item.url}-${index}`}
-                  className="w-[200px] h-[130px] sm:w-[240px] sm:h-[160px] rounded-[2rem] overflow-hidden border border-slate-100/80 shadow-lg shadow-slate-100/50 hover:shadow-xl hover:border-slate-200/50 transition-all duration-500 relative group cursor-pointer bg-slate-50 shrink-0"
+                  className="w-[300px] h-[200px] sm:w-[380px] sm:h-[250px] rounded-[2rem] overflow-hidden border border-slate-100/80 shadow-lg shadow-slate-100/50 hover:shadow-xl hover:border-slate-200/50 transition-all duration-500 relative group cursor-pointer bg-slate-50 shrink-0"
                   onClick={() => {
                     setActiveStepIndex(item.stepIndex);
                     setActiveImageIndex(item.imageIndex);
@@ -236,7 +236,7 @@ export function ProductionProcess({ locale }: { locale: Locale }) {
         )}
 
         {/* 第二行：步骤文本引导线 */}
-        <div className="relative w-full overflow-hidden">
+        <div className="relative w-full overflow-hidden py-4 -my-4">
           <div
             ref={trackRefTexts}
             onMouseEnter={() => setIsHovered(true)}

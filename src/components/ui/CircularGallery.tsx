@@ -389,7 +389,7 @@ const CircularGallery = memo(forwardRef(({
                   {item.text}
                 </h3>
 
-                <p className="text-[11px] md:text-[13px] text-slate-400 line-clamp-4 md:line-clamp-5 leading-relaxed">
+                <p className="text-[11px] md:text-[13px] text-slate-400 line-clamp-3 leading-relaxed">
                   {item.description}
                 </p>
               </div>
