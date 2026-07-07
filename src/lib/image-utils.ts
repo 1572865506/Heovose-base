@@ -67,6 +67,10 @@ export function getAssetUrl(path: string | null | undefined): string {
 
       if (relativePath) {
         const cleanPath = relativePath.startsWith('/') ? relativePath.slice(1) : relativePath;
+        const cleanStoragePrefix = globalStorageBaseUrl.replace(/^\//, '');
+        if (cleanStoragePrefix && cleanPath.startsWith(cleanStoragePrefix + '/')) {
+          return `/${cleanPath}`;
+        }
         return `${globalStorageBaseUrl}/${cleanPath}`;
       }
     }
@@ -77,5 +81,9 @@ export function getAssetUrl(path: string | null | undefined): string {
 
   // 4. 处理已经是相对路径的情况 (如 bucket/file.jpg)
   const cleanPath = path.startsWith('/') ? path.slice(1) : path;
+  const cleanStoragePrefix = globalStorageBaseUrl.replace(/^\//, '');
+  if (cleanStoragePrefix && cleanPath.startsWith(cleanStoragePrefix + '/')) {
+    return `/${cleanPath}`;
+  }
   return `${globalStorageBaseUrl}/${cleanPath}`;
 }

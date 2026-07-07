@@ -20,6 +20,16 @@ import { CodeNode } from '@lexical/code';
 import { HorizontalRuleNode } from '@lexical/react/LexicalHorizontalRuleNode';
 import { TableNode, TableCellNode, TableRowNode } from '@lexical/table';
 import { TablePlugin } from '@lexical/react/LexicalTablePlugin';
+import { 
+  DROP_COMMAND,
+  DRAGOVER_COMMAND,
+  $getNodeByKey,
+  $insertNodes,
+  $getRoot,
+  $getNearestNodeFromDOMNode,
+  COMMAND_PRIORITY_HIGH,
+  EditorState
+} from 'lexical';
 
 import { LexicalTheme } from './LexicalTheme';
 import ToolbarPlugin from './plugins/ToolbarPlugin';
@@ -38,6 +48,49 @@ interface LexicalEditorProps {
   placeholder?: string;
   className?: string;
 }
+
+const dragDropStyle = `
+  /* Smooth transition for block elements when they slide down */
+  [contenteditable="true"] > * {
+    transition: margin-top 0.25s cubic-bezier(0.4, 0, 0.2, 1) !important;
+  }
+  
+  /* Pushes target block down to create space for the placeholder */
+  .drag-drop-target {
+    margin-top: 180px !important;
+    position: relative !important;
+  }
+  
+  /* Renders a beautiful dashed blue outline box in the created gap */
+  .drag-drop-target::before {
+    content: '释放以将图片放置在此处';
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #3b82f6;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.15em;
+    position: absolute;
+    top: -170px;
+    left: 0;
+    right: 0;
+    height: 160px;
+    border: 2px dashed rgba(59, 130, 246, 0.5);
+    background-color: rgba(59, 130, 246, 0.04);
+    border-radius: 16px;
+    z-index: 10;
+    pointer-events: none;
+    box-shadow: inset 0 0 12px rgba(59, 130, 246, 0.08);
+    animation: glow-pulse-border 1.5s infinite ease-in-out;
+  }
+  
+  @keyframes glow-pulse-border {
+    0% { border-color: rgba(59, 130, 246, 0.4); background-color: rgba(59, 130, 246, 0.02); }
+    50% { border-color: rgba(59, 130, 246, 0.8); background-color: rgba(59, 130, 246, 0.06); }
+    100% { border-color: rgba(59, 130, 246, 0.4); background-color: rgba(59, 130, 246, 0.02); }
+  }
+`;
 
 const LexicalEditor = forwardRef<any, LexicalEditorProps>(({ 
   content, 
@@ -121,8 +174,6 @@ const LexicalEditor = forwardRef<any, LexicalEditorProps>(({
 
   const onEditorChange = useCallback((html: string) => {
     onChange(html);
-    // Simple char count from HTML (could be more precise with Lexical state)
-    setCharCount(html.replace(/<[^>]*>/g, '').length);
   }, [onChange]);
 
   const editorUI = (
@@ -130,6 +181,8 @@ const LexicalEditor = forwardRef<any, LexicalEditorProps>(({
       "border border-slate-200 rounded-2xl overflow-hidden bg-white flex flex-col group relative shadow-sm transition-all duration-300",
       isFullscreen ? "fixed inset-0 z-[9999] rounded-none border-none h-screen w-screen" : className
     )}>
+      <style dangerouslySetInnerHTML={{ __html: dragDropStyle }} />
+      
       <ToolbarPlugin 
         onImageClick={onImageClick} 
         isFullscreen={isFullscreen} 
@@ -154,12 +207,12 @@ const LexicalEditor = forwardRef<any, LexicalEditorProps>(({
       )}>
         <div className={cn(
           "transition-all duration-500 ease-in-out",
-          isFullscreen ? "max-w-5xl mx-auto bg-white shadow-[0_32px_64px_-12px_rgba(0,0,0,0.14)] rounded-2xl min-h-full w-full border border-slate-200/50" : "h-full w-full"
+          isFullscreen ? "max-w-[1200px] mx-auto bg-white shadow-[0_32px_64px_-12px_rgba(0,0,0,0.14)] rounded-2xl min-h-full w-full border border-slate-200/50" : "h-full w-full"
         )}>
           <RichTextPlugin
             contentEditable={
               <ContentEditable 
-                className="outline-none min-h-full p-8 max-w-none text-[12px] leading-relaxed font-body" 
+                className="outline-none min-h-full p-8 max-w-none text-[14px] leading-relaxed font-body prose prose-lg dark:prose-invert" 
                 spellCheck={false}
               />
             }
@@ -182,6 +235,8 @@ const LexicalEditor = forwardRef<any, LexicalEditorProps>(({
       <TableActionMenuPlugin />
       <ImagesPlugin />
       <HtmlPlugin initialHtml={content} onHtmlChange={onEditorChange} />
+      <DragDropNodePlugin />
+      <CharCountPlugin onChange={setCharCount} />
       
       {/* Capturing editor instance for imperative handle */}
       <EditorCapturePlugin onInstance={setEditorInstance} />
@@ -224,6 +279,117 @@ function EditorCapturePlugin({ onInstance }: { onInstance: (editor: any) => void
   useEffect(() => {
     onInstance(editor);
   }, [editor, onInstance]);
+  return null;
+}
+
+// Custom plugin to handle decorator node drag and drop
+function DragDropNodePlugin() {
+  const [editor] = useLexicalComposerContext();
+  useEffect(() => {
+    const unregisterDragOver = editor.registerCommand(
+      DRAGOVER_COMMAND,
+      (event: DragEvent) => {
+        const types = event.dataTransfer?.types;
+        // Convert DOMStringList/Array safely for all browsers
+        const hasCustomDrag = types && Array.from(types).includes('application/x-lexical-drag');
+        if (hasCustomDrag) {
+          event.preventDefault();
+          
+          // Draw dynamic drop visual indicator line
+          const target = event.target as HTMLElement;
+          if (target) {
+            const editorElement = editor.getRootElement();
+            if (editorElement) {
+              let current: HTMLElement | null = target;
+              let blockElement: HTMLElement | null = null;
+              while (current && current !== editorElement) {
+                if (current.parentElement === editorElement) {
+                  blockElement = current;
+                  break;
+                }
+                current = current.parentElement;
+              }
+              
+              if (blockElement) {
+                // Clear any other indicator lines first
+                document.querySelectorAll('.drag-drop-target').forEach(el => el.classList.remove('drag-drop-target'));
+                // Set indicator line to the block boundaries we are hovering
+                blockElement.classList.add('drag-drop-target');
+              }
+            }
+          }
+          
+          return true;
+        }
+        return false;
+      },
+      COMMAND_PRIORITY_HIGH
+    );
+
+    const unregisterDrop = editor.registerCommand(
+      DROP_COMMAND,
+      (event: DragEvent) => {
+        const nodeKey = event.dataTransfer?.getData('application/x-lexical-drag');
+        if (nodeKey) {
+          event.preventDefault();
+          
+          const targetBlockEl = document.querySelector('.drag-drop-target');
+          
+          editor.update(() => {
+            const node = $getNodeByKey(nodeKey);
+            if (node) {
+              if (targetBlockEl) {
+                // Use official Lexical API to get nearest node from DOM block element safely
+                const targetNode = $getNearestNodeFromDOMNode(targetBlockEl);
+                if (targetNode && targetNode !== node && targetNode.getParent() !== null) {
+                  node.remove();
+                  targetNode.insertBefore(node);
+                  return;
+                }
+              }
+              // Fallback
+              node.remove();
+              $insertNodes([node]);
+            }
+          });
+          
+          // Cleanup indicator lines
+          document.querySelectorAll('.drag-drop-target').forEach(el => el.classList.remove('drag-drop-target'));
+          return true;
+        }
+        return false;
+      },
+      COMMAND_PRIORITY_HIGH
+    );
+
+    // Global cleanup listeners for safety (in case drag cancels)
+    const handleDragEndGlobal = () => {
+      document.querySelectorAll('.drag-drop-target').forEach(el => el.classList.remove('drag-drop-target'));
+    };
+    window.addEventListener('dragend', handleDragEndGlobal);
+    window.addEventListener('drop', handleDragEndGlobal);
+
+    return () => {
+      unregisterDragOver();
+      unregisterDrop();
+      window.removeEventListener('dragend', handleDragEndGlobal);
+      window.removeEventListener('drop', handleDragEndGlobal);
+    };
+  }, [editor]);
+  return null;
+}
+
+// Custom plugin to calculate logical character count
+function CharCountPlugin({ onChange }: { onChange: (count: number) => void }) {
+  const [editor] = useLexicalComposerContext();
+  useEffect(() => {
+    return editor.registerUpdateListener(({ editorState }: { editorState: EditorState }) => {
+      editorState.read(() => {
+        const text = $getRoot().getTextContent();
+        onChange(text.trim().length);
+      });
+    });
+  }, [editor, onChange]);
   return null;
 }
 

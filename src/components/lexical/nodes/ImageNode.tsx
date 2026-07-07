@@ -18,7 +18,7 @@ import { useLexicalNodeSelection } from '@lexical/react/useLexicalNodeSelection'
 import { mergeRegister } from '@lexical/utils';
 import { cn } from '@/lib/utils';
 import { getAssetUrl } from '@/lib/image-utils';
-import { Trash2 } from 'lucide-react';
+import { Trash2, AlignLeft, AlignCenter, AlignRight } from 'lucide-react';
 
 export interface ImagePayload {
   altText: string;
@@ -29,12 +29,28 @@ export interface ImagePayload {
   showCaption?: boolean;
   src: string;
   width?: number;
+  alignment?: 'left' | 'center' | 'right';
 }
 
 function convertImageElement(domNode: Node): null | DOMConversionOutput {
   if (domNode instanceof HTMLImageElement) {
-    const { alt: altText, src, width, height } = domNode;
-    const node = $createImageNode({ altText, height, src, width });
+    const altText = domNode.getAttribute('alt') || '';
+    const src = domNode.getAttribute('src') || '';
+    const width = domNode.width;
+    const height = domNode.height;
+    
+    // Read alignment from custom data-align attribute or classes
+    let alignment: 'left' | 'center' | 'right' = 'center';
+    const alignAttr = domNode.getAttribute('data-align');
+    if (alignAttr === 'left' || alignAttr === 'center' || alignAttr === 'right') {
+      alignment = alignAttr;
+    } else if (domNode.classList.contains('align-left')) {
+      alignment = 'left';
+    } else if (domNode.classList.contains('align-right')) {
+      alignment = 'right';
+    }
+
+    const node = $createImageNode({ altText, height, src, width, alignment });
     return { node };
   }
   return null;
@@ -49,6 +65,7 @@ export type SerializedImageNode = Spread<
     showCaption?: boolean;
     src: string;
     width?: number;
+    alignment?: 'left' | 'center' | 'right';
   },
   SerializedLexicalNode
 >;
@@ -61,6 +78,7 @@ export class ImageNode extends DecoratorNode<React.ReactNode> {
   __maxWidth: number;
   __showCaption: boolean;
   __caption: string;
+  __alignment: 'left' | 'center' | 'right';
 
   static getType(): string {
     return 'image';
@@ -75,12 +93,13 @@ export class ImageNode extends DecoratorNode<React.ReactNode> {
       node.__height,
       node.__showCaption,
       node.__caption,
+      node.__alignment,
       node.__key,
     );
   }
 
   static importJSON(serializedNode: SerializedImageNode): ImageNode {
-    const { altText, height, width, maxWidth, caption, src, showCaption } =
+    const { altText, height, width, maxWidth, caption, src, showCaption, alignment } =
       serializedNode;
     const node = $createImageNode({
       altText,
@@ -89,6 +108,7 @@ export class ImageNode extends DecoratorNode<React.ReactNode> {
       src,
       width,
       showCaption,
+      alignment: alignment || 'center',
     });
     return node;
   }
@@ -99,6 +119,17 @@ export class ImageNode extends DecoratorNode<React.ReactNode> {
     element.setAttribute('alt', this.__altText);
     element.setAttribute('width', this.__width.toString());
     element.setAttribute('height', this.__height.toString());
+    element.setAttribute('data-align', this.__alignment);
+    
+    // Coherent alignment classes compatible with standard HTML output & Tailwind
+    if (this.__alignment === 'left') {
+      element.className = 'align-left my-6 mr-auto block';
+    } else if (this.__alignment === 'right') {
+      element.className = 'align-right my-6 ml-auto block';
+    } else {
+      element.className = 'align-center my-6 mx-auto block';
+    }
+    
     return { element };
   }
 
@@ -119,6 +150,7 @@ export class ImageNode extends DecoratorNode<React.ReactNode> {
     height?: 'auto' | number,
     showCaption?: boolean,
     caption?: string,
+    alignment?: 'left' | 'center' | 'right',
     key?: NodeKey,
   ) {
     super(key);
@@ -129,6 +161,7 @@ export class ImageNode extends DecoratorNode<React.ReactNode> {
     this.__height = height || 'auto';
     this.__showCaption = showCaption || false;
     this.__caption = caption || '';
+    this.__alignment = alignment || 'center';
   }
 
   exportJSON(): SerializedImageNode {
@@ -139,6 +172,7 @@ export class ImageNode extends DecoratorNode<React.ReactNode> {
       maxWidth: this.__maxWidth,
       showCaption: this.__showCaption,
       src: this.getSrc(),
+      alignment: this.__alignment,
       type: 'image',
       version: 1,
       width: this.__width === 'auto' ? 0 : this.__width,
@@ -148,6 +182,15 @@ export class ImageNode extends DecoratorNode<React.ReactNode> {
   setWidth(width: number | 'auto'): void {
     const writable = this.getWritable();
     writable.__width = width;
+  }
+
+  getAlignment(): 'left' | 'center' | 'right' {
+    return this.__alignment;
+  }
+
+  setAlignment(alignment: 'left' | 'center' | 'right'): void {
+    const writable = this.getWritable();
+    writable.__alignment = alignment;
   }
 
   createDOM(config: EditorConfig): HTMLElement {
@@ -177,6 +220,7 @@ export class ImageNode extends DecoratorNode<React.ReactNode> {
           width={this.__width}
           height={this.__height}
           maxWidth={this.__maxWidth}
+          alignment={this.__alignment}
           nodeKey={this.__key}
         />
       </Suspense>
@@ -190,6 +234,7 @@ function ImageComponent({
   width,
   height,
   maxWidth,
+  alignment,
   nodeKey,
 }: {
   src: string;
@@ -197,6 +242,7 @@ function ImageComponent({
   width: 'auto' | number;
   height: 'auto' | number;
   maxWidth: number;
+  alignment: 'left' | 'center' | 'right';
   nodeKey: NodeKey;
 }) {
   const [editor] = useLexicalComposerContext();
@@ -288,13 +334,38 @@ function ImageComponent({
     );
   }, [clearSelection, editor, isSelected, onDelete, setSelected]);
 
+  // Native HTML5 Drag and Drop Handlers for dragging node within contenteditable
+  const onDragStart = (event: React.DragEvent) => {
+    if (isResizing) {
+      event.preventDefault();
+      return;
+    }
+    event.stopPropagation(); // Prevent Lexical core from intercepting and blocking drag
+    event.dataTransfer.setData('application/x-lexical-drag', nodeKey);
+    event.dataTransfer.effectAllowed = 'move';
+  };
+
+  const onDragEnd = (event: React.DragEvent) => {
+    // Drop/Move is handled by DragDropNodePlugin in LexicalEditor
+  };
+
   return (
-    <div className="relative group my-6 outline-none flex justify-center">
+    <div 
+      className={cn(
+        "relative group my-6 outline-none flex",
+        alignment === 'left' && "justify-start",
+        alignment === 'center' && "justify-center",
+        alignment === 'right' && "justify-end"
+      )}
+    >
       <div className="relative inline-block">
         <img
           src={getAssetUrl(src)}
           alt={altText}
           ref={imageRef}
+          draggable={true}
+          onDragStart={onDragStart}
+          onDragEnd={onDragEnd}
           style={{
             height: height === 0 ? 'auto' : height,
             maxWidth: '100%',
@@ -310,8 +381,74 @@ function ImageComponent({
         
         {isSelected && (
           <>
-            <div className="absolute top-4 right-4 flex gap-2 animate-in fade-in zoom-in duration-200">
+            {/* Top Toolbar: Alignment & Deletion buttons */}
+            <div className="absolute top-4 right-4 flex gap-2 animate-in fade-in zoom-in duration-200 bg-slate-900/90 backdrop-blur-md p-1.5 rounded-2xl border border-white/10 shadow-2xl">
+              {/* Align Left */}
               <button
+                type="button"
+                onClick={() => {
+                  editor.update(() => {
+                    const node = $getNodeByKey(nodeKey);
+                    if ($isImageNode(node)) {
+                      node.setAlignment('left');
+                    }
+                  });
+                }}
+                className={cn(
+                  "p-2 text-white rounded-xl transition-colors hover:bg-white/10",
+                  alignment === 'left' ? "bg-primary text-white" : "text-white/60"
+                )}
+                title="左对齐"
+              >
+                <AlignLeft className="h-4 w-4" />
+              </button>
+
+              {/* Align Center */}
+              <button
+                type="button"
+                onClick={() => {
+                  editor.update(() => {
+                    const node = $getNodeByKey(nodeKey);
+                    if ($isImageNode(node)) {
+                      node.setAlignment('center');
+                    }
+                  });
+                }}
+                className={cn(
+                  "p-2 text-white rounded-xl transition-colors hover:bg-white/10",
+                  alignment === 'center' ? "bg-primary text-white" : "text-white/60"
+                )}
+                title="居中对齐"
+              >
+                <AlignCenter className="h-4 w-4" />
+              </button>
+
+              {/* Align Right */}
+              <button
+                type="button"
+                onClick={() => {
+                  editor.update(() => {
+                    const node = $getNodeByKey(nodeKey);
+                    if ($isImageNode(node)) {
+                      node.setAlignment('right');
+                    }
+                  });
+                }}
+                className={cn(
+                  "p-2 text-white rounded-xl transition-colors hover:bg-white/10",
+                  alignment === 'right' ? "bg-primary text-white" : "text-white/60"
+                )}
+                title="右对齐"
+              >
+                <AlignRight className="h-4 w-4" />
+              </button>
+
+              {/* Separator */}
+              <div className="w-px bg-white/10 self-stretch my-1" />
+
+              {/* Delete Image */}
+              <button
+                type="button"
                 onClick={() => {
                   editor.update(() => {
                     const node = $getNodeByKey(nodeKey);
@@ -319,6 +456,7 @@ function ImageComponent({
                   });
                 }}
                 className="p-2 bg-red-500 text-white rounded-xl shadow-xl hover:bg-red-600 transition-colors"
+                title="删除图片"
               >
                 <Trash2 className="h-4 w-4" />
               </button>
@@ -353,6 +491,7 @@ export function $createImageNode({
   width,
   showCaption,
   caption,
+  alignment,
   key,
 }: ImagePayload): ImageNode {
   return new ImageNode(
@@ -363,6 +502,7 @@ export function $createImageNode({
     height,
     showCaption,
     caption,
+    alignment,
     key,
   );
 }

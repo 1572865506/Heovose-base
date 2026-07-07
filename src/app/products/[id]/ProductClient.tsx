@@ -227,7 +227,15 @@ export default function ProductClient({ product, initialLocale }: { product: any
     }
     const content = details?.[locale] || details?.['en'] || details?.['zh'] || '';
     const plainText = content.replace(/<[^>]*>?/gm, '').trim();
-    return plainText ? content : '';
+    if (!plainText) return '';
+
+    // Process all img tags inside the rich-text details using getAssetUrl
+    // to dynamically resolve local/private storage hosts into correct asset URLs
+    const processedHtml = content.replace(/<img\s+([^>]*?)src="([^"]*?)"([^>]*?)>/gi, (match, before, src, after) => {
+      return `<img ${before}src="${getAssetUrl(src)}"${after}>`;
+    });
+
+    return processedHtml;
   }, [product, locale]);
 
   useEffect(() => {
@@ -599,7 +607,7 @@ export default function ProductClient({ product, initialLocale }: { product: any
             </TabsList>
 
             {productDetails && (
-              <TabsContent value="desc" forceMount className="max-w-4xl animate-in fade-in slide-in-from-bottom-4 duration-700 data-[state=inactive]:hidden print:data-[state=inactive]:block">
+              <TabsContent value="desc" forceMount className="w-full animate-in fade-in slide-in-from-bottom-4 duration-700 data-[state=inactive]:hidden print:data-[state=inactive]:block">
                 <div className="prose prose-lg dark:prose-invert max-w-none" dangerouslySetInnerHTML={{ __html: sanitizedDetails }} />
               </TabsContent>
             )}
