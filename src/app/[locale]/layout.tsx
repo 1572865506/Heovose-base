@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import db from '@/lib/db';
 import { getAssetUrl } from '@/lib/image-utils';
+import { redirect } from 'next/navigation';
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -69,6 +70,29 @@ export async function generateMetadata({ params }: { params: Promise<{ locale: s
   }
 }
 
-export default async function LocaleLayout({ children }: { children: React.ReactNode }) {
+export default async function LocaleLayout({
+  children,
+  params
+}: {
+  children: React.ReactNode;
+  params: Promise<{ locale: string }>;
+}) {
+  const { locale } = await params;
+  const locales = ['en', 'zh', 'id', 'vi', 'vn'];
+
+  if (!locales.includes(locale)) {
+    let defaultLang = 'en';
+    try {
+      const langSetting = await db.setting.findUnique({
+        where: { id: 'languages' },
+      });
+      if (langSetting?.value) {
+        const parsed = JSON.parse(langSetting.value);
+        defaultLang = parsed.defaultLanguage || 'en';
+      }
+    } catch (_) {}
+    return redirect(`/${defaultLang}`);
+  }
+
   return <>{children}</>;
 }

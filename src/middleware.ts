@@ -263,7 +263,8 @@ export default auth(async (request) => {
   const isLocaleFormat = (val: string) => /^[a-z]{2,3}(?:-[a-zA-Z]{2,4})?$/.test(val);
   const pathnameHasLocale = isLocaleFormat(firstSegment);
 
-  const isExcluded = pathname.startsWith('/admin') || 
+  const isExcluded = pathname === '/' ||
+                     pathname.startsWith('/admin') || 
                      pathname.startsWith('/api') || 
                      pathname.startsWith('/auth') || 
                      pathname.startsWith('/storage') ||
