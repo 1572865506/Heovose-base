@@ -231,7 +231,7 @@ export default function ProductClient({ product, initialLocale }: { product: any
 
     // Process all img tags inside the rich-text details using getAssetUrl
     // to dynamically resolve local/private storage hosts into correct asset URLs
-    const processedHtml = content.replace(/<img\s+([^>]*?)src="([^"]*?)"([^>]*?)>/gi, (match, before, src, after) => {
+    const processedHtml = content.replace(/<img\s+([^>]*?)src="([^"]*?)"([^>]*?)>/gi, (match: string, before: string, src: string, after: string) => {
       return `<img ${before}src="${getAssetUrl(src)}"${after}>`;
     });
 

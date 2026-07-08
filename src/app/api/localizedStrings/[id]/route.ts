@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import db from '@/lib/db';
 import { auth } from '@/auth';
 import { getLocalizedStringRefCount } from '@/lib/db-gc';
+import { calculateHash, getSourceText } from '@/lib/translation-sync';
 
 export async function GET(
   request: Request,
@@ -84,19 +85,59 @@ export async function PUT(
       return rest;
     })();
 
+    console.log('[API Debug] PUT localizedString:', {
+      id,
+      dataContent: data.content,
+      incomingContent,
+      existingContent
+    });
+
     const contentToSave = {
       ...existingContent,
       ...incomingContent
     };
 
+    console.log('[API Debug] contentToSave:', contentToSave);
+
+    // 引入哈希计算工具
+    const newSourceText = getSourceText(contentToSave);
+    const newSourceHash = calculateHash(newSourceText);
+
+    // 更新各语种的翻译哈希追踪字典
+    const newTranslatedHashes = {
+      ...((existingEntry?.translatedHashes as Record<string, string>) || {})
+    };
+
+    // 凡是在当前请求（incomingContent）中提供并修改了的非空语种，都更新其哈希为最新的源文哈希
+    Object.keys(incomingContent).forEach((lang) => {
+      const val = incomingContent[lang];
+      if (val && String(val).trim()) {
+        newTranslatedHashes[lang] = newSourceHash;
+      } else {
+        delete newTranslatedHashes[lang];
+      }
+    });
+
+    // 默认源语言本身处于已同步状态
+    newTranslatedHashes['zh'] = newSourceHash;
+
+    console.log('[API Debug] Saving hashes:', {
+      newSourceHash,
+      newTranslatedHashes
+    });
+
     const item = await db.localizedString.upsert({
       where: { id },
       update: {
-        content: contentToSave
+        content: contentToSave,
+        sourceHash: newSourceHash,
+        translatedHashes: newTranslatedHashes
       },
       create: {
         id,
-        content: contentToSave
+        content: contentToSave,
+        sourceHash: newSourceHash,
+        translatedHashes: newTranslatedHashes
       },
     });
     

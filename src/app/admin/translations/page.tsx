@@ -166,7 +166,14 @@ class TranslationSyncManager {
 
         for (const code of supportedCodes) {
           const val = content[code];
-          if (!val || val.trim() === '' || val === item.id) {
+          const isMissing = !val || val.trim() === '' || val === item.id;
+          
+          const hasTranslation = val && val.trim() !== '' && val !== item.id;
+          const isStale = hasTranslation && 
+                          item.sourceHash && 
+                          (!item.translatedHashes || (item.translatedHashes as any)[code] !== item.sourceHash);
+
+          if (isMissing || isStale) {
             if (code !== sourceLang) {
               pendingTasks.push({
                 id: item.id,
@@ -277,6 +284,7 @@ export default function TranslationsPage() {
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [showOnlyDuplicates, setShowOnlyDuplicates] = useState(false);
+  const [showOnlyStale, setShowOnlyStale] = useState(false);
   const [isCleaning, setIsCleaning] = useState(false);
   const [isMerging, setIsMerging] = useState(false);
   const [isMergingBatch, setIsMergingBatch] = useState(false);
@@ -682,15 +690,20 @@ export default function TranslationsPage() {
     const sc = (content.en || t.en) ? 'en' : 'zh';
     if (!st) return;
 
-    // 过滤出当前条目缺失的语种 (排除源语言，且识别空白或占位符)
+    // 过滤出当前条目缺失或过期的语种 (排除源语言，且识别空白、占位符或版本哈希不匹配)
     const ml = activeLanguages
       .filter(l => l.code !== sc)
       .filter(l => {
         const val = content[l.code] || (t as any)[l.code];
-        return !val || val === t.id;
+        const isMissing = !val || val === t.id;
+        const hasTranslation = val && String(val).trim().length > 0 && val !== t.id;
+        const isStale = hasTranslation && 
+                        t.sourceHash && 
+                        (!t.translatedHashes || (t.translatedHashes as any)[l.code] !== t.sourceHash);
+        return isMissing || isStale;
       }).map(l => l.code);
     if (ml.length === 0) {
-      toast({ title: "无需翻译", description: "该条目已拥有所有激活语种的内容" });
+      toast({ title: "无需翻译", description: "该条目所有激活语种均已是最新状态" });
       return;
     }
 
@@ -795,10 +808,23 @@ export default function TranslationsPage() {
       const ms = t.id.toLowerCase().includes(search) ||
         Object.values(t).some(v => typeof v === 'string' && v.toLowerCase().includes(search)) ||
         contentValues.some(v => typeof v === 'string' && v.toLowerCase().includes(search));
-      if (showOnlyDuplicates && activeTab === 'business') {
-        return ms && duplicateIdsSet.has(t.id);
+
+      let matchesStale = true;
+      if (showOnlyStale) {
+        matchesStale = activeLanguages.some(lang => {
+          if (lang.code === 'zh') return false;
+          const val = (t.content as any)?.[lang.code] || '';
+          const hasTranslation = val && String(val).trim().length > 0 && val !== t.id;
+          return hasTranslation && 
+                 t.sourceHash && 
+                 (!t.translatedHashes || (t.translatedHashes as any)[lang.code] !== t.sourceHash);
+        });
       }
-      return ms;
+
+      if (showOnlyDuplicates && activeTab === 'business') {
+        return ms && duplicateIdsSet.has(t.id) && matchesStale;
+      }
+      return ms && matchesStale;
     });
 
     // 2. 排序
@@ -819,7 +845,7 @@ export default function TranslationsPage() {
       if (valA > valB) return direction === 'asc' ? 1 : -1;
       return 0;
     });
-  }, [categorizedTranslations, searchQuery, showOnlyDuplicates, duplicateIdsSet, activeTab, sortConfig]);
+  }, [categorizedTranslations, searchQuery, showOnlyDuplicates, showOnlyStale, duplicateIdsSet, activeTab, sortConfig, activeLanguages]);
 
   const paginatedTranslations = useMemo(() => {
     const start = (currentPage - 1) * itemsPerPage;
@@ -1195,6 +1221,17 @@ export default function TranslationsPage() {
                 冲突查重
               </Button>
             )}
+            <Button
+              variant={showOnlyStale ? "default" : "ghost"}
+              onClick={() => setShowOnlyStale(!showOnlyStale)}
+              className={cn(
+                "h-12 rounded-xl px-5 text-xs uppercase font-bold gap-2 transition-all",
+                showOnlyStale ? "bg-amber-500 hover:bg-amber-600 text-white shadow-lg shadow-amber-500/20" : "text-muted-foreground hover:bg-muted/20"
+              )}
+            >
+              <Languages className={cn("h-4 w-4", showOnlyStale ? "text-white" : "text-amber-500")} />
+              待同步筛查
+            </Button>
           </div>
         </div>
 
@@ -1332,9 +1369,24 @@ export default function TranslationsPage() {
                               className="min-h-[40px] text-xs rounded-lg bg-muted/20 border-none focus-visible:ring-1 focus-visible:ring-primary/20 py-2 text-foreground"
                             />
                           ) : (
-                            <span className="text-xs font-medium text-foreground/70 line-clamp-2 leading-relaxed">
-                              {((t.content as any)?.[lang.code] || (['zh', 'en', 'idn', 'vi'].includes(lang.code) ? (t as any)[lang.code] : null)) || <span className="opacity-20 italic">Empty Payload</span>}
-                            </span>
+                            <div className="flex flex-col gap-1">
+                              <span className="text-xs font-medium text-foreground/70 line-clamp-2 leading-relaxed">
+                                {((t.content as any)?.[lang.code] || (['zh', 'en', 'idn', 'vi'].includes(lang.code) ? (t as any)[lang.code] : null)) || <span className="opacity-20 italic">Empty Payload</span>}
+                              </span>
+                              {(() => {
+                                const contentVal = ((t.content as any)?.[lang.code] || (['zh', 'en', 'idn', 'vi'].includes(lang.code) ? (t as any)[lang.code] : null)) || '';
+                                const hasTranslation = contentVal && String(contentVal).trim().length > 0 && contentVal !== t.id;
+                                const isStale = hasTranslation && 
+                                                t.sourceHash && 
+                                                (!t.translatedHashes || (t.translatedHashes as any)[lang.code] !== t.sourceHash);
+                                if (!isStale) return null;
+                                return (
+                                  <span className="inline-flex items-center gap-1 text-[9px] font-bold text-amber-500 bg-amber-500/10 border border-amber-500/20 px-1.5 py-0.5 rounded-md w-max uppercase tracking-wider mt-1 select-none animate-pulse">
+                                    <AlertTriangle className="h-2.5 w-2.5" /> 待同步
+                                  </span>
+                                );
+                              })()}
+                            </div>
                           )}
                         </TableCell>
                       ))}

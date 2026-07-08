@@ -8,14 +8,16 @@ datasource db {
 }
 
 model LocalizedString {
-  id            String            @id @default(cuid())
-  content       Json              @default("{}")
-  createdAt     DateTime          @default(now())
-  updatedAt     DateTime          @default(now()) @updatedAt
-  productDescs  Product[]         @relation("ProductDesc")
-  productNames  Product[]         @relation("ProductName")
-  categoryDescs ProductCategory[] @relation("CategoryDesc")
-  categoryNames ProductCategory[] @relation("CategoryName")
+  id               String            @id @default(cuid())
+  content          Json              @default("{}")
+  sourceHash       String?           // MD5 hash of the source text (default zh or en)
+  translatedHashes Json?             // JSON map tracking target language versions: { en: hash, id: hash, ... }
+  createdAt        DateTime          @default(now())
+  updatedAt        DateTime          @default(now()) @updatedAt
+  productDescs     Product[]         @relation("ProductDesc")
+  productNames     Product[]         @relation("ProductName")
+  categoryDescs    ProductCategory[] @relation("CategoryDesc")
+  categoryNames    ProductCategory[] @relation("CategoryName")
 }
 
 model HomepageContent {
