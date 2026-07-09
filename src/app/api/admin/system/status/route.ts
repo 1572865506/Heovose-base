@@ -8,6 +8,7 @@ export const GET = withAuth('superadmin', async () => {
     const backupDir = path.join(process.cwd(), "backups");
     let lastBackup = null;
     let updateLog = "";
+    let updateStatus = null;
 
     if (fs.existsSync(backupDir)) {
       const files = fs.readdirSync(backupDir);
@@ -32,6 +33,14 @@ export const GET = withAuth('superadmin', async () => {
       if (fs.existsSync(logPath)) {
         updateLog = fs.readFileSync(logPath, "utf-8").split("\n").slice(-20).join("\n");
       }
+
+      // Read update status if exists
+      const statusPath = path.join(backupDir, "update_status.json");
+      if (fs.existsSync(statusPath)) {
+        try {
+          updateStatus = JSON.parse(fs.readFileSync(statusPath, "utf-8"));
+        } catch (_) {}
+      }
     }
 
     let version = "v2.1.0-gold";
@@ -50,6 +59,7 @@ export const GET = withAuth('superadmin', async () => {
     return NextResponse.json({
       lastBackup,
       updateLog,
+      updateStatus,
       version,
     });
   } catch (error) {
