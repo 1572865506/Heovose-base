@@ -75,8 +75,8 @@ update_status "db_push" "success" ""
 update_status "build" "running" ""
 echo "🏗️ 正在创建影子编译空间并重新构建项目..." | tee -a $LOG_FILE
 
-# 创建临时的影子编译文件夹，将代码复制过去进行编译
-SHADOW_DIR="./backups/shadow_build"
+# 创建临时的影子编译文件夹，将代码复制过去进行编译 (使用 . 开头以被 Next.js/Webpack 文件监听器自动忽略)
+SHADOW_DIR="./.shadow_build"
 rm -rf $SHADOW_DIR
 mkdir -p $SHADOW_DIR
 

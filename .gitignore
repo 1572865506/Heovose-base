@@ -15,6 +15,7 @@
 
 # next.js
 /.next/
+/.shadow_build/
 /out/
 
 # production
