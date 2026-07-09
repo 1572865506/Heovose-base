@@ -71,17 +71,40 @@ if [ ${PIPESTATUS[0]} -ne 0 ]; then
 fi
 update_status "db_push" "success" ""
 
-# 4. 重新构建
+# 4. 重新构建 (使用影子目录独立构建编译，防止覆盖/损坏当前正在运行服务的 .next 目录)
 update_status "build" "running" ""
-echo "🏗️ 正在重新构建项目 (这可能需要 1-3 分钟)..." | tee -a $LOG_FILE
+echo "🏗️ 正在创建影子编译空间并重新构建项目..." | tee -a $LOG_FILE
+
+# 创建临时的影子编译文件夹，将代码复制过去进行编译
+SHADOW_DIR="./backups/shadow_build"
+rm -rf $SHADOW_DIR
+mkdir -p $SHADOW_DIR
+
+# 复制项目必要的文件和依赖（排除备份文件夹和大体积多余内容）
+echo "📂 正在同步构建所需的运行资产..." | tee -a $LOG_FILE
+cp -R ./src $SHADOW_DIR/ 2>/dev/null || true
+cp -R ./prisma $SHADOW_DIR/ 2>/dev/null || true
+cp -R ./public $SHADOW_DIR/ 2>/dev/null || true
+cp -R ./node_modules $SHADOW_DIR/ 2>/dev/null || true
+cp package.json package-lock.json next.config.ts tsconfig.json tailwind.config.ts postcss.config.mjs postcss.config.js $SHADOW_DIR/ 2>/dev/null || true
+
+# 进入影子目录进行单线程轻量化编译，保证原 /app/.next 不受任何影响，后台正常显示进度
+cd $SHADOW_DIR
 env UV_THREADPOOL_SIZE=1 NODE_OPTIONS="--max-old-space-size=1024" npm run build | tee -a $LOG_FILE
 
 if [ ${PIPESTATUS[0]} -eq 0 ]; then
-    echo "✅ [$(date)] 系统更新构建成功！" | tee -a $LOG_FILE
+    echo "✅ [$(date)] 影子编译成功！进行原子级文件夹快速切换..." | tee -a $LOG_FILE
+    cd $PROJECT_DIR
+    mv .next .next_old 2>/dev/null || true
+    mv $SHADOW_DIR/.next .next
+    rm -rf .next_old
+    rm -rf $SHADOW_DIR
     update_status "build" "success" ""
 else
-    echo "❌ [$(date)] 构建失败，正在尝试自动回退至上一版本..." | tee -a $LOG_FILE
+    echo "❌ [$(date)] 编译失败，正在清理影子编译缓存..." | tee -a $LOG_FILE
     update_status "build" "failed" "Next.js 生产环境打包编译失败 (内存不足或代码编译错误)"
+    cd $PROJECT_DIR
+    rm -rf $SHADOW_DIR
     if [ ! -z "$PREV_COMMIT" ]; then
         echo "⏪ 正在回滚代码到 Commit ID: $PREV_COMMIT ..." | tee -a $LOG_FILE
         git reset --hard $PREV_COMMIT | tee -a $LOG_FILE
