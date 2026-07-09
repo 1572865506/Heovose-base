@@ -2,8 +2,8 @@
 
 # 配置
 PROJECT_DIR=$(pwd)
-LOG_FILE="./backups/update_log.txt"
-STATUS_FILE="./backups/update_status.json"
+LOG_FILE="$PROJECT_DIR/backups/update_log.txt"
+STATUS_FILE="$PROJECT_DIR/backups/update_status.json"
 
 # 记录当前版本 Commit ID，以便更新失败时自动回退
 PREV_COMMIT=$(git rev-parse HEAD 2>/dev/null)
