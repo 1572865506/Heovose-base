@@ -346,7 +346,7 @@ export default function AdminSettingsPage() {
         const interval = setInterval(async () => {
           await fetchStatus();
         }, 5000);
-        setTimeout(() => clearInterval(interval), 120000);
+        setTimeout(() => clearInterval(interval), 300000); // 延长至 5 分钟以适配编译时间
       } else {
         throw new Error(data.error);
       }
