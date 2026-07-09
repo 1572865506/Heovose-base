@@ -75,18 +75,18 @@ update_status "db_push" "success" ""
 update_status "build" "running" ""
 echo "🏗️ 正在创建影子编译空间并重新构建项目..." | tee -a $LOG_FILE
 
-# 创建临时的影子编译文件夹，将代码复制过去进行编译 (使用 . 开头以被 Next.js/Webpack 文件监听器自动忽略)
-SHADOW_DIR="./.shadow_build"
+# 创建临时的影子编译文件夹，将代码复制过去进行编译 (放在项目目录的上一级，彻底绕过 Next.js 的本地文件监听器，防止 500 报错)
+SHADOW_DIR="$(dirname "$PROJECT_DIR")/heovose_shadow_build"
 rm -rf $SHADOW_DIR
 mkdir -p $SHADOW_DIR
 
 # 复制项目必要的文件和依赖（排除备份文件夹和大体积多余内容）
 echo "📂 正在同步构建所需的运行资产..." | tee -a $LOG_FILE
-cp -R ./src $SHADOW_DIR/ 2>/dev/null || true
-cp -R ./prisma $SHADOW_DIR/ 2>/dev/null || true
-cp -R ./public $SHADOW_DIR/ 2>/dev/null || true
-cp -R ./node_modules $SHADOW_DIR/ 2>/dev/null || true
-cp package.json package-lock.json next.config.ts tsconfig.json tailwind.config.ts postcss.config.mjs postcss.config.js $SHADOW_DIR/ 2>/dev/null || true
+cp -R $PROJECT_DIR/src $SHADOW_DIR/ 2>/dev/null || true
+cp -R $PROJECT_DIR/prisma $SHADOW_DIR/ 2>/dev/null || true
+cp -R $PROJECT_DIR/public $SHADOW_DIR/ 2>/dev/null || true
+cp -R $PROJECT_DIR/node_modules $SHADOW_DIR/ 2>/dev/null || true
+cp $PROJECT_DIR/package.json $PROJECT_DIR/package-lock.json $PROJECT_DIR/next.config.ts $PROJECT_DIR/tsconfig.json $PROJECT_DIR/tailwind.config.ts $PROJECT_DIR/postcss.config.mjs $PROJECT_DIR/postcss.config.js $SHADOW_DIR/ 2>/dev/null || true
 
 # 进入影子目录进行单线程轻量化编译，保证原 /app/.next 不受任何影响，后台正常显示进度
 cd $SHADOW_DIR
