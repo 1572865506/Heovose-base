@@ -85,12 +85,14 @@ echo "📂 正在同步构建所需的运行资产..." | tee -a $LOG_FILE
 cp -R $PROJECT_DIR/src $SHADOW_DIR/ 2>/dev/null || true
 cp -R $PROJECT_DIR/prisma $SHADOW_DIR/ 2>/dev/null || true
 cp -R $PROJECT_DIR/public $SHADOW_DIR/ 2>/dev/null || true
-cp -R $PROJECT_DIR/node_modules $SHADOW_DIR/ 2>/dev/null || true
+# 使用软链接替代复制 node_modules，避免数万个文件复制导致 I/O 锁死或内存溢出 (OOM)
+ln -sf $PROJECT_DIR/node_modules $SHADOW_DIR/node_modules
 cp $PROJECT_DIR/.env* $SHADOW_DIR/ 2>/dev/null || true
 cp $PROJECT_DIR/package.json $PROJECT_DIR/package-lock.json $PROJECT_DIR/next.config.ts $PROJECT_DIR/tsconfig.json $PROJECT_DIR/tailwind.config.ts $PROJECT_DIR/postcss.config.mjs $PROJECT_DIR/postcss.config.js $SHADOW_DIR/ 2>/dev/null || true
 
 # 进入影子目录进行单线程轻量化编译，保证原 /app/.next 不受任何影响，后台正常显示进度
 cd $SHADOW_DIR
+echo "🏗️ 开始在影子目录中执行 Next.js 编译..." | tee -a $LOG_FILE
 env UV_THREADPOOL_SIZE=1 NODE_OPTIONS="--max-old-space-size=1024" npm run build | tee -a $LOG_FILE
 
 if [ ${PIPESTATUS[0]} -eq 0 ]; then
