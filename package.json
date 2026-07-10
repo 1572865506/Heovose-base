@@ -102,7 +102,7 @@
     "@testing-library/react": "^16.3.2",
     "@types/bcryptjs": "^2.4.6",
     "@types/dompurify": "^3.0.5",
-    "@types/jsdom": "^28.0.2",
+    "@types/jsdom": "^28.0.3",
     "@types/node": "^20",
     "@types/nodemailer": "^8.0.0",
     "@types/react": "^19.2.1",
