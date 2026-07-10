@@ -139,23 +139,33 @@ docker-compose exec web npx prisma db seed
 
 ## 4. 生产环境版本迭代更新指南
 
-当您在本地开发完毕并推送了新的代码版本（例如在 `develop` 分支），您需要更新生产服务器。
+系统支持以下两种完全兼容且高安全防卡死的生产环境升级更新方式：
 
-> [!TIP]
-> **更新三步走**：如果更新包含数据库字段的修改，以下步骤能保证数据库表结构、Prisma 客户端类型及 Next.js 静态页面打包保持一致：
+### 4.1 方式一：网站后台一键升级（基于网页后台，推荐）
+1. 登录前台管理系统后台，访问 `/admin/settings` 配置页面。
+2. 点击右上角 **“检查更新”**，检测到新提交后点击 **“立即安装”**。
+3. **安全限流机制**：后台执行的升级脚本中，已包含 `nice -n 19` CPU 调度限流及 `2GB` 内存优化。编译期间，宿主机 CPU 算力会优先保证线上用户访问和数据库处理，绝不发生系统死锁或卡死。
+4. **实时日志追踪**：您可以在页面上看到实时的升级进度状态时间线。
 
-1. **进入服务器项目目录并拉取最新代码**：
-   ```bash
-   git pull origin develop
-   ```
-2. **重新编译并重启 Web 应用容器**：
-   ```bash
-   docker-compose up -d --build web
-   ```
-3. **将新字段/表迁移同步到生产数据库**（无缝兼容已存在的业务数据）：
-   ```bash
-   docker-compose exec web npx prisma db push
-   ```
+---
+
+### 4.2 方式二：宿主机一键部署脚本（基于终端命令行，支持指定 Commit）
+如果您需要手动登录服务器执行升级，或者需要**指定部署到某个特定历史 Commit 节点**，请在阿里云宿主机终端运行：
+```bash
+cd /mnt/nvme1n1/heovose/app
+
+# 1. 强制重置服务器上未提交的修改，拉取最新代码
+git reset --hard
+git pull origin main
+
+# 2. 运行部署脚本（自动部署到 main 最新版）
+./deploy.sh
+
+# 3. 如果需要部署到指定的 Commit (以 a3da1d3 历史哈希为例)
+./deploy.sh a3da1d3
+```
+*   **资源强隔离**：此脚本在宿主机通过 Docker 强行限制构建时的硬件消耗：`--cpus="1.0" --memory="2g"`。这保证了在编译 Next.js 静态文件时，服务器将永远预留出 1 个完整 CPU 核心和 2GB 内存给线上提供读写服务，绝对无痛升级。
+
 
 ---
 
@@ -200,28 +210,34 @@ PORT=9002
 
 ---
 
-## 6. 数据备份与恢复 (PostgreSQL & MinIO)
+## 6. 数据自动备份与灾备恢复
 
-为了防止数据丢失，系统在 `scripts/` 下预置了数据备份和恢复脚本。所有备份出的包默认会生成在项目根目录的 `./backups` 下。
+为了防止数据丢失，系统在主程序目录下的 `scripts/` 下预置了数据备份和恢复机制。所有备份出的包默认会生成在项目根目录的 `./backups` 下。
 
-### 6.1 执行一键备份
-在宿主机根目录下直接运行备份脚本，即可将当前的**数据库全量 SQL** 以及 **MinIO 中的静态文件**打包归档：
+### 6.1 执行手动一键备份
+在宿主机根目录下直接运行备份脚本，即可将当前的**数据库全量 SQL** 以及 **MinIO 中的静态文件**进行 Gzip 压缩归档，并自动清理超过 180 天的旧备份：
 ```bash
-bash scripts/backup.sh
+./scripts/export-data.sh
 ```
-* 运行后会在 `backups/` 目录下生成类似 `backup_20260624_152410.tar.gz` 的物理文件。
+*   运行后会在 `backups/` 目录下生成类似 `db_backup_xxxx.sql.gz` 和 `minio_backup_xxxx.tar.gz` 的物理文件。
 
-### 6.2 执行一键恢复
-如果发生故障需要还原数据，可在宿主机根目录下运行：
-```bash
-# 传入指定的备份压缩包文件路径进行恢复
-bash scripts/restore.sh ./backups/backup_xxxxxx.tar.gz
-```
-* **恢复逻辑**：脚本会自动清空当前数据库中已有的表，并自动导入备份包的 SQL 以及重新填充 MinIO 存储桶中的静态文件。
+### 6.2 灾备数据恢复步骤
+如需将备份还原导入至运行中的 Docker 容器：
+1.  **还原 PostgreSQL 数据库**：
+    ```bash
+    # 解压备份的 SQL 文件
+    gunzip -c backups/db_backup_xxxx.sql.gz > db_restore.sql
+    # 危险操作：清空容器内已有表结构并导入
+    docker exec -i heovose-db psql -U heovose -d heovose_elevate -c "DROP SCHEMA public CASCADE; CREATE SCHEMA public;"
+    cat db_restore.sql | docker exec -i heovose-db psql -U heovose -d heovose_elevate
+    ```
+2.  **还原 MinIO 对象存储素材**：
+    ```bash
+    # 解压并覆盖到 MinIO 挂载在宿主机的物理存储目录
+    tar -zxvf backups/minio_backup_xxxx.tar.gz -C /mnt/nvme1n1/heovose/storage_data/
+    ```
 
 ---
 
-祝部署顺利！如有其他问题或需求，请随时查阅 `docs/blueprint.md`。
+祝部署顺利！如有其他更为详细的运维需求和指令小抄，请查阅 `docs/maintenance_guide.md` 手册。
 
-<!-- TEST_COMMIT: 2026-06-27 update testing hook -->
-<!-- TEST_COMMIT_2: 2026-06-27 second update testing hook -->
