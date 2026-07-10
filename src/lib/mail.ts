@@ -14,7 +14,7 @@ const getTransporter = async () => {
         id: { in: ['smtp_host', 'smtp_port', 'smtp_secure', 'smtp_user', 'smtp_password'] }
       }
     });
-    
+
     const settingsMap = settings.reduce((acc: any, s: any) => {
       acc[s.id] = s.value;
       return acc;
@@ -61,7 +61,7 @@ export async function sendInquiryNotification(data: {
   productName?: string | null;
 }) {
   const { transporter, sender } = await getTransporter();
-  
+
   // 获取当前基础 URL 用于追踪像素
   const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://heovose.com';
   const trackingPixelUrl = `${baseUrl}/api/inquiries/track/${encodeURIComponent(data.id)}`;
@@ -94,7 +94,7 @@ export async function sendInquiryNotification(data: {
   const escapedProductName = escapeHtml(data.productName || 'General Inquiry');
   const escapedMessage = escapeHtml(data.message);
 
-  const subject = `【官网询盘】New Inquiry from ${escapedName}`;
+  const subject = `【官网询盘】${escapedName}`;
   const productLink = data.productId ? `${baseUrl}/products/${encodeURIComponent(data.productId)}` : null;
   const submissionTime = new Date().toLocaleString('zh-CN', { timeZone: 'Asia/Shanghai' });
 
@@ -103,12 +103,12 @@ export async function sendInquiryNotification(data: {
       <h2 style="color: #2563eb; border-bottom: 2px solid #2563eb; padding-bottom: 10px;">New Customer Inquiry</h2>
       <div style="margin: 20px 0;">
         <p><strong>Name:</strong> ${escapedName}</p>
-        <p><strong>Email:</strong> ${escapedEmail}</p>
-        <p><strong>Phone:</strong> ${escapedPhone}</p>
+        <p><strong>Customer Email:</strong> ${escapedEmail}</p>
+        <p><strong>Customer Phone:</strong> ${escapedPhone}</p>
         <p><strong>Company:</strong> ${escapedCompany}</p>
         <p><strong>Product ID:</strong> ${data.productId ? `<a href="${productLink}" style="color: #2563eb; text-decoration: underline;">${escapedProductId}</a>` : 'N/A'}</p>
         <p><strong>Product Name:</strong> ${escapedProductName}</p>
-        <p><strong>Submission Time:</strong> ${submissionTime}</p>
+        <p><strong>Comment Time:</strong> ${submissionTime}</p>
       </div>
       <div style="background: #f9fafb; padding: 15px; border-radius: 8px; border-left: 4px solid #d1d5db;">
         <p style="margin-top: 0;"><strong>Message:</strong></p>
@@ -120,7 +120,7 @@ export async function sendInquiryNotification(data: {
       </div>
  
       <p style="margin-top: 20px; font-size: 12px; color: #6b7280; text-align: center;">
-        This is an automated notification from Heovose Elevate.
+        这是来自Heovose机器人的自动转发通知，请勿直接回复。
       </p>
  
       <!-- 追踪像素 -->
