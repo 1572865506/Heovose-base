@@ -90,10 +90,10 @@ ln -sf $PROJECT_DIR/node_modules $SHADOW_DIR/node_modules
 cp $PROJECT_DIR/.env* $SHADOW_DIR/ 2>/dev/null || true
 cp $PROJECT_DIR/package.json $PROJECT_DIR/package-lock.json $PROJECT_DIR/next.config.ts $PROJECT_DIR/tsconfig.json $PROJECT_DIR/tailwind.config.ts $PROJECT_DIR/postcss.config.mjs $PROJECT_DIR/postcss.config.js $SHADOW_DIR/ 2>/dev/null || true
 
-# 进入影子目录进行单线程轻量化编译，保证原 /app/.next 不受任何影响，后台正常显示进度
+# 进入影子目录进行单线程轻量化编译，保证原 /app/.next 不受影响，后台正常显示进度
 cd $SHADOW_DIR
-echo "🏗️ 开始在影子目录中执行 Next.js 编译..." >> $LOG_FILE 2>&1
-env UV_THREADPOOL_SIZE=1 NODE_OPTIONS="--max-old-space-size=2048" npm run build >> $LOG_FILE 2>&1
+echo "🏗️ 开始在影子目录中执行 Next.js 编译 (已限制最低 CPU 优先级)..." >> $LOG_FILE 2>&1
+nice -n 19 env UV_THREADPOOL_SIZE=1 NODE_OPTIONS="--max-old-space-size=2048" npm run build >> $LOG_FILE 2>&1
 
 if [ $? -eq 0 ]; then
     echo "✅ [$(date)] 影子编译成功！进行原子级文件夹快速切换..." >> $LOG_FILE 2>&1
@@ -114,7 +114,7 @@ else
         echo "⏪ 正在回滚代码到 Commit ID: $PREV_COMMIT ..." >> $LOG_FILE 2>&1
         git reset --hard $PREV_COMMIT >> $LOG_FILE 2>&1
         npm install >> $LOG_FILE 2>&1
-        env UV_THREADPOOL_SIZE=1 NODE_OPTIONS="--max-old-space-size=2048" npm run build >> $LOG_FILE 2>&1
+        nice -n 19 env UV_THREADPOOL_SIZE=1 NODE_OPTIONS="--max-old-space-size=2048" npm run build >> $LOG_FILE 2>&1
         echo "✅ 已成功回退至更新前的稳定版本。" >> $LOG_FILE 2>&1
     else
         echo "⚠️ 检测到本地 WSL 开发环境，直接执行版本退回，不跑生产回滚构建以保护开发缓存。" >> $LOG_FILE 2>&1
