@@ -174,15 +174,16 @@ export default function AnalyticsPage() {
     const productStats: Record<string, { views: number; inquiries: number }> = {};
 
     // 1. 统计当前时间段内产品页面的 PAGEVIEW 事件数量
-    filteredEvents
-      .filter((e: any) => e.type === 'PAGEVIEW' && e.path?.startsWith('/products/'))
-      .forEach((e: any) => {
-        const prodId = e.path.split('/').pop();
-        if (prodId) {
-          if (!productStats[prodId]) productStats[prodId] = { views: 0, inquiries: 0 };
-          productStats[prodId].views += 1;
-        }
-      });
+    filteredEvents.forEach((e: any) => {
+      if (e.type !== 'PAGEVIEW' || !e.path) return;
+      // 去除 query 参数，匹配类似 /products/[id] 或 /zh/products/[id] 的结构
+      const match = e.path.split('?')[0].match(/\/products\/([^\/]+)$/);
+      if (match) {
+        const prodId = match[1];
+        if (!productStats[prodId]) productStats[prodId] = { views: 0, inquiries: 0 };
+        productStats[prodId].views += 1;
+      }
+    });
 
     // 2. 统计当前时间段内产品的询盘数量 (过滤当前所选时间段内的 inquiries)
     const filteredInquiries = (inquiries || []).filter((inq: any) => isInTimeRange(inq.createdAt));
