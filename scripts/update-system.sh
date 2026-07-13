@@ -38,6 +38,8 @@ update_status "backup" "success" ""
 # 2. 拉取代码
 update_status "git_pull" "running" ""
 echo "⬇️ 正在从远程仓库拉取最新代码..." >> $LOG_FILE 2>&1
+# 自动强置清空服务器本地临时修改，防止 package-lock.json 等文件冲突导致拉取中断
+git reset --hard >> $LOG_FILE 2>&1
 git pull origin main >> $LOG_FILE 2>&1
 
 if [ $? -ne 0 ]; then
