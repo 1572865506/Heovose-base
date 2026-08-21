@@ -21,10 +21,28 @@ export function AnalyticsTracker() {
     return null;
   }
 
-  // 1. Track Page View & Dwell Time (停留时间)
+  // 1. Track Page View, UTM, Landing Page, Dwell Time & Scroll Depth
   useEffect(() => {
+    if (pathname?.startsWith('/admin') || pathname?.startsWith('/dashboard')) return;
+
     const pageStartTime = Date.now();
     const currentPath = pathname;
+    
+    let maxScrollPercent = 0;
+    const handleScroll = () => {
+      const doc = document.documentElement;
+      const scrollTop = window.pageYOffset || doc.scrollTop;
+      const scrollHeight = doc.scrollHeight;
+      const clientHeight = doc.clientHeight;
+      const totalScrollable = scrollHeight - clientHeight;
+      if (totalScrollable > 0) {
+        const percent = Math.round((scrollTop / totalScrollable) * 100);
+        if (percent > maxScrollPercent) {
+          maxScrollPercent = Math.min(percent, 100);
+        }
+      }
+    };
+    window.addEventListener('scroll', handleScroll, { passive: true });
 
     const runTracking = () => {
       // Initialize or retrieve Session & Visitor ID
@@ -42,6 +60,21 @@ export function AnalyticsTracker() {
       }
       sessionIdRef.current = sessionId;
 
+      // GDPR Privacy check
+      const hasConsent = localStorage.getItem('cookie-consent') === 'accepted';
+
+      // Landing Page identification
+      const isLandingPage = !sessionStorage.getItem('heovose-is-landing-tracked');
+      if (isLandingPage) {
+        sessionStorage.setItem('heovose-is-landing-tracked', 'true');
+      }
+
+      // UTM params
+      const searchParams = new URLSearchParams(window.location.search);
+      const utm_source = searchParams.get('utm_source') || undefined;
+      const utm_medium = searchParams.get('utm_medium') || undefined;
+      const utm_campaign = searchParams.get('utm_campaign') || undefined;
+
       // Track Page View
       const trackPageView = async () => {
         try {
@@ -53,8 +86,14 @@ export function AnalyticsTracker() {
               sessionId: sessionIdRef.current,
               visitorId: visitorIdRef.current,
               path: currentPath,
-              referrer: document.referrer,
-              userAgent: navigator.userAgent,
+              // Sensitivity shielding: only send referrer/UA if consent granted
+              referrer: hasConsent ? document.referrer : undefined,
+              userAgent: hasConsent ? navigator.userAgent : undefined,
+              hasConsent,
+              isLandingPage: isLandingPage ? true : undefined,
+              utm_source,
+              utm_medium,
+              utm_campaign,
             }),
           });
         } catch (e) {
@@ -74,24 +113,29 @@ export function AnalyticsTracker() {
     }
 
     return () => {
-      // 页面离开时统计停留时间 (单位秒)
+      window.removeEventListener('scroll', handleScroll);
+      
+      // Send dwell time & max scroll depth on page leave
       const duration = Math.round((Date.now() - pageStartTime) / 1000);
       if (duration > 0 && duration < 7200) {
         const vId = localStorage.getItem('heovose-analytics-visitor') || visitorIdRef.current;
         const sId = sessionStorage.getItem('heovose-analytics-session') || sessionIdRef.current;
+        const hasConsent = localStorage.getItem('cookie-consent') === 'accepted';
         
         if (vId && sId) {
           fetch('/api/analytics/track', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
-              type: 'scroll', // 借用 scroll 传输停留时间，或者其他合规 type
+              type: 'scroll',
               sessionId: sId,
               visitorId: vId,
               path: currentPath,
               duration: duration,
+              scrollDepth: maxScrollPercent,
+              hasConsent,
             }),
-            keepalive: true, // 保证在卸载/跳转时传输成功
+            keepalive: true,
           }).catch(() => {});
         }
       }
@@ -105,6 +149,7 @@ export function AnalyticsTracker() {
       if (pathname.startsWith('/admin')) return;
 
       const doc = document.documentElement;
+      const hasConsent = localStorage.getItem('cookie-consent') === 'accepted';
       const clickData = {
         type: 'click',
         sessionId: sessionIdRef.current,
@@ -113,6 +158,7 @@ export function AnalyticsTracker() {
         x: (e.pageX / doc.scrollWidth) * 100,
         y: (e.pageY / doc.scrollHeight) * 100,
         element: (e.target as HTMLElement).tagName,
+        hasConsent,
         layout: {
           scrollWidth: doc.scrollWidth,
           scrollHeight: doc.scrollHeight,
@@ -148,6 +194,53 @@ export function AnalyticsTracker() {
 
     window.addEventListener('click', handleGlobalClick);
     return () => window.removeEventListener('click', handleGlobalClick);
+  }, [pathname]);
+
+  // 3. Track Form Focus (Inquiry Abandonment Tracking)
+  useEffect(() => {
+    let formStarted = false;
+    const handleFormFocus = (e: FocusEvent) => {
+      if (formStarted) return;
+      const target = e.target as HTMLElement;
+      if (
+        !pathname.startsWith('/admin') &&
+        (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA')
+      ) {
+        const parentForm = target.closest('form');
+        if (parentForm || pathname.includes('inquir') || pathname.includes('contact')) {
+          formStarted = true;
+          
+          const sendFormStart = async () => {
+            const hasConsent = localStorage.getItem('cookie-consent') === 'accepted';
+            try {
+              await fetch('/api/analytics/track', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                  type: 'form_start',
+                  sessionId: sessionIdRef.current,
+                  visitorId: visitorIdRef.current,
+                  path: pathname,
+                  element: target.id || target.getAttribute('name') || 'inquiry_input',
+                  hasConsent,
+                }),
+              });
+            } catch (e) {
+              // Silent fail
+            }
+          };
+
+          if ('requestIdleCallback' in window) {
+            (window as any).requestIdleCallback(() => sendFormStart());
+          } else {
+            setTimeout(sendFormStart, 0);
+          }
+        }
+      }
+    };
+
+    document.addEventListener('focusin', handleFormFocus);
+    return () => document.removeEventListener('focusin', handleFormFocus);
   }, [pathname]);
 
   return null;

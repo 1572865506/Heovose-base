@@ -91,7 +91,12 @@ export default auth(async (request) => {
     targetUrl.host = `${endpoint}:${port}`;
     targetUrl.pathname = cleanPath;
     
-    return NextResponse.rewrite(targetUrl);
+    const response = NextResponse.rewrite(targetUrl);
+    // 强制附加 CORS 头部，完美解决本地测试及任何存储端的跨域限制，确保 HLS (m3u8/ts) 播放顺畅
+    response.headers.set('Access-Control-Allow-Origin', '*');
+    response.headers.set('Access-Control-Allow-Methods', 'GET,OPTIONS,HEAD');
+    response.headers.set('Access-Control-Allow-Headers', '*');
+    return response;
   }
 
   const origin = request.headers.get('origin');

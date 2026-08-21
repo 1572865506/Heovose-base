@@ -52,6 +52,24 @@ export default function CookieConsent() {
   const handleAccept = () => {
     localStorage.setItem('cookie-consent', 'accepted');
     setIsVisible(false);
+
+    // Track consent acceptance to trigger IP / UA backfilling on backend
+    const sId = sessionStorage.getItem('heovose-analytics-session');
+    const vId = localStorage.getItem('heovose-analytics-visitor');
+    if (sId && vId) {
+      fetch('/api/analytics/track', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          type: 'cookie_accept',
+          sessionId: sId,
+          visitorId: vId,
+          path: window.location.pathname,
+          referrer: document.referrer,
+          userAgent: navigator.userAgent,
+        }),
+      }).catch(() => {});
+    }
   };
 
   if (!isReady || isLoading || pathname?.startsWith('/admin')) return null;

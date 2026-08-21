@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { useLocalCollection } from '@/hooks/use-local-collection';
 import {
   CardContent,
@@ -62,14 +62,38 @@ export default function AnalyticsPage() {
   const { data: session } = useSession();
   const { toast } = useToast();
   
-  const { data: sessions, isLoading: isSessionsLoading, mutate: mutateSessions } = useLocalCollection<any>('analytics/sessions');
-  const { data: events, isLoading: isEventsLoading, mutate: mutateEvents } = useLocalCollection<any>('analytics/events');
+  const [timeRange, setTimeRange] = useState<'24h' | '7d' | '30d' | 'year' | 'all'>('7d');
+  const { data: sessions, isLoading: isSessionsLoading, mutate: mutateSessions } = useLocalCollection<any>(`analytics/sessions?range=${timeRange}`);
+  const { data: events, isLoading: isEventsLoading, mutate: mutateEvents } = useLocalCollection<any>(`analytics/events?range=${timeRange}`);
   const { data: products, isLoading: isProductsLoading } = useLocalCollection<any>('products');
   const { data: inquiries, isLoading: isInquiriesLoading, mutate: mutateInquiries } = useLocalCollection<any>('inquiries');
 
   const [isReportOpen, setIsReportOpen] = useState(false);
-  const [timeRange, setTimeRange] = useState<'24h' | '7d' | '30d' | 'year' | 'all'>('7d');
   const [matrixSortBy, setMatrixSortBy] = useState<'pv' | 'dwell'>('pv');
+
+  // Realtime Active Visitors hook
+  const [realtimeData, setRealtimeData] = useState<any>({ onlineCount: 0, activeSessions: [], pages: [] });
+  const [isRealtimeLoading, setIsRealtimeLoading] = useState(true);
+  const [expandedSessionId, setExpandedSessionId] = useState<string | null>(null);
+
+  useEffect(() => {
+    const fetchRealtime = async () => {
+      try {
+        const res = await fetch('/api/analytics/realtime');
+        if (res.ok) {
+          const d = await res.json();
+          setRealtimeData(d);
+        }
+      } catch (e) {
+        // ignore
+      } finally {
+        setIsRealtimeLoading(false);
+      }
+    };
+    fetchRealtime();
+    const timer = setInterval(fetchRealtime, 15000);
+    return () => clearInterval(timer);
+  }, []);
 
   // 一键清洗相关状态
   const [isClearOpen, setIsClearOpen] = useState(false);
@@ -375,6 +399,73 @@ export default function AnalyticsPage() {
       .map(([name, value]) => ({ name, value }))
       .sort((a, b) => b.value - a.value);
 
+    // UTM 营销与 SEO 参数提取
+    const utmSourceCounts: Record<string, number> = {};
+    const utmCampaignCounts: Record<string, number> = {};
+    const landingPageCounts: Record<string, number> = {};
+    const scrollPercentList: number[] = [];
+    let formStartCount = 0;
+
+    filteredEvents.forEach((e: any) => {
+      const extra = e.extraData || {};
+      if (extra.utm_source) {
+        utmSourceCounts[extra.utm_source] = (utmSourceCounts[extra.utm_source] || 0) + 1;
+      }
+      if (extra.utm_campaign) {
+        utmCampaignCounts[extra.utm_campaign] = (utmCampaignCounts[extra.utm_campaign] || 0) + 1;
+      }
+      if (extra.isLandingPage) {
+        landingPageCounts[e.path] = (landingPageCounts[e.path] || 0) + 1;
+      }
+      if (e.type === 'SCROLL' && extra.scrollDepth !== undefined) {
+        scrollPercentList.push(extra.scrollDepth);
+      }
+      if (e.type === 'FORM_START') {
+        formStartCount += 1;
+      }
+    });
+
+    const utmSourceData = Object.entries(utmSourceCounts)
+      .map(([name, value]) => ({ name, value }))
+      .sort((a, b) => b.value - a.value);
+
+    const utmCampaignData = Object.entries(utmCampaignCounts)
+      .map(([name, value]) => ({ name, value }))
+      .sort((a, b) => b.value - a.value);
+
+    const landingPageData = Object.entries(landingPageCounts)
+      .map(([name, value]) => ({ name, value }))
+      .sort((a, b) => b.value - a.value);
+
+    const avgScrollDepth = scrollPercentList.length > 0 
+      ? Math.round(scrollPercentList.reduce((acc, curr) => acc + curr, 0) / scrollPercentList.length)
+      : 0;
+
+    const inquiryCount = filteredInquiries.length;
+    const formAbandonRate = formStartCount > 0
+      ? Math.max(0, Math.round(((formStartCount - inquiryCount) / formStartCount) * 100))
+      : 0;
+
+    // 联合处理带有 Timeline 事件轨迹的 Sessions 列表
+    const sessionsWithTimeline = filteredSessions.map((s: any) => {
+      const sessionEvents = filteredEvents
+        .filter((e: any) => e.sessionId === s.id)
+        .sort((a: any, b: any) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
+        
+      const firstEventTime = sessionEvents[0] ? new Date(sessionEvents[0].timestamp).getTime() : new Date(s.createdAt).getTime();
+      const lastEventTime = sessionEvents[sessionEvents.length - 1] ? new Date(sessionEvents[sessionEvents.length - 1].timestamp).getTime() : new Date(s.updatedAt).getTime();
+      const totalDurationSec = Math.max(Math.round((lastEventTime - firstEventTime) / 1000), 0);
+      
+      const hasAcceptedCookie = sessionEvents.some((e: any) => e.type === 'COOKIE_ACCEPT') || !!s.ip;
+
+      return {
+        ...s,
+        events: sessionEvents,
+        duration: totalDurationSec,
+        hasAcceptedCookie,
+      };
+    }).sort((a: any, b: any) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+
     return {
       totalSessions,
       uniqueVisitors,
@@ -385,7 +476,14 @@ export default function AnalyticsPage() {
       deviceData,
       timeSeries,
       referrerData,
-      productMetrics
+      productMetrics,
+      utmSourceData,
+      utmCampaignData,
+      landingPageData,
+      avgScrollDepth,
+      formStartCount,
+      formAbandonRate,
+      sessionsWithTimeline,
     };
   }, [sessions, events, timeRange, matrixSortBy, products, inquiries]);
 
@@ -508,13 +606,62 @@ export default function AnalyticsPage() {
         }
       />
 
+      {/* 实时在线访客大屏 */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+        <GlassCard className="lg:col-span-4 border-none bg-slate-950 text-white overflow-hidden relative min-h-[160px] flex flex-col justify-between">
+          <div className="absolute top-0 right-0 w-48 h-48 bg-emerald-500/10 blur-[80px] rounded-full translate-x-10 -translate-y-10 animate-pulse" />
+          <CardHeader className="p-6 pb-2 z-10">
+            <div className="flex items-center justify-between">
+              <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-emerald-400">实时在线监控 / LIVE MONITOR</span>
+              <div className="flex items-center gap-1.5 px-2 py-0.5 bg-emerald-500/20 rounded-full border border-emerald-500/30">
+                <div className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                <span className="text-[8px] font-black text-emerald-400 uppercase tracking-tighter">LIVE</span>
+              </div>
+            </div>
+            <CardTitle className="text-3xl font-headline font-black text-white mt-4 flex items-baseline gap-2">
+              {realtimeData?.onlineCount || 0}
+              <span className="text-xs font-bold text-white/50">位访客在线</span>
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="p-6 pt-0 z-10">
+            <p className="text-[9px] font-medium text-white/40 line-clamp-1">
+              当前正在浏览: {realtimeData?.pages?.[0]?.path || '暂无'} 等 {realtimeData?.pages?.length || 0} 个页面
+            </p>
+          </CardContent>
+        </GlassCard>
+
+        <GlassCard className="lg:col-span-8 border-none bg-card overflow-hidden">
+          <CardHeader className="p-6 pb-2">
+            <CardTitle className="text-sm font-bold text-foreground">实时活动轨迹 (最近 5 分钟)</CardTitle>
+          </CardHeader>
+          <CardContent className="p-6 pt-0">
+            <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-thin">
+              {realtimeData?.activeSessions && realtimeData.activeSessions.length > 0 ? (
+                realtimeData.activeSessions.slice(0, 6).map((item: any, idx: number) => (
+                  <div key={idx} className="flex flex-col p-3 rounded-xl bg-muted/20 border border-border/10 min-w-[170px] space-y-1.5">
+                    <div className="flex items-center justify-between">
+                      <span className="text-[8px] font-mono text-muted-foreground/60">{item.sessionId.slice(5, 12)}</span>
+                      <span className="text-[9px] font-bold text-indigo-400">{item.country || 'Anonymized'}</span>
+                    </div>
+                    <p className="text-[10px] font-bold truncate text-foreground">{item.currentPath}</p>
+                    <span className="text-[8px] font-medium text-muted-foreground/40">{new Date(item.lastActive).toLocaleTimeString()}</span>
+                  </div>
+                ))
+              ) : (
+                <div className="py-4 text-center text-[10px] text-muted-foreground/40 font-bold w-full">暂无实时活跃用户...</div>
+              )}
+            </div>
+          </CardContent>
+        </GlassCard>
+      </div>
+
       {/* Overview Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         {[
           { label: '总访问会话', value: stats?.totalSessions || 0, icon: Globe, trend: '+12%', color: 'blue', sub: getTimeRangeLabel() },
           { label: '独立访客数', value: stats?.uniqueVisitors || 0, icon: Users, trend: '+8%', color: 'indigo', sub: getTimeRangeLabel() },
-          { label: '交互总次数', value: stats?.totalEvents || 0, icon: Activity, trend: '+24%', color: 'orange', sub: getTimeRangeLabel() },
-          { label: '平均转化率', value: `${Math.round((stats?.clickEvents || 0) / (stats?.totalEvents || 1) * 100)}%`, icon: Zap, trend: '+5%', color: 'yellow', sub: getTimeRangeLabel() },
+          { label: '平均滚动深度', value: `${stats?.avgScrollDepth || 0}%`, icon: Activity, trend: '+24%', color: 'orange', sub: getTimeRangeLabel() },
+          { label: '询盘表单流失率', value: `${stats?.formAbandonRate || 0}%`, icon: Zap, trend: '+5%', color: 'yellow', sub: getTimeRangeLabel() },
         ].map((stat, i) => (
           <GlassCard key={i} className="border-none overflow-hidden group hover:translate-y-1 transition-all duration-500 bg-card">
             <CardContent className="p-8">
@@ -829,6 +976,208 @@ export default function AnalyticsPage() {
               )}
             </tbody>
           </table>
+        </CardContent>
+      </GlassCard>
+
+      {/* 营销与 SEO 渠道洞察 */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+        <GlassCard className="lg:col-span-6 border-none bg-card overflow-hidden">
+          <CardHeader className="p-10 border-b border-border/20">
+            <CardTitle className="text-xl font-headline font-bold text-foreground">引流渠道分析 (UTM Sources)</CardTitle>
+            <CardDescription className="text-[10px] font-bold uppercase tracking-[0.2em] mt-1">Marketing Campaigns Traffic Source</CardDescription>
+          </CardHeader>
+          <CardContent className="p-10 space-y-8">
+            {stats?.utmSourceData && stats.utmSourceData.length > 0 ? (
+              stats.utmSourceData.slice(0, 5).map((item: any, i: number) => (
+                <div key={i} className="space-y-3">
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm font-bold text-foreground">{item.name}</span>
+                    <span className="text-sm font-black text-foreground">{item.value} <span className="text-[10px] text-muted-foreground">会话</span></span>
+                  </div>
+                  <Progress
+                    value={stats.utmSourceData[0]?.value ? (item.value / stats.utmSourceData[0].value) * 100 : 0}
+                    className="h-1.5 bg-muted/20"
+                  />
+                </div>
+              ))
+            ) : (
+              <div className="py-10 text-center text-xs text-muted-foreground/40 font-bold">暂无带 UTM 来源的广告引流数据</div>
+            )}
+          </CardContent>
+        </GlassCard>
+
+        <GlassCard className="lg:col-span-6 border-none bg-card overflow-hidden">
+          <CardHeader className="p-10 border-b border-border/20">
+            <CardTitle className="text-xl font-headline font-bold text-foreground">入口落地页排行 (Landing Pages)</CardTitle>
+            <CardDescription className="text-[10px] font-bold uppercase tracking-[0.2em] mt-1">First Entry Pages For Users</CardDescription>
+          </CardHeader>
+          <CardContent className="p-10 space-y-8">
+            {stats?.landingPageData && stats.landingPageData.length > 0 ? (
+              stats.landingPageData.slice(0, 5).map((item: any, i: number) => (
+                <div key={i} className="space-y-3">
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm font-bold text-foreground font-mono truncate max-w-xs">{item.path}</span>
+                    <span className="text-sm font-black text-foreground">{item.value} <span className="text-[10px] text-muted-foreground">进入次</span></span>
+                  </div>
+                  <Progress
+                    value={stats.landingPageData[0]?.value ? (item.value / stats.landingPageData[0].value) * 100 : 0}
+                    className="h-1.5 bg-muted/20"
+                  />
+                </div>
+              ))
+            ) : (
+              <div className="py-10 text-center text-xs text-muted-foreground/40 font-bold">暂无落地页首访记录</div>
+            )}
+          </CardContent>
+        </GlassCard>
+      </div>
+
+      {/* 访客会话行为轨迹时光轴 (Timeline) */}
+      <GlassCard className="border-none bg-card overflow-hidden">
+        <CardHeader className="p-10 border-b border-border/20">
+          <div className="flex items-center justify-between">
+            <div>
+              <CardTitle className="text-xl font-headline font-bold text-foreground">访客行为轨迹分析</CardTitle>
+              <CardDescription className="text-[10px] font-bold uppercase tracking-[0.2em] text-muted-foreground mt-1">
+                User Session Journeys Timeline & Privacy Compliance Analysis
+              </CardDescription>
+            </div>
+            <Users className="h-8 w-8 text-muted-foreground/10" />
+          </div>
+        </CardHeader>
+        <CardContent className="p-0">
+          <div className="divide-y divide-border/10">
+            {stats?.sessionsWithTimeline && stats.sessionsWithTimeline.length > 0 ? (
+              stats.sessionsWithTimeline.map((session: any) => {
+                const isExpanded = expandedSessionId === session.id;
+                return (
+                  <div key={session.id} className="transition-all hover:bg-muted/5">
+                    {/* 会话简要概览行 */}
+                    <div 
+                      className="px-10 py-6 flex flex-col md:flex-row md:items-center justify-between gap-4 cursor-pointer"
+                      onClick={() => setExpandedSessionId(isExpanded ? null : session.id)}
+                    >
+                      <div className="space-y-2">
+                        <div className="flex items-center gap-3">
+                          {session.hasAcceptedCookie ? (
+                            <Badge className="bg-emerald-500/10 text-emerald-500 border-none rounded-full px-2 py-0.5 text-[8px] font-black uppercase">
+                              已授权隐私
+                            </Badge>
+                          ) : (
+                            <Badge className="bg-amber-500/10 text-amber-500 border-none rounded-full px-2 py-0.5 text-[8px] font-black uppercase">
+                              匿名浏览 (未授权)
+                            </Badge>
+                          )}
+                          <span className="text-xs font-mono font-black text-foreground">
+                            {session.hasAcceptedCookie && session.ip ? `${session.ip} (${session.city || 'Unknown'}, ${session.country || 'Unknown'})` : 'Anonymous Visitor'}
+                          </span>
+                        </div>
+                        <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-[10px] font-bold text-muted-foreground/60">
+                          <span>会话 ID: <span className="font-mono">{session.id.slice(0, 12)}...</span></span>
+                          <span>首访时间: {new Date(session.createdAt).toLocaleString()}</span>
+                          <span>来源: <span className="text-foreground/75 truncate max-w-xs">{session.referrer || '直接访问'}</span></span>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center gap-4 self-end md:self-auto">
+                        <div className="text-right hidden md:block">
+                          <p className="text-xs font-black text-foreground">{session.events.length} 个交互节点</p>
+                          <p className="text-[10px] font-bold text-muted-foreground/40 uppercase">停留时间: {session.duration}秒</p>
+                        </div>
+                        <Button 
+                          variant="ghost" 
+                          size="sm" 
+                          className="rounded-xl border border-border/10 hover:bg-primary/10 hover:text-primary font-bold text-[10px]"
+                        >
+                          {isExpanded ? '收起详情' : '展开轨迹流'}
+                        </Button>
+                      </div>
+                    </div>
+
+                    {/* 时光轨迹流展开区域 */}
+                    {isExpanded && (
+                      <div className="px-10 pb-8 pt-4 bg-muted/10 border-t border-border/5">
+                        <div className="relative pl-6 border-l-2 border-primary/20 space-y-6">
+                          {/* 节点一：进入站点 */}
+                          <div className="relative">
+                            <div className="absolute -left-[31px] top-0.5 h-4 w-4 rounded-full bg-blue-500 border-4 border-card flex items-center justify-center" />
+                            <div className="space-y-1">
+                              <div className="flex items-center gap-2">
+                                <span className="text-[10px] font-black uppercase tracking-wider text-blue-500">进入站点 / Landing</span>
+                                <span className="text-[9px] font-mono text-muted-foreground/40">{new Date(session.createdAt).toLocaleTimeString()}</span>
+                              </div>
+                              <p className="text-xs font-bold text-foreground">
+                                通过设备 {session.userAgent ? parseUA(session.userAgent).browser + ' (' + parseUA(session.userAgent).os + ')' : '未知终端'} 
+                                进入系统落地页。
+                              </p>
+                            </div>
+                          </div>
+
+                          {/* 动态事件节点 */}
+                          {session.events.map((event: any, idx: number) => {
+                            let nodeColor = "bg-primary";
+                            let nodeTitle = "交互行为";
+                            let nodeDesc = "";
+
+                            if (event.type === 'PAGEVIEW') {
+                              nodeColor = "bg-indigo-500";
+                              nodeTitle = `浏览页面 (PAGEVIEW)`;
+                              nodeDesc = `访问了路径 ${event.path}`;
+                            } else if (event.type === 'COOKIE_ACCEPT') {
+                              nodeColor = "bg-emerald-500 shadow-[0_0_10px_rgba(16,185,129,0.3)] animate-pulse";
+                              nodeTitle = "同意隐私协议 (COOKIE_ACCEPT)";
+                              nodeDesc = `用户点击了同意隐私合规提示。此节点起，系统安全解锁 IP 地理位置与 UA 收集。`;
+                            } else if (event.type === 'FORM_START') {
+                              nodeColor = "bg-amber-500";
+                              nodeTitle = "开始填写表单 (FORM_START)";
+                              nodeDesc = `聚焦并开始在页面 ${event.path} 填写询盘输入框 [${event.element || 'inquiry'}]。`;
+                            } else if (event.type === 'SCROLL') {
+                              nodeColor = "bg-orange-500";
+                              nodeTitle = "页面停留与滚动 (SCROLL & DWELL)";
+                              nodeDesc = `在此页面停留了 ${event.extraData?.duration || 0}秒，最高滚动至页面的 ${event.extraData?.scrollDepth || 0}% 深度。`;
+                            } else if (event.type === 'CLICK') {
+                              nodeColor = "bg-purple-500";
+                              nodeTitle = "页面点击交互 (CLICK)";
+                              nodeDesc = `点击了标签 <${event.element || 'Unknown'}> 元素。相对位置 (X: ${Math.round(event.x || 0)}%, Y: ${Math.round(event.y || 0)}%)`;
+                            }
+
+                            return (
+                              <div key={event.id} className="relative">
+                                <div className={`absolute -left-[31px] top-0.5 h-4 w-4 rounded-full ${nodeColor} border-4 border-card`} />
+                                <div className="space-y-1">
+                                  <div className="flex items-center gap-2">
+                                    <span className="text-[10px] font-black uppercase tracking-wider text-foreground/80">{nodeTitle}</span>
+                                    <span className="text-[9px] font-mono text-muted-foreground/40">{new Date(event.timestamp).toLocaleTimeString()}</span>
+                                  </div>
+                                  <p className="text-xs font-bold text-muted-foreground/80">{nodeDesc}</p>
+                                </div>
+                              </div>
+                            );
+                          })}
+
+                          {/* 节点三：最后活跃离开 */}
+                          <div className="relative">
+                            <div className="absolute -left-[31px] top-0.5 h-4 w-4 rounded-full bg-gray-500 border-4 border-card" />
+                            <div className="space-y-1">
+                              <div className="flex items-center gap-2">
+                                <span className="text-[10px] font-black uppercase tracking-wider text-gray-500">离开站点 / Exit</span>
+                                <span className="text-[9px] font-mono text-muted-foreground/40">{new Date(session.updatedAt).toLocaleTimeString()}</span>
+                              </div>
+                              <p className="text-xs font-bold text-muted-foreground">会话交互结束，在此最后退出页面。</p>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                );
+              })
+            ) : (
+              <div className="py-20 text-center text-muted-foreground/40 font-bold">
+                当前筛选时间段内没有访客会话行为记录。
+              </div>
+            )}
+          </div>
         </CardContent>
       </GlassCard>
 

@@ -20,7 +20,7 @@ export async function POST(request: Request) {
     }
 
     // 2. Type validation
-    const allowedTypes = ['pageview', 'click', 'hover', 'scroll', 'video_play', 'video_pause', 'video_ended'];
+    const allowedTypes = ['pageview', 'click', 'hover', 'scroll', 'video_play', 'video_pause', 'video_ended', 'cookie_accept', 'form_start'];
     if (!type || typeof type !== 'string' || !allowedTypes.includes(type.toLowerCase())) {
       return NextResponse.json({ error: 'Invalid or unsupported tracking type' }, { status: 400 });
     }
@@ -73,55 +73,91 @@ export async function POST(request: Request) {
       const ct = Number(rest.currentTime);
       if (!isNaN(ct) && ct >= 0) extraData.currentTime = ct;
     }
-    if (type.toLowerCase() === 'pageview') {
+    if (rest.scrollDepth !== undefined) {
+      const sd = Number(rest.scrollDepth);
+      if (!isNaN(sd) && sd >= 0) extraData.scrollDepth = sd;
+    }
+    if (rest.utm_source) extraData.utm_source = String(rest.utm_source).slice(0, 100);
+    if (rest.utm_medium) extraData.utm_medium = String(rest.utm_medium).slice(0, 100);
+    if (rest.utm_campaign) extraData.utm_campaign = String(rest.utm_campaign).slice(0, 100);
+    if (rest.isLandingPage !== undefined) extraData.isLandingPage = !!rest.isLandingPage;
+
+    // Check privacy consent
+    const hasConsent = body.hasConsent === true || type.toLowerCase() === 'cookie_accept';
+
+    let ip: string | null = null;
+    let country = "UNKNOWN";
+    let city = "UNKNOWN";
+    let userAgent: string | null = null;
+
+    if (hasConsent) {
       // 获取客户端真实 IP
-      const ip = request.headers.get("x-forwarded-for")?.split(",")[0].trim() || 
-                 request.headers.get("x-real-ip") || 
-                 "127.0.0.1";
+      ip = request.headers.get("x-forwarded-for")?.split(",")[0].trim() || 
+           request.headers.get("x-real-ip") || 
+           "127.0.0.1";
 
       // 提取平台地理位置请求头 (适配 App Hosting / Firebase / Cloudflare / Vercel)
-      let country = request.headers.get("x-appengine-country") || 
-                    request.headers.get("x-vercel-ip-country") || 
-                    request.headers.get("cf-ipcountry") || 
-                    request.headers.get("x-country-code") || 
-                    "";
-                    
-      let city = request.headers.get("x-appengine-city") || 
-                 request.headers.get("x-vercel-ip-city") || 
-                 request.headers.get("cf-ipcity") || 
-                 "";
+      country = request.headers.get("x-appengine-country") || 
+                request.headers.get("x-vercel-ip-country") || 
+                request.headers.get("cf-ipcountry") || 
+                request.headers.get("x-country-code") || 
+                "";
+                
+      city = request.headers.get("x-appengine-city") || 
+             request.headers.get("x-vercel-ip-city") || 
+             request.headers.get("cf-ipcity") || 
+             "";
 
-      // 本地开发友好后备 (无平台头部且为本地/内网 IP 时，模拟为本地来源，防全显示 Unknown)
-      if (!country && (ip === '127.0.0.1' || ip === '::1' || ip.startsWith('192.168.') || ip.startsWith('10.'))) {
+      // 本地开发及WSL局域网网段后备判定 (排除局域网和本地环回展示为 Unknown 影响本地测试)
+      const isLocal = ip === '127.0.0.1' || 
+                      ip === '::1' || 
+                      ip.includes('127.0.0.1') ||
+                      ip.startsWith('192.168.') || 
+                      ip.startsWith('10.') || 
+                      ip.startsWith('172.') ||
+                      ip.includes('172.') ||
+                      ip.startsWith('::ffff:172.');
+
+      if (!country && isLocal) {
         country = 'CN';
         city = 'Localhost';
       }
 
       if (!country) country = 'UNKNOWN';
       if (!city) city = 'UNKNOWN';
-
-      // 强制国家代码大写
       country = country.toUpperCase();
-
-      // Create or Update Session
-      await db.visitorSession.upsert({
-        where: { id: sessionId },
-        update: {
-          lastPath: path ? path.slice(0, 255) : null,
-          updatedAt: new Date(),
-        },
-        create: {
-          id: sessionId,
-          visitorId: visitorId,
-          ip: ip,
-          country: country,
-          city: city,
-          userAgent: extraData.userAgent || '',
-          referrer: extraData.referrer || '',
-          lastPath: path ? path.slice(0, 255) : null,
-        },
-      });
+      
+      // 直接读取 HTTP 头的真实 User-Agent，不再完全依赖前端上报，防止遗漏
+      userAgent = request.headers.get("user-agent") || extraData.userAgent || null;
     }
+
+    // Prepare upsert payload
+    const sessionUpdate: any = {
+      lastPath: path ? path.slice(0, 255) : null,
+      updatedAt: new Date(),
+    };
+    if (hasConsent) {
+      if (ip) sessionUpdate.ip = ip;
+      if (country) sessionUpdate.country = country;
+      if (city) sessionUpdate.city = city;
+      if (userAgent) sessionUpdate.userAgent = userAgent;
+    }
+
+    // Create or Update Session
+    await db.visitorSession.upsert({
+      where: { id: sessionId },
+      update: sessionUpdate,
+      create: {
+        id: sessionId,
+        visitorId: visitorId,
+        ip: ip,
+        country: country,
+        city: city,
+        userAgent: userAgent || '',
+        referrer: extraData.referrer || '',
+        lastPath: path ? path.slice(0, 255) : null,
+      },
+    });
 
     // Record Event
     await db.analyticsEvent.create({

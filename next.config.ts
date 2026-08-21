@@ -13,6 +13,7 @@ if (appUrl) {
 const nextConfig: NextConfig = {
   /* config options here */
   experimental: {
+    middlewareClientMaxBodySize: 20971520, // 20MB to align with the application file upload limit
     serverActions: {
       allowedOrigins: [
         '8.219.243.231',
