@@ -8,6 +8,17 @@ export function AnalyticsTracker() {
   const sessionIdRef = useRef<string | null>(null);
   const visitorIdRef = useRef<string | null>(null);
 
+  const isIgnoredPath = (p?: string | null) => {
+    if (!p) return true;
+    return (
+      p.startsWith('/admin') ||
+      p.startsWith('/dashboard') ||
+      p.startsWith('/auth') ||
+      p.startsWith('/api') ||
+      p.includes('/login')
+    );
+  };
+
   // DISABLE tracking if running inside an iframe (e.g., admin heatmap preview)
   // or if explicitly disabled via query param
   useEffect(() => {
@@ -23,7 +34,7 @@ export function AnalyticsTracker() {
 
   // 1. Track Page View, UTM, Landing Page, Dwell Time & Scroll Depth
   useEffect(() => {
-    if (pathname?.startsWith('/admin') || pathname?.startsWith('/dashboard')) return;
+    if (isIgnoredPath(pathname)) return;
 
     const pageStartTime = Date.now();
     const currentPath = pathname;
@@ -146,7 +157,7 @@ export function AnalyticsTracker() {
   useEffect(() => {
     const handleGlobalClick = (e: MouseEvent) => {
       // Avoid tracking clicks on admin panel or sensitive elements
-      if (pathname.startsWith('/admin')) return;
+      if (isIgnoredPath(pathname)) return;
 
       const doc = document.documentElement;
       const hasConsent = localStorage.getItem('cookie-consent') === 'accepted';
@@ -203,7 +214,7 @@ export function AnalyticsTracker() {
       if (formStarted) return;
       const target = e.target as HTMLElement;
       if (
-        !pathname.startsWith('/admin') &&
+        !isIgnoredPath(pathname) &&
         (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA')
       ) {
         const parentForm = target.closest('form');

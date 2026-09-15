@@ -17,6 +17,19 @@ export const GET = withAuth('editor', async (request) => {
       },
     });
 
+    const isIgnoredPath = (p?: string | null) => {
+      if (!p) return true;
+      return (
+        p.startsWith('/admin') ||
+        p.startsWith('/dashboard') ||
+        p.startsWith('/auth') ||
+        p.startsWith('/api') ||
+        p.includes('/login')
+      );
+    };
+
+    const filteredEvents = recentEvents.filter((e: any) => !isIgnoredPath(e.path));
+
     // 2. Identify unique active sessions & map their latest status
     const activeSessionsMap = new Map<string, {
       sessionId: string;
@@ -29,7 +42,7 @@ export const GET = withAuth('editor', async (request) => {
       referrer: string | null;
     }>();
 
-    recentEvents.forEach((event: any) => {
+    filteredEvents.forEach((event: any) => {
       if (!activeSessionsMap.has(event.sessionId)) {
         activeSessionsMap.set(event.sessionId, {
           sessionId: event.sessionId,

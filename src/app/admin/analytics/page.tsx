@@ -25,7 +25,8 @@ import {
   FileText,
   ShoppingBag,
   MessageSquare,
-  Trash2
+  Trash2,
+  ChevronLeft
 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
@@ -75,6 +76,8 @@ export default function AnalyticsPage() {
   const [realtimeData, setRealtimeData] = useState<any>({ onlineCount: 0, activeSessions: [], pages: [] });
   const [isRealtimeLoading, setIsRealtimeLoading] = useState(true);
   const [expandedSessionId, setExpandedSessionId] = useState<string | null>(null);
+  const [timelinePage, setTimelinePage] = useState(1);
+  const TIMELINE_PAGE_SIZE = 10;
 
   useEffect(() => {
     const fetchRealtime = async () => {
@@ -129,10 +132,14 @@ export default function AnalyticsPage() {
       }
     };
 
-    // 1. Filter events to exclude admin/dashboard paths AND match timeRange
+    // 1. Filter events to exclude admin/dashboard/auth/login paths AND match timeRange
     const filteredEvents = events.filter((e: any) =>
-      !e.path?.startsWith('/admin') &&
-      !e.path?.startsWith('/dashboard') &&
+      e.path &&
+      !e.path.startsWith('/admin') &&
+      !e.path.startsWith('/dashboard') &&
+      !e.path.startsWith('/auth') &&
+      !e.path.startsWith('/api') &&
+      !e.path.includes('/login') &&
       isInTimeRange(e.timestamp)
     );
 
@@ -159,7 +166,7 @@ export default function AnalyticsPage() {
 
     // Dwell Time (停留时间) 统计
     const pathDurations: Record<string, { total: number; count: number }> = {};
-    events.forEach((e: any) => {
+    filteredEvents.forEach((e: any) => {
       const duration = e.extraData?.duration;
       if (duration !== undefined && duration !== null) {
         const d = Number(duration);
@@ -568,7 +575,10 @@ export default function AnalyticsPage() {
               ].map((item) => (
                 <button
                   key={item.value}
-                  onClick={() => setTimeRange(item.value as any)}
+                  onClick={() => {
+                    setTimeRange(item.value as any);
+                    setTimelinePage(1);
+                  }}
                   className={cn(
                     "px-3 py-1.5 rounded-xl text-[10px] font-bold transition-all duration-300",
                     timeRange === item.value
@@ -1015,9 +1025,11 @@ export default function AnalyticsPage() {
             {stats?.landingPageData && stats.landingPageData.length > 0 ? (
               stats.landingPageData.slice(0, 5).map((item: any, i: number) => (
                 <div key={i} className="space-y-3">
-                  <div className="flex justify-between items-center">
-                    <span className="text-sm font-bold text-foreground font-mono truncate max-w-xs">{item.path}</span>
-                    <span className="text-sm font-black text-foreground">{item.value} <span className="text-[10px] text-muted-foreground">进入次</span></span>
+                  <div className="flex justify-between items-center gap-4">
+                    <span className="text-sm font-bold text-foreground font-mono truncate max-w-[240px] sm:max-w-xs md:max-w-sm" title={item.name || item.path || '/'}>
+                      {item.name || item.path || '/'}
+                    </span>
+                    <span className="text-sm font-black text-foreground shrink-0">{item.value} <span className="text-[10px] text-muted-foreground font-normal">进入次</span></span>
                   </div>
                   <Progress
                     value={stats.landingPageData[0]?.value ? (item.value / stats.landingPageData[0].value) * 100 : 0}
@@ -1037,7 +1049,14 @@ export default function AnalyticsPage() {
         <CardHeader className="p-10 border-b border-border/20">
           <div className="flex items-center justify-between">
             <div>
-              <CardTitle className="text-xl font-headline font-bold text-foreground">访客行为轨迹分析</CardTitle>
+              <div className="flex items-center gap-3">
+                <CardTitle className="text-xl font-headline font-bold text-foreground">访客行为轨迹分析</CardTitle>
+                {stats?.sessionsWithTimeline && stats.sessionsWithTimeline.length > 0 && (
+                  <Badge variant="outline" className="text-[10px] font-bold px-2 py-0.5 border-border/40 text-muted-foreground">
+                    共 {stats.sessionsWithTimeline.length} 条会话
+                  </Badge>
+                )}
+              </div>
               <CardDescription className="text-[10px] font-bold uppercase tracking-[0.2em] text-muted-foreground mt-1">
                 User Session Journeys Timeline & Privacy Compliance Analysis
               </CardDescription>
@@ -1048,130 +1067,173 @@ export default function AnalyticsPage() {
         <CardContent className="p-0">
           <div className="divide-y divide-border/10">
             {stats?.sessionsWithTimeline && stats.sessionsWithTimeline.length > 0 ? (
-              stats.sessionsWithTimeline.map((session: any) => {
-                const isExpanded = expandedSessionId === session.id;
+              (() => {
+                const totalTimelineItems = stats.sessionsWithTimeline.length;
+                const totalTimelinePages = Math.ceil(totalTimelineItems / TIMELINE_PAGE_SIZE);
+                const currentTimelinePage = Math.min(timelinePage, totalTimelinePages || 1);
+                const paginatedSessions = stats.sessionsWithTimeline.slice(
+                  (currentTimelinePage - 1) * TIMELINE_PAGE_SIZE,
+                  currentTimelinePage * TIMELINE_PAGE_SIZE
+                );
+
                 return (
-                  <div key={session.id} className="transition-all hover:bg-muted/5">
-                    {/* 会话简要概览行 */}
-                    <div 
-                      className="px-10 py-6 flex flex-col md:flex-row md:items-center justify-between gap-4 cursor-pointer"
-                      onClick={() => setExpandedSessionId(isExpanded ? null : session.id)}
-                    >
-                      <div className="space-y-2">
-                        <div className="flex items-center gap-3">
-                          {session.hasAcceptedCookie ? (
-                            <Badge className="bg-emerald-500/10 text-emerald-500 border-none rounded-full px-2 py-0.5 text-[8px] font-black uppercase">
-                              已授权隐私
-                            </Badge>
-                          ) : (
-                            <Badge className="bg-amber-500/10 text-amber-500 border-none rounded-full px-2 py-0.5 text-[8px] font-black uppercase">
-                              匿名浏览 (未授权)
-                            </Badge>
-                          )}
-                          <span className="text-xs font-mono font-black text-foreground">
-                            {session.hasAcceptedCookie && session.ip ? `${session.ip} (${session.city || 'Unknown'}, ${session.country || 'Unknown'})` : 'Anonymous Visitor'}
-                          </span>
-                        </div>
-                        <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-[10px] font-bold text-muted-foreground/60">
-                          <span>会话 ID: <span className="font-mono">{session.id.slice(0, 12)}...</span></span>
-                          <span>首访时间: {new Date(session.createdAt).toLocaleString()}</span>
-                          <span>来源: <span className="text-foreground/75 truncate max-w-xs">{session.referrer || '直接访问'}</span></span>
-                        </div>
-                      </div>
-
-                      <div className="flex items-center gap-4 self-end md:self-auto">
-                        <div className="text-right hidden md:block">
-                          <p className="text-xs font-black text-foreground">{session.events.length} 个交互节点</p>
-                          <p className="text-[10px] font-bold text-muted-foreground/40 uppercase">停留时间: {session.duration}秒</p>
-                        </div>
-                        <Button 
-                          variant="ghost" 
-                          size="sm" 
-                          className="rounded-xl border border-border/10 hover:bg-primary/10 hover:text-primary font-bold text-[10px]"
-                        >
-                          {isExpanded ? '收起详情' : '展开轨迹流'}
-                        </Button>
-                      </div>
-                    </div>
-
-                    {/* 时光轨迹流展开区域 */}
-                    {isExpanded && (
-                      <div className="px-10 pb-8 pt-4 bg-muted/10 border-t border-border/5">
-                        <div className="relative pl-6 border-l-2 border-primary/20 space-y-6">
-                          {/* 节点一：进入站点 */}
-                          <div className="relative">
-                            <div className="absolute -left-[31px] top-0.5 h-4 w-4 rounded-full bg-blue-500 border-4 border-card flex items-center justify-center" />
-                            <div className="space-y-1">
-                              <div className="flex items-center gap-2">
-                                <span className="text-[10px] font-black uppercase tracking-wider text-blue-500">进入站点 / Landing</span>
-                                <span className="text-[9px] font-mono text-muted-foreground/40">{new Date(session.createdAt).toLocaleTimeString()}</span>
+                  <>
+                    {paginatedSessions.map((session: any) => {
+                      const isExpanded = expandedSessionId === session.id;
+                      return (
+                        <div key={session.id} className="transition-all hover:bg-muted/5">
+                          {/* 会话简要概览行 */}
+                          <div 
+                            className="px-10 py-6 flex flex-col md:flex-row md:items-center justify-between gap-4 cursor-pointer"
+                            onClick={() => setExpandedSessionId(isExpanded ? null : session.id)}
+                          >
+                            <div className="space-y-2">
+                              <div className="flex items-center gap-3">
+                                {session.hasAcceptedCookie ? (
+                                  <Badge className="bg-emerald-500/10 text-emerald-500 border-none rounded-full px-2 py-0.5 text-[8px] font-black uppercase">
+                                    已授权隐私
+                                  </Badge>
+                                ) : (
+                                  <Badge className="bg-amber-500/10 text-amber-500 border-none rounded-full px-2 py-0.5 text-[8px] font-black uppercase">
+                                    匿名浏览 (未授权)
+                                  </Badge>
+                                )}
+                                <span className="text-xs font-mono font-black text-foreground">
+                                  {session.hasAcceptedCookie && session.ip ? `${session.ip} (${session.city || 'Unknown'}, ${session.country || 'Unknown'})` : 'Anonymous Visitor'}
+                                </span>
                               </div>
-                              <p className="text-xs font-bold text-foreground">
-                                通过设备 {session.userAgent ? parseUA(session.userAgent).browser + ' (' + parseUA(session.userAgent).os + ')' : '未知终端'} 
-                                进入系统落地页。
-                              </p>
+                              <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-[10px] font-bold text-muted-foreground/60">
+                                <span>会话 ID: <span className="font-mono">{session.id.slice(0, 12)}...</span></span>
+                                <span>首访时间: {new Date(session.createdAt).toLocaleString()}</span>
+                                <span>来源: <span className="text-foreground/75 truncate max-w-xs">{session.referrer || '直接访问'}</span></span>
+                              </div>
+                            </div>
+
+                            <div className="flex items-center gap-4 self-end md:self-auto">
+                              <div className="text-right hidden md:block">
+                                <p className="text-xs font-black text-foreground">{session.events.length} 个交互节点</p>
+                                <p className="text-[10px] font-bold text-muted-foreground/40 uppercase">停留时间: {session.duration}秒</p>
+                              </div>
+                              <Button 
+                                variant="ghost" 
+                                size="sm" 
+                                className="rounded-xl border border-border/10 hover:bg-primary/10 hover:text-primary font-bold text-[10px]"
+                              >
+                                {isExpanded ? '收起详情' : '展开轨迹流'}
+                              </Button>
                             </div>
                           </div>
 
-                          {/* 动态事件节点 */}
-                          {session.events.map((event: any, idx: number) => {
-                            let nodeColor = "bg-primary";
-                            let nodeTitle = "交互行为";
-                            let nodeDesc = "";
-
-                            if (event.type === 'PAGEVIEW') {
-                              nodeColor = "bg-indigo-500";
-                              nodeTitle = `浏览页面 (PAGEVIEW)`;
-                              nodeDesc = `访问了路径 ${event.path}`;
-                            } else if (event.type === 'COOKIE_ACCEPT') {
-                              nodeColor = "bg-emerald-500 shadow-[0_0_10px_rgba(16,185,129,0.3)] animate-pulse";
-                              nodeTitle = "同意隐私协议 (COOKIE_ACCEPT)";
-                              nodeDesc = `用户点击了同意隐私合规提示。此节点起，系统安全解锁 IP 地理位置与 UA 收集。`;
-                            } else if (event.type === 'FORM_START') {
-                              nodeColor = "bg-amber-500";
-                              nodeTitle = "开始填写表单 (FORM_START)";
-                              nodeDesc = `聚焦并开始在页面 ${event.path} 填写询盘输入框 [${event.element || 'inquiry'}]。`;
-                            } else if (event.type === 'SCROLL') {
-                              nodeColor = "bg-orange-500";
-                              nodeTitle = "页面停留与滚动 (SCROLL & DWELL)";
-                              nodeDesc = `在此页面停留了 ${event.extraData?.duration || 0}秒，最高滚动至页面的 ${event.extraData?.scrollDepth || 0}% 深度。`;
-                            } else if (event.type === 'CLICK') {
-                              nodeColor = "bg-purple-500";
-                              nodeTitle = "页面点击交互 (CLICK)";
-                              nodeDesc = `点击了标签 <${event.element || 'Unknown'}> 元素。相对位置 (X: ${Math.round(event.x || 0)}%, Y: ${Math.round(event.y || 0)}%)`;
-                            }
-
-                            return (
-                              <div key={event.id} className="relative">
-                                <div className={`absolute -left-[31px] top-0.5 h-4 w-4 rounded-full ${nodeColor} border-4 border-card`} />
-                                <div className="space-y-1">
-                                  <div className="flex items-center gap-2">
-                                    <span className="text-[10px] font-black uppercase tracking-wider text-foreground/80">{nodeTitle}</span>
-                                    <span className="text-[9px] font-mono text-muted-foreground/40">{new Date(event.timestamp).toLocaleTimeString()}</span>
+                          {/* 时光轨迹流展开区域 */}
+                          {isExpanded && (
+                            <div className="px-10 pb-8 pt-4 bg-muted/10 border-t border-border/5">
+                              <div className="relative pl-6 border-l-2 border-primary/20 space-y-6">
+                                {/* 节点一：进入站点 */}
+                                <div className="relative">
+                                  <div className="absolute -left-[31px] top-0.5 h-4 w-4 rounded-full bg-blue-500 border-4 border-card flex items-center justify-center" />
+                                  <div className="space-y-1">
+                                    <div className="flex items-center gap-2">
+                                      <span className="text-[10px] font-black uppercase tracking-wider text-blue-500">进入站点 / Landing</span>
+                                      <span className="text-[9px] font-mono text-muted-foreground/40">{new Date(session.createdAt).toLocaleTimeString()}</span>
+                                    </div>
+                                    <p className="text-xs font-bold text-foreground">
+                                      通过设备 {session.userAgent ? parseUA(session.userAgent).browser + ' (' + parseUA(session.userAgent).os + ')' : '未知终端'} 
+                                      进入系统落地页。
+                                    </p>
                                   </div>
-                                  <p className="text-xs font-bold text-muted-foreground/80">{nodeDesc}</p>
+                                </div>
+
+                                {/* 动态事件节点 */}
+                                {session.events.map((event: any, idx: number) => {
+                                  let nodeColor = "bg-primary";
+                                  let nodeTitle = "交互行为";
+                                  let nodeDesc = "";
+
+                                  if (event.type === 'PAGEVIEW') {
+                                    nodeColor = "bg-indigo-500";
+                                    nodeTitle = `浏览页面 (PAGEVIEW)`;
+                                    nodeDesc = `访问了路径 ${event.path}`;
+                                  } else if (event.type === 'COOKIE_ACCEPT') {
+                                    nodeColor = "bg-emerald-500 shadow-[0_0_10px_rgba(16,185,129,0.3)] animate-pulse";
+                                    nodeTitle = "同意隐私协议 (COOKIE_ACCEPT)";
+                                    nodeDesc = `用户点击了同意隐私合规提示。此节点起，系统安全解锁 IP 地理位置与 UA 收集。`;
+                                  } else if (event.type === 'FORM_START') {
+                                    nodeColor = "bg-amber-500";
+                                    nodeTitle = "开始填写表单 (FORM_START)";
+                                    nodeDesc = `聚焦并开始在页面 ${event.path} 填写询盘输入框 [${event.element || 'inquiry'}]。`;
+                                  } else if (event.type === 'SCROLL') {
+                                    nodeColor = "bg-orange-500";
+                                    nodeTitle = "页面停留与滚动 (SCROLL & DWELL)";
+                                    nodeDesc = `在此页面停留了 ${event.extraData?.duration || 0}秒，最高滚动至页面的 ${event.extraData?.scrollDepth || 0}% 深度。`;
+                                  } else if (event.type === 'CLICK') {
+                                    nodeColor = "bg-purple-500";
+                                    nodeTitle = "页面点击交互 (CLICK)";
+                                    nodeDesc = `点击了标签 <${event.element || 'Unknown'}> 元素。相对位置 (X: ${Math.round(event.x || 0)}%, Y: ${Math.round(event.y || 0)}%)`;
+                                  }
+
+                                  return (
+                                    <div key={event.id} className="relative">
+                                      <div className={`absolute -left-[31px] top-0.5 h-4 w-4 rounded-full ${nodeColor} border-4 border-card`} />
+                                      <div className="space-y-1">
+                                        <div className="flex items-center gap-2">
+                                          <span className="text-[10px] font-black uppercase tracking-wider text-foreground/80">{nodeTitle}</span>
+                                          <span className="text-[9px] font-mono text-muted-foreground/40">{new Date(event.timestamp).toLocaleTimeString()}</span>
+                                        </div>
+                                        <p className="text-xs font-bold text-muted-foreground/80">{nodeDesc}</p>
+                                      </div>
+                                    </div>
+                                  );
+                                })}
+
+                                {/* 节点三：最后活跃离开 */}
+                                <div className="relative">
+                                  <div className="absolute -left-[31px] top-0.5 h-4 w-4 rounded-full bg-gray-500 border-4 border-card" />
+                                  <div className="space-y-1">
+                                    <div className="flex items-center gap-2">
+                                      <span className="text-[10px] font-black uppercase tracking-wider text-gray-500">离开站点 / Exit</span>
+                                      <span className="text-[9px] font-mono text-muted-foreground/40">{new Date(session.updatedAt).toLocaleTimeString()}</span>
+                                    </div>
+                                    <p className="text-xs font-bold text-muted-foreground">会话交互结束，在此最后退出页面。</p>
+                                  </div>
                                 </div>
                               </div>
-                            );
-                          })}
-
-                          {/* 节点三：最后活跃离开 */}
-                          <div className="relative">
-                            <div className="absolute -left-[31px] top-0.5 h-4 w-4 rounded-full bg-gray-500 border-4 border-card" />
-                            <div className="space-y-1">
-                              <div className="flex items-center gap-2">
-                                <span className="text-[10px] font-black uppercase tracking-wider text-gray-500">离开站点 / Exit</span>
-                                <span className="text-[9px] font-mono text-muted-foreground/40">{new Date(session.updatedAt).toLocaleTimeString()}</span>
-                              </div>
-                              <p className="text-xs font-bold text-muted-foreground">会话交互结束，在此最后退出页面。</p>
                             </div>
-                          </div>
+                          )}
+                        </div>
+                      );
+                    })}
+
+                    {/* 分页控制栏 */}
+                    {totalTimelinePages > 1 && (
+                      <div className="px-10 py-5 flex items-center justify-between border-t border-border/10 bg-card/50">
+                        <span className="text-xs font-bold text-muted-foreground">
+                          第 <span className="text-foreground font-black">{currentTimelinePage}</span> / {totalTimelinePages} 页 (共 {totalTimelineItems} 条会话)
+                        </span>
+                        <div className="flex items-center gap-2">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            disabled={currentTimelinePage <= 1}
+                            onClick={() => setTimelinePage((prev) => Math.max(prev - 1, 1))}
+                            className="h-8 px-3 rounded-xl text-xs font-bold border-border/20 hover:bg-muted/10 disabled:opacity-40"
+                          >
+                            <ChevronLeft className="h-3.5 w-3.5 mr-1" /> 上一页
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            disabled={currentTimelinePage >= totalTimelinePages}
+                            onClick={() => setTimelinePage((prev) => Math.min(prev + 1, totalTimelinePages))}
+                            className="h-8 px-3 rounded-xl text-xs font-bold border-border/20 hover:bg-muted/10 disabled:opacity-40"
+                          >
+                            下一页 <ChevronRight className="h-3.5 w-3.5 ml-1" />
+                          </Button>
                         </div>
                       </div>
                     )}
-                  </div>
+                  </>
                 );
-              })
+              })()
             ) : (
               <div className="py-20 text-center text-muted-foreground/40 font-bold">
                 当前筛选时间段内没有访客会话行为记录。
