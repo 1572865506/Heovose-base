@@ -25,7 +25,7 @@ async function processHlsSlices(
   buffer: Buffer, 
   pathVal: string, 
   bucketName: string
-): Promise<string | null> {
+): Promise<{ playlistUrl: string; posterUrl: string } | null> {
   const hasFFmpeg = await checkFFmpeg();
   if (!hasFFmpeg) {
     console.warn('[Upload HLS] FFmpeg not found on this system, fallback to direct MP4 upload.');
@@ -41,16 +41,22 @@ async function processHlsSlices(
     const inputPath = path.join(tempDir, 'input.mp4');
     await fs.writeFile(inputPath, buffer);
 
-    // 2. Perform FFmpeg HLS conversion (3s per slice, limited to 1 thread for CPU protection)
+    // 2. Perform FFmpeg HLS conversion and extract poster frame image
     const ffmpegCmd = `ffmpeg -i "${inputPath}" -c:v libx264 -c:a aac -threads 1 -map 0 -f hls -hls_time 3 -hls_list_size 0 -hls_segment_filename "${path.join(tempDir, 'segment_%03d.ts')}" "${path.join(tempDir, 'playlist.m3u8')}"`;
-    await execAsync(ffmpegCmd);
+    const posterPath = path.join(tempDir, 'poster.jpg');
+    const posterCmd = `ffmpeg -ss 00:00:00.100 -i "${inputPath}" -vframes 1 -q:v 2 "${posterPath}"`;
+
+    await Promise.all([
+      execAsync(ffmpegCmd),
+      execAsync(posterCmd).catch((err) => console.warn('[Upload HLS] Poster frame extraction warning:', err))
+    ]);
 
     // 3. Scan generated slices
     const files = await fs.readdir(tempDir);
     const m3u8File = files.find(f => f.endsWith('.m3u8'));
     if (!m3u8File) throw new Error('FFmpeg failed: no playlist.m3u8 found.');
 
-    // 4. Upload all slices & playlist to storage bucket
+    // 4. Upload all slices & playlist & poster to storage bucket
     const targetFolder = `${pathVal}/${uuid}`;
     for (const file of files) {
       if (file === 'input.mp4') continue;
@@ -60,6 +66,7 @@ async function processHlsSlices(
       
       const isM3u8 = file.endsWith('.m3u8');
       const isTs = file.endsWith('.ts');
+      const isJpg = file.endsWith('.jpg') || file.endsWith('.jpeg');
       
       const putCommand = new PutObjectCommand({
         Bucket: bucketName,
@@ -69,13 +76,18 @@ async function processHlsSlices(
           ? 'application/vnd.apple.mpegurl' 
           : isTs 
             ? 'video/MP2T' 
-            : 'application/octet-stream',
+            : isJpg
+              ? 'image/jpeg'
+              : 'application/octet-stream',
       });
       await s3Client.send(putCommand);
     }
 
-    // 5. Return target index path
-    return `${bucketName}/${targetFolder}/playlist.m3u8`;
+    // 5. Return target index path and poster path
+    return {
+      playlistUrl: `${bucketName}/${targetFolder}/playlist.m3u8`,
+      posterUrl: `${bucketName}/${targetFolder}/poster.jpg`
+    };
   } catch (err) {
     console.error('[Upload HLS] Error during FFmpeg processing:', err);
     return null; // Fallback to direct MP4 upload
@@ -218,11 +230,13 @@ export const POST = withAuth('editor', async (request: Request) => {
 
     // Try processing MP4 as HLS slices; fallback to direct storage upload on failure or absence of FFmpeg
     let publicUrl = '';
+    let posterUrl: string | undefined = undefined;
     let isSliced = false;
     if (fileExtension === 'mp4') {
-      const hlsUrl = await processHlsSlices(buffer, pathVal, bucketName);
-      if (hlsUrl) {
-        publicUrl = hlsUrl;
+      const hlsRes = await processHlsSlices(buffer, pathVal, bucketName);
+      if (hlsRes) {
+        publicUrl = hlsRes.playlistUrl;
+        posterUrl = hlsRes.posterUrl;
         isSliced = true;
       }
     }
@@ -241,6 +255,7 @@ export const POST = withAuth('editor', async (request: Request) => {
 
     return NextResponse.json({ 
       url: publicUrl,
+      thumbnailUrl: posterUrl,
       fileName: isSliced ? `${pathVal}/${publicUrl.split('/').slice(-2)[0]}/playlist.m3u8` : fileName,
       brightness: brightness
     });

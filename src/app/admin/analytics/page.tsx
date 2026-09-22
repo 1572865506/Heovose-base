@@ -26,9 +26,34 @@ import {
   ShoppingBag,
   MessageSquare,
   Trash2,
-  ChevronLeft
+  ChevronLeft,
+  Gauge,
+  Wifi,
+  Sparkles
 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
+
+// 纯算法国家/地区标准名称与国旗 Emoji 解析（遵循免硬编码词典规范）
+const getRegionDisplayName = (code?: string | null) => {
+  if (!code || code === 'UNKNOWN' || code === 'Localhost') return '未知区域 / 本地 (Local)';
+  try {
+    const regionNames = new Intl.DisplayNames(['zh-CN'], { type: 'region' });
+    return `${regionNames.of(code.toUpperCase()) || code} (${code.toUpperCase()})`;
+  } catch {
+    return String(code).toUpperCase();
+  }
+};
+
+const getCountryFlagEmoji = (countryCode?: string | null) => {
+  if (!countryCode || countryCode.length !== 2) return '🌐';
+  const code = countryCode.toUpperCase();
+  const first = code.charCodeAt(0) - 65 + 0x1F1E6;
+  const second = code.charCodeAt(1) - 65 + 0x1F1E6;
+  if (first >= 0x1F1E6 && first <= 0x1F1FF && second >= 0x1F1E6 && second <= 0x1F1FF) {
+    return String.fromCodePoint(first, second);
+  }
+  return '🌐';
+};
 import { Progress } from '@/components/ui/progress';
 import { cn } from '@/lib/utils';
 import Link from 'next/link';
@@ -385,25 +410,48 @@ export default function AnalyticsPage() {
       });
     }
 
-    // Referrer Analysis
+    // Referrer Analysis (访问来源渠道分析)
     const referrerCounts: Record<string, number> = {};
     filteredSessions.forEach((s: any) => {
-      let source = 'Direct';
-      if (s.referrer) {
+      let source = '直接访问 (Direct)';
+      if (s.referrer && typeof s.referrer === 'string' && s.referrer.trim() !== '') {
         try {
           const url = new URL(s.referrer);
-          if (url.hostname.includes('google')) source = 'Search (Google)';
-          else if (url.hostname.includes('bing')) source = 'Search (Bing)';
-          else if (url.hostname.includes('facebook') || url.hostname.includes('t.co')) source = 'Social';
-          else source = url.hostname;
+          const host = url.hostname.toLowerCase();
+          if (host.includes('google.')) source = 'Google 搜索';
+          else if (host.includes('bing.')) source = 'Bing 搜索';
+          else if (host.includes('baidu.')) source = '百度搜索';
+          else if (host.includes('yahoo.')) source = 'Yahoo 搜索';
+          else if (host.includes('yandex.')) source = 'Yandex 搜索';
+          else if (host.includes('duckduckgo.')) source = 'DuckDuckGo';
+          else if (host.includes('facebook.com') || host.includes('fb.com')) source = 'Facebook 社媒';
+          else if (host.includes('instagram.com')) source = 'Instagram';
+          else if (host.includes('twitter.com') || host.includes('t.co') || host.includes('x.com')) source = 'X (Twitter)';
+          else if (host.includes('linkedin.com')) source = 'LinkedIn 领英';
+          else if (host.includes('youtube.com') || host.includes('youtu.be')) source = 'YouTube';
+          else if (host.includes('pinterest.')) source = 'Pinterest';
+          else if (host.includes('tiktok.com')) source = 'TikTok';
+          else if (host.includes('reddit.com')) source = 'Reddit';
+          else if (host === 'localhost' || host === '127.0.0.1' || (typeof window !== 'undefined' && host === window.location.hostname)) {
+            source = '直接访问 (Direct)';
+          } else {
+            source = host; // 具体的外部站点或引流网站域名
+          }
         } catch {
-          source = 'Other';
+          source = '直接访问 (Direct)';
         }
       }
       referrerCounts[source] = (referrerCounts[source] || 0) + 1;
     });
+
+    const totalReferrerCount = Object.values(referrerCounts).reduce((a, b) => a + b, 0);
+
     const referrerData = Object.entries(referrerCounts)
-      .map(([name, value]) => ({ name, value }))
+      .map(([name, value]) => ({
+        name,
+        value,
+        percentage: totalReferrerCount > 0 ? Math.round((value / totalReferrerCount) * 100) : 0
+      }))
       .sort((a, b) => b.value - a.value);
 
     // UTM 营销与 SEO 参数提取
@@ -473,6 +521,83 @@ export default function AnalyticsPage() {
       };
     }).sort((a: any, b: any) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
 
+    // Performance & Web Vitals 访客性能体验监控计算
+    const sessionCountryMap = new Map((sessions || []).map((s: any) => [s.id, s.country || 'UNKNOWN']));
+    const perfRecords: Array<{ ttfb: number; fcp: number; domReady: number; loadTime: number; country: string }> = [];
+    const countryPerfMap: Record<string, { totalLoad: number; totalTtfb: number; count: number }> = {};
+
+    filteredEvents.forEach((e: any) => {
+      if (e.type === 'PERFORMANCE' && e.extraData?.perf) {
+        const p = e.extraData.perf;
+        const loadTime = Number(p.loadTime);
+        const ttfb = Number(p.ttfb);
+        const fcp = Number(p.fcp);
+        const domReady = Number(p.domReady);
+        if (!isNaN(loadTime) && loadTime > 0 && loadTime <= 35000) {
+          const country = sessionCountryMap.get(e.sessionId) || 'UNKNOWN';
+          perfRecords.push({
+            loadTime,
+            ttfb: !isNaN(ttfb) ? ttfb : 0,
+            fcp: !isNaN(fcp) ? fcp : (domReady || 0),
+            domReady: !isNaN(domReady) ? domReady : 0,
+            country
+          });
+
+          if (!countryPerfMap[country]) {
+            countryPerfMap[country] = { totalLoad: 0, totalTtfb: 0, count: 0 };
+          }
+          countryPerfMap[country].totalLoad += loadTime;
+          countryPerfMap[country].totalTtfb += (!isNaN(ttfb) ? ttfb : 0);
+          countryPerfMap[country].count += 1;
+        }
+      }
+    });
+
+    const perfCount = perfRecords.length;
+    let avgLoadTime = 0;
+    let p75LoadTime = 0;
+    let avgTtfb = 0;
+    let avgFcp = 0;
+
+    if (perfCount > 0) {
+      avgLoadTime = Math.round(perfRecords.reduce((acc, r) => acc + r.loadTime, 0) / perfCount);
+      avgTtfb = Math.round(perfRecords.reduce((acc, r) => acc + r.ttfb, 0) / perfCount);
+      avgFcp = Math.round(perfRecords.reduce((acc, r) => acc + r.fcp, 0) / perfCount);
+
+      const sortedLoads = [...perfRecords.map(r => r.loadTime)].sort((a, b) => a - b);
+      const p75Index = Math.floor(sortedLoads.length * 0.75);
+      p75LoadTime = sortedLoads[p75Index] || avgLoadTime;
+    }
+
+    const countryPerfData = Object.entries(countryPerfMap)
+      .map(([country, data]) => {
+        const avgLoad = Math.round(data.totalLoad / data.count);
+        const avgTtfbVal = Math.round(data.totalTtfb / data.count);
+        let status: 'fast' | 'moderate' | 'slow' = 'fast';
+        if (avgLoad > 3500) status = 'slow';
+        else if (avgLoad > 2000) status = 'moderate';
+
+        return {
+          country,
+          count: data.count,
+          avgLoadTime: avgLoad,
+          avgTtfb: avgTtfbVal,
+          status
+        };
+      })
+      .sort((a, b) => b.count - a.count);
+
+    const perfStats = {
+      hasData: perfCount > 0,
+      perfCount,
+      avgLoadTimeSec: (avgLoadTime / 1000).toFixed(2),
+      p75LoadTimeSec: (p75LoadTime / 1000).toFixed(2),
+      avgTtfbMs: avgTtfb,
+      avgFcpSec: (avgFcp / 1000).toFixed(2),
+      overallStatus: p75LoadTime <= 2000 ? 'excellent' : p75LoadTime <= 3500 ? 'good' : 'needs_attention',
+      countryPerfData
+    };
+
     return {
       totalSessions,
       uniqueVisitors,
@@ -491,6 +616,7 @@ export default function AnalyticsPage() {
       formStartCount,
       formAbandonRate,
       sessionsWithTimeline,
+      perfStats,
     };
   }, [sessions, events, timeRange, matrixSortBy, products, inquiries]);
 
@@ -1018,31 +1144,230 @@ export default function AnalyticsPage() {
 
         <GlassCard className="lg:col-span-6 border-none bg-card overflow-hidden">
           <CardHeader className="p-10 border-b border-border/20">
-            <CardTitle className="text-xl font-headline font-bold text-foreground">入口落地页排行 (Landing Pages)</CardTitle>
-            <CardDescription className="text-[10px] font-bold uppercase tracking-[0.2em] mt-1">First Entry Pages For Users</CardDescription>
+            <CardTitle className="text-xl font-headline font-bold text-foreground">访问来源统计 (Traffic Sources)</CardTitle>
+            <CardDescription className="text-[10px] font-bold uppercase tracking-[0.2em] mt-1">Direct, Search Engines & External Referrers</CardDescription>
           </CardHeader>
           <CardContent className="p-10 space-y-8">
-            {stats?.landingPageData && stats.landingPageData.length > 0 ? (
-              stats.landingPageData.slice(0, 5).map((item: any, i: number) => (
+            {stats?.referrerData && stats.referrerData.length > 0 ? (
+              stats.referrerData.slice(0, 6).map((item: any, i: number) => (
                 <div key={i} className="space-y-3">
                   <div className="flex justify-between items-center gap-4">
-                    <span className="text-sm font-bold text-foreground font-mono truncate max-w-[240px] sm:max-w-xs md:max-w-sm" title={item.name || item.path || '/'}>
-                      {item.name || item.path || '/'}
+                    <span className="text-sm font-bold text-foreground font-mono truncate max-w-[240px] sm:max-w-xs md:max-w-sm" title={item.name}>
+                      {item.name}
                     </span>
-                    <span className="text-sm font-black text-foreground shrink-0">{item.value} <span className="text-[10px] text-muted-foreground font-normal">进入次</span></span>
+                    <span className="text-sm font-black text-foreground shrink-0">
+                      {item.value} <span className="text-[10px] text-muted-foreground font-normal">会话 ({item.percentage ?? 0}%)</span>
+                    </span>
                   </div>
                   <Progress
-                    value={stats.landingPageData[0]?.value ? (item.value / stats.landingPageData[0].value) * 100 : 0}
+                    value={stats.referrerData[0]?.value ? (item.value / stats.referrerData[0].value) * 100 : 0}
                     className="h-1.5 bg-muted/20"
                   />
                 </div>
               ))
             ) : (
-              <div className="py-10 text-center text-xs text-muted-foreground/40 font-bold">暂无落地页首访记录</div>
+              <div className="py-10 text-center text-xs text-muted-foreground/40 font-bold">暂无外部访问来源记录</div>
             )}
           </CardContent>
         </GlassCard>
       </div>
+
+      {/* 全球访客访问速度与性能体验 (Performance & Web Vitals) */}
+      <GlassCard className="border-none bg-card overflow-hidden">
+        <CardHeader className="p-10 border-b border-border/20">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+            <div>
+              <div className="flex flex-wrap items-center gap-3">
+                <CardTitle className="text-xl font-headline font-bold text-foreground flex items-center gap-2.5">
+                  <Gauge className="h-5 w-5 text-primary" />
+                  全球访客访问速度与性能体验 (Performance & Web Vitals)
+                </CardTitle>
+                {stats?.perfStats?.hasData && (
+                  <Badge 
+                    variant="outline" 
+                    className={cn(
+                      "text-[10px] font-bold px-2.5 py-0.5",
+                      stats.perfStats.overallStatus === 'excellent' ? "border-emerald-500/30 text-emerald-500 bg-emerald-500/10" :
+                      stats.perfStats.overallStatus === 'good' ? "border-amber-500/30 text-amber-500 bg-amber-500/10" :
+                      "border-rose-500/30 text-rose-500 bg-rose-500/10"
+                    )}
+                  >
+                    ● {stats.perfStats.overallStatus === 'excellent' ? '全站综合评级: 极速流畅' :
+                        stats.perfStats.overallStatus === 'good' ? '全站综合评级: 体验良好' :
+                        '全站综合评级: 建议加速'}
+                  </Badge>
+                )}
+              </div>
+              <CardDescription className="text-[10px] font-bold uppercase tracking-[0.2em] text-muted-foreground mt-1">
+                Real User Monitoring (RUM) From Global Clients To Singapore Node
+              </CardDescription>
+            </div>
+            {stats?.perfStats?.hasData && (
+              <div className="text-xs text-muted-foreground font-mono bg-muted/20 px-3 py-1.5 rounded-full self-start sm:self-auto border border-border/20">
+                已采集 <span className="font-bold text-foreground">{stats.perfStats.perfCount}</span> 次真实测速样本
+              </div>
+            )}
+          </div>
+        </CardHeader>
+
+        <CardContent className="p-10 space-y-10">
+          {stats?.perfStats?.hasData ? (
+            <>
+              {/* 核心三联指标卡片 */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                {/* TTFB */}
+                <div className="p-6 rounded-2xl bg-muted/10 border border-border/20 space-y-3 relative overflow-hidden group hover:border-primary/30 transition-all">
+                  <div className="flex items-center justify-between text-muted-foreground">
+                    <span className="text-xs font-bold uppercase tracking-wider">网络首字节响应 (TTFB)</span>
+                    <Wifi className="h-4 w-4 text-sky-400" />
+                  </div>
+                  <div className="flex items-baseline gap-2">
+                    <span className="text-3xl font-black font-headline text-foreground">
+                      {stats.perfStats.avgTtfbMs}
+                    </span>
+                    <span className="text-xs text-muted-foreground font-medium">毫秒 (ms)</span>
+                  </div>
+                  <p className="text-[11px] text-muted-foreground/75 leading-relaxed">
+                    客户端到新加坡节点的纯网络握手与服务器首包响应延迟
+                  </p>
+                  <div className="flex items-center gap-1.5 text-[10px] font-bold text-sky-400">
+                    <span className="h-1.5 w-1.5 rounded-full bg-sky-400"></span>
+                    {stats.perfStats.avgTtfbMs < 400 ? '网络链路极优 (<400ms)' : stats.perfStats.avgTtfbMs < 800 ? '跨洋物理延迟正常 (400~800ms)' : '跨洲网络延迟较高 (>800ms)'}
+                  </div>
+                </div>
+
+                {/* FCP */}
+                <div className="p-6 rounded-2xl bg-muted/10 border border-border/20 space-y-3 relative overflow-hidden group hover:border-primary/30 transition-all">
+                  <div className="flex items-center justify-between text-muted-foreground">
+                    <span className="text-xs font-bold uppercase tracking-wider">首次内容绘制 (FCP)</span>
+                    <Zap className="h-4 w-4 text-amber-400" />
+                  </div>
+                  <div className="flex items-baseline gap-2">
+                    <span className="text-3xl font-black font-headline text-foreground">
+                      {stats.perfStats.avgFcpSec}
+                    </span>
+                    <span className="text-xs text-muted-foreground font-medium">秒 (s)</span>
+                  </div>
+                  <p className="text-[11px] text-muted-foreground/75 leading-relaxed">
+                    首屏文字或主体框架首次渲染出现的耗时，衡量客户白屏等待感
+                  </p>
+                  <div className="flex items-center gap-1.5 text-[10px] font-bold text-amber-400">
+                    <span className="h-1.5 w-1.5 rounded-full bg-amber-400"></span>
+                    {Number(stats.perfStats.avgFcpSec) < 1.5 ? '秒开白屏极短 (<1.5s)' : Number(stats.perfStats.avgFcpSec) < 2.5 ? '白屏时间良好 (1.5~2.5s)' : '白屏稍长需注意 (>2.5s)'}
+                  </div>
+                </div>
+
+                {/* Load Time */}
+                <div className="p-6 rounded-2xl bg-muted/10 border border-border/20 space-y-3 relative overflow-hidden group hover:border-primary/30 transition-all">
+                  <div className="flex items-center justify-between text-muted-foreground">
+                    <span className="text-xs font-bold uppercase tracking-wider">整页完全就绪 (P75 Load)</span>
+                    <Clock className="h-4 w-4 text-emerald-400" />
+                  </div>
+                  <div className="flex items-baseline gap-2">
+                    <span className="text-3xl font-black font-headline text-foreground">
+                      {stats.perfStats.p75LoadTimeSec}
+                    </span>
+                    <span className="text-xs text-muted-foreground font-medium">秒 (s)</span>
+                  </div>
+                  <p className="text-[11px] text-muted-foreground/75 leading-relaxed">
+                    全站 75% 访客在所有外部图片、样式与脚本全部加载完毕的耗时
+                  </p>
+                  <div className="flex items-center gap-1.5 text-[10px] font-bold text-emerald-400">
+                    <span className="h-1.5 w-1.5 rounded-full bg-emerald-400"></span>
+                    {Number(stats.perfStats.p75LoadTimeSec) < 2.0 ? '整体极速流畅 (<2.0s)' : Number(stats.perfStats.p75LoadTimeSec) < 3.5 ? '正常标准速度 (2.0~3.5s)' : '资源较重偏慢 (>3.5s)'}
+                  </div>
+                </div>
+              </div>
+
+              {/* 对标重点市场国别访问速度排行 */}
+              <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <h4 className="text-xs font-bold text-muted-foreground uppercase tracking-widest flex items-center gap-2">
+                    <Globe className="h-3.5 w-3.5" />
+                    各国家/地区对标客户实际访问速度透视 (Speed By Region)
+                  </h4>
+                  <span className="text-[10px] text-muted-foreground">按测速样本量排序</span>
+                </div>
+
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                  {stats.perfStats.countryPerfData.slice(0, 8).map((item: any, idx: number) => {
+                    const flag = getCountryFlagEmoji(item.country);
+                    const countryName = getRegionDisplayName(item.country);
+                    const sec = (item.avgLoadTime / 1000).toFixed(2);
+                    const maxLoad = Math.max(...stats.perfStats.countryPerfData.map((d: any) => d.avgLoadTime), 4000);
+                    const percent = Math.min(100, Math.round((item.avgLoadTime / maxLoad) * 100));
+
+                    return (
+                      <div key={idx} className="p-4 rounded-xl bg-muted/5 border border-border/15 hover:border-border/30 transition-all space-y-2.5">
+                        <div className="flex items-center justify-between gap-3">
+                          <div className="flex items-center gap-2.5 min-w-0">
+                            <span className="text-xl shrink-0">{flag}</span>
+                            <span className="text-xs font-bold text-foreground truncate" title={countryName}>
+                              {countryName}
+                            </span>
+                            <Badge variant="outline" className="text-[9px] px-1.5 py-0 border-border/20 text-muted-foreground shrink-0 font-normal">
+                              {item.count} 次测速
+                            </Badge>
+                          </div>
+                          <div className="flex items-center gap-2 shrink-0">
+                            <span className="text-xs font-bold text-muted-foreground font-mono">
+                              TTFB: {item.avgTtfb}ms
+                            </span>
+                            <span className="text-sm font-black font-mono text-foreground">
+                              {sec}s
+                            </span>
+                            <Badge 
+                              variant="outline"
+                              className={cn(
+                                "text-[9px] px-1.5 py-0 font-bold",
+                                item.status === 'fast' ? "border-emerald-500/30 text-emerald-500 bg-emerald-500/10" :
+                                item.status === 'moderate' ? "border-amber-500/30 text-amber-500 bg-amber-500/10" :
+                                "border-rose-500/30 text-rose-500 bg-rose-500/10"
+                              )}
+                            >
+                              {item.status === 'fast' ? '流畅' : item.status === 'moderate' ? '正常' : '偏慢'}
+                            </Badge>
+                          </div>
+                        </div>
+
+                        <Progress 
+                          value={percent} 
+                          className={cn(
+                            "h-1 bg-muted/20",
+                            item.status === 'fast' ? "[&>div]:bg-emerald-500" :
+                            item.status === 'moderate' ? "[&>div]:bg-amber-500" :
+                            "[&>div]:bg-rose-500"
+                          )} 
+                        />
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* 智能诊断小贴士 */}
+              <div className="p-4 rounded-xl bg-primary/5 border border-primary/15 flex items-start gap-3 text-xs text-muted-foreground">
+                <Sparkles className="h-4 w-4 text-primary shrink-0 mt-0.5" />
+                <div className="space-y-1">
+                  <span className="font-bold text-foreground">体验优化建议小贴士：</span>
+                  <p className="leading-relaxed">
+                    若对标客户主要分布在欧美或中东，且当地网络 TTFB 普遍大于 600ms，说明跨大洲物理网络延迟是主要瓶颈，可通过开启全球 CDN（如 Cloudflare 边缘缓存）将静态资源分发至客户所在国本地节点；若 TTFB 很低但整页加载偏慢，则建议对产品高清大图进行 WebP 压缩与分屏懒加载。
+                  </p>
+                </div>
+              </div>
+            </>
+          ) : (
+            <div className="py-12 text-center space-y-2">
+              <div className="text-muted-foreground/30 font-mono text-xs">
+                暂无所选时间段内的访客速度监控样本
+              </div>
+              <p className="text-[11px] text-muted-foreground/40 max-w-md mx-auto">
+                当访客前台进入并完全加载页面后，系统将自动匿名采集 TTFB 与整页加载耗时。
+              </p>
+            </div>
+          )}
+        </CardContent>
+      </GlassCard>
 
       {/* 访客会话行为轨迹时光轴 (Timeline) */}
       <GlassCard className="border-none bg-card overflow-hidden">

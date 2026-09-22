@@ -86,6 +86,18 @@ export function AnalyticsTracker() {
       const utm_medium = searchParams.get('utm_medium') || undefined;
       const utm_campaign = searchParams.get('utm_campaign') || undefined;
 
+      // 获取清洗后的外部来源 Referrer（过滤站内自身同源跳转）
+      const getExternalReferrer = () => {
+        if (typeof document === 'undefined' || !document.referrer) return undefined;
+        try {
+          const refUrl = new URL(document.referrer);
+          if (refUrl.origin === window.location.origin) return undefined;
+          return document.referrer;
+        } catch {
+          return document.referrer;
+        }
+      };
+
       // Track Page View
       const trackPageView = async () => {
         try {
@@ -97,8 +109,7 @@ export function AnalyticsTracker() {
               sessionId: sessionIdRef.current,
               visitorId: visitorIdRef.current,
               path: currentPath,
-              // Sensitivity shielding: only send referrer/UA if consent granted
-              referrer: hasConsent ? document.referrer : undefined,
+              referrer: getExternalReferrer(),
               userAgent: hasConsent ? navigator.userAgent : undefined,
               hasConsent,
               isLandingPage: isLandingPage ? true : undefined,
@@ -252,6 +263,91 @@ export function AnalyticsTracker() {
 
     document.addEventListener('focusin', handleFormFocus);
     return () => document.removeEventListener('focusin', handleFormFocus);
+  }, [pathname]);
+
+  // 4. Track Web Vitals & Page Load Performance (RUM)
+  useEffect(() => {
+    if (typeof window === 'undefined' || isIgnoredPath(pathname)) return;
+
+    let reported = false;
+
+    const measurePerformance = () => {
+      if (reported) return;
+      
+      try {
+        const navEntries = performance.getEntriesByType('navigation');
+        if (!navEntries || navEntries.length === 0) return;
+        const nav = navEntries[0] as PerformanceNavigationTiming;
+
+        // 若页面加载事件尚未完全结束，暂不上报
+        if (!nav.loadEventEnd || nav.loadEventEnd === 0) {
+          return;
+        }
+
+        reported = true;
+
+        // 提取核心测速指标 (单位: 毫秒)
+        const ttfb = Math.max(0, Math.round(nav.responseStart - nav.requestStart));
+        const domReady = Math.max(0, Math.round(nav.domContentLoadedEventEnd - nav.startTime));
+        const loadTime = Math.max(0, Math.round(nav.loadEventEnd - nav.startTime));
+
+        // 首次内容绘制 (FCP)
+        let fcp: number | undefined = undefined;
+        const paintEntries = performance.getEntriesByType('paint');
+        const fcpEntry = paintEntries.find(p => p.name === 'first-contentful-paint');
+        if (fcpEntry) {
+          fcp = Math.max(0, Math.round(fcpEntry.startTime));
+        }
+
+        // 离群值异常清洗：超过35秒的往往属于移动端断网或后台挂起休眠标签页，丢弃避免污染全站统计
+        if (loadTime <= 0 || loadTime > 35000) return;
+
+        const vId = localStorage.getItem('heovose-analytics-visitor') || visitorIdRef.current;
+        const sId = sessionStorage.getItem('heovose-analytics-session') || sessionIdRef.current;
+        const hasConsent = localStorage.getItem('cookie-consent') === 'accepted';
+
+        if (sId && vId) {
+          fetch('/api/analytics/track', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              type: 'performance',
+              sessionId: sId,
+              visitorId: vId,
+              path: pathname,
+              hasConsent,
+              perf: {
+                ttfb,
+                fcp: fcp || domReady,
+                domReady,
+                loadTime,
+              },
+            }),
+            keepalive: true,
+          }).catch(() => {});
+        }
+      } catch {
+        // Silent fail
+      }
+    };
+
+    if (document.readyState === 'complete') {
+      if ('requestIdleCallback' in window) {
+        (window as any).requestIdleCallback(() => measurePerformance());
+      } else {
+        setTimeout(measurePerformance, 1200);
+      }
+    } else {
+      const onLoad = () => {
+        if ('requestIdleCallback' in window) {
+          (window as any).requestIdleCallback(() => measurePerformance());
+        } else {
+          setTimeout(measurePerformance, 1200);
+        }
+      };
+      window.addEventListener('load', onLoad, { once: true });
+      return () => window.removeEventListener('load', onLoad);
+    }
   }, [pathname]);
 
   return null;

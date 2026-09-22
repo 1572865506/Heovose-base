@@ -20,7 +20,7 @@ export async function POST(request: Request) {
     }
 
     // 2. Type validation
-    const allowedTypes = ['pageview', 'click', 'hover', 'scroll', 'video_play', 'video_pause', 'video_ended', 'cookie_accept', 'form_start'];
+    const allowedTypes = ['pageview', 'click', 'hover', 'scroll', 'video_play', 'video_pause', 'video_ended', 'cookie_accept', 'form_start', 'performance'];
     if (!type || typeof type !== 'string' || !allowedTypes.includes(type.toLowerCase())) {
       return NextResponse.json({ error: 'Invalid or unsupported tracking type' }, { status: 400 });
     }
@@ -81,6 +81,19 @@ export async function POST(request: Request) {
     if (rest.utm_medium) extraData.utm_medium = String(rest.utm_medium).slice(0, 100);
     if (rest.utm_campaign) extraData.utm_campaign = String(rest.utm_campaign).slice(0, 100);
     if (rest.isLandingPage !== undefined) extraData.isLandingPage = !!rest.isLandingPage;
+
+    // Web Vitals & Performance 性能测速指标白名单校验
+    if (rest.perf && typeof rest.perf === 'object') {
+      const cleanPerf: Record<string, number> = {};
+      const { ttfb, fcp, domReady, loadTime } = rest.perf;
+      if (typeof ttfb === 'number' && !isNaN(ttfb) && ttfb >= 0 && ttfb <= 60000) cleanPerf.ttfb = Math.round(ttfb);
+      if (typeof fcp === 'number' && !isNaN(fcp) && fcp >= 0 && fcp <= 60000) cleanPerf.fcp = Math.round(fcp);
+      if (typeof domReady === 'number' && !isNaN(domReady) && domReady >= 0 && domReady <= 60000) cleanPerf.domReady = Math.round(domReady);
+      if (typeof loadTime === 'number' && !isNaN(loadTime) && loadTime >= 0 && loadTime <= 60000) cleanPerf.loadTime = Math.round(loadTime);
+      if (Object.keys(cleanPerf).length > 0) {
+        extraData.perf = cleanPerf;
+      }
+    }
 
     // Check privacy consent
     const hasConsent = body.hasConsent === true || type.toLowerCase() === 'cookie_accept';

@@ -38,6 +38,7 @@ import {
 } from "@/components/ui/select";
 import Image from 'next/image';
 import { useToast } from '@/hooks/use-toast';
+import { GalleryVideoPlayer } from '@/components/admin/GalleryVideoPlayer';
 import { cn } from '@/lib/utils';
 import { Badge } from '@/components/ui/badge';
 import { getAssetUrl } from '@/lib/image-utils';
@@ -614,9 +615,14 @@ export function MediaLibraryDialog({
                             onClick={() => toggleSelectAsset(asset)}
                           >
                             {isVideo ? (
-                              <div className="w-full h-full flex items-center justify-center bg-slate-900">
-                                 <video src={getAssetUrl(asset.url)} className="max-w-full max-h-full object-contain opacity-60" muted playsInline />
-                                 <div className="absolute inset-0 flex items-center justify-center">
+                              <div className="w-full h-full flex items-center justify-center bg-slate-900 overflow-hidden relative">
+                                 <GalleryVideoPlayer
+                                   url={asset.url}
+                                   thumbnailUrl={asset.thumbnailUrl}
+                                   mode="thumbnail"
+                                   title={asset.title}
+                                 />
+                                 <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
                                    <div className="h-10 w-10 rounded-full bg-white/20 backdrop-blur-md flex items-center justify-center text-white border border-white/30"><Play className="h-4 w-4 fill-white ml-0.5" /></div>
                                  </div>
                               </div>

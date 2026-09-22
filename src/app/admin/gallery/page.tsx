@@ -40,6 +40,7 @@ import {
   Database,
   Wallet
 } from 'lucide-react';
+import { GalleryVideoPlayer } from '@/components/admin/GalleryVideoPlayer';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import {
@@ -762,40 +763,53 @@ export default function GalleryPage() {
         });
 
         if (!uploadRes.ok) throw new Error("Upload failed");
-        const { url, fileName } = await uploadRes.json();
+        const { url, fileName, thumbnailUrl: uploadedThumb } = await uploadRes.json();
+        const fullAssetUrl = getAssetUrl(url);
 
-        const isVideo = uploadFile.type.startsWith('video/');
+        const fileExt = (uploadFile.name.split('.').pop() || '').toLowerCase();
+        const isVideo = uploadFile.type.startsWith('video/') || ['mp4', 'webm', 'ogg', 'mov', 'm4v', 'avi', 'mkv'].includes(fileExt);
         let w = 0;
         let h = 0;
         let duration = 0;
 
         if (!isVideo) {
           // 在保存到数据库前获取图片分辨率
-          const getImageDimensions = (url: string): Promise<{ w: number, h: number }> => {
+          const getImageDimensions = (imgUrl: string): Promise<{ w: number, h: number }> => {
             return new Promise((resolve) => {
               const img = new window.Image();
+              img.crossOrigin = 'anonymous';
               img.onload = () => resolve({ w: img.naturalWidth, h: img.naturalHeight });
               img.onerror = () => resolve({ w: 0, h: 0 });
-              img.src = url;
+              img.src = imgUrl;
             });
           };
-          const dims = await getImageDimensions(url);
+          const dims = await getImageDimensions(fullAssetUrl);
           w = dims.w;
           h = dims.h;
         } else {
           // 获取视频元数据
-          const getVideoMetadata = (url: string): Promise<{ w: number, h: number, d: number }> => {
+          const getVideoMetadata = (vidUrl: string): Promise<{ w: number, h: number, d: number }> => {
             return new Promise((resolve) => {
               const video = document.createElement('video');
               video.preload = 'metadata';
+              video.muted = true;
+              video.playsInline = true;
+              video.crossOrigin = 'anonymous';
+              const timer = setTimeout(() => {
+                resolve({ w: video.videoWidth || 0, h: video.videoHeight || 0, d: video.duration || 0 });
+              }, 4000);
               video.onloadedmetadata = () => {
-                resolve({ w: video.videoWidth, h: video.videoHeight, d: video.duration });
+                clearTimeout(timer);
+                resolve({ w: video.videoWidth || 0, h: video.videoHeight || 0, d: video.duration || 0 });
               };
-              video.onerror = () => resolve({ w: 0, h: 0, d: 0 });
-              video.src = url;
+              video.onerror = () => {
+                clearTimeout(timer);
+                resolve({ w: 0, h: 0, d: 0 });
+              };
+              video.src = vidUrl;
             });
           };
-          const meta = await getVideoMetadata(url);
+          const meta = await getVideoMetadata(fullAssetUrl);
           w = meta.w;
           h = meta.h;
           duration = meta.d;
@@ -826,6 +840,7 @@ export default function GalleryPage() {
         const assetData = {
           id: assetId,
           url,
+          thumbnailUrl: uploadedThumb || undefined,
           type: isVideo ? 'VIDEO' : 'IMAGE',
           duration: isVideo ? duration : undefined,
           title: title,
@@ -1670,23 +1685,31 @@ export default function GalleryPage() {
                     <div className="absolute inset-0 bg-[url('/checkerboard.png')] bg-repeat opacity-[0.03] pointer-events-none" />
 
                     {actualType === 'VIDEO' ? (
-                      <div className="w-full h-full flex items-center justify-center bg-black/40 overflow-hidden">
-                        <video
-                          src={getAssetUrl(asset.url)}
-                          className="max-w-full max-h-full object-contain opacity-60 transition-transform duration-1000 group-hover:scale-110"
-                          muted
-                          playsInline
+                      <div className="w-full h-full flex items-center justify-center bg-black/50 overflow-hidden relative group/video-item">
+                        <GalleryVideoPlayer
+                          url={asset.url}
+                          thumbnailUrl={asset.thumbnailUrl}
+                          mode="thumbnail"
+                          title={asset.title}
                         />
                         {isSelected && (
                           <div className="absolute inset-0 bg-primary/5 flex items-center justify-center backdrop-blur-[1px] z-10" />
                         )}
-                        <div className="absolute inset-0 flex items-center justify-center">
-                          <div className="h-14 w-14 rounded-full bg-white/5 backdrop-blur-xl flex items-center justify-center text-white border border-white/10 shadow-2xl transition-all group-hover:scale-110 duration-700 group-hover:bg-primary/20">
-                            <Play className="h-6 w-6 fill-white ml-1" />
+                        <div 
+                          className="absolute inset-0 flex items-center justify-center cursor-pointer z-10"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setPreviewAsset(asset);
+                            setPreviewZoom('fit');
+                          }}
+                          title="点击全屏播放视频"
+                        >
+                          <div className="h-14 w-14 rounded-full bg-black/40 backdrop-blur-xl flex items-center justify-center text-white border border-white/20 shadow-2xl transition-all group-hover:scale-110 duration-500 group-hover:bg-primary group-hover:text-black">
+                            <Play className="h-6 w-6 fill-current ml-1" />
                           </div>
                         </div>
-                        {asset.duration && (
-                          <div className="absolute bottom-3 right-3 px-2 py-1 rounded-lg bg-black/60 text-[9px] font-black font-mono text-white/80 uppercase tracking-tighter">
+                        {Boolean(asset.duration && asset.duration > 0) && (
+                          <div className="absolute bottom-3 right-3 px-2 py-1 rounded-lg bg-black/70 text-[9px] font-black font-mono text-white/90 uppercase tracking-tighter shadow-lg z-10 pointer-events-none">
                             {Math.floor(asset.duration / 60)}:{(asset.duration % 60).toFixed(0).padStart(2, '0')}
                           </div>
                         )}
@@ -2177,35 +2200,34 @@ export default function GalleryPage() {
               <div className={cn("relative transition-all duration-700 ease-out", previewZoom === '1:1' ? "w-auto h-auto" : "w-full h-full flex items-center justify-center")}>
                 <div className="absolute inset-0 bg-[url('/checkerboard.png')] bg-repeat opacity-[0.05] pointer-events-none rounded-xl" />
 
-                {previewAsset.type === 'VIDEO' ? (
-                  <video
-                    src={getAssetUrl(previewAsset.url)}
-                    controls
-                    autoPlay
-                    className={cn(
-                      "shadow-[0_50px_100px_rgba(0,0,0,0.8)] border border-white/10 rounded-2xl transition-all duration-700",
-                      previewZoom === 'fit' ? "max-w-full max-h-full" : "max-w-none w-auto h-auto"
-                    )}
-                    onLoadedMetadata={(e) => {
-                      const vid = e.currentTarget;
-                      setPreviewDimensions({ width: vid.videoWidth, height: vid.videoHeight });
-                    }}
-                  />
-                ) : (
-                  <img
-                    src={getAssetUrl(previewAsset.url)}
-                    alt={previewAsset.title}
-                    onLoad={(e) => {
-                      const img = e.currentTarget;
-                      setPreviewDimensions({ width: img.naturalWidth, height: img.naturalHeight });
-                    }}
-                    style={{ imageRendering: 'high-quality' as any }}
-                    className={cn(
-                      "shadow-[0_50px_100px_rgba(0,0,0,0.8)] border border-white/10 rounded-2xl transition-all duration-700",
-                      previewZoom === 'fit' ? "max-w-full max-h-full" : "max-w-none w-auto h-auto"
-                    )}
-                  />
-                )}
+                {(() => {
+                  const previewExt = (previewAsset.fileName?.split('.').pop() || previewAsset.url?.split('.').pop() || '').toLowerCase();
+                  const isPreviewVideo = previewAsset.type === 'VIDEO' || ['mp4', 'webm', 'ogg', 'mov', 'm4v', 'avi', 'mkv'].includes(previewExt);
+
+                  return isPreviewVideo ? (
+                    <GalleryVideoPlayer
+                      url={previewAsset.url}
+                      thumbnailUrl={previewAsset.thumbnailUrl}
+                      mode="preview"
+                      title={previewAsset.title}
+                      onLoadedMetadata={(dim) => setPreviewDimensions(dim)}
+                    />
+                  ) : (
+                    <img
+                      src={getAssetUrl(previewAsset.url)}
+                      alt={previewAsset.title}
+                      onLoad={(e) => {
+                        const img = e.currentTarget;
+                        setPreviewDimensions({ width: img.naturalWidth, height: img.naturalHeight });
+                      }}
+                      style={{ imageRendering: 'high-quality' as any }}
+                      className={cn(
+                        "shadow-[0_50px_100px_rgba(0,0,0,0.8)] border border-white/10 rounded-2xl transition-all duration-700",
+                        previewZoom === 'fit' ? "max-w-full max-h-full" : "max-w-none w-auto h-auto"
+                      )}
+                    />
+                  );
+                })()}
               </div>
             )}
           </div>
