@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo, useEffect, useRef } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
@@ -22,11 +22,24 @@ import {
   Play,
   ZoomIn,
   ZoomOut,
-  X
+  X,
+  CheckCircle2,
+  Share2,
+  ArrowLeft,
+  Copy,
+  Info
 } from 'lucide-react';
+import { useToast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from '@/components/ui/dialog';
 import { cn } from '@/lib/utils';
 import { getAssetUrl } from '@/lib/image-utils';
 import { useTranslations } from '@/hooks/use-translations';
@@ -35,6 +48,11 @@ import { useLocalDoc } from '@/hooks/use-local-doc';
 import { useInquiry } from '@/components/providers/InquiryProvider';
 import { HoverVideoPlayer } from '@/components/HoverVideoPlayer';
 import { injectTranslations } from '@/lib/translation-injector';
+import { ProductPdfLayout } from './components/ProductPdfLayout';
+import { ProductSpecPreviewModal } from './components/ProductSpecPreviewModal';
+import { ProductShareModal } from './components/ProductShareModal';
+import { SocialShareGuideOverlay } from './components/SocialShareGuideOverlay';
+
 
 const isVideoUrl = (url: string) => {
   if (!url) return false;
@@ -52,7 +70,8 @@ const SYSTEM_FALLBACKS: Record<string, Record<string, string>> = {
   product_tab_specs: { zh: '技术参数', en: 'Specifications', id: 'Spesifikasi', vi: 'Thông số kỹ thuật' },
   related_products_title: { zh: '相关产品', en: 'Related Products', id: 'Produk Terkait', vi: 'Sản phẩm liên quan' },
   explore_more_tech: { zh: '探索更多高端科技', en: 'Explore more high-end technology', id: 'Jelajahi lebih banyak teknologi kelas atas', vi: 'Khám phá thêm công nghệ cao cấp' },
-  view_all: { zh: '查看全部', en: 'View All', id: 'Lihat Semua', vi: 'Xem tất cả' }
+  view_all: { zh: '查看全部', en: 'View All', id: 'Lihat Semua', vi: 'Xem tất cả' },
+  continued: { zh: '续', en: 'Continued', id: 'Lanjutan', vi: 'Tiếp tục' }
 };
 
 export default function ProductClient({ product, initialLocale }: { product: any, initialLocale: Locale }) {
@@ -73,6 +92,532 @@ export default function ProductClient({ product, initialLocale }: { product: any
   const [isZoomOpen, setIsZoomOpen] = useState(false);
   const [zoomScale, setZoomScale] = useState(1);
   const [sanitizedDetails, setSanitizedDetails] = useState('');
+  const [isExporting, setIsExporting] = useState(false);
+  const [exportLogoUrl, setExportLogoUrl] = useState<string>('');
+  const [specPreviewData, setSpecPreviewData] = useState<{
+    isOpen: boolean;
+    pages: string[];
+    fileName: string;
+    pdfBlob?: Blob;
+    pdfFile?: File;
+    pdfDoc?: any;
+  }>({
+    isOpen: false,
+    pages: [],
+    fileName: '',
+  });
+  const { toast } = useToast();
+  const [isSaving, setIsSaving] = useState(false);
+  const [isSharing, setIsSharing] = useState(false);
+  const [isFallbackModalOpen, setIsFallbackModalOpen] = useState(false);
+  const [isSocialGuideOpen, setIsSocialGuideOpen] = useState(false);
+  const [currentSocialAppName, setCurrentSocialAppName] = useState('微信');
+  const printLayoutRef = useRef<HTMLDivElement>(null);
+
+  // 全环境剪贴板兜底函数（即使在局域网 HTTP 或旧浏览器下也能 100% 成功复制）
+  const copyToClipboard = async (text: string): Promise<boolean> => {
+    if (typeof navigator !== 'undefined' && navigator.clipboard && window.isSecureContext) {
+      try {
+        await navigator.clipboard.writeText(text);
+        return true;
+      } catch (e) {
+        // fallback
+      }
+    }
+    try {
+      const textArea = document.createElement('textarea');
+      textArea.value = text;
+      textArea.style.position = 'fixed';
+      textArea.style.left = '-9999px';
+      textArea.style.top = '0';
+      textArea.style.opacity = '0';
+      document.body.appendChild(textArea);
+      textArea.focus();
+      textArea.select();
+      const successful = document.execCommand('copy');
+      document.body.removeChild(textArea);
+      return successful;
+    } catch (err) {
+      return false;
+    }
+  };
+
+  // 预渲染 Logo 为精确尺寸的真实位图，彻底根除移动端 SVG 未缩放裁切问题
+  const rasterizeLogo = async (url: string, targetWidth: number, targetHeight: number): Promise<string> => {
+    if (!url) return '';
+    return new Promise((resolve) => {
+      const img = new window.Image();
+      img.crossOrigin = 'anonymous';
+      img.onload = () => {
+        try {
+          const canvas = document.createElement('canvas');
+          canvas.width = targetWidth * 3;
+          canvas.height = targetHeight * 3;
+          const ctx = canvas.getContext('2d');
+          if (ctx) {
+            ctx.imageSmoothingEnabled = true;
+            ctx.imageSmoothingQuality = 'high';
+            const scale = Math.min(canvas.width / img.width, canvas.height / img.height);
+            const w = img.width * scale;
+            const h = img.height * scale;
+            const x = (canvas.width - w) / 2;
+            const y = (canvas.height - h) / 2;
+            ctx.drawImage(img, x, y, w, h);
+            resolve(canvas.toDataURL('image/png'));
+            return;
+          }
+        } catch (e) {
+          console.warn('Logo rasterize error:', e);
+        }
+        resolve(url);
+      };
+      img.onerror = () => resolve(url);
+      img.src = url;
+    });
+  };
+
+  const handleOpenSpecPreview = async () => {
+    if (isExporting) return;
+    setIsExporting(true);
+
+    try {
+      // 预先将 Logo 渲染为 169x32 的标准高保真位图
+      const rawLogo = siteConfig?.logoStandard ? getAssetUrl(siteConfig.logoStandard) : '/image/Heovose-color.svg';
+      const logoPng = await rasterizeLogo(rawLogo, 169, 32);
+      setExportLogoUrl(logoPng);
+
+      // 给 React 状态更新和 DOM 挂载预留时间
+      await new Promise((r) => setTimeout(r, 250));
+
+      const container = printLayoutRef.current;
+      if (!container) {
+        window.print();
+        setIsExporting(false);
+        return;
+      }
+
+      const pageElements = Array.from(container.querySelectorAll<HTMLElement>('.print-page'));
+      if (pageElements.length === 0) {
+        window.print();
+        setIsExporting(false);
+        return;
+      }
+
+      // 等待离屏容器中所有图片资源加载完成（带超时保险）
+      const waitForImages = async (el: HTMLElement) => {
+        const images = Array.from(el.querySelectorAll('img'));
+        await Promise.all(
+          images.map((img) => {
+            if (img.complete && img.naturalWidth > 0) return Promise.resolve();
+            return new Promise<void>((resolve) => {
+              img.onload = () => resolve();
+              img.onerror = () => resolve();
+              setTimeout(resolve, 3000);
+            });
+          })
+        );
+      };
+
+      await waitForImages(container);
+
+      const html2canvas = (await import('html2canvas')).default;
+      const { jsPDF } = await import('jspdf');
+
+      const canvasOptions = {
+        scale: 3, // 3x 超高清采样（~300 DPI 印刷级高保真分辨率）
+        useCORS: true,
+        allowTaint: true,
+        logging: false,
+        backgroundColor: '#ffffff',
+        width: 794,
+        height: 1123,
+        windowWidth: 1200, // 强制虚拟桌面宽度，彻底消除手机 390px 视口造成的物理横向裁切
+        windowHeight: 1600,
+        scrollX: 0,
+        scrollY: 0,
+        x: 0,
+        y: 0,
+        onclone: (clonedDoc: Document) => {
+          // 确保克隆文档具有足够视口宽度，绝不裁剪右侧
+          const clonedHtml = clonedDoc.documentElement;
+          const clonedBody = clonedDoc.body;
+          if (clonedHtml) {
+            clonedHtml.style.width = '1200px';
+            clonedHtml.style.minWidth = '1200px';
+          }
+          if (clonedBody) {
+            clonedBody.style.width = '1200px';
+            clonedBody.style.minWidth = '1200px';
+            clonedBody.style.position = 'relative';
+          }
+          // 强制优先中文字体栈，消除西文字体度量对汉字基线的拉扯致使下沉的缺陷，并修复 Tailwind preflight 对基线的破坏
+          const fontResetStyle = clonedDoc.createElement('style');
+          fontResetStyle.innerHTML = `
+            .print-layout, .print-layout * {
+              font-family: "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "WenQuanYi Micro Hei", "Noto Sans SC", "Noto Sans CJK SC", -apple-system, sans-serif !important;
+              -webkit-font-smoothing: antialiased;
+              text-rendering: optimizeLegibility;
+            }
+            .print-layout img {
+              display: inline-block !important;
+            }
+            .print-layout svg {
+              display: inline-block !important;
+              vertical-align: middle !important;
+            }
+          `;
+          clonedDoc.head.appendChild(fontResetStyle);
+
+          const clonedLayout = clonedDoc.querySelector('.print-layout') as HTMLElement;
+          if (clonedLayout) {
+            clonedLayout.style.position = 'absolute';
+            clonedLayout.style.left = '0';
+            clonedLayout.style.top = '0';
+            clonedLayout.style.width = '794px';
+            clonedLayout.style.display = 'block';
+            clonedLayout.style.visibility = 'visible';
+          }
+        },
+      };
+
+      const pdf = new jsPDF({
+        orientation: 'portrait',
+        unit: 'mm',
+        format: 'a4',
+        compress: true,
+      });
+
+      const pagesDataUrls: string[] = [];
+
+      // 遍历所有独立的 A4 页面容器逐页渲染
+      for (let i = 0; i < pageElements.length; i++) {
+        if (i > 0) {
+          pdf.addPage();
+        }
+        const canvas = await html2canvas(pageElements[i], canvasOptions);
+        const imgData = canvas.toDataURL('image/jpeg', 0.98);
+        pagesDataUrls.push(imgData);
+        pdf.addImage(imgData, 'JPEG', 0, 0, 210, 297, undefined, 'SLOW');
+      }
+
+      const rawTitle = getProductText(product?.nameTextId, product?.nameText) || 'Specification';
+      // 深度清洗文件名：过滤所有控制符、路径符、Unicode标点符号（如省略号），截取安全长度
+      const safeTitle = rawTitle
+        .replace(/[\r\n\t/\\?%*:|"<>…,\u2026'"`]/g, '_')
+        .replace(/[_\s]+/g, '_')
+        .replace(/^_+|_+$/g, '')
+        .slice(0, 50);
+      const fileName = `${safeTitle || 'Specification'}.pdf`;
+
+      const pdfBlob = pdf.output('blob');
+      const pdfFile = new File([pdfBlob], fileName, { type: 'application/pdf' });
+
+      // 打开站内规格书预览模态窗，并持久化保存 pdf 实例，便于后续一键原生调用 pdf.save()
+      setSpecPreviewData({
+        isOpen: true,
+        pages: pagesDataUrls,
+        fileName,
+        pdfBlob,
+        pdfFile,
+        pdfDoc: pdf,
+      });
+    } catch (err) {
+      console.error('PDF generation failed:', err);
+      window.print();
+    } finally {
+      setIsExporting(false);
+    }
+  };
+
+  // 终端环境与浏览器探测（精细识别国内微信/QQ/钉钉及海外热门 WhatsApp, Telegram, X, Facebook, Instagram, LINE 等）
+  const getDeviceContext = () => {
+    if (typeof navigator === 'undefined') {
+      return {
+        isIOS: false,
+        isAndroid: false,
+        isWeChat: false,
+        isEnterpriseWeChat: false,
+        isQQ: false,
+        isDingTalk: false,
+        isWeibo: false,
+        isLark: false,
+        isDomesticSocial: false,
+        isWhatsApp: false,
+        isFacebook: false,
+        isInstagram: false,
+        isTwitter: false,
+        isTelegram: false,
+        isLine: false,
+        isLinkedIn: false,
+        isOverseasSocial: false,
+        isSocialApp: false,
+        socialAppName: '',
+        safariVersion: 999,
+      };
+    }
+    const ua = navigator.userAgent || '';
+    const isIOS = /iPad|iPhone|iPod/.test(ua) || (typeof navigator !== 'undefined' && navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+    const isAndroid = /Android/i.test(ua);
+
+    // 国内主流社交软件内置容器识别
+    const isWeChat = /MicroMessenger/i.test(ua);
+    const isEnterpriseWeChat = /wxwork/i.test(ua);
+    const isQQ = /QQ\//i.test(ua) || /V1_AND_SQ_/i.test(ua);
+    const isDingTalk = /DingTalk/i.test(ua);
+    const isWeibo = /Weibo/i.test(ua);
+    const isLark = /Lark/i.test(ua) || /Feishu/i.test(ua);
+    const isDomesticSocial = isWeChat || isEnterpriseWeChat || isQQ || isDingTalk || isWeibo || isLark;
+
+    // 海外热门社交应用内置容器识别
+    const isWhatsApp = /WhatsApp/i.test(ua);
+    const isFacebook = /FBAN|FBAV|FB_IAB|Messenger/i.test(ua);
+    const isInstagram = /Instagram/i.test(ua);
+    const isTwitter = /Twitter/i.test(ua);
+    const isTelegram = /Telegram/i.test(ua);
+    const isLine = /Line\//i.test(ua);
+    const isLinkedIn = /LinkedInApp/i.test(ua);
+    const isOverseasSocial = isWhatsApp || isFacebook || isInstagram || isTwitter || isTelegram || isLine || isLinkedIn;
+
+    let socialAppName = '';
+    if (isWeChat) socialAppName = isEnterpriseWeChat ? '企业微信' : '微信';
+    else if (isQQ) socialAppName = 'QQ';
+    else if (isDingTalk) socialAppName = '钉钉';
+    else if (isWeibo) socialAppName = '微博';
+    else if (isLark) socialAppName = '飞书';
+    else if (isWhatsApp) socialAppName = 'WhatsApp';
+    else if (isTelegram) socialAppName = 'Telegram';
+    else if (isFacebook) socialAppName = 'Facebook';
+    else if (isInstagram) socialAppName = 'Instagram';
+    else if (isTwitter) socialAppName = 'X (Twitter)';
+    else if (isLine) socialAppName = 'LINE';
+    else if (isLinkedIn) socialAppName = 'LinkedIn';
+
+    const isSocialApp = isDomesticSocial || isOverseasSocial;
+
+    let safariVersion = 999;
+    const safariMatch = ua.match(/Version\/(\d+)/);
+    if (safariMatch && /Safari/i.test(ua) && !/Chrome|CriOS|FxiOS/i.test(ua)) {
+      safariVersion = parseInt(safariMatch[1], 10);
+    }
+    return {
+      isIOS,
+      isAndroid,
+      isWeChat,
+      isEnterpriseWeChat,
+      isQQ,
+      isDingTalk,
+      isWeibo,
+      isLark,
+      isDomesticSocial,
+      isWhatsApp,
+      isFacebook,
+      isInstagram,
+      isTwitter,
+      isTelegram,
+      isLine,
+      isLinkedIn,
+      isOverseasSocial,
+      isSocialApp,
+      socialAppName,
+      safariVersion,
+    };
+  };
+
+  // 分享功能：智能识别访问设备和环境，减少多层级弹窗，海内外社交内置容器均智能直达
+  const handleShareSpec = async () => {
+    if (isSharing) return;
+    setIsSharing(true);
+
+    const rawTitle = getProductText(product?.nameTextId, product?.nameText) || 'Specification';
+    const currentUrl = typeof window !== 'undefined' ? window.location.href : '';
+    const shareText = `${rawTitle} - Technical Specification`;
+    const device = getDeviceContext();
+
+    // 核心优化 1：若在封闭式国内社交软件内置浏览器（微信、QQ、企业微信、钉钉等）：
+    // 这些平台禁用了外部系统的 Web Share API，自动复制链接并直接拉起右上角【···】直达指引蒙层
+    if (device.isDomesticSocial) {
+      setCurrentSocialAppName(device.socialAppName);
+      await copyToClipboard(currentUrl);
+
+      if (typeof (window as any).WeixinJSBridge !== 'undefined') {
+        try {
+          (window as any).WeixinJSBridge.call('showOptionMenu');
+        } catch {}
+      }
+
+      toast({
+        title: `已开启${device.socialAppName}专属分享`,
+        description: '规格书链接已自动复制，点击右上角【···】即可直接转发给好友！',
+      });
+
+      setIsSocialGuideOpen(true);
+      setIsSharing(false);
+      return;
+    }
+
+    // 核心优化 2：若在海外热门社交内置浏览器（WhatsApp, Telegram, Twitter, Facebook, Instagram, LINE 等）
+    // 海外应用大多基于 Chrome Custom Tabs 或 Safari View Controller，通常支持原生系统分享！
+    // 优先尝试调起系统级原生分享面板（Native OS Share Sheet，可直接选择 WhatsApp 对话、Telegram 好友等）
+    if (device.isOverseasSocial && typeof navigator !== 'undefined' && typeof (navigator as any).share === 'function') {
+      try {
+        await (navigator as any).share({
+          title: rawTitle,
+          text: shareText,
+          url: currentUrl,
+        });
+        setIsSharing(false);
+        return; // 海外内置浏览器原生分享调起成功！
+      } catch (overseasShareErr: any) {
+        if (overseasShareErr?.name === 'AbortError') {
+          setIsSharing(false);
+          return; // 用户主动取消
+        }
+        // 若某些海外应用（如部分 Instagram/Facebook 内核）禁用了 navigator.share，则进入专属右上角蒙层引导
+        setCurrentSocialAppName(device.socialAppName);
+        await copyToClipboard(currentUrl);
+        setIsSocialGuideOpen(true);
+        setIsSharing(false);
+        return;
+      }
+    }
+
+    // 核心优化 3（外部普通浏览器）：首选调用支持原生文件传输的 Web Share API（如 iOS Safari ≥15）
+    const canShareFiles = device.safariVersion >= 15 && typeof navigator !== 'undefined' && (navigator as any).canShare && specPreviewData.pdfFile;
+    if (canShareFiles) {
+      try {
+        const isFileSupported = (navigator as any).canShare({ files: [specPreviewData.pdfFile] });
+        if (isFileSupported) {
+          await (navigator as any).share({
+            files: [specPreviewData.pdfFile],
+            title: rawTitle,
+            text: shareText,
+          });
+          setIsSharing(false);
+          return; // 现代终端原生文件分享唤起成功
+        }
+      } catch (fileShareErr: any) {
+        if (fileShareErr?.name === 'AbortError') {
+          setIsSharing(false);
+          return; // 用户主动取消系统分享
+        }
+        console.warn('Native file share failed, proceeding to link share:', fileShareErr);
+      }
+    }
+
+    // 核心优化 4（外部普通移动端浏览器）：若无法直接传文件（如大部分安卓浏览器），尝试唤起系统底层原生分享面板
+    if (typeof navigator !== 'undefined' && typeof (navigator as any).share === 'function') {
+      try {
+        await (navigator as any).share({
+          title: rawTitle,
+          text: shareText,
+          url: currentUrl,
+        });
+        setIsSharing(false);
+        return; // 安卓等系统原生系统分享面板唤起成功！
+      } catch (linkShareErr: any) {
+        if (linkShareErr?.name === 'AbortError') {
+          setIsSharing(false);
+          return; // 用户主动取消
+        }
+        console.warn('Native link share failed, proceeding to fallback modal:', linkShareErr);
+      }
+    }
+
+    // 核心优化 5（桌面 PC 浏览器或无原生 Share API 的降级环境）：呼出多渠道分享中心弹窗
+    setIsFallbackModalOpen(true);
+    setIsSharing(false);
+  };
+
+  // 保存规格书 PDF：优先调用系统原生另存为 (SavePicker)，兜底使用 jsPDF 原生导出与标准 Blob 触发
+  const handleSaveSpec = async () => {
+    if (!specPreviewData.pdfBlob || isSaving) return;
+    setIsSaving(true);
+
+    // 双重校验文件名与 .pdf 后缀，清洗安全文件名（保留字母、数字、中文、下划线、减号）
+    const rawFileName = specPreviewData.fileName || 'Specification.pdf';
+    const cleanBase = rawFileName
+      .replace(/\.pdf$/i, '')
+      .replace(/[^\w\u4e00-\u9fa5\-_]/g, '_')
+      .replace(/_+/g, '_')
+      .replace(/^_+|_+$/g, '')
+      .slice(0, 40);
+    const finalFileName = `${cleanBase || 'Product_Specification'}.pdf`;
+
+    const blob = specPreviewData.pdfBlob.type === 'application/pdf'
+      ? specPreviewData.pdfBlob
+      : new Blob([specPreviewData.pdfBlob], { type: 'application/pdf' });
+
+    try {
+      // 1. 方案一（现代桌面 Chrome / Edge 首选）：调用浏览器原生系统“另存为”对话框
+      // 该 API 直接由 Windows/macOS 操作系统接管，强制锁定 .pdf 扩展名，绝无乱码或无后缀问题
+      if (typeof window !== 'undefined' && 'showSaveFilePicker' in window) {
+        try {
+          const handle = await (window as any).showSaveFilePicker({
+            suggestedName: finalFileName,
+            types: [
+              {
+                description: 'PDF Document (*.pdf)',
+                accept: {
+                  'application/pdf': ['.pdf'],
+                },
+              },
+            ],
+          });
+          const writable = await handle.createWritable();
+          await writable.write(blob);
+          await writable.close();
+          toast({
+            title: '规格书保存成功',
+            description: `${finalFileName} 已成功保存到您的电脑。`,
+          });
+          setIsSaving(false);
+          return;
+        } catch (pickerErr: any) {
+          if (pickerErr?.name === 'AbortError') {
+            // 用户在系统对话框中主动点击了“取消”
+            setIsSaving(false);
+            return;
+          }
+          console.warn('showSaveFilePicker failed, trying fallback methods:', pickerErr);
+        }
+      }
+
+      // 2. 方案二（jsPDF 原生保存）：由 jsPDF 自身核心引擎直接写入
+      if (specPreviewData.pdfDoc && typeof specPreviewData.pdfDoc.save === 'function') {
+        try {
+          specPreviewData.pdfDoc.save(finalFileName);
+          setIsSaving(false);
+          return;
+        } catch (pdfSaveErr) {
+          console.warn('jsPDF save failed, falling back to blob anchor:', pdfSaveErr);
+        }
+      }
+
+      // 3. 方案三（主窗口直接触发 a[download]）：彻底弃用隐藏 iframe，避免 Chrome 将其判定为子框架后台流生成乱码无后缀临时文件
+      const blobUrl = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = blobUrl;
+      link.download = finalFileName;
+      link.setAttribute('download', finalFileName);
+      link.rel = 'noopener';
+      link.style.display = 'none';
+      document.body.appendChild(link);
+      link.click();
+      setTimeout(() => {
+        if (link.parentNode) link.parentNode.removeChild(link);
+        URL.revokeObjectURL(blobUrl);
+      }, 5000);
+    } catch (saveErr) {
+      console.error('All PDF download methods failed:', saveErr);
+      toast({
+        title: '下载遇到问题',
+        description: '未能直接保存文件，请重试或尝试转发分享。',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsSaving(false);
+    }
+  };
 
   useEffect(() => {
     setMounted(true);
@@ -383,6 +928,322 @@ export default function ProductClient({ product, initialLocale }: { product: any
 
   const groupedSpecs = parsedSpecs.groups;
 
+  // 核心优势自适应画幅与缩略图尺寸配置（优势过多时压缩纵向高度，确保第一页完整排版不换页，且宽高严格锁定 11:9 黄金画幅）
+  const heroImageConfig = useMemo(() => {
+    const advCount = advantages.length;
+    if (advCount === 0) {
+      // 无核心优势：主图适度精炼居中（484x396，严格 11:9），为下方技术规格表留出充足空间
+      return {
+        mainWidth: 484,
+        mainHeight: 396,
+        imgMaxW: 452,
+        imgMaxH: 364,
+        thumbWidth: 77,
+        thumbHeight: 63,
+        thumbImgMaxW: 71,
+        thumbImgMaxH: 57,
+        thumbGap: 8,
+        useTwoColumnsForAdv: false,
+      };
+    } else if (advCount <= 2) {
+      // 1~2 条核心优势：大画幅旗舰封面（572x468，严格 11:9）
+      return {
+        mainWidth: 572,
+        mainHeight: 468,
+        imgMaxW: 540,
+        imgMaxH: 436,
+        thumbWidth: 99,
+        thumbHeight: 81,
+        thumbImgMaxW: 91,
+        thumbImgMaxH: 73,
+        thumbGap: 10,
+        useTwoColumnsForAdv: false,
+      };
+    } else if (advCount <= 4) {
+      // 3~4 条核心优势：适度压缩主图（484x396，严格 11:9）与缩略图，核心优势采用双列网格，确保整页不换页
+      return {
+        mainWidth: 484,
+        mainHeight: 396,
+        imgMaxW: 452,
+        imgMaxH: 364,
+        thumbWidth: 88,
+        thumbHeight: 72,
+        thumbImgMaxW: 80,
+        thumbImgMaxH: 64,
+        thumbGap: 8,
+        useTwoColumnsForAdv: true,
+      };
+    } else {
+      // 5 条及以上核心优势（内容极多）：极限压缩主图（440x360，严格 11:9）与缩略图，优势双列紧凑卡片，第一页完整排版绝不换页
+      return {
+        mainWidth: 440,
+        mainHeight: 360,
+        imgMaxW: 410,
+        imgMaxH: 330,
+        thumbWidth: 77,
+        thumbHeight: 63,
+        thumbImgMaxW: 71,
+        thumbImgMaxH: 57,
+        thumbGap: 6,
+        useTwoColumnsForAdv: true,
+      };
+    }
+  }, [advantages.length]);
+
+  // 工业级智能双列流规格表分页：左右两列排布不同规格子表，保持子表完整性，绝不随意切碎表格
+  const specPagination = useMemo(() => {
+    if (!groupedSpecs || groupedSpecs.length === 0) {
+      return {
+        page1Data: { leftGroups: [], rightGroups: [] },
+        subsequentPages: [],
+        totalPages: 1,
+      };
+    }
+
+    const hasAdvantages = advantages.length > 0;
+    const hasGallery = product?.galleryImageUrls && product.galleryImageUrls.filter((img: string) => img !== product.mainImageUrl && !isVideoUrl(img)).length > 0;
+
+    // 单列单位充盈安全容量：在 1123px A4 画幅与 pb 7px 下，31.8 物理单位（约 850px）使表格底端更靠下。
+    // 右栏距底部页脚精准保留约 60px~65px 紧凑呼吸带，且页脚已被绝对锚定在画幅底边，彻底杜绝页脚被挤出页面。
+    const SUBSEQUENT_COL_CAPACITY = 31.8;
+    // 无优势时 Page 1 安全容量：有画廊 9 行/列，无画廊 13 行/列
+    const PAGE_1_COL_CAPACITY = hasAdvantages ? 0 : (hasGallery ? 9 : 13);
+
+    interface SpecGroupChunk {
+      title: string;
+      isContinued: boolean;
+      items: Array<{ label: string; value: string }>;
+      footnote?: string;
+    }
+
+    interface SpecPageData {
+      leftGroups: SpecGroupChunk[];
+      rightGroups: SpecGroupChunk[];
+    }
+
+    // 真实物理行高精确换算（1.0 单位 = 26.4px 基准单行高度）：
+    // 包含字高 (15.4px) + 上下 padding (10px) + 边线 (1px)；
+    // 严格按照列宽（约 240px 可视宽度）与文本长度对多行折行进行足额加权计算，杜绝低估导致的溢出
+    const getItemUnits = (item: { label: string; value: string }): number => {
+      const cleanVal = (item.value || '').replace(/<[^>]+>/g, '').trim();
+      const valLen = cleanVal.length;
+      let valUnits = 1.0;
+      if (valLen > 140) {
+        valUnits = 3.3; // 5行及以上超长文本（如复杂输入输出端口）
+      } else if (valLen > 95) {
+        valUnits = 2.7; // 4行文本
+      } else if (valLen > 55) {
+        valUnits = 2.1; // 3行文本
+      } else if (valLen > 24) {
+        valUnits = 1.5; // 2行文本
+      }
+
+      const cleanLabel = (item.label || '').replace(/<[^>]+>/g, '').trim();
+      let labelUnits = 1.0;
+      if (cleanLabel.length > 20) {
+        labelUnits = 1.5;
+      }
+
+      return Math.max(valUnits, labelUnits);
+    };
+
+    const HEADER_UNITS = 1.15; // 子表标题所占高度单位（字高 16px + pb 7px + mb 5px + border 1px ≈ 29px）
+    const GROUP_GAP_UNITS = 0.55; // 组间纵向留白单位（14px 间隙 / 26.4px）
+
+    const getGroupUnits = (items: Array<{ label: string; value: string }>): number => {
+      const itemsUnit = items.reduce((sum, it) => sum + getItemUnits(it), 0);
+      return HEADER_UNITS + itemsUnit + GROUP_GAP_UNITS;
+    };
+
+    // 精确测算在剩余可用空间 avail 内，最多能安全塞入多少个 items，确保累加高度绝对不超载
+    const calcFitCount = (items: Array<{ label: string; value: string }>, avail: number): number => {
+      let used = HEADER_UNITS;
+      let count = 0;
+      for (let i = 0; i < items.length; i++) {
+        const u = getItemUnits(items[i]);
+        if (used + u + GROUP_GAP_UNITS <= avail) {
+          used += u;
+          count++;
+        } else {
+          break;
+        }
+      }
+      return count;
+    };
+
+    const totalUnits = groupedSpecs.reduce((sum: number, g: any) => sum + getGroupUnits(g.items), 0);
+
+    // 核心排版准则：只有当整份产品的所有规格能在 Page 1 完整 100% 容纳（整份 PDF 为 1 页）时，才在 Page 1 底部排布；
+    // 一旦规格内容超出 Page 1 容量（必须跨页），Page 1 则保持作为纯净大气的旗舰产品封面，所有技术规格统一从 Page 2 开始展开，绝不在封面底部强塞半截残缺表！
+    const canFitEntirelyOnPage1 = !hasAdvantages && totalUnits <= PAGE_1_COL_CAPACITY * 2;
+
+    let remainingGroups = groupedSpecs.map((g: any) => ({
+      rawTitle: g.title,
+      footnote: g.footnote,
+      items: [...g.items],
+      isSplit: false,
+    }));
+
+    // 双列连续流式自然分栏引擎（反 N 字型排序：左上 -> 左下 -> 右上 -> 右下）：
+    // 1. 空间极致饱满：左列能排尽量排，排不下且有空间则果断切分，续表流向右列（左主右续）；
+    // 2. 右列续表排完后，继续排入后续子表；若放不下，同样切分填满右列，余量流向下一页左侧（续表延伸到下一页左侧）；
+    // 3. 彻底杜绝大面积空白区域，每一栏均饱满严整，同时物理高度严格受控，绝不遮挡页脚。
+    const distributeGroupsToPage = (
+      groupsPool: typeof remainingGroups,
+      colCapacity: number
+    ): { pageData: SpecPageData; remainingPool: typeof remainingGroups } => {
+      const leftGroups: SpecGroupChunk[] = [];
+      const rightGroups: SpecGroupChunk[] = [];
+      let leftUnits = 0;
+      let rightUnits = 0;
+
+      let currentPool = [...groupsPool];
+      let currentCol: 'left' | 'right' = 'left';
+
+      while (currentPool.length > 0) {
+        const group = currentPool[0];
+        const gUnits = getGroupUnits(group.items);
+
+        if (currentCol === 'left') {
+          const leftAvail = colCapacity - leftUnits;
+
+          // 1. 左列能完整容纳该子表（或续表）
+          if (gUnits <= leftAvail) {
+            leftGroups.push({
+              title: group.isSplit
+                ? `${group.rawTitle} <span class="text-xs text-slate-400 font-normal ml-2">(${getSystemText('continued') || '续'})</span>`
+                : group.rawTitle,
+              isContinued: group.isSplit,
+              items: group.items,
+              footnote: group.footnote,
+            });
+            leftUnits += gUnits;
+            currentPool.shift();
+            continue; // 左列还有剩余空间，继续排下一个子表！
+          }
+
+          // 2. 左列无法完整容纳该表：果断进行分栏，充分填满左下，续表流向右上！
+          const fitLeft = calcFitCount(group.items, leftAvail);
+          if (fitLeft >= 1 && group.items.length - fitLeft >= 1) {
+            const leftItems = group.items.slice(0, fitLeft);
+            const restItems = group.items.slice(fitLeft);
+
+            leftGroups.push({
+              title: group.isSplit
+                ? `${group.rawTitle} <span class="text-xs text-slate-400 font-normal ml-2">(${getSystemText('continued') || '续'})</span>`
+                : group.rawTitle,
+              isContinued: group.isSplit,
+              items: leftItems,
+              footnote: undefined,
+            });
+            leftUnits += getGroupUnits(leftItems);
+
+            // 续表顺流排到右侧（续表）继续
+            currentPool[0] = { ...group, items: restItems, isSplit: true };
+            currentCol = 'right';
+            continue;
+          } else {
+            // 左列空间已无法容纳哪怕 1 项，左列饱和，转入右列
+            currentCol = 'right';
+            continue;
+          }
+        }
+
+        if (currentCol === 'right') {
+          const rightAvail = colCapacity - rightUnits;
+
+          // 1. 右列能完整容纳
+          if (gUnits <= rightAvail) {
+            rightGroups.push({
+              title: group.isSplit
+                ? `${group.rawTitle} <span class="text-xs text-slate-400 font-normal ml-2">(${getSystemText('continued') || '续'})</span>`
+                : group.rawTitle,
+              isContinued: group.isSplit,
+              items: group.items,
+              footnote: group.footnote,
+            });
+            rightUnits += gUnits;
+            currentPool.shift();
+            continue; // 右列还有剩余空间，继续排下一个子表！
+          }
+
+          // 2. 右列无法完整容纳：果断进行分栏，充分填满右下，续表流向下一页左侧！
+          const fitRight = calcFitCount(group.items, rightAvail);
+          if (fitRight >= 1 && group.items.length - fitRight >= 1) {
+            const rightItems = group.items.slice(0, fitRight);
+            const restItems = group.items.slice(fitRight);
+
+            rightGroups.push({
+              title: group.isSplit
+                ? `${group.rawTitle} <span class="text-xs text-slate-400 font-normal ml-2">(${getSystemText('continued') || '续'})</span>`
+                : group.rawTitle,
+              isContinued: group.isSplit,
+              items: rightItems,
+              footnote: undefined,
+            });
+            rightUnits += getGroupUnits(rightItems);
+
+            // 续表顺延至下一页左侧继续！
+            currentPool[0] = { ...group, items: restItems, isSplit: true };
+            break; // 本页两列均已充分利用饱和，结束本页
+          } else {
+            // 右列空间已无法容纳哪怕 1 项，结束本页，转入下一页左列完整开始
+            break;
+          }
+        }
+      }
+
+      return {
+        pageData: { leftGroups, rightGroups },
+        remainingPool: currentPool,
+      };
+    };
+
+    let page1Data: SpecPageData = { leftGroups: [], rightGroups: [] };
+    const subsequentPages: SpecPageData[] = [];
+
+    // 1. 若整份规格表在 Page 1 能够 100% 完整容纳，排入 Page 1
+    if (canFitEntirelyOnPage1 && remainingGroups.length > 0) {
+      const res1 = distributeGroupsToPage(remainingGroups, PAGE_1_COL_CAPACITY);
+      page1Data = res1.pageData;
+      remainingGroups = res1.remainingPool;
+    }
+
+    // 2. 否则，所有规格子表统一从后续纯表格页开始排布，保持封面完整大气与表格零碎片
+    while (remainingGroups.length > 0) {
+      const res = distributeGroupsToPage(remainingGroups, SUBSEQUENT_COL_CAPACITY);
+      // 防止极端死循环兜底
+      if (res.pageData.leftGroups.length === 0 && res.pageData.rightGroups.length === 0) {
+        const g = remainingGroups.shift();
+        if (g) {
+          const half = Math.ceil(g.items.length / 2);
+          res.pageData.leftGroups.push({
+            title: g.rawTitle,
+            isContinued: g.isSplit,
+            items: g.items.slice(0, half),
+          });
+          res.pageData.rightGroups.push({
+            title: `${g.rawTitle} <span class="text-xs text-slate-400 font-normal ml-2">(${getSystemText('continued') || '续'})</span>`,
+            isContinued: true,
+            items: g.items.slice(half),
+            footnote: g.footnote,
+          });
+          subsequentPages.push(res.pageData);
+        }
+        continue;
+      }
+      subsequentPages.push(res.pageData);
+      remainingGroups = res.remainingPool;
+    }
+
+    const totalPages = canFitEntirelyOnPage1 && subsequentPages.length === 0 ? 1 : 1 + subsequentPages.length;
+
+    return { page1Data, subsequentPages, totalPages };
+  }, [groupedSpecs, advantages.length, product, locale]);
+
+  const specPages = specPagination.subsequentPages;
+  const totalPdfPages = specPagination.totalPages;
+
   const jsonLd = useMemo(() => {
     if (!product) return null;
     const productName = getProductText(product.nameTextId, product.nameText);
@@ -545,27 +1406,31 @@ export default function ProductClient({ product, initialLocale }: { product: any
             <div className="lg:col-span-5 flex flex-col space-y-10">
               <div className="space-y-4">
                 {categoryName && (
-                  <Badge variant="outline" className="bg-primary/5 border-primary/10 text-primary text-[10px] font-bold uppercase tracking-[0.2em] px-3 py-1 rounded-full">
-                    {categoryName}
-                  </Badge>
+                  <div className="flex items-center">
+                    <span className="inline-flex items-center justify-center h-6 px-3.5 rounded-full bg-primary/5 border border-primary/20 text-primary text-xs font-bold uppercase tracking-[0.18em] leading-none select-none">
+                      {categoryName}
+                    </span>
+                  </div>
                 )}
                 <h1 className="text-4xl font-headline font-bold leading-tight text-primary">{getProductText(product.nameTextId, product.nameText)}</h1>
               </div>
 
-              <div className="space-y-6">
-                <div className="flex items-center gap-2">
-                  <ShieldCheck className="h-5 w-5 text-primary" />
-                  <span className="text-xs font-bold uppercase tracking-[0.2em]">{getSystemText('core_advantages')}</span>
+              {advantages.length > 0 && (
+                <div className="space-y-6">
+                  <div className="flex items-center gap-2">
+                    <ShieldCheck className="h-5 w-5 text-primary shrink-0" />
+                    <span className="text-xs font-bold uppercase tracking-[0.2em] leading-none">{getSystemText('core_advantages')}</span>
+                  </div>
+                  <div className="grid grid-cols-1 gap-4">
+                    {advantages.map((adv: string, i: number) => (
+                      <div key={i} className="flex items-start gap-4 p-3 bg-muted/20 rounded-2xl border border-border/20">
+                        <Star className="h-5 w-5 shrink-0 text-primary fill-primary/10" />
+                        <span className="text-sm leading-5 text-muted-foreground font-medium whitespace-pre-wrap">{adv}</span>
+                      </div>
+                    ))}
+                  </div>
                 </div>
-                <div className="grid grid-cols-1 gap-4">
-                  {advantages.map((adv: string, i: number) => (
-                    <div key={i} className="flex items-start gap-4 p-3 bg-muted/20 rounded-2xl border border-border/20">
-                      <Star className="h-5 w-5 mt-0.5 shrink-0 text-primary fill-primary/10" />
-                      <span className="text-sm text-muted-foreground font-medium whitespace-pre-wrap">{adv}</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
+              )}
 
               <div className="flex flex-col sm:flex-row gap-4 pt-6 no-print">
                 <Button
@@ -577,7 +1442,19 @@ export default function ProductClient({ product, initialLocale }: { product: any
                 >
                   {getSystemText('product_contact_now')} <ArrowRight className="ml-2 h-5 w-5" />
                 </Button>
-                <Button onClick={() => window.print()} variant="outline" className="h-16 min-h-16 px-8 rounded-2xl"><Download className="mr-2 h-5 w-5" />{getSystemText('product_spec_sheet')}</Button>
+                <Button
+                  onClick={handleOpenSpecPreview}
+                  disabled={isExporting}
+                  variant="outline"
+                  className="h-16 min-h-16 px-8 rounded-2xl"
+                >
+                  {isExporting ? (
+                    <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+                  ) : (
+                    <Download className="mr-2 h-5 w-5" />
+                  )}
+                  {getSystemText('product_spec_sheet')}
+                </Button>
               </div>
 
               <div className="pt-8 border-t border-border/40 no-print">
@@ -788,121 +1665,53 @@ export default function ProductClient({ product, initialLocale }: { product: any
         </div>
       )}
 
-      {/* Dedicated Print-only layout */}
-      <div className="hidden print:block print-layout">
-        {/* Page 1 */}
-        <div className="print-page page-1 flex flex-col justify-between">
-          <div>
-            {/* Print Header */}
-            <div className="print-header flex items-center justify-between border-b-2 border-primary pb-3 mb-6">
-              {siteConfig?.logoStandard ? (
-                <img src={getAssetUrl(siteConfig.logoStandard)} alt="Logo" className="h-8 object-contain" />
-              ) : (
-                <span className="text-lg font-bold tracking-widest text-primary">HEOVOSE ELEVATE</span>
-              )}
-              <span className="text-xs text-muted-foreground font-bold uppercase tracking-wider">{getProductText(product.nameTextId, product.nameText)}</span>
-            </div>
+      {/* 离屏 PDF 规格书排版与渲染模块 */}
+      <ProductPdfLayout
+        ref={printLayoutRef}
+        isExporting={isExporting}
+        exportLogoUrl={exportLogoUrl}
+        siteConfig={siteConfig}
+        product={product}
+        categoryName={categoryName}
+        heroImageConfig={heroImageConfig}
+        advantages={advantages}
+        specPagination={specPagination}
+        parsedSpecs={parsedSpecs}
+        companyEmail={companyEmail}
+        getProductText={getProductText}
+        getSystemText={getSystemText}
+        getAssetUrl={getAssetUrl}
+      />
 
-            {/* Product Title on print */}
-            <div className="mb-6">
-              {categoryName && (
-                <span className="text-[10px] font-bold text-primary uppercase tracking-[0.2em]">{categoryName}</span>
-              )}
-              <h1 className="text-2xl font-bold text-slate-900 mt-1">{getProductText(product.nameTextId, product.nameText)}</h1>
-            </div>
+      {/* 沉浸式站内规格书预览模态窗 */}
+      <ProductSpecPreviewModal
+        isOpen={specPreviewData.isOpen}
+        onClose={() => setSpecPreviewData((prev) => ({ ...prev, isOpen: false }))}
+        pages={specPreviewData.pages}
+        productName={product ? getProductText(product.nameTextId, product.nameText) : ''}
+        isDownloadingPdf={isSaving}
+        onDownloadPdf={handleSaveSpec}
+        onShare={handleShareSpec}
+        getSystemText={getSystemText}
+      />
 
-            {/* Main Image */}
-            <div className="relative aspect-[16/10] max-w-[580px] mx-auto overflow-hidden mb-4">
-              <img src={getAssetUrl(product.mainImageUrl || '/image/product-placeholder.png')} alt="Product Main" className="w-full h-full object-cover rounded-xl" />
-            </div>
+      {/* 多渠道降级分享中心模态窗（适用于外部普通浏览器/桌面PC） */}
+      <ProductShareModal
+        isOpen={isFallbackModalOpen}
+        onClose={() => setIsFallbackModalOpen(false)}
+        productName={product ? getProductText(product.nameTextId, product.nameText) : ''}
+      />
 
-            {/* Gallery Images (other than mainImage, max 2 rows, max 12 images) */}
-            {product.galleryImageUrls && product.galleryImageUrls.filter((img: string) => img !== product.mainImageUrl && !isVideoUrl(img)).length > 0 && (
-              <div className="grid grid-cols-6 gap-2 mb-4">
-                {product.galleryImageUrls
-                  .filter((img: string) => img !== product.mainImageUrl && !isVideoUrl(img))
-                  .slice(0, 12) // Limit to 12 images (2 rows of 6)
-                  .map((img: string, idx: number) => (
-                    <div key={idx} className="relative aspect-[11/9] overflow-hidden rounded-lg">
-                      <img src={getAssetUrl(img)} alt={`Gallery ${idx}`} className="w-full h-full object-cover" />
-                    </div>
-                  ))}
-              </div>
-            )}
+      {/* 社交软件（微信/QQ/企业微信/钉钉/海外热门社交等）专属右上角直达引导蒙层 */}
+      <SocialShareGuideOverlay
+        isOpen={isSocialGuideOpen}
+        onClose={() => setIsSocialGuideOpen(false)}
+        socialAppName={currentSocialAppName}
+        productName={product ? getProductText(product.nameTextId, product.nameText) : ''}
+        shareUrl={typeof window !== 'undefined' ? window.location.href : ''}
+        locale={locale}
+      />
 
-            {/* Core Advantages */}
-            {advantages.length > 0 && (
-              <div className="space-y-3 mt-4">
-                <div className="flex items-center gap-2">
-                  <ShieldCheck className="h-4 w-4 text-primary" />
-                  <span className="text-xs font-bold uppercase tracking-[0.2em]">{getSystemText('core_advantages')}</span>
-                </div>
-                <div className="grid grid-cols-1 gap-1">
-                  {advantages.map((adv: string, i: number) => (
-                    <div key={i} className="flex items-start gap-3 py-1.5">
-                      <Star className="h-3.5 w-3.5 mt-0.5 shrink-0 text-primary fill-primary/10" />
-                      <span className="text-xs text-slate-600 font-medium whitespace-pre-wrap">{adv}</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-          </div>
-        </div>
-
-        {/* Page 2: Specifications */}
-        <div className="print-page page-2 page-break-before-always">
-          {/* Print Header */}
-          <div className="print-header flex items-center justify-between border-b-2 border-primary pb-3 mb-6">
-            {siteConfig?.logoStandard ? (
-              <img src={getAssetUrl(siteConfig.logoStandard)} alt="Logo" className="h-8 object-contain" />
-            ) : (
-              <span className="text-lg font-bold tracking-widest text-primary">HEOVOSE ELEVATE</span>
-            )}
-            <span className="text-xs text-muted-foreground font-bold uppercase tracking-wider">{getProductText(product.nameTextId, product.nameText)}</span>
-          </div>
-
-          <div className="space-y-6">
-            <h2 className="text-xl font-bold text-primary flex items-center gap-2">
-              {getSystemText('product_tab_specs')}
-            </h2>
-            <div className="space-y-6">
-              {groupedSpecs.map((group: any, gIdx: number) => (
-                <div key={gIdx} className="space-y-3">
-                  <h3 className="text-sm font-bold text-slate-800 border-l-4 border-primary pl-2" dangerouslySetInnerHTML={{ __html: group.title }} />
-                  <div className="border border-slate-200 rounded-xl overflow-hidden divide-y divide-slate-200 mx-[50px]">
-                    {group.items.map((item: any, iIdx: number) => (
-                      <div key={iIdx} className="flex justify-between p-3 bg-white text-xs gap-6">
-                        <span className="font-medium text-slate-500 shrink-0" dangerouslySetInnerHTML={{ __html: item.label }} />
-                        <span className="font-bold text-slate-900 text-right pl-6 whitespace-pre-wrap" dangerouslySetInnerHTML={{ __html: item.value }} />
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              ))}
-            </div>
-
-            {(parsedSpecs.orderedFootnotes.length > 0 || parsedSpecs.unorderedFootnotes.length > 0) && (
-              <div className="mt-8 pt-6 border-t border-slate-200 space-y-1.5 mx-[50px]">
-                <div className="space-y-1.5">
-                  {parsedSpecs.unorderedFootnotes.map((fn, idx) => (
-                    <p key={idx} className="text-[10px] text-slate-400 font-mono flex items-start gap-1.5 leading-relaxed">
-                      <span className="text-amber-500 font-bold shrink-0 select-none">{'*'.repeat(idx + 1)}</span>
-                      <span>{fn}</span>
-                    </p>
-                  ))}
-                  {parsedSpecs.orderedFootnotes.map((fn, idx) => (
-                    <p key={idx} className="text-[10px] text-slate-400 font-mono flex items-start gap-1.5 leading-relaxed">
-                      <span className="text-amber-500 font-bold shrink-0 select-none">[{idx + 1}]</span>
-                      <span>{fn}</span>
-                    </p>
-                  ))}
-                </div>
-              </div>
-            )}
-          </div>
-        </div>
-      </div>
     </main>
   );
 }

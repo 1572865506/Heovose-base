@@ -1708,7 +1708,7 @@ export default function GalleryPage() {
                             <Play className="h-6 w-6 fill-current ml-1" />
                           </div>
                         </div>
-                        {Boolean(asset.duration && asset.duration > 0) && (
+                        {typeof asset.duration === 'number' && asset.duration > 0 && (
                           <div className="absolute bottom-3 right-3 px-2 py-1 rounded-lg bg-black/70 text-[9px] font-black font-mono text-white/90 uppercase tracking-tighter shadow-lg z-10 pointer-events-none">
                             {Math.floor(asset.duration / 60)}:{(asset.duration % 60).toFixed(0).padStart(2, '0')}
                           </div>

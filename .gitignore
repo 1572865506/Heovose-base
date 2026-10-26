@@ -55,3 +55,6 @@ server.log
 # playwright
 /playwright-report/
 /test-results/
+
+# dev tunnel
+.tunnel/
