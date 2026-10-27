@@ -358,8 +358,12 @@ export function Footer({ locale }: { locale: Locale }) {
         <div className="mt-16 pt-8 border-t border-white/5 flex flex-col md:flex-row justify-between items-center gap-6 opacity-50 text-[12px] uppercase tracking-[0.02em]">
           <p>© {new Date().getFullYear()} {companyName}. {tr('footer_copyright_suffix')}</p>
           <div className="flex gap-8">
-            <span className="hover:text-white cursor-pointer transition-colors">{tr('footer_privacy')}</span>
-            <span className="hover:text-white cursor-pointer transition-colors">{tr('footer_terms')}</span>
+            <a href={getLocalizedLink('/privacy', locale)} className="hover:text-white cursor-pointer transition-colors">
+              {tr('footer_privacy') || (locale === 'zh' ? '隐私政策' : 'Privacy Policy')}
+            </a>
+            <a href={getLocalizedLink('/privacy#scopes-and-consents', locale)} className="hover:text-white cursor-pointer transition-colors">
+              {tr('footer_terms') || (locale === 'zh' ? '授权条款' : 'Terms of Consent')}
+            </a>
           </div>
         </div>
       </div>

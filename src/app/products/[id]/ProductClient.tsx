@@ -743,7 +743,14 @@ export default function ProductClient({ product, initialLocale }: { product: any
   };
 
   const companyEmail = tr('COMPANY_EMAIL') || 'sales@heovose.com';
-  const companyPhone = tr('COMPANY_PHONE') || '+86 0755 1234';
+  const companyPhone = tr('COMPANY_PHONE');
+  const companyName = tr('COMPANY_NAME') || siteConfig?.companyName || tr('SITE_TITLE') || 'Heovose Technology';
+  const companyWebsite = siteConfig?.primaryDomain 
+    ? siteConfig.primaryDomain.replace(/^https?:\/\//i, '').replace(/\/$/, '')
+    : (typeof window !== 'undefined' ? window.location.host : 'www.heovose.com');
+  const companyContact = companyPhone && companyPhone !== companyEmail
+    ? `${companyEmail} / ${companyPhone}`
+    : companyEmail;
 
   // 动态将该产品及其分类和规格的翻译按需注入全局缓存
   useEffect(() => {
@@ -1003,9 +1010,9 @@ export default function ProductClient({ product, initialLocale }: { product: any
     const hasAdvantages = advantages.length > 0;
     const hasGallery = product?.galleryImageUrls && product.galleryImageUrls.filter((img: string) => img !== product.mainImageUrl && !isVideoUrl(img)).length > 0;
 
-    // 单列单位充盈安全容量：在 1123px A4 画幅与 pb 7px 下，31.8 物理单位（约 850px）使表格底端更靠下。
-    // 右栏距底部页脚精准保留约 60px~65px 紧凑呼吸带，且页脚已被绝对锚定在画幅底边，彻底杜绝页脚被挤出页面。
-    const SUBSEQUENT_COL_CAPACITY = 31.8;
+    // 单列单位充盈安全容量：下调至 31.2（以 26.4px 基准行高计算，增加约 15.8px 底端呼吸安全空间）
+    // 确保右栏内容底端与绝对定位页脚之间留有绝对充裕的留白，杜绝遮挡表格
+    const SUBSEQUENT_COL_CAPACITY = 31.2;
     // 无优势时 Page 1 安全容量：有画廊 9 行/列，无画廊 13 行/列
     const PAGE_1_COL_CAPACITY = hasAdvantages ? 0 : (hasGallery ? 9 : 13);
 
@@ -1678,6 +1685,9 @@ export default function ProductClient({ product, initialLocale }: { product: any
         specPagination={specPagination}
         parsedSpecs={parsedSpecs}
         companyEmail={companyEmail}
+        companyName={companyName}
+        companyWebsite={companyWebsite}
+        companyContact={companyContact}
         getProductText={getProductText}
         getSystemText={getSystemText}
         getAssetUrl={getAssetUrl}

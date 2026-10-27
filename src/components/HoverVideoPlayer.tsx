@@ -209,6 +209,10 @@ export function HoverVideoPlayer({
 
     setHasBeenHovered(true);
     setIsPlaying(true);
+    // 关键优化：一旦用户 hover 立即通知轮播图锁定当前卡片，绝不等视频网络请求完成，防止加载中被轮播切走
+    if (videoUrl) {
+      onPlayStateChange?.(true);
+    }
   };
 
   const handleMouseLeave = () => {
@@ -223,8 +227,9 @@ export function HoverVideoPlayer({
     leaveTimerRef.current = setTimeout(() => {
       setIsPlaying(false);
       setHoveringProgress(false);
+      onPlayStateChange?.(false);
       leaveTimerRef.current = null;
-    }, 50);
+    }, 150);
   };
 
   // 进度条的进度调节
@@ -355,6 +360,7 @@ export function HoverVideoPlayer({
               setHasBeenHovered(true);
             }
             setIsPlaying(nextPlaying);
+            onPlayStateChange?.(nextPlaying);
           }}
           className={cn(
             "absolute top-3 right-3 h-8 w-8 rounded-full backdrop-blur-md flex items-center justify-center text-white border shadow-lg transition-all duration-300 active:scale-90 z-20",

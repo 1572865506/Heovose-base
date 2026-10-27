@@ -45,6 +45,9 @@ export interface ProductPdfLayoutProps {
     unorderedFootnotes: string[];
   };
   companyEmail?: string;
+  companyName?: string;
+  companyWebsite?: string;
+  companyContact?: string;
   getProductText: (id?: any, fallback?: any) => string;
   getSystemText: (key: string) => string;
   getAssetUrl: (url: string | null | undefined) => string;
@@ -63,6 +66,9 @@ export const ProductPdfLayout = forwardRef<HTMLDivElement, ProductPdfLayoutProps
       specPagination,
       parsedSpecs,
       companyEmail,
+      companyName,
+      companyWebsite,
+      companyContact,
       getProductText,
       getSystemText,
       getAssetUrl,
@@ -72,6 +78,8 @@ export const ProductPdfLayout = forwardRef<HTMLDivElement, ProductPdfLayoutProps
     const specPages = specPagination.subsequentPages;
     const totalPdfPages = specPagination.totalPages;
 
+    const mainImgUrl = getAssetUrl(product?.mainImageUrl || '/image/product-placeholder.png');
+
     // 动态提取全部有效画廊图片（排除主图与视频文件，绝不遗漏用户上传的任何图片）
     const validGalleryImages = useMemo(() => {
       if (!product?.galleryImageUrls || !Array.isArray(product.galleryImageUrls)) return [];
@@ -80,57 +88,25 @@ export const ProductPdfLayout = forwardRef<HTMLDivElement, ProductPdfLayoutProps
       );
     }, [product?.galleryImageUrls, product?.mainImageUrl]);
 
-    // 根据画廊缩略图真实数量自适应计算网格与尺寸，确保所有图片完整呈现且与大图完美等宽
-    const thumbLayout = useMemo(() => {
-      const count = validGalleryImages.length;
-      if (count === 0) return null;
+    const galleryCount = validGalleryImages.length;
 
-      const containerW = heroImageConfig.mainWidth;
-      // 5 张及以下：单行，标准间距 8px
-      if (count <= 5) {
-        const gap = 8;
-        const width = Math.min(
-          heroImageConfig.thumbWidth,
-          Math.floor((containerW - (count - 1) * gap) / count)
-        );
-        const height = Math.round((width * 9) / 11);
-        return {
-          gap,
-          width,
-          height,
-          imgMaxW: width - 8,
-          imgMaxH: height - 8,
-          wrap: false,
-        };
+    // 依据核心优势条目数及是否有下方缩略图，智能分配图片展示区域基准高度，最大化呈现产品细节：
+    const heroHeight = useMemo(() => {
+      const advCount = advantages.length;
+      const hasBottomGallery = validGalleryImages.length >= 4;
+
+      if (advCount === 0) {
+        return hasBottomGallery ? 340 : 440;
       }
-      // 6~7 张：单行自适应紧凑网格（如 7 张时为 64px 宽），间距 6px，完整铺满大图总宽度
-      if (count <= 7) {
-        const gap = 6;
-        const width = Math.floor((containerW - (count - 1) * gap) / count);
-        const height = Math.round((width * 9) / 11);
-        return {
-          gap,
-          width,
-          height,
-          imgMaxW: width - 6,
-          imgMaxH: height - 6,
-          wrap: false,
-        };
+      if (advCount <= 2) {
+        return hasBottomGallery ? 320 : 400;
       }
-      // 8 张及以上：双行或多行弹性换行排布，每行最多 6 张，自动折行居中
-      const cols = Math.min(count, 6);
-      const gap = 6;
-      const width = Math.floor((containerW - (cols - 1) * gap) / cols);
-      const height = Math.round((width * 9) / 11);
-      return {
-        gap,
-        width,
-        height,
-        imgMaxW: width - 6,
-        imgMaxH: height - 6,
-        wrap: true,
-      };
-    }, [validGalleryImages.length, heroImageConfig]);
+      if (advCount <= 4) {
+        return hasBottomGallery ? 290 : 360;
+      }
+      // 5 条及以上核心优势
+      return hasBottomGallery ? 260 : 310;
+    }, [advantages.length, validGalleryImages.length]);
 
     // 极简横线子表渲染器（类似苹果/特斯拉技术规格书风格：纯正顶格对齐，紧凑列宽消除过大间距，极简细横线）
     const renderSubTable = (group: any, key: string) => {
@@ -261,7 +237,7 @@ export const ProductPdfLayout = forwardRef<HTMLDivElement, ProductPdfLayoutProps
             fontFamily: '"PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "WenQuanYi Micro Hei", "Noto Sans SC", "Noto Sans CJK SC", -apple-system, sans-serif',
           }}
         >
-          <div style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
+          <div style={{ flex: 1, display: 'flex', flexDirection: 'column', position: 'relative', zIndex: 1 }}>
             {/* Header: 优雅的品牌主色横线，高度自适应，文字留足呼吸感，杜绝下半部裁切 */}
             <div
               className="flex items-center justify-between border-b-2 border-primary pb-3 mb-5"
@@ -303,8 +279,8 @@ export const ProductPdfLayout = forwardRef<HTMLDivElement, ProductPdfLayoutProps
               </div>
             </div>
 
-            {/* 产品分类与标题：分类胶囊由内边距自然居中，彻底消除固定高度与负偏移造成的贴底问题 */}
-            <div className="space-y-1.5 mb-5">
+            {/* 产品分类与标题 */}
+            <div className="space-y-1.5 mb-4">
               {categoryName && (
                 <div style={{ display: 'flex', alignItems: 'center' }}>
                   <div
@@ -329,84 +305,410 @@ export const ProductPdfLayout = forwardRef<HTMLDivElement, ProductPdfLayoutProps
               </h1>
             </div>
 
-            {/* 主图区：严格遵循 11:9 黄金画幅，根据优势数量弹性压缩纵向高度，绝不拉伸挤压 */}
-            <div
-              className="rounded-2xl bg-muted/5 border border-slate-200/60 shadow-sm relative overflow-hidden"
-              style={{
-                width: `${heroImageConfig.mainWidth}px`,
-                height: `${heroImageConfig.mainHeight}px`,
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                margin: '0 auto 10px auto',
-                boxSizing: 'border-box',
-                backgroundColor: '#ffffff',
-              }}
-            >
-              <img
-                src={getAssetUrl(product?.mainImageUrl || '/image/product-placeholder.png')}
-                alt={getProductText(product?.nameTextId, product?.nameText)}
-                style={{
-                  maxWidth: `${heroImageConfig.imgMaxW}px`,
-                  maxHeight: `${heroImageConfig.imgMaxH}px`,
-                  width: 'auto',
-                  height: 'auto',
-                  objectFit: 'contain',
-                  display: 'block',
-                  margin: 'auto',
-                }}
-                crossOrigin="anonymous"
-              />
-            </div>
-
-            {/* 封面精选画廊缩略图：完整展示所有有效画廊图片，自适应锁定 11:9 黄金画幅 */}
-            {validGalleryImages.length > 0 && thumbLayout && (
-              <div
-                className="flex items-center justify-center"
-                style={{
-                  width: `${heroImageConfig.mainWidth}px`,
-                  margin: '0 auto 10px auto',
-                  display: 'flex',
-                  flexDirection: 'row',
-                  flexWrap: thumbLayout.wrap ? 'wrap' : 'nowrap',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  gap: `${thumbLayout.gap}px`,
-                  boxSizing: 'border-box',
-                }}
-              >
-                {validGalleryImages.map((img: string, idx: number) => (
+            {/* 产品多图自适应排版引擎：充分利用 706px 可用宽度，消除多余边距，所有卡片严格锁定 11:9 黄金画幅 */}
+            {(() => {
+              // 1 张图（无副图）：单主图卡片在 11:9 画幅下最大化呈现，大幅扩充尺寸填满宽度，产品细节巨幅清晰
+              if (galleryCount === 0) {
+                const singleW = 706;
+                const singleH = Math.round((singleW * 9) / 11);
+                return (
                   <div
-                    key={idx}
-                    className="rounded-xl border border-slate-200/70 overflow-hidden shrink-0 shadow-2xs"
+                    className="rounded-2xl bg-white border border-slate-200/70 shadow-2xs overflow-hidden"
                     style={{
-                      width: `${thumbLayout.width}px`,
-                      height: `${thumbLayout.height}px`,
+                      width: `${singleW}px`,
+                      height: `${singleH}px`,
+                      aspectRatio: '11 / 9',
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'center',
+                      margin: '0 auto 12px auto',
                       boxSizing: 'border-box',
-                      backgroundColor: '#ffffff',
                     }}
                   >
                     <img
-                      src={getAssetUrl(img)}
-                      alt={`Gallery ${idx}`}
+                      src={mainImgUrl}
+                      alt={getProductText(product?.nameTextId, product?.nameText)}
                       style={{
-                        maxWidth: `${thumbLayout.imgMaxW}px`,
-                        maxHeight: `${thumbLayout.imgMaxH}px`,
-                        width: 'auto',
-                        height: 'auto',
+                        width: '100%',
+                        height: '100%',
                         objectFit: 'contain',
                         display: 'block',
-                        margin: 'auto',
                       }}
                       crossOrigin="anonymous"
                     />
                   </div>
-                ))}
-              </div>
-            )}
+                );
+              }
+
+              // 2 张图（主图 + 1 张副图）：
+              // 左右布局 100% 撑满 706px 可视宽（主图 467px + 间距 10px + 副图 229px = 706px）！
+              // 主图居左（严格 11:9），右侧上方为 11:9 副图卡片，下方自然空出距离，两边绝无大片多余空白
+              if (galleryCount === 1) {
+                const mainH = 382;
+                const mainW = Math.round((mainH * 11) / 9); // 467px
+                const subH = Math.round((mainH - 8) / 2); // 187px
+                const subW = Math.round((subH * 11) / 9); // 229px
+                const blockW = 706;
+
+                return (
+                  <div
+                    style={{
+                      width: `${blockW}px`,
+                      height: `${mainH}px`,
+                      display: 'flex',
+                      flexDirection: 'row',
+                      gap: '10px',
+                      margin: '0 auto 12px auto',
+                      boxSizing: 'border-box',
+                    }}
+                  >
+                    {/* 主图：严格 11:9 */}
+                    <div
+                      className="rounded-2xl bg-white border border-slate-200/70 shadow-2xs overflow-hidden"
+                      style={{
+                        width: `${mainW}px`,
+                        height: `${mainH}px`,
+                        aspectRatio: '11 / 9',
+                        flexShrink: 0,
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        boxSizing: 'border-box',
+                      }}
+                    >
+                      <img
+                        src={mainImgUrl}
+                        alt="Main"
+                        style={{ width: '100%', height: '100%', objectFit: 'contain', display: 'block' }}
+                        crossOrigin="anonymous"
+                      />
+                    </div>
+                    {/* 右侧：副图卡片严格 11:9，位于右侧上方，下方自然空出距离 */}
+                    <div
+                      style={{
+                        width: `${subW}px`,
+                        height: `${mainH}px`,
+                        display: 'flex',
+                        flexDirection: 'column',
+                        justifyContent: 'flex-start',
+                        gap: '8px',
+                        boxSizing: 'border-box',
+                      }}
+                    >
+                      <div
+                        className="rounded-xl bg-white border border-slate-200/70 shadow-2xs overflow-hidden"
+                        style={{
+                          width: `${subW}px`,
+                          height: `${subH}px`,
+                          aspectRatio: '11 / 9',
+                          flexShrink: 0,
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          boxSizing: 'border-box',
+                        }}
+                      >
+                        <img
+                          src={getAssetUrl(validGalleryImages[0])}
+                          alt="Gallery 1"
+                          style={{ width: '100%', height: '100%', objectFit: 'contain', display: 'block' }}
+                          crossOrigin="anonymous"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                );
+              }
+
+              // 3 张图（主图 + 2 张副图）：
+              // 100% 充满 706px 宽度（467px + 10px + 229px = 706px）！
+              // 主图居左（严格 11:9），右侧上下垂直排列 2 张副图（各严格 11:9，等高对齐）
+              if (galleryCount === 2) {
+                const mainH = 382;
+                const mainW = Math.round((mainH * 11) / 9); // 467px
+                const subH = Math.round((mainH - 8) / 2); // 187px
+                const subW = Math.round((subH * 11) / 9); // 229px
+                const blockW = 706;
+
+                return (
+                  <div
+                    style={{
+                      width: `${blockW}px`,
+                      height: `${mainH}px`,
+                      display: 'flex',
+                      flexDirection: 'row',
+                      gap: '10px',
+                      margin: '0 auto 12px auto',
+                      boxSizing: 'border-box',
+                    }}
+                  >
+                    {/* 主图：严格 11:9 */}
+                    <div
+                      className="rounded-2xl bg-white border border-slate-200/70 shadow-2xs overflow-hidden"
+                      style={{
+                        width: `${mainW}px`,
+                        height: `${mainH}px`,
+                        aspectRatio: '11 / 9',
+                        flexShrink: 0,
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        boxSizing: 'border-box',
+                      }}
+                    >
+                      <img
+                        src={mainImgUrl}
+                        alt="Main"
+                        style={{ width: '100%', height: '100%', objectFit: 'contain', display: 'block' }}
+                        crossOrigin="anonymous"
+                      />
+                    </div>
+                    {/* 右侧上下垂直 2 张副图：全部严格 11:9 */}
+                    <div
+                      style={{
+                        width: `${subW}px`,
+                        height: `${mainH}px`,
+                        display: 'flex',
+                        flexDirection: 'column',
+                        justifyContent: 'space-between',
+                        gap: '8px',
+                        boxSizing: 'border-box',
+                      }}
+                    >
+                      {validGalleryImages.map((img: string, idx: number) => (
+                        <div
+                          key={idx}
+                          className="rounded-xl bg-white border border-slate-200/70 shadow-2xs overflow-hidden"
+                          style={{
+                            width: `${subW}px`,
+                            height: `${subH}px`,
+                            aspectRatio: '11 / 9',
+                            flexShrink: 0,
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            boxSizing: 'border-box',
+                          }}
+                        >
+                          <img
+                            src={getAssetUrl(img)}
+                            alt={`Gallery ${idx}`}
+                            style={{ width: '100%', height: '100%', objectFit: 'contain', display: 'block' }}
+                            crossOrigin="anonymous"
+                          />
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                );
+              }
+
+              // 4 张图（主图 + 3 张副图）：
+              // 100% 充满 706px 宽度（主图 523px + 间距 13px + 副图 170px = 706px）！
+              // 主图居左（严格 11:9），右侧上下垂直排列 3 张副图（每张副图容器严格 11:9）
+              if (galleryCount === 3) {
+                const mainH = 428;
+                const mainW = Math.round((mainH * 11) / 9); // 523px
+                const subH = Math.round((mainH - 12) / 3); // 139px
+                const subW = Math.round((subH * 11) / 9); // 170px
+                const blockW = 706;
+
+                return (
+                  <div
+                    style={{
+                      width: `${blockW}px`,
+                      height: `${mainH}px`,
+                      display: 'flex',
+                      flexDirection: 'row',
+                      gap: '13px',
+                      margin: '0 auto 12px auto',
+                      boxSizing: 'border-box',
+                    }}
+                  >
+                    {/* 主图：严格 11:9 */}
+                    <div
+                      className="rounded-2xl bg-white border border-slate-200/70 shadow-2xs overflow-hidden"
+                      style={{
+                        width: `${mainW}px`,
+                        height: `${mainH}px`,
+                        aspectRatio: '11 / 9',
+                        flexShrink: 0,
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        boxSizing: 'border-box',
+                      }}
+                    >
+                      <img
+                        src={mainImgUrl}
+                        alt="Main"
+                        style={{ width: '100%', height: '100%', objectFit: 'contain', display: 'block' }}
+                        crossOrigin="anonymous"
+                      />
+                    </div>
+                    {/* 右侧上下垂直 3 张副图：全部严格 11:9 */}
+                    <div
+                      style={{
+                        width: `${subW}px`,
+                        height: `${mainH}px`,
+                        display: 'flex',
+                        flexDirection: 'column',
+                        justifyContent: 'space-between',
+                        gap: '6px',
+                        boxSizing: 'border-box',
+                      }}
+                    >
+                      {validGalleryImages.map((img: string, idx: number) => (
+                        <div
+                          key={idx}
+                          className="rounded-xl bg-white border border-slate-200/70 shadow-2xs overflow-hidden"
+                          style={{
+                            width: `${subW}px`,
+                            height: `${subH}px`,
+                            aspectRatio: '11 / 9',
+                            flexShrink: 0,
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            boxSizing: 'border-box',
+                          }}
+                        >
+                          <img
+                            src={getAssetUrl(img)}
+                            alt={`Gallery ${idx}`}
+                            style={{ width: '100%', height: '100%', objectFit: 'contain', display: 'block' }}
+                            crossOrigin="anonymous"
+                          />
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                );
+              }
+
+              // 5~11 张图（副图 4~10 张，系统上限最多 10 张副图）：
+              // 上半部：主图与右侧 2 张大副图进一步放大，100% 占满 706px 页面可用宽（大图宽 467px、高 382px，右侧小图宽 229px、高 187px，总宽 706px，彻底消除两边空隙）
+              // 下半部：剩余副图（最多 8 张）在 706px 页面可用总宽上整齐铺满，缩略图高度达 68px~115px，细节大幅清晰，每个卡片严格 11:9
+              const rightImages = validGalleryImages.slice(0, 2);
+              const bottomImages = validGalleryImages.slice(2);
+              const nBot = bottomImages.length;
+
+              // 上半部分高度与宽度计算（严格锁定 11:9 黄金画幅，满宽 706px 铺展）
+              const topH = 382;
+              const topMainW = Math.round((topH * 11) / 9); // 467px
+              const topSubH = Math.round((topH - 8) / 2); // 187px
+              const topSubW = Math.round((topSubH * 11) / 9); // 229px
+              const topBlockW = 706;
+
+              // 下半部缩略图自适应尺寸计算：充分铺满 706px 宽度，两端对齐，彻底消除两边空余，大幅放大缩略图画幅
+              const botGap = nBot > 6 ? 6 : 8;
+              const botCardW = Math.min(
+                Math.floor((706 - (nBot - 1) * botGap) / nBot),
+                140
+              );
+              const botCardH = Math.round((botCardW * 9) / 11);
+              const botRowW = nBot * botCardW + (nBot - 1) * botGap;
+
+              return (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', margin: '0 auto 12px auto', width: '100%', alignItems: 'center' }}>
+                  {/* 上半部：主图与右侧 2 张副图（全为 11:9，满宽 706px） */}
+                  <div style={{ width: `${topBlockW}px`, height: `${topH}px`, display: 'flex', flexDirection: 'row', gap: '10px' }}>
+                    <div
+                      className="rounded-2xl bg-white border border-slate-200/70 shadow-2xs overflow-hidden"
+                      style={{
+                        width: `${topMainW}px`,
+                        height: `${topH}px`,
+                        aspectRatio: '11 / 9',
+                        flexShrink: 0,
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        boxSizing: 'border-box',
+                      }}
+                    >
+                      <img
+                        src={mainImgUrl}
+                        alt="Main"
+                        style={{ width: '100%', height: '100%', objectFit: 'contain', display: 'block' }}
+                        crossOrigin="anonymous"
+                      />
+                    </div>
+                    <div
+                      style={{
+                        width: `${topSubW}px`,
+                        height: `${topH}px`,
+                        display: 'flex',
+                        flexDirection: 'column',
+                        justifyContent: 'space-between',
+                        gap: '8px',
+                        boxSizing: 'border-box',
+                      }}
+                    >
+                      {rightImages.map((img: string, idx: number) => (
+                        <div
+                          key={idx}
+                          className="rounded-xl bg-white border border-slate-200/70 shadow-2xs overflow-hidden"
+                          style={{
+                            width: `${topSubW}px`,
+                            height: `${topSubH}px`,
+                            aspectRatio: '11 / 9',
+                            flexShrink: 0,
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            boxSizing: 'border-box',
+                          }}
+                        >
+                          <img
+                            src={getAssetUrl(img)}
+                            alt={`Gallery right ${idx}`}
+                            style={{ width: '100%', height: '100%', objectFit: 'contain', display: 'block' }}
+                            crossOrigin="anonymous"
+                          />
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* 下半部：剩余副图整齐铺满可用宽度，每个缩略卡片均严格保持 11:9 比例，画幅充盈细节清晰 */}
+                  <div
+                    style={{
+                      width: `${botRowW}px`,
+                      height: `${botCardH}px`,
+                      display: 'flex',
+                      flexDirection: 'row',
+                      gap: `${botGap}px`,
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                    }}
+                  >
+                    {bottomImages.map((img: string, idx: number) => (
+                      <div
+                        key={idx}
+                        className="rounded-xl bg-white border border-slate-200/70 shadow-2xs overflow-hidden"
+                        style={{
+                          width: `${botCardW}px`,
+                          height: `${botCardH}px`,
+                          aspectRatio: '11 / 9',
+                          flexShrink: 0,
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          boxSizing: 'border-box',
+                        }}
+                      >
+                        <img
+                          src={getAssetUrl(img)}
+                          alt={`Gallery bottom ${idx}`}
+                          style={{ width: '100%', height: '100%', objectFit: 'contain', display: 'block' }}
+                          crossOrigin="anonymous"
+                        />
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              );
+            })()}
 
             {/* 核心优势：全部完整展示，条目多时自动双列排布，牢牢锁定在第一页 */}
             {advantages.length > 0 && (
@@ -545,7 +847,9 @@ export const ProductPdfLayout = forwardRef<HTMLDivElement, ProductPdfLayoutProps
               backgroundColor: '#ffffff',
             }}
           >
-            <span className="tracking-wide">HEOVOSE ELEVATE &bull; {companyEmail || 'sales@heovose.com'}</span>
+            <span className="tracking-wide">
+              {companyName || 'Heovose Technology'} &bull; {companyWebsite || 'www.heovose.com'}
+            </span>
             <span className="font-mono font-bold text-slate-500">1 / {totalPdfPages}</span>
           </div>
         </div>
@@ -574,7 +878,7 @@ export const ProductPdfLayout = forwardRef<HTMLDivElement, ProductPdfLayoutProps
                 fontFamily: '"PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "WenQuanYi Micro Hei", "Noto Sans SC", "Noto Sans CJK SC", -apple-system, sans-serif',
               }}
             >
-              <div style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
+              <div style={{ flex: 1, display: 'flex', flexDirection: 'column', position: 'relative', zIndex: 1 }}>
                 {/* Header */}
                 <div
                   className="flex items-center justify-between border-b-2 border-primary pb-3 mb-5"
@@ -674,13 +978,13 @@ export const ProductPdfLayout = forwardRef<HTMLDivElement, ProductPdfLayoutProps
 
                 {isLastSpecPage && (parsedSpecs.orderedFootnotes.length > 0 || parsedSpecs.unorderedFootnotes.length > 0) && (
                   <div className="mt-6 pt-4 border-t border-slate-200/80 space-y-1.5">
-                    {parsedSpecs.unorderedFootnotes.map((fn, idx) => (
+                    {parsedSpecs.unorderedFootnotes.map((fn: string, idx: number) => (
                       <p key={idx} className="text-xs text-slate-400 font-mono flex items-start gap-2 leading-relaxed">
                         <span className="text-amber-500 font-bold shrink-0 select-none">{'*'.repeat(idx + 1)}</span>
                         <span>{fn}</span>
                       </p>
                     ))}
-                    {parsedSpecs.orderedFootnotes.map((fn, idx) => (
+                    {parsedSpecs.orderedFootnotes.map((fn: string, idx: number) => (
                       <p key={idx} className="text-xs text-slate-400 font-mono flex items-start gap-2 leading-relaxed">
                         <span className="text-amber-500 font-bold shrink-0 select-none">[{idx + 1}]</span>
                         <span>{fn}</span>
@@ -706,7 +1010,9 @@ export const ProductPdfLayout = forwardRef<HTMLDivElement, ProductPdfLayoutProps
                   backgroundColor: '#ffffff',
                 }}
               >
-                <span className="tracking-wide">HEOVOSE ELEVATE &bull; {companyEmail || 'sales@heovose.com'}</span>
+                <span className="tracking-wide">
+                  {companyName || 'Heovose Technology'} &bull; {companyWebsite || 'www.heovose.com'}
+                </span>
                 <span className="font-mono font-bold text-slate-500">{currentPrintPage} / {totalPdfPages}</span>
               </div>
             </div>

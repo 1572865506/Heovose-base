@@ -339,6 +339,7 @@ export function ProductGallery({ locale }: { locale: Locale }) {
   }, [api]);
 
   const [isVisible, setIsVisible] = useState(false);
+  const [isHovered, setIsHovered] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
 
   // 性能优化：观察可见性
@@ -350,16 +351,23 @@ export function ProductGallery({ locale }: { locale: Locale }) {
     return () => observer.disconnect();
   }, []);
 
+  // 综合判定轮播是否应该暂停：
+  // 1. 用户主动暂停播放 (!isPlaying)
+  // 2. 轮播图尚未进入视口 (!isVisible)
+  // 3. 用户鼠标悬停在轮播区域/卡片上 (isHovered)
+  // 4. 用户正在交互/准备播放/正在观看某个卡片的视频 (playingProductId !== null)
+  const isAutoplayPaused = !isPlaying || !isVisible || isHovered || playingProductId !== null;
+
   // CUSTOM TIMER: Manages slide switching
   useEffect(() => {
-    if (!api || !isVisible || !isPlaying || playingProductId !== null) return;
+    if (!api || isAutoplayPaused) return;
 
     const timer = setInterval(() => {
       api.scrollNext();
     }, AUTOPLAY_DELAY);
 
     return () => clearInterval(timer);
-  }, [api, isVisible, isPlaying, playingProductId, current]);
+  }, [api, isAutoplayPaused, current]);
 
   const toggleAutoplay = useCallback(() => {
     setIsPlaying(prev => !prev);
@@ -375,7 +383,11 @@ export function ProductGallery({ locale }: { locale: Locale }) {
         />
       </div>
 
-      <div className="relative px-4 md:px-12 lg:px-24 overflow-hidden md:overflow-visible">
+      <div 
+        className="relative px-4 md:px-12 lg:px-24 overflow-hidden md:overflow-visible"
+        onMouseEnter={() => setIsHovered(true)}
+        onMouseLeave={() => setIsHovered(false)}
+      >
         <Carousel
           setApi={setApi}
           opts={{
@@ -424,7 +436,7 @@ export function ProductGallery({ locale }: { locale: Locale }) {
                       className="absolute inset-0 bg-primary origin-left"
                       style={{
                         animation: 'hero-progress-gpu 5000ms linear forwards',
-                        animationPlayState: isPlaying ? 'running' : 'paused'
+                        animationPlayState: isAutoplayPaused ? 'paused' : 'running'
                       }}
                     />
                   )}
