@@ -58,3 +58,7 @@ server.log
 
 # dev tunnel
 .tunnel/
+
+# local dev certs
+.certs/
+

@@ -433,8 +433,8 @@ export default function ProductClient({ product, initialLocale }: { product: any
     const shareText = `${rawTitle} - Technical Specification`;
     const device = getDeviceContext();
 
-    // 核心优化 1：若在封闭式国内社交软件内置浏览器（微信、QQ、企业微信、钉钉等）：
-    // 这些平台禁用了外部系统的 Web Share API，自动复制链接并直接拉起右上角【···】直达指引蒙层
+    // 1. 若在封闭式国内社交软件内置浏览器（微信、企业微信、QQ内置、钉钉等）：
+    // 这些平台底层禁用了 Web Share API，自动复制链接并直接拉起右上角【···】直达指引蒙层
     if (device.isDomesticSocial) {
       setCurrentSocialAppName(device.socialAppName);
       await copyToClipboard(currentUrl);
@@ -455,75 +455,68 @@ export default function ProductClient({ product, initialLocale }: { product: any
       return;
     }
 
-    // 核心优化 2：若在海外热门社交内置浏览器（WhatsApp, Telegram, Twitter, Facebook, Instagram, LINE 等）
-    // 海外应用大多基于 Chrome Custom Tabs 或 Safari View Controller，通常支持原生系统分享！
-    // 优先尝试调起系统级原生分享面板（Native OS Share Sheet，可直接选择 WhatsApp 对话、Telegram 好友等）
-    if (device.isOverseasSocial && typeof navigator !== 'undefined' && typeof (navigator as any).share === 'function') {
-      try {
-        await (navigator as any).share({
-          title: rawTitle,
-          text: shareText,
-          url: currentUrl,
-        });
-        setIsSharing(false);
-        return; // 海外内置浏览器原生分享调起成功！
-      } catch (overseasShareErr: any) {
-        if (overseasShareErr?.name === 'AbortError') {
-          setIsSharing(false);
-          return; // 用户主动取消
-        }
-        // 若某些海外应用（如部分 Instagram/Facebook 内核）禁用了 navigator.share，则进入专属右上角蒙层引导
-        setCurrentSocialAppName(device.socialAppName);
-        await copyToClipboard(currentUrl);
-        setIsSocialGuideOpen(true);
-        setIsSharing(false);
-        return;
-      }
-    }
-
-    // 核心优化 3（外部普通浏览器）：首选调用支持原生文件传输的 Web Share API（如 iOS Safari ≥15）
-    const canShareFiles = device.safariVersion >= 15 && typeof navigator !== 'undefined' && (navigator as any).canShare && specPreviewData.pdfFile;
-    if (canShareFiles) {
-      try {
-        const isFileSupported = (navigator as any).canShare({ files: [specPreviewData.pdfFile] });
-        if (isFileSupported) {
-          await (navigator as any).share({
-            files: [specPreviewData.pdfFile],
-            title: rawTitle,
-            text: shareText,
-          });
-          setIsSharing(false);
-          return; // 现代终端原生文件分享唤起成功
-        }
-      } catch (fileShareErr: any) {
-        if (fileShareErr?.name === 'AbortError') {
-          setIsSharing(false);
-          return; // 用户主动取消系统分享
-        }
-        console.warn('Native file share failed, proceeding to link share:', fileShareErr);
-      }
-    }
-
-    // 核心优化 4（外部普通移动端浏览器）：若无法直接传文件（如大部分安卓浏览器），尝试唤起系统底层原生分享面板
+    // 2. 外部普通浏览器 / 现代移动端浏览器（包括 Android、HarmonyOS、iOS 等）：
+    // 关键规范：
+    // a. 绝不在同一个点击事件中多次调用 navigator.share（第一次若失败，用户手势立即被浏览器消耗，第二次必报 NotAllowedError）！
+    // b. 必须先通过同步的 navigator.canShare() 预检当前设备支持的数据格式，然后再发起一次且仅一次 navigator.share！
+    // c. 在 Android / 鸿蒙上分享链接时，只传 title 和 url，不传冗余 text，根除 Android Intent 字段冲突崩溃！
     if (typeof navigator !== 'undefined' && typeof (navigator as any).share === 'function') {
-      try {
-        await (navigator as any).share({
-          title: rawTitle,
-          text: shareText,
-          url: currentUrl,
-        });
-        setIsSharing(false);
-        return; // 安卓等系统原生系统分享面板唤起成功！
-      } catch (linkShareErr: any) {
-        if (linkShareErr?.name === 'AbortError') {
-          setIsSharing(false);
-          return; // 用户主动取消
+      let targetPayload: any = null;
+
+      // 优先预检：是否支持原生文件直传（包含 Android Chrome/Edge 以及 iOS Safari 15+）
+      if (specPreviewData.pdfFile && typeof (navigator as any).canShare === 'function') {
+        try {
+          const testFilePayload = { files: [specPreviewData.pdfFile], title: rawTitle };
+          if ((navigator as any).canShare(testFilePayload)) {
+            targetPayload = testFilePayload;
+          }
+        } catch (e) {
+          console.warn('[Share] File canShare test skipped:', e);
         }
-        console.warn('Native link share failed, proceeding to fallback modal:', linkShareErr);
+      }
+
+      // 若不支持直接传文件，降级为精准链接分享（专为安卓/鸿蒙系统 Intent 优化，只传 title 和 url）
+      if (!targetPayload) {
+        const linkPayload = {
+          title: rawTitle,
+          url: currentUrl,
+        };
+        if (typeof (navigator as any).canShare === 'function') {
+          try {
+            if ((navigator as any).canShare(linkPayload)) {
+              targetPayload = linkPayload;
+            }
+          } catch {
+            targetPayload = linkPayload;
+          }
+        } else {
+          targetPayload = linkPayload;
+        }
+      }
+
+      // 执行且仅执行一次系统原生 share，保留完整瞬时用户手势凭据
+      if (targetPayload) {
+        try {
+          await (navigator as any).share(targetPayload);
+          setIsSharing(false);
+          return; // 系统原生分享面板成功拉起并完成！
+        } catch (shareErr: any) {
+          // 若用户在系统分享菜单中主动点击了“取消”或返回，直接平稳退出
+          if (shareErr?.name === 'AbortError') {
+            setIsSharing(false);
+            return;
+          }
+          console.warn('[Share] Native share failed, proceeding to fallback:', shareErr);
+        }
       }
     }
 
-    // 核心优化 5（桌面 PC 浏览器或无原生 Share API 的降级环境）：呼出多渠道分享中心弹窗
+    // 3. 降级环境（如桌面 PC、或定制浏览器安全策略屏蔽）：自动复制链接并呼出多渠道分享中心弹窗
+    const copied = await copyToClipboard(currentUrl);
+    toast({
+      title: copied ? '规格书链接已复制' : '分享面板已就绪',
+      description: '已为您复制产品直达链接，您可通过快捷渠道分享给好友或客户。',
+    });
     setIsFallbackModalOpen(true);
     setIsSharing(false);
   };
