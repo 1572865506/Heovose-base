@@ -7,6 +7,8 @@ STATUS_FILE="$PROJECT_DIR/backups/update_status.json"
 
 # 记录当前版本 Commit ID，以便更新失败时自动回退
 PREV_COMMIT=$(git rev-parse HEAD 2>/dev/null)
+PREV_COMMIT_MSG=$(git log -1 --pretty=%s 2>/dev/null)
+PREV_COMMIT_DATE=$(git log -1 --pretty=%cd 2>/dev/null)
 
 mkdir -p ./backups
 
@@ -34,6 +36,10 @@ if [ $? -ne 0 ]; then
     exit 1
 fi
 update_status "backup" "success" ""
+
+# 记录刚生成的备份快照路径，供版本回退使用
+LATEST_DB_BACKUP=$(ls -t $PROJECT_DIR/backups/db_backup_*.sql.gz 2>/dev/null | head -n 1)
+LATEST_MINIO_BACKUP=$(ls -t $PROJECT_DIR/backups/minio_backup_*.tar.gz 2>/dev/null | head -n 1)
 
 # 2. 拉取代码
 update_status "git_pull" "running" ""
@@ -100,10 +106,32 @@ nice -n 19 env UV_THREADPOOL_SIZE=1 NODE_OPTIONS="--max-old-space-size=2048" npm
 if [ $? -eq 0 ]; then
     echo "✅ [$(date)] 影子编译成功！进行原子级文件夹快速切换..." >> $LOG_FILE 2>&1
     cd $PROJECT_DIR
-    mv .next .next_old 2>/dev/null || true
+    rm -rf .next_previous
+    mv .next .next_previous 2>/dev/null || true
     mv $SHADOW_DIR/.next .next
-    rm -rf .next_old
     rm -rf $SHADOW_DIR
+
+    # 记录可回退快照信息
+    TARGET_COMMIT=$(git rev-parse HEAD 2>/dev/null)
+    TARGET_COMMIT_MSG=$(git log -1 --pretty=%s 2>/dev/null)
+
+    node -e "
+      const fs = require('fs');
+      const data = {
+        prevCommit: process.argv[1],
+        prevCommitShort: process.argv[1] ? process.argv[1].slice(0, 7) : '',
+        prevCommitMsg: process.argv[2] || '',
+        prevCommitDate: process.argv[3] || '',
+        targetCommit: process.argv[4] || '',
+        targetCommitMsg: process.argv[5] || '',
+        dbBackup: process.argv[6] ? require('path').basename(process.argv[6]) : '',
+        minioBackup: process.argv[7] ? require('path').basename(process.argv[7]) : '',
+        hasPreviousBuild: true,
+        updatedAt: new Date().toISOString()
+      };
+      fs.writeFileSync('$PROJECT_DIR/backups/rollback_info.json', JSON.stringify(data, null, 2));
+    " "$PREV_COMMIT" "$PREV_COMMIT_MSG" "$PREV_COMMIT_DATE" "$TARGET_COMMIT" "$TARGET_COMMIT_MSG" "$LATEST_DB_BACKUP" "$LATEST_MINIO_BACKUP" 2>/dev/null || true
+
     update_status "build" "success" ""
 else
     echo "❌ [$(date)] 影子编译失败，正在清理影子工作区..." >> $LOG_FILE 2>&1

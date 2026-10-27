@@ -9,6 +9,7 @@ export const GET = withAuth('superadmin', async () => {
     let lastBackup = null;
     let updateLog = "";
     let updateStatus = null;
+    let rollbackInfo = null;
 
     if (fs.existsSync(backupDir)) {
       const files = fs.readdirSync(backupDir);
@@ -41,6 +42,14 @@ export const GET = withAuth('superadmin', async () => {
           updateStatus = JSON.parse(fs.readFileSync(statusPath, "utf-8"));
         } catch (_) {}
       }
+
+      // Read rollback info if exists
+      const rollbackPath = path.join(backupDir, "rollback_info.json");
+      if (fs.existsSync(rollbackPath)) {
+        try {
+          rollbackInfo = JSON.parse(fs.readFileSync(rollbackPath, "utf-8"));
+        } catch (_) {}
+      }
     }
 
     let version = "v2.1.0-gold";
@@ -60,6 +69,7 @@ export const GET = withAuth('superadmin', async () => {
       lastBackup,
       updateLog,
       updateStatus,
+      rollbackInfo,
       version,
     });
   } catch (error) {

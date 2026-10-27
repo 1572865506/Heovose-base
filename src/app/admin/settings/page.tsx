@@ -19,7 +19,15 @@ import {
 } from "@/components/ui/select";
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
-import { History, RotateCcw, Terminal, Download, Database, Cpu, Info, ShieldCheck, Globe, Save, Settings2, Loader2, Cloud, FileText, PlayCircle, Upload, ChevronDown, ChevronRight } from 'lucide-react';
+import { History, RotateCcw, Terminal, Download, Database, Cpu, Info, ShieldCheck, Globe, Save, Settings2, Loader2, Cloud, FileText, PlayCircle, Upload, ChevronDown, ChevronRight, CheckCircle2 } from 'lucide-react';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
@@ -38,6 +46,7 @@ const updateSteps = [
   { key: 'npm_install', label: '📦 同步项目依赖项', desc: '安装或升级最新 package.json 中的依赖' },
   { key: 'db_push', label: '🔄 数据库 Schema 热同步', desc: '自动推送并映射数据库表的字段及索引变更' },
   { key: 'build', label: '🏗️ 生产环境打包与预编译', desc: 'Next.js 静态生产构建优化与资源导出 (约需 1-2 分钟)' },
+  { key: 'rollback', label: '⏪ 版本与数据安全回退', desc: '恢复至上一版本的代码与数据快照并重启容器' },
   { key: 'restart', label: '🔄 容器进程重启激活', desc: '自动重启 heovose-web 容器加载最新的内存进程' },
 ];
 
@@ -62,6 +71,9 @@ export default function AdminSettingsPage() {
   const [isUploadingBackup, setIsUploadingBackup] = useState(false);
   const [updateInfo, setUpdateInfo] = useState<any>(null);
   const [sysStatus, setSysStatus] = useState<any>(null);
+  const [isRollingBack, setIsRollingBack] = useState(false);
+  const [isRollbackModalOpen, setIsRollbackModalOpen] = useState(false);
+  const [rollbackDataChecked, setRollbackDataChecked] = useState(true);
   const [backups, setBackups] = useState<any[]>([]);
   const [expandedBackups, setExpandedBackups] = useState<Record<string, boolean>>({});
 
@@ -357,6 +369,32 @@ export default function AdminSettingsPage() {
     }
   };
 
+  const handleRollback = async () => {
+    setIsRollingBack(true);
+    try {
+      const res = await fetch('/api/admin/system/rollback', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ rollbackData: rollbackDataChecked })
+      });
+      const data = await res.json();
+      if (data.success) {
+        toast({ title: "回退流程已启动", description: data.message });
+        setIsRollbackModalOpen(false);
+        const interval = setInterval(async () => {
+          await fetchStatus();
+        }, 3000);
+        setTimeout(() => clearInterval(interval), 180000);
+      } else {
+        throw new Error(data.error);
+      }
+    } catch (e: any) {
+      toast({ variant: "destructive", title: "回退启动失败", description: e.message });
+    } finally {
+      setIsRollingBack(false);
+    }
+  };
+
   return (
     <div className="space-y-8 animate-in fade-in duration-700 pb-20 relative">
       {/* Background Aurora Glows */}
@@ -480,6 +518,18 @@ export default function AdminSettingsPage() {
                   {isBackingUp ? <Loader2 className="h-3 w-3 animate-spin" /> : <Database className="h-3.5 w-3.5" />}
                   立即备份
                 </Button>
+                {sysStatus?.rollbackInfo && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setIsRollbackModalOpen(true)}
+                    disabled={isRollingBack || isUpdating}
+                    className="rounded-xl h-9 border-amber-500/40 text-amber-500 hover:bg-amber-500/10 text-[10px] font-bold gap-1.5 uppercase tracking-wider"
+                  >
+                    <RotateCcw className="h-3.5 w-3.5" />
+                    版本回退
+                  </Button>
+                )}
                 {updateInfo ? (
                   <Button
                     variant="default"
@@ -508,6 +558,39 @@ export default function AdminSettingsPage() {
           >
             <div className="space-y-4">
               <div className="flex flex-col gap-4">
+
+                {/* 上一稳定版本可回退提示卡片 */}
+                {sysStatus?.rollbackInfo && (
+                  <div className="p-4 bg-amber-500/5 rounded-xl border border-amber-500/20 flex flex-col sm:flex-row sm:items-center justify-between gap-3 animate-in fade-in">
+                    <div className="space-y-1 min-w-0">
+                      <div className="flex items-center gap-2">
+                        <RotateCcw className="h-3.5 w-3.5 text-amber-500 shrink-0" />
+                        <span className="text-xs font-bold text-amber-500 tracking-wide">可一键回退至上一稳定版本</span>
+                        <code className="text-[10px] font-mono bg-amber-500/10 text-amber-500 px-1.5 py-0.5 rounded border border-amber-500/20 font-bold">
+                          {sysStatus.rollbackInfo.prevCommitShort || sysStatus.rollbackInfo.prevCommit?.slice(0, 7)}
+                        </code>
+                      </div>
+                      <p className="text-xs text-muted-foreground truncate">
+                        {sysStatus.rollbackInfo.prevCommitMsg || '历史稳定提交记录'}
+                      </p>
+                      {sysStatus.rollbackInfo.dbBackup && (
+                        <p className="text-[10px] text-muted-foreground/70 font-mono">
+                          包含更新前数据快照: {sysStatus.rollbackInfo.dbBackup}
+                        </p>
+                      )}
+                    </div>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setIsRollbackModalOpen(true)}
+                      disabled={isRollingBack || isUpdating}
+                      className="rounded-xl h-8 border-amber-500/40 text-amber-500 hover:bg-amber-500/10 text-[10px] font-bold shrink-0 gap-1.5"
+                    >
+                      <RotateCcw className="h-3 w-3" />
+                      一键快速回退
+                    </Button>
+                  </div>
+                )}
 
                 {updateInfo && (
                   <div className="p-4 bg-primary/5 rounded-xl border border-primary/10">
@@ -947,6 +1030,78 @@ export default function AdminSettingsPage() {
           </GlassCard>
         </div>
       </div>
+
+      {/* 版本回退确认弹窗 */}
+      <Dialog open={isRollbackModalOpen} onOpenChange={setIsRollbackModalOpen}>
+        <DialogContent className="sm:max-w-md rounded-2xl">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-base font-bold text-amber-500">
+              <RotateCcw className="h-5 w-5" /> 确认系统版本安全回退
+            </DialogTitle>
+            <DialogDescription className="text-xs text-muted-foreground pt-1.5 leading-relaxed">
+              系统将把程序代码重置回上一个稳定版本。如果新更新的功能存在缺陷，您可以安全返回上一版本。
+            </DialogDescription>
+          </DialogHeader>
+
+          {sysStatus?.rollbackInfo && (
+            <div className="p-3.5 bg-muted/20 border border-border/50 rounded-xl space-y-2 text-xs">
+              <div className="flex justify-between items-center">
+                <span className="text-muted-foreground font-medium">目标回退版本:</span>
+                <code className="font-mono font-bold text-primary bg-primary/10 px-1.5 py-0.5 rounded">
+                  {sysStatus.rollbackInfo.prevCommitShort || sysStatus.rollbackInfo.prevCommit?.slice(0, 7)}
+                </code>
+              </div>
+              <p className="text-muted-foreground text-[11px] line-clamp-2">
+                <b>提交说明：</b>{sysStatus.rollbackInfo.prevCommitMsg || '无说明'}
+              </p>
+              {sysStatus.rollbackInfo.hasPreviousBuild && (
+                <div className="flex items-center gap-1.5 text-emerald-500 text-[11px] font-medium pt-1">
+                  <CheckCircle2 className="h-3.5 w-3.5" /> 已就绪上一版本预编译包，回退将以秒级极速完成！
+                </div>
+              )}
+            </div>
+          )}
+
+          <div className="p-3 bg-card border border-border/60 rounded-xl space-y-2">
+            <label className="flex items-start gap-2.5 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={rollbackDataChecked}
+                onChange={(e) => setRollbackDataChecked(e.target.checked)}
+                className="mt-0.5 h-4 w-4 rounded border-border text-primary focus:ring-primary"
+              />
+              <div className="space-y-0.5">
+                <span className="text-xs font-bold text-foreground">同时还原更新前的数据快照（强烈推荐）</span>
+                <p className="text-[11px] text-muted-foreground leading-normal">
+                  将数据库与 MinIO 存储桶一并恢复至更新前的瞬间，确保代码与数据结构完全吻合。
+                </p>
+              </div>
+            </label>
+          </div>
+
+          <DialogFooter className="gap-2 sm:gap-0 pt-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setIsRollbackModalOpen(false)}
+              disabled={isRollingBack}
+              className="rounded-xl h-9"
+            >
+              取消
+            </Button>
+            <Button
+              variant="destructive"
+              size="sm"
+              onClick={handleRollback}
+              disabled={isRollingBack}
+              className="rounded-xl h-9 bg-amber-600 hover:bg-amber-700 text-white font-bold gap-1.5"
+            >
+              {isRollingBack ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <RotateCcw className="h-3.5 w-3.5" />}
+              确认执行安全回退
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
