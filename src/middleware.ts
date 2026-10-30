@@ -54,6 +54,10 @@ export default auth(async (request) => {
   const { nextUrl } = request;
   const pathname = nextUrl.pathname;
 
+  const host = request.headers.get('x-forwarded-host') || request.headers.get('host') || 'localhost:9002';
+  const proto = request.headers.get('x-forwarded-proto') || 'http';
+  const baseOrigin = `${proto}://${host}`;
+
   // 1. 隐藏后台登录入口安全防护
   if (pathname === '/auth/login') {
     const secretParam = nextUrl.searchParams.get('secret');
@@ -67,7 +71,7 @@ export default auth(async (request) => {
 
     // 若通过口令进入，为浏览器植入长期 Cookie 标识，并重定向去除 URL 敏感参数
     if (secretParam === adminSecret) {
-      const redirectUrl = new URL('/auth/login', request.url);
+      const redirectUrl = `${baseOrigin}/auth/login`;
       const response = NextResponse.redirect(redirectUrl);
       response.cookies.set('login_access_allowed', 'true', {
         httpOnly: true,
@@ -253,10 +257,10 @@ export default auth(async (request) => {
     if (!isLoggedIn) {
       const secretCookie = request.cookies.get('login_access_allowed')?.value;
       if (secretCookie === 'true') {
-        return NextResponse.redirect(new URL("/auth/login", nextUrl));
+        return NextResponse.redirect(`${baseOrigin}/auth/login`);
       } else {
         // 无授权 Cookie 时访问后台，直接静默跳转到前台首页，彻底隐匿后台地址
-        return NextResponse.redirect(new URL("/", nextUrl));
+        return NextResponse.redirect(`${baseOrigin}/`);
       }
     }
     return NextResponse.next();
@@ -290,12 +294,12 @@ export default auth(async (request) => {
     }
 
     // Redirect to the subpath (e.g. /zh/products or /en)
-    const url = nextUrl.clone();
-    url.pathname = `/${resolved}${pathname === '/' ? '' : pathname}`;
-    // Clean up query param if it was explicitly passed
-    if (url.searchParams.has('lang')) {
-      url.searchParams.delete('lang');
-    }
+    const url = new URL(`${baseOrigin}/${resolved}${pathname === '/' ? '' : pathname}`);
+    nextUrl.searchParams.forEach((val, key) => {
+      if (key !== 'lang') {
+        url.searchParams.set(key, val);
+      }
+    });
     return NextResponse.redirect(url, 307);
   }
 

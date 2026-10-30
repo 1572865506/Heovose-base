@@ -21,8 +21,26 @@ const options = {
   cert: fs.readFileSync(certPath),
 };
 
+const os = require('os');
+
+function getLocalIpAddresses() {
+  const interfaces = os.networkInterfaces();
+  const addresses = [];
+  for (const name of Object.keys(interfaces)) {
+    for (const iface of interfaces[name]) {
+      if (iface.family === 'IPv4' && !iface.internal) {
+        addresses.push(iface.address);
+      }
+    }
+  }
+  return addresses;
+}
+
 const server = https.createServer(options, (req, res) => {
-  const clientHost = req.headers['host'] || '192.168.1.190:9443';
+  const incomingHost = req.headers['host'];
+  const localIps = getLocalIpAddresses();
+  const defaultHost = localIps.find(ip => ip.startsWith('192.168.')) || localIps[0] || '127.0.0.1';
+  const clientHost = incomingHost || `${defaultHost}:${LISTEN_PORT}`;
   const proxyReq = http.request(
     {
       hostname: TARGET_HOST,
@@ -34,7 +52,7 @@ const server = https.createServer(options, (req, res) => {
         'host': clientHost,
         'x-forwarded-host': clientHost,
         'x-forwarded-proto': 'https',
-        'x-forwarded-port': clientHost.split(':')[1] || '9443',
+        'x-forwarded-port': clientHost.split(':')[1] || String(LISTEN_PORT),
         'x-forwarded-for': req.socket.remoteAddress || '127.0.0.1',
       },
     },
@@ -78,5 +96,10 @@ server.on('upgrade', (req, clientSocket, head) => {
 
 server.listen(LISTEN_PORT, '0.0.0.0', () => {
   console.log(`[HTTPS Proxy] Listening on 0.0.0.0:${LISTEN_PORT} -> forwarding to ${TARGET_HOST}:${TARGET_PORT}`);
-  console.log(`[HTTPS Proxy] Test URL on Mobile / HarmonyOS: https://172.25.85.178:${LISTEN_PORT}`);
+  console.log(`[HTTPS Proxy] 局域网访问（请使用物理网卡IP或WSL IP）:`);
+  console.log(`  - 物理局域网推荐: https://192.168.1.190:${LISTEN_PORT}`);
+  const localIps = getLocalIpAddresses();
+  localIps.forEach(ip => {
+    console.log(`  - 本机/WSL 网卡 IP: https://${ip}:${LISTEN_PORT}`);
+  });
 });
