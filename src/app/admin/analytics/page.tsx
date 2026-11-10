@@ -29,9 +29,18 @@ import {
   ChevronLeft,
   Gauge,
   Wifi,
-  Sparkles
+  Sparkles,
+  TrendingUp,
+  TrendingDown,
+  Minus
 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
+import {
+  Tooltip as UITooltip,
+  TooltipTrigger,
+  TooltipContent,
+  TooltipProvider
+} from '@/components/ui/tooltip';
 
 // 纯算法国家/地区标准名称与国旗 Emoji 解析（遵循免硬编码词典规范）
 const getRegionDisplayName = (code?: string | null) => {
@@ -523,8 +532,27 @@ export default function AnalyticsPage() {
 
     // Performance & Web Vitals 访客性能体验监控计算
     const sessionCountryMap = new Map((sessions || []).map((s: any) => [s.id, s.country || 'UNKNOWN']));
-    const perfRecords: Array<{ ttfb: number; fcp: number; domReady: number; loadTime: number; country: string }> = [];
-    const countryPerfMap: Record<string, { totalLoad: number; totalTtfb: number; count: number }> = {};
+    const perfRecords: Array<{
+      timestamp: number;
+      ttfb: number;
+      fcp: number;
+      domReady: number;
+      loadTime: number;
+      country: string;
+    }> = [];
+    const countryPerfMap: Record<string, {
+      totalLoad: number;
+      totalTtfb: number;
+      count: number;
+      samples: Array<{
+        timestamp: string;
+        timeMs: number;
+        loadTime: number;
+        ttfb: number;
+        fcp: number;
+        status: 'fast' | 'moderate' | 'slow';
+      }>;
+    }> = {};
 
     filteredEvents.forEach((e: any) => {
       if (e.type === 'PERFORMANCE' && e.extraData?.perf) {
@@ -535,20 +563,45 @@ export default function AnalyticsPage() {
         const domReady = Number(p.domReady);
         if (!isNaN(loadTime) && loadTime > 0 && loadTime <= 35000) {
           const country = sessionCountryMap.get(e.sessionId) || 'UNKNOWN';
+          const timeMs = new Date(e.timestamp).getTime();
+          const validTtfb = !isNaN(ttfb) ? ttfb : 0;
+          const validFcp = !isNaN(fcp) ? fcp : (domReady || 0);
+
+          let sampleLevel: 1 | 2 | 3 | 4 | 5 = 1;
+          if (loadTime > 6000) sampleLevel = 5;
+          else if (loadTime > 4000) sampleLevel = 4;
+          else if (loadTime > 3000) sampleLevel = 3;
+          else if (loadTime > 2000) sampleLevel = 2;
+          else sampleLevel = 1;
+
+          let sampleStatus: 'fast' | 'moderate' | 'slow' = 'fast';
+          if (loadTime > 4000) sampleStatus = 'slow';
+          else if (loadTime > 2000) sampleStatus = 'moderate';
+
           perfRecords.push({
+            timestamp: timeMs,
             loadTime,
-            ttfb: !isNaN(ttfb) ? ttfb : 0,
-            fcp: !isNaN(fcp) ? fcp : (domReady || 0),
+            ttfb: validTtfb,
+            fcp: validFcp,
             domReady: !isNaN(domReady) ? domReady : 0,
             country
           });
 
           if (!countryPerfMap[country]) {
-            countryPerfMap[country] = { totalLoad: 0, totalTtfb: 0, count: 0 };
+            countryPerfMap[country] = { totalLoad: 0, totalTtfb: 0, count: 0, samples: [] };
           }
           countryPerfMap[country].totalLoad += loadTime;
-          countryPerfMap[country].totalTtfb += (!isNaN(ttfb) ? ttfb : 0);
+          countryPerfMap[country].totalTtfb += validTtfb;
           countryPerfMap[country].count += 1;
+          countryPerfMap[country].samples.push({
+            timestamp: e.timestamp,
+            timeMs,
+            loadTime,
+            ttfb: validTtfb,
+            fcp: validFcp,
+            level: sampleLevel,
+            status: sampleStatus
+          });
         }
       }
     });
@@ -569,6 +622,74 @@ export default function AnalyticsPage() {
       p75LoadTime = sortedLoads[p75Index] || avgLoadTime;
     }
 
+    // 趋势走向计算：将当前所选时间段二等分为“基线前期”与“近期表现”
+    let rangeStartTime = 0;
+    if (timeRange === '24h') {
+      rangeStartTime = now.getTime() - 24 * 60 * 60 * 1000;
+    } else if (timeRange === '7d') {
+      rangeStartTime = now.getTime() - 7 * 24 * 60 * 60 * 1000;
+    } else if (timeRange === '30d') {
+      rangeStartTime = now.getTime() - 30 * 24 * 60 * 60 * 1000;
+    } else if (timeRange === 'year') {
+      rangeStartTime = new Date(now.getFullYear(), 0, 1).getTime();
+    } else {
+      const allTimes = perfRecords.map(r => r.timestamp).filter(t => !isNaN(t));
+      rangeStartTime = allTimes.length > 0 ? Math.min(...allTimes) : (now.getTime() - 7 * 24 * 60 * 60 * 1000);
+    }
+    const rangeMidTime = rangeStartTime + (now.getTime() - rangeStartTime) / 2;
+
+    const priorRecords = perfRecords.filter(r => r.timestamp < rangeMidTime);
+    const recentRecords = perfRecords.filter(r => r.timestamp >= rangeMidTime);
+
+    const computeTrend = (
+      getValue: (r: { ttfb: number; fcp: number; loadTime: number }) => number,
+      useP75: boolean = false
+    ) => {
+      if (priorRecords.length === 0 || recentRecords.length === 0) {
+        return { direction: 'flat' as const, diffPercent: 0, priorVal: 0, recentVal: 0, hasPrior: false };
+      }
+
+      const priorVals = priorRecords.map(getValue);
+      const recentVals = recentRecords.map(getValue);
+
+      let priorVal = 0;
+      let recentVal = 0;
+
+      if (useP75) {
+        const sortedPrior = [...priorVals].sort((a, b) => a - b);
+        const sortedRecent = [...recentVals].sort((a, b) => a - b);
+        priorVal = sortedPrior[Math.floor(sortedPrior.length * 0.75)] || 0;
+        recentVal = sortedRecent[Math.floor(sortedRecent.length * 0.75)] || 0;
+      } else {
+        priorVal = priorVals.reduce((a, b) => a + b, 0) / priorVals.length;
+        recentVal = recentVals.reduce((a, b) => a + b, 0) / recentVals.length;
+      }
+
+      if (priorVal === 0) {
+        return { direction: 'flat' as const, diffPercent: 0, priorVal, recentVal, hasPrior: true };
+      }
+
+      const diff = ((recentVal - priorVal) / priorVal) * 100;
+      const absDiff = Math.abs(diff);
+
+      if (absDiff < 0.5) {
+        return { direction: 'flat' as const, diffPercent: 0, priorVal, recentVal, hasPrior: true };
+      }
+
+      // 注意：耗时类指标，耗时下降（diff < 0）为提速改善（improved），耗时上升（diff > 0）为延迟增高（degraded）
+      return {
+        direction: diff < 0 ? ('improved' as const) : ('degraded' as const),
+        diffPercent: Number(absDiff.toFixed(1)),
+        priorVal,
+        recentVal,
+        hasPrior: true
+      };
+    };
+
+    const ttfbTrend = computeTrend(r => r.ttfb);
+    const fcpTrend = computeTrend(r => r.fcp);
+    const loadTrend = computeTrend(r => r.loadTime, true);
+
     const countryPerfData = Object.entries(countryPerfMap)
       .map(([country, data]) => {
         const avgLoad = Math.round(data.totalLoad / data.count);
@@ -577,12 +698,18 @@ export default function AnalyticsPage() {
         if (avgLoad > 3500) status = 'slow';
         else if (avgLoad > 2000) status = 'moderate';
 
+        // 提取按时间排序（从旧到新排列）的最近 20 个样本
+        const recentSamples = [...data.samples]
+          .sort((a, b) => a.timeMs - b.timeMs)
+          .slice(-20);
+
         return {
           country,
           count: data.count,
           avgLoadTime: avgLoad,
           avgTtfb: avgTtfbVal,
-          status
+          status,
+          recentSamples
         };
       })
       .sort((a, b) => b.count - a.count);
@@ -595,6 +722,9 @@ export default function AnalyticsPage() {
       avgTtfbMs: avgTtfb,
       avgFcpSec: (avgFcp / 1000).toFixed(2),
       overallStatus: p75LoadTime <= 2000 ? 'excellent' : p75LoadTime <= 3500 ? 'good' : 'needs_attention',
+      ttfbTrend,
+      fcpTrend,
+      loadTrend,
       countryPerfData
     };
 
@@ -1221,11 +1351,73 @@ export default function AnalyticsPage() {
                     <span className="text-xs font-bold uppercase tracking-wider">网络首字节响应 (TTFB)</span>
                     <Wifi className="h-4 w-4 text-sky-400" />
                   </div>
-                  <div className="flex items-baseline gap-2">
-                    <span className="text-3xl font-black font-headline text-foreground">
-                      {stats.perfStats.avgTtfbMs}
-                    </span>
-                    <span className="text-xs text-muted-foreground font-medium">毫秒 (ms)</span>
+                  <div className="flex items-baseline justify-between gap-2">
+                    <div className="flex items-baseline gap-2">
+                      <span className="text-3xl font-black font-headline text-foreground">
+                        {stats.perfStats.avgTtfbMs}
+                      </span>
+                      <span className="text-xs text-muted-foreground font-medium">毫秒 (ms)</span>
+                    </div>
+
+                    {/* 7天/选定周期走向趋势图标 */}
+                    {stats.perfStats.ttfbTrend && (
+                      <TooltipProvider delayDuration={150}>
+                        <UITooltip>
+                          <TooltipTrigger asChild>
+                            <div className={cn(
+                              "flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold font-mono border cursor-help transition-colors",
+                              !stats.perfStats.ttfbTrend.hasPrior
+                                ? "bg-muted/20 text-muted-foreground/60 border-border/20"
+                                : stats.perfStats.ttfbTrend.direction === 'improved'
+                                ? "bg-emerald-500/10 text-emerald-500 border-emerald-500/20 hover:bg-emerald-500/20"
+                                : stats.perfStats.ttfbTrend.direction === 'degraded'
+                                ? "bg-rose-500/10 text-rose-500 border-rose-500/20 hover:bg-rose-500/20"
+                                : "bg-muted/30 text-muted-foreground border-border/20"
+                            )}>
+                              {!stats.perfStats.ttfbTrend.hasPrior ? (
+                                <span className="text-[10px]">基准期</span>
+                              ) : stats.perfStats.ttfbTrend.direction === 'improved' ? (
+                                <>
+                                  <TrendingDown className="h-3.5 w-3.5" />
+                                  <span>-{stats.perfStats.ttfbTrend.diffPercent}%</span>
+                                </>
+                              ) : stats.perfStats.ttfbTrend.direction === 'degraded' ? (
+                                <>
+                                  <TrendingUp className="h-3.5 w-3.5" />
+                                  <span>+{stats.perfStats.ttfbTrend.diffPercent}%</span>
+                                </>
+                              ) : (
+                                <>
+                                  <Minus className="h-3 w-3" />
+                                  <span>持平</span>
+                                </>
+                              )}
+                            </div>
+                          </TooltipTrigger>
+                          <TooltipContent className="normal-case font-normal text-xs py-2 px-3 bg-popover text-popover-foreground border-border shadow-xl rounded-lg">
+                            {!stats.perfStats.ttfbTrend.hasPrior ? (
+                              <div>当前时间窗口无更早样本作为对比基准</div>
+                            ) : stats.perfStats.ttfbTrend.direction === 'improved' ? (
+                              <div>
+                                <div className="font-bold text-emerald-500">网络提速 (延迟下降)</div>
+                                <div className="text-[11px] text-muted-foreground mt-0.5">
+                                  较前期基准 ({Math.round(stats.perfStats.ttfbTrend.priorVal)}ms) 耗时减少了 {stats.perfStats.ttfbTrend.diffPercent}% (近期: {Math.round(stats.perfStats.ttfbTrend.recentVal)}ms)
+                                </div>
+                              </div>
+                            ) : stats.perfStats.ttfbTrend.direction === 'degraded' ? (
+                              <div>
+                                <div className="font-bold text-rose-500">网络延迟上升</div>
+                                <div className="text-[11px] text-muted-foreground mt-0.5">
+                                  较前期基准 ({Math.round(stats.perfStats.ttfbTrend.priorVal)}ms) 延迟上升了 {stats.perfStats.ttfbTrend.diffPercent}% (近期: {Math.round(stats.perfStats.ttfbTrend.recentVal)}ms)
+                                </div>
+                              </div>
+                            ) : (
+                              <div>较前期基准波动小于 0.5%，网络表现平稳</div>
+                            )}
+                          </TooltipContent>
+                        </UITooltip>
+                      </TooltipProvider>
+                    )}
                   </div>
                   <p className="text-[11px] text-muted-foreground/75 leading-relaxed">
                     客户端到新加坡节点的纯网络握手与服务器首包响应延迟
@@ -1242,11 +1434,73 @@ export default function AnalyticsPage() {
                     <span className="text-xs font-bold uppercase tracking-wider">首次内容绘制 (FCP)</span>
                     <Zap className="h-4 w-4 text-amber-400" />
                   </div>
-                  <div className="flex items-baseline gap-2">
-                    <span className="text-3xl font-black font-headline text-foreground">
-                      {stats.perfStats.avgFcpSec}
-                    </span>
-                    <span className="text-xs text-muted-foreground font-medium">秒 (s)</span>
+                  <div className="flex items-baseline justify-between gap-2">
+                    <div className="flex items-baseline gap-2">
+                      <span className="text-3xl font-black font-headline text-foreground">
+                        {stats.perfStats.avgFcpSec}
+                      </span>
+                      <span className="text-xs text-muted-foreground font-medium">秒 (s)</span>
+                    </div>
+
+                    {/* 7天/选定周期走向趋势图标 */}
+                    {stats.perfStats.fcpTrend && (
+                      <TooltipProvider delayDuration={150}>
+                        <UITooltip>
+                          <TooltipTrigger asChild>
+                            <div className={cn(
+                              "flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold font-mono border cursor-help transition-colors",
+                              !stats.perfStats.fcpTrend.hasPrior
+                                ? "bg-muted/20 text-muted-foreground/60 border-border/20"
+                                : stats.perfStats.fcpTrend.direction === 'improved'
+                                ? "bg-emerald-500/10 text-emerald-500 border-emerald-500/20 hover:bg-emerald-500/20"
+                                : stats.perfStats.fcpTrend.direction === 'degraded'
+                                ? "bg-rose-500/10 text-rose-500 border-rose-500/20 hover:bg-rose-500/20"
+                                : "bg-muted/30 text-muted-foreground border-border/20"
+                            )}>
+                              {!stats.perfStats.fcpTrend.hasPrior ? (
+                                <span className="text-[10px]">基准期</span>
+                              ) : stats.perfStats.fcpTrend.direction === 'improved' ? (
+                                <>
+                                  <TrendingDown className="h-3.5 w-3.5" />
+                                  <span>-{stats.perfStats.fcpTrend.diffPercent}%</span>
+                                </>
+                              ) : stats.perfStats.fcpTrend.direction === 'degraded' ? (
+                                <>
+                                  <TrendingUp className="h-3.5 w-3.5" />
+                                  <span>+{stats.perfStats.fcpTrend.diffPercent}%</span>
+                                </>
+                              ) : (
+                                <>
+                                  <Minus className="h-3 w-3" />
+                                  <span>持平</span>
+                                </>
+                              )}
+                            </div>
+                          </TooltipTrigger>
+                          <TooltipContent className="normal-case font-normal text-xs py-2 px-3 bg-popover text-popover-foreground border-border shadow-xl rounded-lg">
+                            {!stats.perfStats.fcpTrend.hasPrior ? (
+                              <div>当前时间窗口无更早样本作为对比基准</div>
+                            ) : stats.perfStats.fcpTrend.direction === 'improved' ? (
+                              <div>
+                                <div className="font-bold text-emerald-500">渲染提速 (白屏缩短)</div>
+                                <div className="text-[11px] text-muted-foreground mt-0.5">
+                                  较前期基准 ({(stats.perfStats.fcpTrend.priorVal / 1000).toFixed(2)}s) 渲染提速了 {stats.perfStats.fcpTrend.diffPercent}% (近期: {(stats.perfStats.fcpTrend.recentVal / 1000).toFixed(2)}s)
+                                </div>
+                              </div>
+                            ) : stats.perfStats.fcpTrend.direction === 'degraded' ? (
+                              <div>
+                                <div className="font-bold text-rose-500">渲染等待增加</div>
+                                <div className="text-[11px] text-muted-foreground mt-0.5">
+                                  较前期基准 ({(stats.perfStats.fcpTrend.priorVal / 1000).toFixed(2)}s) 白屏增加了 {stats.perfStats.fcpTrend.diffPercent}% (近期: {(stats.perfStats.fcpTrend.recentVal / 1000).toFixed(2)}s)
+                                </div>
+                              </div>
+                            ) : (
+                              <div>较前期基准波动小于 0.5%，白屏时间平稳</div>
+                            )}
+                          </TooltipContent>
+                        </UITooltip>
+                      </TooltipProvider>
+                    )}
                   </div>
                   <p className="text-[11px] text-muted-foreground/75 leading-relaxed">
                     首屏文字或主体框架首次渲染出现的耗时，衡量客户白屏等待感
@@ -1263,11 +1517,73 @@ export default function AnalyticsPage() {
                     <span className="text-xs font-bold uppercase tracking-wider">整页完全就绪 (P75 Load)</span>
                     <Clock className="h-4 w-4 text-emerald-400" />
                   </div>
-                  <div className="flex items-baseline gap-2">
-                    <span className="text-3xl font-black font-headline text-foreground">
-                      {stats.perfStats.p75LoadTimeSec}
-                    </span>
-                    <span className="text-xs text-muted-foreground font-medium">秒 (s)</span>
+                  <div className="flex items-baseline justify-between gap-2">
+                    <div className="flex items-baseline gap-2">
+                      <span className="text-3xl font-black font-headline text-foreground">
+                        {stats.perfStats.p75LoadTimeSec}
+                      </span>
+                      <span className="text-xs text-muted-foreground font-medium">秒 (s)</span>
+                    </div>
+
+                    {/* 7天/选定周期走向趋势图标 */}
+                    {stats.perfStats.loadTrend && (
+                      <TooltipProvider delayDuration={150}>
+                        <UITooltip>
+                          <TooltipTrigger asChild>
+                            <div className={cn(
+                              "flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold font-mono border cursor-help transition-colors",
+                              !stats.perfStats.loadTrend.hasPrior
+                                ? "bg-muted/20 text-muted-foreground/60 border-border/20"
+                                : stats.perfStats.loadTrend.direction === 'improved'
+                                ? "bg-emerald-500/10 text-emerald-500 border-emerald-500/20 hover:bg-emerald-500/20"
+                                : stats.perfStats.loadTrend.direction === 'degraded'
+                                ? "bg-rose-500/10 text-rose-500 border-rose-500/20 hover:bg-rose-500/20"
+                                : "bg-muted/30 text-muted-foreground border-border/20"
+                            )}>
+                              {!stats.perfStats.loadTrend.hasPrior ? (
+                                <span className="text-[10px]">基准期</span>
+                              ) : stats.perfStats.loadTrend.direction === 'improved' ? (
+                                <>
+                                  <TrendingDown className="h-3.5 w-3.5" />
+                                  <span>-{stats.perfStats.loadTrend.diffPercent}%</span>
+                                </>
+                              ) : stats.perfStats.loadTrend.direction === 'degraded' ? (
+                                <>
+                                  <TrendingUp className="h-3.5 w-3.5" />
+                                  <span>+{stats.perfStats.loadTrend.diffPercent}%</span>
+                                </>
+                              ) : (
+                                <>
+                                  <Minus className="h-3 w-3" />
+                                  <span>持平</span>
+                                </>
+                              )}
+                            </div>
+                          </TooltipTrigger>
+                          <TooltipContent className="normal-case font-normal text-xs py-2 px-3 bg-popover text-popover-foreground border-border shadow-xl rounded-lg">
+                            {!stats.perfStats.loadTrend.hasPrior ? (
+                              <div>当前时间窗口无更早样本作为对比基准</div>
+                            ) : stats.perfStats.loadTrend.direction === 'improved' ? (
+                              <div>
+                                <div className="font-bold text-emerald-500">整页加速 (P75 缩短)</div>
+                                <div className="text-[11px] text-muted-foreground mt-0.5">
+                                  较前期基准 ({(stats.perfStats.loadTrend.priorVal / 1000).toFixed(2)}s) 耗时减少了 {stats.perfStats.loadTrend.diffPercent}% (近期: {(stats.perfStats.loadTrend.recentVal / 1000).toFixed(2)}s)
+                                </div>
+                              </div>
+                            ) : stats.perfStats.loadTrend.direction === 'degraded' ? (
+                              <div>
+                                <div className="font-bold text-rose-500">整页耗时上升</div>
+                                <div className="text-[11px] text-muted-foreground mt-0.5">
+                                  较前期基准 ({(stats.perfStats.loadTrend.priorVal / 1000).toFixed(2)}s) 耗时增加了 {stats.perfStats.loadTrend.diffPercent}% (近期: {(stats.perfStats.loadTrend.recentVal / 1000).toFixed(2)}s)
+                                </div>
+                              </div>
+                            ) : (
+                              <div>较前期基准波动小于 0.5%，整体耗时平稳</div>
+                            )}
+                          </TooltipContent>
+                        </UITooltip>
+                      </TooltipProvider>
+                    )}
                   </div>
                   <p className="text-[11px] text-muted-foreground/75 leading-relaxed">
                     全站 75% 访客在所有外部图片、样式与脚本全部加载完毕的耗时
@@ -1281,12 +1597,37 @@ export default function AnalyticsPage() {
 
               {/* 对标重点市场国别访问速度排行 */}
               <div className="space-y-4">
-                <div className="flex items-center justify-between">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                   <h4 className="text-xs font-bold text-muted-foreground uppercase tracking-widest flex items-center gap-2">
                     <Globe className="h-3.5 w-3.5" />
                     各国家/地区对标客户实际访问速度透视 (Speed By Region)
                   </h4>
-                  <span className="text-[10px] text-muted-foreground">按测速样本量排序</span>
+                  {/* GitHub 风格 5 阶热力图例与排序说明 */}
+                  <div className="flex items-center gap-2.5 text-[10px] text-muted-foreground flex-wrap">
+                    <span className="font-semibold text-foreground/80">热力等级:</span>
+                    <div className="flex items-center gap-1">
+                      <span className="w-2.5 h-2.5 rounded-[1.5px] bg-emerald-400 inline-block"></span>
+                      <span>&lt;2s 极速</span>
+                    </div>
+                    <div className="flex items-center gap-1">
+                      <span className="w-2.5 h-2.5 rounded-[1.5px] bg-emerald-600 dark:bg-emerald-500 inline-block"></span>
+                      <span>2~3s 流畅</span>
+                    </div>
+                    <div className="flex items-center gap-1">
+                      <span className="w-2.5 h-2.5 rounded-[1.5px] bg-amber-500 inline-block"></span>
+                      <span>3~4s 正常</span>
+                    </div>
+                    <div className="flex items-center gap-1">
+                      <span className="w-2.5 h-2.5 rounded-[1.5px] bg-rose-400 inline-block"></span>
+                      <span>4~6s 偏慢</span>
+                    </div>
+                    <div className="flex items-center gap-1">
+                      <span className="w-2.5 h-2.5 rounded-[1.5px] bg-rose-600 dark:bg-rose-700 inline-block"></span>
+                      <span>&gt;6s 严重</span>
+                    </div>
+                    <span className="text-border">|</span>
+                    <span>按测速样本量排序</span>
+                  </div>
                 </div>
 
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
@@ -1294,11 +1635,9 @@ export default function AnalyticsPage() {
                     const flag = getCountryFlagEmoji(item.country);
                     const countryName = getRegionDisplayName(item.country);
                     const sec = (item.avgLoadTime / 1000).toFixed(2);
-                    const maxLoad = Math.max(...stats.perfStats.countryPerfData.map((d: any) => d.avgLoadTime), 4000);
-                    const percent = Math.min(100, Math.round((item.avgLoadTime / maxLoad) * 100));
 
                     return (
-                      <div key={idx} className="p-4 rounded-xl bg-muted/5 border border-border/15 hover:border-border/30 transition-all space-y-2.5">
+                      <div key={idx} className="p-4 rounded-xl bg-muted/5 border border-border/15 hover:border-border/30 transition-all space-y-3">
                         <div className="flex items-center justify-between gap-3">
                           <div className="flex items-center gap-2.5 min-w-0">
                             <span className="text-xl shrink-0">{flag}</span>
@@ -1330,15 +1669,109 @@ export default function AnalyticsPage() {
                           </div>
                         </div>
 
-                        <Progress 
-                          value={percent} 
-                          className={cn(
-                            "h-1 bg-muted/20",
-                            item.status === 'fast' ? "[&>div]:bg-emerald-500" :
-                            item.status === 'moderate' ? "[&>div]:bg-amber-500" :
-                            "[&>div]:bg-rose-500"
-                          )} 
-                        />
+                        {/* 类似 GitHub 提交记录的最近 20 个采样样本小方块 */}
+                        <div className="pt-2 border-t border-border/10">
+                          <div className="flex items-center gap-1.5 flex-wrap">
+                            {(item.recentSamples || []).map((sample: any, sIdx: number) => {
+                              const sampleLoadSec = (sample.loadTime / 1000).toFixed(2);
+                              const timeFormatted = new Date(sample.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+                              const dateFormatted = new Date(sample.timestamp).toLocaleDateString([], { month: '2-digit', day: '2-digit' });
+
+                              // 5 级纯度与语义色阶定义 (Lv1 <2s, Lv2 2~3s, Lv3 3~4s, Lv4 4~6s, Lv5 >6s)
+                              const level = sample.level || (
+                                sample.loadTime > 6000 ? 5 :
+                                sample.loadTime > 4000 ? 4 :
+                                sample.loadTime > 3000 ? 3 :
+                                sample.loadTime > 2000 ? 2 : 1
+                              );
+
+                              let levelClass = "bg-emerald-400 hover:bg-emerald-300";
+                              let textClass = "text-emerald-400";
+                              let labelText = "⚡ 极速秒开 (<2s)";
+
+                              if (level === 5) {
+                                levelClass = "bg-rose-600 dark:bg-rose-700 hover:bg-rose-500";
+                                textClass = "text-rose-600 dark:text-rose-400";
+                                labelText = "🚨 严重延迟 (>6s)";
+                              } else if (level === 4) {
+                                levelClass = "bg-rose-400 hover:bg-rose-300";
+                                textClass = "text-rose-400";
+                                labelText = "🔴 体验偏慢 (4~6s)";
+                              } else if (level === 3) {
+                                levelClass = "bg-amber-500 hover:bg-amber-400";
+                                textClass = "text-amber-500";
+                                labelText = "🟡 速度正常 (3~4s)";
+                              } else if (level === 2) {
+                                levelClass = "bg-emerald-600 dark:bg-emerald-500 hover:bg-emerald-500";
+                                textClass = "text-emerald-500";
+                                labelText = "🟢 体验流畅 (2~3s)";
+                              }
+
+                              const positionClass = 
+                                sIdx === 0 ? "left-0" :
+                                sIdx >= (item.recentSamples?.length || 0) - 2 ? "right-0" :
+                                "left-1/2 -translate-x-1/2";
+
+                              const arrowPositionClass =
+                                sIdx === 0 ? "left-2" :
+                                sIdx >= (item.recentSamples?.length || 0) - 2 ? "right-2" :
+                                "left-1/2 -translate-x-1/2";
+
+                              return (
+                                <div key={sIdx} className="relative group/square">
+                                  {/* 样本方块：5 阶热力纯度渲染 */}
+                                  <div
+                                    className={cn(
+                                      "w-3.5 h-3.5 rounded-[2.5px] cursor-pointer transition-all duration-100",
+                                      levelClass,
+                                      "group-hover/square:ring-2 group-hover/square:ring-foreground/50 group-hover/square:z-20"
+                                    )}
+                                  />
+
+                                  {/* 
+                                    原生即时气泡浮层（双层解耦）：
+                                    外层负责精确的物理锚定与水平对齐，避免动画 transform 覆盖 -translate-x-1/2 导致右滑；
+                                    内层专职执行 slide-in-from-bottom 从下方小方块纯粹向上滑入浮现。
+                                  */}
+                                  <div
+                                    className={cn(
+                                      "pointer-events-none absolute bottom-full mb-2 hidden group-hover/square:block z-50",
+                                      positionClass
+                                    )}
+                                  >
+                                    <div className="relative w-44 rounded-lg border border-border bg-popover/95 backdrop-blur-md p-2.5 text-popover-foreground shadow-2xl animate-in fade-in-0 slide-in-from-bottom-2 duration-150">
+                                      <div className="flex items-center justify-between gap-3 text-[10px] text-muted-foreground border-b border-border/40 pb-1">
+                                        <span className="font-bold">测速样本 #{sIdx + 1}</span>
+                                        <span className="font-mono">{dateFormatted} {timeFormatted}</span>
+                                      </div>
+                                      <div className="flex items-center justify-between gap-3 font-mono mt-1 text-xs">
+                                        <span className="text-muted-foreground text-[11px]">整页耗时:</span>
+                                        <span className={cn("font-bold", textClass)}>
+                                          {sampleLoadSec}s
+                                        </span>
+                                      </div>
+                                      <div className="flex items-center justify-between gap-3 font-mono text-[11px] text-muted-foreground">
+                                        <span>首包 TTFB:</span>
+                                        <span>{sample.ttfb}ms</span>
+                                      </div>
+                                      <div className="text-[10px] font-bold pt-1 border-t border-border/20 mt-1">
+                                        {labelText}
+                                      </div>
+
+                                      {/* 指示小箭头：精准垂直对齐小方块 */}
+                                      <div
+                                        className={cn(
+                                          "absolute top-full -mt-px border-4 border-transparent border-t-popover/95",
+                                          arrowPositionClass
+                                        )}
+                                      />
+                                    </div>
+                                  </div>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        </div>
                       </div>
                     );
                   })}

@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import db from '@/lib/db';
 import { getAssetUrl } from '@/lib/image-utils';
 import { redirect } from 'next/navigation';
+import { BackToTop } from '@/components/BackToTop';
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -115,5 +116,10 @@ export default async function LocaleLayout({
     return redirect(`/${defaultLang}`);
   }
 
-  return <>{children}</>;
+  return (
+    <>
+      {children}
+      <BackToTop />
+    </>
+  );
 }
