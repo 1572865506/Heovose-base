@@ -20,9 +20,9 @@ export function AdminPageHeader({
   className
 }: AdminPageHeaderProps) {
   return (
-    <div className={cn("flex flex-col md:flex-row md:items-center justify-between gap-6 relative z-10 w-full", className)}>
+    <div className={cn("flex flex-col md:flex-row md:items-center justify-between gap-6 relative z-10 w-full antialiased [transform:translateZ(0)] [backface-visibility:hidden]", className)}>
       <div className="space-y-1">
-        <h2 className="text-2xl font-headline font-bold text-foreground flex items-center gap-4">
+        <h2 className="text-2xl font-headline font-bold text-foreground flex items-center gap-4 tracking-normal">
           <div className="h-10 w-10 rounded-2xl bg-primary/10 flex items-center justify-center text-primary shadow-sm shrink-0">
             <Icon className="h-5 w-5" />
           </div>

@@ -16,11 +16,18 @@ export default async function robots(): Promise<MetadataRoute.Robots> {
   }
 
   return {
-    rules: {
-      userAgent: '*',
-      allow: '/',
-      disallow: ['/admin/', '/api/', '/_next/'],
-    },
+    rules: [
+      {
+        userAgent: '*',
+        allow: '/',
+        disallow: ['/admin/', '/api/', '/_next/'],
+      },
+      {
+        userAgent: ['GPTBot', 'PerplexityBot', 'ClaudeBot', 'Google-Extended', 'Applebot-Extended', 'cohere-ai'],
+        allow: ['/', '/llms.txt', '/llms-full.txt'],
+        disallow: ['/admin/', '/api/'],
+      },
+    ],
     sitemap: `${siteUrl}/sitemap.xml`,
   };
 }

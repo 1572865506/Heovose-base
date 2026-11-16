@@ -32,7 +32,11 @@ import {
   Sparkles,
   TrendingUp,
   TrendingDown,
-  Minus
+  Minus,
+  FileDown,
+  Layers,
+  ArrowRight,
+  Filter
 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import {
@@ -66,6 +70,8 @@ const getCountryFlagEmoji = (countryCode?: string | null) => {
 import { Progress } from '@/components/ui/progress';
 import { cn } from '@/lib/utils';
 import Link from 'next/link';
+import Image from 'next/image';
+import { getAssetUrl } from '@/lib/image-utils';
 import { parseUA } from '@/lib/ua-parser';
 import {
   XAxis,
@@ -98,6 +104,7 @@ export default function AnalyticsPage() {
   const { toast } = useToast();
   
   const [timeRange, setTimeRange] = useState<'24h' | '7d' | '30d' | 'year' | 'all'>('7d');
+  const [showComparison, setShowComparison] = useState(true);
   const { data: sessions, isLoading: isSessionsLoading, mutate: mutateSessions } = useLocalCollection<any>(`analytics/sessions?range=${timeRange}`);
   const { data: events, isLoading: isEventsLoading, mutate: mutateEvents } = useLocalCollection<any>(`analytics/events?range=${timeRange}`);
   const { data: products, isLoading: isProductsLoading } = useLocalCollection<any>('products');
@@ -105,6 +112,7 @@ export default function AnalyticsPage() {
 
   const [isReportOpen, setIsReportOpen] = useState(false);
   const [matrixSortBy, setMatrixSortBy] = useState<'pv' | 'dwell'>('pv');
+  const [productSortBy, setProductSortBy] = useState<'views' | 'inquiries' | 'conversion' | 'downloads'>('views');
 
   // Realtime Active Visitors hook
   const [realtimeData, setRealtimeData] = useState<any>({ onlineCount: 0, activeSessions: [], pages: [] });
@@ -166,29 +174,82 @@ export default function AnalyticsPage() {
       }
     };
 
-    // 1. Filter events to exclude admin/dashboard/auth/login paths AND match timeRange
-    const filteredEvents = events.filter((e: any) =>
+    // 1. Filter events to exclude admin/dashboard/auth/login paths
+    const validEvents = events.filter((e: any) =>
       e.path &&
       !e.path.startsWith('/admin') &&
       !e.path.startsWith('/dashboard') &&
       !e.path.startsWith('/auth') &&
       !e.path.startsWith('/api') &&
-      !e.path.includes('/login') &&
-      isInTimeRange(e.timestamp)
+      !e.path.includes('/login')
     );
 
-    // 2. Filter sessions to match timeRange
-    const timeFilteredSessions = sessions.filter((s: any) => isInTimeRange(s.createdAt));
+    const filteredEvents = validEvents.filter((e: any) => isInTimeRange(e.timestamp));
 
-    // 3. Identify sessions that have at least one frontend event in this timeRange
-    const frontendSessionIds = new Set(filteredEvents.map((e: any) => e.sessionId));
-    const filteredSessions = timeFilteredSessions.filter((s: any) => frontendSessionIds.has(s.id));
+    // 计算上一周期的起始与结束时间戳（用于 4 个概览卡片的动态真实同期对比）
+    let currentPeriodStart = 0;
+    let priorPeriodStart = 0;
+    let priorPeriodEnd = 0;
+    if (timeRange === '24h') {
+      currentPeriodStart = now.getTime() - 24 * 60 * 60 * 1000;
+      priorPeriodEnd = currentPeriodStart;
+      priorPeriodStart = currentPeriodStart - 24 * 60 * 60 * 1000;
+    } else if (timeRange === '7d') {
+      currentPeriodStart = now.getTime() - 7 * 24 * 60 * 60 * 1000;
+      priorPeriodEnd = currentPeriodStart;
+      priorPeriodStart = currentPeriodStart - 7 * 24 * 60 * 60 * 1000;
+    } else if (timeRange === '30d') {
+      currentPeriodStart = now.getTime() - 30 * 24 * 60 * 60 * 1000;
+      priorPeriodEnd = currentPeriodStart;
+      priorPeriodStart = currentPeriodStart - 30 * 24 * 60 * 60 * 1000;
+    } else if (timeRange === 'year') {
+      currentPeriodStart = new Date(now.getFullYear(), 0, 1).getTime();
+      priorPeriodStart = new Date(now.getFullYear() - 1, 0, 1).getTime();
+      // 对应去年此时此刻的同期截止时间
+      priorPeriodEnd = new Date(now.getFullYear() - 1, now.getMonth(), now.getDate(), now.getHours(), now.getMinutes(), now.getSeconds()).getTime();
+    }
+
+    const isPriorTime = (dateStr: string) => {
+      if (!dateStr || timeRange === 'all') return false;
+      const t = new Date(dateStr).getTime();
+      return t >= priorPeriodStart && t < priorPeriodEnd;
+    };
+
+    const priorEvents = validEvents.filter((e: any) => isPriorTime(e.timestamp));
+
+    // 2. Filter sessions to match timeRange
+    const validSessionIds = new Set(validEvents.map((e: any) => e.sessionId));
+    const allValidSessions = sessions.filter((s: any) => validSessionIds.has(s.id));
+    const filteredSessions = allValidSessions.filter((s: any) => isInTimeRange(s.createdAt));
+    const priorSessions = allValidSessions.filter((s: any) => isPriorTime(s.createdAt));
 
     // Calculate metrics based on filtered data
     const totalSessions = filteredSessions.length;
     const uniqueVisitors = new Set(filteredSessions.map((s: any) => s.visitorId)).size;
     const totalEvents = filteredEvents.length;
     const clickEvents = filteredEvents.filter((e: any) => e.type === 'CLICK').length;
+
+    // 计算上期基准并算出 4 个卡片的动态真实增减趋势
+    const priorTotalSessions = priorSessions.length;
+    const priorUniqueVisitors = new Set(priorSessions.map((s: any) => s.visitorId)).size;
+
+    const calcTrend = (current: number, prior: number, isRate: boolean = false) => {
+      if (timeRange === 'all') return { text: '统计中', isUp: true, isFlat: true };
+      if (prior === 0) {
+        if (current === 0) return { text: '0%', isUp: true, isFlat: true };
+        return { text: `+${current > 0 ? 100 : 0}%`, isUp: true, isFlat: false };
+      }
+      const diff = isRate ? (current - prior) : Math.round(((current - prior) / prior) * 100);
+      if (diff === 0) return { text: '0%', isUp: true, isFlat: true };
+      return {
+        text: `${diff > 0 ? '+' : ''}${diff}%`,
+        isUp: diff > 0,
+        isFlat: false
+      };
+    };
+
+    const sessionsTrend = calcTrend(totalSessions, priorTotalSessions);
+    const visitorsTrend = calcTrend(uniqueVisitors, priorUniqueVisitors);
 
     // Page distribution (PV)
     const pageCounts: Record<string, number> = {};
@@ -235,18 +296,26 @@ export default function AnalyticsPage() {
       })
       .slice(0, 10);
 
-    // 联合统计各产品的访问和询盘量
-    const productStats: Record<string, { views: number; inquiries: number }> = {};
+    // 联合统计各产品的访问、询盘量与规格书下载量
+    const productStats: Record<string, { views: number; inquiries: number; pdfDownloads: number }> = {};
 
-    // 1. 统计当前时间段内产品页面的 PAGEVIEW 事件数量
+    // 1. 统计当前时间段内产品页面的 PAGEVIEW 事件数量与 PDF 下载行为
     filteredEvents.forEach((e: any) => {
-      if (e.type !== 'PAGEVIEW' || !e.path) return;
-      // 去除 query 参数，匹配类似 /products/[id] 或 /zh/products/[id] 的结构
-      const match = e.path.split('?')[0].match(/\/products\/([^\/]+)$/);
-      if (match) {
-        const prodId = match[1];
-        if (!productStats[prodId]) productStats[prodId] = { views: 0, inquiries: 0 };
-        productStats[prodId].views += 1;
+      const cleanPath = (e.path || '').split('?')[0];
+      const match = cleanPath.match(/\/products\/([^\/]+)$/);
+      const prodIdFromPath = match ? match[1] : null;
+
+      if (e.type === 'PAGEVIEW' && prodIdFromPath) {
+        if (!productStats[prodIdFromPath]) productStats[prodIdFromPath] = { views: 0, inquiries: 0, pdfDownloads: 0 };
+        productStats[prodIdFromPath].views += 1;
+      }
+
+      if ((e.type === 'PDF_DOWNLOAD' || e.type === 'pdf_download') || e.extraData?.element === 'spec_pdf_download') {
+        const prodId = e.extraData?.productId || prodIdFromPath;
+        if (prodId) {
+          if (!productStats[prodId]) productStats[prodId] = { views: 0, inquiries: 0, pdfDownloads: 0 };
+          productStats[prodId].pdfDownloads += 1;
+        }
       }
     });
 
@@ -255,28 +324,188 @@ export default function AnalyticsPage() {
     filteredInquiries.forEach((inq: any) => {
       const prodId = inq.productId;
       if (prodId) {
-        if (!productStats[prodId]) productStats[prodId] = { views: 0, inquiries: 0 };
+        if (!productStats[prodId]) productStats[prodId] = { views: 0, inquiries: 0, pdfDownloads: 0 };
         productStats[prodId].inquiries += 1;
       }
     });
 
     // 3. 与 products 列表联合生成指标
     const productMetrics = (products || []).map((prod: any) => {
-      const statsForProd = productStats[prod.id] || { views: 0, inquiries: 0 };
+      const statsForProd = productStats[prod.id] || { views: 0, inquiries: 0, pdfDownloads: 0 };
       const views = statsForProd.views;
       const inqCount = statsForProd.inquiries;
+      const pdfDownloads = statsForProd.pdfDownloads;
       const name = prod.nameText?.content?.zh || prod.nameText?.content?.en || '未命名产品';
-      const conversion = views > 0 ? `${Math.round((inqCount / views) * 100)}%` : '0%';
+      const conversionRate = views > 0 ? (inqCount / views) * 100 : 0;
+      const conversion = views > 0 ? `${Math.round(conversionRate)}%` : '0%';
 
       return {
         id: prod.id,
         name,
+        mainImageUrl: prod.mainImageUrl,
         views,
         inquiries: inqCount,
+        pdfDownloads,
+        conversionRate,
         conversion
       };
-    }).sort((a: any, b: any) => b.views - a.views) // 默认按访问量倒序
-      .slice(0, 8); // 取前8个
+    }).sort((a: any, b: any) => {
+      if (productSortBy === 'inquiries') {
+        if (b.inquiries !== a.inquiries) return b.inquiries - a.inquiries;
+        return b.views - a.views;
+      }
+      if (productSortBy === 'conversion') {
+        if (b.conversionRate !== a.conversionRate) return b.conversionRate - a.conversionRate;
+        return b.inquiries - a.inquiries;
+      }
+      if (productSortBy === 'downloads') {
+        if (b.pdfDownloads !== a.pdfDownloads) return b.pdfDownloads - a.pdfDownloads;
+        return b.views - a.views;
+      }
+      // 默认按访问量 (PV) 降序
+      if (b.views !== a.views) return b.views - a.views;
+      return b.inquiries - a.inquiries;
+    }).slice(0, 10); // 适度扩充展示前10个热门产品
+
+    // 4. 统计全链路询盘转化漏斗 (Inquiry Conversion Funnel)
+    const funnelStep1Sessions = totalSessions;
+    const productDetailSessionsSet = new Set<string>();
+    const deepEngagementSessionsSet = new Set<string>();
+    const formStartSessionsSet = new Set<string>();
+    const inquirySessionsSet = new Set<string>();
+
+    filteredInquiries.forEach((inq: any) => {
+      if (inq.sessionId) inquirySessionsSet.add(inq.sessionId);
+    });
+
+    filteredEvents.forEach((e: any) => {
+      const sId = e.sessionId;
+      if (!sId) return;
+
+      if (e.path && (e.path.includes('/products/') || e.path === '/products')) {
+        productDetailSessionsSet.add(sId);
+      }
+
+      if (
+        (e.type === 'SCROLL' && (e.extraData?.scrollDepth || 0) >= 50) ||
+        e.type === 'PDF_DOWNLOAD' ||
+        e.type === 'pdf_download' ||
+        e.extraData?.element === 'spec_pdf_download'
+      ) {
+        deepEngagementSessionsSet.add(sId);
+      }
+
+      if (e.type === 'FORM_START' || e.extraData?.element?.includes('inquiry')) {
+        formStartSessionsSet.add(sId);
+      }
+    });
+
+    // 成功提交询盘总量
+    const totalInquiriesCount = filteredInquiries.length;
+    // 成功提交询盘的独立会话数（去重会话，若无 sessionId 则以总量为准）
+    const inquirySessionsCount = Math.min(funnelStep1Sessions, Math.max(inquirySessionsSet.size, totalInquiriesCount));
+
+    // 向前兼容与递进归因：成功提交询盘者必然触达了表单(Step 4)，也属于全站对产品/业务产生意向的范畴(Step 2)
+    // 保证严密的漏斗单调性 (f1 >= f2 >= f3 >= f4 >= f5)
+    const f5 = inquirySessionsCount;
+    const f4 = Math.min(funnelStep1Sessions, Math.max(formStartSessionsSet.size, f5));
+    // Step 3 深度交互：既包含下载了PDF/深入滚动的，也包含完成了最终转化的高价值客户
+    const f3 = Math.min(funnelStep1Sessions, Math.max(deepEngagementSessionsSet.size, f4));
+    // Step 2 产品意向：包含浏览了产品页以及任何提交了产品询盘的客户
+    const f2 = Math.min(funnelStep1Sessions, Math.max(productDetailSessionsSet.size, f3));
+    const f1 = Math.max(funnelStep1Sessions, f2);
+
+    // 深度技术型转化 vs 快速直达型转化分析
+    const deepConvertersCount = Array.from(inquirySessionsSet).filter(sid => deepEngagementSessionsSet.has(sid)).length;
+    const directConvertersCount = Math.max(0, f5 - deepConvertersCount);
+
+    const funnelData = [
+      {
+        step: 1,
+        name: '全站访问会话 (Total Sessions)',
+        count: f1,
+        rate: '100%',
+        dropRate: f1 > 0 ? `${Math.max(0, Math.round(((f1 - f2) / f1) * 100))}%` : '0%',
+        desc: '进站全部有效流量',
+        color: '#005B99'
+      },
+      {
+        step: 2,
+        name: '产品目录与详情 (Product Views)',
+        count: f2,
+        rate: f1 > 0 ? `${Math.round((f2 / f1) * 100)}%` : '0%',
+        dropRate: f2 > 0 ? `${Math.max(0, Math.round(((f2 - f3) / f2) * 100))}%` : '0%',
+        desc: '产生明确工业选型意向',
+        color: '#0284c7'
+      },
+      {
+        step: 3,
+        name: '深度研读与规格书 (Deep Read & PDF)',
+        count: f3,
+        rate: f1 > 0 ? `${Math.round((f3 / f1) * 100)}%` : '0%',
+        dropRate: f3 > 0 ? `${Math.max(0, Math.round(((f3 - f4) / f3) * 100))}%` : '0%',
+        desc: '深读参数或导出规格书',
+        color: '#0d9488'
+      },
+      {
+        step: 4,
+        name: '唤起询盘咨询 (Inquiry Started)',
+        count: f4,
+        rate: f1 > 0 ? `${Math.round((f4 / f1) * 100)}%` : '0%',
+        dropRate: f4 > 0 ? `${Math.max(0, Math.round(((f4 - f5) / f4) * 100))}%` : '0%',
+        desc: '点击咨询并聚焦表单',
+        color: '#ea580c'
+      },
+      {
+        step: 5,
+        name: '成功提交询盘 (Inquiry Converted)',
+        count: f5,
+        rate: f1 > 0 ? `${((f5 / f1) * 100).toFixed(1)}%` : '0%',
+        dropRate: '0%',
+        desc: '获取高价值真实采购商机',
+        color: '#16a34a'
+      }
+    ];
+
+    // 5. 多语言出海市场 ROI 对比
+    const langBuckets: Record<string, { name: string; sessions: Set<string>; views: number; inquiries: number }> = {
+      en: { name: 'English (全球 / 欧美)', sessions: new Set(), views: 0, inquiries: 0 },
+      zh: { name: '简体中文 (大中华区)', sessions: new Set(), views: 0, inquiries: 0 },
+      id: { name: 'Indonesian (印尼市场)', sessions: new Set(), views: 0, inquiries: 0 },
+      vi: { name: 'Vietnamese (越南市场)', sessions: new Set(), views: 0, inquiries: 0 },
+    };
+
+    filteredEvents.forEach((e: any) => {
+      let matched = 'en';
+      if (e.path) {
+        if (e.path.startsWith('/zh') || e.path.includes('/zh/')) matched = 'zh';
+        else if (e.path.startsWith('/id') || e.path.includes('/id/')) matched = 'id';
+        else if (e.path.startsWith('/vi') || e.path.includes('/vi/')) matched = 'vi';
+      }
+      if (langBuckets[matched]) {
+        langBuckets[matched].views += 1;
+        if (e.sessionId) langBuckets[matched].sessions.add(e.sessionId);
+      }
+    });
+
+    filteredInquiries.forEach((inq: any) => {
+      let matched = 'en';
+      if (inq.locale && langBuckets[inq.locale]) matched = inq.locale;
+      langBuckets[matched].inquiries += 1;
+    });
+
+    const marketRoiData = Object.entries(langBuckets).map(([code, item]) => {
+      const sCount = item.sessions.size;
+      const rate = sCount > 0 ? ((item.inquiries / sCount) * 100).toFixed(1) : '0.0';
+      return {
+        code,
+        name: item.name,
+        sessions: sCount,
+        views: item.views,
+        inquiries: item.inquiries,
+        conversionRate: `${rate}%`
+      };
+    });
 
     // Geo Distribution
     const countryCounts: Record<string, number> = {};
@@ -297,28 +526,47 @@ export default function AnalyticsPage() {
     });
     const deviceData = Object.entries(deviceCounts).map(([name, value]) => ({ name, value }));
 
-    // Time Series based on selected timeRange
-    let timeSeries: { date: string; sessions: number; events: number }[] = [];
+    // Time Series based on selected timeRange (支持当前周期 vs 上一期同期对比)
+    let timeSeries: {
+      date: string;
+      sessions: number;
+      events: number;
+      prevSessions?: number;
+      prevEvents?: number;
+    }[] = [];
 
     if (timeRange === '24h') {
       timeSeries = Array.from({ length: 24 }, (_, i) => {
         const d = new Date(now.getTime() - (23 - i) * 60 * 60 * 1000);
+        const prevD = new Date(d.getTime() - 24 * 60 * 60 * 1000);
         const hourStr = d.getHours().toString().padStart(2, '0') + ':00';
 
-        const hourlySessions = filteredSessions.filter((s: any) => {
+        const hourlySessions = allValidSessions.filter((s: any) => {
           const sd = new Date(s.createdAt);
           return sd.toDateString() === d.toDateString() && sd.getHours() === d.getHours();
         }).length;
 
-        const hourlyEvents = filteredEvents.filter((e: any) => {
+        const hourlyEvents = validEvents.filter((e: any) => {
           const ed = new Date(e.timestamp);
           return ed.toDateString() === d.toDateString() && ed.getHours() === d.getHours();
+        }).length;
+
+        const prevHourlySessions = allValidSessions.filter((s: any) => {
+          const sd = new Date(s.createdAt);
+          return sd.toDateString() === prevD.toDateString() && sd.getHours() === prevD.getHours();
+        }).length;
+
+        const prevHourlyEvents = validEvents.filter((e: any) => {
+          const ed = new Date(e.timestamp);
+          return ed.toDateString() === prevD.toDateString() && ed.getHours() === prevD.getHours();
         }).length;
 
         return {
           date: hourStr,
           sessions: hourlySessions,
-          events: hourlyEvents
+          events: hourlyEvents,
+          prevSessions: prevHourlySessions,
+          prevEvents: prevHourlyEvents,
         };
       });
     } else if (timeRange === '7d' || timeRange === '30d') {
@@ -328,39 +576,67 @@ export default function AnalyticsPage() {
         d.setDate(d.getDate() - (daysCount - 1 - i));
         const dateStr = d.toISOString().split('T')[0];
 
-        const dailySessions = filteredSessions.filter((s: any) =>
+        const prevD = new Date(d);
+        prevD.setDate(prevD.getDate() - daysCount);
+        const prevDateStr = prevD.toISOString().split('T')[0];
+
+        const dailySessions = allValidSessions.filter((s: any) =>
           new Date(s.createdAt).toISOString().split('T')[0] === dateStr
         ).length;
 
-        const dailyEvents = filteredEvents.filter((e: any) =>
+        const dailyEvents = validEvents.filter((e: any) =>
           new Date(e.timestamp).toISOString().split('T')[0] === dateStr
+        ).length;
+
+        const prevDailySessions = allValidSessions.filter((s: any) =>
+          new Date(s.createdAt).toISOString().split('T')[0] === prevDateStr
+        ).length;
+
+        const prevDailyEvents = validEvents.filter((e: any) =>
+          new Date(e.timestamp).toISOString().split('T')[0] === prevDateStr
         ).length;
 
         return {
           date: dateStr.split('-').slice(1).join('/'),
           sessions: dailySessions,
-          events: dailyEvents
+          events: dailyEvents,
+          prevSessions: prevDailySessions,
+          prevEvents: prevDailyEvents,
         };
       });
     } else if (timeRange === 'year') {
       timeSeries = Array.from({ length: 12 }, (_, i) => {
         const monthNum = i; // 0-11
         const monthLabel = `${monthNum + 1}月`;
+        const currentYear = now.getFullYear();
+        const prevYear = currentYear - 1;
 
-        const monthlySessions = filteredSessions.filter((s: any) => {
+        const monthlySessions = allValidSessions.filter((s: any) => {
           const sd = new Date(s.createdAt);
-          return sd.getFullYear() === now.getFullYear() && sd.getMonth() === monthNum;
+          return sd.getFullYear() === currentYear && sd.getMonth() === monthNum;
         }).length;
 
-        const monthlyEvents = filteredEvents.filter((e: any) => {
+        const monthlyEvents = validEvents.filter((e: any) => {
           const ed = new Date(e.timestamp);
-          return ed.getFullYear() === now.getFullYear() && ed.getMonth() === monthNum;
+          return ed.getFullYear() === currentYear && ed.getMonth() === monthNum;
+        }).length;
+
+        const prevMonthlySessions = allValidSessions.filter((s: any) => {
+          const sd = new Date(s.createdAt);
+          return sd.getFullYear() === prevYear && sd.getMonth() === monthNum;
+        }).length;
+
+        const prevMonthlyEvents = validEvents.filter((e: any) => {
+          const ed = new Date(e.timestamp);
+          return ed.getFullYear() === prevYear && ed.getMonth() === monthNum;
         }).length;
 
         return {
           date: monthLabel,
           sessions: monthlySessions,
-          events: monthlyEvents
+          events: monthlyEvents,
+          prevSessions: prevMonthlySessions,
+          prevEvents: prevMonthlyEvents,
         };
       });
     } else {
@@ -418,6 +694,19 @@ export default function AnalyticsPage() {
         };
       });
     }
+
+    // 计算当前所选周期与上一周期的总体汇总与增长率
+    const currentTotalSessions = timeSeries.reduce((sum, item) => sum + item.sessions, 0);
+    const prevTotalSessions = timeSeries.reduce((sum, item) => sum + (item.prevSessions || 0), 0);
+    const sessionsGrowth = prevTotalSessions > 0
+      ? Math.round(((currentTotalSessions - prevTotalSessions) / prevTotalSessions) * 100)
+      : (currentTotalSessions > 0 ? 100 : 0);
+
+    const currentTotalEvents = timeSeries.reduce((sum, item) => sum + item.events, 0);
+    const prevTotalEvents = timeSeries.reduce((sum, item) => sum + (item.prevEvents || 0), 0);
+    const eventsGrowth = prevTotalEvents > 0
+      ? Math.round(((currentTotalEvents - prevTotalEvents) / prevTotalEvents) * 100)
+      : (currentTotalEvents > 0 ? 100 : 0);
 
     // Referrer Analysis (访问来源渠道分析)
     const referrerCounts: Record<string, number> = {};
@@ -505,10 +794,42 @@ export default function AnalyticsPage() {
       ? Math.round(scrollPercentList.reduce((acc, curr) => acc + curr, 0) / scrollPercentList.length)
       : 0;
 
+    // 上期滚动深度计算
+    const priorScrollList: number[] = [];
+    priorEvents.forEach((e: any) => {
+      if (e.type === 'SCROLL' && e.extraData?.scrollDepth !== undefined) {
+        priorScrollList.push(e.extraData.scrollDepth);
+      }
+    });
+    const priorAvgScrollDepth = priorScrollList.length > 0
+      ? Math.round(priorScrollList.reduce((acc, curr) => acc + curr, 0) / priorScrollList.length)
+      : 0;
+    const scrollDepthTrend = calcTrend(avgScrollDepth, priorAvgScrollDepth);
+
     const inquiryCount = filteredInquiries.length;
     const formAbandonRate = formStartCount > 0
       ? Math.max(0, Math.round(((formStartCount - inquiryCount) / formStartCount) * 100))
       : 0;
+
+    // 上期询盘表单流失率计算
+    let priorFormStartCount = 0;
+    priorEvents.forEach((e: any) => {
+      if (e.type === 'FORM_START') priorFormStartCount += 1;
+    });
+    const priorInquiries = (inquiries || []).filter((inq: any) => isPriorTime(inq.createdAt));
+    const priorInquiryCount = priorInquiries.length;
+    const priorFormAbandonRate = priorFormStartCount > 0
+      ? Math.max(0, Math.round(((priorFormStartCount - priorInquiryCount) / priorFormStartCount) * 100))
+      : 0;
+    // 流失率下降属于改善 (isUp: diff < 0)
+    const abandonDiff = formAbandonRate - priorFormAbandonRate;
+    const abandonTrend = timeRange === 'all' || (formStartCount === 0 && priorFormStartCount === 0)
+      ? { text: '0%', isUp: true, isFlat: true }
+      : {
+          text: `${abandonDiff > 0 ? '+' : ''}${abandonDiff}%`,
+          isUp: abandonDiff <= 0,
+          isFlat: abandonDiff === 0
+        };
 
     // 联合处理带有 Timeline 事件轨迹的 Sessions 列表
     const sessionsWithTimeline = filteredSessions.map((s: any) => {
@@ -550,6 +871,7 @@ export default function AnalyticsPage() {
         loadTime: number;
         ttfb: number;
         fcp: number;
+        level: 1 | 2 | 3 | 4 | 5;
         status: 'fast' | 'moderate' | 'slow';
       }>;
     }> = {};
@@ -737,18 +1059,32 @@ export default function AnalyticsPage() {
       geoData,
       deviceData,
       timeSeries,
+      currentTotalSessions,
+      prevTotalSessions,
+      sessionsGrowth,
+      currentTotalEvents,
+      prevTotalEvents,
+      eventsGrowth,
       referrerData,
       productMetrics,
       utmSourceData,
       utmCampaignData,
       landingPageData,
       avgScrollDepth,
+      scrollDepthTrend,
       formStartCount,
       formAbandonRate,
+      abandonTrend,
+      sessionsTrend,
+      visitorsTrend,
       sessionsWithTimeline,
       perfStats,
+      funnelData,
+      marketRoiData,
+      directConvertersCount,
+      deepConvertersCount,
     };
-  }, [sessions, events, timeRange, matrixSortBy, products, inquiries]);
+  }, [sessions, events, timeRange, matrixSortBy, productSortBy, products, inquiries]);
 
   const handleClearData = async () => {
     setIsClearing(true);
@@ -803,17 +1139,8 @@ export default function AnalyticsPage() {
     return secs > 0 ? `${mins}m ${secs}s` : `${mins}m`;
   };
 
-  if (isSessionsLoading || isEventsLoading || isProductsLoading || isInquiriesLoading) {
-    return (
-      <div className="h-[60vh] flex flex-col items-center justify-center gap-4">
-        <Loader2 className="h-12 w-12 animate-spin text-primary/20" />
-        <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest animate-pulse">正在生成深度洞察报告 / GENERATING INSIGHTS</p>
-      </div>
-    );
-  }
-
   return (
-    <div className="space-y-12 animate-in fade-in duration-1000 pb-20">
+    <div className="space-y-12 pb-20">
       <AdminPageHeader
         title="数据洞察中心"
         subtitle="Overview / Analytics"
@@ -821,7 +1148,7 @@ export default function AnalyticsPage() {
         actions={
           <div className="flex items-center gap-3">
             {/* Time Range Selector */}
-            <div className="inline-flex p-1 rounded-2xl bg-card border border-border/20 backdrop-blur-md">
+            <div className="inline-flex p-1 rounded-2xl bg-card border border-border/40 shadow-sm">
               {[
                 { value: '24h', label: '24小时' },
                 { value: '7d', label: '7天' },
@@ -872,6 +1199,13 @@ export default function AnalyticsPage() {
         }
       />
 
+      {isSessionsLoading || isEventsLoading || isProductsLoading || isInquiriesLoading ? (
+        <div className="h-[50vh] flex flex-col items-center justify-center gap-4">
+          <Loader2 className="h-12 w-12 animate-spin text-primary/20" />
+          <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest animate-pulse">正在生成深度洞察报告 / GENERATING INSIGHTS</p>
+        </div>
+      ) : (
+        <>
       {/* 实时在线访客大屏 */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
         <GlassCard className="lg:col-span-4 border-none bg-slate-950 text-white overflow-hidden relative min-h-[160px] flex flex-col justify-between">
@@ -924,10 +1258,46 @@ export default function AnalyticsPage() {
       {/* Overview Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         {[
-          { label: '总访问会话', value: stats?.totalSessions || 0, icon: Globe, trend: '+12%', color: 'blue', sub: getTimeRangeLabel() },
-          { label: '独立访客数', value: stats?.uniqueVisitors || 0, icon: Users, trend: '+8%', color: 'indigo', sub: getTimeRangeLabel() },
-          { label: '平均滚动深度', value: `${stats?.avgScrollDepth || 0}%`, icon: Activity, trend: '+24%', color: 'orange', sub: getTimeRangeLabel() },
-          { label: '询盘表单流失率', value: `${stats?.formAbandonRate || 0}%`, icon: Zap, trend: '+5%', color: 'yellow', sub: getTimeRangeLabel() },
+          {
+            label: '总访问会话',
+            value: stats?.totalSessions || 0,
+            icon: Globe,
+            trend: stats?.sessionsTrend.text || '0%',
+            isUp: stats?.sessionsTrend.isUp ?? true,
+            isFlat: stats?.sessionsTrend.isFlat ?? false,
+            color: 'blue',
+            sub: getTimeRangeLabel()
+          },
+          {
+            label: '独立访客数',
+            value: stats?.uniqueVisitors || 0,
+            icon: Users,
+            trend: stats?.visitorsTrend.text || '0%',
+            isUp: stats?.visitorsTrend.isUp ?? true,
+            isFlat: stats?.visitorsTrend.isFlat ?? false,
+            color: 'indigo',
+            sub: getTimeRangeLabel()
+          },
+          {
+            label: '平均滚动深度',
+            value: `${stats?.avgScrollDepth || 0}%`,
+            icon: Activity,
+            trend: stats?.scrollDepthTrend.text || '0%',
+            isUp: stats?.scrollDepthTrend.isUp ?? true,
+            isFlat: stats?.scrollDepthTrend.isFlat ?? false,
+            color: 'orange',
+            sub: getTimeRangeLabel()
+          },
+          {
+            label: '询盘表单流失率',
+            value: `${stats?.formAbandonRate || 0}%`,
+            icon: Zap,
+            trend: stats?.abandonTrend.text || '0%',
+            isUp: stats?.abandonTrend.isUp ?? true,
+            isFlat: stats?.abandonTrend.isFlat ?? false,
+            color: 'yellow',
+            sub: getTimeRangeLabel()
+          },
         ].map((stat, i) => (
           <GlassCard key={i} className="border-none overflow-hidden group hover:translate-y-1 transition-all duration-500 bg-card">
             <CardContent className="p-8">
@@ -942,9 +1312,19 @@ export default function AnalyticsPage() {
                 </div>
                 <div className={cn(
                   "flex items-center gap-1 text-[10px] font-bold px-2 py-1 rounded-lg",
-                  stat.trend.startsWith('+') ? "text-green-500 bg-green-500/10" : "text-red-500 bg-red-500/10"
+                  stat.isFlat
+                    ? "text-muted-foreground/70 bg-muted/20"
+                    : stat.isUp
+                      ? "text-green-500 bg-green-500/10"
+                      : "text-red-500 bg-red-500/10"
                 )}>
-                  {stat.trend.startsWith('+') ? <ArrowUpRight className="h-3 w-3" /> : <ArrowDownRight className="h-3 w-3" />}
+                  {stat.isFlat ? (
+                    <Minus className="h-3 w-3" />
+                  ) : stat.isUp ? (
+                    <ArrowUpRight className="h-3 w-3" />
+                  ) : (
+                    <ArrowDownRight className="h-3 w-3" />
+                  )}
                   {stat.trend}
                 </div>
               </div>
@@ -963,21 +1343,61 @@ export default function AnalyticsPage() {
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
         {/* Main Chart - Traffic Over Time */}
         <GlassCard className="lg:col-span-8 border-none bg-card overflow-hidden">
-          <CardHeader className="p-10 border-b border-border/20">
-            <div className="flex items-center justify-between">
+          <CardHeader className="p-8 sm:p-10 border-b border-border/20">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
               <div>
-                <CardTitle className="text-xl font-headline font-bold text-foreground">流量动态监测</CardTitle>
+                <div className="flex items-center gap-3">
+                  <CardTitle className="text-xl font-headline font-bold text-foreground">流量动态监测</CardTitle>
+                  {timeRange !== 'all' && (
+                    <button
+                      onClick={() => setShowComparison(prev => !prev)}
+                      className={cn(
+                        "inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[10px] font-bold transition-all border",
+                        showComparison
+                          ? "bg-primary/10 text-primary border-primary/30 shadow-xs"
+                          : "bg-muted/20 text-muted-foreground border-border/30 hover:text-foreground"
+                      )}
+                      title="对比上一个等长周期的流量趋势"
+                    >
+                      <span className={cn("w-1.5 h-1.5 rounded-full", showComparison ? "bg-primary animate-pulse" : "bg-muted-foreground/50")} />
+                      同期对比 {showComparison ? '开启' : '关闭'}
+                    </button>
+                  )}
+                </div>
                 <CardDescription className="text-[10px] font-bold uppercase tracking-[0.2em] text-muted-foreground mt-1">
                   Traffic Volume Tracking ({timeRange === '24h' ? 'Last 24 Hours' : timeRange === '7d' ? 'Last 7 Days' : timeRange === '30d' ? 'Last 30 Days' : timeRange === 'year' ? 'This Year' : 'All Time'})
+                  {showComparison && timeRange !== 'all' && (
+                    <span className="text-primary/70 ml-1.5 font-normal tracking-normal lowercase">
+                      (vs {timeRange === '24h' ? '前24小时' : timeRange === '7d' ? '前7天' : timeRange === '30d' ? '前30天' : '去年同期'})
+                    </span>
+                  )}
                 </CardDescription>
               </div>
-              <div className="flex gap-2">
-                <Badge className="bg-primary/10 text-primary border-none text-[10px] font-bold py-1 px-2.5 rounded-lg">访问会话</Badge>
-                <Badge className="bg-orange-500/10 text-orange-500 border-none text-[10px] font-bold py-1 px-2.5 rounded-lg">交互事件</Badge>
+              <div className="flex flex-wrap items-center gap-2">
+                <div className="flex items-center gap-1.5 bg-primary/10 text-primary border border-primary/20 text-[10px] font-bold py-1 px-2.5 rounded-lg">
+                  <span className="w-2 h-2 rounded-full bg-primary" />
+                  <span>访问会话</span>
+                </div>
+                <div className="flex items-center gap-1.5 bg-orange-500/10 text-orange-500 border border-orange-500/20 text-[10px] font-bold py-1 px-2.5 rounded-lg">
+                  <span className="w-2 h-2 rounded-full bg-orange-500" />
+                  <span>交互事件</span>
+                </div>
+                {showComparison && timeRange !== 'all' && (
+                  <>
+                    <div className="flex items-center gap-1.5 bg-slate-500/10 text-slate-400 border border-slate-500/20 text-[10px] font-bold py-1 px-2.5 rounded-lg">
+                      <span className="w-3.5 h-0.5 border-t-2 border-dashed border-slate-400" />
+                      <span>上期会话</span>
+                    </div>
+                    <div className="flex items-center gap-1.5 bg-amber-500/10 text-amber-500/80 border border-amber-500/20 text-[10px] font-bold py-1 px-2.5 rounded-lg">
+                      <span className="w-3.5 h-0.5 border-t-2 border-dashed border-amber-500/80" />
+                      <span>上期事件</span>
+                    </div>
+                  </>
+                )}
               </div>
             </div>
           </CardHeader>
-          <CardContent className="p-10">
+          <CardContent className="p-8 sm:p-10">
             <div className="h-[350px] w-full">
               <ResponsiveContainer width="100%" height="100%">
                 <AreaChart data={stats?.timeSeries} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
@@ -989,6 +1409,10 @@ export default function AnalyticsPage() {
                     <linearGradient id="colorEvents" x1="0" y1="0" x2="0" y2="1">
                       <stop offset="5%" stopColor="#f97316" stopOpacity={0.15} />
                       <stop offset="95%" stopColor="#f97316" stopOpacity={0} />
+                    </linearGradient>
+                    <linearGradient id="colorPrevSessions" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor="#94a3b8" stopOpacity={0.08} />
+                      <stop offset="95%" stopColor="#94a3b8" stopOpacity={0} />
                     </linearGradient>
                   </defs>
                   <CartesianGrid strokeDasharray="4 4" vertical={false} stroke="hsl(var(--border) / 0.1)" />
@@ -1009,6 +1433,32 @@ export default function AnalyticsPage() {
                     labelStyle={{ fontSize: '11px', fontWeight: 'bold', color: 'hsl(var(--foreground))', marginBottom: '0.25rem' }}
                     itemStyle={{ fontSize: '11px', fontWeight: 'bold', textTransform: 'uppercase', letterSpacing: '0.05em' }}
                   />
+                  {showComparison && timeRange !== 'all' && (
+                    <Area
+                      type="monotone"
+                      dataKey="prevSessions"
+                      name="上期会话 (Prior Sessions)"
+                      stroke="#94a3b8"
+                      strokeWidth={2}
+                      strokeDasharray="4 4"
+                      fillOpacity={1}
+                      fill="url(#colorPrevSessions)"
+                      activeDot={{ r: 4, strokeWidth: 0, fill: '#94a3b8' }}
+                    />
+                  )}
+                  {showComparison && timeRange !== 'all' && (
+                    <Area
+                      type="monotone"
+                      dataKey="prevEvents"
+                      name="上期事件 (Prior Events)"
+                      stroke="#f59e0b"
+                      strokeWidth={1.8}
+                      strokeDasharray="3 3"
+                      fillOpacity={0}
+                      fill="transparent"
+                      activeDot={{ r: 4, strokeWidth: 0, fill: '#f59e0b' }}
+                    />
+                  )}
                   <Area
                     type="monotone"
                     dataKey="sessions"
@@ -1099,6 +1549,135 @@ export default function AnalyticsPage() {
         </div>
       </div>
 
+      {/* ────── B2B 全链路询盘转化漏斗 & 出海多语言市场 ROI 对比 ────── */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+        {/* 左侧 8 栅格: 全链路询盘转化漏斗 */}
+        <GlassCard className="lg:col-span-8 border-none bg-card overflow-hidden">
+          <CardHeader className="p-8 sm:p-10 border-b border-border/20">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+              <div>
+                <div className="flex items-center gap-2">
+                  <Filter className="h-5 w-5 text-primary" />
+                  <CardTitle className="text-xl font-headline font-bold text-foreground">
+                    B2B 全链路询盘转化漏斗
+                  </CardTitle>
+                </div>
+                <CardDescription className="text-[10px] font-bold uppercase tracking-[0.2em] text-muted-foreground mt-1">
+                  Inquiry Conversion Funnel • 5-Step Customer Journey
+                </CardDescription>
+              </div>
+              <div className="flex items-center gap-3">
+                <div className="px-3.5 py-1.5 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-600 dark:text-emerald-400 text-xs font-bold font-mono">
+                  综合询盘转化率: {stats?.funnelData?.[4]?.rate || '0%'}
+                </div>
+              </div>
+            </div>
+          </CardHeader>
+          <CardContent className="p-8 sm:p-10 space-y-6">
+            <div className="space-y-4">
+              {stats?.funnelData?.map((stepItem: any, idx: number) => {
+                const isLast = idx === (stats.funnelData.length - 1);
+                return (
+                  <div key={idx} className="space-y-2">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1 text-xs">
+                      <div className="flex items-center gap-2.5">
+                        <span className="flex items-center justify-center h-5 w-5 rounded-full text-[10px] font-bold text-white shadow-sm" style={{ backgroundColor: stepItem.color }}>
+                          {stepItem.step}
+                        </span>
+                        <span className="font-bold text-foreground">{stepItem.name}</span>
+                        <span className="text-[10px] text-muted-foreground hidden md:inline">({stepItem.desc})</span>
+                      </div>
+                      <div className="flex items-center gap-4 text-xs font-mono">
+                        <span className="font-bold text-foreground">{stepItem.count} 次</span>
+                        <span className="px-2 py-0.5 rounded-md bg-muted/20 font-bold text-primary">留存率 {stepItem.rate}</span>
+                        {!isLast && (
+                          <span className="text-[10px] text-muted-foreground/60">
+                            流失率 {stepItem.dropRate}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                    {/* 阶梯进度条 */}
+                    <div className="h-3 w-full bg-muted/15 rounded-full overflow-hidden p-0.5 border border-border/10">
+                      <div
+                        className="h-full rounded-full transition-all duration-700 shadow-sm"
+                        style={{
+                          width: stepItem.rate === '100%' ? '100%' : `max(6px, ${stepItem.rate})`,
+                          backgroundColor: stepItem.color,
+                        }}
+                      />
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+            <div className="pt-4 border-t border-border/10 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-[11px] text-muted-foreground">
+              <div className="flex flex-wrap items-center gap-4">
+                <span className="flex items-center gap-1.5">
+                  <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
+                  商机路径归因:
+                </span>
+                <span className="px-2 py-0.5 rounded bg-muted/20 font-mono text-[10px] text-foreground font-bold">
+                  快速直达询盘: {stats?.directConvertersCount || 0} 条
+                </span>
+                <span className="px-2 py-0.5 rounded bg-muted/20 font-mono text-[10px] text-foreground font-bold">
+                  深度研读/下载PDF后询盘: {stats?.deepConvertersCount || 0} 条
+                </span>
+              </div>
+              <span className="font-mono font-bold text-foreground">
+                成单线索转化指数: {(stats?.funnelData?.[4]?.count ?? 0) > 0 ? '活跃 (Active)' : '待发掘 (N/A)'}
+              </span>
+            </div>
+          </CardContent>
+        </GlassCard>
+
+        {/* 右侧 4 栅格: 出海多语言市场表现与 ROI 对比 */}
+        <GlassCard className="lg:col-span-4 border-none bg-card overflow-hidden flex flex-col justify-between">
+          <CardHeader className="p-8 sm:p-10 border-b border-border/20">
+            <div className="flex items-center justify-between">
+              <div>
+                <div className="flex items-center gap-2">
+                  <Globe className="h-5 w-5 text-indigo-500" />
+                  <CardTitle className="text-xl font-headline font-bold text-foreground">
+                    多语言市场转化 ROI
+                  </CardTitle>
+                </div>
+                <CardDescription className="text-[10px] font-bold uppercase tracking-[0.2em] text-muted-foreground mt-1">
+                  Global Markets Performance
+                </CardDescription>
+              </div>
+            </div>
+          </CardHeader>
+          <CardContent className="p-8 sm:p-10 space-y-6 flex-1 flex flex-col justify-between">
+            <div className="space-y-4">
+              {stats?.marketRoiData?.map((item: any, i: number) => {
+                const totalSessionsAll = stats?.totalSessions || 1;
+                const share = Math.round((item.sessions / totalSessionsAll) * 100);
+                return (
+                  <div key={i} className="p-3.5 rounded-2xl bg-muted/10 border border-border/20 space-y-2 hover:bg-muted/15 transition-all">
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-bold text-foreground">{item.name}</span>
+                      <span className="text-xs font-mono font-black text-emerald-600 dark:text-emerald-400">
+                        转化率 {item.conversionRate}
+                      </span>
+                    </div>
+                    <div className="flex items-center justify-between text-[10px] text-muted-foreground font-mono">
+                      <span>会话: <strong className="text-foreground">{item.sessions}</strong> 次 ({share}%)</span>
+                      <span>浏览: <strong className="text-foreground">{item.views}</strong> PV</span>
+                      <span>询盘: <strong className="text-emerald-600 dark:text-emerald-400 font-bold">{item.inquiries}</strong> 条</span>
+                    </div>
+                    <Progress value={share} className="h-1 bg-muted/30" />
+                  </div>
+                );
+              })}
+            </div>
+            <p className="text-[10px] text-muted-foreground/60 text-center">
+              按语种划分访客意向，指导海外投放与本地化运营
+            </p>
+          </CardContent>
+        </GlassCard>
+      </div>
+
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
         {/* Geographic Distribution */}
         <GlassCard className="lg:col-span-5 border-none bg-card overflow-hidden">
@@ -1138,45 +1717,42 @@ export default function AnalyticsPage() {
                 <CardTitle className="text-xl font-headline font-bold text-foreground">核心内容热度矩阵</CardTitle>
                 <CardDescription className="text-[10px] font-bold uppercase tracking-[0.2em] text-muted-foreground mt-1">Content matrix performance</CardDescription>
               </div>
-              {/* 排序筛选按钮 */}
-              <div className="inline-flex p-1 rounded-xl bg-muted/50 border border-border/10 backdrop-blur-sm shrink-0">
-                <button
-                  onClick={() => setMatrixSortBy('pv')}
-                  className={cn(
-                    "px-3 py-1.5 rounded-lg text-[9px] font-bold transition-all duration-300",
-                    matrixSortBy === 'pv' ? "bg-card text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"
-                  )}
-                >
-                  按浏览量 (PV)
-                </button>
-                <button
-                  onClick={() => setMatrixSortBy('dwell')}
-                  className={cn(
-                    "px-3 py-1.5 rounded-lg text-[9px] font-bold transition-all duration-300",
-                    matrixSortBy === 'dwell' ? "bg-card text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"
-                  )}
-                >
-                  按停留时间
-                </button>
-              </div>
             </div>
           </CardHeader>
-          <CardContent className="p-0">
-            <table className="w-full text-left">
+          <CardContent className="p-0 overflow-x-auto">
+            <table className="w-full text-left min-w-[540px]">
               <thead>
-                <tr className="text-[10px] font-bold text-muted-foreground/40 uppercase tracking-widest">
-                  <th className="px-10 py-6">路径 / Page Path</th>
-                  <th className="px-10 py-6 text-right">浏览量 / PV</th>
-                  <th className="px-10 py-6 text-right">平均停留时间</th>
-                  <th className="px-10 py-6 text-right">占比 / Share</th>
+                <tr className="text-[10px] font-bold text-muted-foreground/40 uppercase tracking-widest border-b border-border/10">
+                  <th className="px-10 py-5">路径 / Page Path</th>
+                  <th
+                    className={cn(
+                      "px-6 py-5 text-right cursor-pointer select-none transition-colors",
+                      matrixSortBy === 'pv' ? "text-primary font-black" : "hover:text-foreground"
+                    )}
+                    onClick={() => setMatrixSortBy('pv')}
+                    title="点击按浏览量排序"
+                  >
+                    浏览量 / PV {matrixSortBy === 'pv' && '↓'}
+                  </th>
+                  <th
+                    className={cn(
+                      "px-6 py-5 text-right cursor-pointer select-none transition-colors",
+                      matrixSortBy === 'dwell' ? "text-primary font-black" : "hover:text-foreground"
+                    )}
+                    onClick={() => setMatrixSortBy('dwell')}
+                    title="点击按平均停留时间排序"
+                  >
+                    平均停留时间 {matrixSortBy === 'dwell' && '↓'}
+                  </th>
+                  <th className="px-10 py-5 text-right">占比 / Share</th>
                 </tr>
               </thead>
               <tbody className="text-xs font-bold text-muted-foreground">
                 {stats?.sortedPages.map((item: any, i: number) => (
                   <tr key={i} className="border-t border-border/10 group hover:bg-muted/10 transition-all">
                     <td className="px-10 py-5 font-mono text-muted-foreground/60 group-hover:text-primary">{item.path}</td>
-                    <td className="px-10 py-5 text-right font-black text-foreground">{item.pv}</td>
-                    <td className="px-10 py-5 text-right text-indigo-400 font-mono">{formatDwellTime(item.avgDwell)}</td>
+                    <td className="px-6 py-5 text-right font-black text-foreground">{item.pv}</td>
+                    <td className="px-6 py-5 text-right text-indigo-400 font-mono">{formatDwellTime(item.avgDwell)}</td>
                     <td className="px-10 py-5 text-right">
                       <Badge variant="secondary" className="rounded-full bg-muted/20 text-muted-foreground border-none font-bold">
                         {stats.totalEvents > 0 ? Math.round((item.pv / stats.totalEvents) * 100) : 0}%
@@ -1192,7 +1768,7 @@ export default function AnalyticsPage() {
 
       {/* 产品维度数据监测板块 */}
       <GlassCard className="border-none bg-card overflow-hidden">
-        <CardHeader className="p-10 border-b border-border/20">
+        <CardHeader className="p-8 sm:p-10 border-b border-border/20">
           <div className="flex items-center justify-between">
             <div>
               <CardTitle className="text-xl font-headline font-bold text-foreground">产品数据监测中心</CardTitle>
@@ -1201,32 +1777,102 @@ export default function AnalyticsPage() {
             <ShoppingBag className="h-8 w-8 text-muted-foreground/10" />
           </div>
         </CardHeader>
-        <CardContent className="p-0">
-          <table className="w-full text-left">
+        <CardContent className="p-0 overflow-x-auto">
+          <table className="w-full text-left min-w-[640px]">
             <thead>
-              <tr className="text-[10px] font-bold text-muted-foreground/40 uppercase tracking-widest">
-                <th className="px-10 py-6">产品名称</th>
-                <th className="px-10 py-6 text-right">被访问数量 (PV)</th>
-                <th className="px-10 py-6 text-right">产品询盘数</th>
-                <th className="px-10 py-6 text-right">询盘转化率</th>
-                <th className="px-10 py-6 text-right">转化趋势</th>
+              <tr className="text-[10px] font-bold text-muted-foreground/40 uppercase tracking-widest border-b border-border/10">
+                <th className="px-8 sm:px-10 py-5">产品信息</th>
+                <th
+                  className={cn(
+                    "px-6 py-5 text-right cursor-pointer select-none transition-colors",
+                    productSortBy === 'views' ? "text-primary font-black" : "hover:text-foreground"
+                  )}
+                  onClick={() => setProductSortBy('views')}
+                  title="点击按访问量排序"
+                >
+                  被访问数量 (PV) {productSortBy === 'views' && '↓'}
+                </th>
+                <th
+                  className={cn(
+                    "px-6 py-5 text-right cursor-pointer select-none transition-colors",
+                    productSortBy === 'inquiries' ? "text-primary font-black" : "hover:text-foreground"
+                  )}
+                  onClick={() => setProductSortBy('inquiries')}
+                  title="点击按产品询盘数排序"
+                >
+                  产品询盘数 {productSortBy === 'inquiries' && '↓'}
+                </th>
+                <th
+                  className={cn(
+                    "px-6 py-5 text-right cursor-pointer select-none transition-colors",
+                    productSortBy === 'downloads' ? "text-primary font-black" : "hover:text-foreground"
+                  )}
+                  onClick={() => setProductSortBy('downloads')}
+                  title="点击按规格书下载量排序"
+                >
+                  规格书下载 (PDF) {productSortBy === 'downloads' && '↓'}
+                </th>
+                <th
+                  className={cn(
+                    "px-6 py-5 text-right cursor-pointer select-none transition-colors",
+                    productSortBy === 'conversion' ? "text-primary font-black" : "hover:text-foreground"
+                  )}
+                  onClick={() => setProductSortBy('conversion')}
+                  title="点击按询盘转化率排序"
+                >
+                  询盘转化率 {productSortBy === 'conversion' && '↓'}
+                </th>
+                <th className="px-8 sm:px-10 py-5 text-right">转化趋势</th>
               </tr>
             </thead>
             <tbody className="text-xs font-bold text-muted-foreground">
               {stats?.productMetrics && stats.productMetrics.length > 0 ? (
                 stats.productMetrics.map((item: any, i: number) => (
                   <tr key={i} className="border-t border-border/10 group hover:bg-muted/10 transition-all">
-                    <td className="px-10 py-5 font-semibold text-foreground group-hover:text-primary max-w-xs truncate">{item.name}</td>
-                    <td className="px-10 py-5 text-right font-mono text-muted-foreground/60">{item.views} 次</td>
-                    <td className="px-10 py-5 text-right font-mono text-foreground flex items-center justify-end gap-1.5">
-                      <MessageSquare className="h-3 w-3 text-orange-400" />
-                      <span>{item.inquiries} 个</span>
+                    {/* 产品缩略图 + 产品名称 */}
+                    <td className="px-8 sm:px-10 py-4 font-semibold text-foreground group-hover:text-primary max-w-xs">
+                      <div className="flex items-center gap-3">
+                        <div className="relative w-10 h-10 rounded-xl bg-muted/30 border border-border/40 overflow-hidden shrink-0 flex items-center justify-center">
+                          {item.mainImageUrl ? (
+                            <Image
+                              src={getAssetUrl(item.mainImageUrl)}
+                              alt={item.name}
+                              fill
+                              className="object-cover"
+                              unoptimized
+                            />
+                          ) : (
+                            <ShoppingBag className="w-4 h-4 text-muted-foreground/40" />
+                          )}
+                        </div>
+                        <Link
+                          href={`/products/${item.id}`}
+                          target="_blank"
+                          className="truncate hover:underline"
+                          title={item.name}
+                        >
+                          {item.name}
+                        </Link>
+                      </div>
                     </td>
-                    <td className="px-10 py-5 text-right font-black text-green-500 font-mono">{item.conversion}</td>
-                    <td className="px-10 py-5 text-right">
+                    <td className="px-6 py-4 text-right font-mono text-muted-foreground/80">{item.views} 次</td>
+                    <td className="px-6 py-4 text-right font-mono text-foreground">
+                      <div className="flex items-center justify-end gap-1.5">
+                        <MessageSquare className="h-3.5 w-3.5 text-orange-400" />
+                        <span>{item.inquiries} 个</span>
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 text-right font-mono text-muted-foreground/80">
+                      <div className="flex items-center justify-end gap-1.5">
+                        <FileDown className="h-3.5 w-3.5 text-blue-500" />
+                        <span>{item.pdfDownloads || 0} 次</span>
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 text-right font-black text-emerald-500 font-mono text-sm">{item.conversion}</td>
+                    <td className="px-8 sm:px-10 py-4 text-right">
                       <div className="w-24 ml-auto">
                         <Progress
-                          value={parseFloat(item.conversion) || 0}
+                          value={Math.min(100, item.conversionRate || 0)}
                           className="h-1.5 bg-muted/20"
                         />
                       </div>
@@ -1235,7 +1881,7 @@ export default function AnalyticsPage() {
                 ))
               ) : (
                 <tr>
-                  <td colSpan={5} className="text-center py-10 text-muted-foreground/40 font-medium">
+                  <td colSpan={6} className="text-center py-12 text-muted-foreground/40 font-medium">
                     暂无产品监测数据，请先前去前台浏览产品或提交询盘。
                   </td>
                 </tr>
@@ -2000,11 +2646,14 @@ export default function AnalyticsPage() {
           </div>
         </CardContent>
       </GlassCard>
+      </>
+      )}
 
       <AnalyticsReport
         isOpen={isReportOpen}
         onClose={() => setIsReportOpen(false)}
         data={stats}
+        timeRange={timeRange}
       />
 
       {/* 数据清洗二次确认弹框 */}

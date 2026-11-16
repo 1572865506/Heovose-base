@@ -20,7 +20,7 @@ export async function POST(request: Request) {
     }
 
     // 2. Type validation
-    const allowedTypes = ['pageview', 'click', 'hover', 'scroll', 'video_play', 'video_pause', 'video_ended', 'cookie_accept', 'form_start', 'performance'];
+    const allowedTypes = ['pageview', 'click', 'hover', 'scroll', 'video_play', 'video_pause', 'video_ended', 'cookie_accept', 'form_start', 'performance', 'pdf_download'];
     if (!type || typeof type !== 'string' || !allowedTypes.includes(type.toLowerCase())) {
       return NextResponse.json({ error: 'Invalid or unsupported tracking type' }, { status: 400 });
     }
@@ -81,6 +81,8 @@ export async function POST(request: Request) {
     if (rest.utm_medium) extraData.utm_medium = String(rest.utm_medium).slice(0, 100);
     if (rest.utm_campaign) extraData.utm_campaign = String(rest.utm_campaign).slice(0, 100);
     if (rest.isLandingPage !== undefined) extraData.isLandingPage = !!rest.isLandingPage;
+    if (rest.productId) extraData.productId = String(rest.productId).slice(0, 100);
+    if (rest.productName) extraData.productName = String(rest.productName).slice(0, 200);
 
     // Web Vitals & Performance 性能测速指标白名单校验
     if (rest.perf && typeof rest.perf === 'object') {

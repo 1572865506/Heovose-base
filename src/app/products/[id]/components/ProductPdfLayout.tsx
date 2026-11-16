@@ -51,6 +51,7 @@ export interface ProductPdfLayoutProps {
   getProductText: (id?: any, fallback?: any) => string;
   getSystemText: (key: string) => string;
   getAssetUrl: (url: string | null | undefined) => string;
+  getGalleryThumbUrl?: (url: string | null | undefined) => string;
 }
 
 export const ProductPdfLayout = forwardRef<HTMLDivElement, ProductPdfLayoutProps>(
@@ -72,9 +73,11 @@ export const ProductPdfLayout = forwardRef<HTMLDivElement, ProductPdfLayoutProps
       getProductText,
       getSystemText,
       getAssetUrl,
+      getGalleryThumbUrl,
     },
     ref
   ) => {
+    const resolveThumbUrl = getGalleryThumbUrl || getAssetUrl;
     const specPages = specPagination.subsequentPages;
     const totalPdfPages = specPagination.totalPages;
 
@@ -237,7 +240,7 @@ export const ProductPdfLayout = forwardRef<HTMLDivElement, ProductPdfLayoutProps
             fontFamily: '"PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "WenQuanYi Micro Hei", "Noto Sans SC", "Noto Sans CJK SC", -apple-system, sans-serif',
           }}
         >
-          <div style={{ flex: 1, display: 'flex', flexDirection: 'column', position: 'relative', zIndex: 1 }}>
+          <div style={{ flex: 1, display: 'flex', flexDirection: 'column', position: 'relative', zIndex: 1, paddingBottom: '44px', boxSizing: 'border-box' }}>
             {/* Header: 优雅的品牌主色横线，高度自适应，文字留足呼吸感，杜绝下半部裁切 */}
             <div
               className="flex items-center justify-between border-b-2 border-primary pb-3 mb-5"
@@ -409,7 +412,7 @@ export const ProductPdfLayout = forwardRef<HTMLDivElement, ProductPdfLayoutProps
                         }}
                       >
                         <img
-                          src={getAssetUrl(validGalleryImages[0])}
+                          src={resolveThumbUrl(validGalleryImages[0])}
                           alt="Gallery 1"
                           style={{ width: '100%', height: '100%', objectFit: 'contain', display: 'block' }}
                           crossOrigin="anonymous"
@@ -491,7 +494,7 @@ export const ProductPdfLayout = forwardRef<HTMLDivElement, ProductPdfLayoutProps
                           }}
                         >
                           <img
-                            src={getAssetUrl(img)}
+                            src={resolveThumbUrl(img)}
                             alt={`Gallery ${idx}`}
                             style={{ width: '100%', height: '100%', objectFit: 'contain', display: 'block' }}
                             crossOrigin="anonymous"
@@ -574,7 +577,7 @@ export const ProductPdfLayout = forwardRef<HTMLDivElement, ProductPdfLayoutProps
                           }}
                         >
                           <img
-                            src={getAssetUrl(img)}
+                            src={resolveThumbUrl(img)}
                             alt={`Gallery ${idx}`}
                             style={{ width: '100%', height: '100%', objectFit: 'contain', display: 'block' }}
                             crossOrigin="anonymous"
@@ -660,7 +663,7 @@ export const ProductPdfLayout = forwardRef<HTMLDivElement, ProductPdfLayoutProps
                           }}
                         >
                           <img
-                            src={getAssetUrl(img)}
+                            src={resolveThumbUrl(img)}
                             alt={`Gallery right ${idx}`}
                             style={{ width: '100%', height: '100%', objectFit: 'contain', display: 'block' }}
                             crossOrigin="anonymous"
@@ -698,7 +701,7 @@ export const ProductPdfLayout = forwardRef<HTMLDivElement, ProductPdfLayoutProps
                         }}
                       >
                         <img
-                          src={getAssetUrl(img)}
+                          src={resolveThumbUrl(img)}
                           alt={`Gallery bottom ${idx}`}
                           style={{ width: '100%', height: '100%', objectFit: 'contain', display: 'block' }}
                           crossOrigin="anonymous"
@@ -878,7 +881,7 @@ export const ProductPdfLayout = forwardRef<HTMLDivElement, ProductPdfLayoutProps
                 fontFamily: '"PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "WenQuanYi Micro Hei", "Noto Sans SC", "Noto Sans CJK SC", -apple-system, sans-serif',
               }}
             >
-              <div style={{ flex: 1, display: 'flex', flexDirection: 'column', position: 'relative', zIndex: 1 }}>
+              <div style={{ flex: 1, display: 'flex', flexDirection: 'column', position: 'relative', zIndex: 1, paddingBottom: '44px', boxSizing: 'border-box' }}>
                 {/* Header */}
                 <div
                   className="flex items-center justify-between border-b-2 border-primary pb-3 mb-5"

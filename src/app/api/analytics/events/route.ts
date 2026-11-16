@@ -10,13 +10,17 @@ export const GET = withAuth('editor', async (request) => {
     let startDate: Date | undefined;
     const now = new Date();
     if (range === '24h') {
-      startDate = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+      // 预留前序一个周期 (24h * 2 = 48h)
+      startDate = new Date(now.getTime() - 48 * 60 * 60 * 1000);
     } else if (range === '7d') {
-      startDate = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+      // 预留前序一个周期 (7d * 2 = 14d)
+      startDate = new Date(now.getTime() - 14 * 24 * 60 * 60 * 1000);
     } else if (range === '30d') {
-      startDate = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+      // 预留前序一个周期 (30d * 2 = 60d)
+      startDate = new Date(now.getTime() - 60 * 24 * 60 * 60 * 1000);
     } else if (range === 'year') {
-      startDate = new Date(now.getFullYear(), 0, 1);
+      // 预留去年同期数据
+      startDate = new Date(now.getFullYear() - 1, 0, 1);
     } else if (range === 'all') {
       startDate = undefined;
     }

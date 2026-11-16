@@ -113,6 +113,8 @@ export default function ProductClient({ product, initialLocale }: { product: any
   const [isSocialGuideOpen, setIsSocialGuideOpen] = useState(false);
   const [currentSocialAppName, setCurrentSocialAppName] = useState('微信');
   const printLayoutRef = useRef<HTMLDivElement>(null);
+  const cachedSpecKeyRef = useRef<string>('');
+  const localThumbMapRef = useRef<Record<string, string>>({});
 
   // 全环境剪贴板兜底函数（即使在局域网 HTTP 或旧浏览器下也能 100% 成功复制）
   const copyToClipboard = async (text: string): Promise<boolean> => {
@@ -176,18 +178,71 @@ export default function ProductClient({ product, initialLocale }: { product: any
     });
   };
 
+  // 直接从页面已加载完成的缩略图 DOM 节点提取本地图像资源（Canvas DataURL 或已缓存的 currentSrc），
+  // 使得规格书中的副图（小图）100% 复用页面已加载资源，无需重新向服务器请求原图
+  const captureLoadedLocalThumbnails = () => {
+    if (typeof document === 'undefined') return;
+    const thumbImgs = document.querySelectorAll<HTMLImageElement>('img[data-gallery-raw-url]');
+    thumbImgs.forEach((imgEl) => {
+      const rawUrl = imgEl.getAttribute('data-gallery-raw-url');
+      if (!rawUrl || localThumbMapRef.current[rawUrl]) return;
+      if (imgEl.complete && imgEl.naturalWidth > 0) {
+        try {
+          const canvas = document.createElement('canvas');
+          canvas.width = imgEl.naturalWidth;
+          canvas.height = imgEl.naturalHeight;
+          const ctx = canvas.getContext('2d');
+          if (ctx) {
+            ctx.drawImage(imgEl, 0, 0);
+            localThumbMapRef.current[rawUrl] = canvas.toDataURL('image/jpeg', 0.92);
+            return;
+          }
+        } catch {
+          // 若跨域受限无法转 DataURL，则直接复用浏览器已缓存的 Next.js 缩略图 currentSrc
+        }
+        if (imgEl.currentSrc || imgEl.src) {
+          localThumbMapRef.current[rawUrl] = imgEl.currentSrc || imgEl.src;
+        }
+      }
+    });
+  };
+
+  const getGalleryThumbUrl = (rawUrl: string | null | undefined): string => {
+    if (!rawUrl) return '';
+    if (localThumbMapRef.current[rawUrl]) {
+      return localThumbMapRef.current[rawUrl];
+    }
+    return getAssetUrl(rawUrl);
+  };
+
   const handleOpenSpecPreview = async () => {
     if (isExporting) return;
+
+    // 1. 命中本地内存缓存：同一产品与语种下二次点击，0ms 瞬时打开预览弹窗，绝不重复合成！
+    const currentCacheKey = `${product?.id || ''}_${locale}`;
+    if (
+      cachedSpecKeyRef.current === currentCacheKey &&
+      specPreviewData.pages.length > 0 &&
+      specPreviewData.pdfBlob
+    ) {
+      setSpecPreviewData((prev) => ({ ...prev, isOpen: true }));
+      return;
+    }
+
+    // 2. 同步捕获当前页面 DOM 中已经加载完毕的本地缩略图资源供副图直接复用
+    captureLoadedLocalThumbnails();
     setIsExporting(true);
 
     try {
-      // 预先将 Logo 渲染为 169x32 的标准高保真位图
-      const rawLogo = siteConfig?.logoStandard ? getAssetUrl(siteConfig.logoStandard) : '/image/Heovose-color.svg';
-      const logoPng = await rasterizeLogo(rawLogo, 169, 32);
-      setExportLogoUrl(logoPng);
+      // 若闲时预热尚未完成 Logo 栅格化，则在此补充执行；若已预热完成则直接跳过等待
+      if (!exportLogoUrl) {
+        const rawLogo = siteConfig?.logoStandard ? getAssetUrl(siteConfig.logoStandard) : '/image/Heovose-color.svg';
+        const logoPng = await rasterizeLogo(rawLogo, 169, 32);
+        setExportLogoUrl(logoPng);
+      }
 
-      // 给 React 状态更新和 DOM 挂载预留时间
-      await new Promise((r) => setTimeout(r, 250));
+      // 给 React 状态更新和离屏 DOM 挂载预留极短帧时间
+      await new Promise((r) => setTimeout(r, 120));
 
       const container = printLayoutRef.current;
       if (!container) {
@@ -312,7 +367,8 @@ export default function ProductClient({ product, initialLocale }: { product: any
       const pdfBlob = pdf.output('blob');
       const pdfFile = new File([pdfBlob], fileName, { type: 'application/pdf' });
 
-      // 打开站内规格书预览模态窗，并持久化保存 pdf 实例，便于后续一键原生调用 pdf.save()
+      // 打开站内规格书预览模态窗，并持久化保存 pdf 实例与缓存 Key，二次点击 0ms 瞬开
+      cachedSpecKeyRef.current = currentCacheKey;
       setSpecPreviewData({
         isOpen: true,
         pages: pagesDataUrls,
@@ -526,6 +582,27 @@ export default function ProductClient({ product, initialLocale }: { product: any
     if (!specPreviewData.pdfBlob || isSaving) return;
     setIsSaving(true);
 
+    // 埋点上报：用户下载/保存了产品规格书
+    try {
+      const sid = typeof window !== 'undefined' ? (sessionStorage.getItem('heovose-analytics-session') || `session_${Date.now()}`) : '';
+      const vid = typeof window !== 'undefined' ? (localStorage.getItem('heovose-analytics-visitor') || `visitor_${Date.now()}`) : '';
+      if (sid && vid) {
+        fetch('/api/analytics/track', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            type: 'pdf_download',
+            sessionId: sid,
+            visitorId: vid,
+            path: typeof window !== 'undefined' ? window.location.pathname : '',
+            element: 'spec_pdf_download',
+            productId: product?.id,
+            productName: getProductText(product?.nameTextId, product?.nameText)
+          })
+        }).catch(() => {});
+      }
+    } catch (_) {}
+
     // 双重校验文件名与 .pdf 后缀，清洗安全文件名（保留字母、数字、中文、下划线、减号）
     const rawFileName = specPreviewData.fileName || 'Specification.pdf';
     const cleanBase = rawFileName
@@ -636,6 +713,36 @@ export default function ProductClient({ product, initialLocale }: { product: any
   const { data: langSettings } = useLocalDoc<any>('settings', 'languages');
   const { data: siteConfig } = useLocalDoc<any>('settings', 'site');
   const { t: tr } = useTranslations(locale);
+
+  // 闲时静默预热：后台预先加载 html2canvas / jspdf 引擎并预栅格化品牌 Logo，用户点击导出时无需等待网络下载与 Logo 转换
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const scheduleIdle = (cb: () => void) => {
+      if ('requestIdleCallback' in window) {
+        return (window as any).requestIdleCallback(cb, { timeout: 2000 });
+      }
+      return setTimeout(cb, 800);
+    };
+    const cancelIdle = (id: any) => {
+      if ('cancelIdleCallback' in window) {
+        (window as any).cancelIdleCallback(id);
+      } else {
+        clearTimeout(id);
+      }
+    };
+
+    const idleId = scheduleIdle(() => {
+      import('html2canvas').catch(() => {});
+      import('jspdf').catch(() => {});
+      const rawLogo = siteConfig?.logoStandard ? getAssetUrl(siteConfig.logoStandard) : '/image/Heovose-color.svg';
+      rasterizeLogo(rawLogo, 169, 32).then((png) => {
+        if (png) setExportLogoUrl(png);
+      });
+      captureLoadedLocalThumbnails();
+    });
+
+    return () => cancelIdle(idleId);
+  }, [siteConfig?.logoStandard, product?.id]);
 
   // 校验解析出的翻译内容是否是系统级翻译 Key 或是无有效内容的英文 Key。
   // 如果是 Key 模式（如大写且含下划线，或含有前缀等），直接判定为未翻译，返回空。
@@ -990,7 +1097,10 @@ export default function ProductClient({ product, initialLocale }: { product: any
     }
   }, [advantages.length]);
 
-  // 工业级智能双列流规格表分页：左右两列排布不同规格子表，保持子表完整性，绝不随意切碎表格
+  // 工业级像素级精准双列流规格表分页引擎：
+  // 1. 精确识别显式换行（\n / <br>）与中英文字符视觉宽度差异（汉字 2.0 单位、西文 0.95~1.15 单位）；
+  // 2. 完整纳入子表局部脚注 (group.footnote) 与尾页全局脚注 (orderedFootnotes / unorderedFootnotes) 的真实物理像素高度；
+  // 3. 非尾页满额填充 886px 可用高度（消除页脚上方大段空白），尾页精准预留全局脚注高度（杜绝遮挡或重叠页脚）。
   const specPagination = useMemo(() => {
     if (!groupedSpecs || groupedSpecs.length === 0) {
       return {
@@ -1001,13 +1111,10 @@ export default function ProductClient({ product, initialLocale }: { product: any
     }
 
     const hasAdvantages = advantages.length > 0;
-    const hasGallery = product?.galleryImageUrls && product.galleryImageUrls.filter((img: string) => img !== product.mainImageUrl && !isVideoUrl(img)).length > 0;
-
-    // 单列单位充盈安全容量：下调至 31.2（以 26.4px 基准行高计算，增加约 15.8px 底端呼吸安全空间）
-    // 确保右栏内容底端与绝对定位页脚之间留有绝对充裕的留白，杜绝遮挡表格
-    const SUBSEQUENT_COL_CAPACITY = 31.2;
-    // 无优势时 Page 1 安全容量：有画廊 9 行/列，无画廊 13 行/列
-    const PAGE_1_COL_CAPACITY = hasAdvantages ? 0 : (hasGallery ? 9 : 13);
+    const validGalleryCount = product?.galleryImageUrls
+      ? product.galleryImageUrls.filter((img: string) => img && img !== product.mainImageUrl && !isVideoUrl(img)).length
+      : 0;
+    const hasGallery = validGalleryCount > 0;
 
     interface SpecGroupChunk {
       title: string;
@@ -1021,48 +1128,123 @@ export default function ProductClient({ product, initialLocale }: { product: any
       rightGroups: SpecGroupChunk[];
     }
 
-    // 真实物理行高精确换算（1.0 单位 = 26.4px 基准单行高度）：
-    // 包含字高 (15.4px) + 上下 padding (10px) + 边线 (1px)；
-    // 严格按照列宽（约 240px 可视宽度）与文本长度对多行折行进行足额加权计算，杜绝低估导致的溢出
-    const getItemUnits = (item: { label: string; value: string }): number => {
-      const cleanVal = (item.value || '').replace(/<[^>]+>/g, '').trim();
-      const valLen = cleanVal.length;
-      let valUnits = 1.0;
-      if (valLen > 140) {
-        valUnits = 3.3; // 5行及以上超长文本（如复杂输入输出端口）
-      } else if (valLen > 95) {
-        valUnits = 2.7; // 4行文本
-      } else if (valLen > 55) {
-        valUnits = 2.1; // 3行文本
-      } else if (valLen > 24) {
-        valUnits = 1.5; // 2行文本
+    // 精确计算一段 HTML/文本在指定单行视觉宽度容量（maxUnitsPerLine）下的真实折行行数
+    const calcVisualLines = (htmlStr: string, maxUnitsPerLine: number): number => {
+      if (!htmlStr) return 1;
+      const normalized = String(htmlStr)
+        .replace(/<br\s*\/?>/gi, '\n')
+        .replace(/<\/(p|div|li|tr)>/gi, '\n')
+        .replace(/<[^>]+>/g, '')
+        .replace(/&nbsp;/gi, ' ')
+        .replace(/&amp;/gi, '&')
+        .replace(/&lt;/gi, '<')
+        .replace(/&gt;/gi, '>')
+        .replace(/&quot;/gi, '"')
+        .replace(/\r\n/g, '\n')
+        .replace(/\r/g, '\n')
+        .trim();
+
+      if (!normalized) return 1;
+
+      const paragraphs = normalized.split('\n');
+      let totalLines = 0;
+
+      for (const para of paragraphs) {
+        const trimmed = para.trim();
+        if (!trimmed) {
+          totalLines += 1;
+          continue;
+        }
+        let visualUnits = 0;
+        for (let i = 0; i < trimmed.length; i++) {
+          const code = trimmed.charCodeAt(i);
+          // CJK 统一表意文字、全角标点与日韩字符计 2.0 视觉宽度单位
+          if ((code >= 0x2e80 && code <= 0xfe4f) || code >= 0xff00) {
+            visualUnits += 2.0;
+          } else if (code >= 65 && code <= 90) {
+            // 大写西文字母计 1.15 单位
+            visualUnits += 1.15;
+          } else {
+            // 小写字母、数字、半角标点与空格计 0.95 单位
+            visualUnits += 0.95;
+          }
+        }
+        totalLines += Math.max(1, Math.ceil(visualUnits / maxUnitsPerLine));
       }
 
-      const cleanLabel = (item.label || '').replace(/<[^>]+>/g, '').trim();
-      let labelUnits = 1.0;
-      if (cleanLabel.length > 20) {
-        labelUnits = 1.5;
+      return Math.max(1, totalLines);
+    };
+
+    // 单项参数行真实物理像素高度（px）：
+    // 单列总宽 339px（(706 - 28)/2）：
+    // - Label 占 28%（扣除 12px 右间距后净宽约 83px，11px 字号每行可容纳约 14.2 视觉单位）
+    // - Value 占 72%（净宽约 244px，11px 字号每行可容纳约 42.0 视觉单位）
+    // - 纵向固定开销：paddingTop(5px) + paddingBottom(7px) + borderBottom(1px) = 13px；每行字高 11 * 1.4 ≈ 15.6px
+    const getItemHeightPx = (item: { label: string; value: string }): number => {
+      const labelLines = calcVisualLines(item.label || '', 14.2);
+      const valueLines = calcVisualLines(item.value || '', 42.0);
+      const lines = Math.max(labelLines, valueLines);
+      return 13 + lines * 15.6;
+    };
+
+    // 子表标题固定像素高度：字高(16px) + paddingBottom(7px) + borderBottom(1px) + marginBottom(5px) = 29px
+    const HEADER_HEIGHT_PX = 29;
+    // 同列子表之间的纵向 gap 间距：14px
+    const GROUP_GAP_PX = 14;
+
+    // 子表局部脚注（* group.footnote）物理像素高度：10px 字号在 339px 列宽下每行约 58 视觉单位
+    const getGroupFootnoteHeightPx = (footnote?: string): number => {
+      if (!footnote || !footnote.trim()) return 0;
+      const fnLines = calcVisualLines(`* ${footnote}`, 58);
+      return 7 + fnLines * 16.5;
+    };
+
+    // 计算一个子表（或切分后的子表块）所占用的总物理像素高度
+    const getGroupHeightPx = (
+      items: Array<{ label: string; value: string }>,
+      footnote?: string,
+      includeBottomGap = false
+    ): number => {
+      const itemsPx = items.reduce((sum, it) => sum + getItemHeightPx(it), 0);
+      const fnPx = getGroupFootnoteHeightPx(footnote);
+      return HEADER_HEIGHT_PX + itemsPx + fnPx + (includeBottomGap ? GROUP_GAP_PX : 0);
+    };
+
+    // 计算尾页底部的全局脚注（orderedFootnotes & unorderedFootnotes）真实物理像素高度
+    const globalFootnotesHeightPx = (() => {
+      const uList = parsedSpecs?.unorderedFootnotes || [];
+      const oList = parsedSpecs?.orderedFootnotes || [];
+      if (uList.length === 0 && oList.length === 0) return 0;
+
+      // 顶部间距：双列下边距(16px) + mt-6(24px) + pt-4(16px) + border-t(1px) = 57px
+      let totalFnPx = 57;
+      for (const fn of uList) {
+        const lines = calcVisualLines(fn, 108);
+        totalFnPx += lines * 19.5 + 6;
       }
+      for (const fn of oList) {
+        const lines = calcVisualLines(fn, 108);
+        totalFnPx += lines * 19.5 + 6;
+      }
+      return totalFnPx;
+    })();
 
-      return Math.max(valUnits, labelUnits);
-    };
+    // A4 页面（1123px 高）在 Page 2+ 的双列规格区最大安全物理高度（px）：
+    // 1123 - 顶距(36) - 页眉(64) - 规格大标题(40) - 页脚及底距(36+32=68) - 页脚上方呼吸留白(29) = 886px
+    const SUBSEQUENT_COL_MAX_PX = 886;
 
-    const HEADER_UNITS = 1.15; // 子表标题所占高度单位（字高 16px + pb 7px + mb 5px + border 1px ≈ 29px）
-    const GROUP_GAP_UNITS = 0.55; // 组间纵向留白单位（14px 间隙 / 26.4px）
+    // 无优势时 Page 1 下方剩余可用高度（px）：有副图画廊时约 245px，仅单主图时约 345px
+    const PAGE_1_COL_MAX_PX = hasAdvantages ? 0 : (hasGallery ? 245 : 345);
 
-    const getGroupUnits = (items: Array<{ label: string; value: string }>): number => {
-      const itemsUnit = items.reduce((sum, it) => sum + getItemUnits(it), 0);
-      return HEADER_UNITS + itemsUnit + GROUP_GAP_UNITS;
-    };
-
-    // 精确测算在剩余可用空间 avail 内，最多能安全塞入多少个 items，确保累加高度绝对不超载
-    const calcFitCount = (items: Array<{ label: string; value: string }>, avail: number): number => {
-      let used = HEADER_UNITS;
+    // 精确测算在当前列剩余像素空间 availPx 内，最多能安全塞入多少行参数：
+    // 由于切分出的前半表位于当前列最底端，其下方无后续子表（无需加 GROUP_GAP_PX），且局部脚注跟随下半表流向下一列
+    const calcFitCount = (items: Array<{ label: string; value: string }>, availPx: number): number => {
+      let usedPx = HEADER_HEIGHT_PX;
       let count = 0;
       for (let i = 0; i < items.length; i++) {
-        const u = getItemUnits(items[i]);
-        if (used + u + GROUP_GAP_UNITS <= avail) {
-          used += u;
+        const itemPx = getItemHeightPx(items[i]);
+        if (usedPx + itemPx <= availPx) {
+          usedPx += itemPx;
           count++;
         } else {
           break;
@@ -1071,11 +1253,18 @@ export default function ProductClient({ product, initialLocale }: { product: any
       return count;
     };
 
-    const totalUnits = groupedSpecs.reduce((sum: number, g: any) => sum + getGroupUnits(g.items), 0);
+    const totalSpecsPx = groupedSpecs.reduce(
+      (sum: number, g: any, idx: number) =>
+        sum + getGroupHeightPx(g.items, g.footnote, idx < groupedSpecs.length - 1),
+      0
+    );
 
-    // 核心排版准则：只有当整份产品的所有规格能在 Page 1 完整 100% 容纳（整份 PDF 为 1 页）时，才在 Page 1 底部排布；
-    // 一旦规格内容超出 Page 1 容量（必须跨页），Page 1 则保持作为纯净大气的旗舰产品封面，所有技术规格统一从 Page 2 开始展开，绝不在封面底部强塞半截残缺表！
-    const canFitEntirelyOnPage1 = !hasAdvantages && totalUnits <= PAGE_1_COL_CAPACITY * 2;
+    // Page 1 容纳判定：仅当无核心优势，且全部规格子表 + 全局脚注能在 Page 1 底部完整容纳时，才排入 Page 1
+    const page1EffectiveColMaxPx = Math.max(0, PAGE_1_COL_MAX_PX - globalFootnotesHeightPx);
+    const canFitEntirelyOnPage1 =
+      !hasAdvantages &&
+      page1EffectiveColMaxPx > 80 &&
+      totalSpecsPx <= page1EffectiveColMaxPx * 1.85;
 
     let remainingGroups = groupedSpecs.map((g: any) => ({
       rawTitle: g.title,
@@ -1084,31 +1273,29 @@ export default function ProductClient({ product, initialLocale }: { product: any
       isSplit: false,
     }));
 
-    // 双列连续流式自然分栏引擎（反 N 字型排序：左上 -> 左下 -> 右上 -> 右下）：
-    // 1. 空间极致饱满：左列能排尽量排，排不下且有空间则果断切分，续表流向右列（左主右续）；
-    // 2. 右列续表排完后，继续排入后续子表；若放不下，同样切分填满右列，余量流向下一页左侧（续表延伸到下一页左侧）；
-    // 3. 彻底杜绝大面积空白区域，每一栏均饱满严整，同时物理高度严格受控，绝不遮挡页脚。
+    // 双列连续流式自然分栏引擎（左上 -> 左下 -> 右上 -> 右下）：
     const distributeGroupsToPage = (
       groupsPool: typeof remainingGroups,
-      colCapacity: number
+      colCapacityPx: number
     ): { pageData: SpecPageData; remainingPool: typeof remainingGroups } => {
       const leftGroups: SpecGroupChunk[] = [];
       const rightGroups: SpecGroupChunk[] = [];
-      let leftUnits = 0;
-      let rightUnits = 0;
+      let leftPx = 0;
+      let rightPx = 0;
 
-      let currentPool = [...groupsPool];
+      const currentPool = groupsPool.map((g) => ({ ...g, items: [...g.items] }));
       let currentCol: 'left' | 'right' = 'left';
 
       while (currentPool.length > 0) {
         const group = currentPool[0];
-        const gUnits = getGroupUnits(group.items);
+        const gPx = getGroupHeightPx(group.items, group.footnote, false);
 
         if (currentCol === 'left') {
-          const leftAvail = colCapacity - leftUnits;
+          const gapBefore = leftGroups.length > 0 ? GROUP_GAP_PX : 0;
+          const leftAvail = colCapacityPx - leftPx - gapBefore;
 
-          // 1. 左列能完整容纳该子表（或续表）
-          if (gUnits <= leftAvail) {
+          // 1. 左列能完整容纳该子表（含其局部脚注）
+          if (gPx <= leftAvail) {
             leftGroups.push({
               title: group.isSplit
                 ? `${group.rawTitle} <span class="text-xs text-slate-400 font-normal ml-2">(${getSystemText('continued') || '续'})</span>`
@@ -1117,12 +1304,12 @@ export default function ProductClient({ product, initialLocale }: { product: any
               items: group.items,
               footnote: group.footnote,
             });
-            leftUnits += gUnits;
+            leftPx += gapBefore + gPx;
             currentPool.shift();
-            continue; // 左列还有剩余空间，继续排下一个子表！
+            continue;
           }
 
-          // 2. 左列无法完整容纳该表：果断进行分栏，充分填满左下，续表流向右上！
+          // 2. 左列无法完整容纳该子表：精确测算剩余像素可容纳的行数并果断分栏，填满左列底部，杜绝大块空白
           const fitLeft = calcFitCount(group.items, leftAvail);
           if (fitLeft >= 1 && group.items.length - fitLeft >= 1) {
             const leftItems = group.items.slice(0, fitLeft);
@@ -1136,24 +1323,24 @@ export default function ProductClient({ product, initialLocale }: { product: any
               items: leftItems,
               footnote: undefined,
             });
-            leftUnits += getGroupUnits(leftItems);
+            leftPx += gapBefore + getGroupHeightPx(leftItems, undefined, false);
 
-            // 续表顺流排到右侧（续表）继续
             currentPool[0] = { ...group, items: restItems, isSplit: true };
             currentCol = 'right';
             continue;
           } else {
-            // 左列空间已无法容纳哪怕 1 项，左列饱和，转入右列
+            // 左列剩余高度连“表头 + 1行”都放不下，左列已自然饱满，切换至右列
             currentCol = 'right';
             continue;
           }
         }
 
         if (currentCol === 'right') {
-          const rightAvail = colCapacity - rightUnits;
+          const gapBefore = rightGroups.length > 0 ? GROUP_GAP_PX : 0;
+          const rightAvail = colCapacityPx - rightPx - gapBefore;
 
-          // 1. 右列能完整容纳
-          if (gUnits <= rightAvail) {
+          // 1. 右列能完整容纳该子表（含其局部脚注）
+          if (gPx <= rightAvail) {
             rightGroups.push({
               title: group.isSplit
                 ? `${group.rawTitle} <span class="text-xs text-slate-400 font-normal ml-2">(${getSystemText('continued') || '续'})</span>`
@@ -1162,12 +1349,12 @@ export default function ProductClient({ product, initialLocale }: { product: any
               items: group.items,
               footnote: group.footnote,
             });
-            rightUnits += gUnits;
+            rightPx += gapBefore + gPx;
             currentPool.shift();
-            continue; // 右列还有剩余空间，继续排下一个子表！
+            continue;
           }
 
-          // 2. 右列无法完整容纳：果断进行分栏，充分填满右下，续表流向下一页左侧！
+          // 2. 右列无法完整容纳：精确切分填满右列底部，余量作为续表流向下一页左列
           const fitRight = calcFitCount(group.items, rightAvail);
           if (fitRight >= 1 && group.items.length - fitRight >= 1) {
             const rightItems = group.items.slice(0, fitRight);
@@ -1181,13 +1368,12 @@ export default function ProductClient({ product, initialLocale }: { product: any
               items: rightItems,
               footnote: undefined,
             });
-            rightUnits += getGroupUnits(rightItems);
+            rightPx += gapBefore + getGroupHeightPx(rightItems, undefined, false);
 
-            // 续表顺延至下一页左侧继续！
             currentPool[0] = { ...group, items: restItems, isSplit: true };
-            break; // 本页两列均已充分利用饱和，结束本页
+            break;
           } else {
-            // 右列空间已无法容纳哪怕 1 项，结束本页，转入下一页左列完整开始
+            // 右列已自然饱满，结束本页
             break;
           }
         }
@@ -1202,44 +1388,74 @@ export default function ProductClient({ product, initialLocale }: { product: any
     let page1Data: SpecPageData = { leftGroups: [], rightGroups: [] };
     const subsequentPages: SpecPageData[] = [];
 
-    // 1. 若整份规格表在 Page 1 能够 100% 完整容纳，排入 Page 1
+    // 1. 若尝试排入 Page 1：验证是否 100% 排完且无剩余；若发现折行后仍有剩余，则撤回并统一从 Page 2 开始排布
     if (canFitEntirelyOnPage1 && remainingGroups.length > 0) {
-      const res1 = distributeGroupsToPage(remainingGroups, PAGE_1_COL_CAPACITY);
-      page1Data = res1.pageData;
-      remainingGroups = res1.remainingPool;
+      const res1 = distributeGroupsToPage(remainingGroups, page1EffectiveColMaxPx);
+      if (res1.remainingPool.length === 0) {
+        page1Data = res1.pageData;
+        remainingGroups = [];
+      }
     }
 
-    // 2. 否则，所有规格子表统一从后续纯表格页开始排布，保持封面完整大气与表格零碎片
+    // 2. 逐页排布 Page 2 及后续纯规格页（动态感知尾页全局脚注高度）：
+    // - 非尾页使用 100% 满额高度（886px），彻底消除页脚上方大段空白；
+    // - 尾页自动扣除 globalFootnotesHeightPx，确保双列表格 + 底部全局脚注总高绝对不超过安全红线，彻底根除压占页脚！
     while (remainingGroups.length > 0) {
-      const res = distributeGroupsToPage(remainingGroups, SUBSEQUENT_COL_CAPACITY);
-      // 防止极端死循环兜底
-      if (res.pageData.leftGroups.length === 0 && res.pageData.rightGroups.length === 0) {
+      let chosenRes: { pageData: SpecPageData; remainingPool: typeof remainingGroups };
+
+      if (globalFootnotesHeightPx > 0) {
+        const lastPageCapPx = Math.max(220, SUBSEQUENT_COL_MAX_PX - globalFootnotesHeightPx);
+        const trialWithFootnotes = distributeGroupsToPage(remainingGroups, lastPageCapPx);
+
+        if (trialWithFootnotes.remainingPool.length === 0) {
+          // 当前页即可完整容纳剩余规格 + 全局脚注
+          chosenRes = trialWithFootnotes;
+        } else {
+          const fullCapRes = distributeGroupsToPage(remainingGroups, SUBSEQUENT_COL_MAX_PX);
+          if (fullCapRes.remainingPool.length === 0) {
+            // 剩余规格虽能塞进 886px，但塞入后将挤占全局脚注空间导致撞击页脚 -> 采用预留容量平稳分流尾项与脚注至下一页
+            chosenRes = trialWithFootnotes;
+          } else {
+            // 当前页确定不是最后一页，全局脚注将在后续页渲染 -> 当前页释放 886px 满额容量，消除底部空白！
+            chosenRes = fullCapRes;
+          }
+        }
+      } else {
+        chosenRes = distributeGroupsToPage(remainingGroups, SUBSEQUENT_COL_MAX_PX);
+      }
+
+      // 防止极端超长单项死循环兜底
+      if (chosenRes.pageData.leftGroups.length === 0 && chosenRes.pageData.rightGroups.length === 0) {
         const g = remainingGroups.shift();
         if (g) {
           const half = Math.ceil(g.items.length / 2);
-          res.pageData.leftGroups.push({
+          chosenRes.pageData.leftGroups.push({
             title: g.rawTitle,
             isContinued: g.isSplit,
             items: g.items.slice(0, half),
           });
-          res.pageData.rightGroups.push({
+          chosenRes.pageData.rightGroups.push({
             title: `${g.rawTitle} <span class="text-xs text-slate-400 font-normal ml-2">(${getSystemText('continued') || '续'})</span>`,
             isContinued: true,
             items: g.items.slice(half),
             footnote: g.footnote,
           });
-          subsequentPages.push(res.pageData);
+          subsequentPages.push(chosenRes.pageData);
         }
         continue;
       }
-      subsequentPages.push(res.pageData);
-      remainingGroups = res.remainingPool;
+
+      subsequentPages.push(chosenRes.pageData);
+      remainingGroups = chosenRes.remainingPool;
     }
 
-    const totalPages = canFitEntirelyOnPage1 && subsequentPages.length === 0 ? 1 : 1 + subsequentPages.length;
+    const totalPages =
+      (page1Data.leftGroups.length > 0 || page1Data.rightGroups.length > 0) && subsequentPages.length === 0
+        ? 1
+        : 1 + subsequentPages.length;
 
     return { page1Data, subsequentPages, totalPages };
-  }, [groupedSpecs, advantages.length, product, locale]);
+  }, [groupedSpecs, parsedSpecs, advantages.length, product, locale]);
 
   const specPages = specPagination.subsequentPages;
   const totalPdfPages = specPagination.totalPages;
@@ -1363,7 +1579,14 @@ export default function ProductClient({ product, initialLocale }: { product: any
                           </div>
                         </>
                       ) : (
-                        <Image src={getAssetUrl(img || '/image/product-placeholder.png')} alt="Thumbnail" fill sizes="(max-width: 768px) 25vw, (max-width: 1200px) 15vw, 10vw" className="object-cover" />
+                        <Image
+                          src={getAssetUrl(img || '/image/product-placeholder.png')}
+                          alt="Thumbnail"
+                          fill
+                          sizes="(max-width: 768px) 25vw, (max-width: 1200px) 15vw, 10vw"
+                          className="object-cover"
+                          data-gallery-raw-url={img || ''}
+                        />
                       )}
                     </button>
                   );
@@ -1684,6 +1907,7 @@ export default function ProductClient({ product, initialLocale }: { product: any
         getProductText={getProductText}
         getSystemText={getSystemText}
         getAssetUrl={getAssetUrl}
+        getGalleryThumbUrl={getGalleryThumbUrl}
       />
 
       {/* 沉浸式站内规格书预览模态窗 */}

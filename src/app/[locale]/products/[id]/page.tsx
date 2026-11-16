@@ -4,6 +4,7 @@ import ProductClient from '@/app/products/[id]/ProductClient';
 import { notFound } from 'next/navigation';
 import { Locale } from '@/lib/translations';
 import { Suspense } from 'react';
+import { getAssetUrl } from '@/lib/image-utils';
 
 interface Props {
   params: Promise<{ locale: string; id: string }>;
@@ -148,9 +149,115 @@ export default async function ProductPage({ params }: Props) {
     specTranslations
   };
 
+  // 构造结构化数据 (Schema.org JSON-LD for Google & GEO)
+  let siteUrl = 'https://www.heovose.com';
+  try {
+    const siteConfig = await db.setting.findUnique({ where: { id: 'site' } });
+    if (siteConfig?.value) {
+      const parsed = JSON.parse(siteConfig.value);
+      if (parsed.siteUrl) siteUrl = parsed.siteUrl.replace(/\/$/, '');
+    }
+  } catch (_) {}
+
+  const productName = (product.nameText?.content as any)?.[targetLocale] || product.nameText?.[targetLocale] || (product.nameText?.content as any)?.en || 'Industrial Product';
+  const productDesc = (product.descriptionText?.content as any)?.[targetLocale] || product.descriptionText?.[targetLocale] || '';
+  const categoryName = product.category ? ((product.category.nameText?.content as any)?.[targetLocale] || product.category.nameText?.[targetLocale] || '') : '';
+
+  const additionalProperties: Array<{ '@type': string; name: string; value: string }> = [];
+  let specGroups = product.specGroups;
+  if (typeof specGroups === 'string') {
+    try { specGroups = JSON.parse(specGroups); } catch (_) { specGroups = null; }
+  }
+  if (specGroups && Array.isArray(specGroups)) {
+    const specMap = new Map((specTranslations || []).map((st: any) => [st.id, st.content || {}]));
+    specGroups.forEach((g: any) => {
+      if (Array.isArray(g.items)) {
+        g.items.forEach((item: any) => {
+          const labelObj = specMap.get(item.labelId) || {};
+          const valObj = specMap.get(item.valueId) || {};
+          const label = (labelObj as any)[targetLocale] || (labelObj as any).en || (labelObj as any).zh || item.label || '';
+          const val = (valObj as any)[targetLocale] || (valObj as any).en || (valObj as any).zh || item.value || '';
+          if (label && val) {
+            additionalProperties.push({
+              '@type': 'PropertyValue',
+              name: String(label),
+              value: String(val)
+            });
+          }
+        });
+      }
+    });
+  }
+
+  const productJsonLd = {
+    '@context': 'https://schema.org',
+    '@type': 'Product',
+    name: productName,
+    description: productDesc || undefined,
+    image: [
+      ...(product.mainImageUrl ? [getAssetUrl(product.mainImageUrl)] : []),
+      ...((product.galleryImageUrls || []).map((img: string) => getAssetUrl(img)))
+    ],
+    category: categoryName || undefined,
+    brand: {
+      '@type': 'Brand',
+      name: 'Heovose'
+    },
+    offers: {
+      '@type': 'Offer',
+      url: `${siteUrl}/${targetLocale}/products/${id}`,
+      priceCurrency: 'USD',
+      price: '0.00',
+      availability: 'https://schema.org/InStock',
+      itemCondition: 'https://schema.org/NewCondition'
+    },
+    additionalProperty: additionalProperties.length > 0 ? additionalProperties : undefined
+  };
+
+  const breadcrumbJsonLd = {
+    '@context': 'https://schema.org',
+    '@type': 'BreadcrumbList',
+    itemListElement: [
+      {
+        '@type': 'ListItem',
+        position: 1,
+        name: 'Home',
+        item: `${siteUrl}/${targetLocale}`
+      },
+      {
+        '@type': 'ListItem',
+        position: 2,
+        name: 'Products',
+        item: `${siteUrl}/${targetLocale}/products`
+      },
+      ...(categoryName ? [{
+        '@type': 'ListItem',
+        position: 3,
+        name: categoryName,
+        item: `${siteUrl}/${targetLocale}/products?category=${encodeURIComponent(product.category?.slug || '')}`
+      }] : []),
+      {
+        '@type': 'ListItem',
+        position: categoryName ? 4 : 3,
+        name: productName,
+        item: `${siteUrl}/${targetLocale}/products/${id}`
+      }
+    ]
+  };
+
   return (
-    <Suspense fallback={null}>
-      <ProductClient product={JSON.parse(JSON.stringify(productWithSpecs))} initialLocale={targetLocale} />
-    </Suspense>
+    <>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(productJsonLd).replace(/</g, '\\u003c') }}
+      />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbJsonLd).replace(/</g, '\\u003c') }}
+      />
+      <Suspense fallback={null}>
+        <ProductClient product={JSON.parse(JSON.stringify(productWithSpecs))} initialLocale={targetLocale} />
+      </Suspense>
+    </>
   );
 }
