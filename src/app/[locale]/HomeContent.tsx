@@ -34,6 +34,7 @@ interface HomeContentProps {
     hero: any;
     video: any;
     map: any;
+    gallery?: any;
     languages: any;
   };
 }
@@ -137,7 +138,7 @@ export default function HomeContent({ initialLocale, initialTranslations, initia
         
         <ProductBento locale={locale} />
         
-        <ProductGallery locale={locale} />
+        <ProductGallery locale={locale} initialConfig={initialConfigs.gallery} />
         
         {/* 动态开关：视频/品牌故事模块 */}
         {mountHeavyComponents && (isVideoLoading || videoConfig?.isVideoEnabled !== false) && (

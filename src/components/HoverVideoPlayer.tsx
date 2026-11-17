@@ -32,6 +32,17 @@ export function HoverVideoPlayer({
   const enterTimerRef = useRef<NodeJS.Timeout | null>(null);
   const leaveTimerRef = useRef<NodeJS.Timeout | null>(null);
 
+  const isPlayingRef = useRef(false);
+  const onPlayStateChangeRef = useRef(onPlayStateChange);
+
+  useEffect(() => {
+    onPlayStateChangeRef.current = onPlayStateChange;
+  }, [onPlayStateChange]);
+
+  useEffect(() => {
+    isPlayingRef.current = isPlaying;
+  }, [isPlaying]);
+
   const [videoProgress, setVideoProgress] = useState(0);
   const [hoveringProgress, setHoveringProgress] = useState(false);
   const progressTrackRef = useRef<HTMLDivElement>(null);
@@ -73,7 +84,7 @@ export function HoverVideoPlayer({
             .then(() => {
               setIsVideoLoaded(true);
               setIsBuffering(false);
-              onPlayStateChange?.(true);
+              onPlayStateChangeRef.current?.(true);
             })
             .catch((err) => {
               console.warn("[HoverVideoPlayer] Autoplay fallback retry:", err);
@@ -83,26 +94,33 @@ export function HoverVideoPlayer({
         }
       } else {
         video.pause();
-        onPlayStateChange?.(false);
-      }
-      // 发送自定义广播事件，通知其他卡片视频暂停
-      if (typeof window !== 'undefined') {
-        window.dispatchEvent(new CustomEvent('heovose-video-play', { detail: { productId } }));
+        onPlayStateChangeRef.current?.(false);
       }
     } else {
       video.pause();
-      onPlayStateChange?.(false);
+      onPlayStateChangeRef.current?.(false);
     }
-  }, [isPlaying, productId, hoveringProgress, onPlayStateChange]);
+  }, [isPlaying, hoveringProgress]);
 
-  // 监听全局其他卡片的播放事件，实现移动端（以及多设备/桌面多重操作）下的排他式唯一播放
+  // 监听全局其他卡片的播放事件，实现移动端与桌面排他式唯一播放
   useEffect(() => {
     if (typeof window === 'undefined') return;
 
     const handleGlobalPlay = (e: Event) => {
       const customEvent = e as CustomEvent;
       if (customEvent.detail && customEvent.detail.productId !== productId) {
+        // 关键：立即取消排队中的 leaveTimer，直接停止底层 video，避免状态争抢
+        if (leaveTimerRef.current) {
+          clearTimeout(leaveTimerRef.current);
+          leaveTimerRef.current = null;
+        }
+        if (videoRef.current) {
+          videoRef.current.pause();
+        }
+        isPlayingRef.current = false;
         setIsPlaying(false);
+        setHoveringProgress(false);
+        onPlayStateChangeRef.current?.(false);
       }
     };
 
@@ -146,7 +164,7 @@ export function HoverVideoPlayer({
         hlsInstance.on(HlsClass.Events.MANIFEST_PARSED, () => {
           setIsVideoLoaded(true);
           setIsBuffering(false);
-          if (isPlaying && !hoveringProgress) {
+          if (isPlayingRef.current && !hoveringProgress) {
             video.play().catch(() => {});
           }
         });
@@ -173,13 +191,22 @@ export function HoverVideoPlayer({
     if ((window as any).Hls) {
       loadHls();
     } else {
-      const script = document.createElement('script');
-      script.src = 'https://cdnjs.cloudflare.com/ajax/libs/hls.js/1.5.8/hls.min.js';
-      script.async = true;
-      script.onload = () => {
-        loadHls();
-      };
-      document.head.appendChild(script);
+      const existingScript = document.querySelector('script[src*="hls.min.js"]') as HTMLScriptElement | null;
+      if (existingScript) {
+        if ((window as any).Hls) {
+          loadHls();
+        } else {
+          existingScript.addEventListener('load', () => loadHls(), { once: true });
+        }
+      } else {
+        const script = document.createElement('script');
+        script.src = 'https://cdnjs.cloudflare.com/ajax/libs/hls.js/1.5.8/hls.min.js';
+        script.async = true;
+        script.onload = () => {
+          loadHls();
+        };
+        document.head.appendChild(script);
+      }
     }
 
     return () => {
@@ -209,9 +236,15 @@ export function HoverVideoPlayer({
 
     setHasBeenHovered(true);
     setIsPlaying(true);
+    isPlayingRef.current = true;
+
     // 关键优化：一旦用户 hover 立即通知轮播图锁定当前卡片，绝不等视频网络请求完成，防止加载中被轮播切走
     if (videoUrl) {
-      onPlayStateChange?.(true);
+      onPlayStateChangeRef.current?.(true);
+      // 立即通过全局广播切断其他卡片的播放，同时让其他卡片立即清除定时器并 pause()
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent('heovose-video-play', { detail: { productId } }));
+      }
     }
   };
 
@@ -226,8 +259,12 @@ export function HoverVideoPlayer({
     }
     leaveTimerRef.current = setTimeout(() => {
       setIsPlaying(false);
+      isPlayingRef.current = false;
       setHoveringProgress(false);
-      onPlayStateChange?.(false);
+      if (videoRef.current) {
+        videoRef.current.pause();
+      }
+      onPlayStateChangeRef.current?.(false);
       leaveTimerRef.current = null;
     }, 150);
   };
@@ -288,7 +325,7 @@ export function HoverVideoPlayer({
             if (node) {
               node.muted = true;
               node.defaultMuted = true;
-              if (isPlaying && !hoveringProgress) {
+              if (isPlayingRef.current && !hoveringProgress) {
                 node.play().catch(() => {});
               }
             }
@@ -302,11 +339,14 @@ export function HoverVideoPlayer({
           onLoadedData={() => {
             setIsVideoLoaded(true);
             setIsBuffering(false);
+            if (isPlayingRef.current && !hoveringProgress) {
+              videoRef.current?.play().catch(() => {});
+            }
           }}
           onCanPlay={() => {
             setIsVideoLoaded(true);
             setIsBuffering(false);
-            if (isPlaying && !hoveringProgress) {
+            if (isPlayingRef.current && !hoveringProgress) {
               videoRef.current?.play().catch(() => {});
             }
           }}
@@ -358,9 +398,18 @@ export function HoverVideoPlayer({
             const nextPlaying = !isPlaying;
             if (nextPlaying) {
               setHasBeenHovered(true);
+              isPlayingRef.current = true;
+              if (typeof window !== 'undefined') {
+                window.dispatchEvent(new CustomEvent('heovose-video-play', { detail: { productId } }));
+              }
+            } else {
+              isPlayingRef.current = false;
+              if (videoRef.current) {
+                videoRef.current.pause();
+              }
             }
             setIsPlaying(nextPlaying);
-            onPlayStateChange?.(nextPlaying);
+            onPlayStateChangeRef.current?.(nextPlaying);
           }}
           className={cn(
             "absolute top-3 right-3 h-8 w-8 rounded-full backdrop-blur-md flex items-center justify-center text-white border shadow-lg transition-all duration-300 active:scale-90 z-20",

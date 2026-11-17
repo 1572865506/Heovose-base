@@ -4,17 +4,14 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
-import { Locale } from "@/lib/translations";
+import { Locale, getLocalizedLink } from "@/lib/translations";
 import { ArrowUpRight, ChevronLeft, ChevronRight } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { getAssetUrl } from '@/lib/image-utils';
 import useEmblaCarousel from 'embla-carousel-react';
 import Autoplay from 'embla-carousel-autoplay';
 import Fade from 'embla-carousel-fade';
-import dynamic from 'next/dynamic';
 import { useLocalCollection } from '@/hooks/use-local-collection';
-
-const SplitText = dynamic(() => import('./ui/SplitText'), { ssr: false });
 
 const isVideoUrl = (url: string | undefined | null) => {
   if (!url) return false;
@@ -66,7 +63,7 @@ export function Hero({ locale, homeConfig, isLoading, onThemeChange }: HeroProps
       subheadlineEn: homeConfig?.heroSubheadlineEn || '',
       bgImage: homeConfig?.heroBgImage || "",
     }];
-  }, [JSON.stringify(homeConfig)]);
+  }, [homeConfig?.heroSlides, homeConfig?.heroHeadlineZh, homeConfig?.heroHeadlineEn, homeConfig?.heroSubheadlineZh, homeConfig?.heroSubheadlineEn, homeConfig?.heroBgImage]);
 
   // 2. Carousel Setup
   const plugins = React.useMemo(() => {
@@ -307,27 +304,36 @@ export function Hero({ locale, homeConfig, isLoading, onThemeChange }: HeroProps
     return `/${url}`;
   }, []);
 
+  const toLocalizedHref = useCallback((url: string | null | undefined) => {
+    if (!url) return '';
+    if (url.startsWith('http://') || url.startsWith('https://')) return url;
+    const normalized = url.startsWith('/') ? url : `/${url}`;
+    const hasLocale = /^\/(en|zh|id|vi|vn)(\/|$)/.test(normalized);
+    return hasLocale ? normalized : getLocalizedLink(normalized, locale);
+  }, [locale]);
+
   const getSlideHref = useCallback((slide: HeroSlide) => {
+    let rawHref: string | null = null;
     if (slide.linkType === 'category') {
       if (slide.categoryId && slide.categoryId !== 'none') {
         const cat = categories?.find((c: any) => c.id === slide.categoryId);
         if (cat?.slug) {
-          return `/products?category=${encodeURIComponent(cat.slug)}`;
+          rawHref = `/products?category=${encodeURIComponent(cat.slug)}`;
         }
       }
-      if (slide.linkUrl) {
-        return resolveLinkUrl(slide.linkUrl);
+      if (!rawHref && slide.linkUrl) {
+        rawHref = resolveLinkUrl(slide.linkUrl);
       }
-      if (slide.categoryId) {
-        return `/products?category=${encodeURIComponent(slide.categoryId)}`;
+      if (!rawHref && slide.categoryId) {
+        rawHref = `/products?category=${encodeURIComponent(slide.categoryId)}`;
       }
-      return null;
+    } else if (slide.linkUrl) {
+      rawHref = resolveLinkUrl(slide.linkUrl);
     }
 
-    // custom
-    if (!slide.linkUrl) return null;
-    return resolveLinkUrl(slide.linkUrl);
-  }, [categories, resolveLinkUrl]);
+    if (!rawHref) return null;
+    return toLocalizedHref(rawHref);
+  }, [categories, resolveLinkUrl, toLocalizedHref]);
 
   const getEntryHref = useCallback((id: string | undefined, defaultLine: string) => {
     if (!id || id === 'none') return `/products?line=${defaultLine}`;
@@ -336,32 +342,42 @@ export function Hero({ locale, homeConfig, isLoading, onThemeChange }: HeroProps
   }, []);
 
   const wholesaleHref = React.useMemo(() => {
+    let rawHref = '';
     if (homeConfig?.heroWholesaleLinkType === 'custom') {
-      return resolveLinkUrl(homeConfig?.heroWholesaleLinkUrl);
-    }
-    const catId = homeConfig?.heroWholesaleCategoryId;
-    if (catId && catId !== 'none' && catId !== 'WHOLESALE' && catId !== 'PROJECT') {
-      const cat = categories?.find((c: any) => c.id === catId);
-      if (cat?.slug) {
-        return `/products?category=${encodeURIComponent(cat.slug)}`;
+      rawHref = resolveLinkUrl(homeConfig?.heroWholesaleLinkUrl);
+    } else {
+      const catId = homeConfig?.heroWholesaleCategoryId;
+      if (catId && catId !== 'none' && catId !== 'WHOLESALE' && catId !== 'PROJECT') {
+        const cat = categories?.find((c: any) => c.id === catId);
+        if (cat?.slug) {
+          rawHref = `/products?category=${encodeURIComponent(cat.slug)}`;
+        }
+      }
+      if (!rawHref) {
+        rawHref = getEntryHref(catId, 'wholesale');
       }
     }
-    return getEntryHref(catId, 'wholesale');
-  }, [homeConfig, categories, resolveLinkUrl, getEntryHref]);
+    return toLocalizedHref(rawHref);
+  }, [homeConfig, categories, resolveLinkUrl, getEntryHref, toLocalizedHref]);
 
   const projectHref = React.useMemo(() => {
+    let rawHref = '';
     if (homeConfig?.heroProjectLinkType === 'custom') {
-      return resolveLinkUrl(homeConfig?.heroProjectLinkUrl);
-    }
-    const catId = homeConfig?.heroProjectCategoryId;
-    if (catId && catId !== 'none' && catId !== 'WHOLESALE' && catId !== 'PROJECT') {
-      const cat = categories?.find((c: any) => c.id === catId);
-      if (cat?.slug) {
-        return `/products?category=${encodeURIComponent(cat.slug)}`;
+      rawHref = resolveLinkUrl(homeConfig?.heroProjectLinkUrl);
+    } else {
+      const catId = homeConfig?.heroProjectCategoryId;
+      if (catId && catId !== 'none' && catId !== 'WHOLESALE' && catId !== 'PROJECT') {
+        const cat = categories?.find((c: any) => c.id === catId);
+        if (cat?.slug) {
+          rawHref = `/products?category=${encodeURIComponent(cat.slug)}`;
+        }
+      }
+      if (!rawHref) {
+        rawHref = getEntryHref(catId, 'project');
       }
     }
-    return getEntryHref(catId, 'project');
-  }, [homeConfig, categories, resolveLinkUrl, getEntryHref]);
+    return toLocalizedHref(rawHref);
+  }, [homeConfig, categories, resolveLinkUrl, getEntryHref, toLocalizedHref]);
 
   const wholesaleBg = homeConfig?.heroWholesaleBg || "";
   const projectBg = homeConfig?.heroProjectBg || "";
@@ -369,11 +385,6 @@ export function Hero({ locale, homeConfig, isLoading, onThemeChange }: HeroProps
   const hasWholesaleConfig = !!(homeConfig?.heroWholesaleButtonZh?.trim() || homeConfig?.heroWholesaleButtonEn?.trim());
   const hasProjectConfig = !!(homeConfig?.heroProjectButtonZh?.trim() || homeConfig?.heroProjectButtonEn?.trim());
   const showEntryCards = hasWholesaleConfig || hasProjectConfig;
-
-  const headlineAnimateFrom = React.useMemo(() => ({ opacity: 0, y: 80, rotateX: 30 }), []);
-  const headlineAnimateTo = React.useMemo(() => ({ opacity: 1, y: 0, rotateX: 0 }), []);
-  const subheadlineAnimateFrom = React.useMemo(() => ({ opacity: 0, y: 20 }), []);
-  const subheadlineAnimateTo = React.useMemo(() => ({ opacity: 1, y: 0 }), []);
 
   // 只有在真正没有数据 (isLoading 且 homeConfig 为空或无幻灯片) 时才展示骨架屏。
   // 如果已经有缓存的 homeConfig (例如通过 initialData 传入)，即使处于重新校验 (isLoading === true) 状态，也进行平滑渲染，从而避免二次渲染闪烁。
@@ -406,11 +417,30 @@ export function Hero({ locale, homeConfig, isLoading, onThemeChange }: HeroProps
         <div className="flex h-full">
           {slides.map((slide, index) => {
             const slideHref = getSlideHref(slide);
+            const isPcVideo = isVideoUrl(slide.bgImage);
+            const isSameVideo = isPcVideo && (!slide.mobileBgImage || slide.mobileBgImage === slide.bgImage);
+
             return (
               <div key={slide.id} className="relative flex-[0_0_100%] min-w-0 h-full">
                 {/* Slide Background */}
                 <div className="absolute inset-0">
-                  {slide.mobileBgImage ? (
+                  {isSameVideo ? (
+                    index === selectedIndex && allowVideo ? (
+                      <video
+                        ref={registerVideoRef(index)}
+                        onLoadedMetadata={() => handleVideoMetadata(index)}
+                        onEnded={() => handleVideoEnded(index)}
+                        src={getAssetUrl(slide.bgImage)}
+                        autoPlay
+                        loop={false}
+                        muted
+                        playsInline
+                        className="object-cover w-full h-full"
+                      />
+                    ) : (
+                      <div className="absolute inset-0 bg-neutral-950/60" />
+                    )
+                  ) : slide.mobileBgImage ? (
                     <>
                       {/* PC Poster */}
                       <div className="hidden md:block absolute inset-0">
@@ -516,41 +546,48 @@ export function Hero({ locale, homeConfig, isLoading, onThemeChange }: HeroProps
 
                 {/* Slide Content */}
                 <div className="max-w-[1600px] mx-auto px-6 relative z-10 pointer-events-none h-[calc(100vh-160px)] min-h-[600px] flex items-start pt-24 md:pt-0 md:items-center justify-start">
-                  <div className="max-w-[50rem] flex flex-col gap-4 md:gap-6 animate-fade-in text-left mr-auto ml-0 mt-8 md:mt-32 items-start">
-                    <SplitText
-                      key={`headline-${slide.id}-${selectedIndex === index}-v1.1`}
-                      text={tr(`hero_slide_${slide.id.replace(/^slide_/, '')}_headline`) || getFallback(slide.headlineZh, slide.headlineEn)}
+                  <div className="max-w-[50rem] flex flex-col gap-4 md:gap-6 text-left mr-auto ml-0 mt-8 md:mt-32 items-start">
+                    <h1
+                      key={`headline-${slide.id}-${selectedIndex === index}`}
                       className={cn(
-                        "hero-headline text-4xl md:text-5xl lg:text-[4rem] font-headline font-black leading-[1.2] tracking-tight drop-shadow-[0_4px_30px_rgba(0,0,0,0.5)] gpu-accelerated overflow-visible",
+                        "hero-headline text-4xl md:text-5xl lg:text-[4rem] font-headline font-black leading-[1.2] tracking-tight drop-shadow-[0_4px_30px_rgba(0,0,0,0.5)] transform-gpu overflow-visible",
+                        selectedIndex === index ? "animate-hero-headline" : "opacity-100",
                         currentTheme === 'light' ? "text-slate-900" : "text-white"
                       )}
-                      tag="h1"
-                      delay={40}
-                      duration={0.8}
-                      ease="power4.out"
-                      from={headlineAnimateFrom}
-                      to={headlineAnimateTo}
-                      textAlign="left"
-                      threshold={0.1}
-                      rootMargin="0px"
-                      splitType="chars"
-                    />
+                    >
+                      {tr(`hero_slide_${slide.id.replace(/^slide_/, '')}_headline`) || getFallback(slide.headlineZh, slide.headlineEn)}
+                    </h1>
 
                     <div className="relative w-full">
                       <style dangerouslySetInnerHTML={{
                         __html: `
-                        .hero-headline {
-                          line-height: 1.2 !important;
+                        @keyframes hero-headline-in {
+                          0% {
+                            opacity: 0;
+                            transform: translateY(24px);
+                          }
+                          100% {
+                            opacity: 1;
+                            transform: translateY(0);
+                          }
                         }
-                        .hero-headline div {
-                          line-height: 1.2 !important;
-                          height: auto !important;
+                        @keyframes hero-subheadline-in {
+                          0% {
+                            opacity: 0;
+                            transform: translateY(16px);
+                          }
+                          100% {
+                            opacity: 1;
+                            transform: translateY(0);
+                          }
                         }
-                        .hero-subheadline .split-line {
-                          line-height: 1.35 !important;
-                          height: auto !important;
-                          padding-bottom: 0.1em;
-                          justify-content: flex-start !important;
+                        .animate-hero-headline {
+                          animation: hero-headline-in 0.85s cubic-bezier(0.16, 1, 0.3, 1) both;
+                          will-change: transform, opacity;
+                        }
+                        .animate-hero-subheadline {
+                          animation: hero-subheadline-in 0.85s cubic-bezier(0.16, 1, 0.3, 1) 0.12s both;
+                          will-change: transform, opacity;
                         }
                         @keyframes arrow-slide-out-in {
                           0% {
@@ -582,24 +619,16 @@ export function Hero({ locale, homeConfig, isLoading, onThemeChange }: HeroProps
                           animation-delay: 2s;
                         }
                       `}} />
-                      <SplitText
-                        key={`subheadline-${slide.id}-${selectedIndex === index}-${locale}-v1.35`}
-                        text={tr(`hero_slide_${slide.id.replace(/^slide_/, '')}_subheadline`) || getFallback(slide.subheadlineZh, slide.subheadlineEn)}
+                      <h2
+                        key={`subheadline-${slide.id}-${selectedIndex === index}`}
                         className={cn(
-                          "hero-subheadline text-xl md:text-2xl lg:text-[2rem] font-body max-w-full leading-[1.35] tracking-tight drop-shadow-[0_2px_15px_rgba(0,0,0,0.4)] block mr-auto ml-0 gpu-accelerated overflow-visible",
+                          "hero-subheadline text-xl md:text-2xl lg:text-[2rem] font-body max-w-full leading-[1.35] tracking-tight drop-shadow-[0_2px_15px_rgba(0,0,0,0.4)] block mr-auto ml-0 transform-gpu overflow-visible",
+                          selectedIndex === index ? "animate-hero-subheadline" : "opacity-90",
                           currentTheme === 'light' ? "text-slate-800/80" : "text-white/90"
                         )}
-                        tag="h2"
-                        delay={20}
-                        duration={1}
-                        ease="power3.out"
-                        from={subheadlineAnimateFrom}
-                        to={subheadlineAnimateTo}
-                        textAlign="left"
-                        threshold={0.1}
-                        rootMargin="0px"
-                        splitType="lines"
-                      />
+                      >
+                        {tr(`hero_slide_${slide.id.replace(/^slide_/, '')}_subheadline`) || getFallback(slide.subheadlineZh, slide.subheadlineEn)}
+                      </h2>
                     </div>
                   </div>
                 </div>
@@ -638,6 +667,7 @@ export function Hero({ locale, homeConfig, isLoading, onThemeChange }: HeroProps
                           src={getAssetUrl(wholesaleBg)}
                           alt="Wholesale"
                           fill
+                          priority
                           className="object-cover transition-transform duration-1000 ease-out group-hover:scale-110"
                           sizes="(max-width: 768px) 100vw, 50vw"
                         />
@@ -697,6 +727,7 @@ export function Hero({ locale, homeConfig, isLoading, onThemeChange }: HeroProps
                           src={getAssetUrl(projectBg)}
                           alt="Projects"
                           fill
+                          priority
                           className="object-cover transition-transform duration-1000 ease-out group-hover:scale-110"
                           sizes="(max-width: 768px) 100vw, 50vw"
                         />

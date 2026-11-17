@@ -4,7 +4,7 @@
 import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
-import { Locale } from "@/lib/translations";
+import { Locale, getLocalizedLink } from "@/lib/translations";
 import { PlaceHolderImages } from "@/lib/placeholder-images";
 import { SectionHeading } from "./SectionHeading";
 import { Button } from "@/components/ui/button";
@@ -20,28 +20,36 @@ import { cn } from "@/lib/utils";
 import { useLocalCollection } from '@/hooks/use-local-collection';
 import { useLocalDoc } from '@/hooks/use-local-doc';
 import { useTranslations } from '@/hooks/use-translations';
-import { useInquiry } from '@/hooks/../components/providers/InquiryProvider';
+import { useInquiry } from '@/components/providers/InquiryProvider';
 import { MessageSquare } from 'lucide-react';
 import { HoverVideoPlayer } from '@/components/HoverVideoPlayer';
 import { injectTranslations } from '@/lib/translation-injector';
 
 function GalleryCard({ 
   product, 
+  locale,
   requestQuoteText, 
   playingProductId,
   setPlayingProductId
 }: { 
   product: any, 
+  locale: Locale,
   requestQuoteText: string, 
   playingProductId: string | null,
-  setPlayingProductId: (id: string | null) => void
+  setPlayingProductId: React.Dispatch<React.SetStateAction<string | null>>
 }) {
   const { openInquiry } = useInquiry();
+  const productHref = getLocalizedLink(`/products/${product.id}`, locale);
 
   return (
-    <div className="group relative flex flex-col h-full max-w-[400px] mx-auto w-full bg-white rounded-[2.5rem] shadow-sm hover:shadow-xl hover:-translate-y-2 transition-all duration-500 border border-border/5 overflow-hidden transform-gpu isolate">
+    <div 
+      className="group relative flex flex-col h-full max-w-[400px] mx-auto w-full bg-white rounded-[2.5rem] shadow-sm hover:shadow-xl hover:-translate-y-2 transition-all duration-500 border border-border/5 overflow-hidden transform-gpu isolate"
+      onMouseLeave={() => {
+        setPlayingProductId((currentId) => (currentId === product.id ? null : currentId));
+      }}
+    >
       <Link
-        href={`/products/${product.id}`}
+        href={productHref}
         className="block rounded-t-[2.5rem] overflow-hidden"
       >
         {/* Product Image - 11:9 Ratio at the top with Video Preview */}
@@ -58,8 +66,8 @@ function GalleryCard({
             onPlayStateChange={(playing) => {
               if (playing) {
                 setPlayingProductId(product.id);
-              } else if (playingProductId === product.id) {
-                setPlayingProductId(null);
+              } else {
+                setPlayingProductId((currentId) => (currentId === product.id ? null : currentId));
               }
             }}
           />
@@ -106,7 +114,7 @@ function GalleryCard({
           {requestQuoteText}
         </Button>
         <Link 
-          href={`/products/${product.id}`}
+          href={productHref}
           className="h-9 w-9 rounded-full bg-slate-50 border border-slate-100 flex items-center justify-center text-slate-400 hover:bg-primary/10 hover:text-primary hover:border-primary/20 transition-all duration-500 shrink-0"
         >
           <ArrowRight className="h-4 w-4" />
@@ -116,7 +124,7 @@ function GalleryCard({
   );
 }
 
-export function ProductGallery({ locale }: { locale: Locale }) {
+export function ProductGallery({ locale, initialConfig }: { locale: Locale; initialConfig?: any }) {
   const { t: tr } = useTranslations(locale);
   const [api, setApi] = useState<CarouselApi>();
   const [current, setCurrent] = useState(0);
@@ -132,11 +140,26 @@ export function ProductGallery({ locale }: { locale: Locale }) {
   }, [isPlaying]);
 
   // 1. Fetch dynamic data
-  const { data: remoteProducts, isLoading } = useLocalCollection<any>('products?status=published');
+  const { data: galleryConfig, mutate: mutateGallery } = useLocalDoc<any>('homepageContent', 'gallery', { initialData: initialConfig });
+
+  const targetProductIds = useMemo(() => {
+    const items = galleryConfig?.galleryItems;
+    if (Array.isArray(items) && items.length > 0) {
+      return items.map((i: any) => i.productId).filter(Boolean);
+    }
+    return [];
+  }, [galleryConfig?.galleryItems]);
+
+  const productsQuery = useMemo(() => {
+    if (targetProductIds.length > 0) {
+      return `products?ids=${targetProductIds.join(',')}`;
+    }
+    return 'products?status=published&limit=12';
+  }, [targetProductIds]);
+
+  const { data: remoteProducts, isLoading } = useLocalCollection<any>(productsQuery);
   const { data: allTranslations } = useLocalCollection<any>(`localizedStrings?lang=${locale}`);
   const { data: langSettings } = useLocalDoc<any>('settings', 'languages');
-
-  const { data: galleryConfig, mutate: mutateGallery } = useLocalDoc<any>('homepageContent', 'gallery');
 
   // 注入轮播图产品翻译到本地缓存，让 getT 能通过 lightweight 词典无感读取
   useEffect(() => {
@@ -208,13 +231,13 @@ export function ProductGallery({ locale }: { locale: Locale }) {
   }, [galleryConfig, locale, langSettings, tr]);
 
   // 2. Data transformation
-  const products = useMemo(() => {
+  const { products, originalCount } = useMemo(() => {
     // 3. 循环轮播机制（数据兜底）：
-    // 当卡片总数过少（比如小于 8 个）时，Embla Carousel 的 loop: true 拼接机制会因为节点不足而失效（无法在划出视口的同时于右侧补齐卡片）。
-    // 在这里我们对 products 数组进行自适应倍增补齐，至少补充到 8 个，实现真正的无限循环。
-    let finalProducts: any[] = [];
+    // 当卡片总数极少（比如小于 5 个）时，Embla Carousel 的 loop: true 拼接机制会因为节点不足以覆盖视口而出现空白。
+    // 在这里我们对 products 数组进行自适应倍增补齐，至少补充到 6 个，实现真正的无限循环。
+    let rawProducts: any[] = [];
     if (galleryConfig?.galleryItems && Array.isArray(galleryConfig.galleryItems) && galleryConfig.galleryItems.length > 0 && remoteProducts) {
-      finalProducts = galleryConfig.galleryItems.map((item: any) => {
+      rawProducts = galleryConfig.galleryItems.map((item: any, idx: number) => {
         const product = remoteProducts.find((p: any) => p.id === item.productId);
         if (!product) return null;
 
@@ -224,6 +247,7 @@ export function ProductGallery({ locale }: { locale: Locale }) {
 
         return {
           id: product.id,
+          uniqueKey: `gallery-${product.id}-${idx}`,
           label: getT(product.nameTextId),
           desc: getT(product.descriptionTextId),
           category: product.categoryId || '',
@@ -236,7 +260,7 @@ export function ProductGallery({ locale }: { locale: Locale }) {
       }).filter(Boolean);
     } else if (remoteProducts && remoteProducts.length > 0) {
       // 限制轮播图默认兜底展示前 8 个产品，防止未配置时页面溢出
-      finalProducts = remoteProducts.slice(0, 8).map((p: any, idx: number) => {
+      rawProducts = remoteProducts.slice(0, 8).map((p: any, idx: number) => {
         let badge = null;
         let badgeType = null;
         if (idx % 4 === 0) {
@@ -249,6 +273,7 @@ export function ProductGallery({ locale }: { locale: Locale }) {
 
         return {
           id: p.id,
+          uniqueKey: `gallery-${p.id}-${idx}`,
           label: getT(p.nameTextId),
           desc: getT(p.descriptionTextId),
           imageUrl: p.mainImageUrl || '/image/product-placeholder.png',
@@ -261,21 +286,24 @@ export function ProductGallery({ locale }: { locale: Locale }) {
       });
     }
 
-    if (finalProducts.length > 0 && finalProducts.length < 8) {
-      // 至少复制拼接至 8 个或以上
-      while (finalProducts.length < 8) {
+    const realCount = rawProducts.length;
+    let finalProducts = [...rawProducts];
+
+    // 只有在卡片数极少（不足 5 个，无法支撑 Embla 3~4 视口宽度的 loop 无缝轮播）时，才在底层补齐到至少 6 个
+    if (finalProducts.length > 0 && finalProducts.length < 5) {
+      while (finalProducts.length < 6) {
         finalProducts = [
           ...finalProducts,
           ...finalProducts.map((p: any, i: number) => ({
             ...p,
-            // 复制时修改唯一的 id，防止 React Key 重复报错，同时保持数据独立
-            id: `${p.id}-dup-${finalProducts.length + i}`
+            // 保持真实的业务产品 id 不变，仅赋予唯一的 uniqueKey 供 React 轮播节点使用，彻底避免 404 与询盘 ID 错乱
+            uniqueKey: `${p.id}-dup-${finalProducts.length + i}`
           }))
         ];
       }
     }
 
-    return finalProducts;
+    return { products: finalProducts, originalCount: realCount };
   }, [remoteProducts, getT, galleryConfig]);
 
   useEffect(() => {
@@ -323,6 +351,7 @@ export function ProductGallery({ locale }: { locale: Locale }) {
       updateSlideVisibilities();
     };
 
+    api.reInit();
     setCount(api.scrollSnapList().length);
     setCurrent(api.selectedScrollSnap());
     setTimeout(updateSlideVisibilities, 50); // 给 DOM 首次挂载留出计算空隙
@@ -336,13 +365,23 @@ export function ProductGallery({ locale }: { locale: Locale }) {
       api.off("reInit", onReInit);
       api.off("scroll", updateSlideVisibilities);
     };
-  }, [api]);
+  }, [api, products.length]);
 
-  const [isVisible, setIsVisible] = useState(false);
+  const [isVisible, setIsVisible] = useState(true);
+  const [isPageVisible, setIsPageVisible] = useState(true);
   const [isHovered, setIsHovered] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
 
-  // 性能优化：观察可见性
+  // 监听浏览器 Tab 切换或最小化窗口等页面可见性变化
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      setIsPageVisible(!document.hidden);
+    };
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
+  }, []);
+
+  // 性能优化：观察视口可见性
   useEffect(() => {
     const observer = new IntersectionObserver(([entry]) => {
       setIsVisible(entry.isIntersecting);
@@ -354,19 +393,59 @@ export function ProductGallery({ locale }: { locale: Locale }) {
   // 综合判定轮播是否应该暂停：
   // 1. 用户主动暂停播放 (!isPlaying)
   // 2. 轮播图尚未进入视口 (!isVisible)
-  // 3. 用户鼠标悬停在轮播区域/卡片上 (isHovered)
-  // 4. 用户正在交互/准备播放/正在观看某个卡片的视频 (playingProductId !== null)
-  const isAutoplayPaused = !isPlaying || !isVisible || isHovered || playingProductId !== null;
+  // 3. 用户切换了浏览器 Tab 或最小化窗口 (!isPageVisible)
+  // 4. 用户鼠标真正悬停在轮播产品卡片上 (isHovered)
+  // 5. 用户正在交互/准备播放/正在观看某个卡片的视频 (playingProductId !== null)
+  const isAutoplayPaused = !isPlaying || !isVisible || !isPageVisible || isHovered || playingProductId !== null;
 
-  // CUSTOM TIMER: Manages slide switching
+  // 精准时间记录器：支持暂停定格与恢复继续（Pause & Resume）
+  const startTimeRef = useRef<number>(0);
+  const elapsedTimeRef = useRef<number>(0);
+  const timerRef = useRef<NodeJS.Timeout | null>(null);
+
+  // 当卡片真正切换（current 改变）时，彻底重置已播放时长
   useEffect(() => {
-    if (!api || isAutoplayPaused) return;
+    elapsedTimeRef.current = 0;
+    startTimeRef.current = 0;
+  }, [current]);
 
-    const timer = setInterval(() => {
+  // 控制自动轮播定时器：精准根据已消耗时间计算剩余时间，恢复时无缝续播
+  useEffect(() => {
+    if (!api) return;
+
+    if (isAutoplayPaused) {
+      // 暂停时：清除当前定时器，并精确记录本次已经播放了多久
+      if (timerRef.current) {
+        clearTimeout(timerRef.current);
+        timerRef.current = null;
+      }
+      if (startTimeRef.current > 0) {
+        elapsedTimeRef.current += Date.now() - startTimeRef.current;
+        startTimeRef.current = 0;
+      }
+      return;
+    }
+
+    // 恢复/运行状态：
+    const remainingTime = Math.max(0, AUTOPLAY_DELAY - elapsedTimeRef.current);
+
+    if (remainingTime <= 50) {
+      // 剩余时间已消耗殆尽，直接切换下一张
       api.scrollNext();
-    }, AUTOPLAY_DELAY);
+      return;
+    }
 
-    return () => clearInterval(timer);
+    startTimeRef.current = Date.now();
+    timerRef.current = setTimeout(() => {
+      api.scrollNext();
+    }, remainingTime);
+
+    return () => {
+      if (timerRef.current) {
+        clearTimeout(timerRef.current);
+        timerRef.current = null;
+      }
+    };
   }, [api, isAutoplayPaused, current]);
 
   const toggleAutoplay = useCallback(() => {
@@ -377,35 +456,34 @@ export function ProductGallery({ locale }: { locale: Locale }) {
     <section ref={containerRef} id="products" className="relative z-20 -mt-px py-24 bg-background overflow-hidden shadow-[0_50px_100px_rgba(0,0,0,0.05)] group/carousel">
       <div className="container mx-auto px-6">
         <SectionHeading
-          key={count}
+          key={originalCount || count}
           title={getSectionConfig('galleryTitle', 'GALLERY_TITLE')}
           subtitle={getSectionConfig('gallerySubtitle', 'GALLERY_SUBTITLE')}
         />
       </div>
 
-      <div 
-        className="relative px-4 md:px-12 lg:px-24 overflow-hidden md:overflow-visible"
-        onMouseEnter={() => setIsHovered(true)}
-        onMouseLeave={() => setIsHovered(false)}
-      >
+      <div className="relative px-4 md:px-12 lg:px-24 overflow-hidden md:overflow-visible">
         <Carousel
           setApi={setApi}
           opts={{
             align: "start",
             loop: true,
           }}
+          onMouseEnter={() => setIsHovered(true)}
+          onMouseLeave={() => setIsHovered(false)}
           className="w-full overflow-hidden md:overflow-visible"
         >
           <CarouselContent className="-ml-8" viewportClassName="py-8 overflow-hidden md:overflow-visible">
             {products.map((product: any) => {
               return (
                 <CarouselItem 
-                  key={product.id} 
+                  key={product.uniqueKey || product.id} 
                   className="pl-8 shrink-0 basis-auto w-[290px] xs:w-[320px] sm:w-[350px] md:w-[380px] lg:w-[400px]"
                   data-gallery-slide-id={product.id}
                 >
                   <GalleryCard 
                     product={product} 
+                    locale={locale}
                     requestQuoteText={tr('products_requestQuote')}
                     playingProductId={playingProductId}
                     setPlayingProductId={setPlayingProductId}
@@ -417,55 +495,69 @@ export function ProductGallery({ locale }: { locale: Locale }) {
         </Carousel>
 
         {/* Carousel Indicators & Progress Bar */}
-        <div className="container mx-auto px-6 mt-8 lg:mt-12">
-          <div className="flex items-center justify-center lg:justify-end gap-4 lg:gap-8 max-w-4xl ml-auto">
-            {/* Progress Indicators */}
-            <div className="flex gap-2 lg:gap-3 h-1.5 items-center flex-grow max-w-[180px] lg:max-w-xs">
-              {count > 0 ? Array.from({ length: count }).map((_, i) => (
-                <button
-                  key={i}
-                  onClick={() => api?.scrollTo(i)}
-                  className={cn(
-                    "relative h-full rounded-full transition-all duration-500 cursor-pointer overflow-hidden flex-grow",
-                    i === current ? "bg-slate-200 w-10 lg:w-16" : "bg-slate-100 w-4 lg:w-8 hover:bg-slate-200"
-                  )}
-                >
-                  {i === current && (
-                    <div
-                      key={current}
-                      className="absolute inset-0 bg-primary origin-left"
-                      style={{
-                        animation: 'hero-progress-gpu 5000ms linear forwards',
-                        animationPlayState: isAutoplayPaused ? 'paused' : 'running'
+        {(() => {
+          const displayCount = originalCount > 0 ? originalCount : (count || products.length || 0);
+          const activeIndex = displayCount > 0 ? current % displayCount : 0;
+
+          return (
+            <div className="container mx-auto px-6 mt-8 lg:mt-12">
+              <div className="flex items-center justify-center lg:justify-end gap-4 lg:gap-8 max-w-4xl ml-auto">
+                {/* Progress Indicators */}
+                <div className="flex gap-2 lg:gap-3 h-1.5 items-center flex-grow max-w-[180px] lg:max-w-xs">
+                  {displayCount > 0 ? Array.from({ length: displayCount }).map((_, i) => (
+                    <button
+                      key={i}
+                      onClick={() => {
+                        if (!api) return;
+                        // 如果底层存在循环倍增，计算最接近当前位置的滚动目标，平滑滚动
+                        const targetIndex = displayCount > 0
+                          ? (Math.floor(current / displayCount) * displayCount + i) % products.length
+                          : i;
+                        api.scrollTo(targetIndex);
                       }}
-                    />
+                      className={cn(
+                        "relative h-full rounded-full transition-all duration-500 cursor-pointer overflow-hidden flex-grow",
+                        i === activeIndex ? "bg-slate-200 w-10 lg:w-16" : "bg-slate-100 w-4 lg:w-8 hover:bg-slate-200"
+                      )}
+                    >
+                      {i === activeIndex && (
+                        <div
+                          key={`progress-${current}`}
+                          className="absolute inset-0 bg-primary origin-left"
+                          style={{
+                            animation: `hero-progress-gpu ${AUTOPLAY_DELAY}ms linear forwards`,
+                            animationPlayState: isAutoplayPaused ? 'paused' : 'running'
+                          }}
+                        />
+                      )}
+                    </button>
+                  )) : (
+                    <div className="h-full w-full bg-slate-100 rounded-full animate-pulse" />
                   )}
-                </button>
-              )) : (
-                <div className="h-full w-full bg-slate-100 rounded-full animate-pulse" />
-              )}
-            </div>
+                </div>
 
-            {/* Digital Index */}
-            <div className="flex items-center gap-2 lg:gap-3 text-primary/40 font-mono text-[10px] lg:text-sm font-bold">
-              <span className="text-primary">{String(current + 1).padStart(2, '0')}</span>
-              <span className="h-4 w-[1px] bg-border" />
-              <span>{String(count || products.length || 0).padStart(2, '0')}</span>
-            </div>
+                {/* Digital Index */}
+                <div className="flex items-center gap-2 lg:gap-3 text-primary/40 font-mono text-[10px] lg:text-sm font-bold">
+                  <span className="text-primary">{String(activeIndex + 1).padStart(2, '0')}</span>
+                  <span className="h-4 w-[1px] bg-border" />
+                  <span>{String(displayCount).padStart(2, '0')}</span>
+                </div>
 
-            {/* Controls */}
-            <div className="flex items-center gap-2">
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={toggleAutoplay}
-                className="rounded-full hover:bg-primary/10 text-primary h-10 w-10 lg:h-12 lg:w-12 shrink-0 border border-border/50"
-              >
-                {isPlaying ? <Pause className="h-4 w-4 lg:h-5 lg:w-5" /> : <Play className="h-4 w-4 lg:h-5 lg:w-5" />}
-              </Button>
+                {/* Controls */}
+                <div className="flex items-center gap-2">
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={toggleAutoplay}
+                    className="rounded-full hover:bg-primary/10 text-primary h-10 w-10 lg:h-12 lg:w-12 shrink-0 border border-border/50"
+                  >
+                    {isPlaying ? <Pause className="h-4 w-4 lg:h-5 lg:w-5" /> : <Play className="h-4 w-4 lg:h-5 lg:w-5" />}
+                  </Button>
+                </div>
+              </div>
             </div>
-          </div>
-        </div>
+          );
+        })()}
       </div>
     </section>
   );

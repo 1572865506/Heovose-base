@@ -4,7 +4,7 @@
 import { useMemo, useState, useEffect, useRef } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
-import { Locale } from "@/lib/translations";
+import { Locale, getLocalizedLink } from "@/lib/translations";
 import { PlaceHolderImages } from "@/lib/placeholder-images";
 import { SectionHeading } from "./SectionHeading";
 import { cn } from "@/lib/utils";
@@ -17,17 +17,25 @@ import { useImageBrightness } from '@/hooks/use-image-brightness';
 
 function BentoCard({ item, index, locale, isVisible }: { item: any, index: number, locale: Locale, isVisible: boolean }) {
   const { theme } = useImageBrightness(item.imageUrl, item.brightness);
-  
+
+  const normalizedSlug = item.slug.startsWith('/') ? item.slug : `/${item.slug}`;
+  const hasLocalePrefix = /^\/(en|zh|id|vi|vn)(\/|$)/.test(normalizedSlug);
+  const cardHref = item.slug.startsWith('http')
+    ? item.slug
+    : hasLocalePrefix
+      ? normalizedSlug
+      : getLocalizedLink(normalizedSlug, locale);
+
   return (
     <Link
-      href={item.slug.startsWith('http') ? item.slug : (item.slug.startsWith('/') ? item.slug : `/${item.slug}`)}
+      href={cardHref}
       className={cn(
         "group relative rounded-[2.5rem] overflow-hidden border border-border/40 bg-muted/5 transition-all duration-700 transform-gpu translate-z-0",
         "opacity-0 translate-y-12",
         isVisible && "opacity-100 translate-y-0",
         item.grid
       )}
-      style={{ 
+      style={{
         transitionDelay: isVisible ? `${index * 50}ms` : '0ms'
       }}
     >
@@ -40,15 +48,15 @@ function BentoCard({ item, index, locale, isVisible }: { item: any, index: numbe
           sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
         />
       )}
-      
+
 
       <div className="absolute inset-0 p-5 pb-5 flex flex-col justify-end transition-transform duration-500 group-hover:-translate-y-1 transform-gpu will-change-transform [backface-visibility:hidden]">
         <div className="space-y-3">
           {item.category && (
             <span className={cn(
               "inline-block px-3 py-1 text-[10px] font-bold tracking-[0.2em] uppercase rounded-full border shadow-sm transition-colors duration-500",
-              theme === 'light' 
-                ? "bg-white/95 text-slate-800 border-slate-200/50" 
+              theme === 'light'
+                ? "bg-white/95 text-slate-800 border-slate-200/50"
                 : "bg-black/80 text-white/90 border-white/10"
             )}>
               {item.category}
@@ -57,8 +65,8 @@ function BentoCard({ item, index, locale, isVisible }: { item: any, index: numbe
           <div className="flex items-center justify-between gap-4">
             <h3 className={cn(
               "text-xl md:text-2xl font-headline font-bold leading-tight tracking-tight transition-colors duration-500",
-              theme === 'light' 
-                ? "text-slate-900 drop-shadow-[0_2px_10px_rgba(255,255,255,0.8)]" 
+              theme === 'light'
+                ? "text-slate-900 drop-shadow-[0_2px_10px_rgba(255,255,255,0.8)]"
                 : "text-white drop-shadow-[0_2px_15px_rgba(0,0,0,0.6)]"
             )}>
               {item.label}
@@ -88,7 +96,8 @@ export function ProductBento({ locale }: { locale: Locale }) {
 
   const items = useMemo(() => {
     if (bentoItems && bentoItems.length > 0) {
-      return bentoItems.map((item: any) => {
+      const sortedItems = [...bentoItems].sort((a: any, b: any) => (a.order ?? 0) - (b.order ?? 0));
+      return sortedItems.map((item: any) => {
         let grid = 'col-span-1 row-span-1';
         if (item.gridSize === 'wide') grid = 'col-span-2 row-span-1';
         if (item.gridSize === 'tall') grid = 'col-span-1 row-span-2';
@@ -96,11 +105,11 @@ export function ProductBento({ locale }: { locale: Locale }) {
 
         const getLocalized = (prefix: string) => {
           const defaultLang = langSettings?.defaultLanguage || 'en';
-          const activeLangs = langSettings?.supportedLanguages?.map((l: any) => l.code) || 
+          const activeLangs = langSettings?.supportedLanguages?.map((l: any) => l.code) ||
             Object.keys(item)
               .filter(key => key.startsWith(prefix) && key.length > prefix.length)
               .map(key => key.slice(prefix.length).toLowerCase());
-          
+
           const getVal = (l: string) => {
             const getField = (langCode: string) => {
               const suffix = langCode.charAt(0).toUpperCase() + langCode.slice(1);
@@ -114,10 +123,10 @@ export function ProductBento({ locale }: { locale: Locale }) {
 
           const currentVal = getVal(locale);
           if (currentVal) return currentVal;
-          
+
           const defaultVal = getVal(defaultLang);
           if (defaultVal) return defaultVal;
-          
+
           for (const l of activeLangs) {
             if (l === locale || l === defaultLang) continue;
             const val = getVal(l);
@@ -176,7 +185,7 @@ export function ProductBento({ locale }: { locale: Locale }) {
 
     const defaultLang = langSettings?.defaultLanguage || 'en';
     const configObj = bentoConfig?.data || bentoConfig || {};
-    const activeLangs = langSettings?.supportedLanguages?.map((l: any) => l.code) || 
+    const activeLangs = langSettings?.supportedLanguages?.map((l: any) => l.code) ||
       Object.keys(configObj)
         .filter(key => key.startsWith(prefix) && key.length > prefix.length)
         .map(key => key.slice(prefix.length).toLowerCase());
@@ -197,28 +206,28 @@ export function ProductBento({ locale }: { locale: Locale }) {
   };
 
   return (
-    <section 
-      id="portfolio" 
+    <section
+      id="portfolio"
       ref={sectionRef}
       className="relative z-20 py-24 bg-background overflow-hidden"
     >
       <div className="container mx-auto px-6">
-        <SectionHeading 
+        <SectionHeading
           key={count}
-          title={getSectionConfig('bentoTitle', 'PRODUCTS_TITLE')} 
-          subtitle={getSectionConfig('bentoSubtitle', 'PRODUCTS_SUBTITLE')} 
+          title={getSectionConfig('bentoTitle', 'PRODUCTS_TITLE')}
+          subtitle={getSectionConfig('bentoSubtitle', 'PRODUCTS_SUBTITLE')}
         />
-        
+
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 grid-flow-dense gap-3 lg:gap-4 auto-rows-[150px] lg:auto-rows-[220px]">
           {isLoading ? (
             Array.from({ length: 6 }).map((_, i) => (
-              <div 
-                key={i} 
+              <div
+                key={i}
                 className={cn(
                   "relative rounded-[2.5rem] overflow-hidden border border-border/40 bg-muted/20 animate-pulse",
-                  i === 0 ? "col-span-2 row-span-2" : 
-                  i === 1 ? "col-span-1 row-span-2" :
-                  "col-span-1 row-span-1"
+                  i === 0 ? "col-span-2 row-span-2" :
+                    i === 1 ? "col-span-1 row-span-2" :
+                      "col-span-1 row-span-1"
                 )}
               >
                 <div className="absolute inset-0 p-8 flex flex-col justify-end gap-3">
@@ -229,12 +238,12 @@ export function ProductBento({ locale }: { locale: Locale }) {
             ))
           ) : (
             items.map((item, index) => (
-              <BentoCard 
-                key={index} 
-                item={item} 
-                index={index} 
-                locale={locale} 
-                isVisible={isVisible} 
+              <BentoCard
+                key={index}
+                item={item}
+                index={index}
+                locale={locale}
+                isVisible={isVisible}
               />
             ))
           )}

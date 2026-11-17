@@ -22,6 +22,7 @@ export async function GET(request: Request) {
   try {
     const { searchParams } = new URL(request.url);
     const status = searchParams.get('status');
+    const idsParam = searchParams.get('ids');
     const pageParam = searchParams.get('page');
     const limitParam = searchParams.get('limit');
     const categoryId = searchParams.get('categoryId');
@@ -34,6 +35,12 @@ export async function GET(request: Request) {
     let where: any = { deletedAt: null };
     if (status) {
       where.status = status;
+    }
+    if (idsParam) {
+      const ids = idsParam.split(',').map(s => s.trim()).filter(Boolean);
+      if (ids.length > 0) {
+        where.id = { in: ids };
+      }
     }
     if (lang) {
       where.enabledLanguages = { has: lang };
@@ -117,7 +124,11 @@ export async function GET(request: Request) {
         take: limit,
         orderBy
       });
-      return NextResponse.json(products);
+      const response = NextResponse.json(products);
+      if ((status === 'published' || idsParam) && !search) {
+        response.headers.set('Cache-Control', 'public, s-maxage=60, stale-while-revalidate=300');
+      }
+      return response;
     }
 
     // 执行分页逻辑
@@ -137,8 +148,7 @@ export async function GET(request: Request) {
       orderBy
     });
 
-
-    return NextResponse.json({
+    const response = NextResponse.json({
       products,
       pagination: {
         total,
@@ -147,6 +157,10 @@ export async function GET(request: Request) {
         totalPages: Math.ceil(total / limit)
       }
     });
+    if (status === 'published' && !search) {
+      response.headers.set('Cache-Control', 'public, s-maxage=60, stale-while-revalidate=300');
+    }
+    return response;
   } catch (error) {
     console.error('Failed to fetch products:', error);
     return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });

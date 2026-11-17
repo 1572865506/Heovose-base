@@ -1,146 +1,169 @@
 'use client';
 
-import { useEffect, useState } from 'react';
-import { useSearchParams, usePathname } from 'next/navigation';
+import { useEffect, useState, useMemo } from 'react';
+import { usePathname } from 'next/navigation';
 import { toast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
-import { X } from 'lucide-react';
 import { useLocalDoc } from '@/hooks/use-local-doc';
+import { useLocalCollection } from '@/hooks/use-local-collection';
 
 /**
  * LanguageIntelligence Component
  * 
  * Automatically detects browser language and suggests a switch if it matches 
- * a supported locale and differs from the current language.
+ * a supported locale and differs from the current language path.
  * 
- * Reuses existing 'languages' settings from the database.
+ * Reuses existing 'languages' settings and dynamic localized strings from database.
+ * No hardcoded translations are used.
  */
 export function LanguageIntelligence() {
-  const searchParams = useSearchParams();
   const pathname = usePathname();
   const { data: langSettings } = useLocalDoc<any>('settings', 'languages');
   const [hasPrompted, setHasPrompted] = useState(false);
 
+  // 1. 严格以 URL pathname 为唯一事实源判定当前所处的语言
+  const currentLocale = useMemo(() => {
+    if (!pathname) return '';
+    const match = pathname.match(/^\/([a-z]{2,3})(\/|$)/i);
+    const code = match ? match[1].toLowerCase() : '';
+    return code === 'vn' ? 'vi' : code;
+  }, [pathname]);
+
+  // 2. 检测浏览器首选系统语言（规范化为 ISO 639-1 二位码）
+  const browserLang = useMemo(() => {
+    if (typeof window === 'undefined' || typeof navigator === 'undefined') return '';
+    const raw = (navigator.languages && navigator.languages.length > 0)
+      ? navigator.languages[0]
+      : navigator.language;
+    if (!raw) return '';
+    const clean = raw.split(/[-_]/)[0].toLowerCase();
+    return clean === 'vn' ? 'vi' : clean;
+  }, []);
+
+  // 3. 动态拉取国际化词条（彻底杜绝硬编码）
+  const { data: targetTranslations } = useLocalCollection<any>(
+    browserLang ? `localizedStrings?lang=${browserLang}` : null
+  );
+
   useEffect(() => {
-    // DISABLE for Admin panel - Backend should remain in a single language
-    if (pathname?.startsWith('/admin')) return;
-    // Wait for settings to load and ensure we only prompt once per session/mount
-    if (!langSettings || hasPrompted) return;
+    // 排除管理后台、登录授权页面
+    if (!pathname || pathname.startsWith('/admin') || pathname.startsWith('/auth') || pathname.includes('/login')) {
+      return;
+    }
 
-    const getActiveLocale = () => {
-      const activeLangs = langSettings?.supportedLanguages?.map((l: any) => l.code) || ['en', 'zh', 'id', 'vi', 'vn'];
-      const defaultLang = langSettings?.defaultLanguage || 'en';
+    // 基础参数与配置需已就绪
+    if (!langSettings || !currentLocale || !browserLang || hasPrompted) {
+      return;
+    }
 
-      // Use the same priority as the page detection
-      const langParam = searchParams.get('lang');
-      if (langParam && activeLangs.includes(langParam)) return langParam;
-      
-      const saved = typeof window !== 'undefined' ? localStorage.getItem('heovose-locale') : null;
-      if (saved && activeLangs.includes(saved)) return saved;
-      
-      const browserLang = typeof navigator !== 'undefined' 
-        ? (navigator.languages && navigator.languages.length > 0 
-           ? navigator.languages[0].split('-')[0].toLowerCase() 
-           : navigator.language.split('-')[0].toLowerCase())
-        : 'en';
-      if (activeLangs.includes(browserLang)) return browserLang;
-      
-      return defaultLang;
+    const supportedLocales: Array<{ code: string; label: string; name?: string }> = langSettings?.supportedLanguages || [];
+    const supportedCodes = supportedLocales.map((l) => (l.code.toLowerCase() === 'vn' ? 'vi' : l.code.toLowerCase()));
+
+    // 校验浏览器语言是否在系统支持的语言列表中
+    const isSupported = supportedCodes.includes(browserLang);
+
+    // 调试日志输出（帮助开发与排查）
+    if (process.env.NODE_ENV !== 'production') {
+      console.log('[LanguageIntelligence Debug]', {
+        pathname,
+        currentLocale,
+        browserLang,
+        supportedCodes,
+        isSupported,
+        isSameLang: browserLang === currentLocale,
+        hasPrompted,
+        translationsCount: Array.isArray(targetTranslations) ? targetTranslations.length : 0,
+      });
+    }
+
+    if (!isSupported) return;
+
+    // 若浏览器语言与当前页面所在语言一致，无需提示
+    if (browserLang === currentLocale) return;
+
+    // 检查本地忽略冷却记录（24小时内不重复弹窗提示）
+    const dismissalKey = `dismiss_lang_prompt_${browserLang}`;
+    const dismissedVal = localStorage.getItem(dismissalKey);
+    if (dismissedVal) {
+      const timestamp = parseInt(dismissedVal, 10);
+      if (!isNaN(timestamp)) {
+        if (Date.now() - timestamp < 24 * 60 * 60 * 1000) {
+          return;
+        }
+      } else {
+        // 清理旧版本的非时间戳历史记录
+        localStorage.removeItem(dismissalKey);
+      }
+    }
+
+    // 确保翻译词条已加载完成，避免空内容或硬编码
+    if (!Array.isArray(targetTranslations) || targetTranslations.length === 0) {
+      return;
+    }
+
+    // 获取目标语言对应的展示标签
+    const targetObj = supportedLocales.find((l) => {
+      const code = l.code.toLowerCase() === 'vn' ? 'vi' : l.code.toLowerCase();
+      return code === browserLang;
+    });
+    const targetLabel = targetObj?.label || targetObj?.name || browserLang.toUpperCase();
+
+    // 从数据库拉取的 targetTranslations 中读取词条，杜绝代码内硬编码
+    const getTargetText = (key: string): string => {
+      const item = targetTranslations.find((t: any) => (t.id || '').toUpperCase() === key.toUpperCase());
+      if (item && item.content) {
+        return item.content[browserLang] || item.content['en'] || item.content['zh'] || '';
+      }
+      return '';
     };
 
-    const currentActiveLocale = getActiveLocale();
-    const browserLang = navigator.language.split('-')[0].toLowerCase();
-    const supportedLocales = langSettings.supportedLanguages || [];
-    const supportedCodes = supportedLocales.map((l: any) => l.code.toLowerCase());
-    
-    // 2. Check if browser language is supported by our system
-    const isSupported = supportedCodes.includes(browserLang);
-    
-    // 3. If supported and DIFFERENT from the currently active locale, show suggestion
-    // Crucially: if currentActiveLocale already matched browserLang via auto-detection,
-    // this check will correctly be false and prevent the redundant prompt.
-    if (isSupported && browserLang !== currentActiveLocale.toLowerCase()) {
-      // Check for 'cooldown' or dismissal in localStorage
-      const dismissalKey = `dismiss_lang_prompt_${browserLang}`;
-      const isDismissed = localStorage.getItem(dismissalKey);
-      
-      // If user previously dismissed this specific language suggestion, don't show it again
-      if (isDismissed) return;
+    const title = getTargetText('LANG_DETECT_TITLE');
+    const rawDesc = getTargetText('LANG_DETECT_DESC');
+    const actionText = getTargetText('LANG_DETECT_ACTION');
 
-      const targetLabel = supportedLocales.find((l: any) => l.code.toLowerCase() === browserLang)?.label || browserLang;
-
-      // Define translation table for language suggestion prompt
-      const localizedPrompts: Record<string, { title: string; description: string; action: string }> = {
-        zh: {
-          title: "语种探测 / Language Detected",
-          description: `检测到您的系统环境为 ${targetLabel}，是否切换？`,
-          action: "切换",
-        },
-        en: {
-          title: "Language Detected",
-          description: `We detected your system language is ${targetLabel}. Switch to ${targetLabel}?`,
-          action: "Switch",
-        },
-        id: {
-          title: "Bahasa Terdeteksi",
-          description: `Bahasa sistem Anda terdeteksi sebagai ${targetLabel}. Ubah ke ${targetLabel}?`,
-          action: "Ubah",
-        },
-        vi: {
-          title: "Phát hiện ngôn ngữ",
-          description: `Phát hiện ngôn ngữ hệ thống của bạn là ${targetLabel}. Chuyển sang ${targetLabel}?`,
-          action: "Chuyển",
-        },
-        vn: {
-          title: "Phát hiện ngôn ngữ",
-          description: `Phát hiện ngôn ngữ hệ thống của bạn là ${targetLabel}. Chuyển sang ${targetLabel}?`,
-          action: "Chuyển",
-        }
-      };
-
-      const prompt = localizedPrompts[browserLang] || localizedPrompts.en;
-
-      // Use a non-intrusive toast notification for the suggestion
-      toast({
-        title: prompt.title,
-        description: prompt.description,
-        action: (
-          <div className="flex gap-2">
-            <Button 
-              size="sm" 
-              className="bg-primary text-primary-foreground hover:bg-primary/90 text-[10px] font-bold h-8 px-3 rounded-lg"
-              onClick={() => {
-                // Update URL and refresh to apply changes
-                const url = new URL(window.location.href);
-                url.searchParams.set('lang', browserLang);
-                // Also set cookie and localStorage to persist the choice
-                localStorage.setItem('heovose-locale', browserLang);
-                document.cookie = `NEXT_LOCALE=${browserLang}; path=/; max-age=${60 * 60 * 24 * 30}`;
-                window.location.href = url.toString();
-              }}
-            >
-              {prompt.action}
-            </Button>
-            <Button 
-              size="sm" 
-              variant="ghost"
-              className="h-8 w-8 p-0 rounded-lg"
-              onClick={() => {
-                // Save dismissal to localStorage to respect user choice
-                localStorage.setItem(dismissalKey, 'true');
-                setHasPrompted(true);
-              }}
-            >
-              <X className="h-4 w-4" />
-            </Button>
-          </div>
-        ),
-        duration: 8000,
-      });
-      
-      setHasPrompted(true);
+    if (!title || !rawDesc || !actionText) {
+      return;
     }
-  }, [langSettings, searchParams, hasPrompted]);
 
-  return null; // This is a logic-only component
+    const description = rawDesc.replace(/\{lang\}/g, targetLabel);
+
+    // 延迟 600ms 平滑弹出，提升页面加载体验
+    const timer = setTimeout(() => {
+      toast({
+        title,
+        description,
+        action: (
+          <Button 
+            size="sm" 
+            className="bg-primary text-primary-foreground hover:bg-primary/90 text-xs font-semibold h-8 px-3 rounded-lg shadow-sm"
+            onClick={() => {
+              // 规范替换路径前缀（例如 /zh/products -> /en/products）并保留 query 与 hash
+              localStorage.setItem('heovose-locale', browserLang);
+              document.cookie = `NEXT_LOCALE=${browserLang}; path=/; max-age=31536000`;
+              
+              const newPathname = pathname.replace(/^\/[a-z]{2,3}(\/|$)/i, `/${browserLang}$1`);
+              const search = window.location.search || '';
+              const hash = window.location.hash || '';
+              window.location.href = `${newPathname}${search}${hash}`;
+            }}
+          >
+            {actionText}
+          </Button>
+        ),
+        onOpenChange: (open) => {
+          if (!open) {
+            // 用户关闭或提示自动淡出时，记录冷却时间
+            localStorage.setItem(dismissalKey, Date.now().toString());
+          }
+        },
+        duration: 9000,
+      });
+
+      setHasPrompted(true);
+    }, 600);
+
+    return () => clearTimeout(timer);
+  }, [langSettings, currentLocale, browserLang, hasPrompted, targetTranslations, pathname]);
+
+  return null;
 }

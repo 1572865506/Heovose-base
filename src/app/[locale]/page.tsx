@@ -41,14 +41,16 @@ export default async function Home({ params }: PageProps) {
   let heroConfig: any = null;
   let videoConfig: any = null;
   let mapConfig: any = null;
+  let galleryConfig: any = null;
   let langSettings: any = null;
 
   try {
-    const [rawStrings, rawHero, rawVideo, rawMap, rawLang] = await Promise.all([
+    const [rawStrings, rawHero, rawVideo, rawMap, rawGallery, rawLang] = await Promise.all([
       db.localizedString.findMany({ orderBy: { id: 'asc' }, take: 5000 }),
       db.homepageContent.findUnique({ where: { id: 'hero' } }),
       db.homepageContent.findUnique({ where: { id: 'video' } }),
       db.homepageContent.findUnique({ where: { id: 'map' }, include: { locations: true } }),
+      db.homepageContent.findUnique({ where: { id: 'gallery' } }),
       db.setting.findUnique({ where: { id: 'languages' } }),
     ]);
 
@@ -81,6 +83,7 @@ export default async function Home({ params }: PageProps) {
     heroConfig = rawHero;
     videoConfig = rawVideo;
     mapConfig = rawMap;
+    galleryConfig = rawGallery;
     langSettings = prepareSettingDataForGet(rawLang?.value ?? null);
   } catch (e) {
     console.error('[ISR Page] Failed to pre-fetch homepage configs from DB:', e);
@@ -95,6 +98,7 @@ export default async function Home({ params }: PageProps) {
           hero: heroConfig,
           video: videoConfig,
           map: mapConfig,
+          gallery: galleryConfig,
           languages: langSettings
         }}
       />
