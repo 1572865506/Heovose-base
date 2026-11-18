@@ -215,8 +215,41 @@ export default function ProductClient({ product, initialLocale }: { product: any
     return getAssetUrl(rawUrl);
   };
 
+  // 统一上报产品技术规格书下载埋点
+  const reportPdfDownloadEvent = () => {
+    try {
+      if (typeof window === 'undefined') return;
+      let sid = sessionStorage.getItem('heovose-analytics-session');
+      let vid = localStorage.getItem('heovose-analytics-visitor');
+      if (!vid) {
+        vid = `vis_${Math.random().toString(36).substring(2)}_${Date.now()}`;
+        localStorage.setItem('heovose-analytics-visitor', vid);
+      }
+      if (!sid) {
+        sid = `sess_${Math.random().toString(36).substring(2)}_${Date.now()}`;
+        sessionStorage.setItem('heovose-analytics-session', sid);
+      }
+      fetch('/api/analytics/track', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          type: 'pdf_download',
+          sessionId: sid,
+          visitorId: vid,
+          path: window.location.pathname,
+          element: 'spec_pdf_download',
+          productId: product?.id,
+          productName: getProductText(product?.nameTextId, product?.nameText)
+        })
+      }).catch(() => {});
+    } catch (_) {}
+  };
+
   const handleOpenSpecPreview = async () => {
     if (isExporting) return;
+
+    // 触发规格书调取/下载埋点
+    reportPdfDownloadEvent();
 
     // 1. 命中本地内存缓存：同一产品与语种下二次点击，0ms 瞬时打开预览弹窗，绝不重复合成！
     const currentCacheKey = `${product?.id || ''}_${locale}`;
@@ -583,25 +616,7 @@ export default function ProductClient({ product, initialLocale }: { product: any
     setIsSaving(true);
 
     // 埋点上报：用户下载/保存了产品规格书
-    try {
-      const sid = typeof window !== 'undefined' ? (sessionStorage.getItem('heovose-analytics-session') || `session_${Date.now()}`) : '';
-      const vid = typeof window !== 'undefined' ? (localStorage.getItem('heovose-analytics-visitor') || `visitor_${Date.now()}`) : '';
-      if (sid && vid) {
-        fetch('/api/analytics/track', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            type: 'pdf_download',
-            sessionId: sid,
-            visitorId: vid,
-            path: typeof window !== 'undefined' ? window.location.pathname : '',
-            element: 'spec_pdf_download',
-            productId: product?.id,
-            productName: getProductText(product?.nameTextId, product?.nameText)
-          })
-        }).catch(() => {});
-      }
-    } catch (_) {}
+    reportPdfDownloadEvent();
 
     // 双重校验文件名与 .pdf 后缀，清洗安全文件名（保留字母、数字、中文、下划线、减号）
     const rawFileName = specPreviewData.fileName || 'Specification.pdf';
@@ -1124,6 +1139,7 @@ export default function ProductClient({ product, initialLocale }: { product: any
     }
 
     interface SpecPageData {
+      groups: SpecGroupChunk[];
       leftGroups: SpecGroupChunk[];
       rightGroups: SpecGroupChunk[];
     }
@@ -1163,7 +1179,6 @@ export default function ProductClient({ product, initialLocale }: { product: any
             visualUnits += 2.0;
           } else if (code >= 65 && code <= 90) {
             // 大写西文字母计 1.15 单位
-            visualUnits += 1.15;
           } else {
             // 小写字母、数字、半角标点与空格计 0.95 单位
             visualUnits += 0.95;
@@ -1187,27 +1202,40 @@ export default function ProductClient({ product, initialLocale }: { product: any
       return 13 + lines * 15.6;
     };
 
+    // 纯正 Z 字走向排版：每行容纳左右两项参数，计算单行物理像素高度
+    const getRowHeightPx = (
+      leftItem: { label: string; value: string },
+      rightItem?: { label: string; value: string }
+    ): number => {
+      const leftPx = getItemHeightPx(leftItem);
+      const rightPx = rightItem ? getItemHeightPx(rightItem) : 0;
+      return Math.max(leftPx, rightPx);
+    };
+
     // 子表标题固定像素高度：字高(16px) + paddingBottom(7px) + borderBottom(1px) + marginBottom(5px) = 29px
     const HEADER_HEIGHT_PX = 29;
-    // 同列子表之间的纵向 gap 间距：14px
+    // 同页子表之间的纵向 gap 间距：14px
     const GROUP_GAP_PX = 14;
 
-    // 子表局部脚注（* group.footnote）物理像素高度：10px 字号在 339px 列宽下每行约 58 视觉单位
+    // 子表局部脚注（* group.footnote）物理像素高度：10px 字号在 706px 总宽下每行约 116 视觉单位
     const getGroupFootnoteHeightPx = (footnote?: string): number => {
       if (!footnote || !footnote.trim()) return 0;
-      const fnLines = calcVisualLines(`* ${footnote}`, 58);
+      const fnLines = calcVisualLines(`* ${footnote}`, 116);
       return 7 + fnLines * 16.5;
     };
 
-    // 计算一个子表（或切分后的子表块）所占用的总物理像素高度
+    // 计算一个子表（按每 2 项成一行的 Z 字布局）所占用的总物理像素高度
     const getGroupHeightPx = (
       items: Array<{ label: string; value: string }>,
       footnote?: string,
       includeBottomGap = false
     ): number => {
-      const itemsPx = items.reduce((sum, it) => sum + getItemHeightPx(it), 0);
+      let rowsPx = 0;
+      for (let i = 0; i < items.length; i += 2) {
+        rowsPx += getRowHeightPx(items[i], items[i + 1]);
+      }
       const fnPx = getGroupFootnoteHeightPx(footnote);
-      return HEADER_HEIGHT_PX + itemsPx + fnPx + (includeBottomGap ? GROUP_GAP_PX : 0);
+      return HEADER_HEIGHT_PX + rowsPx + fnPx + (includeBottomGap ? GROUP_GAP_PX : 0);
     };
 
     // 计算尾页底部的全局脚注（orderedFootnotes & unorderedFootnotes）真实物理像素高度
@@ -1229,23 +1257,22 @@ export default function ProductClient({ product, initialLocale }: { product: any
       return totalFnPx;
     })();
 
-    // A4 页面（1123px 高）在 Page 2+ 的双列规格区最大安全物理高度（px）：
+    // A4 页面（1123px 高）在 Page 2+ 的规格区最大安全物理高度（px）：
     // 1123 - 顶距(36) - 页眉(64) - 规格大标题(40) - 页脚及底距(36+32=68) - 页脚上方呼吸留白(29) = 886px
     const SUBSEQUENT_COL_MAX_PX = 886;
 
     // 无优势时 Page 1 下方剩余可用高度（px）：有副图画廊时约 245px，仅单主图时约 345px
     const PAGE_1_COL_MAX_PX = hasAdvantages ? 0 : (hasGallery ? 245 : 345);
 
-    // 精确测算在当前列剩余像素空间 availPx 内，最多能安全塞入多少行参数：
-    // 由于切分出的前半表位于当前列最底端，其下方无后续子表（无需加 GROUP_GAP_PX），且局部脚注跟随下半表流向下一列
-    const calcFitCount = (items: Array<{ label: string; value: string }>, availPx: number): number => {
+    // 测算在当前页剩余像素空间 availPx 内，按 Z 字走向（两两成行）最多能塞入多少项参数
+    const calcFitItemCount = (items: Array<{ label: string; value: string }>, availPx: number): number => {
       let usedPx = HEADER_HEIGHT_PX;
       let count = 0;
-      for (let i = 0; i < items.length; i++) {
-        const itemPx = getItemHeightPx(items[i]);
-        if (usedPx + itemPx <= availPx) {
-          usedPx += itemPx;
-          count++;
+      for (let i = 0; i < items.length; i += 2) {
+        const rowPx = getRowHeightPx(items[i], items[i + 1]);
+        if (usedPx + rowPx <= availPx) {
+          usedPx += rowPx;
+          count += (items[i + 1] ? 2 : 1);
         } else {
           break;
         }
@@ -1264,7 +1291,7 @@ export default function ProductClient({ product, initialLocale }: { product: any
     const canFitEntirelyOnPage1 =
       !hasAdvantages &&
       page1EffectiveColMaxPx > 80 &&
-      totalSpecsPx <= page1EffectiveColMaxPx * 1.85;
+      totalSpecsPx <= page1EffectiveColMaxPx;
 
     let remainingGroups = groupedSpecs.map((g: any) => ({
       rawTitle: g.title,
@@ -1273,119 +1300,72 @@ export default function ProductClient({ product, initialLocale }: { product: any
       isSplit: false,
     }));
 
-    // 双列连续流式自然分栏引擎（左上 -> 左下 -> 右上 -> 右下）：
+    // 全宽 Z 字走向（行优先两列并排：左 -> 右，下一行 左 -> 右）流式分页引擎
     const distributeGroupsToPage = (
       groupsPool: typeof remainingGroups,
-      colCapacityPx: number
+      pageCapacityPx: number
     ): { pageData: SpecPageData; remainingPool: typeof remainingGroups } => {
-      const leftGroups: SpecGroupChunk[] = [];
-      const rightGroups: SpecGroupChunk[] = [];
-      let leftPx = 0;
-      let rightPx = 0;
+      const pageGroups: SpecGroupChunk[] = [];
+      let usedPx = 0;
 
       const currentPool = groupsPool.map((g) => ({ ...g, items: [...g.items] }));
-      let currentCol: 'left' | 'right' = 'left';
 
       while (currentPool.length > 0) {
         const group = currentPool[0];
+        const gapBefore = pageGroups.length > 0 ? GROUP_GAP_PX : 0;
         const gPx = getGroupHeightPx(group.items, group.footnote, false);
 
-        if (currentCol === 'left') {
-          const gapBefore = leftGroups.length > 0 ? GROUP_GAP_PX : 0;
-          const leftAvail = colCapacityPx - leftPx - gapBefore;
-
-          // 1. 左列能完整容纳该子表（含其局部脚注）
-          if (gPx <= leftAvail) {
-            leftGroups.push({
-              title: group.isSplit
-                ? `${group.rawTitle} <span class="text-xs text-slate-400 font-normal ml-2">(${getSystemText('continued') || '续'})</span>`
-                : group.rawTitle,
-              isContinued: group.isSplit,
-              items: group.items,
-              footnote: group.footnote,
-            });
-            leftPx += gapBefore + gPx;
-            currentPool.shift();
-            continue;
-          }
-
-          // 2. 左列无法完整容纳该子表：精确测算剩余像素可容纳的行数并果断分栏，填满左列底部，杜绝大块空白
-          const fitLeft = calcFitCount(group.items, leftAvail);
-          if (fitLeft >= 1 && group.items.length - fitLeft >= 1) {
-            const leftItems = group.items.slice(0, fitLeft);
-            const restItems = group.items.slice(fitLeft);
-
-            leftGroups.push({
-              title: group.isSplit
-                ? `${group.rawTitle} <span class="text-xs text-slate-400 font-normal ml-2">(${getSystemText('continued') || '续'})</span>`
-                : group.rawTitle,
-              isContinued: group.isSplit,
-              items: leftItems,
-              footnote: undefined,
-            });
-            leftPx += gapBefore + getGroupHeightPx(leftItems, undefined, false);
-
-            currentPool[0] = { ...group, items: restItems, isSplit: true };
-            currentCol = 'right';
-            continue;
-          } else {
-            // 左列剩余高度连“表头 + 1行”都放不下，左列已自然饱满，切换至右列
-            currentCol = 'right';
-            continue;
-          }
+        // 1. 本组全部能够容纳在当前页
+        if (usedPx + gapBefore + gPx <= pageCapacityPx) {
+          pageGroups.push({
+            title: group.isSplit
+              ? `${group.rawTitle} <span class="text-xs text-slate-400 font-normal ml-2">(${getSystemText('continued') || '续'})</span>`
+              : group.rawTitle,
+            isContinued: group.isSplit,
+            items: group.items,
+            footnote: group.footnote,
+          });
+          usedPx += gapBefore + gPx;
+          currentPool.shift();
+          continue;
         }
 
-        if (currentCol === 'right') {
-          const gapBefore = rightGroups.length > 0 ? GROUP_GAP_PX : 0;
-          const rightAvail = colCapacityPx - rightPx - gapBefore;
+        // 2. 当前页放不下整组，测算能放入的行数（按两两成行的 Z 字步长）
+        const availPx = pageCapacityPx - usedPx - gapBefore;
+        const fitCount = calcFitItemCount(group.items, availPx);
 
-          // 1. 右列能完整容纳该子表（含其局部脚注）
-          if (gPx <= rightAvail) {
-            rightGroups.push({
-              title: group.isSplit
-                ? `${group.rawTitle} <span class="text-xs text-slate-400 font-normal ml-2">(${getSystemText('continued') || '续'})</span>`
-                : group.rawTitle,
-              isContinued: group.isSplit,
-              items: group.items,
-              footnote: group.footnote,
-            });
-            rightPx += gapBefore + gPx;
-            currentPool.shift();
-            continue;
-          }
+        if (fitCount >= 2 && group.items.length - fitCount >= 1) {
+          const fitItems = group.items.slice(0, fitCount);
+          const restItems = group.items.slice(fitCount);
 
-          // 2. 右列无法完整容纳：精确切分填满右列底部，余量作为续表流向下一页左列
-          const fitRight = calcFitCount(group.items, rightAvail);
-          if (fitRight >= 1 && group.items.length - fitRight >= 1) {
-            const rightItems = group.items.slice(0, fitRight);
-            const restItems = group.items.slice(fitRight);
+          pageGroups.push({
+            title: group.isSplit
+              ? `${group.rawTitle} <span class="text-xs text-slate-400 font-normal ml-2">(${getSystemText('continued') || '续'})</span>`
+              : group.rawTitle,
+            isContinued: group.isSplit,
+            items: fitItems,
+            footnote: undefined,
+          });
 
-            rightGroups.push({
-              title: group.isSplit
-                ? `${group.rawTitle} <span class="text-xs text-slate-400 font-normal ml-2">(${getSystemText('continued') || '续'})</span>`
-                : group.rawTitle,
-              isContinued: group.isSplit,
-              items: rightItems,
-              footnote: undefined,
-            });
-            rightPx += gapBefore + getGroupHeightPx(rightItems, undefined, false);
-
-            currentPool[0] = { ...group, items: restItems, isSplit: true };
-            break;
-          } else {
-            // 右列已自然饱满，结束本页
-            break;
-          }
+          currentPool[0] = { ...group, items: restItems, isSplit: true };
+          break; // 当前页已饱满，剩余流向下一页
         }
+
+        // 无法再容纳本组哪怕一行，本页结束
+        break;
       }
 
       return {
-        pageData: { leftGroups, rightGroups },
+        pageData: {
+          groups: pageGroups,
+          leftGroups: pageGroups,
+          rightGroups: [],
+        },
         remainingPool: currentPool,
       };
     };
 
-    let page1Data: SpecPageData = { leftGroups: [], rightGroups: [] };
+    let page1Data: SpecPageData = { groups: [], leftGroups: [], rightGroups: [] };
     const subsequentPages: SpecPageData[] = [];
 
     // 1. 若尝试排入 Page 1：验证是否 100% 排完且无剩余；若发现折行后仍有剩余，则撤回并统一从 Page 2 开始排布
@@ -1425,21 +1405,16 @@ export default function ProductClient({ product, initialLocale }: { product: any
       }
 
       // 防止极端超长单项死循环兜底
-      if (chosenRes.pageData.leftGroups.length === 0 && chosenRes.pageData.rightGroups.length === 0) {
+      if (chosenRes.pageData.groups.length === 0) {
         const g = remainingGroups.shift();
         if (g) {
-          const half = Math.ceil(g.items.length / 2);
-          chosenRes.pageData.leftGroups.push({
+          chosenRes.pageData.groups.push({
             title: g.rawTitle,
             isContinued: g.isSplit,
-            items: g.items.slice(0, half),
-          });
-          chosenRes.pageData.rightGroups.push({
-            title: `${g.rawTitle} <span class="text-xs text-slate-400 font-normal ml-2">(${getSystemText('continued') || '续'})</span>`,
-            isContinued: true,
-            items: g.items.slice(half),
+            items: g.items,
             footnote: g.footnote,
           });
+          chosenRes.pageData.leftGroups = chosenRes.pageData.groups;
           subsequentPages.push(chosenRes.pageData);
         }
         continue;
@@ -1450,7 +1425,7 @@ export default function ProductClient({ product, initialLocale }: { product: any
     }
 
     const totalPages =
-      (page1Data.leftGroups.length > 0 || page1Data.rightGroups.length > 0) && subsequentPages.length === 0
+      page1Data.groups.length > 0 && subsequentPages.length === 0
         ? 1
         : 1 + subsequentPages.length;
 

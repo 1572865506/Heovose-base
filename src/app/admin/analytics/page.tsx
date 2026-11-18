@@ -45,28 +45,6 @@ import {
   TooltipContent,
   TooltipProvider
 } from '@/components/ui/tooltip';
-
-// 纯算法国家/地区标准名称与国旗 Emoji 解析（遵循免硬编码词典规范）
-const getRegionDisplayName = (code?: string | null) => {
-  if (!code || code === 'UNKNOWN' || code === 'Localhost') return '未知区域 / 本地 (Local)';
-  try {
-    const regionNames = new Intl.DisplayNames(['zh-CN'], { type: 'region' });
-    return `${regionNames.of(code.toUpperCase()) || code} (${code.toUpperCase()})`;
-  } catch {
-    return String(code).toUpperCase();
-  }
-};
-
-const getCountryFlagEmoji = (countryCode?: string | null) => {
-  if (!countryCode || countryCode.length !== 2) return '🌐';
-  const code = countryCode.toUpperCase();
-  const first = code.charCodeAt(0) - 65 + 0x1F1E6;
-  const second = code.charCodeAt(1) - 65 + 0x1F1E6;
-  if (first >= 0x1F1E6 && first <= 0x1F1FF && second >= 0x1F1E6 && second <= 0x1F1FF) {
-    return String.fromCodePoint(first, second);
-  }
-  return '🌐';
-};
 import { Progress } from '@/components/ui/progress';
 import { cn } from '@/lib/utils';
 import Link from 'next/link';
@@ -98,6 +76,40 @@ import {
 } from '@/components/ui/dialog';
 import { useSession } from 'next-auth/react';
 import { useToast } from '@/hooks/use-toast';
+import { format } from 'date-fns';
+
+// 纯算法国家/地区标准名称与国旗 Emoji 解析（遵循免硬编码词典规范）
+const getRegionDisplayName = (code?: string | null) => {
+  if (!code || code === 'UNKNOWN' || code === 'Localhost') return '未知区域 / 本地 (Local)';
+  try {
+    const regionNames = new Intl.DisplayNames(['zh-CN'], { type: 'region' });
+    return `${regionNames.of(code.toUpperCase()) || code} (${code.toUpperCase()})`;
+  } catch {
+    return String(code).toUpperCase();
+  }
+};
+
+const getCountryFlagEmoji = (countryCode?: string | null) => {
+  if (!countryCode || countryCode.length !== 2) return '🌐';
+  const code = countryCode.toUpperCase();
+  const first = code.charCodeAt(0) - 65 + 0x1F1E6;
+  const second = code.charCodeAt(1) - 65 + 0x1F1E6;
+  if (first >= 0x1F1E6 && first <= 0x1F1FF && second >= 0x1F1E6 && second <= 0x1F1FF) {
+    return String.fromCodePoint(first, second);
+  }
+  return '🌐';
+};
+
+const formatDateSafe = (dateVal: any, pattern: string = 'yyyy-MM-dd HH:mm:ss') => {
+  if (!dateVal) return '-';
+  try {
+    const d = new Date(dateVal);
+    if (isNaN(d.getTime())) return '-';
+    return format(d, pattern);
+  } catch {
+    return '-';
+  }
+};
 
 export default function AnalyticsPage() {
   const { data: session } = useSession();
@@ -1237,16 +1249,26 @@ export default function AnalyticsPage() {
           <CardContent className="p-6 pt-0">
             <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-thin">
               {realtimeData?.activeSessions && realtimeData.activeSessions.length > 0 ? (
-                realtimeData.activeSessions.slice(0, 6).map((item: any, idx: number) => (
-                  <div key={idx} className="flex flex-col p-3 rounded-xl bg-muted/20 border border-border/10 min-w-[170px] space-y-1.5">
-                    <div className="flex items-center justify-between">
-                      <span className="text-[8px] font-mono text-muted-foreground/60">{item.sessionId.slice(5, 12)}</span>
-                      <span className="text-[9px] font-bold text-indigo-400">{item.country || 'Anonymized'}</span>
+                realtimeData.activeSessions.slice(0, 6).map((item: any, idx: number) => {
+                  const flag = getCountryFlagEmoji(item.country);
+                  const countryName = item.country && item.country !== 'UNKNOWN' && item.country !== 'Localhost'
+                    ? (getRegionDisplayName(item.country).split(' ')[0] || item.country)
+                    : item.country === 'Localhost' ? '本地 (Local)' : '匿名区域';
+
+                  return (
+                    <div key={idx} className="flex flex-col p-3 rounded-xl bg-muted/20 border border-border/10 min-w-[170px] space-y-1.5">
+                      <div className="flex items-center justify-between">
+                        <span className="text-[8px] font-mono text-muted-foreground/60">{item.sessionId.slice(5, 12)}</span>
+                        <span className="text-[10px] font-bold text-indigo-400 flex items-center gap-1">
+                          <span>{flag}</span>
+                          <span>{countryName}</span>
+                        </span>
+                      </div>
+                      <p className="text-[10px] font-bold truncate text-foreground">{item.currentPath}</p>
+                      <span className="text-[8px] font-medium text-muted-foreground/40">{formatDateSafe(item.lastActive, 'HH:mm:ss')}</span>
                     </div>
-                    <p className="text-[10px] font-bold truncate text-foreground">{item.currentPath}</p>
-                    <span className="text-[8px] font-medium text-muted-foreground/40">{new Date(item.lastActive).toLocaleTimeString()}</span>
-                  </div>
-                ))
+                  );
+                })
               ) : (
                 <div className="py-4 text-center text-[10px] text-muted-foreground/40 font-bold w-full">暂无实时活跃用户...</div>
               )}
@@ -1691,21 +1713,27 @@ export default function AnalyticsPage() {
             </div>
           </CardHeader>
           <CardContent className="p-10 space-y-8">
-            {stats?.geoData.slice(0, 6).map((item: any, i: number) => (
-              <div key={i} className="space-y-3">
-                <div className="flex justify-between items-center">
-                  <div className="flex items-center gap-3">
-                    <span className="text-[10px] font-bold text-muted-foreground/20">0{i + 1}</span>
-                    <span className="text-sm font-bold text-foreground uppercase tracking-tighter">{item.name || '其他'}</span>
+            {stats?.geoData.slice(0, 6).map((item: any, i: number) => {
+              const flag = getCountryFlagEmoji(item.name);
+              const displayName = getRegionDisplayName(item.name);
+
+              return (
+                <div key={i} className="space-y-3">
+                  <div className="flex justify-between items-center">
+                    <div className="flex items-center gap-2.5">
+                      <span className="text-[10px] font-bold text-muted-foreground/20">0{i + 1}</span>
+                      <span className="text-base select-none">{flag}</span>
+                      <span className="text-sm font-bold text-foreground tracking-tight">{displayName}</span>
+                    </div>
+                    <span className="text-sm font-black text-foreground">{item.value} <span className="text-[10px] text-muted-foreground">UV</span></span>
                   </div>
-                  <span className="text-sm font-black text-foreground">{item.value} <span className="text-[10px] text-muted-foreground">UV</span></span>
+                  <Progress
+                    value={stats.geoData[0]?.value ? (item.value / stats.geoData[0].value) * 100 : 0}
+                    className="h-1.5 bg-muted/20"
+                  />
                 </div>
-                <Progress
-                  value={stats.geoData[0]?.value ? (item.value / stats.geoData[0].value) * 100 : 0}
-                  className="h-1.5 bg-muted/20"
-                />
-              </div>
-            ))}
+              );
+            })}
           </CardContent>
         </GlassCard>
 
@@ -2320,8 +2348,8 @@ export default function AnalyticsPage() {
                           <div className="flex items-center gap-1.5 flex-wrap">
                             {(item.recentSamples || []).map((sample: any, sIdx: number) => {
                               const sampleLoadSec = (sample.loadTime / 1000).toFixed(2);
-                              const timeFormatted = new Date(sample.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
-                              const dateFormatted = new Date(sample.timestamp).toLocaleDateString([], { month: '2-digit', day: '2-digit' });
+                              const timeFormatted = formatDateSafe(sample.timestamp, 'HH:mm:ss');
+                              const dateFormatted = formatDateSafe(sample.timestamp, 'MM/dd');
 
                               // 5 级纯度与语义色阶定义 (Lv1 <2s, Lv2 2~3s, Lv3 3~4s, Lv4 4~6s, Lv5 >6s)
                               const level = sample.level || (
@@ -2502,13 +2530,27 @@ export default function AnalyticsPage() {
                                     匿名浏览 (未授权)
                                   </Badge>
                                 )}
-                                <span className="text-xs font-mono font-black text-foreground">
-                                  {session.hasAcceptedCookie && session.ip ? `${session.ip} (${session.city || 'Unknown'}, ${session.country || 'Unknown'})` : 'Anonymous Visitor'}
+                                <span className="text-xs font-mono font-black text-foreground flex items-center gap-1.5 flex-wrap">
+                                  {session.hasAcceptedCookie && session.ip ? (
+                                    <>
+                                      <span>{session.ip}</span>
+                                      <span className="text-muted-foreground/40 font-sans text-xs font-normal">•</span>
+                                      <span className="font-sans text-xs font-bold text-foreground/90 flex items-center gap-1">
+                                        <span>{getCountryFlagEmoji(session.country)}</span>
+                                        <span>{getRegionDisplayName(session.country)}</span>
+                                        {session.city && session.city !== 'UNKNOWN' && session.city !== 'Localhost' && (
+                                          <span className="text-muted-foreground/75 font-normal">({session.city})</span>
+                                        )}
+                                      </span>
+                                    </>
+                                  ) : (
+                                    'Anonymous Visitor (匿名访客)'
+                                  )}
                                 </span>
                               </div>
                               <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-[10px] font-bold text-muted-foreground/60">
                                 <span>会话 ID: <span className="font-mono">{session.id.slice(0, 12)}...</span></span>
-                                <span>首访时间: {new Date(session.createdAt).toLocaleString()}</span>
+                                <span>首访时间: {formatDateSafe(session.createdAt, 'yyyy-MM-dd HH:mm:ss')}</span>
                                 <span>来源: <span className="text-foreground/75 truncate max-w-xs">{session.referrer || '直接访问'}</span></span>
                               </div>
                             </div>
@@ -2538,7 +2580,7 @@ export default function AnalyticsPage() {
                                   <div className="space-y-1">
                                     <div className="flex items-center gap-2">
                                       <span className="text-[10px] font-black uppercase tracking-wider text-blue-500">进入站点 / Landing</span>
-                                      <span className="text-[9px] font-mono text-muted-foreground/40">{new Date(session.createdAt).toLocaleTimeString()}</span>
+                                      <span className="text-[9px] font-mono text-muted-foreground/40">{formatDateSafe(session.createdAt, 'HH:mm:ss')}</span>
                                     </div>
                                     <p className="text-xs font-bold text-foreground">
                                       通过设备 {session.userAgent ? parseUA(session.userAgent).browser + ' (' + parseUA(session.userAgent).os + ')' : '未知终端'} 
@@ -2565,6 +2607,10 @@ export default function AnalyticsPage() {
                                     nodeColor = "bg-amber-500";
                                     nodeTitle = "开始填写表单 (FORM_START)";
                                     nodeDesc = `聚焦并开始在页面 ${event.path} 填写询盘输入框 [${event.element || 'inquiry'}]。`;
+                                  } else if (event.type === 'PDF_DOWNLOAD') {
+                                    nodeColor = "bg-rose-500 shadow-[0_0_10px_rgba(244,63,94,0.3)] animate-pulse";
+                                    nodeTitle = "下载规格书 (PDF_DOWNLOAD)";
+                                    nodeDesc = `下载了产品技术规格书 PDF [${event.element || 'Product Spec'}]（高意向转化动作）。`;
                                   } else if (event.type === 'SCROLL') {
                                     nodeColor = "bg-orange-500";
                                     nodeTitle = "页面停留与滚动 (SCROLL & DWELL)";
@@ -2581,7 +2627,7 @@ export default function AnalyticsPage() {
                                       <div className="space-y-1">
                                         <div className="flex items-center gap-2">
                                           <span className="text-[10px] font-black uppercase tracking-wider text-foreground/80">{nodeTitle}</span>
-                                          <span className="text-[9px] font-mono text-muted-foreground/40">{new Date(event.timestamp).toLocaleTimeString()}</span>
+                                          <span className="text-[9px] font-mono text-muted-foreground/40">{formatDateSafe(event.timestamp, 'HH:mm:ss')}</span>
                                         </div>
                                         <p className="text-xs font-bold text-muted-foreground/80">{nodeDesc}</p>
                                       </div>
@@ -2595,7 +2641,7 @@ export default function AnalyticsPage() {
                                   <div className="space-y-1">
                                     <div className="flex items-center gap-2">
                                       <span className="text-[10px] font-black uppercase tracking-wider text-gray-500">离开站点 / Exit</span>
-                                      <span className="text-[9px] font-mono text-muted-foreground/40">{new Date(session.updatedAt).toLocaleTimeString()}</span>
+                                      <span className="text-[9px] font-mono text-muted-foreground/40">{formatDateSafe(session.updatedAt, 'HH:mm:ss')}</span>
                                     </div>
                                     <p className="text-xs font-bold text-muted-foreground">会话交互结束，在此最后退出页面。</p>
                                   </div>

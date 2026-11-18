@@ -35,7 +35,15 @@ import {
   Globe,
   Lock,
   ChevronLeft,
-  Download
+  Download,
+  MapPin,
+  Languages,
+  FileDown,
+  Compass,
+  Layers,
+  TrendingUp,
+  AlertTriangle,
+  RefreshCw
 } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
@@ -79,6 +87,8 @@ export default function InquiriesPage() {
   const [isDeleting, setIsDeleting] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isSavingSettings, setIsSavingSettings] = useState(false);
+  const [isTestingSmtp, setIsTestingSmtp] = useState(false);
+  const [isResendingEmail, setIsResendingEmail] = useState(false);
   
   // Pagination State
   const [currentPage, setCurrentPage] = useState(1);
@@ -142,6 +152,45 @@ export default function InquiriesPage() {
     currentPage * itemsPerPage
   );
 
+  const handleResendEmail = async (id: string) => {
+    if (isResendingEmail) return;
+    setIsResendingEmail(true);
+    try {
+      const res = await fetch(`/api/inquiries/${id}`, { method: 'POST' });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || '发送失败');
+
+      setSelectedInquiry((prev: any) => prev ? {
+        ...prev,
+        dossier: {
+          ...(prev.dossier || {}),
+          mailStatus: data.mailStatus,
+          mailError: data.mailError,
+          mailSentAt: data.mailSentAt,
+        }
+      } : prev);
+      mutate();
+
+      if (data.success) {
+        toast({ title: '询盘通知邮件已重新转发' });
+      } else {
+        toast({
+          variant: 'destructive',
+          title: data.mailStatus === 'unconfigured' ? '发信服务器未配置' : '邮件转发失败',
+          description: data.mailError || '请检查发信服务器设置',
+        });
+      }
+    } catch (e: any) {
+      toast({
+        variant: 'destructive',
+        title: '重新转发请求失败',
+        description: e?.message || '请稍后重试',
+      });
+    } finally {
+      setIsResendingEmail(false);
+    }
+  };
+
   const handleStatusChange = async (id: string, status: string) => {
     try {
       const res = await fetch(`/api/inquiries/${id}`, {
@@ -179,38 +228,152 @@ export default function InquiriesPage() {
     }
   };
 
+  const formatTimeSafe = (dateVal: any, pattern: string = 'yyyy-MM-dd HH:mm:ss') => {
+    if (!dateVal) return '-';
+    try {
+      const d = new Date(dateVal);
+      if (isNaN(d.getTime())) return '-';
+      return format(d, pattern);
+    } catch {
+      return '-';
+    }
+  };
+
+  const escapeCell = (str: any) => {
+    if (str === null || str === undefined) return '';
+    return String(str)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;');
+  };
+
   const handleExport = () => {
     if (!filteredInquiries.length) {
       toast({ variant: "destructive", title: "没有可导出的数据" });
       return;
     }
 
-    const headers = ['姓名', '电子邮箱', '公司', '电话', '关联产品ID', '咨询内容', '状态', '提交时间'];
-    const rows = filteredInquiries.map((inq: any) => [
-      inq.name,
-      inq.email,
-      inq.company || '个人客户',
-      inq.phone || '',
-      inq.productId || '无',
-      inq.message.replace(/\n/g, ' '),
-      inq.status === 'pending' ? '待处理' : '已处理',
-      format(new Date(inq.createdAt), 'yyyy-MM-dd HH:mm:ss')
-    ]);
+    const headers = [
+      '序号',
+      '意向评级',
+      '客户姓名',
+      '电子邮箱',
+      '联系电话',
+      '公司名称',
+      '所在国家/地区',
+      '建议沟通语种',
+      '关联产品名称',
+      '关联产品ID',
+      '规格书PDF下载',
+      '站内总停留',
+      '对比浏览产品',
+      '流量来源渠道',
+      '处理状态',
+      '提交时间',
+      '客户咨询留言'
+    ];
 
-    const csvContent = "\uFEFF" + [
-      headers.join(','),
-      ...rows.map((row: any) => row.map((cell: any) => `"${String(cell).replace(/"/g, '""')}"`).join(','))
-    ].join('\n');
+    const rowsHtml = filteredInquiries.map((inq: any, idx: number) => {
+      const dossier = inq.dossier || {};
+      const rating = dossier.leadRating || '🌱 常规快速';
+      const isHigh = rating.includes('极高');
+      const isDeep = rating.includes('深度');
+      const ratingStyle = isHigh 
+        ? 'background-color: #ffe4e6; color: #e11d48; font-weight: bold;' 
+        : isDeep 
+        ? 'background-color: #dbeafe; color: #2563eb; font-weight: bold;' 
+        : 'background-color: #f1f5f9; color: #475569;';
 
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+      const statusStyle = inq.status === 'pending'
+        ? 'background-color: #ffedd5; color: #c2410c; font-weight: bold;'
+        : 'background-color: #dcfce7; color: #15803d; font-weight: bold;';
+
+      const pdfStyle = dossier.pdfDownloaded
+        ? 'color: #16a34a; font-weight: bold;'
+        : 'color: #64748b;';
+
+      // 纯净标准的提交时间戳
+      const submitTime = formatTimeSafe(inq.createdAt, 'yyyy-MM-dd HH:mm:ss');
+
+      const comparedProds = dossier.comparedProducts && dossier.comparedProducts.length > 0
+        ? dossier.comparedProducts.join('、')
+        : '无';
+
+      return `
+        <tr style="height: 32px;">
+          <td style="text-align: center; border: 1px solid #cbd5e1;">${idx + 1}</td>
+          <td style="text-align: center; border: 1px solid #cbd5e1; ${ratingStyle}">${escapeCell(rating)}</td>
+          <td style="border: 1px solid #cbd5e1; font-weight: bold;">${escapeCell(inq.name)}</td>
+          <td style="border: 1px solid #cbd5e1;"><a href="mailto:${escapeCell(inq.email)}">${escapeCell(inq.email)}</a></td>
+          <td style="border: 1px solid #cbd5e1; mso-number-format:'\\@';">${escapeCell(inq.phone || '未提供')}</td>
+          <td style="border: 1px solid #cbd5e1;">${escapeCell(inq.company || '个人客户')}</td>
+          <td style="border: 1px solid #cbd5e1;">${escapeCell(dossier.location || '未知国家/地区')}</td>
+          <td style="border: 1px solid #cbd5e1;">${escapeCell(dossier.language || '未知')}</td>
+          <td style="border: 1px solid #cbd5e1; font-weight: bold;">${escapeCell(inq.productName || (inq.productId ? `产品 ${inq.productId}` : '通用咨询'))}</td>
+          <td style="border: 1px solid #cbd5e1; mso-number-format:'\\@'; font-family: monospace;">${escapeCell(inq.productId || '无')}</td>
+          <td style="text-align: center; border: 1px solid #cbd5e1; ${pdfStyle}">${dossier.pdfDownloaded ? '已下载 (高意向)' : '未下载'}</td>
+          <td style="text-align: center; border: 1px solid #cbd5e1;">${escapeCell(dossier.dwellTime || '刚刚进站')}</td>
+          <td style="border: 1px solid #cbd5e1;">${escapeCell(comparedProds)}</td>
+          <td style="border: 1px solid #cbd5e1;">${escapeCell(dossier.channel || '直接访问')}</td>
+          <td style="text-align: center; border: 1px solid #cbd5e1; ${statusStyle}">${inq.status === 'pending' ? '待处理' : '已处理'}</td>
+          <td style="border: 1px solid #cbd5e1; white-space: nowrap;">${submitTime}</td>
+          <td style="border: 1px solid #cbd5e1; max-width: 400px; white-space: pre-wrap;">${escapeCell(inq.message)}</td>
+        </tr>
+      `;
+    }).join('');
+
+    const excelTemplate = `
+      <html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40">
+      <head>
+        <meta http-equiv="content-type" content="application/vnd.ms-excel; charset=UTF-8"/>
+        <!--[if gte mso 9]>
+        <xml>
+          <x:ExcelWorkbook>
+            <x:ExcelWorksheets>
+              <x:ExcelWorksheet>
+                <x:Name>官网客户询盘列表</x:Name>
+                <x:WorksheetOptions>
+                  <x:DisplayGridlines/>
+                  <x:DoNotDisplayZeros/>
+                </x:WorksheetOptions>
+              </x:ExcelWorksheet>
+            </x:ExcelWorksheets>
+          </x:ExcelWorkbook>
+        </xml>
+        <![endif]-->
+        <style>
+          table { border-collapse: collapse; font-family: 'Segoe UI', Arial, sans-serif; font-size: 12px; }
+          th { background-color: #0f172a; color: #ffffff; font-weight: bold; font-size: 13px; height: 38px; text-align: center; vertical-align: middle; border: 1px solid #475569; padding: 6px 12px; }
+          td { vertical-align: middle; padding: 6px 10px; color: #1e293b; }
+          tr:nth-child(even) { background-color: #f8fafc; }
+        </style>
+      </head>
+      <body>
+        <table>
+          <thead>
+            <tr>
+              ${headers.map(h => `<th>${h}</th>`).join('')}
+            </tr>
+          </thead>
+          <tbody>
+            ${rowsHtml}
+          </tbody>
+        </table>
+      </body>
+      </html>
+    `;
+
+    const blob = new Blob([excelTemplate], { type: 'application/vnd.ms-excel;charset=utf-8;' });
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
-    link.setAttribute('download', `heovose-inquiries-${new Date().toISOString().split('T')[0]}.csv`);
+    link.setAttribute('download', `heovose-inquiries-${new Date().toISOString().split('T')[0]}.xls`);
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
-    toast({ title: "数据导出成功", description: "Excel 已就绪" });
+    toast({ title: "数据导出成功", description: "已为您生成带画像样式的 Excel 报表" });
   };
 
   return (
@@ -310,7 +473,7 @@ export default function InquiriesPage() {
           <TableBody>
             {isLoading ? (
               <TableRow>
-                <TableCell colSpan={5} className="h-64 text-center">
+                <TableCell colSpan={6} className="h-64 text-center">
                   <div className="flex flex-col items-center justify-center gap-4">
                     <Loader2 className="h-8 w-8 animate-spin text-primary/20" />
                     <p className="text-xs font-bold text-slate-300 uppercase tracking-widest admin-interface-dark:text-slate-700">数据加载中...</p>
@@ -319,7 +482,7 @@ export default function InquiriesPage() {
               </TableRow>
             ) : paginatedInquiries.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={5} className="h-64 text-center">
+                <TableCell colSpan={6} className="h-64 text-center">
                   <div className="flex flex-col items-center justify-center gap-4">
                     <div className="h-16 w-16 rounded-3xl bg-slate-50 flex items-center justify-center admin-interface-dark:bg-slate-900/50">
                       <MessageSquare className="h-8 w-8 text-slate-200 admin-interface-dark:text-slate-800" />
@@ -333,8 +496,28 @@ export default function InquiriesPage() {
                 <TableRow key={inquiry.id} className="group hover:bg-slate-50/50 transition-colors border-slate-100 admin-interface-dark:hover:bg-slate-900/20 admin-interface-dark:border-slate-900">
                   <TableCell className="py-4 px-8">
                     <div className="flex flex-col">
-                      <span className="text-sm font-bold text-slate-900 group-hover:text-primary transition-colors admin-interface-dark:text-slate-100">{inquiry.name}</span>
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm font-bold text-slate-900 group-hover:text-primary transition-colors admin-interface-dark:text-slate-100">{inquiry.name}</span>
+                        {inquiry.dossier?.leadRating && (
+                          <span className={cn(
+                            "text-[9px] leading-none font-semibold px-1.5 py-[3px] rounded-full inline-flex items-center gap-0.5 shrink-0",
+                            inquiry.dossier.leadRating.includes('极高') 
+                              ? "bg-rose-50 text-rose-600 admin-interface-dark:bg-rose-950/30 admin-interface-dark:text-rose-400 border border-rose-200/50" 
+                              : inquiry.dossier.leadRating.includes('深度') 
+                              ? "bg-blue-50 text-blue-600 admin-interface-dark:bg-blue-950/30 admin-interface-dark:text-blue-400 border border-blue-200/50" 
+                              : "bg-slate-100 text-slate-500 admin-interface-dark:bg-slate-900 admin-interface-dark:text-slate-400"
+                          )}>
+                            {inquiry.dossier.leadRating.split(' ')[0]} {inquiry.dossier.leadRating.split(' ')[1]}
+                          </span>
+                        )}
+                      </div>
                       <span className="text-xs text-slate-400 mt-1 admin-interface-dark:text-slate-500">{inquiry.email}</span>
+                      {inquiry.dossier?.location && inquiry.dossier.location !== '未知国家/地区' && (
+                        <span className="text-[11px] text-slate-400 mt-0.5 flex items-center gap-1 admin-interface-dark:text-slate-500">
+                          <MapPin className="h-3 w-3 text-slate-400 shrink-0" />
+                          <span className="truncate max-w-[180px]">{inquiry.dossier.location}</span>
+                        </span>
+                      )}
                     </div>
                   </TableCell>
                   <TableCell className="py-4">
@@ -353,16 +536,28 @@ export default function InquiriesPage() {
                     </Badge>
                   </TableCell>
                   <TableCell className="py-4 text-center">
-                    <Badge className={cn(
-                      "rounded-full px-3 py-1 text-[10px] font-bold uppercase tracking-wider border-none shadow-sm",
-                      inquiry.emailViewedAt ? "bg-blue-50 text-blue-600 animate-pulse admin-interface-dark:bg-blue-950/30 admin-interface-dark:text-blue-400" : "bg-slate-50 text-slate-400 admin-interface-dark:bg-slate-900/50 admin-interface-dark:text-slate-400"
-                    )}>
-                      {inquiry.emailViewedAt ? '邮件已阅' : '尚未查阅'}
-                    </Badge>
+                    {inquiry.dossier?.mailStatus === 'failed' || inquiry.dossier?.mailStatus === 'unconfigured' ? (
+                      <Badge
+                        title={inquiry.dossier?.mailError || ''}
+                        className="rounded-full px-3 py-1 text-[10px] font-bold uppercase tracking-wider border-none shadow-sm bg-rose-50 text-rose-600 hover:bg-rose-100 admin-interface-dark:bg-rose-950/30 admin-interface-dark:text-rose-400 admin-interface-dark:hover:bg-rose-950/50 gap-1"
+                      >
+                        <AlertTriangle className="h-3 w-3" />
+                        {inquiry.dossier.mailStatus === 'unconfigured' ? '未配置SMTP' : '转发失败'}
+                      </Badge>
+                    ) : (
+                      <Badge className={cn(
+                        "rounded-full px-3 py-1 text-[10px] font-bold uppercase tracking-wider border-none shadow-sm pointer-events-none",
+                        inquiry.emailViewedAt
+                          ? "bg-blue-50 text-blue-600 hover:bg-blue-50 animate-pulse admin-interface-dark:bg-blue-950/30 admin-interface-dark:text-blue-400 admin-interface-dark:hover:bg-blue-950/30"
+                          : "bg-slate-50 text-slate-400 hover:bg-slate-50 admin-interface-dark:bg-slate-900/50 admin-interface-dark:text-slate-400 admin-interface-dark:hover:bg-slate-900/50"
+                      )}>
+                        {inquiry.emailViewedAt ? '邮件已阅' : '尚未查阅'}
+                      </Badge>
+                    )}
                   </TableCell>
                   <TableCell className="py-4">
                     <span className="text-xs font-medium text-slate-400 admin-interface-dark:text-muted-foreground">
-                      {format(new Date(inquiry.createdAt), 'yyyy-MM-dd HH:mm')}
+                      {formatTimeSafe(inquiry.createdAt, 'yyyy-MM-dd HH:mm')}
                     </span>
                   </TableCell>
                   <TableCell className="py-4 px-8 text-right">
@@ -463,23 +658,54 @@ export default function InquiriesPage() {
 
                     <div className="space-y-3">
                       <label className="text-[10px] font-bold uppercase tracking-widest text-slate-400 flex items-center gap-2 px-1 admin-interface-dark:text-slate-500">
-                        <Eye className="h-3 w-3 text-primary" /> 邮件查阅状态
+                        <Eye className="h-3 w-3 text-primary" /> 邮件通知与查阅状态
                       </label>
                       <div className={cn(
-                        "h-14 px-4 rounded-lg border flex items-center justify-between",
-                        selectedInquiry.emailViewedAt ? "bg-green-50 border-green-100 admin-interface-dark:bg-green-950/20 admin-interface-dark:border-green-900/30" : "bg-slate-50 border-slate-100 admin-interface-dark:bg-slate-900/50 admin-interface-dark:border-slate-800"
+                        "min-h-[56px] px-4 py-2 rounded-lg border flex items-center justify-between gap-2",
+                        (selectedInquiry.dossier?.mailStatus === 'failed' || selectedInquiry.dossier?.mailStatus === 'unconfigured')
+                          ? "bg-rose-50 border-rose-200 admin-interface-dark:bg-rose-950/20 admin-interface-dark:border-rose-900/40"
+                          : selectedInquiry.emailViewedAt
+                          ? "bg-green-50 border-green-100 admin-interface-dark:bg-green-950/20 admin-interface-dark:border-green-900/30"
+                          : "bg-slate-50 border-slate-100 admin-interface-dark:bg-slate-900/50 admin-interface-dark:border-slate-800"
                       )}>
-                        <div className="flex items-center gap-2">
-                          <div className={cn("w-2 h-2 rounded-full", selectedInquiry.emailViewedAt ? "bg-green-500 animate-pulse" : "bg-slate-300")} />
-                          <span className={cn("text-sm font-bold uppercase tracking-tight", selectedInquiry.emailViewedAt ? "text-green-700 admin-interface-dark:text-green-400" : "text-slate-400 admin-interface-dark:text-slate-500")}>
-                            {selectedInquiry.emailViewedAt ? '邮件已查阅' : '邮件未查阅'}
-                          </span>
+                        <div className="min-w-0 flex-1">
+                          {(selectedInquiry.dossier?.mailStatus === 'failed' || selectedInquiry.dossier?.mailStatus === 'unconfigured') ? (
+                            <div className="space-y-0.5">
+                              <div className="flex items-center gap-1.5 text-xs font-bold text-rose-600 admin-interface-dark:text-rose-400">
+                                <AlertTriangle className="h-3.5 w-3.5 shrink-0" />
+                                <span>{selectedInquiry.dossier.mailStatus === 'unconfigured' ? '未配置发信服务器' : '自动转发邮件失败'}</span>
+                              </div>
+                              {selectedInquiry.dossier?.mailError && (
+                                <p className="text-[10px] text-rose-500/80 truncate" title={selectedInquiry.dossier.mailError}>
+                                  {selectedInquiry.dossier.mailError}
+                                </p>
+                              )}
+                            </div>
+                          ) : (
+                            <div className="flex items-center gap-2">
+                              <div className={cn("w-2 h-2 rounded-full", selectedInquiry.emailViewedAt ? "bg-green-500 animate-pulse" : "bg-slate-300")} />
+                              <span className={cn("text-sm font-bold uppercase tracking-tight", selectedInquiry.emailViewedAt ? "text-green-700 admin-interface-dark:text-green-400" : "text-slate-400 admin-interface-dark:text-slate-500")}>
+                                {selectedInquiry.emailViewedAt ? '邮件已查阅' : '邮件未查阅'}
+                              </span>
+                              {selectedInquiry.emailViewedAt && (
+                                <span className="text-[10px] font-bold text-green-600/60 uppercase ml-1">
+                                  {format(new Date(selectedInquiry.emailViewedAt), 'HH:mm')}
+                                </span>
+                              )}
+                            </div>
+                          )}
                         </div>
-                        {selectedInquiry.emailViewedAt && (
-                          <span className="text-[10px] font-bold text-green-600/60 uppercase">
-                            {format(new Date(selectedInquiry.emailViewedAt), 'HH:mm')}
-                          </span>
-                        )}
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          disabled={isResendingEmail}
+                          onClick={() => handleResendEmail(selectedInquiry.id)}
+                          className="h-8 px-2.5 text-[11px] font-bold gap-1 shrink-0 hover:bg-white/80 admin-interface-dark:hover:bg-slate-800"
+                          title="手动重新转发询盘通知邮件"
+                        >
+                          <RefreshCw className={cn("h-3 w-3", isResendingEmail && "animate-spin")} />
+                          {isResendingEmail ? '发送中' : '重发'}
+                        </Button>
                       </div>
                     </div>
                   </div>
@@ -509,7 +735,7 @@ export default function InquiriesPage() {
                       </label>
                       <div className="h-14 px-4 bg-slate-50 rounded-lg border border-slate-100 flex items-center admin-interface-dark:bg-slate-900/50 admin-interface-dark:border-slate-800">
                         <span className="text-sm font-medium text-slate-700 admin-interface-dark:text-slate-300">
-                          {format(new Date(selectedInquiry.createdAt), 'yyyy-MM-dd HH:mm:ss')}
+                          {formatTimeSafe(selectedInquiry.createdAt, 'yyyy-MM-dd HH:mm:ss')}
                         </span>
                       </div>
                     </div>
@@ -535,14 +761,126 @@ export default function InquiriesPage() {
                       </div>
                       <div>
                         <p className="text-[10px] font-bold text-primary uppercase tracking-widest">关联产品 (Linked Product)</p>
-                        <p className="text-sm font-bold text-slate-900 mt-0.5 admin-interface-dark:text-slate-300">ID: {selectedInquiry.productId}</p>
+                        <p className="text-sm font-bold text-slate-900 mt-0.5 admin-interface-dark:text-slate-200">
+                          {selectedInquiry.productName ? `${selectedInquiry.productName} (ID: ${selectedInquiry.productId})` : `ID: ${selectedInquiry.productId}`}
+                        </p>
                       </div>
                     </div>
-                    <Button variant="ghost" size="sm" className="rounded-full text-[10px] font-bold uppercase tracking-widest hover:bg-primary/10 text-primary">
-                      查看产品 <ChevronRight className="h-3 w-3 ml-1" />
+                    <Button 
+                      variant="ghost" 
+                      size="sm" 
+                      onClick={() => window.open(`/products/${selectedInquiry.productId}`, '_blank')}
+                      className="rounded-full text-[10px] font-bold uppercase tracking-widest hover:bg-primary/10 text-primary gap-1"
+                    >
+                      查看产品 <ExternalLink className="h-3 w-3 ml-1" />
                     </Button>
                   </div>
                 )}
+
+                {/* 客户战术画像分析专栏 */}
+                <div className="space-y-4 pt-4 border-t border-slate-100 admin-interface-dark:border-slate-900">
+                  <div className="flex items-center justify-between">
+                    <label className="text-[10px] font-bold uppercase tracking-widest text-slate-400 flex items-center gap-2 px-1 admin-interface-dark:text-slate-500">
+                      <TrendingUp className="h-3.5 w-3.5 text-primary" /> 客户战术画像分析 (Sales Intelligence Dossier)
+                    </label>
+                    {selectedInquiry.dossier?.leadRating ? (
+                      <Badge className={cn(
+                        "rounded-full px-3 py-1 text-[11px] font-bold border-none shadow-sm",
+                        selectedInquiry.dossier.leadRating.includes('极高') 
+                          ? "bg-rose-50 text-rose-600 border border-rose-200/60 admin-interface-dark:bg-rose-950/30 admin-interface-dark:text-rose-400"
+                          : selectedInquiry.dossier.leadRating.includes('深度')
+                          ? "bg-blue-50 text-blue-600 border border-blue-200/60 admin-interface-dark:bg-blue-950/30 admin-interface-dark:text-blue-400"
+                          : "bg-slate-100 text-slate-600 admin-interface-dark:bg-slate-900 admin-interface-dark:text-slate-400"
+                      )}>
+                        {selectedInquiry.dossier.leadRating}
+                      </Badge>
+                    ) : (
+                      <span className="text-[10px] text-slate-400 admin-interface-dark:text-slate-600">未采集隐性画像</span>
+                    )}
+                  </div>
+
+                  {selectedInquiry.dossier ? (
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                      {/* 所在国家/地区（严格符合隐私授权条款） */}
+                      <div className="p-4 rounded-xl bg-slate-50 border border-slate-100 admin-interface-dark:bg-slate-900/40 admin-interface-dark:border-slate-800">
+                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest flex items-center gap-1.5 mb-1.5 admin-interface-dark:text-slate-500">
+                          <MapPin className="h-3.5 w-3.5 text-primary" /> 所在国家/地区
+                        </p>
+                        <p className="text-sm font-semibold text-slate-800 admin-interface-dark:text-slate-200">
+                          {selectedInquiry.dossier.location || '未知国家/地区'}
+                        </p>
+                      </div>
+
+                      {/* 建议沟通语种 */}
+                      <div className="p-4 rounded-xl bg-slate-50 border border-slate-100 admin-interface-dark:bg-slate-900/40 admin-interface-dark:border-slate-800">
+                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest flex items-center gap-1.5 mb-1.5 admin-interface-dark:text-slate-500">
+                          <Languages className="h-3.5 w-3.5 text-primary" /> 建议沟通语种
+                        </p>
+                        <p className="text-sm font-semibold text-slate-800 admin-interface-dark:text-slate-200">
+                          {selectedInquiry.dossier.language || '未知'}
+                        </p>
+                      </div>
+
+                      {/* 站内总停留 */}
+                      <div className="p-4 rounded-xl bg-slate-50 border border-slate-100 admin-interface-dark:bg-slate-900/40 admin-interface-dark:border-slate-800">
+                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest flex items-center gap-1.5 mb-1.5 admin-interface-dark:text-slate-500">
+                          <Clock className="h-3.5 w-3.5 text-primary" /> 站内总停留时长
+                        </p>
+                        <p className="text-sm font-semibold text-slate-800 admin-interface-dark:text-slate-200">
+                          {selectedInquiry.dossier.dwellTime || '刚刚进站'}
+                        </p>
+                      </div>
+
+                      {/* 规格书PDF下载 */}
+                      <div className="p-4 rounded-xl bg-slate-50 border border-slate-100 admin-interface-dark:bg-slate-900/40 admin-interface-dark:border-slate-800">
+                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest flex items-center gap-1.5 mb-1.5 admin-interface-dark:text-slate-500">
+                          <FileDown className="h-3.5 w-3.5 text-primary" /> 规格书PDF下载
+                        </p>
+                        <div className="flex items-center gap-2">
+                          <span className={cn(
+                            "text-sm font-bold",
+                            selectedInquiry.dossier.pdfDownloaded ? "text-emerald-600 admin-interface-dark:text-emerald-400" : "text-slate-500"
+                          )}>
+                            {selectedInquiry.dossier.pdfDownloaded ? '已下载技术规格表' : '未下载'}
+                          </span>
+                          {selectedInquiry.dossier.pdfDownloaded && (
+                            <Badge variant="outline" className="text-[9px] px-1.5 py-0 border-emerald-300 text-emerald-600 bg-emerald-50">
+                              高意向
+                            </Badge>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* 流量来源渠道 */}
+                      <div className="p-4 rounded-xl bg-slate-50 border border-slate-100 admin-interface-dark:bg-slate-900/40 admin-interface-dark:border-slate-800">
+                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest flex items-center gap-1.5 mb-1.5 admin-interface-dark:text-slate-500">
+                          <Compass className="h-3.5 w-3.5 text-primary" /> 流量来源渠道
+                        </p>
+                        <p className="text-sm font-semibold text-slate-800 truncate admin-interface-dark:text-slate-200">
+                          {selectedInquiry.dossier.channel || '直接访问'}
+                        </p>
+                      </div>
+
+                      {/* 对比浏览产品型号 */}
+                      <div className="p-4 rounded-xl bg-slate-50 border border-slate-100 admin-interface-dark:bg-slate-900/40 admin-interface-dark:border-slate-800 sm:col-span-2 lg:col-span-1">
+                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest flex items-center gap-1.5 mb-1.5 admin-interface-dark:text-slate-500">
+                          <Layers className="h-3.5 w-3.5 text-primary" /> 对比浏览产品
+                        </p>
+                        <p className="text-sm font-semibold text-slate-800 truncate admin-interface-dark:text-slate-200">
+                          {selectedInquiry.dossier.comparedProducts && selectedInquiry.dossier.comparedProducts.length > 0
+                            ? selectedInquiry.dossier.comparedProducts.join('、')
+                            : '仅关注当前询盘产品'}
+                        </p>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="p-6 rounded-2xl bg-slate-50 border border-dashed border-slate-200 text-center admin-interface-dark:bg-slate-900/20 admin-interface-dark:border-slate-800">
+                      <p className="text-xs text-slate-400 admin-interface-dark:text-slate-500">
+                        该询盘提交时未携带访客会话追踪或属于历史询盘记录
+                      </p>
+                    </div>
+                  )}
+                </div>
               </div>
 
               <div className="p-10 border-t border-slate-100 bg-slate-50/50 flex flex-col md:flex-row items-center justify-between gap-6 admin-interface-dark:border-slate-900 admin-interface-dark:bg-slate-950/50">
@@ -694,13 +1032,13 @@ export default function InquiriesPage() {
           <div className="p-8 border-t border-slate-100 bg-slate-50/50 flex justify-between items-center gap-3 admin-interface-dark:border-slate-900 admin-interface-dark:bg-slate-950/50">
             <Button 
               variant="outline" 
+              disabled={isTestingSmtp}
               onClick={async () => {
                 if (!settings.smtp_host || !settings.smtp_user || !settings.inquiry_forward_email) {
                   toast({ variant: "destructive", title: "请先填写完整的 SMTP 设置和接收邮箱" });
                   return;
                 }
-                const btn = document.getElementById('test-smtp-btn');
-                if (btn) btn.innerHTML = '正在测试...';
+                setIsTestingSmtp(true);
                 try {
                   const res = await fetch('/api/admin/settings/test-email', {
                     method: 'POST',
@@ -723,13 +1061,13 @@ export default function InquiriesPage() {
                 } catch (e: any) {
                   toast({ variant: "destructive", title: "连接测试失败", description: e.message });
                 } finally {
-                  if (btn) btn.innerHTML = '测试连接并发送邮件';
+                  setIsTestingSmtp(false);
                 }
               }}
-              id="test-smtp-btn"
               className="rounded-2xl font-bold h-12 px-6 border-slate-200 text-slate-600 hover:bg-slate-100 admin-interface-dark:border-slate-800 admin-interface-dark:text-slate-300 admin-interface-dark:hover:bg-slate-900"
             >
-              测试连接并发送邮件
+              {isTestingSmtp ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
+              {isTestingSmtp ? '正在测试...' : '测试连接并发送邮件'}
             </Button>
             <div className="flex gap-3">
               <Button variant="ghost" onClick={() => setIsSettingsOpen(false)} className="rounded-2xl font-bold h-12 px-6">

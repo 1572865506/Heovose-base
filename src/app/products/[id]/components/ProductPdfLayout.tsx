@@ -30,10 +30,12 @@ export interface ProductPdfLayoutProps {
   advantages: string[];
   specPagination: {
     page1Data: {
+      groups?: any[];
       leftGroups: any[];
       rightGroups: any[];
     };
     subsequentPages: Array<{
+      groups?: any[];
       leftGroups: any[];
       rightGroups: any[];
     }>;
@@ -111,8 +113,14 @@ export const ProductPdfLayout = forwardRef<HTMLDivElement, ProductPdfLayoutProps
       return hasBottomGallery ? 260 : 310;
     }, [advantages.length, validGalleryImages.length]);
 
-    // 极简横线子表渲染器（类似苹果/特斯拉技术规格书风格：纯正顶格对齐，紧凑列宽消除过大间距，极简细横线）
-    const renderSubTable = (group: any, key: string) => {
+    // 工业级 Z 字走向规格表渲染器（两两成行，左 -> 右，下一行 左 -> 右）
+    const renderSpecGroup = (group: any, key: string) => {
+      const items = Array.isArray(group?.items) ? group.items : [];
+      const rows: Array<[any, any?]> = [];
+      for (let i = 0; i < items.length; i += 2) {
+        rows.push([items[i], items[i + 1]]);
+      }
+
       return (
         <div key={key} style={{ display: 'flex', flexDirection: 'column', width: '100%' }}>
           {/* 子表标题：纯文字顶格左对齐，增加边线距离，采用浅灰色细横线 */}
@@ -140,48 +148,104 @@ export const ProductPdfLayout = forwardRef<HTMLDivElement, ProductPdfLayoutProps
             />
           </div>
 
-          {/* 参数行：浅灰色细分割线 + 顶端自适应贴合 */}
+          {/* 参数行集合：每行左右两列（严格 Z 字走向） */}
           <div style={{ display: 'flex', flexDirection: 'column' }}>
-            {group.items.map((item: any, iIdx: number) => (
+            {rows.map(([leftItem, rightItem], rIdx: number) => (
               <div
-                key={iIdx}
+                key={rIdx}
                 style={{
                   display: 'flex',
                   flexDirection: 'row',
-                  alignItems: 'flex-start',
-                  paddingTop: '5px',
-                  paddingBottom: '7px',
-                  borderBottom: '1px solid #e2e8f0',
+                  alignItems: 'stretch',
+                  gap: '28px',
+                  width: '100%',
                   boxSizing: 'border-box',
                 }}
               >
-                {/* 参数名称 (Label)：紧凑比例 28%，右侧适度间距，与参数值自然贴近，基线严格对齐 */}
-                <div style={{ width: '28%', flexShrink: 0, paddingRight: '12px', boxSizing: 'border-box' }}>
-                  <div
-                    className="text-[11px] font-medium text-slate-500"
-                    style={{
-                      lineHeight: '1.4',
-                      margin: 0,
-                      padding: 0,
-                      textAlign: 'left',
-                      wordBreak: 'break-word',
-                    }}
-                    dangerouslySetInnerHTML={{ __html: item.label }}
-                  />
+                {/* 左侧参数项 (Z字走向第一格) */}
+                <div
+                  style={{
+                    flex: 1,
+                    minWidth: 0,
+                    display: 'flex',
+                    flexDirection: 'row',
+                    alignItems: 'flex-start',
+                    paddingTop: '5px',
+                    paddingBottom: '7px',
+                    borderBottom: '1px solid #e2e8f0',
+                    boxSizing: 'border-box',
+                  }}
+                >
+                  <div style={{ width: '28%', flexShrink: 0, paddingRight: '12px', boxSizing: 'border-box' }}>
+                    <div
+                      className="text-[11px] font-medium text-slate-500"
+                      style={{
+                        lineHeight: '1.4',
+                        margin: 0,
+                        padding: 0,
+                        textAlign: 'left',
+                        wordBreak: 'break-word',
+                      }}
+                      dangerouslySetInnerHTML={{ __html: leftItem.label }}
+                    />
+                  </div>
+                  <div style={{ flex: 1, minWidth: 0, boxSizing: 'border-box' }}>
+                    <div
+                      className="text-[11px] font-semibold text-slate-900 text-left whitespace-pre-wrap"
+                      style={{
+                        lineHeight: '1.4',
+                        margin: 0,
+                        padding: 0,
+                        wordBreak: 'break-word',
+                      }}
+                      dangerouslySetInnerHTML={{ __html: leftItem.value }}
+                    />
+                  </div>
                 </div>
 
-                {/* 参数数值 (Value)：宽阔比例 72%，长文本自然展开，基线严格对齐 */}
-                <div style={{ flex: 1, minWidth: 0, boxSizing: 'border-box' }}>
-                  <div
-                    className="text-[11px] font-semibold text-slate-900 text-left whitespace-pre-wrap"
-                    style={{
-                      lineHeight: '1.4',
-                      margin: 0,
-                      padding: 0,
-                      wordBreak: 'break-word',
-                    }}
-                    dangerouslySetInnerHTML={{ __html: item.value }}
-                  />
+                {/* 右侧参数项 (Z字走向第二格，若无则占位保持对齐) */}
+                <div
+                  style={{
+                    flex: 1,
+                    minWidth: 0,
+                    display: 'flex',
+                    flexDirection: 'row',
+                    alignItems: 'flex-start',
+                    paddingTop: '5px',
+                    paddingBottom: '7px',
+                    borderBottom: rightItem ? '1px solid #e2e8f0' : 'none',
+                    boxSizing: 'border-box',
+                  }}
+                >
+                  {rightItem ? (
+                    <>
+                      <div style={{ width: '28%', flexShrink: 0, paddingRight: '12px', boxSizing: 'border-box' }}>
+                        <div
+                          className="text-[11px] font-medium text-slate-500"
+                          style={{
+                            lineHeight: '1.4',
+                            margin: 0,
+                            padding: 0,
+                            textAlign: 'left',
+                            wordBreak: 'break-word',
+                          }}
+                          dangerouslySetInnerHTML={{ __html: rightItem.label }}
+                        />
+                      </div>
+                      <div style={{ flex: 1, minWidth: 0, boxSizing: 'border-box' }}>
+                        <div
+                          className="text-[11px] font-semibold text-slate-900 text-left whitespace-pre-wrap"
+                          style={{
+                            lineHeight: '1.4',
+                            margin: 0,
+                            padding: 0,
+                            wordBreak: 'break-word',
+                          }}
+                          dangerouslySetInnerHTML={{ __html: rightItem.value }}
+                        />
+                      </div>
+                    </>
+                  ) : null}
                 </div>
               </div>
             ))}
@@ -798,19 +862,17 @@ export const ProductPdfLayout = forwardRef<HTMLDivElement, ProductPdfLayoutProps
               </div>
             )}
 
-            {/* 当无核心优势时：独立双列极简横线子表向前推进至产品图下方，设置安全边距 */}
-            {advantages.length === 0 && (specPagination.page1Data.leftGroups.length > 0 || specPagination.page1Data.rightGroups.length > 0) && (
+            {/* 当无核心优势时：独立全宽 Z 字走向规格表向前推进至产品图下方，设置安全边距 */}
+            {advantages.length === 0 && (
+              ((specPagination.page1Data.groups && specPagination.page1Data.groups.length > 0) ||
+               (specPagination.page1Data.leftGroups && specPagination.page1Data.leftGroups.length > 0))
+            ) && (
               <div style={{ marginTop: '16px', marginBottom: '24px' }}>
-                <div style={{ display: 'flex', flexDirection: 'row', alignItems: 'flex-start', gap: '26px', width: '100%' }}>
-                  {/* 左列规格子表集合 */}
-                  <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: '18px' }}>
-                    {specPagination.page1Data.leftGroups.map((group: any, gIdx: number) => renderSubTable(group, `p1-l-${gIdx}`))}
-                  </div>
-
-                  {/* 右列规格子表集合 */}
-                  <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: '18px' }}>
-                    {specPagination.page1Data.rightGroups.map((group: any, gIdx: number) => renderSubTable(group, `p1-r-${gIdx}`))}
-                  </div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '14px', width: '100%' }}>
+                  {((specPagination.page1Data.groups && specPagination.page1Data.groups.length > 0)
+                    ? specPagination.page1Data.groups
+                    : specPagination.page1Data.leftGroups
+                  ).map((group: any, gIdx: number) => renderSpecGroup(group, `p1-${gIdx}`))}
                 </div>
 
                 {/* 如果整份规格书在第 1 页全部容纳（无第 2 页）且存在脚注，则在第 1 页底部显示脚注 */}
@@ -966,17 +1028,12 @@ export const ProductPdfLayout = forwardRef<HTMLDivElement, ProductPdfLayoutProps
                   </h2>
                 </div>
 
-                {/* 规格表：左右独立双列流，设置安全的区块下边距与列间隙 */}
-                <div style={{ display: 'flex', flexDirection: 'row', alignItems: 'flex-start', gap: '28px', width: '100%', marginBottom: '16px' }}>
-                  {/* 左列子表 */}
-                  <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: '14px' }}>
-                    {pageData.leftGroups.map((group: any, gIdx: number) => renderSubTable(group, `sub-${pageIdx}-l-${gIdx}`))}
-                  </div>
-
-                  {/* 右列子表 */}
-                  <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: '14px' }}>
-                    {pageData.rightGroups.map((group: any, gIdx: number) => renderSubTable(group, `sub-${pageIdx}-r-${gIdx}`))}
-                  </div>
+                {/* 规格表：全宽 Z 字走向双列规格表，设置安全的区块下边距 */}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '14px', width: '100%', marginBottom: '16px' }}>
+                  {((pageData.groups && pageData.groups.length > 0)
+                    ? pageData.groups
+                    : pageData.leftGroups
+                  ).map((group: any, gIdx: number) => renderSpecGroup(group, `sub-${pageIdx}-${gIdx}`))}
                 </div>
 
                 {isLastSpecPage && (parsedSpecs.orderedFootnotes.length > 0 || parsedSpecs.unorderedFootnotes.length > 0) && (

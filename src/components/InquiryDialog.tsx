@@ -70,12 +70,29 @@ export function InquiryDialog({
   async function onSubmit(values: z.infer<typeof formSchema>) {
     setIsSubmitting(true);
     try {
+      let sessionId = typeof window !== 'undefined' ? (sessionStorage.getItem('heovose-analytics-session') || undefined) : undefined;
+      let visitorId = typeof window !== 'undefined' ? (localStorage.getItem('heovose-analytics-visitor') || undefined) : undefined;
+      if (!visitorId && typeof window !== 'undefined') {
+        visitorId = `vis_${Math.random().toString(36).substring(2)}_${Date.now()}`;
+        localStorage.setItem('heovose-analytics-visitor', visitorId);
+      }
+      if (!sessionId && typeof window !== 'undefined') {
+        sessionId = `sess_${Math.random().toString(36).substring(2)}_${Date.now()}`;
+        sessionStorage.setItem('heovose-analytics-session', sessionId);
+      }
+      const clientTimezone = typeof Intl !== 'undefined' ? Intl.DateTimeFormat().resolvedOptions().timeZone : undefined;
+      const clientLang = typeof navigator !== 'undefined' ? (navigator.language || (navigator.languages && navigator.languages[0])) : undefined;
+
       const response = await fetch('/api/inquiries', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           ...values,
           productId,
+          sessionId: sessionId || undefined,
+          visitorId: visitorId || undefined,
+          clientTimezone: clientTimezone || undefined,
+          clientLang: clientLang || undefined,
         }),
       });
 
