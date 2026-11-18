@@ -39,19 +39,6 @@ export default function LoginPage() {
   const { resolvedTheme } = useAdminTheme();
   const isDark = resolvedTheme === 'dark';
 
-  // 动态将客户端中 NextAuth 要求的环境变量修正为浏览器当前真实的 origin，
-  // 彻底避免从不同局域网 IP、本地 localhost 或生产域名访问时由于 Origin 不匹配或端上变量缺失导致的 Invalid URL 崩溃报错。
-  useEffect(() => {
-    if (typeof window !== 'undefined') {
-      const origin = window.location.origin;
-      const anyWin = window as any;
-      anyWin.process = anyWin.process || {};
-      anyWin.process.env = anyWin.process.env || {};
-      anyWin.process.env.NEXTAUTH_URL = origin;
-      anyWin.process.env.AUTH_URL = origin;
-    }
-  }, []);
-
   // 决定最终展示的 Logo 图片
   const logoSrc = isDark
     ? (siteConfig?.logoInverted || siteConfig?.logoStandard)
@@ -70,8 +57,12 @@ export default function LoginPage() {
 
       if (result?.error) {
         let errorMsg = "登录失败：邮箱或密码错误";
-        if (result.error === "AccessDenied") {
-          errorMsg = "系统内部错误，请联系系统管理员";
+        if (result.error === "TooManyAttempts") {
+          errorMsg = "连续登录失败次数过多，该账号已暂时锁定，请 15 分钟后再试";
+        } else if (result.error === "AccessDenied") {
+          errorMsg = "无权访问管理后台，请联系系统管理员";
+        } else if (result.error === "UnexpectedError") {
+          errorMsg = "系统繁忙，请稍后再试";
         }
         setError(errorMsg);
         toast({ title: "认证失败", description: errorMsg, variant: "destructive" });
@@ -85,12 +76,12 @@ export default function LoginPage() {
         return;
       }
       console.error("Login unexpected client error:", err);
-      const errDetail = String(err?.message || err || '');
-      setError(`发生意外错误: ${errDetail}`);
-      toast({ 
-        title: "认证意外中断", 
-        description: `错误详情: ${errDetail}`, 
-        variant: "destructive" 
+      const safeErr = "请求异常，请刷新页面后重试";
+      setError(safeErr);
+      toast({
+        title: "认证意外中断",
+        description: safeErr,
+        variant: "destructive"
       });
     } finally {
       setIsLoading(false);

@@ -1,8 +1,11 @@
 import type { NextAuthConfig } from "next-auth";
 
+const appUrl = process.env.AUTH_URL || process.env.NEXTAUTH_URL || "";
+const useSecureCookies = process.env.NODE_ENV === "production" && appUrl.startsWith("https://");
+
 export const authConfig = {
   trustHost: true,
-  useSecureCookies: false,
+  useSecureCookies,
   providers: [], // Empty array, overridden in auth.ts
   callbacks: {
     async jwt({ token, user }) {

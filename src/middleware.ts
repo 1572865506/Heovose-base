@@ -50,6 +50,62 @@ function checkRateLimit(ip: string, limit: number, durationMs: number): { succes
   return { success: true, remaining: limit - record.count };
 }
 
+const LOGIN_COOKIE_TTL_MS = 1000 * 60 * 60 * 24 * 7; // 7 天
+
+function timingSafeEqualStr(a: string, b: string): boolean {
+  if (a.length !== b.length) return false;
+  let diff = 0;
+  for (let i = 0; i < a.length; i++) {
+    diff |= a.charCodeAt(i) ^ b.charCodeAt(i);
+  }
+  return diff === 0;
+}
+
+function getCookieSigningSecret(): string {
+  return (
+    process.env.AUTH_SECRET ||
+    process.env.NEXTAUTH_SECRET ||
+    process.env.ADMIN_LOGIN_SECRET ||
+    'heovose_dev_cookie_key'
+  );
+}
+
+async function signAccessToken(issuedAtMs: number): Promise<string> {
+  const payload = String(issuedAtMs);
+  const enc = new TextEncoder();
+  const key = await crypto.subtle.importKey(
+    'raw',
+    enc.encode(getCookieSigningSecret()),
+    { name: 'HMAC', hash: 'SHA-256' },
+    false,
+    ['sign']
+  );
+  const sigBuf = await crypto.subtle.sign('HMAC', key, enc.encode(payload));
+  const sigHex = Array.from(new Uint8Array(sigBuf))
+    .map((b) => b.toString(16).padStart(2, '0'))
+    .join('');
+  return `${payload}.${sigHex}`;
+}
+
+async function verifyAccessToken(token?: string | null): Promise<boolean> {
+  if (!token || !token.includes('.')) return false;
+  const [payload, sigHex] = token.split('.');
+  if (!payload || !sigHex) return false;
+  const issuedAt = Number(payload);
+  if (!Number.isFinite(issuedAt) || Date.now() - issuedAt > LOGIN_COOKIE_TTL_MS || issuedAt > Date.now() + 60000) {
+    return false;
+  }
+  const expected = await signAccessToken(issuedAt);
+  return timingSafeEqualStr(token, expected);
+}
+
+function applyAdminSecurityHeaders(res: NextResponse): NextResponse {
+  res.headers.set('X-Frame-Options', 'DENY');
+  res.headers.set('X-Content-Type-Options', 'nosniff');
+  res.headers.set('Referrer-Policy', 'same-origin');
+  return res;
+}
+
 export default auth(async (request) => {
   const { nextUrl } = request;
   const pathname = nextUrl.pathname;
@@ -57,29 +113,36 @@ export default auth(async (request) => {
   const host = request.headers.get('x-forwarded-host') || request.headers.get('host') || 'localhost:9002';
   const proto = request.headers.get('x-forwarded-proto') || 'http';
   const baseOrigin = `${proto}://${host}`;
+  const isHttps = proto === 'https' && process.env.NODE_ENV === 'production';
 
-  // 1. 隐藏后台登录入口安全防护
+  // 1. 隐藏后台登录入口安全防护（HMAC 签名 Cookie + 生产环境禁止硬编码默认口令）
   if (pathname === '/auth/login') {
-    const secretParam = nextUrl.searchParams.get('secret');
+    const secretParam = nextUrl.searchParams.get('secret') || '';
     const secretCookie = request.cookies.get('login_access_allowed')?.value;
-    const adminSecret = process.env.ADMIN_LOGIN_SECRET || 'heovose_secure_2026';
+    const adminSecret =
+      process.env.ADMIN_LOGIN_SECRET ||
+      (process.env.NODE_ENV !== 'production' ? 'heovose_dev_only' : '');
 
-    // 如果没有合法的 URL 口令，且浏览器内无临时授权 Cookie，直接返回 404 伪装无此页面
-    if (secretParam !== adminSecret && secretCookie !== 'true') {
+    const hasValidParam = Boolean(adminSecret && secretParam && timingSafeEqualStr(secretParam, adminSecret));
+    const hasValidCookie = await verifyAccessToken(secretCookie);
+
+    // 如果没有合法的 URL 口令，且浏览器内无有效签名授权 Cookie，直接返回 404 伪装无此页面
+    if (!hasValidParam && !hasValidCookie) {
       return new NextResponse("Not Found", { status: 404 });
     }
 
-    // 若通过口令进入，为浏览器植入长期 Cookie 标识，并重定向去除 URL 敏感参数
-    if (secretParam === adminSecret) {
+    // 若通过口令进入，为浏览器植入带 HMAC 签名的长期 Cookie 标识，并重定向去除 URL 敏感参数
+    if (hasValidParam) {
+      const signedToken = await signAccessToken(Date.now());
       const redirectUrl = `${baseOrigin}/auth/login`;
       const response = NextResponse.redirect(redirectUrl);
-      response.cookies.set('login_access_allowed', 'true', {
+      response.cookies.set('login_access_allowed', signedToken, {
         httpOnly: true,
-        secure: process.env.NODE_ENV === 'production',
+        secure: isHttps,
         sameSite: 'lax',
         maxAge: 60 * 60 * 24 * 7, // 7 天有效期
       });
-      return response;
+      return applyAdminSecurityHeaders(response);
     }
   }
 
@@ -113,15 +176,13 @@ export default auth(async (request) => {
   const isWriteMethod = ['POST', 'PUT', 'DELETE', 'PATCH'].includes(method);
   
   if (isWriteMethod && pathname !== '/api/analytics/track') {
-    // 添加核心调试日志，诊断反代与 CSRF Origin 校验数据
-    console.log(`[CSRF Debug] path: ${pathname}, origin: ${origin}, nextUrl.origin: ${nextUrl.origin}, appUrl: ${appUrl}`);
-
     // 维护模式拦截 (问题 4)：在还原/升级期间阻止所有非管理性质的写操作，防范数据冲突与不一致
     if (!pathname.startsWith('/api/admin/system')) {
       try {
         const localApiUrl = `http://127.0.0.1:${process.env.PORT || '9002'}`;
         const checkRes = await fetch(`${localApiUrl}/api/admin/system/maintenance-check`, {
-          headers: { 'Cache-Control': 'no-cache' }
+          headers: { 'Cache-Control': 'no-cache' },
+          signal: AbortSignal.timeout(800),
         });
         if (checkRes.ok) {
           const checkData = await checkRes.json();
@@ -143,21 +204,25 @@ export default auth(async (request) => {
       return NextResponse.json({ error: 'CSRF Protection: Cross-site write requests are blocked.' }, { status: 403 });
     }
     
-    // 2. 校验 Origin 同源域
-    const host = request.headers.get('host');
+    const isDev = process.env.NODE_ENV !== 'production';
+    const isPrivateOrigin = (o: string) =>
+      o.startsWith('http://localhost:') ||
+      o.startsWith('http://127.0.0.1:') ||
+      o.startsWith('http://192.168.') ||
+      o.startsWith('http://10.') ||
+      o.startsWith('http://172.');
+
+    // 2. 校验 Origin 同源域（生产环境严格禁用 localhost/内网段放行）
+    const reqHost = request.headers.get('host');
     if (origin) {
-      const isAllowedOrigin = origin === appUrl || 
-                              origin === nextUrl.origin || 
-                              (host && (origin === `http://${host}` || origin === `https://${host}`)) || 
-                              origin.startsWith('http://localhost:') || 
-                              origin.startsWith('http://127.0.0.1:') || 
-                              origin.startsWith('http://192.168.') || 
-                              origin.startsWith('http://10.') || 
-                              origin.startsWith('http://172.') || 
+      const isAllowedOrigin = origin === appUrl ||
+                              origin === nextUrl.origin ||
+                              (reqHost && (origin === `http://${reqHost}` || origin === `https://${reqHost}`)) ||
                               origin.endsWith('.heovose.com') ||
-                              origin.endsWith('.web.app');
+                              origin.endsWith('.web.app') ||
+                              (isDev && isPrivateOrigin(origin));
       if (!isAllowedOrigin) {
-        console.warn(`[CSRF Blocked] Origin: ${origin} not matched against AppUrl: ${appUrl}, NextUrlOrigin: ${nextUrl.origin}, Host: ${host}`);
+        console.warn(`[CSRF Blocked] Origin: ${origin} not matched against AppUrl: ${appUrl}, NextUrlOrigin: ${nextUrl.origin}, Host: ${reqHost}`);
         return NextResponse.json({ error: 'CSRF Protection: Origin mismatch.' }, { status: 403 });
       }
     } else if (referer) {
@@ -166,15 +231,11 @@ export default auth(async (request) => {
         const refererUrl = new URL(referer);
         const appUrlObj = new URL(appUrl);
         const isAllowedReferer = refererUrl.origin === appUrlObj.origin ||
-                                 refererUrl.origin === nextUrl.origin || 
-                                 (host && (refererUrl.origin === `http://${host}` || refererUrl.origin === `https://${host}`)) || 
-                                 refererUrl.origin.startsWith('http://localhost:') ||
-                                 refererUrl.origin.startsWith('http://127.0.0.1:') ||
-                                 refererUrl.origin.startsWith('http://192.168.') ||
-                                 refererUrl.origin.startsWith('http://10.') ||
-                                 refererUrl.origin.startsWith('http://172.') ||
+                                 refererUrl.origin === nextUrl.origin ||
+                                 (reqHost && (refererUrl.origin === `http://${reqHost}` || refererUrl.origin === `https://${reqHost}`)) ||
                                  refererUrl.hostname.endsWith('.heovose.com') ||
-                                 refererUrl.hostname.endsWith('.web.app');
+                                 refererUrl.hostname.endsWith('.web.app') ||
+                                 (isDev && isPrivateOrigin(refererUrl.origin));
         if (!isAllowedReferer) {
           return NextResponse.json({ error: 'CSRF Protection: Referer mismatch.' }, { status: 403 });
         }
@@ -216,7 +277,12 @@ export default auth(async (request) => {
     const isStateChangingPost = request.method === 'POST' && (pathname.startsWith('/api/auth') || pathname.endsWith('/auth/login') || pathname === '/api/inquiries' || pathname === '/api/upload' || pathname === '/api/analytics/track');
     
     if (isGetProducts || isStateChangingPost) {
-      const ip = (request as any).ip || request.headers.get("x-forwarded-for")?.split(",")[0].trim() || "127.0.0.1";
+      // 优先采用反代设置的真实 IP（x-real-ip / platform ip），防止伪造 x-forwarded-for 绕过限流
+      const ip =
+        request.headers.get("x-real-ip")?.trim() ||
+        (request as any).ip ||
+        request.headers.get("x-forwarded-for")?.split(",")[0].trim() ||
+        "127.0.0.1";
       
       let limit = 10;
       let duration = 60000; // 1 minute
@@ -251,19 +317,26 @@ export default auth(async (request) => {
   }
 
   const isLoggedIn = !!request.auth;
+  const userRole = (request.auth?.user as any)?.role;
+  const hasAdminRole = userRole === 'superadmin' || userRole === 'editor';
 
-  // 2. Admin protection 与入口防探针拦截
+  // 2. Admin protection 与入口防探针拦截（验证登录态 + 管理员角色 + HMAC 签名门禁 Cookie）
   if (pathname.startsWith("/admin")) {
-    if (!isLoggedIn) {
+    if (!isLoggedIn || !hasAdminRole) {
       const secretCookie = request.cookies.get('login_access_allowed')?.value;
-      if (secretCookie === 'true') {
-        return NextResponse.redirect(`${baseOrigin}/auth/login`);
+      const hasValidCookie = await verifyAccessToken(secretCookie);
+      if (hasValidCookie) {
+        return applyAdminSecurityHeaders(NextResponse.redirect(`${baseOrigin}/auth/login`));
       } else {
-        // 无授权 Cookie 时访问后台，直接静默跳转到前台首页，彻底隐匿后台地址
+        // 无有效授权 Cookie 时访问后台，直接静默跳转到前台首页，彻底隐匿后台地址
         return NextResponse.redirect(`${baseOrigin}/`);
       }
     }
-    return NextResponse.next();
+    return applyAdminSecurityHeaders(NextResponse.next());
+  }
+
+  if (pathname.startsWith('/auth')) {
+    return applyAdminSecurityHeaders(NextResponse.next());
   }
 
   // 2. Language resolution and subpath routing

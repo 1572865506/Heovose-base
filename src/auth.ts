@@ -5,10 +5,46 @@ import db from "@/lib/db";
 import bcrypt from "bcryptjs";
 import { authConfig } from "./auth.config";
 
+// 账号维度防暴力破解锁定表（15 分钟窗口内连续失败 5 次锁定 15 分钟）
+const LOGIN_MAX_FAILURES = 5;
+const LOGIN_LOCK_WINDOW_MS = 15 * 60 * 1000;
+const loginFailureMap = new Map<string, { count: number; lockUntil?: number; windowStart: number }>();
+
+function checkAccountLocked(emailKey: string): boolean {
+  const now = Date.now();
+  const record = loginFailureMap.get(emailKey);
+  if (!record) return false;
+  if (record.lockUntil && now < record.lockUntil) return true;
+  if (now - record.windowStart > LOGIN_LOCK_WINDOW_MS) {
+    loginFailureMap.delete(emailKey);
+    return false;
+  }
+  return false;
+}
+
+function recordLoginFailure(emailKey: string) {
+  const now = Date.now();
+  // 惰性清理过期记录
+  if (loginFailureMap.size > 500) {
+    for (const [k, v] of loginFailureMap.entries()) {
+      if (now - v.windowStart > LOGIN_LOCK_WINDOW_MS && (!v.lockUntil || now >= v.lockUntil)) {
+        loginFailureMap.delete(k);
+      }
+    }
+  }
+  const record = loginFailureMap.get(emailKey);
+  if (!record || now - record.windowStart > LOGIN_LOCK_WINDOW_MS) {
+    loginFailureMap.set(emailKey, { count: 1, windowStart: now });
+    return;
+  }
+  record.count += 1;
+  if (record.count >= LOGIN_MAX_FAILURES) {
+    record.lockUntil = now + LOGIN_LOCK_WINDOW_MS;
+  }
+}
+
 export const { handlers, signIn, signOut, auth } = NextAuth({
   ...authConfig,
-  trustHost: true,
-  useSecureCookies: false,
   adapter: PrismaAdapter(db),
   providers: [
     Credentials({
@@ -20,19 +56,35 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
       async authorize(credentials) {
         if (!credentials?.email || !credentials?.password) return null;
 
+        const rawEmail = String(credentials.email).trim();
+        const emailKey = rawEmail.toLowerCase();
+
+        if (checkAccountLocked(emailKey)) {
+          throw new Error("TOO_MANY_ATTEMPTS");
+        }
+
         try {
           const user = await db.user.findUnique({
-            where: { email: credentials.email as string },
+            where: { email: rawEmail },
           });
 
-          if (!user || !user.password) return null;
+          // 仅允许具备后台管理角色（superadmin / editor）的账号登录
+          if (!user || !user.password || (user.role !== "superadmin" && user.role !== "editor")) {
+            recordLoginFailure(emailKey);
+            return null;
+          }
 
           const isPasswordValid = await bcrypt.compare(
             credentials.password as string,
             user.password
           );
 
-          if (!isPasswordValid) return null;
+          if (!isPasswordValid) {
+            recordLoginFailure(emailKey);
+            return null;
+          }
+
+          loginFailureMap.delete(emailKey);
 
           return {
             id: user.id,
